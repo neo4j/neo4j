@@ -24,12 +24,12 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
 import org.neo4j.memory.MemoryAllocationTracker;
-import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
 import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.copyMemory;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getLong;
+import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.newDirectByteBuffer;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.putLong;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.setMemory;
 import static org.neo4j.util.Preconditions.checkState;
@@ -46,9 +46,13 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
     }
 
     @Override
-    public Memory allocate( long size )
+    public Memory allocate( long size, boolean zeroed )
     {
         final MemoryBlock block = blockAllocator.allocate( size, tracker );
+        if ( zeroed )
+        {
+            setMemory( block.unalignedAddr, block.unalignedSize, (byte) 0 );
+        }
         return new OffHeapMemory( block );
     }
 
@@ -105,7 +109,7 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
             checkState( block.size <= Integer.MAX_VALUE, "Can't create ByteBuffer: memory size exceeds integer limit" );
             try
             {
-                return UnsafeUtil.newDirectByteBuffer( block.addr, toIntExact( block.size ) );
+                return newDirectByteBuffer( block.addr, toIntExact( block.size ) );
             }
             catch ( Exception e )
             {

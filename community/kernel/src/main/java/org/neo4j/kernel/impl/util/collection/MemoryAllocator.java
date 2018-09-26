@@ -22,5 +22,9 @@ package org.neo4j.kernel.impl.util.collection;
 @FunctionalInterface
 public interface MemoryAllocator
 {
-    Memory allocate( long size );
+    /**
+     * @param size amount of memory to allocate in bytes
+     * @param zeroed if {@code true} then allocated memory is guaranteed to be zero-filled
+     */
+    Memory allocate( long size, boolean zeroed );
 }

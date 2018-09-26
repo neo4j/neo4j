@@ -97,7 +97,6 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         else
         {
             tracker.allocated( block.unalignedSize );
-            UnsafeUtil.setMemory( block.unalignedAddr, block.unalignedSize, (byte) 0 );
         }
         return block;
     }
@@ -154,7 +153,6 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         final long unalignedSize = requirePositive( size ) + Long.BYTES - 1;
         final long unalignedAddr = UnsafeUtil.allocateMemory( unalignedSize, tracker );
         final long addr = UnsafeUtil.alignedMemory( unalignedAddr, Long.BYTES );
-        UnsafeUtil.setMemory( unalignedAddr, unalignedSize, (byte) 0 );
         return new MemoryBlock( addr, size, unalignedAddr, unalignedSize );
     }
 

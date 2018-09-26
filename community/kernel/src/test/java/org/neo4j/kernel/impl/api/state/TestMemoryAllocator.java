@@ -45,9 +45,13 @@ class TestMemoryAllocator implements MemoryAllocator
     }
 
     @Override
-    public Memory allocate( long size )
+    public Memory allocate( long size, boolean zeroed )
     {
         final ByteBuffer buf = ByteBuffer.allocate( toIntExact( size ) );
+        if ( zeroed )
+        {
+            Arrays.fill( buf.array(), (byte) 0 );
+        }
         return new MemoryImpl( buf );
     }
 

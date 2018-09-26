@@ -764,7 +764,7 @@ class LinearProbeLongLongHashMap extends AbstractLongIterable implements Mutable
         capacity = newCapacity;
         resizeOccupancyThreshold = (int) (newCapacity * LOAD_FACTOR);
         resizeRemovalsThreshold = (int) (newCapacity * REMOVALS_FACTOR);
-        memory = allocator.allocate( newCapacity * ENTRY_SIZE );
+        memory = allocator.allocate( newCapacity * ENTRY_SIZE, true );
     }
 
     private long removeForSentinelKey( long key, long ifAbsent )

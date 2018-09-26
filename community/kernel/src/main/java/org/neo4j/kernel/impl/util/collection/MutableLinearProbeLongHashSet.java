@@ -332,7 +332,7 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         capacity = newCapacity;
         resizeOccupancyThreshold = (int) (newCapacity * LOAD_FACTOR);
         resizeRemovalsThreshold = newCapacity / REMOVALS_RATIO;
-        memory = allocator.allocate( (long) newCapacity * Long.BYTES );
+        memory = allocator.allocate( (long) newCapacity * Long.BYTES, true );
     }
 
     private void rehash( int newCapacity )
