@@ -45,7 +45,6 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_ID_MISMAT
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_STORE_UNAVAILABLE;
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
 public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequest>
 {
@@ -85,36 +84,45 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         StoreId localStoreId = storeIdSupplier.get();
         StoreId expectedStoreId = msg.expectedStoreId();
 
-        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( ctx, msg.previousTxId() + 1, localStoreId, expectedStoreId );
+        long firstTxId = msg.previousTxId() + 1;
+
+        /*
+         * This is the minimum transaction id we must send to consider our streaming operation successful. The kernel can
+         * concurrently prune even future transactions while iterating and the cursor will silently fail on iteration, so
+         * we need to add our own protection for this reason and also as a generally important sanity check for the fulfillment
+         * of the consistent recovery contract which requires us to stream transactions at least as far as the time when the
+         * file copy operation completed.
+         */
+        long txIdPromise = transactionIdStore.getLastCommittedTransactionId();
+        IOCursor<CommittedTransactionRepresentation> txCursor = getCursor( txIdPromise, ctx, firstTxId, localStoreId, expectedStoreId );
 
         if ( txCursor != null )
         {
-            ctx.writeAndFlush( new ChunkedTransactionStream( localStoreId, txCursor, protocol ) );
+            ChunkedTransactionStream txStream = new ChunkedTransactionStream( log, localStoreId, firstTxId, txIdPromise, txCursor, protocol );
             // chunked transaction stream ends the interaction internally and closes the cursor
+            ctx.writeAndFlush( txStream );
         }
     }
 
-    private IOCursor<CommittedTransactionRepresentation> getCursor( ChannelHandlerContext ctx, long firstTxId,
+    private IOCursor<CommittedTransactionRepresentation> getCursor( long txIdPromise, ChannelHandlerContext ctx, long firstTxId,
             StoreId localStoreId, StoreId expectedStoreId ) throws IOException
     {
-        long lastCommittedTransactionId = transactionIdStore.getLastCommittedTransactionId();
-
         if ( localStoreId == null || !localStoreId.equals( expectedStoreId ) )
         {
             log.info( "Failed to serve TxPullRequest for tx %d and storeId %s because that storeId is different " +
                     "from this machine with %s", firstTxId, expectedStoreId, localStoreId );
-            endInteraction( ctx, E_STORE_ID_MISMATCH, lastCommittedTransactionId );
+            endInteraction( ctx, E_STORE_ID_MISMATCH, txIdPromise );
             return null;
         }
         else if ( !databaseAvailable.getAsBoolean() )
         {
             log.info( "Failed to serve TxPullRequest for tx %d because the local database is unavailable.", firstTxId );
-            endInteraction( ctx, E_STORE_UNAVAILABLE, lastCommittedTransactionId );
+            endInteraction( ctx, E_STORE_UNAVAILABLE, txIdPromise );
             return null;
         }
-        else if ( lastCommittedTransactionId < firstTxId )
+        else if ( txIdPromise < firstTxId )
         {
-            endInteraction( ctx, SUCCESS_END_OF_STREAM, lastCommittedTransactionId );
+            endInteraction( ctx, SUCCESS_END_OF_STREAM, txIdPromise );
             return null;
         }
 
@@ -125,7 +133,7 @@ public class TxPullRequestHandler extends SimpleChannelInboundHandler<TxPullRequ
         catch ( NoSuchTransactionException e )
         {
             log.info( "Failed to serve TxPullRequest for tx %d because the transaction does not exist.", firstTxId );
-            endInteraction( ctx, E_TRANSACTION_PRUNED, lastCommittedTransactionId );
+            endInteraction( ctx, E_TRANSACTION_PRUNED, txIdPromise );
             return null;
         }
     }
