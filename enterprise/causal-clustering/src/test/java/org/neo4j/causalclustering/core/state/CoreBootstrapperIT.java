@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionStore;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -116,9 +117,10 @@ public class CoreBootstrapperIT
         FileSystemAbstraction fileSystem = fileSystemRule.get();
         File storeInNeedOfRecovery =
                 ClassicNeo4jStore.builder( testDirectory.directory(), fileSystem ).amountOfNodes( nodeCount ).needToRecover().build().getStoreDir();
+        AssertableLogProvider assertableLogProvider = new AssertableLogProvider(  );
 
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
-        CoreBootstrapper bootstrapper = new CoreBootstrapper( storeInNeedOfRecovery, pageCache, fileSystem, Config.defaults(), NullLogProvider.getInstance() );
+        CoreBootstrapper bootstrapper = new CoreBootstrapper( storeInNeedOfRecovery, pageCache, fileSystem, Config.defaults(), assertableLogProvider );
 
         // when
         Set<MemberId> membership = asSet( randomMember(), randomMember(), randomMember() );
@@ -129,8 +131,10 @@ public class CoreBootstrapperIT
         }
         catch ( IllegalStateException e )
         {
-            assertEquals( e.getMessage(), "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
-                    "instance of Neo4j or a Neo4j backup" );
+            String errorMessage = "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
+                    "instance of Neo4j or a Neo4j backup";
+            assertEquals( e.getMessage(), errorMessage );
+            assertableLogProvider.assertExactly( AssertableLogProvider.inLog( CoreBootstrapper.class ).error( errorMessage) );
         }
     }
 
