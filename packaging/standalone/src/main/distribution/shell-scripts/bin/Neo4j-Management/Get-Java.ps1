@@ -247,7 +247,7 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
           } else {
             $gcOptions = '-Xlog:gc*,safepoint,age*=trace'
           }
-          # GC file name should be escaped on Windows because of ':' usage as part of absolue name
+          # GC file name should be escaped on Windows because of ':' usage as part of absolute name
           $gcFile = "\`"" + "$($Neo4jServer.Home)/gc.log" + "\`""
           $gcOptions += ":file=$( $gcFile )::"
 
