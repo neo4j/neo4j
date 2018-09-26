@@ -32,6 +32,7 @@ import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.memory.MemoryAllocationTracker;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -52,6 +53,22 @@ class CachingOffHeapBlockAllocatorTest
     {
         allocator.release();
         assertEquals( 0, memoryTracker.usedDirectMemory(), "Native memory is leaking" );
+    }
+
+    @Test
+    void allocateAfterRelease()
+    {
+        allocator.release();
+        assertThrows( IllegalStateException.class, () -> allocator.allocate( 128, memoryTracker ) );
+    }
+
+    @Test
+    void freeAfterRelease()
+    {
+        final MemoryBlock block = allocator.allocate( 128, memoryTracker );
+        allocator.release();
+        allocator.free( block, memoryTracker );
+        verify( allocator ).doFree( eq( block ), any() );
     }
 
     @Test
