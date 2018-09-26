@@ -98,7 +98,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           l.fields ++ r.fields, l.variables ++ r.variables, l.nullCheck ++ r.nullCheck)
       }
 
-    case org.opencypher.v9_0.expressions.Add(lhs, rhs) =>
+    case expressions.Add(lhs, rhs) =>
       for {l <- internalCompileExpression(lhs, currentContext)
            r <- internalCompileExpression(rhs, currentContext)
       } yield {
@@ -109,7 +109,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
     case UnaryAdd(source) => internalCompileExpression(source, currentContext)
 
-    case org.opencypher.v9_0.expressions.Subtract(lhs, rhs) =>
+    case expressions.Subtract(lhs, rhs) =>
       for {l <- internalCompileExpression(lhs, currentContext)
            r <- internalCompileExpression(rhs, currentContext)
       } yield {
@@ -1605,7 +1605,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       case Some(RefSlot(offset, _, _)) =>
         setRefAt(offset, Some(context), value)
       case None =>
-        // @Reviewer: does this look ok? We fall into this case when working setting temporary fields, e.g., in inner context of filter()
         invokeSideEffect(context, method[ExecutionContext, Unit, String, AnyValue]("set"), constant(key), value)
     }
   }

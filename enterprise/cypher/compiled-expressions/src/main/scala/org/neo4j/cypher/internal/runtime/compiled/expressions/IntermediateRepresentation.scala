@@ -131,32 +131,32 @@ case class Ternary(condition: IntermediateRepresentation,
 /**
   * Defines {{{lhs + rhs}}}
   *
-  * @param lhs the left-hand side to check
-  * @param rhs the right-hand side to check
+  * @param lhs the left-hand side to add
+  * @param rhs the right-hand side to add
   */
 case class Add(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines {{{lhs - rhs}}}
   *
-  * @param lhs the left-hand side to check
-  * @param rhs the right-hand side to check
+  * @param lhs the left-hand side to subtract from
+  * @param rhs the right-hand side to subtract
   */
 case class Subtract(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines {{{lhs < rhs}}}
   *
-  * @param lhs the left-hand side to check
-  * @param rhs the right-hand side to check
+  * @param lhs the left-hand side to compare
+  * @param rhs the right-hand side to compare
   */
 case class Lt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines {{{lhs > rhs}}}
   *
-  * @param lhs the left-hand side to check
-  * @param rhs the right-hand side to check
+  * @param lhs the left-hand side to compare
+  * @param rhs the right-hand side to compare
   */
 case class Gt(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
