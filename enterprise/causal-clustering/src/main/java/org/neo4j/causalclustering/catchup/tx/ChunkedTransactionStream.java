@@ -26,13 +26,16 @@ import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedInput;
 
+import org.neo4j.causalclustering.catchup.CatchupResult;
 import org.neo4j.causalclustering.catchup.CatchupServerProtocol;
 import org.neo4j.causalclustering.catchup.ResponseMessageType;
 import org.neo4j.causalclustering.identity.StoreId;
 import org.neo4j.cursor.IOCursor;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
+import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
+import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 
 /**
@@ -40,9 +43,11 @@ import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_ST
  */
 public class ChunkedTransactionStream implements ChunkedInput<Object>
 {
+    private final Log log;
     private final StoreId storeId;
     private final IOCursor<CommittedTransactionRepresentation> txCursor;
     private final CatchupServerProtocol protocol;
+    private final long txIdPromise;
 
     private boolean endOfInput;
     private boolean noMoreTransactions;
@@ -51,10 +56,13 @@ public class ChunkedTransactionStream implements ChunkedInput<Object>
 
     private Object pending;
 
-    ChunkedTransactionStream( StoreId storeId, long firstTxId, IOCursor<CommittedTransactionRepresentation> txCursor, CatchupServerProtocol protocol )
+    ChunkedTransactionStream( Log log, StoreId storeId, long firstTxId, long txIdPromise, IOCursor<CommittedTransactionRepresentation> txCursor,
+            CatchupServerProtocol protocol )
     {
+        this.log = log;
         this.storeId = storeId;
         this.expectedTxId = firstTxId;
+        this.txIdPromise = txIdPromise;
         this.txCursor = txCursor;
         this.protocol = protocol;
     }
@@ -117,8 +125,17 @@ public class ChunkedTransactionStream implements ChunkedInput<Object>
 
             noMoreTransactions = true;
             protocol.expect( CatchupServerProtocol.State.MESSAGE_TYPE );
-
-            pending = new TxStreamFinishedResponse( SUCCESS_END_OF_STREAM, lastTxId );
+            CatchupResult result;
+            if ( lastTxId >= txIdPromise )
+            {
+                result = SUCCESS_END_OF_STREAM;
+            }
+            else
+            {
+                result = E_TRANSACTION_PRUNED;
+                log.warn( "Transaction cursor fell short. Expected at least %d but only got to %d.", txIdPromise, lastTxId );
+            }
+            pending = new TxStreamFinishedResponse( result, lastTxId );
             return ResponseMessageType.TX_STREAM_FINISHED;
         }
     }
