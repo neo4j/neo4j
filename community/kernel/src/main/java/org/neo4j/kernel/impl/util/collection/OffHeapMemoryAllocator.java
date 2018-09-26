@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator.MemoryBlock;
 import org.neo4j.memory.MemoryAllocationTracker;
 import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 
+import static java.lang.Math.toIntExact;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.copyMemory;
 import static org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil.getLong;
@@ -104,7 +105,7 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
             checkState( block.size <= Integer.MAX_VALUE, "Can't create ByteBuffer: memory size exceeds integer limit" );
             try
             {
-                return UnsafeUtil.newDirectByteBuffer( block.addr, (int) block.size );
+                return UnsafeUtil.newDirectByteBuffer( block.addr, toIntExact( block.size ) );
             }
             catch ( Exception e )
             {
