@@ -29,9 +29,11 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should reduce on values") {
     val result = executeWith(Configs.Interpreted,
-      query = "RETURN reduce(acc=0, s IN ['1','22','1','333'] | acc + size(s)) AS result")
+      query = "RETURN" +
+        " reduce(acc=0, s IN ['1','22','1','333'] | acc + size(s)) AS result," +
+        " reduce(acc=0, s IN ['1','22','1','333'] | acc + null) AS nullValue")
 
-    result.toList.head should equal(Map("result" -> 7))
+    result.toList.head should equal(Map("result" -> 7, "nullValue" -> null))
   }
 
   test("should reduce on nodes") {
@@ -134,9 +136,11 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should filter on values") {
     val result = executeWith(Configs.Interpreted,
-      query = "RETURN filter(s IN ['1','22','1','333'] WHERE s STARTS WITH '1') AS result")
+      query = "RETURN" +
+        " filter(s IN ['1','22','1','333'] WHERE s STARTS WITH '1') AS result," +
+        " filter(s IN ['1','22','1','333'] WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("result" -> List("1", "1")))
+    result.toList.head should equal(Map("result" -> List("1", "1"), "nullValue" -> List()))
   }
 
   test("should filter on nodes") {
@@ -157,9 +161,10 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
         " all(s IN ['1','22','1','333'] WHERE size(s) > 0) AS true, " +
-        " all(s IN ['1','22','1','333'] WHERE size(s) > 1) AS false")
+        " all(s IN ['1','22','1','333'] WHERE size(s) > 1) AS false, " +
+        " all(s IN ['1','22','1','333'] WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true))
+    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
   }
 
   test("should all predicate on nodes") {
@@ -174,18 +179,20 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
           "WHERE all(n IN nodes(p) WHERE n:Label)" +
           "RETURN " +
           " all(n IN nodes(p) WHERE n.x > 0) AS true, " +
-          " all(n IN nodes(p) WHERE n.x > 1) AS false")
+          " all(n IN nodes(p) WHERE n.x > 1) AS false," +
+          " all(n IN nodes(p) WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false))
+    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
   }
 
   test("should any predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
         " any(s IN ['1','22','1','333'] WHERE size(s) = 1) AS true, " +
-        " any(s IN ['1','22','1','333'] WHERE size(s) = 0) AS false")
+        " any(s IN ['1','22','1','333'] WHERE size(s) = 0) AS false, " +
+        " any(s IN ['1','22','1','333'] WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true))
+    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
   }
 
   test("should any predicate on nodes") {
@@ -200,18 +207,20 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
           "WHERE any(n IN nodes(p) WHERE n:Label) " +
           "RETURN " +
           " any(n IN nodes(p) WHERE n.x = 1) AS true, " +
-          " any(n IN nodes(p) WHERE n.x = 0) AS false")
+          " any(n IN nodes(p) WHERE n.x = 0) AS false," +
+          " any(n IN nodes(p) WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false))
+    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
   }
 
   test("should none predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
         " none(s IN ['1','22','1','333'] WHERE size(s) = 0) AS true, " +
-        " none(s IN ['1','22','1','333'] WHERE size(s) = 1) AS false")
+        " none(s IN ['1','22','1','333'] WHERE size(s) = 1) AS false, " +
+        " none(s IN ['1','22','1','333'] WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true))
+    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
   }
 
   test("should none predicate on nodes") {
@@ -226,18 +235,20 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
           "WHERE none(n IN nodes(p) WHERE n:Fake) " +
           "RETURN " +
           " none(n IN nodes(p) WHERE n.x = 0) AS true, " +
-          " none(n IN nodes(p) WHERE n.x = 1) AS false")
+          " none(n IN nodes(p) WHERE n.x = 1) AS false," +
+          " none(n IN nodes(p) WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false))
+    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
   }
 
   test("should single predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
         " single(s IN ['1','22','1','333'] WHERE s = '333') AS true, " +
-        " single(s IN ['1','22','1','333'] WHERE s = '1') AS false")
+        " single(s IN ['1','22','1','333'] WHERE s = '1') AS false, " +
+        " single(s IN ['1','22','1','333'] WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true))
+    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
   }
 
   test("should single predicate on nodes") {
@@ -252,8 +263,9 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
           "WHERE single(n IN nodes(p) WHERE n.x = 1) " +
           "RETURN " +
           " single(n IN nodes(p) WHERE n.x = 1) AS true, " +
-          " single(n IN nodes(p) WHERE n.x > 1) AS false")
+          " single(n IN nodes(p) WHERE n.x > 1) AS false," +
+          " single(n IN nodes(p) WHERE null) AS nullValue")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false))
+    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
   }
 }
