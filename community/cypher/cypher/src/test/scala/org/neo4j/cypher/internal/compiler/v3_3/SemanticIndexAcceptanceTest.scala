@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_3
 import java.util.concurrent.TimeUnit
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.InternalExecutionResult
 import org.scalacheck.{Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
@@ -42,23 +43,23 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
     for (_ <- 1 to 1000) createLabeledNode("Label")
   }
 
-  def changeLastChar(f: Char => Char)(in: String) =
+  def changeLastChar(f: Char => Char)(in: String): String =
     if (in.isEmpty) ""
     else
       in.substring(0, in.length - 1) + (in.last - 1).toChar
 
-  def testOperator(operator: String) = {
+  def testOperator(operator: String): Unit = {
 
     val queryNotUsingIndex = s"match (n:Label) where n.nonIndexed $operator {prop} return n order by id(n)"
     val queryUsingIndex = s"match (n:Label) where n.indexed $operator {prop} return n order by id(n)"
 
     def testValue(queryNotUsingIndex: String, queryUsingIndex: String, value: Any): Unit = {
-      val indexedResult = execute(queryUsingIndex, "prop" -> value)
-      execute(queryNotUsingIndex, "prop" -> value).toList should equal(indexedResult.toList)
+      val indexedResult = assertingExecute(queryUsingIndex, "prop" -> value)
+      assertingExecute(queryNotUsingIndex, "prop" -> value).toList should equal(indexedResult.toList)
       indexedResult.executionPlanDescription().toString should include("NodeIndexSeek")
     }
 
-    def tester[T](propertyValue: T, prev: T => T, next: T => T) = {
+    def tester[T](propertyValue: T, prev: T => T, next: T => T): Unit = {
       graph.inTx {
         createLabeledNode(Map("nonIndexed" -> propertyValue, "indexed" -> propertyValue), "Label")
 
@@ -94,5 +95,16 @@ class SemanticIndexAcceptanceTest extends ExecutionEngineFunSuite with PropertyC
       }
     }
 
+  }
+
+  /*
+   * This test has been flaky on ibm jdk and we don't get the full stack trace to the failure using execute.
+   */
+  private def assertingExecute(q: String, params: (String, Any)*): InternalExecutionResult = try {
+    execute(q, params: _*)
+  } catch {
+    case e: Throwable =>
+      e.printStackTrace()
+      fail(e.getMessage)
   }
 }
