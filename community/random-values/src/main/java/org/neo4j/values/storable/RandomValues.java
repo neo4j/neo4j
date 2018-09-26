@@ -294,6 +294,13 @@ public class RandomValues
         return nextValueOfType( among( types ) );
     }
 
+    public static Type[] including( Predicate<Type> include )
+    {
+        return Arrays.stream( Type.values() )
+                .filter( include )
+                .toArray( Type[]::new );
+    }
+
     /**
      * Create an array containing all value types, excluding provided types.
      */

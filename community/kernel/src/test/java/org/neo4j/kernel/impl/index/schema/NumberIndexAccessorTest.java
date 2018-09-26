@@ -55,7 +55,7 @@ public class NumberIndexAccessorTest extends NativeIndexAccessorTest<NumberIndex
     public void respectIndexOrder() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] someUpdates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] someUpdates = someUpdates();
         processAll( someUpdates );
         Value[] expectedValues = layoutUtil.extractValuesFromUpdates( someUpdates );
 

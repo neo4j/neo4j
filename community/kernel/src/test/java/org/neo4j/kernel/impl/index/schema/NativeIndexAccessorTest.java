@@ -936,7 +936,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
     {
         RandomValues.Type type = randomValues.among( layoutUtil.supportedTypes() );
-        return someUpdatesOfType( type, true );
+        return someUpdatesOfTypes( true, type );
     }
 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates()
@@ -953,16 +953,25 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
             type = randomValues.among( types );
         }
         while ( type == RandomValues.Type.BOOLEAN );
-        return someUpdatesOfType( type, false );
+        return someUpdatesOfTypes( false, type );
     }
 
-    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesOfType( RandomValues.Type type, boolean allowDuplicates )
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
+        return someUpdatesOfTypes( true, layoutUtil.supportedTypes() );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesOfTypes( boolean allowDuplicates, RandomValues.Type... types )
+    {
+        if ( types.length < 1)
+        {
+            throw new IllegalArgumentException( "Need at least one type, was " + Arrays.toString( types ) );
+        }
         Value[] values = new Value[N_VALUES];
         int i = 0;
         while ( i < N_VALUES )
         {
-            Value value = randomValues.nextValueOfTypes( type );
+            Value value = randomValues.nextValueOfTypes( types );
             if ( allowDuplicates || !ArrayUtils.contains( values, value ) )
             {
                 values[i++] = value;
