@@ -71,7 +71,7 @@ public class DumpUtils
             for ( int i = 0; i < stackTrace.length; i++ )
             {
                 StackTraceElement e = stackTrace[i];
-                sb.append( "\tat " ).append( e.toString() );
+                sb.append( "\tat " ).append( e.toString() ).append( '\n' );
 
                 // First stack element info can be found in the thread state
                 if ( i == 0 && threadInfo.getLockInfo() != null )
