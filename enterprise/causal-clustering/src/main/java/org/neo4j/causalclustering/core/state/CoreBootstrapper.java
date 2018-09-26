@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -100,6 +101,7 @@ public class CoreBootstrapper
     private final Config config;
     private final LogProvider logProvider;
     private final RecoveryRequiredChecker recoveryRequiredChecker;
+    private final Log log;
 
     CoreBootstrapper( File storeDir, PageCache pageCache, FileSystemAbstraction fs, Config config, LogProvider logProvider, Monitors monitors )
     {
@@ -108,6 +110,7 @@ public class CoreBootstrapper
         this.fs = fs;
         this.config = config;
         this.logProvider = logProvider;
+        this.log = logProvider.getLog( getClass() );
         this.recoveryRequiredChecker = new RecoveryRequiredChecker( fs, pageCache, config, monitors );
     }
 
@@ -115,8 +118,10 @@ public class CoreBootstrapper
     {
         if ( recoveryRequiredChecker.isRecoveryRequiredAt( storeDir ) )
         {
-            throw new IllegalStateException( "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded " +
-                    "comes from a cleanly shutdown instance of Neo4j or a Neo4j backup" );
+            String message = "Cannot bootstrap. Recovery is required. Please ensure that the store being seeded comes from a cleanly shutdown " +
+                    "instance of Neo4j or a Neo4j backup";
+            log.error( message );
+            throw new IllegalStateException( message );
         }
         StoreFactory factory = new StoreFactory( storeDir, config,
                 new DefaultIdGeneratorFactory( fs ), pageCache, fs, logProvider, EmptyVersionContextSupplier.EMPTY );
