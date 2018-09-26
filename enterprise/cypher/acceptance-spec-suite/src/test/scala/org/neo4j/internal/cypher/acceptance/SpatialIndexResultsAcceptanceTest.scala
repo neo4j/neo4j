@@ -22,6 +22,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
+import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
@@ -38,7 +39,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
   test("inequality query should give same answer for indexed and non-indexed property") {
     createIndex()
-    val point = Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 0)
+    val point = cartesianPoint(0, 0)
     val node = createIndexedNode(point)
     setNonIndexedValue(node, point)
 
@@ -48,11 +49,11 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     assertRangeScanFor("<=", point, node)
     assertLabelRangeScanFor("<=", point, node)
 
-    assertRangeScanFor("<", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 1), node)
-    assertLabelRangeScanFor("<", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 1), node)
+    assertRangeScanFor("<", cartesianPoint(1, 1), node)
+    assertLabelRangeScanFor("<", cartesianPoint(1, 1), node)
 
-    assertRangeScanFor("<=", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0), node)
-    assertLabelRangeScanFor("<=", Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 0), node)
+    assertRangeScanFor("<=", cartesianPoint(1, 0), node)
+    assertLabelRangeScanFor("<=", cartesianPoint(1, 0), node)
   }
 
   test("indexed point should be readable from node property") {
@@ -73,7 +74,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    point should equal(wgsPoint(12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
@@ -94,11 +95,11 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
           .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Place(location)"))
 
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
-      params = ImmutableMap("param" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
+      params = ImmutableMap("param" -> wgsPoint(12.78, 56.7)))
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))
+    point should equal(wgsPoint(12.78, 56.7))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
@@ -118,11 +119,11 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
           .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
           .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Place(location)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
-      params = ImmutableMap("param" -> Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+      params = ImmutableMap("param" -> Array(wgsPoint(12.78, 56.7))))
 
     // Then
     val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
-    pointList should equal(List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7)))
+    pointList should equal(List(wgsPoint(12.78, 56.7)))
     // And CRS names should equal
     pointList.head.getCRS.getHref should equal("http://spatialreference.org/ref/epsg/4326/")
   }
@@ -147,14 +148,14 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
           .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Place(location)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
       params = ImmutableMap("param" ->
-        Array(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-          Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
+        Array(wgsPoint(12.78, 56.7),
+          wgsPoint(13.78, 56.7))))
 
     // Then
     val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
     pointList should equal(List(
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))
+      wgsPoint(12.78, 56.7),
+      wgsPoint(13.78, 56.7))
     )
 
     // And CRS names should equal
@@ -175,19 +176,20 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     val localConfig = Configs.All - Configs.Before3_3AndRule
     val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
-      planComparisonStrategy = ComparePlansWithAssertion({ plan =>        plan should includeSomewhere
-        .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
-        .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Place(location)"))
+      planComparisonStrategy = ComparePlansWithAssertion({ plan =>
+        plan should includeSomewhere
+          .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
+          .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Place(location)"))
       }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
       params = ImmutableMap("param" ->
-        List(Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-          Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))))
+        List(wgsPoint(12.78, 56.7),
+          wgsPoint(13.78, 56.7))))
 
     // Then
     val pointList = result.columnAs("point").toList.head.asInstanceOf[Iterable[PointValue]].toList
     pointList should equal(List(
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7),
-      Values.pointValue(CoordinateReferenceSystem.WGS84, 13.78, 56.7))
+      wgsPoint(12.78, 56.7),
+      wgsPoint(13.78, 56.7))
     )
 
     // And CRS names should equal
@@ -197,8 +199,8 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
   test("seeks should work for indexed point arrays") {
     createIndex()
 
-    val point1 = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 3.4).asObjectCopy()
-    val point2 = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2, 5.6).asObjectCopy()
+    val point1 = cartesianPoint(1.2, 3.4).asObjectCopy()
+    val point2 = cartesianPoint(1.2, 5.6).asObjectCopy()
 
     val pointArray1 = Values.pointArray(Array(point1, point2))
     val pointArray2 = Values.pointArray(Array(point2, point1))
@@ -230,7 +232,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
       }, expectPlansToFail = Configs.AbsolutelyAll - configuration))
 
     // Then
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
   }
 
   test("3D indexed point should be readable from node property") {
@@ -250,7 +252,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
     // Then
     val point = result.columnAs("point").toList.head.asInstanceOf[Point]
-    point should equal(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))
+    point should equal(cartesianPoint(1.2, 3.4, 5.6))
     // And CRS names should equal
     point.getCRS.getHref should equal("http://spatialreference.org/ref/sr-org/9157/")
   }
@@ -273,7 +275,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
       }, expectPlansToFail = Configs.AbsolutelyAll - configuration))
 
     // Then
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 1.2, 3.4, 5.6))))
+    result.toList should equal(List(Map("point" -> cartesianPoint(1.2, 3.4, 5.6))))
   }
 
   test("indexed points far apart in cartesian space - range query greaterThan") {
@@ -292,7 +294,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) > point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 100000, 100000))))
+    result.toList should equal(List(Map("point" -> cartesianPoint(100000, 100000))))
   }
 
   test("indexed points far apart in cartesian space - range query lessThan") {
@@ -311,7 +313,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) < point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, -100000, -100000))))
+    result.toList should equal(List(Map("point" -> cartesianPoint(-100000, -100000))))
   }
 
   test("indexed points far apart in cartesian space - range query within") {
@@ -331,7 +333,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) > point.* AND :Place\\(location\\) < point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.Cartesian, 100000, 100000))))
+    result.toList should equal(List(Map("point" -> cartesianPoint(100000, 100000))))
   }
 
   test("indexed points far apart in WGS84 - range query greaterThan") {
@@ -351,7 +353,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) > point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
   }
 
   test("indexed points close together in WGS84 - equality query") {
@@ -366,7 +368,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // Then
     val plan = result.executionPlanDescription()
     plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Place(location)")
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
   }
 
   test("Index query with MERGE") {
@@ -381,7 +383,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // Then
     val plan = result.executionPlanDescription()
     plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Place(location)")
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
 
     //  And when creating in merge
     val result2 = executeWith(equalityConfig, "MERGE (p:Place {location: point({latitude: 156.7, longitude: 112.78, crs: 'WGS-84'}) }) RETURN p.location as point")
@@ -389,7 +391,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     // Then
     val plan2 = result2.executionPlanDescription()
     plan2 should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":Place(location)")
-    result2.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 112.78, 156.7))))
+    result2.toList should equal(List(Map("point" -> wgsPoint(112.78, 156.7))))
   }
 
   test("indexed points close together in WGS84 - range query greaterThan") {
@@ -409,7 +411,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) > point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
   }
 
   test("indexed points close together in WGS84 - range query greaterThanOrEqualTo") {
@@ -429,7 +431,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) >= point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
   }
 
   test("indexed points close together in WGS84 - range query greaterThan with no results") {
@@ -468,7 +470,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) >= point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 12.78, 56.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(12.78, 56.7))))
   }
 
   test("indexed points close together in WGS84 - range query within") {
@@ -488,29 +490,29 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     plan should includeSomewhere
       .aPlan("Projection").containingArgumentRegex("\\{point : .*\\}".r)
       .onTopOf(aPlan("NodeIndexSeekByRange").containingArgumentRegex(":Place\\(location\\) >= point.* AND :Place\\(location\\) < point.*".r))
-    result.toList should equal(List(Map("point" -> Values.pointValue(CoordinateReferenceSystem.WGS84, 11.78, 55.7))))
+    result.toList should equal(List(Map("point" -> wgsPoint(11.78, 55.7))))
   }
 
   test("indexed points in 3D cartesian space - range queries") {
     // Given
     createIndex()
-    val originPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 0, 0, 0)
-    val maxPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, 100000, 100000)
-    val minPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, -100000, -100000)
+    val originPoint = cartesianPoint(0, 0, 0)
+    val maxPoint = cartesianPoint(100000, 100000, 100000)
+    val minPoint = cartesianPoint(-100000, -100000, -100000)
 
     val origin = createIndexedNode(originPoint)
     val upRightTop = createIndexedNode(maxPoint)
     val downLeftBottom = createIndexedNode(minPoint)
 
-    val downrightTop = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, 100000, 100000))
-    val downLeftTop = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, -100000, 100000))
-    val upLeftTop = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, -100000, 100000))
-    val upRightBottom = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, 100000, -100000))
-    val downRightBottom = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, -100000, 100000, -100000))
-    val upLeftBottom = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, 100000, -100000, -100000))
+    val downrightTop = createIndexedNode(cartesianPoint(-100000, 100000, 100000))
+    val downLeftTop = createIndexedNode(cartesianPoint(-100000, -100000, 100000))
+    val upLeftTop = createIndexedNode(cartesianPoint(100000, -100000, 100000))
+    val upRightBottom = createIndexedNode(cartesianPoint(100000, 100000, -100000))
+    val downRightBottom = createIndexedNode(cartesianPoint(-100000, 100000, -100000))
+    val upLeftBottom = createIndexedNode(cartesianPoint(100000, -100000, -100000))
     // 2D points should never be returned
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, -100000, -100000))
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 100000, 100000))
+    createIndexedNode(cartesianPoint(-100000, -100000))
+    createIndexedNode(cartesianPoint(100000, 100000))
 
     assertRangeScanFor(">", originPoint, upRightTop)
     assertRangeScanFor(">=", originPoint, origin, upRightTop)
@@ -525,22 +527,22 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
   test("indexed points 3D WGS84 space - range queries") {
     // Given
     createIndex()
-    val maxPoint = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 13.1, 100)
-    val midPoint = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.5, 13.0, 50)
-    val minPoint = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 12.9, 0)
+    val maxPoint = wgsPoint(56.6, 13.1, 100)
+    val midPoint = wgsPoint(56.5, 13.0, 50)
+    val minPoint = wgsPoint(56.4, 12.9, 0)
 
     val n0 = createIndexedNode(midPoint)
     val n1 = createIndexedNode(maxPoint)
-    val n2 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 13.1, 100))
-    val n3 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 12.9, 100))
-    val n4 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 12.9, 0))
-    val n5 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 13.1, 0))
-    val n6 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.4, 13.1, 0))
+    val n2 = createIndexedNode(wgsPoint(56.4, 13.1, 100))
+    val n3 = createIndexedNode(wgsPoint(56.4, 12.9, 100))
+    val n4 = createIndexedNode(wgsPoint(56.6, 12.9, 0))
+    val n5 = createIndexedNode(wgsPoint(56.6, 13.1, 0))
+    val n6 = createIndexedNode(wgsPoint(56.4, 13.1, 0))
     val n8 = createIndexedNode(minPoint)
-    val n7 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84_3D, 56.6, 12.9, 0))
+    val n7 = createIndexedNode(wgsPoint(56.6, 12.9, 0))
     // 2D points should never be returned
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84, 56.6, 13.1))
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.WGS84, 56.4, 12.9))
+    createIndexedNode(wgsPoint(56.6, 13.1))
+    createIndexedNode(wgsPoint(56.4, 12.9))
 
     assertRangeScanFor(">", midPoint, n1)
     assertRangeScanFor(">=", midPoint, n0, n1)
@@ -555,15 +557,15 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
   test("Range query should return points greater on both axes or less on both axes") {
     // Given nodes at the search point, above and below it, and on the axes intersecting it
     createIndex()
-    val nodeAbove15 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2345, 5.4321))
-    val nodeBelow15 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 0.2345, 4.4321))
-    val nodeAt15 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 5))
-    val nodeAt25 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 5))
-    val nodeAt16 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 6))
-    val nodeAt05 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 0, 5))
-    val nodeAt14 = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 4))
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 0.2345, 5.4321))
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2345, 4.4321))
+    val nodeAbove15 = createIndexedNode(cartesianPoint(1.2345, 5.4321))
+    val nodeBelow15 = createIndexedNode(cartesianPoint(0.2345, 4.4321))
+    val nodeAt15 = createIndexedNode(cartesianPoint(1, 5))
+    val nodeAt25 = createIndexedNode(cartesianPoint(2, 5))
+    val nodeAt16 = createIndexedNode(cartesianPoint(1, 6))
+    val nodeAt05 = createIndexedNode(cartesianPoint(0, 5))
+    val nodeAt14 = createIndexedNode(cartesianPoint(1, 4))
+    createIndexedNode(cartesianPoint(0.2345, 5.4321))
+    createIndexedNode(cartesianPoint(1.2345, 4.4321))
 
     Map(
       ">=" -> Set(nodeAbove15, nodeAt15, nodeAt16, nodeAt25),
@@ -578,12 +580,12 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
         // Then
         val expectAxes = op contains "="
-        withClue(s"Should ${if(expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op' and index") {
+        withClue(s"Should ${if (expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op' and index") {
           resultsWithIndex.toSet should be(expected)
         }
 
         // And should get same results without an index
-        withClue(s"Should ${if(expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op' and no index") {
+        withClue(s"Should ${if (expectAxes) "" else "NOT "}find nodes that are on the axes defined by the search point when using operator '$op' and no index") {
           resultsWithoutIndex.toSet should be(expected)
         }
     }
@@ -609,11 +611,11 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     createIndex()
     val grid = Range(-10, 10).map { x =>
       Range(-10, 10).map { y =>
-        createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, x, y))
+        createIndexedNode(cartesianPoint(x, y))
       }
     }
-    val nodeToFind = createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 1.2345, 5.4321))
-    createIndexedNode(Values.pointValue(CoordinateReferenceSystem.Cartesian, 5.4321, 1.2345))
+    val nodeToFind = createIndexedNode(cartesianPoint(1.2345, 5.4321))
+    createIndexedNode(cartesianPoint(5.4321, 1.2345))
     val vertices = Seq(grid(11)(15), grid(11)(16), grid(12)(16), grid(12)(15))
 
     // When running a bounding box query we expect to include all or none of the border points
@@ -627,17 +629,17 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     }
 
     // And when using the range scan assertions we should find the same results
-    val minPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian, 1, 5)
-    val maxPoint = Values.pointValue(CoordinateReferenceSystem.Cartesian, 2, 6)
+    val minPoint = cartesianPoint(1, 5)
+    val maxPoint = cartesianPoint(2, 6)
     assertRangeScanFor(">=", minPoint, "<=", maxPoint, vertices :+ nodeToFind: _*)
     assertRangeScanFor(">", minPoint, "<", maxPoint, nodeToFind)
   }
 
   test("should not return points on edges even when using transaction state") {
-    val atPoint = Values.pointValue(CoordinateReferenceSystem.WGS84, 1, 5)
-    val onAxisX = Values.pointValue(CoordinateReferenceSystem.WGS84, 1, 4)
-    val onAxisY = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 5)
-    val inRange = Values.pointValue(CoordinateReferenceSystem.WGS84, 0, 4)
+    val atPoint = wgsPoint(1, 5)
+    val onAxisX = wgsPoint(1, 4)
+    val onAxisY = wgsPoint(0, 5)
+    val inRange = wgsPoint(0, 4)
     val query = "MATCH (n:Label) WHERE n.prop < {prop} RETURN n, n.prop AS prop ORDER BY id(n)"
     createIndex()
     createIndexedNode(atPoint)
@@ -655,4 +657,73 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     }
     runTest("no transaction state")
   }
+
+  test("should use index if predicate depends on property of variable from horizon") {
+    createIndex()
+    createLabeledNode(Map("location" -> cartesianPoint(5, 5)), "MIN")
+    createLabeledNode(Map("location" -> cartesianPoint(10, 10)), "MAX")
+    createIndexedNode(cartesianPoint(5, 5))
+    val n1 = createIndexedNode(cartesianPoint(5.1, 9.9))
+    val n2 = createIndexedNode(cartesianPoint(9.9, 5.1))
+    createIndexedNode(cartesianPoint(10, 10))
+    val expected = Seq(n1, n2)
+
+    val query =
+      s"""
+         |MATCH (a:MIN), (b:MAX)
+         |WITH a.location AS min, b.location AS max
+         |MATCH (p:$LABEL) USING INDEX SEEK p:$LABEL($PROPERTY)
+         |WHERE min < p.$PROPERTY < max
+         |RETURN p
+      """.stripMargin
+
+    val result =
+      executeWith(
+        Configs.Interpreted - Configs.Before3_3AndRule - Configs.Version3_4,
+        query,
+        planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange")
+          .containingArgument(s":$LABEL($PROPERTY) > min AND :$LABEL($PROPERTY) < max"))
+      )
+    val nodes = result.columnAs[Node]("p").toSet
+    expected.foreach(p => assert(nodes.contains(p)))
+    nodes.size should be(expected.size)
+  }
+
+  test("should plan index usage if predicate depends on simple variable from horizon") {
+    createIndex()
+    createLabeledNode(Map("location" -> cartesianPoint(5, 5)), "MIN")
+    createLabeledNode(Map("location" -> cartesianPoint(10, 10)), "MAX")
+    createIndexedNode(cartesianPoint(5, 5))
+    val n1 = createIndexedNode(cartesianPoint(5.1, 9.9))
+    val n2 = createIndexedNode(cartesianPoint(9.9, 5.1))
+    createIndexedNode(cartesianPoint(10, 10))
+    val expected = Seq(n1, n2)
+
+    val query =
+      s"""
+         |WITH point({x:5, y:5}) as min, point({x:10, y:10}) as max
+         |MATCH (p:$LABEL) USING INDEX SEEK p:$LABEL($PROPERTY)
+         |WHERE point({x:min.x, y:min.y}) < p.$PROPERTY < max
+         |RETURN p
+      """.stripMargin
+
+    val result =
+      executeWith(
+        Configs.Interpreted - Configs.Before3_3AndRule - Configs.Version3_4,
+        query,
+        planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange")
+          .containingArgument(s":$LABEL($PROPERTY) > point({x: min.x, y: min.y}) AND :$LABEL($PROPERTY) < max"))
+      )
+    val nodes = result.columnAs[Node]("p").toSet
+    expected.foreach(p => assert(nodes.contains(p)))
+    nodes.size should be(expected.size)
+  }
+
+  private def cartesianPoint(x: Double, y: Double) = Values.pointValue(CoordinateReferenceSystem.Cartesian, x, y)
+
+  private def cartesianPoint(x: Double, y: Double, z: Double) = Values.pointValue(CoordinateReferenceSystem.Cartesian_3D, x, y, z)
+
+  private def wgsPoint(longitude: Double, latitude: Double) = Values.pointValue(CoordinateReferenceSystem.WGS84, longitude, latitude)
+
+  private def wgsPoint(longitude: Double, latitude: Double, z: Double) = Values.pointValue(CoordinateReferenceSystem.WGS84_3D, longitude, latitude, z)
 }
