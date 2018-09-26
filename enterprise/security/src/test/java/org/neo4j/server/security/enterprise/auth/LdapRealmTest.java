@@ -50,7 +50,6 @@ import javax.naming.directory.Attributes;
 import javax.naming.directory.SearchResult;
 import javax.naming.ldap.LdapContext;
 
-import org.neo4j.graphdb.security.AuthProviderFailedException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.server.security.enterprise.log.SecurityLog;
@@ -59,6 +58,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.hasItems;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -72,8 +72,8 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class LdapRealmTest
 {
     Config config = mock( Config.class );
-    SecurityLog securityLog = mock( SecurityLog.class );
-    SecureHasher secureHasher = new SecureHasher();
+    private SecurityLog securityLog = mock( SecurityLog.class );
+    private SecureHasher secureHasher = new SecureHasher();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -442,11 +442,11 @@ public class LdapRealmTest
         when( jndiLdapContectFactory.getUrl() ).thenReturn( "ldap://myserver.org:12345" );
 
         // When
-        assertException( () -> realm.doGetAuthorizationInfo( new SimplePrincipalCollection( "olivia", "LdapRealm" ) ),
-                AuthProviderFailedException.class );
+        AuthorizationInfo info = realm.doGetAuthorizationInfo( new SimplePrincipalCollection( "olivia", "LdapRealm" ) );
 
         // Then
-        verify( securityLog ).error( contains( "{LdapRealm}: Failed to get authorization info: " +
+        assertNull( info );
+        verify( securityLog ).warn( contains( "{LdapRealm}: Failed to get authorization info: " +
                 "'LDAP naming error while attempting to retrieve authorization for user [olivia].'" +
                 " caused by 'Simulated failure'"
         ) );

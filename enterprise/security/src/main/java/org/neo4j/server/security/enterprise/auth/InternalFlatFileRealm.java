@@ -343,7 +343,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
     }
 
     @Override
-    protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals ) throws AuthenticationException
+    protected AuthorizationInfo doGetAuthorizationInfo( PrincipalCollection principals )
     {
         if ( !authorizationEnabled )
         {
