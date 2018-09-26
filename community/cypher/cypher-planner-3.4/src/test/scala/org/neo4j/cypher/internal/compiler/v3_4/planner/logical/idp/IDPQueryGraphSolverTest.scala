@@ -679,15 +679,12 @@ class IDPQueryGraphSolverTest extends CypherFunSuite with LogicalPlanningTestSup
       val qgs = cfg.qg.connectedComponents
       val allNodeScanA: AllNodesScan = AllNodesScan("a", Set.empty)
       val expandAtoB = Expand(Argument(Set("a")), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
-      val expandAtoB2 = Expand(AllNodesScan("a", Set.empty), "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+      val expandAtoB2 = Expand(allNodeScanA, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       val plan = queryGraphSolver.plan(cfg.qg, ctx, solveds, cardinalities)
       plan should equal(
-        Apply(
+        OptionalExpand(
           allNodeScanA,
-          Optional(
-            expandAtoB, Set("a")
-          )
-        )
+          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
       )
 
       verify(monitor).noIDPIterationFor(qgs.head, allNodeScanA)

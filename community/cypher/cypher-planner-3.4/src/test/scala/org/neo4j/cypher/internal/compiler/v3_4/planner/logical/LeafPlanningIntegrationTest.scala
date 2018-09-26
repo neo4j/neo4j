@@ -48,6 +48,32 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("should prefer cheaper optional expand over joins, even if not cheaper before rewriting") {
+    (new given {
+      cost = {
+        case (_: RightOuterHashJoin, _, _) => 6.610321376825E9
+        case (_: LeftOuterHashJoin, _, _) => 8.1523761738E9
+        case (_: Apply, _, _) => 7.444573003149691E9
+        case (_: OptionalExpand, _, _) => 4.76310362E8
+        case (_: Optional, _, _) => 7.206417822149691E9
+        case (_: Selection, _, _) => 1.02731056E8
+        case (_: Expand, _, _) => 7.89155379E7
+        case (_: AllNodesScan, _, _) => 3.50735724E7
+        case (_: Argument, _, _) => 2.38155181E8
+        case (_: ProjectEndpoints, _, _) => 11.0
+      }
+    } getLogicalPlanFor
+      """UNWIND {createdRelationships} as r
+        |MATCH (source)-[r]->(target)
+        |WITH source AS p
+        |OPTIONAL MATCH (p)<-[follow]-() WHERE type(follow) STARTS WITH 'ProfileFavorites'
+        |WITH p, count(follow) as fc
+        |RETURN 1
+      """.stripMargin)._2 should beLike {
+      case Projection(Aggregation(_: OptionalExpand, _, _), _) => ()
+    }
+  }
+
   test("should plan index seek by prefix for simple prefix search based on CONTAINS substring") {
     (new given {
       indexOn("Person", "name")

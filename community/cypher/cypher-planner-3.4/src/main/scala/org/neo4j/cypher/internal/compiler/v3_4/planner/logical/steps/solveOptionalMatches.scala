@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.steps.solveOptionalMatches.OptionalSolver
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.frontend.v3_4.ast.UsingJoinHint
 import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
@@ -35,7 +36,11 @@ case object applyOptional extends OptionalSolver {
     val innerContext: LogicalPlanningContext = context.withUpdatedCardinalityInformation(lhs, solveds, cardinalities)
     val inner = context.strategy.plan(optionalQg, innerContext, solveds, cardinalities)
     val rhs = context.logicalPlanProducer.planOptional(inner, lhs.availableSymbols, innerContext)
-    Some(context.logicalPlanProducer.planApply(lhs, rhs, context))
+    val applied = context.logicalPlanProducer.planApply(lhs, rhs, context)
+
+    // Often the Apply can be rewritten into an OptionalExpand. We want to do that before cost estimating against the hash joins, otherwise that
+    // is not a fair comparison (as they cannot be rewritten to something cheaper).
+    Some(unnestOptional(applied).asInstanceOf[LogicalPlan])
   }
 }
 

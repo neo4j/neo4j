@@ -37,6 +37,7 @@ case class unnestApply(solveds: Solveds, attributes: Attributes) extends Rewrite
     π  : Projection
     Arg: Argument
     EXP: Expand
+    OEX: Optional Expand
     LOJ: Left Outer Join
     ROJ: Right Outer Join
     CN : CreateNode
@@ -111,6 +112,12 @@ case class unnestApply(solveds: Solveds, attributes: Attributes) extends Rewrite
     // L Ax (L2 ROJ Arg) => L2 ROJ L
     case apply@Apply(lhs, join@RightOuterHashJoin(_, _, _:Argument)) =>
       val res = join.copy(right = lhs)(attributes.copy(join.id))
+      solveds.copy(apply.id, res.id)
+      res
+
+    // L Ax (OEX Arg) => OEX L
+    case apply@Apply(lhs, oex@OptionalExpand(_:Argument, _, _, _, _, _, _, _)) =>
+      val res = oex.copy(source = lhs)(attributes.copy(oex.id))
       solveds.copy(apply.id, res.id)
       res
 
