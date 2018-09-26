@@ -28,22 +28,20 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket.DEFAULT_CONNECTOR_KEY;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
@@ -81,20 +79,11 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     public void shouldStartStopNeoServerWithoutAnyConfigFiles() throws Throwable
     {
         // When
-        int resultCode = ServerBootstrapper.start( bootstrapper,
+        int resultCode = ServerBootstrapper.start( bootstrapper, withConnectorsOnRandomPortsConfig(
                 "--home-dir", tempDir.newFolder( "home-dir" ).getAbsolutePath(),
                 "-c", configOption( data_directory, tempDir.getRoot().getAbsolutePath() ),
                 "-c", configOption( logs_directory, tempDir.getRoot().getAbsolutePath() ),
-                "-c", "dbms.connector.https.listen_address=localhost:0",
-                "-c", "dbms.connector.http.type=HTTP",
-                "-c", "dbms.connector.http.enabled=true",
-                "-c", "dbms.connector.http.listen_address=localhost:" + PortAuthority.allocatePort(),
-                "-c", "dbms.connector.https.type=HTTP",
-                "-c", "dbms.connector.https.enabled=true",
-                "-c", "dbms.connector.https.listen_address=localhost:" + PortAuthority.allocatePort(),
-                "-c", new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name() + "=localhost:" + PortAuthority.allocatePort(),
-                "-c", "dbms.backup.enabled=false"
-        );
+                "-c", "dbms.backup.enabled=false" ) );
 
         // Then
         assertEquals( ServerBootstrapper.OK, resultCode );
@@ -109,10 +98,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "ourcustomvalue" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-        properties.put( "dbms.connector.http.type", "HTTP" );
-        properties.put( "dbms.connector.http.enabled", "true" );
-        properties.put( "dbms.connector.http.listen_address", "localhost:0" );
-        properties.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
 
@@ -133,10 +119,7 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
 
         Map<String,String> properties = stringMap( forced_kernel_id.name(), "thisshouldnotshowup" );
         properties.putAll( ServerTestUtils.getDefaultRelativeProperties() );
-        properties.put( "dbms.connector.http.type", "HTTP" );
-        properties.put( "dbms.connector.http.enabled", "true" );
-        properties.put( "dbms.connector.http.listen_address", "localhost:0" );
-        properties.put( new BoltConnector( DEFAULT_CONNECTOR_KEY ).listen_address.name(), "localhost:0" );
+        properties.putAll( connectorsOnRandomPortsConfig() );
 
         store( properties, configFile );
 
@@ -221,6 +204,38 @@ public abstract class BaseBootstrapperIT extends ExclusiveServerTestBase
     protected String configOption( Setting<?> setting, String value )
     {
         return setting.name() + "=" + value;
+    }
+
+    protected static String[] withConnectorsOnRandomPortsConfig( String... otherConfigs )
+    {
+        Stream<String> configs = Stream.of( otherConfigs );
+
+        Stream<String> connectorsConfig = connectorsOnRandomPortsConfig().entrySet()
+                .stream()
+                .map( entry -> entry.getKey() + "=" + entry.getValue() )
+                .flatMap( config -> Stream.of( "-c", config ) );
+
+        return Stream.concat( configs, connectorsConfig ).toArray( String[]::new );
+    }
+
+    protected static Map<String,String> connectorsOnRandomPortsConfig()
+    {
+        return stringMap(
+                "dbms.connector.http.type", "HTTP",
+                "dbms.connector.http.listen_address", "localhost:0",
+                "dbms.connector.http.encryption", "NONE",
+                "dbms.connector.http.enabled", "true",
+
+                "dbms.connector.https.type", "HTTP",
+                "dbms.connector.https.listen_address", "localhost:0",
+                "dbms.connector.https.encryption", "TLS",
+                "dbms.connector.https.enabled", "true",
+
+                "dbms.connector.bolt.type", "BOLT",
+                "dbms.connector.bolt.listen_address", "localhost:0",
+                "dbms.connector.bolt.tls_level", "OPTIONAL",
+                "dbms.connector.bolt.enabled", "true"
+        );
     }
 
     private void assertDbAccessibleAsEmbedded()
