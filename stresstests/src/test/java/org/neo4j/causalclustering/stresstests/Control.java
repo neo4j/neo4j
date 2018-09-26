@@ -28,6 +28,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.diagnostics.utils.DumpUtils;
 import org.neo4j.logging.Log;
 import org.neo4j.util.concurrent.Futures;
 
@@ -68,6 +69,8 @@ public class Control
             failure.addSuppressed( cause );
         }
         log.error( "Failure occurred", cause );
+        log.error( "Thread dump always printed on failure" );
+        threadDump();
         stopTheWorld.set( true );
     }
 
@@ -82,5 +85,24 @@ public class Control
     public void awaitEnd( Iterable<Future<?>> completions ) throws InterruptedException, TimeoutException, ExecutionException
     {
         Futures.combine( completions ).get( totalDurationMinutes, MINUTES );
+    }
+
+    private void threadDump()
+    {
+        int exitCode = -1;
+        try
+        {
+            exitCode = DumpUtils.threadDumpUsingSignal().waitFor();
+        }
+        catch ( Throwable e )
+        {
+            log.error( "Thread dump using signal failed exceptionally", e );
+        }
+
+        if ( exitCode != 0 )
+        {
+            // fallback
+            System.out.println( DumpUtils.threadDump() );
+        }
     }
 }
