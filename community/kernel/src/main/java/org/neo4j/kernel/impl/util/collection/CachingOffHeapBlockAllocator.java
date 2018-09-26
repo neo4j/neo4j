@@ -112,14 +112,21 @@ public class CachingOffHeapBlockAllocator implements OffHeapBlockAllocator
         }
 
         final BlockingQueue<MemoryBlock> cache = caches[log2floor( block.size )];
-        if ( cache.offer( block ) )
-        {
-            tracker.deallocated( block.unalignedSize );
-        }
-        else
+        if ( !cache.offer( block ) )
         {
             doFree( block, tracker );
+            return;
         }
+
+        // it is possible that allocator is released just before we put the block into queue;
+        // in such case case we need to free memory right away, since release() will never be called again
+        if ( released && cache.remove( block ) )
+        {
+            doFree( block, tracker );
+            return;
+        }
+
+        tracker.deallocated( block.unalignedSize );
     }
 
     @Override
