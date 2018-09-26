@@ -241,7 +241,6 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
         } else {
           # JAVA 9 and newer GC logs configuration
           $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
-          $gcOptions
           if ($option -ne $null) {
             $gcOptions = $option.value
           } else {
