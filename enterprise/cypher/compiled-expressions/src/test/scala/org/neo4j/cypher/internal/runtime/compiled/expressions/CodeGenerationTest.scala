@@ -1589,13 +1589,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
-    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "b")
     val compiledNone = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       startsWith(varFor("bar"), literalString("b"))))
-    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aaa")
     val compiledSingle = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       startsWith(varFor("bar"), literalString("aaa"))))
-    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aaa")
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
     val compiledMany = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       startsWith(varFor("bar"), literalString("a"))))
 
@@ -1613,13 +1613,13 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
       "aaa" -> stringValue("aaa")))
 
     //When
-    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "b")
     val compiledNone = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       startsWith(varFor("bar"), varFor("b"))))
-    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aaa")
     val compiledSingle = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       startsWith(varFor("bar"), varFor("aaa"))))
-    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aaa")
+    // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
     val compiledMany = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       startsWith(varFor("bar"), varFor("a"))))
 
@@ -1633,9 +1633,21 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
 
-    //When, single(bar IN null WHERE bar STARTS WITH foo)
+    //When, single(bar IN null WHERE bar = foo)
     val compiled = compile(singleInList("bar", noValue,
       equals(varFor("bar"), varFor("foo"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("single in list with null predicate") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, single(bar IN ['a','aa','aaa'] WHERE bar = null)
+    val compiled = compile(singleInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), noValue)))
 
     //Then
     compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
@@ -1646,10 +1658,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
-    // none(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    // none(bar IN ["a", "aa", "aaa"] WHERE bar = "b")
     val compiledTrue = compile(noneInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), literalString("b"))))
-    // none(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "b")
+    // none(bar IN ["a", "aa", "aaa"] WHERE bar = "a")
     val compiledFalse = compile(noneInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), literalString("a"))))
 
@@ -1663,10 +1675,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = new MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")))
 
     //When
-    // none(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH a)
+    // none(bar IN ["a", "aa", "aaa"] WHERE bar = b)
     val compiledTrue = compile(noneInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), varFor("b"))))
-    // none(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH aa)
+    // none(bar IN ["a", "aa", "aaa"] WHERE bar = a)
     val compiledFalse = compile(noneInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), varFor("a"))))
 
@@ -1679,9 +1691,21 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
 
-    //When, none(bar IN null WHERE bar STARTS WITH foo)
+    //When, none(bar IN null WHERE bar = foo)
     val compiled = compile(noneInList("bar", noValue,
       equals(varFor("bar"), varFor("foo"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("none in list with null predicate") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, none(bar IN null WHERE bar = null)
+    val compiled = compile(noneInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), noValue )))
 
     //Then
     compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
@@ -1692,10 +1716,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
-    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar = "a")
     val compiledTrue = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), literalString("a"))))
-    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "b")
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar = "b")
     val compiledFalse = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), literalString("b"))))
 
@@ -1709,10 +1733,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = new MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")))
 
     //When
-    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH a)
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar = a)
     val compiledTrue = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), varFor("a"))))
-    // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH aa)
+    // any(bar IN ["a", "aa", "aaa"] WHERE bar = aa)
     val compiledFalse = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
       equals(varFor("bar"), varFor("b"))))
 
@@ -1725,9 +1749,21 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
 
-    //When, any(bar IN null WHERE bar STARTS WITH foo)
+    //When, any(bar IN null WHERE bar = foo)
     val compiled = compile(anyInList("bar", noValue,
       equals(varFor("bar"), varFor("foo"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("any in list with null predicate") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, any(bar IN ['a','aa','aaa'] WHERE bar = null)
+    val compiled = compile(anyInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      equals(varFor("bar"), noValue)))
 
     //Then
     compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
@@ -1779,6 +1815,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
   }
 
+  test("all in list with null predicate") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, all(bar IN null WHERE bar STARTS WITH null)
+    val compiled = compile(allInList("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), noValue)))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
   test("filter function local access only") {
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
@@ -1807,12 +1855,24 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
 
-    //When, filter(bar IN null WHERE bar STARTS WITH foo)
+    //When, filter(bar IN null WHERE bar STARTS WITH 'aa')
     val compiled = compile(filter("bar", noValue,
       startsWith(varFor("bar"), varFor("aa"))))
 
     //Then
     compiled.evaluate(context, db, EMPTY_MAP) should equal(NO_VALUE)
+  }
+
+  test("filter with null predicate") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, filter(bar IN null WHERE bar STARTS WITH null)
+    val compiled = compile(filter("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
+      startsWith(varFor("bar"), noValue)))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(list())
   }
 
   test("extract function local access only") {
