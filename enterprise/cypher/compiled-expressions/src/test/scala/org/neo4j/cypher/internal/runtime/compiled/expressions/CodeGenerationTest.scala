@@ -1586,7 +1586,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("single in list function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
     // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
@@ -1607,10 +1607,10 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("single in list function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map(
+    val context = new MapExecutionContext(mutable.Map(
       "b" -> stringValue("b"),
       "a" -> stringValue("a"),
-      "aaa" -> stringValue("aaa")), mutable.Map.empty)
+      "aaa" -> stringValue("aaa")))
 
     //When
     // single(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
@@ -1631,7 +1631,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("single in list on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When, single(bar IN null WHERE bar STARTS WITH foo)
     val compiled = compile(singleInList("bar", noValue,
@@ -1643,7 +1643,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("none in list function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
     // none(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
@@ -1660,7 +1660,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("none in list function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")), mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")))
 
     //When
     // none(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH a)
@@ -1677,7 +1677,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("none in list on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When, none(bar IN null WHERE bar STARTS WITH foo)
     val compiled = compile(noneInList("bar", noValue,
@@ -1689,7 +1689,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("any in list function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
     // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
@@ -1706,7 +1706,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("any in list function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")), mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map("a" -> stringValue("a"), "b" -> stringValue("b")))
 
     //When
     // any(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH a)
@@ -1723,7 +1723,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("any in list on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When, any(bar IN null WHERE bar STARTS WITH foo)
     val compiled = compile(anyInList("bar", noValue,
@@ -1735,7 +1735,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("all in list function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When
     // all(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "a")
@@ -1752,7 +1752,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("all in list function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map("a" -> stringValue("a"), "aa" -> stringValue("aa")), mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map("a" -> stringValue("a"), "aa" -> stringValue("aa")))
 
     //When
     // all(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH a)
@@ -1769,7 +1769,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("all in list on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When, all(bar IN null WHERE bar STARTS WITH foo)
     val compiled = compile(allInList("bar", noValue,
@@ -1781,7 +1781,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("filter function local access only") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When, filter(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH "aa")
     val compiled = compile(filter("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
@@ -1793,7 +1793,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("filter function accessing outer scope") {
     //Given
-    val context = MapExecutionContext(mutable.Map("foo" -> stringValue("aa")), mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map("foo" -> stringValue("aa")))
 
     //When, filter(bar IN ["a", "aa", "aaa"] WHERE bar STARTS WITH foo)
     val compiled = compile(filter("bar", listOf(literalString("a"), literalString("aa"), literalString("aaa")),
@@ -1805,7 +1805,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("filter on null") {
     //Given
-    val context = MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
+    val context = new MapExecutionContext(mutable.Map.empty)
 
     //When, filter(bar IN null WHERE bar STARTS WITH foo)
     val compiled = compile(filter("bar", noValue,
