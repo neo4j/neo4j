@@ -19,8 +19,15 @@
  */
 package org.neo4j.kernel.api.txstate.aux;
 
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordState;
 
+/**
+ * An opaque instance of auxiliary transaction state, which can be closed, and may or may not have record changes.
+ * <p>
+ * The implemnentation of this interface is opaque to the {@link KernelTransactionImplementation}, and is entirely controlled by the
+ * {@link AuxiliaryTransactionStateProvider} that created it.
+ */
 public interface AuxiliaryTransactionState extends RecordState, AutoCloseable
 {
 

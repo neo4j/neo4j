@@ -120,13 +120,6 @@ public class KernelAuxTransactionStateManager implements AuxiliaryTransactionSta
         }
 
         @Override
-        public boolean hasChanges( String providerIdentityKey )
-        {
-            AuxiliaryTransactionState state = openedStates.get( providerIdentityKey );
-            return state != null && state.hasChanges();
-        }
-
-        @Override
         public void extractCommands( Collection<StorageCommand> extractedCommands ) throws TransactionFailureException
         {
             for ( AuxiliaryTransactionState state : openedStates.values() )

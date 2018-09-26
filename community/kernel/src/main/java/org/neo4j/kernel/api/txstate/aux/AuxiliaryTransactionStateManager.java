@@ -19,11 +19,36 @@
  */
 package org.neo4j.kernel.api.txstate.aux;
 
+/**
+ * The auxiliary transaction state manager keeps track of what auxiliary transaction state providers are available, and is responsible for creating
+ * {@link AuxiliaryTransactionStateHolder} instances, which are the per-transaction containers of auxiliary transaction state.
+ */
 public interface AuxiliaryTransactionStateManager
 {
+    /**
+     * Register a new {@link AuxiliaryTransactionStateProvider}.
+     * <p>
+     * This method is thread-safe. Only {@link AuxiliaryTransactionStateHolder} instances that are opened after the completion of a provider registration,
+     * will have that provider available.
+     *
+     * @param provider The provider to register.
+     */
     void registerProvider( AuxiliaryTransactionStateProvider provider );
 
+    /**
+     * Unregister the given {@link AuxiliaryTransactionStateProvider}.
+     * <p>
+     * This method is thread-safe. The transaction state provider will still be referenced by existing {@link AuxiliaryTransactionStateHolder} instances,
+     * but will not be available to holders that are opened after the unregistration completes.
+     *
+     * @param provider The provider to unregister.
+     */
     void unregisterProvider( AuxiliaryTransactionStateProvider provider );
 
+    /**
+     * Open a new {@link AuxiliaryTransactionStateHolder} for a transaction.
+     *
+     * @return A new auxiliary transaction state holder.
+     */
     AuxiliaryTransactionStateHolder openStateHolder();
 }

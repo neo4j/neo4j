@@ -19,9 +19,35 @@
  */
 package org.neo4j.kernel.api.txstate.aux;
 
+import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+
+/**
+ * Auxiliary transaction state can be used to attach "opaque" transaction state to a {@link KernelTransactionImplementation} from external sources.
+ * <p>
+ * Those external sources can put whatever transaction-specific data they need into the auxiliary transaction state, but it is up to those external sources,
+ * to ensure that their transaction state is kept up to date. The {@link KernelTransactionImplementation#getTransactionDataRevision()} method can be helpful
+ * for that purpose.
+ * <p>
+ * The {@link AuxiliaryTransactionStateProvider} is used as a factory of the {@link AuxiliaryTransactionState}, which is created when it is first requested
+ * from the {@link TxStateHolder#auxiliaryTxState(Object)}, giving the {@link #getIdentityKey() identity key} of the particular auxiliary transaction state
+ * provider.
+ */
 public interface AuxiliaryTransactionStateProvider
 {
+    /**
+     * Return the <em>identity key</em> that is used to identify the provider, if {@link TxStateHolder#auxiliaryTxState(Object)} needs to have a new auxiliary
+     * transaction state instance created.
+     * <p>
+     * Note that this is matched by object identity, so it is recommended to either be a unique interned string literal or constant, or the provider class
+     * object.
+     *
+     * @return The key object used for identifying the auxiliary transaction state provider.
+     */
     Object getIdentityKey();
 
+    /**
+     * @return a new instance of the {@link AuxiliaryTransactionState}.
+     */
     AuxiliaryTransactionState createNewAuxiliaryTransactionState();
 }
