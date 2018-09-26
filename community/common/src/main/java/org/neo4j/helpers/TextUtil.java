@@ -27,6 +27,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.StringTokenizer;
 
+/**
+ * @deprecated This class will be removed from public API in 4.0.
+ */
+@Deprecated
 public class TextUtil
 {
     private TextUtil()

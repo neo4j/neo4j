@@ -31,6 +31,10 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 
+/**
+ * @deprecated This class will be removed from public API in 4.0.
+ */
+@Deprecated
 public class Exceptions
 {
     public static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
