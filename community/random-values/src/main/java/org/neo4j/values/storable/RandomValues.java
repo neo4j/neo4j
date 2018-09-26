@@ -38,6 +38,7 @@ import java.util.SplittableRandom;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.function.IntFunction;
+import java.util.function.Predicate;
 
 import static java.lang.Math.abs;
 import static java.time.LocalDate.ofEpochDay;
@@ -303,8 +304,13 @@ public class RandomValues
 
     public static Type[] excluding( Type[] among, Type... exclude )
     {
+        return excluding( among, t -> ArrayUtils.contains( exclude, t ) );
+    }
+
+    public static Type[] excluding( Type[] among, Predicate<Type> exclude )
+    {
         return Arrays.stream( among )
-                .filter( t -> !ArrayUtils.contains( exclude, t ) )
+                .filter( t -> !exclude.test( t ) )
                 .toArray( Type[]::new );
     }
 

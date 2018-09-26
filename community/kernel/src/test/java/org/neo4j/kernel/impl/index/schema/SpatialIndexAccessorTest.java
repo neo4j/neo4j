@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.junit.Test;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -68,6 +70,22 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialInd
     public void shouldNotSeeFilteredEntries()
     {
         // This test doesn't make sense for spatial, since it needs a proper store for the values
+    }
+
+    @Test
+    public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
+    {
+        // given
+        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.generateAddUpdatesFor( new Value[]{
+                Values.pointValue( WGS84, -90, -90 ),
+                Values.pointValue( WGS84, -70, -70 ),
+                Values.pointValue( WGS84, -50, -50 ),
+                Values.pointValue( WGS84, 0, 0 ),
+                Values.pointValue( WGS84, 50, 50 ),
+                Values.pointValue( WGS84, 70, 70 ),
+                Values.pointValue( WGS84, 90, 90 )
+        } );
+        shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd( updates );
     }
 
     @Override

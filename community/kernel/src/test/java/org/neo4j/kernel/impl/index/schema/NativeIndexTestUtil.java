@@ -204,4 +204,12 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     {
         assertFalse( fs.fileExists( getIndexFile() ) );
     }
+
+    // Useful when debugging
+    void setSeed( long seed )
+    {
+        random.setSeed( seed );
+        random.reset();
+        randomValues = random.randomValues();
+    }
 }

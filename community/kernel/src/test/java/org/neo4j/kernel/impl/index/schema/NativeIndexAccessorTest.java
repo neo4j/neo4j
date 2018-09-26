@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
@@ -56,6 +57,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
@@ -266,7 +268,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnCountZeroForMismatchingData() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates();
         processAll( updates );
 
         // when
@@ -348,7 +350,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -363,7 +365,13 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
+        shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd( updates );
+    }
+
+    void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd( IndexEntryUpdate<IndexDescriptor>[] updates )
+            throws IndexEntryConflictException, IndexNotApplicableKernelException
+    {
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -378,7 +386,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndExclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -393,7 +401,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnMatchingEntriesForRangePredicateWithExclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -408,7 +416,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         layoutUtil.sort( updates );
         processAll( updates[0], updates[1], updates[updates.length - 1], updates[updates.length - 2] );
 
@@ -423,7 +431,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void mustHandleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         mustHandleNestedQueries( updates );
     }
 
@@ -456,7 +464,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void mustHandleMultipleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         mustHandleMultipleNestedQueries( updates );
     }
 
@@ -700,7 +708,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldNotSeeFilteredEntries() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesNoDuplicateValues();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleTypeNoDuplicates( supportedTypesExcludingNonOrderable() );
         processAll( updates );
         layoutUtil.sort( updates );
         IndexReader reader = accessor.newReader();
@@ -928,12 +936,48 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
     {
         RandomValues.Type type = randomValues.among( layoutUtil.supportedTypes() );
-        Value[] values = new Value[N_VALUES];
-        for ( int i = 0; i < N_VALUES; i++ )
+        return someUpdatesOfType( type, true );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates()
+    {
+        return someUpdatesSingleTypeNoDuplicates( layoutUtil.supportedTypes() );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates( RandomValues.Type[] types )
+    {
+        RandomValues.Type type;
+        do
         {
-            values[i] = randomValues.nextValueOfTypes( type );
+            // Can not generate enough unique values of boolean
+            type = randomValues.among( types );
+        }
+        while ( type == RandomValues.Type.BOOLEAN );
+        return someUpdatesOfType( type, false );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesOfType( RandomValues.Type type, boolean allowDuplicates )
+    {
+        Value[] values = new Value[N_VALUES];
+        int i = 0;
+        while ( i < N_VALUES )
+        {
+            Value value = randomValues.nextValueOfTypes( type );
+            if ( allowDuplicates || !ArrayUtils.contains( values, value ) )
+            {
+                values[i++] = value;
+            }
         }
         return layoutUtil.generateAddUpdatesFor( values );
+    }
+
+    private RandomValues.Type[] supportedTypesExcludingNonOrderable()
+    {
+        return RandomValues.excluding( layoutUtil.supportedTypes(),
+                t -> t.valueGroup == ValueGroup.GEOMETRY ||
+                        t.valueGroup == ValueGroup.GEOMETRY_ARRAY ||
+                        t == RandomValues.Type.STRING ||
+                        t == RandomValues.Type.STRING_ARRAY );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate
