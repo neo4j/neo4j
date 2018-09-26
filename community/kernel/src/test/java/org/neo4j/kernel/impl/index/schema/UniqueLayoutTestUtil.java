@@ -51,6 +51,12 @@ class UniqueLayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE ext
     }
 
     @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return delegate.supportedTypes();
+    }
+
+    @Override
     int compareIndexedPropertyValue( KEY key1, KEY key2 )
     {
         return delegate.compareIndexedPropertyValue( key1, key2 );

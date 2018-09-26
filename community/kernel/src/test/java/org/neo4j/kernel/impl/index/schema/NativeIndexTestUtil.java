@@ -44,6 +44,7 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.lang.String.format;
@@ -73,6 +74,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
+    RandomValues randomValues;
 
     @Before
     public void setup()
@@ -82,6 +84,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         layout = layoutUtil.createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
+        randomValues = random.randomValues();
     }
 
     public File getIndexFile()

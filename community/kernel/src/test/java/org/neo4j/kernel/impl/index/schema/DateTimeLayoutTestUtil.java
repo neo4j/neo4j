@@ -31,6 +31,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 import static java.time.ZoneOffset.UTC;
@@ -62,6 +63,12 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeIndexKey
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
+    }
+
+    @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME );
     }
 
     @Override

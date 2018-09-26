@@ -54,6 +54,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -83,6 +84,7 @@ import static org.neo4j.values.storable.Values.of;
 public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>
 {
+    private static final int N_VALUES = 10;
     NativeIndexAccessor<KEY,VALUE> accessor;
 
     @Rule
@@ -135,7 +137,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldIndexAdd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
             // when
@@ -151,7 +153,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldIndexChange() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
         Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), layoutUtil.randomUpdateGenerator( random ) );
 
@@ -174,7 +176,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldIndexRemove() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         for ( int i = 0; i < updates.length; i++ )
@@ -237,7 +239,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnCountOneForExistingData() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         // when
@@ -264,7 +266,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnCountZeroForMismatchingData() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         // when
@@ -288,7 +290,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnAllEntriesForExistsPredicate() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         // when
@@ -315,7 +317,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnMatchingEntriesForExactPredicate() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         // when
@@ -332,7 +334,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldReturnNoEntriesForMismatchingExactPredicate() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         // when
@@ -421,7 +423,12 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void mustHandleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
+        mustHandleNestedQueries( updates );
+    }
+
+    void mustHandleNestedQueries( IndexEntryUpdate<IndexDescriptor>[] updates ) throws IndexEntryConflictException, IndexNotApplicableKernelException
+    {
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -449,7 +456,13 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void mustHandleMultipleNestedQueries() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
+        mustHandleMultipleNestedQueries( updates );
+    }
+
+    void mustHandleMultipleNestedQueries( IndexEntryUpdate<IndexDescriptor>[] updates )
+            throws IndexEntryConflictException, IndexNotApplicableKernelException
+    {
         processAll( updates );
         layoutUtil.sort( updates );
 
@@ -498,7 +511,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldHandleMultipleConsecutiveUpdaters() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
 
         // when
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
@@ -545,7 +558,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void forceShouldCheckpointTree() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] data = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] data = someUpdatesSingleType();
         processAll( data );
 
         // when
@@ -561,7 +574,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void closeShouldCloseTreeWithoutCheckpoint() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] data = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] data = someUpdatesSingleType();
         processAll( data );
 
         // when
@@ -587,7 +600,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldSampleIndex() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
         try ( IndexReader reader = accessor.newReader() )
         {
@@ -659,7 +672,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     public void shouldSeeAllEntriesInAllEntriesReader() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
 
         // when
@@ -730,7 +743,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
         return update.values()[0];
     }
 
-    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery.ExactPredicate filter )
+    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery filter )
     {
         return new IndexProgressor.NodeValueClient()
         {
@@ -892,7 +905,7 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
         }
     }
 
-    private void forceAndCloseAccessor() throws IOException
+    private void forceAndCloseAccessor()
     {
         accessor.force( IOLimiter.UNLIMITED );
         closeAccessor();
@@ -910,6 +923,17 @@ public abstract class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, V
     private IndexEntryUpdate<IndexDescriptor> simpleUpdate()
     {
         return IndexEntryUpdate.add( 0, indexDescriptor, of( 0 ) );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
+    {
+        RandomValues.Type type = randomValues.among( layoutUtil.supportedTypes() );
+        Value[] values = new Value[N_VALUES];
+        for ( int i = 0; i < N_VALUES; i++ )
+        {
+            values[i] = randomValues.nextValueOfTypes( type );
+        }
+        return layoutUtil.generateAddUpdatesFor( values );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate

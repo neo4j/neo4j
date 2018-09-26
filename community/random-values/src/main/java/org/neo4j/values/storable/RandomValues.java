@@ -75,7 +75,7 @@ public class RandomValues
 {
     public enum Type
     {
-        BOOLEAN( ValueGroup.NUMBER, BooleanValue.class ),
+        BOOLEAN( ValueGroup.BOOLEAN, BooleanValue.class ),
         BYTE( ValueGroup.NUMBER, ByteValue.class ),
         SHORT( ValueGroup.NUMBER, ShortValue.class ),
         INT( ValueGroup.NUMBER, IntValue.class ),
@@ -305,6 +305,13 @@ public class RandomValues
     {
         return Arrays.stream( among )
                 .filter( t -> !ArrayUtils.contains( exclude, t ) )
+                .toArray( Type[]::new );
+    }
+
+    public static Type[] typesOfGroup( ValueGroup valueGroup )
+    {
+        return Arrays.stream( Type.values() )
+                .filter( t -> t.valueGroup == valueGroup )
                 .toArray( Type[]::new );
     }
 

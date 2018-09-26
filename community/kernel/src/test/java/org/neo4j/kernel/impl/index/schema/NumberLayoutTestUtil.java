@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValue>
 {
@@ -57,6 +58,12 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,Native
     NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
         super( indexDescriptor.withId( 0 ) );
+    }
+
+    @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return RandomValues.typesOfGroup( ValueGroup.NUMBER );
     }
 
     @Override

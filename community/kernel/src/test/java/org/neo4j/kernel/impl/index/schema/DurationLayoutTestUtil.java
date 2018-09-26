@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public class DurationLayoutTestUtil extends LayoutTestUtil<DurationIndexKey,NativeIndexValue>
@@ -60,6 +61,12 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationIndexKey,Nati
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
+    }
+
+    @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return RandomValues.typesOfGroup( ValueGroup.DURATION );
     }
 
     @Override

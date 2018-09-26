@@ -29,6 +29,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
@@ -60,6 +61,12 @@ class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValu
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
+    }
+
+    @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return RandomValues.typesOfGroup( ValueGroup.TEXT );
     }
 
     @Override

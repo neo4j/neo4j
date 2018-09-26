@@ -31,6 +31,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeIndexKey,NativeIndexValue>
@@ -62,6 +63,12 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeIndexKey,NativeI
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
+    }
+
+    @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return RandomValues.typesOfGroup( ValueGroup.ZONED_TIME );
     }
 
     @Override

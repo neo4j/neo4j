@@ -30,6 +30,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeIndexKey,NativeIndexValue>
@@ -59,6 +60,12 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeIndexKey,Na
     IndexEntryUpdate<IndexDescriptor>[] someUpdates()
     {
         return someUpdatesWithDuplicateValues();
+    }
+
+    @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME );
     }
 
     @Override

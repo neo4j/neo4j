@@ -60,6 +60,8 @@ abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
 
     abstract IndexEntryUpdate<IndexDescriptor>[] someUpdates();
 
+    abstract RandomValues.Type[] supportedTypes();
+
     protected double fractionDuplicates()
     {
         return 0.1;
@@ -136,11 +138,18 @@ abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
 
     IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Object[] values )
     {
-        @SuppressWarnings( "unchecked" )
+        return generateAddUpdatesFor( Arrays.stream( values )
+                .map( Values::of )
+                .toArray( Value[]::new ) );
+    }
+
+    IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Value[] values )
+    {
+        //noinspection unchecked
         IndexEntryUpdate<IndexDescriptor>[] indexEntryUpdates = new IndexEntryUpdate[values.length];
         for ( int i = 0; i < indexEntryUpdates.length; i++ )
         {
-            indexEntryUpdates[i] = add( i, Values.of( values[i] ) );
+            indexEntryUpdates[i] = add( i, values[i] );
         }
         return indexEntryUpdates;
     }

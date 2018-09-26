@@ -79,6 +79,12 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,Native
     }
 
     @Override
+    RandomValues.Type[] supportedTypes()
+    {
+        return new RandomValues.Type[]{RandomValues.Type.GEOGRAPHIC_POINT};
+    }
+
+    @Override
     int compareIndexedPropertyValue( SpatialIndexKey key1, SpatialIndexKey key2 )
     {
         return Long.compare( key1.rawValueBits, key2.rawValueBits );
