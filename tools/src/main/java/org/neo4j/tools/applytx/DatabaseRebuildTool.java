@@ -197,6 +197,7 @@ public class DatabaseRebuildTool
 
         ConsoleInput consoleInput = life.add( new ConsoleInput( in, out, prompt ) );
         consoleInput.add( "apply", new ApplyTransactionsCommand( fromPath, dbAccess ) );
+        consoleInput.add( "reapply", new ReapplyTransactionsCommand( dbAccess ) );
         consoleInput.add( DumpRecordsCommand.NAME, new DumpRecordsCommand( storeAccess ) );
         consoleInput.add( "cc", new ArgsCommand()
         {

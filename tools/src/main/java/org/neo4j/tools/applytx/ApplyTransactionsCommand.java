@@ -32,10 +32,10 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.progress.ProgressListener;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
-import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -56,6 +56,12 @@ import static org.neo4j.helpers.progress.ProgressMonitorFactory.textual;
 import static org.neo4j.kernel.impl.transaction.tracing.CommitEvent.NULL;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.EXTERNAL;
 
+/**
+ * Applies one or more transactions read from a separate transaction log onto the the store.
+ * It's only the transaction contents that are being applied and so theoretically the transaction ids in the target store
+ * may not match those from the source, but practically this is what usually happens because the transaction range usually
+ * starts from the beginning.
+ */
 public class ApplyTransactionsCommand extends ArgsCommand
 {
     private final File from;
@@ -72,7 +78,6 @@ public class ApplyTransactionsCommand extends ArgsCommand
     {
         DependencyResolver dependencyResolver = to.get().getDependencyResolver();
         TransactionIdStore txIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
-        Config config = dependencyResolver.resolveDependency( Config.class );
         long fromTx = txIdStore.getLastCommittedTransaction().transactionId();
         long toTx;
         if ( args.orphans().isEmpty() )
@@ -94,11 +99,11 @@ public class ApplyTransactionsCommand extends ArgsCommand
             toTx = Long.parseLong( whereTo );
         }
 
-        long lastApplied = applyTransactions( from, to.get(), config, fromTx, toTx, out );
+        long lastApplied = applyTransactions( from, to.get(), fromTx, toTx, out );
         out.println( "Applied transactions up to and including " + lastApplied );
     }
 
-    private long applyTransactions( File fromPath, GraphDatabaseAPI toDb, Config toConfig,
+    private long applyTransactions( File fromPath, GraphDatabaseAPI toDb,
             long fromTxExclusive, long toTxInclusive, PrintStream out )
             throws IOException, TransactionFailureException
     {
@@ -156,7 +161,7 @@ public class ApplyTransactionsCommand extends ArgsCommand
     public String toString()
     {
         return ArrayUtil.join( new String[] {
-                "Applies transaction from the source onto the new db. Example:",
+                "Applies transactions from the source onto the new db. Example:",
                 "  apply last : applies transactions from the currently last applied and up to the last",
                 "               transaction of source db",
                 "  apply next : applies the next transaction onto the new db",
