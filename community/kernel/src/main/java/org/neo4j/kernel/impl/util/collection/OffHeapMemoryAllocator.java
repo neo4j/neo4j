@@ -76,7 +76,7 @@ public class OffHeapMemoryAllocator implements MemoryAllocator
         @Override
         public void clear()
         {
-            setMemory( block.addr, block.size, (byte) 0 );
+            setMemory( block.unalignedAddr, block.unalignedSize, (byte) 0 );
         }
 
         @Override
