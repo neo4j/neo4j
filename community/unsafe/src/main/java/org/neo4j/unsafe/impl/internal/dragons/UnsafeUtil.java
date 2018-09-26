@@ -935,7 +935,15 @@ public final class UnsafeUtil
      */
     public static void setMemory( long address, long bytes, byte value )
     {
-        unsafe.setMemory( address, bytes, value );
+        if ( 0 == (address & 1) && bytes > 64 )
+        {
+            unsafe.putByte( address, value );
+            unsafe.setMemory( address + 1, bytes - 1, value );
+        }
+        else
+        {
+            unsafe.setMemory( address, bytes, value );
+        }
     }
 
     /**
