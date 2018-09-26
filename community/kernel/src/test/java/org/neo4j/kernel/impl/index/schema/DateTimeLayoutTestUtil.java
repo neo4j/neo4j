@@ -23,14 +23,10 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Set;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
@@ -75,19 +71,6 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeIndexKey
     int compareIndexedPropertyValue( ZonedDateTimeIndexKey key1, ZonedDateTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
-    }
-
-    @Override
-    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        DateTimeValue candidate;
-        do
-        {
-            candidate = random.nextDateTimeValue();
-        }
-        while ( !uniqueCompareValues.add( candidate ) );
-        uniqueValues.add( candidate );
-        return candidate;
     }
 
     @Override

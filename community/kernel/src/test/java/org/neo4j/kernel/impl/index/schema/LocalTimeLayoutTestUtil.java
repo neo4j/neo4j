@@ -22,14 +22,10 @@ package org.neo4j.kernel.impl.index.schema;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.time.LocalTime;
-import java.util.List;
-import java.util.Set;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
@@ -72,19 +68,6 @@ public class LocalTimeLayoutTestUtil extends LayoutTestUtil<LocalTimeIndexKey,Na
     int compareIndexedPropertyValue( LocalTimeIndexKey key1, LocalTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
-    }
-
-    @Override
-    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        LocalTimeValue candidate;
-        do
-        {
-            candidate = random.nextLocalTimeValue();
-        }
-        while ( !uniqueCompareValues.add( candidate ) );
-        uniqueValues.add( candidate );
-        return candidate;
     }
 
     @Override

@@ -21,14 +21,10 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.TextValue;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static java.util.Arrays.asList;
@@ -81,18 +77,5 @@ class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValu
         Collection<String> duplicates = new ArrayList<>( asList( STRINGS ) );
         duplicates.addAll( asList( STRINGS ) );
         return generateAddUpdatesFor( duplicates.toArray() );
-    }
-
-    @Override
-    protected Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        TextValue candidate;
-        do
-        {
-            candidate = random.nextTextValue();
-        }
-        while ( !uniqueCompareValues.add( candidate.stringValue() ) );
-        uniqueValues.add( candidate );
-        return candidate;
     }
 }

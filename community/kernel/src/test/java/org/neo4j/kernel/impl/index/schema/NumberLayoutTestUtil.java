@@ -21,14 +21,9 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.List;
-import java.util.Set;
-
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValue>
@@ -87,20 +82,5 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,Native
     IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
-    }
-
-    @Override
-    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        NumberValue value;
-        Double compareValue;
-        do
-        {
-            value = random.nextNumberValue();
-            compareValue = value.doubleValue();
-        }
-        while ( !uniqueCompareValues.add( compareValue ) );
-        uniqueValues.add( value );
-        return value;
     }
 }

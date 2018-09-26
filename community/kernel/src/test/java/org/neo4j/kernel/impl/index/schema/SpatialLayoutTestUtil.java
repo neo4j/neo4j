@@ -21,9 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.util.List;
-import java.util.Set;
-
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
@@ -32,7 +29,6 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
@@ -88,21 +84,6 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,Native
     int compareIndexedPropertyValue( SpatialIndexKey key1, SpatialIndexKey key2 )
     {
         return Long.compare( key1.rawValueBits, key2.rawValueBits );
-    }
-
-    @Override
-    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        PointValue pointValue;
-        Long compareValue;
-        do
-        {
-            pointValue = random.nextGeographicPoint();
-            compareValue = curve.derivedValueFor( pointValue.coordinate() );
-        }
-        while ( !uniqueCompareValues.add( compareValue ) );
-        uniqueValues.add( pointValue );
-        return pointValue;
     }
 
     @Override

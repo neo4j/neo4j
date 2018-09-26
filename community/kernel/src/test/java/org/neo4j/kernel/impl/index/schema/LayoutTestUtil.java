@@ -116,7 +116,17 @@ abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
         };
     }
 
-    abstract Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues );
+    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    {
+        Value value;
+        do
+        {
+            value = random.nextValueOfTypes( supportedTypes() );
+        }
+        while ( !uniqueCompareValues.add( value ) );
+        uniqueValues.add( value );
+        return value;
+    }
 
     Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
