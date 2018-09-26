@@ -25,25 +25,18 @@ package org.neo4j.causalclustering.stresstests;
 import org.hamcrest.Matchers;
 
 import java.io.File;
-import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.CoreClusterMember;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
 import static org.neo4j.causalclustering.BackupUtil.restoreFromBackup;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class ReplaceRandomMember extends RepeatOnRandomMember
 {
@@ -51,45 +44,34 @@ class ReplaceRandomMember extends RepeatOnRandomMember
     private static final int MIN_SUCCESSFUL_REPLACEMENTS = 2;
 
     /* Backups retry a few times with a pause in between. */
-    private static final long MAX_BACKUP_FAILURES = 5;
+    private static final long MAX_BACKUP_FAILURES = 20;
     private static final long RETRY_TIMEOUT_MILLIS = 5000;
 
     private final Cluster<?> cluster;
-    private final File baseBackupDir;
     private final FileSystemAbstraction fs;
     private final Log log;
+    private final BackupHelper backupHelper;
 
-    private int backupNumber;
     private int successfulReplacements;
 
     ReplaceRandomMember( Control control, Resources resources )
     {
         super( control, resources );
         this.cluster = resources.cluster();
-        this.baseBackupDir = resources.backupDir();
+        this.backupHelper = new BackupHelper( resources );
         this.fs = resources.fileSystem();
         this.log = resources.logProvider().getLog( getClass() );
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember oldMember ) throws CommandFailed, IncorrectUsage, IOException,
-            InterruptedException
+    protected void doWorkOnMember( ClusterMember oldMember ) throws Exception
     {
-        File backupDir = null;
-
-        String backupName = null;
         boolean replaceFromBackup = ThreadLocalRandom.current().nextBoolean();
 
+        File backup = null;
         if ( replaceFromBackup )
         {
-            backupName = "backup-" + backupNumber++;
-
-            AdvertisedSocketAddress address = oldMember.config().get(
-                    CausalClusteringSettings.transaction_advertised_address );
-            backupDir = new File( baseBackupDir, backupName );
-
-            log.info( "Creating backup: " + backupName + " from: " + oldMember );
-            createBackupWithRetries( backupName, address );
+            backup = createBackupWithRetries( oldMember );
         }
 
         log.info( "Stopping: " + oldMember );
@@ -99,10 +81,11 @@ class ReplaceRandomMember extends RepeatOnRandomMember
                 cluster.newCoreMember() :
                 cluster.newReadReplica();
 
-        if ( backupDir != null )
+        if ( replaceFromBackup )
         {
-            log.info( "Restoring backup: " + backupName + " to: " + newMember );
-            restoreFromBackup( backupDir, fs, newMember );
+            log.info( "Restoring backup: " + backup.getName() + " to: " + newMember );
+            restoreFromBackup( backup, fs, newMember );
+            fs.deleteRecursively( backup );
         }
 
         log.info( "Starting: " + newMember );
@@ -111,28 +94,19 @@ class ReplaceRandomMember extends RepeatOnRandomMember
         successfulReplacements++;
     }
 
-    private void createBackupWithRetries( String backupName, AdvertisedSocketAddress address ) throws IncorrectUsage,
-            InterruptedException, CommandFailed
+    private File createBackupWithRetries( ClusterMember member ) throws Exception
     {
         int failureCount = 0;
 
-        boolean done = false;
-        while ( !done )
+        while ( true )
         {
-            try
+            Optional<File> backupOpt = backupHelper.backup( member );
+            if ( backupOpt.isPresent() )
             {
-                new OnlineBackupCommandBuilder().withOutput( NULL_OUTPUT_STREAM )
-                        .withSelectedBackupStrategy( CATCHUP )
-                        .withConsistencyCheck( false )
-                        .withHost( address.getHostname() )
-                        .withPort( address.getPort() )
-                        .backup( baseBackupDir, backupName );
-
-                done = true;
+                return backupOpt.get();
             }
-            catch ( CommandFailed e )
+            else
             {
-                log.warn( format( "Failed backup: %s from: %s.", backupName, address ), e );
                 failureCount++;
 
                 if ( failureCount >= MAX_BACKUP_FAILURES )

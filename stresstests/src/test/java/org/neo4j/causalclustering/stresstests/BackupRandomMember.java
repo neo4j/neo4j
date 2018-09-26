@@ -23,83 +23,44 @@
 package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.ConnectException;
 import java.util.Optional;
 
-import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
-import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.discovery.ClusterMember;
-import org.neo4j.commandline.admin.CommandFailed;
-import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.Log;
 
-import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
-import static org.neo4j.helpers.Exceptions.findCauseOrSuppressed;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
-
 class BackupRandomMember extends RepeatOnRandomMember
 {
-    private final File baseBackupDir;
     private final Log log;
+    private final BackupHelper backupHelper;
     private final FileSystemAbstraction fs;
-    private long backupNumber;
-    private long successfulBackups;
 
     BackupRandomMember( Control control, Resources resources )
     {
         super( control, resources );
-        this.baseBackupDir = resources.backupDir();
-        this.fs = resources.fileSystem();
         this.log = resources.logProvider().getLog( getClass() );
+        this.fs = resources.fileSystem();
+        this.backupHelper = new BackupHelper( resources );
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember member ) throws IncorrectUsage, CommandFailed, IOException
+    protected void doWorkOnMember( ClusterMember member ) throws Exception
     {
-        try
+        Optional<File> backupDir = backupHelper.backup( member );
+        if ( backupDir.isPresent() )
         {
-            AdvertisedSocketAddress address = member.config().get( CausalClusteringSettings.transaction_advertised_address );
-
-            String backupName = "backup-" + backupNumber++;
-
-            new OnlineBackupCommandBuilder()
-                    .withOutput( NULL_OUTPUT_STREAM )
-                    .withSelectedBackupStrategy( CATCHUP )
-                    .withConsistencyCheck( true )
-                    .withHost( address.getHostname() )
-                    .withPort( address.getPort() )
-                    .backup( baseBackupDir, backupName );
-
-            log.info( String.format( "Created backup %s from %s", backupName, member ) );
-            successfulBackups++;
-            fs.deleteRecursively( new File( baseBackupDir, backupName ) );
-        }
-        catch ( CommandFailed e )
-        {
-            Optional<Throwable> connectException = findCauseOrSuppressed( e, t -> t instanceof ConnectException );
-            if ( connectException.isPresent() )
-            {
-                log.info( "Benign failure: " + connectException.get().getMessage() );
-            }
-            else
-            {
-                log.error( "Unexpected failure", e );
-                throw e;
-            }
+            fs.deleteRecursively( backupDir.get() );
         }
     }
 
     @Override
     public void validate()
     {
-        if ( successfulBackups == 0 )
+        if ( backupHelper.successfulBackups.get() == 0 )
         {
             throw new IllegalStateException( "Failed to perform any backups" );
         }
 
-        log.info( String.format( "Performed %d/%d successful backups.", successfulBackups, backupNumber ) );
+        log.info( String.format( "Performed %d/%d successful backups.", backupHelper.successfulBackups.get(), backupHelper.backupNumber.get() ) );
     }
 }
