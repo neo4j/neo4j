@@ -244,17 +244,22 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ExecutionContext innerContext = context.createClone();
         Iterator<AnyValue> listIterator = list.iterator();
         int matches = 0;
+        boolean isNull = true
         while( matches < 2 && listIterator.hasNext() )
         {
             AnyValue currentValue = listIterator.next();
             innerContext.set([name from scope], currentValue);
-            boolean isMatch = [result from inner expression using innerContext]
-            if (isMatch)
+            Value isMatch = [result from inner expression using innerContext]
+            if (isMatch == Values.TRUE)
             {
                 matches++;
             }
+            if (isMatch != Values.NO_VALUE)
+            {
+                isNull = false;
+            }
         }
-        return Values.booleanValue(matches == 1);
+        return (isNull) ? Values.NO_VALUE : Values.booleanValue(matches == 1);
        */
       val innerContext = namer.nextVariableName()
       val iterVariable = namer.nextVariableName()
@@ -268,10 +273,13 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val matches = namer.nextVariableName()
+        val isNull = namer.nextVariableName()
+        val isMatch = namer.nextVariableName()
         val ops = Seq(
           // ListValue list = [evaluate collection expression];
           // ExecutionContext innerContext = context.createClone();
           // int matches = 0;
+          // boolean isNull = true;
           declare[ListValue](listVar),
           assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
           declare[ExecutionContext](innerContext),
@@ -279,6 +287,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
           declare[Int](matches),
           assign(matches, constant(0)),
+          declare[Boolean](isNull),
+          assign(isNull, constant(true)),
           // Iterator<AnyValue> listIterator = list.iterator();
           // while( matches < 2 && listIterator.hasNext())
           // {
@@ -291,18 +301,30 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             //innerContext.set([name from scope], currentValue);
             contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
-            // if ([result from inner expression using innerContext])
+            // Value isMatch = [result from inner expression using innerContext]
+            // if (isMatch == Values.TRUE)
             // {
-            //    matches = matches + 1;
+            //     matches = matches + 1;
             // }
-            condition(invoke(cast[BooleanValue](nullCheck(inner)(inner.ir)), method[BooleanValue, Boolean]("booleanValue")))(
+            declare[Value](isMatch),
+            assign(isMatch, nullCheck(inner)(inner.ir)),
+            condition(equal(load(isMatch), truthValue))(
               assign(matches, add(load(matches), constant(1)))
+            ),
+            // if (isMatch != Values.NO_VALUE)
+            // {
+            //     isNull=false;
+            // }
+            condition(notEqual(load(isMatch), noValue))(
+              assign(isNull, constant(false))
             )
           ):_*)
           },
           // }
-          // return Values.booleanValue(matches == 1);
-          invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(matches), constant(1)))
+          // return isNull ? Values.NO_VALUE : Values.booleanValue(matches == 1);
+          ternary(load(isNull),
+            noValue,
+            invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(matches), constant(1))))
         )
         IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
           collection.nullCheck)
