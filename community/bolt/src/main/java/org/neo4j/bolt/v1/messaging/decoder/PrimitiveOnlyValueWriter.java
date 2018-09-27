@@ -19,6 +19,8 @@
  */
 package org.neo4j.bolt.v1.messaging.decoder;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,7 +34,10 @@ import org.neo4j.kernel.impl.util.BaseToObjectValueWriter;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.StringValue;
 import org.neo4j.values.storable.UTF8StringValue;
+
+import static org.neo4j.values.storable.NoValue.NO_VALUE;
 
 /**
  * {@link AnyValueWriter Writer} that allows to convert {@link AnyValue} to any primitive Java type. It explicitly
@@ -51,6 +56,14 @@ public class PrimitiveOnlyValueWriter extends BaseToObjectValueWriter<RuntimeExc
         if ( value instanceof UTF8StringValue )
         {
             return ((UTF8StringValue) value).bytes();
+        }
+        else if ( value == NO_VALUE )
+        {
+            return null;
+        }
+        else if ( value instanceof StringValue && ((StringValue) value).equals( "" ) )
+        {
+            return ArrayUtils.EMPTY_BYTE_ARRAY;
         }
         throw new UnsupportedOperationException(
                 String.format( "INIT message authentication token field '%s' should be a UTF-8 encoded string", sensitiveKey ) );

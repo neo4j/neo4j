@@ -68,7 +68,7 @@ public class InitMessageDecoder implements RequestMessageDecoder
         authTokenValue.foreach( ( key, value ) ->
         {
             Object convertedValue = AuthToken.CREDENTIALS.equals( key ) || AuthToken.NEW_CREDENTIALS.equals( key ) ?
-                                    writer.sensitiveValueAsObject( value, AuthToken.CREDENTIALS ) :
+                                    writer.sensitiveValueAsObject( value, key ) :
                                     writer.valueAsObject( value );
             tokenMap.put( key, convertedValue );
         } );

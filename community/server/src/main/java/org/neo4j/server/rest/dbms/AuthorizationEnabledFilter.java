@@ -157,7 +157,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
     private LoginContext authenticate( String username, String password ) throws InvalidAuthTokenException
     {
         AuthManager authManager = authManagerSupplier.get();
-        Map<String,Object> authToken = newBasicAuthToken( username, UTF8.encode( password ) );
+        Map<String,Object> authToken = newBasicAuthToken( username, password != null ? UTF8.encode( password ) : null );
         return authManager.login( authToken );
     }
 

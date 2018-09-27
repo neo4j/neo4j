@@ -338,7 +338,7 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
 
         if ( isAuthenticationCachingEnabled() )
         {
-            SimpleHash hashedCredentials = secureHasher.hash( ((String) token.getCredentials()).getBytes() );
+            SimpleHash hashedCredentials = secureHasher.hash( (byte[]) token.getCredentials() );
             return new ShiroAuthenticationInfo( token.getPrincipal(), hashedCredentials.getBytes(),
                     hashedCredentials.getSalt(), getName(), AuthenticationResult.SUCCESS );
         }

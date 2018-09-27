@@ -59,7 +59,7 @@ public class AuthProcedures
     {
         // TODO: Deprecate this and create a new procedure that takes password as a byte[]
         securityContext.assertCredentialsNotExpired();
-        userManager.newUser( username, UTF8.encode( password ), requirePasswordChange );
+        userManager.newUser( username, password != null ? UTF8.encode( password ) : null, requirePasswordChange );
     }
 
     @Description( "Delete the specified user." )
