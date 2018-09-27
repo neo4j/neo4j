@@ -19,8 +19,10 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+
 @FunctionalInterface
 interface LayoutTestUtilFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
-    LayoutTestUtil<KEY,VALUE> create();
+    LayoutTestUtil<KEY,VALUE> create( IndexDescriptor descriptor );
 }

@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -47,47 +46,46 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Parameterized.Parameters( name = "{index}: {0}" )
     public static Collection<Object[]> data()
     {
-        IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberAccessorFactory(),
-                        (LayoutTestUtilFactory) () -> new NumberLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) NumberLayoutTestUtil::new
                 },
                 {"String",
                         stringAccessorFactory(),
-                        (LayoutTestUtilFactory) () -> new StringLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) StringLayoutTestUtil::new
                 },
                 {"Date",
                         temporalAccessorFactory( ValueGroup.DATE ),
-                        (LayoutTestUtilFactory) () -> new DateLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) DateLayoutTestUtil::new
                 },
                 {"DateTime",
                         temporalAccessorFactory( ValueGroup.ZONED_DATE_TIME ),
-                        (LayoutTestUtilFactory) () -> new DateTimeLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) DateTimeLayoutTestUtil::new
                 },
                 {"Duration",
                         temporalAccessorFactory( ValueGroup.DURATION ),
-                        (LayoutTestUtilFactory) () -> new DurationLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) DurationLayoutTestUtil::new
                 },
                 {"LocalDateTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutTestUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) LocalDateTimeLayoutTestUtil::new
                 },
                 {"LocalTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_TIME ),
-                        (LayoutTestUtilFactory) () -> new LocalTimeLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) LocalTimeLayoutTestUtil::new
                 },
                 {"LocalDateTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutTestUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) LocalDateTimeLayoutTestUtil::new
                 },
                 {"Time",
                         temporalAccessorFactory( ValueGroup.ZONED_TIME ),
-                        (LayoutTestUtilFactory) () -> new TimeLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) TimeLayoutTestUtil::new
                 },
                 {"Generic",
                         genericAccessorFactory(),
-                        (LayoutTestUtilFactory) () -> new GenericLayoutTestUtil( descriptor )
+                        (LayoutTestUtilFactory) GenericLayoutTestUtil::new
                 },
                 //{ Spatial has it's own subclass because it need to override some of the test methods }
         } );
@@ -112,7 +110,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     LayoutTestUtil<KEY,VALUE> createLayoutTestUtil()
     {
-        return layoutTestUtilFactory.create();
+        return layoutTestUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 
     /* Helpers */
