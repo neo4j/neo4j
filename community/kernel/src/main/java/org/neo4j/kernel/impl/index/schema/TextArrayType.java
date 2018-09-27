@@ -31,8 +31,8 @@ import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_ARRAY_LENG
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.setCursorException;
 import static org.neo4j.kernel.impl.index.schema.GenericKeyState.toNonNegativeShortExact;
 import static org.neo4j.kernel.impl.index.schema.TextType.CHAR_TYPE_LENGTH_MARKER;
-import static org.neo4j.kernel.impl.index.schema.TextType.CHAR_TYPE_STATE_MARKER;
 import static org.neo4j.kernel.impl.index.schema.TextType.isCharValueType;
+import static org.neo4j.kernel.impl.index.schema.TextType.setCharType;
 import static org.neo4j.kernel.impl.index.schema.TextType.textAsChar;
 
 class TextArrayType extends AbstractArrayType<String>
@@ -89,10 +89,7 @@ class TextArrayType extends AbstractArrayType<String>
         // long1 (bytesDereferenced) - Not needed because we never leak bytes from string array
         // long2 (ignoreLength) - Not needed because kept on 'global' level for full array
         // long3 (isHighest) - Not needed because kept on 'global' level for full array
-        if ( arrayType == ValueWriter.ArrayType.CHAR )
-        {
-            key.long2 |= CHAR_TYPE_STATE_MARKER;
-        }
+        setCharType( key, arrayType == ValueWriter.ArrayType.CHAR );
     }
 
     @Override

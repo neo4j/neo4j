@@ -180,14 +180,24 @@ class TextType extends Type
             setCursorException( cursor, "non-valid bytes length for text, " + bytesLength );
             return false;
         }
-        if ( isCharType )
-        {
-            // Remember this fact, i.e. set the flag in this state
-            into.long2 |= CHAR_TYPE_STATE_MARKER;
-        }
+
+        // Remember this fact, i.e. set the flag in this state
+        setCharType( into, isCharType );
         setBytesLength( into, bytesLength );
         cursor.getBytes( into.byteArray, 0, bytesLength );
         return true;
+    }
+
+    static void setCharType( GenericKeyState into, boolean isCharType )
+    {
+        if ( isCharType )
+        {
+            into.long2 |= CHAR_TYPE_STATE_MARKER;
+        }
+        else
+        {
+            into.long2 &= ~CHAR_TYPE_STATE_MARKER;
+        }
     }
 
     private static boolean isHighestText( long long3 )
@@ -204,10 +214,7 @@ class TextType extends Type
     {
         state.byteArray = bytes;
         state.long0 = bytes.length;
-        if ( isCharType )
-        {
-            state.long2 |= CHAR_TYPE_STATE_MARKER;
-        }
+        setCharType( state, isCharType );
     }
 
     @Override

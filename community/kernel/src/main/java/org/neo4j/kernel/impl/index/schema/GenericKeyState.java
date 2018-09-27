@@ -199,6 +199,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
 
     void writeValue( Value value, NativeIndexKey.Inclusion inclusion )
     {
+        isArray = false;
         value.writeTo( this );
         this.inclusion = inclusion;
     }
@@ -269,14 +270,17 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
             return false;
         }
 
-        type = Types.BY_ID[typeId];
         inclusion = NEUTRAL;
-        return type.readValue( cursor, size - TYPE_ID_SIZE, this );
+        return setType( Types.BY_ID[typeId] ).readValue( cursor, size - TYPE_ID_SIZE, this );
     }
 
     /* <write> (write to field state from Value or cursor) */
     private <T extends Type> T setType( T type )
     {
+        if ( this.type != null && type != this.type )
+        {
+            clear();
+        }
         this.type = type;
         return type;
     }
@@ -478,8 +482,9 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     {
         if ( !isArray )
         {
+            setType( Types.GEOMETRY );
             updateCurve( crs );
-            setType( Types.GEOMETRY ).write( this, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
+            Types.GEOMETRY.write( this, spaceFillingCurve.derivedValueFor( coordinate ), coordinate );
         }
         else
         {
@@ -549,7 +554,7 @@ public class GenericKeyState extends TemporalValueWriterAdapter<RuntimeException
     public void beginArray( int size, ArrayType arrayType )
     {
         AbstractArrayType<?> arrayValueType = Types.BY_ARRAY_TYPE[arrayType.ordinal()];
-        type = arrayValueType;
+        setType( arrayValueType );
         initializeArrayMeta( size );
         arrayValueType.initializeArray( this, size, arrayType );
     }

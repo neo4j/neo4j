@@ -62,16 +62,6 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void initialize( long entityId )
-    {
-        super.initialize( entityId );
-        for ( GenericKeyState state : states )
-        {
-            state.clear();
-        }
-    }
-
-    @Override
     Value[] asValues()
     {
         Value[] values = new Value[states.length];

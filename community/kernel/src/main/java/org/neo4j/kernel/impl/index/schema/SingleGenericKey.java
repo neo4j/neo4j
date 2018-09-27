@@ -44,13 +44,6 @@ class SingleGenericKey extends GenericKey
     }
 
     @Override
-    void initialize( long entityId )
-    {
-        super.initialize( entityId );
-        clear();
-    }
-
-    @Override
     void initFromDerivedSpatialValue( int stateSlot, CoordinateReferenceSystem crs, long derivedValue, Inclusion inclusion )
     {
         writePointDerived( crs, derivedValue, inclusion );
