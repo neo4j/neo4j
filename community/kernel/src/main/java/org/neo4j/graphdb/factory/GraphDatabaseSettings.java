@@ -1064,7 +1064,7 @@ public class GraphDatabaseSettings implements LoadableConfig
         OFF_HEAP
     }
 
-    @Description( "Defines whether memory for transaction state should allocaten on- or off-heap." )
+    @Description( "Defines whether memory for transaction state should be allocated on- or off-heap." )
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = buildSetting(
             "dbms.tx_state.memory_allocation",
             options( TransactionStateMemoryAllocation.class, true ),
