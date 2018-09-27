@@ -478,7 +478,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public long nodeReference()
+        public long entityReference()
         {
             return current.id;
         }
@@ -572,6 +572,12 @@ public class StubStorageCursors implements StorageReader
         private long next;
 
         @Override
+        public void scan()
+        {
+            scan( -1 );
+        }
+
+        @Override
         public void scan( int type )
         {
             iterator = relationshipData.keySet().iterator();
@@ -586,7 +592,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public long relationshipReference()
+        public long entityReference()
         {
             return current.id;
         }

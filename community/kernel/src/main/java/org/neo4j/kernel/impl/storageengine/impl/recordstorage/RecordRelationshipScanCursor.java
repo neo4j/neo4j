@@ -41,6 +41,12 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     }
 
     @Override
+    public void scan()
+    {
+        scan( -1 );
+    }
+
+    @Override
     public void scan( int type )
     {
         if ( getId() != NO_ID )

@@ -25,38 +25,39 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
-public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<NodeRecord,FAILURE>
+public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageNodeCursor,FAILURE>
 {
-    private final NodeStore nodeStore;
-
     private final Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
     protected final int[] labelIds;
 
-    public StoreViewNodeStoreScan( NodeStore nodeStore, LockService locks, PropertyStore propertyStore,
+    public StoreViewNodeStoreScan( StorageReader storageReader, LockService locks,
             Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor,
             int[] labelIds, IntPredicate propertyKeyIdFilter )
     {
-        super( nodeStore, propertyStore, propertyKeyIdFilter, id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
-        this.nodeStore = nodeStore;
+        super( storageReader, propertyKeyIdFilter, id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) );
         this.labelUpdateVisitor = labelUpdateVisitor;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
         this.labelIds = labelIds;
     }
 
     @Override
-    public boolean process( NodeRecord node ) throws FAILURE
+    protected StorageNodeCursor allocateCursor( StorageReader storageReader )
     {
-        long[] labels = parseLabelsField( node ).get( this.nodeStore );
+        return storageReader.allocateNodeCursor();
+    }
+
+    @Override
+    public boolean process( StorageNodeCursor cursor ) throws FAILURE
+    {
+        long[] labels = cursor.labels();
         if ( labels.length == 0 && labelIds.length != 0 )
         {
             // This node has no labels at all
@@ -66,15 +67,15 @@ public class StoreViewNodeStoreScan<FAILURE extends Exception> extends PropertyA
         if ( labelUpdateVisitor != null )
         {
             // Notify the label update visitor
-            labelUpdateVisitor.visit( labelChanges( node.getId(), EMPTY_LONG_ARRAY, labels ) );
+            labelUpdateVisitor.visit( labelChanges( cursor.entityReference(), EMPTY_LONG_ARRAY, labels ) );
         }
 
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( labelIds, labels ) )
         {
             // Notify the property update visitor
-            EntityUpdates.Builder updates = EntityUpdates.forEntity( node.getId() ).withTokens( labels );
+            EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference() ).withTokens( labels );
 
-            if ( hasRelevantProperty( node, updates ) )
+            if ( hasRelevantProperty( cursor, updates ) )
             {
                 return propertyUpdatesVisitor.visit( updates.build() );
             }

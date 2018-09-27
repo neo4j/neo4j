@@ -90,7 +90,7 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 
     private void visitDegrees( StorageNodeCursor node, DegreeVisitor visitor )
     {
-        groupCursor.init( node.nodeReference(), node.relationshipGroupReference() );
+        groupCursor.init( node.entityReference(), node.relationshipGroupReference() );
         while ( groupCursor.next() )
         {
             int loopCount = groupCursor.loopCount();

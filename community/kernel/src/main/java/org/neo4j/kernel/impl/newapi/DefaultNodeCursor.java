@@ -73,7 +73,7 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public long nodeReference()
     {
-        return storeCursor.nodeReference();
+        return storeCursor.entityReference();
     }
 
     @Override
@@ -82,10 +82,10 @@ class DefaultNodeCursor implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            if ( txState.nodeIsAddedInThisTx( storeCursor.nodeReference() ) )
+            if ( txState.nodeIsAddedInThisTx( storeCursor.entityReference() ) )
             {
                 //Node just added, no reason to go down to store and check
-                return Labels.from( txState.nodeStateLabelDiffSets( storeCursor.nodeReference() ).getAdded() );
+                return Labels.from( txState.nodeStateLabelDiffSets( storeCursor.entityReference() ).getAdded() );
             }
             else
             {
@@ -98,7 +98,7 @@ class DefaultNodeCursor implements NodeCursor
                 }
 
                 //Augment what was found in store with what we have in tx state
-                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.nodeReference() ) ) );
+                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ) );
             }
         }
         else
@@ -114,7 +114,7 @@ class DefaultNodeCursor implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            LongDiffSets diffSets = txState.nodeStateLabelDiffSets( storeCursor.nodeReference() );
+            LongDiffSets diffSets = txState.nodeStateLabelDiffSets( storeCursor.entityReference() );
             if ( diffSets.getAdded().contains( label ) )
             {
                 return true;
@@ -185,7 +185,7 @@ class DefaultNodeCursor implements NodeCursor
 
         while ( storeCursor.next() )
         {
-            if ( !hasChanges || !read.txState().nodeIsDeletedInThisTx( storeCursor.nodeReference() ) )
+            if ( !hasChanges || !read.txState().nodeIsDeletedInThisTx( storeCursor.entityReference() ) )
             {
                 return true;
             }

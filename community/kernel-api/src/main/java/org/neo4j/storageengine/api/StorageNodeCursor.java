@@ -22,25 +22,8 @@ package org.neo4j.storageengine.api;
 /**
  * Cursor over nodes and its data.
  */
-public interface StorageNodeCursor extends StorageEntityCursor
+public interface StorageNodeCursor extends StorageEntityScanCursor
 {
-    /**
-     * Initializes this cursor so that the next call to {@link #next()} will place this cursor at that node.
-     * @param reference node to place this cursor at the next call to {@link #next()}.
-     */
-    void single( long reference );
-
-    /**
-     * Initializes this cursor so that it will scan over all existing nodes. Each call to {@link #next()} will
-     * advance the cursor so that the next node is read.
-     */
-    void scan();
-
-    /**
-     * @return reference to the node this cursor currently is placed at.
-     */
-    long nodeReference();
-
     /**
      * @return label ids of the node this cursor currently is placed at.
      */
@@ -67,9 +50,9 @@ public interface StorageNodeCursor extends StorageEntityCursor
     /**
      * A means of simplifying higher-level cursors which takes into consideration transaction-state.
      * This basically tells this cursor to be placed at nodeReference, even if it doesn't exist, such that
-     * {@link #nodeReference()} will return this reference on the next call.
+     * {@link #entityReference()} will return this reference on the next call.
      *
-     * @param nodeReference the reference to be returned on the next {@link #nodeReference()} call.
+     * @param nodeReference the reference to be returned on the next {@link #entityReference()} call.
      */
     void setCurrent( long nodeReference );
 

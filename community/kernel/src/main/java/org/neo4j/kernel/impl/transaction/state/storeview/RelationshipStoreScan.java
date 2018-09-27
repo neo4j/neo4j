@@ -24,34 +24,39 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
-public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<RelationshipRecord,FAILURE>
+public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAwareEntityStoreScan<StorageRelationshipScanCursor,FAILURE>
 {
     private final int[] relationshipTypeIds;
     private final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor;
 
-    public RelationshipStoreScan( RelationshipStore relationshipStore, LockService locks, PropertyStore propertyStore,
+    public RelationshipStoreScan( StorageReader storageReader, LockService locks,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter )
     {
-        super( relationshipStore, propertyStore, propertyKeyIdFilter, id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) );
+        super( storageReader, propertyKeyIdFilter, id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) );
         this.relationshipTypeIds = relationshipTypeIds;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
     }
 
     @Override
-    protected boolean process( RelationshipRecord record ) throws FAILURE
+    protected StorageRelationshipScanCursor allocateCursor( StorageReader storageReader )
     {
-        int reltype = record.getType();
+        return storageReader.allocateRelationshipScanCursor();
+    }
+
+    @Override
+    protected boolean process( StorageRelationshipScanCursor cursor ) throws FAILURE
+    {
+        int reltype = cursor.type();
 
         if ( propertyUpdatesVisitor != null && containsAnyEntityToken( relationshipTypeIds, reltype ) )
         {
             // Notify the property update visitor
-            EntityUpdates.Builder updates = EntityUpdates.forEntity( record.getId() ).withTokens( reltype );
+            EntityUpdates.Builder updates = EntityUpdates.forEntity( cursor.entityReference() ).withTokens( reltype );
 
-            if ( hasRelevantProperty( record, updates ) )
+            if ( hasRelevantProperty( cursor, updates ) )
             {
                 return propertyUpdatesVisitor.visit( updates.build() );
             }

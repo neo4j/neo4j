@@ -26,8 +26,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.storageengine.api.StorageReader;
 
 /**
  * Store scan view that will try to minimize amount of scanned nodes by using label scan store {@link LabelScanStore}
@@ -38,13 +37,12 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
 {
     private final LabelScanStore labelScanStore;
 
-    public LabelScanViewNodeStoreScan( NodeStore nodeStore, LockService locks,
-            PropertyStore propertyStore,
+    public LabelScanViewNodeStoreScan( StorageReader storageReader, LockService locks,
             LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds,
             IntPredicate propertyKeyIdFilter )
     {
-        super( nodeStore, locks, propertyStore, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
+        super( storageReader, locks, labelUpdateVisitor, propertyUpdatesVisitor, labelIds,
                 propertyKeyIdFilter );
         this.labelScanStore = labelScanStore;
     }
@@ -52,6 +50,6 @@ public class LabelScanViewNodeStoreScan<FAILURE extends Exception> extends Store
     @Override
     public EntityIdIterator getEntityIdIterator()
     {
-        return new LabelScanViewIdIterator( labelScanStore.newReader(), labelIds );
+        return new LabelScanViewIdIterator<>( labelScanStore.newReader(), labelIds, entityCursor );
     }
 }

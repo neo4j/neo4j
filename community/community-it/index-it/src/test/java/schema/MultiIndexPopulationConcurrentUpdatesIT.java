@@ -70,9 +70,8 @@ import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
@@ -82,6 +81,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
@@ -485,12 +485,14 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView
     {
         private final Runnable customAction;
+        private final NeoStores neoStores;
 
         DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
                 NeoStores neoStores, Runnable customAction )
         {
             super( neoStoreIndexStoreView, labelScanStore, locks, neoStores, NullLogProvider.getInstance() );
             this.customAction = customAction;
+            this.neoStores = neoStores;
         }
 
         @Override
@@ -502,7 +504,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
                     labelUpdateVisitor, forceStoreScan );
-            return new LabelScanViewNodeStoreWrapper<>( nodeStore, locks, propertyStore, getLabelScanStore(),
+            return new LabelScanViewNodeStoreWrapper<>( new RecordStorageReader( neoStores ), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan<FAILURE>) storeScan, customAction );
         }
@@ -513,14 +515,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         private final LabelScanViewNodeStoreScan<FAILURE> delegate;
         private final Runnable customAction;
 
-        LabelScanViewNodeStoreWrapper( NodeStore nodeStore, LockService locks,
-                PropertyStore propertyStore,
+        LabelScanViewNodeStoreWrapper( StorageReader storageReader, LockService locks,
                 LabelScanStore labelScanStore, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor,
                 Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] labelIds, IntPredicate propertyKeyIdFilter,
                 LabelScanViewNodeStoreScan<FAILURE> delegate,
                 Runnable customAction )
         {
-            super( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
+            super( storageReader, locks, labelScanStore, labelUpdateVisitor,
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
             this.delegate = delegate;
             this.customAction = customAction;

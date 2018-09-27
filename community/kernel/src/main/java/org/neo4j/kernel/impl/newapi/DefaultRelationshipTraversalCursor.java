@@ -275,7 +275,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         while ( storeCursor.next() )
         {
             boolean skip = (filterStore && !correctTypeAndDirection()) ||
-                    (hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.relationshipReference() ) );
+                    (hasChanges && read.txState().relationshipIsDeletedInThisTx( storeCursor.entityReference() ) );
             if ( !skip )
             {
                 return true;
@@ -372,7 +372,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
             {
                 mode = mode + "regular";
             }
-            return "RelationshipTraversalCursor[id=" + storeCursor.relationshipReference() +
+            return "RelationshipTraversalCursor[id=" + storeCursor.entityReference() +
                     ", " + mode +
                     ", " + storeCursor.toString() + "]";
         }

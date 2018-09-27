@@ -34,8 +34,9 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static org.junit.Assert.assertThat;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.when;
 public class LabelScanViewNodeStoreScanTest
 {
     private NodeStore nodeStore = mock( NodeStore.class );
-    private PropertyStore propertyStore = mock( PropertyStore.class );
+    private NeoStores neoStores = mock( NeoStores.class );
     private LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private LabelScanReader labelScanReader = mock( LabelScanReader.class );
     private IntPredicate propertyKeyIdFilter = mock( IntPredicate.class );
@@ -56,6 +57,7 @@ public class LabelScanViewNodeStoreScanTest
     public void setUp()
     {
         when( labelScanStore.newReader() ).thenReturn( labelScanReader );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
     }
 
     @Test
@@ -77,7 +79,7 @@ public class LabelScanViewNodeStoreScanTest
 
     private LabelScanViewNodeStoreScan<Exception> getLabelScanViewStoreScan( int[] labelIds )
     {
-        return new LabelScanViewNodeStoreScan<>( nodeStore, LockService.NO_LOCK_SERVICE, propertyStore,
+        return new LabelScanViewNodeStoreScan<>( new RecordStorageReader( neoStores ), LockService.NO_LOCK_SERVICE,
                 labelScanStore, labelUpdateVisitor, propertyUpdateVisitor, labelIds, propertyKeyIdFilter );
     }
 }

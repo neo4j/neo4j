@@ -33,4 +33,9 @@ public interface StorageEntityCursor extends StorageCursor
      * @return a {@code long} reference to start reading properties for the entity this cursor is at.
      */
     long propertiesReference();
+
+    /**
+     * @return reference to the entity this cursor currently is placed at.
+     */
+    long entityReference();
 }

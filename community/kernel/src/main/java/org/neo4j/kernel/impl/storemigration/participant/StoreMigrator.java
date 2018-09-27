@@ -624,7 +624,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         @Override
         protected void visitRecord( RecordNodeCursor record, InputEntityVisitor visitor )
         {
-            visitor.id( record.nodeReference() );
+            visitor.id( record.entityReference() );
             visitor.labelField( record.getLabelField() );
             visitProperties( record, visitor );
         }

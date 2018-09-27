@@ -133,7 +133,7 @@ public class RecordRelationshipTraversalCursorTest
             cursor.init( FIRST_OWNING_NODE, 1 );
             while ( cursor.next() )
             {
-                assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.relationshipReference() );
+                assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.entityReference() );
             }
         }
     }
@@ -152,7 +152,7 @@ public class RecordRelationshipTraversalCursorTest
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
-                        expectedRelationshipIds[relationshipIndex++], cursor.relationshipReference() );
+                        expectedRelationshipIds[relationshipIndex++], cursor.entityReference() );
             }
         }
     }

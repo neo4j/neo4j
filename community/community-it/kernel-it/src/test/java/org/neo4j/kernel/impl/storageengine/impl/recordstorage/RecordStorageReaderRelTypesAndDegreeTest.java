@@ -244,7 +244,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         int degree = 0;
         try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
         {
-            groups.init( cursor.nodeReference(), cursor.relationshipGroupReference() );
+            groups.init( cursor.entityReference(), cursor.relationshipGroupReference() );
             while ( groups.next() )
             {
                 if ( relType == ANY_RELATIONSHIP_TYPE || relType == groups.type() )
@@ -398,7 +398,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         Set<TestRelType> types = new HashSet<>();
         try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
         {
-            groups.init( cursor.nodeReference(), cursor.relationshipGroupReference() );
+            groups.init( cursor.entityReference(), cursor.relationshipGroupReference() );
             while ( groups.next() )
             {
                 types.add( relTypeForId( groups.type() ) );
@@ -492,7 +492,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
         Set<TestDegreeItem> degrees = new HashSet<>();
         try ( StorageRelationshipGroupCursor groups = storageReader.allocateRelationshipGroupCursor() )
         {
-            groups.init( nodeCursor.nodeReference(), nodeCursor.relationshipGroupReference() );
+            groups.init( nodeCursor.entityReference(), nodeCursor.relationshipGroupReference() );
             while ( groups.next() )
             {
                 degrees.add( new TestDegreeItem( groups.type(), groups.outgoingCount() + groups.loopCount(), groups.incomingCount() + groups.loopCount() ) );

@@ -20,17 +20,22 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.eclipse.collections.impl.block.factory.primitive.IntPredicates;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.junit.Assert.assertEquals;
@@ -46,6 +51,14 @@ public class PropertyAwareEntityStoreScanTest
     private final LockService locks = mock( LockService.class, RETURNS_MOCKS );
     private final NodeStore nodeStore = mock( NodeStore.class );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
+    private final NeoStores neoStores = mock( NeoStores.class );
+
+    @Before
+    public void before()
+    {
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
+        when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
+    }
 
     @Test
     public void shouldGiveBackCompletionPercentage()
@@ -61,15 +74,14 @@ public class PropertyAwareEntityStoreScanTest
                 inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
-
-        final PropertyAwareEntityStoreScan<NodeRecord,RuntimeException> scan =
-                new PropertyAwareEntityStoreScan<NodeRecord,RuntimeException>( nodeStore, propertyStore, IntPredicates.alwaysTrue(),
+        final PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException> scan =
+                new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( new RecordStorageReader( neoStores ), IntPredicates.alwaysTrue(),
                         id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
                 {
                     private int read;
 
                     @Override
-                    public boolean process( NodeRecord node )
+                    public boolean process( StorageNodeCursor node )
                     {
                         // then
                         read++;
@@ -77,6 +89,12 @@ public class PropertyAwareEntityStoreScanTest
                         float actual = percentageSupplier.get();
                         assertEquals( String.format( "%f==%f", expected, actual ), expected, actual, 0.0 );
                         return false;
+                    }
+
+                    @Override
+                    protected StorageNodeCursor allocateCursor( StorageReader storageReader )
+                    {
+                        return storageReader.allocateNodeCursor();
                     }
                 };
         percentageSupplier.setStoreScan( scan );

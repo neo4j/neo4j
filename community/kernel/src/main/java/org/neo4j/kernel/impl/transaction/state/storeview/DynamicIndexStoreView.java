@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -59,10 +60,12 @@ public class DynamicIndexStoreView implements IndexStoreView
     protected final NodeStore nodeStore;
     protected final RelationshipStore relationshipStore;
     protected final PropertyStore propertyStore;
+    private final NeoStores neoStores;
 
     public DynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
             NeoStores neoStores, LogProvider logProvider )
     {
+        this.neoStores = neoStores;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.propertyStore = neoStores.getPropertyStore();
@@ -83,7 +86,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
                     forceStoreScan );
         }
-        return new LabelScanViewNodeStoreScan<>( nodeStore, locks, propertyStore, labelScanStore, labelUpdateVisitor,
+        return new LabelScanViewNodeStoreScan<>( new RecordStorageReader( neoStores ), locks, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
     }
 
@@ -91,7 +94,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
     {
-        return new RelationshipStoreScan<>( relationshipStore, locks, propertyStore, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter );
+        return new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter );
     }
 
     @Override

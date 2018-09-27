@@ -25,11 +25,6 @@ package org.neo4j.storageengine.api;
 public interface StorageRelationshipCursor extends RelationshipVisitor<RuntimeException>, StorageEntityCursor
 {
     /**
-     * @return reference to the relationship this cursor is placed at.
-     */
-    long relationshipReference();
-
-    /**
      * @return relationship type of the relationship this cursor is placed at.
      */
     int type();

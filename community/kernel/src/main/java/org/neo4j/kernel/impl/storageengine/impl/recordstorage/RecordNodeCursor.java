@@ -78,7 +78,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public long nodeReference()
+    public long entityReference()
     {
         return getId();
     }

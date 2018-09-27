@@ -81,7 +81,7 @@ public class RecordRelationshipScanCursorTest
         {
             cursor.single( RELATIONSHIP_ID );
             assertTrue( cursor.next() );
-            assertEquals( RELATIONSHIP_ID, cursor.relationshipReference() );
+            assertEquals( RELATIONSHIP_ID, cursor.entityReference() );
         }
     }
 
@@ -153,7 +153,7 @@ public class RecordRelationshipScanCursorTest
             while ( cursor.next() )
             {
                 // then
-                assertTrue( cursor.toString(), expected.remove( cursor.relationshipReference() ) );
+                assertTrue( cursor.toString(), expected.remove( cursor.entityReference() ) );
             }
         }
         assertTrue( expected.isEmpty() );

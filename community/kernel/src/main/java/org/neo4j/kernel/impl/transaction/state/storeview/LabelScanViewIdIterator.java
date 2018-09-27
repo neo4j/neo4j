@@ -20,22 +20,25 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.storageengine.api.StorageEntityScanCursor;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 /**
  * Node id iterator used during index population when we go over node ids indexed in label scan store.
  */
-class LabelScanViewIdIterator implements EntityIdIterator
+class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements EntityIdIterator
 {
     private final int[] labelIds;
     private final LabelScanReader labelScanReader;
+    private final CURSOR entityCursor;
 
     private PrimitiveLongResourceIterator idIterator;
     private long lastReturnedId = -1;
 
-    LabelScanViewIdIterator( LabelScanReader labelScanReader, int[] labelIds )
+    LabelScanViewIdIterator( LabelScanReader labelScanReader, int[] labelIds, CURSOR entityCursor )
     {
         this.labelScanReader = labelScanReader;
+        this.entityCursor = entityCursor;
         this.idIterator = labelScanReader.nodesWithAnyOfLabels( labelIds );
         this.labelIds = labelIds;
     }
@@ -56,6 +59,8 @@ class LabelScanViewIdIterator implements EntityIdIterator
     public long next()
     {
         long next = idIterator.next();
+        entityCursor.single( next );
+        entityCursor.next();
         lastReturnedId = next;
         return next;
     }

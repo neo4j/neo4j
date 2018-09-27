@@ -37,7 +37,7 @@ abstract class RecordRelationshipCursor extends RelationshipRecord implements Re
     }
 
     @Override
-    public long relationshipReference()
+    public long entityReference()
     {
         return getId();
     }

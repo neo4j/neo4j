@@ -973,7 +973,7 @@ public class NeoStoresTest
             {
                 while ( relationships.next() )
                 {
-                    long rel = relationships.relationshipReference();
+                    long rel = relationships.entityReference();
                     if ( rel == rel1 )
                     {
                         assertEquals( node, relationships.sourceNodeReference() );
@@ -999,7 +999,7 @@ public class NeoStoresTest
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
         StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor();
-        relationships.init( node.nodeReference(), node.allRelationshipsReference() );
+        relationships.init( node.entityReference(), node.allRelationshipsReference() );
         return relationships;
     }
 
@@ -1064,7 +1064,7 @@ public class NeoStoresTest
             {
                 while ( relationships.next() )
                 {
-                    long rel = relationships.relationshipReference();
+                    long rel = relationships.entityReference();
                     if ( rel == rel1 )
                     {
                         assertEquals( node, relationships.targetNodeReference() );
@@ -1452,7 +1452,7 @@ public class NeoStoresTest
             {
                 while ( relationships.next() )
                 {
-                    relDelete( relationships.relationshipReference() );
+                    relDelete( relationships.entityReference() );
                 }
             }
         }

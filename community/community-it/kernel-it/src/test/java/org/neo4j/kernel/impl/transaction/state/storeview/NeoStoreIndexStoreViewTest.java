@@ -52,11 +52,12 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -98,6 +99,7 @@ public class NeoStoreIndexStoreViewTest
     private NeoStores neoStores;
     private Relationship aKnowsS;
     private Relationship sKnowsA;
+    private StorageReader reader;
 
     @Before
     public void before() throws KernelException
@@ -122,6 +124,7 @@ public class NeoStoreIndexStoreViewTest
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
         storeView = new NeoStoreIndexStoreView( locks, neoStores );
+        reader = new RecordStorageReader( neoStores );
     }
 
     @Test
@@ -259,14 +262,15 @@ public class NeoStoreIndexStoreViewTest
     {
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
         StoreViewNodeStoreScan storeViewNodeStoreScan =
-                new StoreViewNodeStoreScan( neoStores.getNodeStore(), locks,
-                        neoStores.getPropertyStore(), null, propertyUpdateVisitor, new int[]{labelId},
+                new StoreViewNodeStoreScan( new RecordStorageReader( neoStores ), locks,
+                        null, propertyUpdateVisitor, new int[]{labelId},
                         id -> true );
 
-        NodeRecord nodeRecord = new NodeRecord( -1 );
-        neoStores.getNodeStore().getRecord( 1L, nodeRecord, RecordLoad.FORCE );
+        StorageNodeCursor nodeCursor = reader.allocateNodeCursor();
+        nodeCursor.single( 1 );
+        nodeCursor.next();
 
-        storeViewNodeStoreScan.process( nodeRecord );
+        storeViewNodeStoreScan.process( nodeCursor );
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
@@ -290,13 +294,14 @@ public class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         CopyUpdateVisitor propertyUpdateVisitor = new CopyUpdateVisitor();
         RelationshipStoreScan relationshipStoreScan =
-                new RelationshipStoreScan( neoStores.getRelationshipStore(), locks, neoStores.getPropertyStore(), propertyUpdateVisitor, new int[]{relTypeId},
+                new RelationshipStoreScan( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
                         id -> true );
 
-        RelationshipRecord relationshipRecord = new RelationshipRecord( -1 );
-        neoStores.getRelationshipStore().getRecord( 1L, relationshipRecord, RecordLoad.FORCE );
+        StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor();
+        relationshipScanCursor.single( 1 );
+        relationshipScanCursor.next();
 
-        relationshipStoreScan.process( relationshipRecord );
+        relationshipStoreScan.process( relationshipScanCursor );
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should contain container with updates.", propertyUpdates );

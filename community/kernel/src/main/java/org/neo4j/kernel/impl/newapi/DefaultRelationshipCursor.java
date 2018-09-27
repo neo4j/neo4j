@@ -48,7 +48,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     @Override
     public long relationshipReference()
     {
-        return storeCursor.relationshipReference();
+        return storeCursor.entityReference();
     }
 
     @Override
