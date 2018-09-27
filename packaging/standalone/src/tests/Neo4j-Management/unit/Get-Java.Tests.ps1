@@ -334,10 +334,10 @@ InModuleScope Neo4j-Management {
       $resultArgs = ($result.args -join ' ')
 
       It "should have jars from bin" {
-        $resultArgs | Should Match ([regex]::Escape('bin1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape("$($serverObject.Home)/bin/*"))
       }
       It "should have jars from lib" {
-        $resultArgs | Should Match ([regex]::Escape('lib1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape("$($serverObject.Home)/lib/*"))
       }
       It "should have correct Starting Class" {
         $resultArgs | Should Match ([regex]::Escape(' someclass'))
@@ -352,10 +352,10 @@ InModuleScope Neo4j-Management {
       $resultArgs = ($result.args -join ' ')
 
       It "should have jars from bin" {
-        $resultArgs | Should Match ([regex]::Escape('bin1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape("$($serverObject.Home)/bin/*"))
       }
       It "should have jars from lib" {
-        $resultArgs | Should Match ([regex]::Escape('lib1.jar"'))
+        $resultArgs | Should Match ([regex]::Escape("$($serverObject.Home)/lib/*"))
       }
       It "should have correct Starting Class" {
         $resultArgs | Should Match ([regex]::Escape(' someclass'))

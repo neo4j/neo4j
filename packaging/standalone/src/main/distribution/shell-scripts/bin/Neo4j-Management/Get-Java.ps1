@@ -276,22 +276,13 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
     if ($PsCmdlet.ParameterSetName -eq 'UtilityInvoke')
     {
       # Generate the commandline args
-      $ClassPath = ''
+      $ClassPath = "$($Neo4jServer.Home)/lib/*;$($Neo4jServer.Home)/bin/*"
       # Augment with tools.jar if found
-      if (Test-Path -Path "$EnvJavaHome\lib\tools.jar") { $ClassPath += "`"$EnvJavaHome\lib\tools.jar`";" }
-      # Enumerate all JARS in the lib directory and add to the class path
-      Get-ChildItem -Path (Join-Path -Path $Neo4jServer.Home -ChildPath 'lib') | Where-Object { $_.Extension -eq '.jar' } | ForEach-Object {
-        $ClassPath += "`"$($_.FullName)`";"
-      }
-      # Enumerate all JARS in the bin directory and add to the class path
-      Get-ChildItem -Path (Join-Path -Path $Neo4jServer.Home -ChildPath 'bin') | Where-Object { $_.Extension -eq '.jar' } | ForEach-Object {
-        $ClassPath += "`"$($_.FullName)`";"
-      }
-      if ($ClassPath.Length -gt 0) { $ClassPath = $ClassPath.SubString(0,$ClassPath.Length - 1) } # Strip the trailing semicolon if needed
+      if (Test-Path -Path "$EnvJavaHome\lib\tools.jar") { $ClassPath += ";$EnvJavaHome\lib\tools.jar" }
 
       $ShellArgs = @()
       $ShellArgs += @("-XX:+UseParallelGC",
-        "-classpath $($EnvClassPrefix);$ClassPath",
+        "-classpath `"$($EnvClassPrefix);$ClassPath`"",
         "-Dbasedir=`"$($Neo4jServer.Home)`"",`
            '-Dfile.encoding=UTF-8')
 
