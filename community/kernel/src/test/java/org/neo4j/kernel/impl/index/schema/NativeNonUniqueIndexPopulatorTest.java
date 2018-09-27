@@ -34,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 
 public abstract class NativeNonUniqueIndexPopulatorTest<KEY extends NativeIndexSingleValueKey<KEY>,VALUE extends NativeIndexValue>
-        extends NativeIndexPopulatorTest<KEY,VALUE>
+        extends NativeIndexPopulatorTests<KEY,VALUE>
 {
     @Test
     public void addShouldApplyDuplicateValues() throws Exception

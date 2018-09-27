@@ -19,17 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-public class NumberUniqueIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<NumberIndexKey,NativeIndexValue>
+@FunctionalInterface
+interface LayoutTestUtilFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
-    @Override
-    NativeIndexPopulator<NumberIndexKey,NativeIndexValue> createPopulator()
-    {
-        return new NumberIndexPopulator( pageCache, fs, getIndexFile(), layout, monitor, indexDescriptor );
-    }
-
-    @Override
-    protected LayoutTestUtil<NumberIndexKey,NativeIndexValue> createLayoutTestUtil()
-    {
-        return new NumberUniqueLayoutTestUtil();
-    }
+    LayoutTestUtil<KEY,VALUE> create();
 }

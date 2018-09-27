@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Random;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.OpenMode;
@@ -44,8 +45,10 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
@@ -54,10 +57,11 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
 
-public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValueKey<KEY>,VALUE extends NativeIndexValue>
+public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
@@ -477,6 +481,167 @@ public abstract class NativeIndexPopulatorTest<KEY extends NativeIndexSingleValu
         catch ( IllegalStateException e )
         {
             // then good
+        }
+    }
+
+    public abstract static class Unique<K extends NativeIndexKey<K>, V extends NativeIndexValue> extends NativeIndexPopulatorTests<K,V>
+    {
+        @Test
+        public void addShouldThrowOnDuplicateValues()
+        {
+            // given
+            populator.create();
+            IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+
+            // when
+            try
+            {
+                populator.add( Arrays.asList( updates ) );
+                fail( "Updates should have conflicted" );
+            }
+            catch ( IndexEntryConflictException e )
+            {
+                // then good
+            }
+            finally
+            {
+                populator.close( true );
+            }
+        }
+
+        @Test
+        public void updaterShouldThrowOnDuplicateValues() throws Exception
+        {
+            // given
+            populator.create();
+            IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+            IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
+
+            // when
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            {
+                updater.process( update );
+            }
+            try
+            {
+                updater.close();
+                fail( "Updates should have conflicted" );
+            }
+            catch ( Exception e )
+            {
+                // then
+                assertTrue( e.getMessage(), Exceptions.contains( e, IndexEntryConflictException.class ) );
+            }
+            finally
+            {
+                populator.close( true );
+            }
+        }
+
+        @Test
+        public void shouldSampleUpdates() throws Exception
+        {
+            // GIVEN
+            populator.create();
+            IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdates();
+
+            // WHEN
+            populator.add( asList( updates ) );
+            for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+            {
+                populator.includeSample( update );
+            }
+            IndexSample sample = populator.sampleResult();
+
+            // THEN
+            assertEquals( updates.length, sample.sampleSize() );
+            assertEquals( updates.length, sample.uniqueValues() );
+            assertEquals( updates.length, sample.indexSize() );
+            populator.close( true );
+        }
+    }
+
+    public abstract static class NonUnique<K extends NativeIndexKey<K>, V extends NativeIndexValue> extends NativeIndexPopulatorTests<K,V>
+    {
+        @Test
+        public void addShouldApplyDuplicateValues() throws Exception
+        {
+            // given
+            populator.create();
+            IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+
+            // when
+            populator.add( Arrays.asList( updates ) );
+
+            // then
+            populator.close( true );
+            verifyUpdates( updates );
+        }
+
+        @Test
+        public void updaterShouldApplyDuplicateValues() throws Exception
+        {
+            // given
+            populator.create();
+            IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.someUpdatesWithDuplicateValues();
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+            {
+                // when
+                for ( IndexEntryUpdate<IndexDescriptor> update : updates )
+                {
+                    updater.process( update );
+                }
+            }
+
+            // then
+            populator.close( true );
+            verifyUpdates( updates );
+        }
+
+        @Test
+        public void shouldSampleUpdatesIfConfiguredForOnlineSampling() throws Exception
+        {
+            // GIVEN
+            populator.create();
+            IndexEntryUpdate<IndexDescriptor>[] scanUpdates = layoutUtil.someUpdates();
+            populator.add( Arrays.asList( scanUpdates ) );
+            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = layoutUtil.randomUpdateGenerator( random );
+            Object[] updates = new Object[5];
+            updates[0] = generator.next().values()[0].asObject();
+            updates[1] = generator.next().values()[0].asObject();
+            updates[2] = updates[1];
+            updates[3] = generator.next().values()[0].asObject();
+            updates[4] = updates[3];
+            try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
+            {
+                long nodeId = 1000;
+                for ( Object value : updates )
+                {
+                    IndexEntryUpdate<IndexDescriptor> update = layoutUtil.add( nodeId++, Values.of( value ) );
+                    updater.process( update );
+                }
+            }
+
+            // WHEN
+            IndexSample sample = populator.sampleResult();
+
+            // THEN
+            Object[] allValues = Arrays.copyOf( updates, updates.length + scanUpdates.length );
+            System.arraycopy( asValues( scanUpdates ), 0, allValues, updates.length, scanUpdates.length );
+            assertEquals( updates.length + scanUpdates.length, sample.sampleSize() );
+            assertEquals( countUniqueValues( allValues ), sample.uniqueValues() );
+            assertEquals( updates.length + scanUpdates.length, sample.indexSize() );
+            populator.close( true );
+        }
+
+        private Object[] asValues( IndexEntryUpdate<IndexDescriptor>[] updates )
+        {
+            Object[] values = new Object[updates.length];
+            for ( int i = 0; i < updates.length; i++ )
+            {
+                values[i] = updates[i].values()[0].asObject();
+            }
+            return values;
         }
     }
 

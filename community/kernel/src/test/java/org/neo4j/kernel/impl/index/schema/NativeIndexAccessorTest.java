@@ -44,37 +44,63 @@ import org.neo4j.values.storable.ValueGroup;
 @RunWith( Parameterized.class )
 public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY,VALUE>
 {
-    @Parameterized.Parameters(name = "{index}: {0}")
+    @Parameterized.Parameters( name = "{index}: {0}" )
     public static Collection<Object[]> data()
     {
         IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
         return Arrays.asList( new Object[][]{
-                {"Number", numberAccessorFactory(), (LayoutUtilFactory) NumberNonUniqueLayoutTestUtil::new},
-                {"String", stringAccessorFactory(), (LayoutUtilFactory) StringNonUniqueLayoutTestUtil::new},
-                {"Date", temporalAccessorFactory( ValueGroup.DATE ), (LayoutUtilFactory) () -> new DateLayoutTestUtil( descriptor )},
-                {"DateTime", temporalAccessorFactory( ValueGroup.ZONED_DATE_TIME ), (LayoutUtilFactory) () -> new DateTimeLayoutTestUtil( descriptor )},
-                {"Duration", temporalAccessorFactory( ValueGroup.DURATION ), (LayoutUtilFactory) () -> new DurationLayoutTestUtil( descriptor )},
-                {"LocalDateTime", temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )},
-                {"LocalTime", temporalAccessorFactory( ValueGroup.LOCAL_TIME ),
-                        (LayoutUtilFactory) () -> new LocalTimeLayoutTestUtil( descriptor )},
-                {"LocalDateTime", temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )},
-                {"Time", temporalAccessorFactory( ValueGroup.ZONED_TIME ),
-                        (LayoutUtilFactory) () -> new TimeLayoutTestUtil( descriptor )},
-                {"Generic", genericAccessorFactory(), (LayoutUtilFactory) () -> new GenericLayoutTestUtil( descriptor )},
+                {"Number",
+                        numberAccessorFactory(),
+                        (LayoutTestUtilFactory) NumberNonUniqueLayoutTestUtil::new
+                },
+                {"String",
+                        stringAccessorFactory(),
+                        (LayoutTestUtilFactory) StringNonUniqueLayoutTestUtil::new
+                },
+                {"Date",
+                        temporalAccessorFactory( ValueGroup.DATE ),
+                        (LayoutTestUtilFactory) () -> new DateLayoutTestUtil( descriptor )
+                },
+                {"DateTime",
+                        temporalAccessorFactory( ValueGroup.ZONED_DATE_TIME ),
+                        (LayoutTestUtilFactory) () -> new DateTimeLayoutTestUtil( descriptor )
+                },
+                {"Duration",
+                        temporalAccessorFactory( ValueGroup.DURATION ),
+                        (LayoutTestUtilFactory) () -> new DurationLayoutTestUtil( descriptor )
+                },
+                {"LocalDateTime",
+                        temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
+                        (LayoutTestUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )
+                },
+                {"LocalTime",
+                        temporalAccessorFactory( ValueGroup.LOCAL_TIME ),
+                        (LayoutTestUtilFactory) () -> new LocalTimeLayoutTestUtil( descriptor )
+                },
+                {"LocalDateTime",
+                        temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
+                        (LayoutTestUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )
+                },
+                {"Time",
+                        temporalAccessorFactory( ValueGroup.ZONED_TIME ),
+                        (LayoutTestUtilFactory) () -> new TimeLayoutTestUtil( descriptor )
+                },
+                {"Generic",
+                        genericAccessorFactory(),
+                        (LayoutTestUtilFactory) () -> new GenericLayoutTestUtil( descriptor )
+                },
                 //{ Spatial has it's own subclass because it need to override some of the test methods }
         } );
     }
 
     private final AccessorFactory<KEY,VALUE> accessorFactory;
-    private final LayoutUtilFactory<KEY,VALUE> layoutUtilFactory;
+    private final LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory;
 
     @SuppressWarnings( "unused" )
-    public NativeIndexAccessorTest( String name, AccessorFactory<KEY,VALUE> accessorFactory, LayoutUtilFactory<KEY,VALUE> layoutUtilFactory )
+    public NativeIndexAccessorTest( String name, AccessorFactory<KEY,VALUE> accessorFactory, LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory )
     {
         this.accessorFactory = accessorFactory;
-        this.layoutUtilFactory = layoutUtilFactory;
+        this.layoutTestUtilFactory = layoutTestUtilFactory;
     }
 
     @Override
@@ -86,7 +112,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     LayoutTestUtil<KEY,VALUE> createLayoutTestUtil()
     {
-        return layoutUtilFactory.create();
+        return layoutTestUtilFactory.create();
     }
 
     /* Helpers */
@@ -100,11 +126,11 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
         return StringIndexAccessor::new;
     }
 
-    private static AccessorFactory<DateIndexKey,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
+    private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
     {
         return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor ) ->
         {
-            TemporalIndexFiles.FileLayout<DateIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
+            TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
             return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor );
         };
     }
@@ -122,13 +148,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
         NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs,
-                File storeFile, IndexLayout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor,
-                StoreIndexDescriptor descriptor ) throws IOException;
-    }
-
-    @FunctionalInterface
-    private interface LayoutUtilFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-    {
-        LayoutTestUtil<KEY,VALUE> create();
+                File storeFile, IndexLayout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+                IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
     }
 }

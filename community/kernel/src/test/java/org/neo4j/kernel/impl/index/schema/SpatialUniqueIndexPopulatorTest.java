@@ -27,7 +27,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
-public class SpatialUniqueIndexPopulatorTest extends NativeUniqueIndexPopulatorTest<SpatialIndexKey,NativeIndexValue>
+public class SpatialUniqueIndexPopulatorTest extends NativeIndexPopulatorTests.Unique<SpatialIndexKey,NativeIndexValue>
 {
     private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
     private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );

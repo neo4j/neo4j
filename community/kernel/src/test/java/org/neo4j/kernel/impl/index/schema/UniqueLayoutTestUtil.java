@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-class UniqueLayoutTestUtil<KEY extends NativeIndexSingleValueKey<KEY>, VALUE extends NativeIndexValue> extends LayoutTestUtil<KEY, VALUE>
+class UniqueLayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends LayoutTestUtil<KEY, VALUE>
 {
 
     private final LayoutTestUtil<KEY, VALUE> delegate;

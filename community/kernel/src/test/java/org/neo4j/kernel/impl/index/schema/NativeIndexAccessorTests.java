@@ -1023,7 +1023,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesOfTypes( boolean allowDuplicates, RandomValues.Type... types )
     {
-        if ( types.length < 1)
+        if ( types.length < 1 )
         {
             throw new IllegalArgumentException( "Need at least one type, was " + Arrays.toString( types ) );
         }

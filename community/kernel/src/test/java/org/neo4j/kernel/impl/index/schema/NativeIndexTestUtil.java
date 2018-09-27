@@ -36,6 +36,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -71,6 +72,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     StoreIndexDescriptor indexDescriptor;
     LayoutTestUtil<KEY,VALUE> layoutUtil;
     IndexLayout<KEY,VALUE> layout;
+    private IndexDirectoryStructure indexDirectoryStructure;
     private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
