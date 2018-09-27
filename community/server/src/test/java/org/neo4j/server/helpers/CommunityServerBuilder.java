@@ -53,11 +53,11 @@ import static org.neo4j.server.ServerTestUtils.asOneLine;
 
 public class CommunityServerBuilder
 {
-    protected static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
+    private static final ListenSocketAddress ANY_ADDRESS = new ListenSocketAddress( "localhost", 0 );
 
     protected final LogProvider logProvider;
-    private ListenSocketAddress address = new ListenSocketAddress( "localhost", 7474 );
-    private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", 7473 );
+    private ListenSocketAddress address = new ListenSocketAddress( "localhost", Encryption.NONE.defaultPort );
+    private ListenSocketAddress httpsAddress = new ListenSocketAddress( "localhost", Encryption.TLS.defaultPort );
     private String maxThreads;
     private String dataDir;
     private String managementUri = "/db/manage/";
