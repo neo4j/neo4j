@@ -163,6 +163,7 @@ public class OpenEnterpriseNeoServer extends CommunityNeoServer
         {
             uriWhitelist.add( Pattern.compile( "/db/manage/server/core.*" ) );
             uriWhitelist.add( Pattern.compile( "/db/manage/server/read-replica.*" ) );
+            uriWhitelist.add( Pattern.compile( "/db/manage/server/causalclustering.*" ) );
         }
 
         return uriWhitelist.toArray( new Pattern[uriWhitelist.size()] );
