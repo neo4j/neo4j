@@ -95,7 +95,7 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
     @Override
     public Lifecycle newInstance( KernelContext context, GenericNativeIndexProviderFactory.Dependencies dependencies )
     {
-        IndexProvider actualProvider = (IndexProvider) actual.newInstance( context, dependencies );
+        IndexProvider actualProvider = actual.newInstance( context, dependencies );
         return new IndexProvider( actualProvider.getProviderDescriptor(), priority, IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
         {
             @Override

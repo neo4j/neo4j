@@ -43,7 +43,7 @@ public abstract class AbstractIndexProviderFactory<DEPENDENCIES extends Abstract
     }
 
     @Override
-    public IndexProvider newInstance( KernelContext context, Dependencies dependencies )
+    public IndexProvider newInstance( KernelContext context, DEPENDENCIES dependencies )
     {
         PageCache pageCache = dependencies.pageCache();
         File databaseDir = context.directory();
