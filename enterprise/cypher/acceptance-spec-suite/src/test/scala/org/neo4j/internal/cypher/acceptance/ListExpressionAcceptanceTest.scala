@@ -49,9 +49,16 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
-          "RETURN reduce(acc=0, n IN nodes(p) | acc + n.x) AS result")
+          "RETURN" +
+          " reduce(acc=0, n IN nodes(p) | acc + n.x) AS result," +
+          " reduce(acc=0, n IN nodes(p) | acc + null) AS nullExpression," +
+          " reduce(acc=0, n IN nodes(p) + [null] | acc + n.x) AS nullElement")
 
-    result.toList.head should equal(Map("result" -> 6))
+    result.toList.head should equal(Map(
+      "result" -> 6,
+      "nullExpression" -> null,
+      "nullElement" -> null
+    ))
   }
 
   test("should extract on values") {
@@ -76,9 +83,16 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
-          "RETURN extract(n IN nodes(p) | n.x) AS result")
+          "RETURN" +
+          " extract(n IN nodes(p) | n.x) AS result," +
+          " extract(n IN nodes(p) | null) AS nullExpression," +
+          " extract(n IN nodes(p) + [null] | n.x) AS nullElement")
 
-    result.toList.head should equal(Map("result" -> List(1, 2, 3)))
+    result.toList.head should equal(Map(
+      "result" -> List(1, 2, 3),
+      "nullExpression" -> List(null, null, null),
+      "nullElement" -> List(1, 2, 3, null)
+    ))
   }
 
   test("should list comprehension on values") {
@@ -176,9 +190,16 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
-          "RETURN filter(n IN nodes(p) WHERE n.x <= 2) AS result")
+          "RETURN" +
+          " filter(n IN nodes(p) WHERE n.x <= 2) AS result," +
+          " filter(n IN nodes(p) WHERE null) AS nullPredicate," +
+          " filter(n IN nodes(p) + [null] WHERE n.x < 2) AS nullElement")
 
-    result.toList.head should equal(Map("result" -> List(n1, n2)))
+    result.toList.head should equal(Map(
+      "result" -> List(n1, n2),
+      "nullPredicate" -> List(),
+      "nullElement" -> List(n1)
+    ))
   }
 
   test("should all predicate on values") {
@@ -209,11 +230,18 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE all(n IN nodes(p) WHERE n:Label)" +
           "RETURN " +
-          " all(n IN nodes(p) WHERE n.x > 0) AS true, " +
-          " all(n IN nodes(p) WHERE n.x > 1) AS false," +
-          " all(n IN nodes(p) WHERE null) AS nullValue")
+          " all(n IN nodes(p) WHERE n.x > 0) AS allTrue, " +
+          " all(n IN nodes(p) WHERE n.x > 1) AS someFalse," +
+          " all(n IN nodes(p) WHERE null) AS nullPredicate," +
+          " all(n IN nodes(p) + [null] WHERE n.x > 0) AS allTrueWithNull," +
+          " all(n IN nodes(p) + [null] WHERE n.x > 1) AS someFalseWithNull")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "allTrue" -> true,
+      "someFalse" -> false,
+      "nullPredicate" -> null,
+      "allTrueWithNull" -> null,
+      "someFalseWithNull" -> false))
   }
 
   test("should any predicate on values") {
@@ -244,11 +272,18 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE any(n IN nodes(p) WHERE n:Label) " +
           "RETURN " +
-          " any(n IN nodes(p) WHERE n.x = 1) AS true, " +
-          " any(n IN nodes(p) WHERE n.x = 0) AS false," +
-          " any(n IN nodes(p) WHERE null) AS nullValue")
+          " any(n IN nodes(p) WHERE n.x = 1) AS someTrue," +
+          " any(n IN nodes(p) WHERE n.x = 0) AS allFalse," +
+          " any(n IN nodes(p) WHERE null) AS nullPredicate," +
+          " any(n IN nodes(p)+[null] WHERE n.x = 1) AS someTrueWithNull," +
+          " any(n IN nodes(p)+[null] WHERE n.x = 0) AS allFalseWithNull")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "someTrue" -> true,
+      "allFalse" -> false,
+      "nullPredicate" -> null,
+      "someTrueWithNull" -> true,
+      "allFalseWithNull" -> null))
   }
 
   test("should none predicate on values") {
@@ -280,11 +315,19 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE none(n IN nodes(p) WHERE n:Fake) " +
           "RETURN " +
-          " none(n IN nodes(p) WHERE n.x = 0) AS true, " +
-          " none(n IN nodes(p) WHERE n.x = 1) AS false," +
-          " none(n IN nodes(p) WHERE null) AS nullValue")
+          " none(n IN nodes(p) WHERE n.x = 0) AS allFalse," +
+          " none(n IN nodes(p) WHERE n.x = 1) AS someTrue, " +
+          " none(n IN nodes(p) WHERE null) AS nullValue," +
+          " none(n IN nodes(p) + [null] WHERE n.x = 0) AS allFalseWithNull," +
+          " none(n IN nodes(p) + [null] WHERE n.x = 1) AS someTrueWithNull")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "allFalse" -> true,
+      "someTrue" -> false,
+      "nullValue" -> null,
+      "allFalseWithNull" -> null,
+      "someTrueWithNull" -> false
+    ))
   }
 
   test("should single predicate on values") {
@@ -330,10 +373,21 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE single(n IN nodes(p) WHERE n.x = 1) " +
           "RETURN " +
-          " single(n IN nodes(p) WHERE n.x = 1) AS true, " +
-          " single(n IN nodes(p) WHERE n.x > 1) AS false," +
-          " single(n IN nodes(p) WHERE null) AS nullValue")
+          " single(n IN nodes(p) WHERE n.x = 0) AS noneTrue," +
+          " single(n IN nodes(p) WHERE n.x = 1) AS oneTrue, " +
+          " single(n IN nodes(p) WHERE n.x <= 2) AS twoTrue, " +
+          " single(n IN nodes(p) WHERE null) AS nullPredicate," +
+          " single(n IN nodes(p) + [null] WHERE n.x = 0) AS noneTrueWithNull," +
+          " single(n IN nodes(p) + [null] WHERE n.x = 1) AS oneTrueWithNull," +
+          " single(n IN nodes(p) + [null] WHERE n.x <= 2) AS twoTrueWithNull")
 
-    result.toList.head should equal(Map("true" -> true, "false" -> false, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "noneTrue" -> false,
+      "oneTrue" -> true,
+      "twoTrue" -> false,
+      "nullPredicate" -> null,
+      "noneTrueWithNull" -> null,
+      "oneTrueWithNull" -> null,
+      "twoTrueWithNull" -> false))
   }
 }
