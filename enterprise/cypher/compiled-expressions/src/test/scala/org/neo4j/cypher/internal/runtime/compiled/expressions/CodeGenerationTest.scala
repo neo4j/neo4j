@@ -1119,6 +1119,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(equals(noValue, literalInt(43))).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(equals(literalInt(42), noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(equals(noValue, noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(equals(TRUE, equals(TRUE, equals(TRUE, noValue)))).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("NOT EQUALS") {
@@ -1127,6 +1128,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compile(notEquals(noValue, literalInt(43))).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(notEquals(literalInt(42), noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
     compile(notEquals(noValue, noValue)).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
+    compile(notEquals(TRUE, notEquals(TRUE, notEquals(TRUE, noValue)))).evaluate(ctx, db, EMPTY_MAP) should equal(Values.NO_VALUE)
   }
 
   test("regex match on literal pattern") {
