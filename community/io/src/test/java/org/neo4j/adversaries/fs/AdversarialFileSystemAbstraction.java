@@ -28,14 +28,9 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Proxy;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import org.neo4j.adversaries.Adversary;
@@ -222,24 +217,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         delegate.deleteRecursively( directory );
     }
 
-    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
-            new HashMap<>();
-
-    @Override
-    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
-            Class<K> clazz,
-            Function<Class<K>, K> creator )
-    {
-        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
-        if ( fileSystem == null )
-        {
-            fileSystem = creator.apply( clazz );
-            fileSystem = adversarialProxy( fileSystem, clazz );
-            thirdPartyFileSystems.put( clazz, fileSystem );
-        }
-        return (K) fileSystem;
-    }
-
     @Override
     public void truncate( File path, long size ) throws IOException
     {
@@ -266,19 +243,6 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     public Stream<FileHandle> streamFilesRecursive( File directory ) throws IOException
     {
         return StreamFilesRecursive.streamFilesRecursive( directory, this );
-    }
-
-    private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(
-            final ThirdPartyFileSystem fileSystem,
-            Class<K> clazz )
-    {
-        InvocationHandler handler = ( proxy, method, args ) ->
-        {
-            adversary.injectFailure( (Class<? extends Throwable>[]) method.getExceptionTypes() );
-            return method.invoke( fileSystem, args );
-        };
-        ClassLoader loader = Thread.currentThread().getContextClassLoader();
-        return (ThirdPartyFileSystem) Proxy.newProxyInstance( loader, new Class[] { clazz }, handler );
     }
 
     @Override

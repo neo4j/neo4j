@@ -79,6 +79,12 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
         return IndexCapability.NO_CAPABILITY;
     }
 
+    @Override
+    public void stop() throws Throwable
+    {
+        indexStorageFactory.close();
+    }
+
     protected PartitionedIndexStorage getIndexStorage( long indexId )
     {
         return indexStorageFactory.indexStorageOf( indexId );

@@ -235,9 +235,6 @@ class EphemeralFileSystemAbstractionTest
     {
         try ( EphemeralFileSystemAbstraction fileSystemAbstraction = new EphemeralFileSystemAbstraction() )
         {
-            CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
-            fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                    closeTrackingFileSystemClass -> closeTrackingFileSystem );
             File testDir = new File( "testDir" );
             File testFile = new File( "testFile" );
             fileSystemAbstraction.mkdir( testDir );
@@ -245,18 +242,16 @@ class EphemeralFileSystemAbstractionTest
 
             assertTrue( fileSystemAbstraction.fileExists( testFile ) );
             assertTrue( fileSystemAbstraction.fileExists( testFile ) );
-            assertFalse( closeTrackingFileSystem.isClosed() );
 
             fileSystemAbstraction.close();
 
-            assertTrue( closeTrackingFileSystem.isClosed() );
             assertTrue( fileSystemAbstraction.isClosed() );
             assertFalse( fileSystemAbstraction.fileExists( testFile ) );
             assertFalse( fileSystemAbstraction.fileExists( testFile ) );
         }
     }
 
-    private void verifyFileIsFullOfLongIntegerOnes( StoreChannel channel )
+    private static void verifyFileIsFullOfLongIntegerOnes( StoreChannel channel )
     {
         try
         {
@@ -277,7 +272,7 @@ class EphemeralFileSystemAbstractionTest
         }
     }
 
-    private void verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( StoreChannel channel )
+    private static void verifyFileIsEitherEmptyOrContainsLongIntegerValueOne( StoreChannel channel )
     {
         try
         {
@@ -301,7 +296,7 @@ class EphemeralFileSystemAbstractionTest
         }
     }
 
-    private ByteBuffer readLong( StoreChannel readChannel ) throws IOException
+    private static ByteBuffer readLong( StoreChannel readChannel ) throws IOException
     {
         ByteBuffer readBuffer = allocate( 8 );
         readChannel.readAll( readBuffer );
@@ -309,7 +304,7 @@ class EphemeralFileSystemAbstractionTest
         return readBuffer;
     }
 
-    private void writeLong( StoreChannel channel, long value ) throws IOException
+    private static void writeLong( StoreChannel channel, long value ) throws IOException
     {
         ByteBuffer buffer = allocate( 8 );
         buffer.putLong( value );

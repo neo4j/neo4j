@@ -37,12 +37,8 @@ import java.nio.file.CopyOption;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.WatchService;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.watcher.DefaultFileSystemWatcher;
 import org.neo4j.io.fs.watcher.FileWatcher;
 
@@ -196,17 +192,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
         FileUtils.copyRecursively( fromDirectory, toDirectory );
     }
 
-    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
-            new HashMap<>();
-
-    @Override
-    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
-            Class<K> clazz, Function<Class<K>, K> creator )
-    {
-        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.computeIfAbsent( clazz, k -> creator.apply( clazz ) );
-        return clazz.cast( fileSystem );
-    }
-
     @Override
     public void truncate( File path, long size ) throws IOException
     {
@@ -239,6 +224,6 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     @Override
     public void close() throws IOException
     {
-        IOUtils.closeAll( thirdPartyFileSystems.values() );
+        // nothing
     }
 }

@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.index.schema.SpatialIndexProvider;
 import org.neo4j.kernel.impl.index.schema.StringIndexProvider;
 import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 
-import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
+import static org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.directoryFactory;
 
 class IndexProviderFactoryUtil
 {
@@ -70,7 +70,7 @@ class IndexProviderFactoryUtil
             Config config, OperationalMode operationalMode )
     {
         boolean ephemeral = config.get( GraphDatabaseSettings.ephemeral );
-        DirectoryFactory directoryFactory = directoryFactory( ephemeral, fs );
+        DirectoryFactory directoryFactory = directoryFactory( ephemeral );
         return new LuceneIndexProvider( fs, directoryFactory, directoryStructure, monitor, config, operationalMode );
     }
 }

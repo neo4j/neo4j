@@ -44,6 +44,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory.InMemoryDirectoryFactory;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -59,6 +60,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class PartitionedIndexStorageTest
 {
+    private static final InMemoryDirectoryFactory directoryFactory = new InMemoryDirectoryFactory();
     @Inject
     private DefaultFileSystemAbstraction fs;
     @Inject
@@ -69,7 +71,7 @@ class PartitionedIndexStorageTest
     @BeforeEach
     void createIndexStorage()
     {
-        storage = new PartitionedIndexStorage( getOrCreateDirFactory( fs ), fs, testDir.databaseDir() );
+        storage = new PartitionedIndexStorage( directoryFactory, fs, testDir.databaseDir() );
     }
 
     @Test
@@ -182,7 +184,7 @@ class PartitionedIndexStorageTest
                     }
                 } )
         {
-            PartitionedIndexStorage myStorage = new PartitionedIndexStorage( getOrCreateDirFactory( scramblingFs ),
+            PartitionedIndexStorage myStorage = new PartitionedIndexStorage( directoryFactory,
                     scramblingFs, testDir.databaseDir() );
             File parent = myStorage.getIndexFolder();
             int directoryCount = 10;
@@ -225,7 +227,6 @@ class PartitionedIndexStorageTest
     private Directory createRandomLuceneDir( File rootFolder ) throws IOException
     {
         File folder = createRandomFolder( rootFolder );
-        DirectoryFactory directoryFactory = getOrCreateDirFactory( fs );
         Directory directory = directoryFactory.open( folder );
         try ( IndexWriter writer = new IndexWriter( directory, IndexWriterConfigs.standard() ) )
         {
@@ -256,11 +257,5 @@ class PartitionedIndexStorageTest
         Document doc = new Document();
         doc.add( new StringField( "field", RandomStringUtils.randomNumeric( 5 ), Field.Store.YES ) );
         return doc;
-    }
-
-    private static DirectoryFactory getOrCreateDirFactory( FileSystemAbstraction fs )
-    {
-        return fs.getOrCreateThirdPartyFileSystem( DirectoryFactory.class,
-                clazz -> new DirectoryFactory.InMemoryDirectoryFactory() );
     }
 }

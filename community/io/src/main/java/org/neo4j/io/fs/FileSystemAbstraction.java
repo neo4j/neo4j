@@ -30,9 +30,7 @@ import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
 import java.nio.file.NoSuchFileException;
-import java.util.function.Function;
 import java.util.stream.Stream;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.watcher.FileWatcher;
 
@@ -88,21 +86,11 @@ public interface FileSystemAbstraction extends Closeable
 
     void copyRecursively( File fromDirectory, File toDirectory ) throws IOException;
 
-    <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>,K> creator );
-
     void truncate( File path, long size ) throws IOException;
 
     long lastModifiedTime( File file );
 
     void deleteFileOrThrow( File file ) throws IOException;
-
-    interface ThirdPartyFileSystem extends Closeable
-    {
-        @Override
-        void close();
-
-        void dumpToZip( ZipOutputStream zip, byte[] scratchPad ) throws IOException;
-    }
 
     /**
      * Return a stream of {@link FileHandle file handles} for every file in the given directory, and its

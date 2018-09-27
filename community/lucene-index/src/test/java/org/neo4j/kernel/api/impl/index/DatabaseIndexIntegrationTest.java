@@ -48,7 +48,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
-import java.util.zip.ZipOutputStream;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -56,10 +55,10 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.partition.WritableIndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
-import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.time.Duration.ofSeconds;
@@ -296,12 +295,7 @@ class DatabaseIndexIntegrationTest
         {
         }
 
-        @Override
-        public void dumpToZip( ZipOutputStream zip, byte[] scratchPad )
-        {
-        }
-
-        private class SyncNotifierDirectory extends Directory
+        private static class SyncNotifierDirectory extends Directory
         {
             private final Directory delegate;
             private final CountDownLatch signal;

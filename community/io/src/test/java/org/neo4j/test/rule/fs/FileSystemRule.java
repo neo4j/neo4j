@@ -31,7 +31,6 @@ import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.charset.Charset;
 import java.nio.file.CopyOption;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 
@@ -201,13 +200,6 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     public void copyRecursively( File fromDirectory, File toDirectory ) throws IOException
     {
         fs.copyRecursively( fromDirectory, toDirectory );
-    }
-
-    @Override
-    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz,
-            Function<Class<K>,K> creator )
-    {
-        return fs.getOrCreateThirdPartyFileSystem( clazz, creator );
     }
 
     @Override

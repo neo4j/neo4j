@@ -22,41 +22,14 @@ package org.neo4j.io.fs;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
-import java.nio.file.Path;
-import java.nio.file.PathMatcher;
-import java.nio.file.WatchService;
-import java.nio.file.attribute.UserPrincipalLookupService;
-import java.nio.file.spi.FileSystemProvider;
-import java.util.Set;
 
-import org.neo4j.graphdb.mockfs.CloseTrackingFileSystem;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 class DelegateFileSystemAbstractionTest
 {
-
-    @Test
-    void closeAllResourcesOnClose() throws Exception
-    {
-        TrackableFileSystem fileSystem = new TrackableFileSystem();
-        CloseTrackingFileSystem closeTrackingFileSystem = new CloseTrackingFileSystem();
-
-        try ( DelegateFileSystemAbstraction fileSystemAbstraction = new DelegateFileSystemAbstraction( fileSystem ) )
-        {
-            fileSystemAbstraction.getOrCreateThirdPartyFileSystem( CloseTrackingFileSystem.class,
-                    closeTrackingFileSystemClass -> closeTrackingFileSystem );
-        }
-
-        assertFalse( fileSystem.isOpen() );
-        assertTrue( closeTrackingFileSystem.isClosed() );
-    }
 
     @Test
     void delegatedFileSystemWatcher() throws IOException
@@ -68,83 +41,5 @@ class DelegateFileSystemAbstractionTest
         }
 
         verify( fileSystem ).newWatchService();
-    }
-
-    private static class TrackableFileSystem extends FileSystem
-    {
-
-        private boolean closed;
-
-        @Override
-        public FileSystemProvider provider()
-        {
-            return null;
-        }
-
-        @Override
-        public void close()
-        {
-            closed = true;
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return !closed;
-        }
-
-        @Override
-        public boolean isReadOnly()
-        {
-            return false;
-        }
-
-        @Override
-        public String getSeparator()
-        {
-            return null;
-        }
-
-        @Override
-        public Iterable<Path> getRootDirectories()
-        {
-            return null;
-        }
-
-        @Override
-        public Iterable<FileStore> getFileStores()
-        {
-            return null;
-        }
-
-        @Override
-        public Set<String> supportedFileAttributeViews()
-        {
-            return null;
-        }
-
-        @Override
-        public Path getPath( String first, String... more )
-        {
-            return null;
-        }
-
-        @Override
-        public PathMatcher getPathMatcher( String syntaxAndPattern )
-        {
-            return null;
-        }
-
-        @Override
-        public UserPrincipalLookupService getUserPrincipalLookupService()
-        {
-            return null;
-        }
-
-        @Override
-        public WatchService newWatchService()
-        {
-            return null;
-        }
     }
 }

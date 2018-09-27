@@ -72,7 +72,7 @@ public class LuceneIndexRecoveryIT
     }
 
     @After
-    public void after()
+    public void after() throws Exception
     {
         if ( db != null )
         {
