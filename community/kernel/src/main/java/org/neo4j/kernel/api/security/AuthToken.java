@@ -93,6 +93,11 @@ public interface AuthToken
         }
     }
 
+    static boolean containsSensitiveInformation( String key )
+    {
+        return CREDENTIALS.equals( key ) || NEW_CREDENTIALS.equals( key );
+    }
+
     static void clearCredentials( Map<String,Object> authToken )
     {
         Object credentials = authToken.get( CREDENTIALS );

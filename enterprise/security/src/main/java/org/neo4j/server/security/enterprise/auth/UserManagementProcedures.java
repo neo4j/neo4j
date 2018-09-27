@@ -47,7 +47,7 @@ public class UserManagementProcedures extends AuthProceduresBase
             throws InvalidArgumentsException, IOException
     {
         // TODO: Deprecate this and create a new procedure that takes password as a byte[]
-        userManager.newUser( username, UTF8.encode( password ), requirePasswordChange );
+        userManager.newUser( username, password != null ? UTF8.encode( password ) : null, requirePasswordChange );
     }
 
     @Deprecated
@@ -191,7 +191,7 @@ public class UserManagementProcedures extends AuthProceduresBase
     private void setUserPassword( String username, String newPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        userManager.setUserPassword( username, UTF8.encode( newPassword ), requirePasswordChange );
+        userManager.setUserPassword( username, newPassword != null ? UTF8.encode( newPassword ) : null, requirePasswordChange );
         if ( securityContext.subject().hasUsername( username ) )
         {
             securityContext.subject().setPasswordChangeNoLongerRequired();
