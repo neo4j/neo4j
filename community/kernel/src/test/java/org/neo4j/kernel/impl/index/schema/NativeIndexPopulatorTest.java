@@ -26,11 +26,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 
+import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
@@ -76,6 +82,10 @@ public class NativeIndexPopulatorTest
                         temporalPopulatorFactory( ValueGroup.ZONED_TIME ),
                         (LayoutTestUtilFactory) TimeLayoutTestUtil::new
                 },
+                {"Generic",
+                        genericPopulatorFactory(),
+                        (LayoutTestUtilFactory) GenericLayoutTestUtil::new
+                },
                 // todo { Spatial has it's own subclass because it need to override some of the test methods }
         } );
     }
@@ -92,6 +102,38 @@ public class NativeIndexPopulatorTest
             TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
             return new TemporalIndexPopulator.PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
         };
+    }
+
+    private static PopulatorFactory<CompositeGenericKey,NativeIndexValue> genericPopulatorFactory()
+    {
+        IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
+                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+        StandardConfiguration configuration = new StandardConfiguration();
+        return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
+                new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
+                        new SimpleDirectoryStructure( storeFile ), configuration, false );
+    }
+
+    private static class SimpleDirectoryStructure extends IndexDirectoryStructure
+    {
+        private final File indexFile;
+
+        SimpleDirectoryStructure( File indexFile )
+        {
+            this.indexFile = indexFile;
+        }
+
+        @Override
+        public File rootDirectory()
+        {
+            return indexFile.getParentFile();
+        }
+
+        @Override
+        public File directoryForIndex( long indexId )
+        {
+            return indexFile;
+        }
     }
 
     @FunctionalInterface
