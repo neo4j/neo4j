@@ -122,7 +122,7 @@ public class NativeIndexPopulatorTest
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
+                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false, false );
     }
 
     @FunctionalInterface

@@ -120,8 +120,8 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
-    public GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
-            FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
+    GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache, FileSystemAbstraction fs, Monitor monitor,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
         super( DESCRIPTOR, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
 
@@ -153,8 +153,9 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
     {
-        return new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor,
-                layout.getSpaceFillingCurveSettings(), directoryStructure(), configuration, archiveFailedIndex );
+        return new ParallelNativeIndexPopulator<>( storeFile, layout, file ->
+                new GenericNativeIndexPopulator( pageCache, fs, file, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                        directoryStructure(), configuration, archiveFailedIndex, !file.equals( storeFile ) ) );
     }
 
     @Override

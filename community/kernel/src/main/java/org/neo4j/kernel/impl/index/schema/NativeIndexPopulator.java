@@ -26,9 +26,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -45,11 +43,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.util.concurrent.Work;
-import org.neo4j.util.concurrent.WorkSync;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.GENERAL;
@@ -62,7 +57,7 @@ import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.UNIQUE;
  * @param <VALUE> type of {@link NativeIndexValue}.
  */
 public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-        extends NativeIndex<KEY,VALUE> implements IndexPopulator
+        extends NativeIndex<KEY,VALUE> implements IndexPopulator, ConsistencyCheckableIndexPopulator
 {
     public static final byte BYTE_FAILED = 0;
     static final byte BYTE_ONLINE = 1;
@@ -73,8 +68,8 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private final UniqueIndexSampler uniqueSampler;
     private final Consumer<PageCursor> additionalHeaderWriter;
 
-    private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> additionsWorkSync;
-    private WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> updatesWorkSync;
+    private ConflictDetectingValueMerger<KEY,VALUE> mainConflictDetector;
+    private ConflictDetectingValueMerger<KEY,VALUE> updatesConflictDetector;
 
     private byte[] failureBytes;
     private boolean dropped;
@@ -121,12 +116,10 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
-        boolean compareIds = descriptor.type() == GENERAL;
-        additionsWorkSync = new WorkSync<>( new IndexUpdateApply<>( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( compareIds ) ) );
-
+        mainConflictDetector = new ConflictDetectingValueMerger<>( descriptor.type() == GENERAL );
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
-        updatesWorkSync = new WorkSync<>( new IndexUpdateApply<>( tree, treeKey, treeValue, new ConflictDetectingValueMerger<>( true ) ) );
+        updatesConflictDetector = new ConflictDetectingValueMerger<>( true );
     }
 
     @Override
@@ -147,7 +140,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     @Override
     public void add( Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
     {
-        applyWithWorkSync( additionsWorkSync, updates );
+        processUpdates( updates, mainConflictDetector );
     }
 
     @Override
@@ -159,31 +152,12 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
-        IndexUpdater updater = new IndexUpdater()
+        IndexUpdater updater = new CollectingIndexUpdater<KEY,VALUE>()
         {
-            private boolean closed;
-            private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
-
             @Override
-            public void process( IndexEntryUpdate<?> update )
+            protected void apply( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
             {
-                assertOpen();
-                updates.add( update );
-            }
-
-            @Override
-            public void close() throws IndexEntryConflictException
-            {
-                applyWithWorkSync( updatesWorkSync, updates );
-                closed = true;
-            }
-
-            private void assertOpen()
-            {
-                if ( closed )
-                {
-                    throw new IllegalStateException( "Updater has been closed" );
-                }
+                processUpdates( updates, updatesConflictDetector );
             }
         };
 
@@ -196,7 +170,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         return updater;
     }
 
-    abstract IndexReader newReader();
+    abstract NativeIndexReader<KEY,VALUE> newReader();
 
     @Override
     public synchronized void close( boolean populationCompletedSuccessfully )
@@ -224,28 +198,6 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         {
             closeTree();
             closed = true;
-        }
-    }
-
-    private void applyWithWorkSync( WorkSync<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>> workSync,
-            Collection<? extends IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
-    {
-        try
-        {
-            workSync.apply( new IndexUpdateWork<>( updates ) );
-        }
-        catch ( ExecutionException e )
-        {
-            Throwable cause = e.getCause();
-            if ( cause instanceof IOException )
-            {
-                throw new UncheckedIOException( (IOException) cause );
-            }
-            if ( cause instanceof IndexEntryConflictException )
-            {
-                throw (IndexEntryConflictException) cause;
-            }
-            throw new RuntimeException( cause );
         }
     }
 
@@ -301,55 +253,19 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         tree.checkpoint( IOLimiter.UNLIMITED, new NativeIndexHeaderWriter( BYTE_ONLINE, additionalHeaderWriter ) );
     }
 
-    static class IndexUpdateApply<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+    private void processUpdates( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates, ConflictDetectingValueMerger<KEY,VALUE> conflictDetector )
+            throws IndexEntryConflictException
     {
-        private final GBPTree<KEY,VALUE> tree;
-        private final KEY treeKey;
-        private final VALUE treeValue;
-        private final ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger;
-
-        IndexUpdateApply( GBPTree<KEY,VALUE> tree, KEY treeKey, VALUE treeValue, ConflictDetectingValueMerger<KEY,VALUE> conflictDetectingValueMerger )
+        try ( Writer<KEY,VALUE> writer = tree.writer() )
         {
-            this.tree = tree;
-            this.treeKey = treeKey;
-            this.treeValue = treeValue;
-            this.conflictDetectingValueMerger = conflictDetectingValueMerger;
-        }
-
-        void process( Iterable<? extends IndexEntryUpdate<?>> indexEntryUpdates ) throws Exception
-        {
-            try ( Writer<KEY,VALUE> writer = tree.writer() )
+            for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
             {
-                for ( IndexEntryUpdate<?> indexEntryUpdate : indexEntryUpdates )
-                {
-                    NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetectingValueMerger );
-                }
+                NativeIndexUpdater.processUpdate( treeKey, treeValue, indexEntryUpdate, writer, conflictDetector );
             }
         }
-    }
-
-    static class IndexUpdateWork<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
-            implements Work<IndexUpdateApply<KEY,VALUE>,IndexUpdateWork<KEY,VALUE>>
-    {
-        private final Collection<? extends IndexEntryUpdate<?>> updates;
-
-        IndexUpdateWork( Collection<? extends IndexEntryUpdate<?>> updates )
+        catch ( IOException e )
         {
-            this.updates = updates;
-        }
-
-        @Override
-        public IndexUpdateWork<KEY,VALUE> combine( IndexUpdateWork<KEY,VALUE> work )
-        {
-            ArrayList<IndexEntryUpdate<?>> combined = new ArrayList<>( updates );
-            combined.addAll( work.updates );
-            return new IndexUpdateWork<>( combined );
-        }
-
-        @Override
-        public void apply( IndexUpdateApply<KEY,VALUE> indexUpdateApply ) throws Exception
-        {
-            indexUpdateApply.process( updates );
+            throw new UncheckedIOException( e );
         }
     }
 
