@@ -47,7 +47,4 @@ trait Compiler {
               transactionalContext: TransactionalContext,
               params: MapValue
              ): ExecutableQuery
-
-  @throws[org.neo4j.cypher.CypherException]
-  def recompile(executableQuery: ExecutableQuery, expressionEngine: CypherExpressionEngineOption): ExecutableQuery = executableQuery
 }
