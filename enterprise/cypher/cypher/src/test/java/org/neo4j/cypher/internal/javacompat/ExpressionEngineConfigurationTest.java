@@ -22,7 +22,6 @@
  */
 package org.neo4j.cypher.internal.javacompat;
 
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 
 import org.neo4j.cypher.internal.EnterpriseCompilerFactory;
@@ -32,10 +31,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.cypher.internal.javacompat.ExpressionEngineConfigurationTest.ExpressionEngine.COMPILED;
-import static org.neo4j.cypher.internal.javacompat.ExpressionEngineConfigurationTest.ExpressionEngine.INTERPRETED;
+import static org.hamcrest.Matchers.anyOf;
+import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 class ExpressionEngineConfigurationTest
 {
@@ -44,27 +41,13 @@ class ExpressionEngineConfigurationTest
     @Test
     void shouldNotUseCompiledExpressionsFirstTimeWithDefaultSettings()
     {
-        // Given
-        GraphDatabaseService db = withEngineAndLimit( "DEFAULT", 1 );
-
-        // When
-        ExpressionEngine engine = engineUsedForQuery( db, "RETURN sin(cos(sin(cos(rand()))))" );
-
-        // Then
-        assertThat( engine, equalTo( INTERPRETED ) );
+        assertNotUsingCompiled( withEngineAndLimit( "DEFAULT", 1 ), "RETURN sin(cos(sin(cos(rand()))))" );
     }
 
     @Test
     void shouldUseCompiledExpressionsFirstTimeWhenLimitIsZero()
     {
-        // Given
-        GraphDatabaseService db = withEngineAndLimit( "DEFAULT", 0 );
-
-        // When
-        ExpressionEngine engine = engineUsedForQuery( db, "RETURN sin(cos(sin(cos(rand()))))" );
-
-        // Then
-        assertThat( engine, equalTo( COMPILED ) );
+        assertUsingCompiled( withEngineAndLimit( "DEFAULT", 0 ), "RETURN sin(cos(sin(cos(rand()))))" );
     }
 
     @Test
@@ -73,97 +56,71 @@ class ExpressionEngineConfigurationTest
         // Given
         String query = "RETURN sin(cos(sin(cos(rand()))))";
         GraphDatabaseService db = withEngineAndLimit( "DEFAULT", 3 );
-        db.execute( query );
-        db.execute( query );
-        db.execute( query );
 
         // When
-        ExpressionEngine engine = engineUsedForQuery( db, query );
+        db.execute( query );
+        db.execute( query );
+        db.execute( query );
 
         // Then
-        assertThat( engine, equalTo( COMPILED ) );
+        assertUsingCompiled( db, query );
     }
 
     @Test
     void shouldUseCompiledExpressionsFirstTimeWhenConfigured()
     {
-        // Given
-        GraphDatabaseService db = withEngineAndLimit( "COMPILED", 42 );
-
-        // When
-        ExpressionEngine engine = engineUsedForQuery( db, "RETURN sin(cos(sin(cos(rand()))))" );
-
-        // Then
-        assertThat( engine, equalTo( COMPILED ) );
+        assertUsingCompiled( withEngineAndLimit( "COMPILED", 42 ), "RETURN sin(cos(sin(cos(rand()))))" );
     }
 
     @Test
     void shouldUseCompiledExpressionsFirstTimeWhenExplicitlyAskedFor()
     {
-        // Given
-        GraphDatabaseService db = withEngineAndLimit( "DEFAULT", 42 );
-
-        // When
-        ExpressionEngine engine =
-                engineUsedForQuery( db, "CYPHER expressionEngine=COMPILED RETURN sin(cos(sin(cos(rand()))))" );
-
-        // Then
-        assertThat( engine, equalTo( COMPILED ) );
+        assertUsingCompiled( withEngineAndLimit( "DEFAULT", 42 ),
+                "CYPHER expressionEngine=COMPILED RETURN sin(cos(sin(cos(rand()))))" );
     }
 
     @Test
     void shouldNotUseCompiledExpressionsWhenExplicitlyAskingForInterpreted()
     {
-        // Given
-        GraphDatabaseService db = withEngineAndLimit( "COMPILED", 42 );
-
-        // When
-        ExpressionEngine engine =
-                engineUsedForQuery( db, "CYPHER expressionEngine=INTERPRETED RETURN sin(cos(sin(cos(rand()))))" );
-
-        // Then
-        assertThat( engine, equalTo( INTERPRETED ) );
+        assertNotUsingCompiled( withEngineAndLimit( "COMPILED", 42 ),
+                "CYPHER expressionEngine=INTERPRETED RETURN sin(cos(sin(cos(rand()))))" );
     }
-
 
     private GraphDatabaseService withEngineAndLimit( String engine, int limit )
     {
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().
+        return new TestGraphDatabaseFactory().
                 setInternalLogProvider( logProvider )
                 .newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cypher_expression_engine, engine )
                 .setConfig( GraphDatabaseSettings.cypher_expression_recompilation_limit, Integer.toString( limit ) )
                 .newGraphDatabase();
-        return db;
     }
 
-    enum ExpressionEngine
-    {
-        COMPILED,
-        INTERPRETED
-    }
-
-    private ExpressionEngine engineUsedForQuery( GraphDatabaseService db, String query )
+    private void assertUsingCompiled( GraphDatabaseService db, String query )
     {
         logProvider.clear();
         db.execute( query ).resultAsString();
 
-        try
-        {
-            logProvider.assertAtLeastOnce(
-                    AssertableLogProvider.inLog( EnterpriseCompilerFactory.class )
-                            .debug( Matchers.<String>anyOf(
-                                    containsString( "Compiling expression:" ),
-                                    containsString( "Compiling projection:" )
-                            ) ) );
-            return ExpressionEngine.COMPILED;
-        }
-        catch ( AssertionError error )
-        {
-            return INTERPRETED;
-        }
+        logProvider.assertAtLeastOnce(
+                inLog( EnterpriseCompilerFactory.class )
+                        .debug( anyOf(
+                                containsString( "Compiling expression:" ),
+                                containsString( "Compiling projection:" )
+                        ) ) );
+    }
 
+    private void assertNotUsingCompiled( GraphDatabaseService db, String query )
+    {
+        logProvider.clear();
+        db.execute( query ).resultAsString();
+
+        logProvider.assertNone(
+                inLog( EnterpriseCompilerFactory.class )
+                        .debug( anyOf(
+                                containsString( "Compiling expression:" ),
+                                containsString( "Compiling projection:" )
+                        ) ) );
     }
 
 }
