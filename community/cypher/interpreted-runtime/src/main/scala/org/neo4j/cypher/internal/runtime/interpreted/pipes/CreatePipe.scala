@@ -135,12 +135,18 @@ case class CreatePipe(src: Pipe, nodes: Array[CreateNodeCommand], relationships:
                      (val id: Id = Id.INVALID_ID) extends EntityCreatePipe(src) {
 
   override def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.map(inRow => {
-      val createdNodes = nodes.map(node => createNode(inRow, state, node))
-      val rowWithNodes = inRow.copyWith(createdNodes)
+    input.map(row => {
+      nodes.foreach { nodeCommand =>
+        val (key, node) = createNode(row, state, nodeCommand)
+        row.set(key, node)
+      }
 
-      val createdRelationships = relationships.map(r => createRelationship(rowWithNodes, state, r))
-      rowWithNodes.copyWith(createdRelationships)
+      relationships.foreach{ relCommand =>
+        val (key, node) = createRelationship(row, state, relCommand)
+        row.set(key, node)
+      }
+
+      row
     })
 
   override protected def handleNoValue(key: String) {
