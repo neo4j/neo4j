@@ -39,10 +39,10 @@ import org.neo4j.values.storable.Values;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
-public class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialIndexKey,NativeIndexValue>
+public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIndexKey,NativeIndexValue>
 {
-    static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
-    static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
+    private static final CoordinateReferenceSystem crs = CoordinateReferenceSystem.WGS84;
+    private static final ConfiguredSpaceFillingCurveSettingsCache configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() );
 
     private SpatialIndexFiles.SpatialFile spatialFile;
 
@@ -141,7 +141,7 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTest<SpatialInd
     }
 
     @Override
-    public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch() throws Exception
+    public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch()
     {
         // Accidental hits outside range is handled via a postfilter for spatial
     }

@@ -62,6 +62,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     @Override
     public IndexReader newReader()
     {
+        assertOpen();
         return new GenericNativeIndexReader( tree, layout, descriptor, spaceFillingCurveSettings, configuration );
     }
 
