@@ -145,9 +145,9 @@ public class DelegatingFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean fileExists( File fileName )
+    public boolean fileExists( File file )
     {
-        return delegate.fileExists( fileName );
+        return delegate.fileExists( file );
     }
 
     @Override

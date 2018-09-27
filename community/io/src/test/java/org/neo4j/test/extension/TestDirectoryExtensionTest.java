@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -61,5 +62,13 @@ class TestDirectoryExtensionTest
     void testDirectoryUsesFileSystemFromExtension()
     {
         assertSame( fileSystem, testDirectory.getFileSystem() );
+    }
+
+    @Test
+    void createTestFile()
+    {
+        File file = testDirectory.createFile( "a" );
+        assertEquals( "a", file.getName() );
+        assertTrue( fileSystem.fileExists( file ) );
     }
 }

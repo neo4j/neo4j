@@ -102,9 +102,9 @@ public class SelectiveFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean fileExists( File fileName )
+    public boolean fileExists( File file )
     {
-        return chooseFileSystem( fileName ).fileExists( fileName );
+        return chooseFileSystem( file ).fileExists( file );
     }
 
     @Override

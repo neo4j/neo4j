@@ -60,7 +60,7 @@ public interface FileSystemAbstraction extends Closeable
 
     StoreChannel create( File fileName ) throws IOException;
 
-    boolean fileExists( File fileName );
+    boolean fileExists( File file );
 
     boolean mkdir( File fileName );
 

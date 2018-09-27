@@ -120,9 +120,9 @@ public abstract class FileSystemRule<FS extends FileSystemAbstraction> extends E
     }
 
     @Override
-    public boolean fileExists( File fileName )
+    public boolean fileExists( File file )
     {
-        return fs.fileExists( fileName );
+        return fs.fileExists( file );
     }
 
     @Override

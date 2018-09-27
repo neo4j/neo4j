@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.ResourceRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -49,7 +48,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreFormatTest.Data.data;
 import static org.neo4j.kernel.impl.store.kvstore.KeyValueDatabaseStoreFormatTest.DataEntry.entry;
-import static org.neo4j.test.rule.ResourceRule.testPath;
 
 public class KeyValueDatabaseStoreFormatTest
 {
@@ -58,13 +56,7 @@ public class KeyValueDatabaseStoreFormatTest
     @Rule
     public final ConfigurablePageCacheRule pages = new ConfigurablePageCacheRule();
     @Rule
-    public final ResourceRule<File> storeFile = testPath();
-
-    @Before
-    public void existingStoreDirectory()
-    {
-        fs.get().mkdirs( storeFile.get().getParentFile() );
-    }
+    public final TestDirectory directory = TestDirectory.testDirectory( fs );
 
     @Test
     public void shouldCreateAndOpenEmptyStoreWithEmptyHeader() throws Exception
@@ -318,7 +310,7 @@ public class KeyValueDatabaseStoreFormatTest
             {
                 // then only headers are present in the file and not the old content
                 assertEquals( "boom!", io.getMessage() );
-                assertFormatSpecifierAndHeadersOnly( headers, fs.get(), storeFile.get() );
+                assertFormatSpecifierAndHeadersOnly( headers, fs.get(), getStoreFile() );
             }
         }
     }
@@ -527,13 +519,13 @@ public class KeyValueDatabaseStoreFormatTest
 
         void createEmpty( Map<String,byte[]> headers ) throws IOException
         {
-            createEmptyStore( fs.get(), storeFile.get(), 16, 16, headers( headers ) );
+            createEmptyStore( fs.get(), getStoreFile(), 16, 16, headers( headers ) );
         }
 
         KeyValueStoreFile create( Map<String,byte[]> headers, DataProvider data )
                 throws IOException
         {
-            return createStore( fs.get(), pages.getPageCache( fs.get() ), storeFile.get(), 16, 16, headers( headers ),
+            return createStore( fs.get(), pages.getPageCache( fs.get() ), getStoreFile(), 16, 16, headers( headers ),
                     data );
         }
 
@@ -544,7 +536,7 @@ public class KeyValueDatabaseStoreFormatTest
             PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
             PageCache pageCache = pages.getPageCache( fs.get(), pageCacheConfig, Config.defaults( config ) );
             return createStore( fs.get(),
-                    pageCache, storeFile.get(), 16, 16,
+                    pageCache, getStoreFile(), 16, 16,
                     headers( headers ), data );
         }
 
@@ -560,7 +552,7 @@ public class KeyValueDatabaseStoreFormatTest
 
         KeyValueStoreFile open() throws IOException
         {
-            return openStore( fs.get(), pages.getPageCache( fs.get() ), storeFile.get() );
+            return openStore( fs.get(), pages.getPageCache( fs.get() ), getStoreFile() );
         }
 
         @Override
@@ -571,6 +563,11 @@ public class KeyValueDatabaseStoreFormatTest
                 formatSpecifier.putByte( i, (byte) 0xFF );
             }
         }
+    }
+
+    private File getStoreFile()
+    {
+        return directory.createFile( "storeFile" );
     }
 
     static class Data implements DataProvider

@@ -125,9 +125,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean fileExists( File fileName )
+    public boolean fileExists( File file )
     {
-        return fileName.exists();
+        return file.exists();
     }
 
     @Override

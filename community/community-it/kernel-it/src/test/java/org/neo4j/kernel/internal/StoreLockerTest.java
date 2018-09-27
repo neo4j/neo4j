@@ -136,7 +136,7 @@ public class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
-            public boolean fileExists( File fileName )
+            public boolean fileExists( File file )
             {
                 return true;
             }
@@ -160,7 +160,7 @@ public class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
-            public boolean fileExists( File fileName )
+            public boolean fileExists( File file )
             {
                 return false;
             }
@@ -185,7 +185,7 @@ public class StoreLockerTest
             }
 
             @Override
-            public boolean fileExists( File fileName )
+            public boolean fileExists( File file )
             {
                 return false;
             }
@@ -218,7 +218,7 @@ public class StoreLockerTest
             }
 
             @Override
-            public boolean fileExists( File fileName )
+            public boolean fileExists( File file )
             {
                 return false;
             }
@@ -247,7 +247,7 @@ public class StoreLockerTest
         FileSystemAbstraction fileSystemAbstraction = new DelegatingFileSystemAbstraction( fileSystemRule.get() )
         {
             @Override
-            public boolean fileExists( File fileName )
+            public boolean fileExists( File file )
             {
                 return false;
             }

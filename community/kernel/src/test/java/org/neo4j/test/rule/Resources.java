@@ -70,14 +70,14 @@ public final class Resources implements TestRule
     }
 
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final ResourceRule<PageCache> pageCache = ResourceRule.pageCache( fs );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
     private final LifeRule life = new LifeRule();
 
     @Override
     public Statement apply( Statement base, Description description )
     {
-        return fs.apply( testDirectory.apply( pageCache.apply( lifeStatement( base, description ), description ), description ), description );
+        return fs.apply( testDirectory.apply( pageCacheRule.apply( lifeStatement( base, description ), description ), description ), description );
     }
 
     private Statement lifeStatement( Statement base, Description description )
@@ -110,7 +110,7 @@ public final class Resources implements TestRule
 
     public PageCache pageCache()
     {
-        return pageCache.get();
+        return pageCacheRule.getPageCache( fileSystem() );
     }
 
     public TestDirectory testDirectory()

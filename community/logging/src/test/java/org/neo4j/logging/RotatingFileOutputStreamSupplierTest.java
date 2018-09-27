@@ -668,11 +668,11 @@ class RotatingFileOutputStreamSupplierTest
         }
 
         @Override
-        public boolean fileExists( File fileName )
+        public boolean fileExists( File file )
         {
             // Default adversarial might throw a java.lang.SecurityException here, which is an exception
             // that should not be survived
-            return delegate.fileExists( fileName );
+            return delegate.fileExists( file );
         }
 
         @Override

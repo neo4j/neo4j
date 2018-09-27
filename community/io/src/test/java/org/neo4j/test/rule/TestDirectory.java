@@ -160,6 +160,13 @@ public class TestDirectory extends ExternalResource
         return new File( directory(), name );
     }
 
+    public File createFile( String name )
+    {
+        File file = file( name );
+        ensureFileExists( file );
+        return file;
+    }
+
     public File databaseDir()
     {
         return databaseLayout().databaseDirectory();
@@ -279,6 +286,21 @@ public class TestDirectory extends ExternalResource
     private void directoryForDescription( Description description ) throws IOException
     {
         prepareDirectory( description.getTestClass(), description.getMethodName() );
+    }
+
+    private void ensureFileExists( File file )
+    {
+        try
+        {
+            if ( !fileSystem.fileExists( file ) )
+            {
+                fileSystem.create( file ).close();
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( "Failed to create file: " + file, e );
+        }
     }
 
     private void createDirectory( File databaseDirectory )

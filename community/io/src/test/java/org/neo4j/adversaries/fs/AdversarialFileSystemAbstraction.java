@@ -202,10 +202,10 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public boolean fileExists( File fileName )
+    public boolean fileExists( File file )
     {
         adversary.injectFailure( SecurityException.class );
-        return delegate.fileExists( fileName );
+        return delegate.fileExists( file );
     }
 
     @Override
