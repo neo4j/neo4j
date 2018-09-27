@@ -340,7 +340,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private void populateIndexesOfAllTypes( MutableLongObjectMap<StoreIndexDescriptor> rebuildingDescriptors, IndexMap indexMap )
     {
-        Map<EntityType,MutableLongObjectMap<StoreIndexDescriptor>> rebuildingDescriptorsByType = new HashMap<>();
+        Map<EntityType,MutableLongObjectMap<StoreIndexDescriptor>> rebuildingDescriptorsByType = new EnumMap<>( EntityType.class );
         for ( StoreIndexDescriptor descriptor : rebuildingDescriptors )
         {
             rebuildingDescriptorsByType.computeIfAbsent( descriptor.schema().entityType(), type -> new LongObjectHashMap<>() )
