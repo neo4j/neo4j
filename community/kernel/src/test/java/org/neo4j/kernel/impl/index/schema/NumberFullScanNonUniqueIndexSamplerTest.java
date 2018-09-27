@@ -26,6 +26,7 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
@@ -97,6 +98,6 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
     @Override
     protected LayoutTestUtil<NumberIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new NumberNonUniqueLayoutTestUtil();
+        return new NumberLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 }

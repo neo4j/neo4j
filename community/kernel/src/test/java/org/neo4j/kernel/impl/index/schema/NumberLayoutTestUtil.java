@@ -26,7 +26,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
-abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValue>
+class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValue>
 {
     private static final Number[] ALL_EXTREME_VALUES = new Number[]
             {
@@ -53,6 +53,18 @@ abstract class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,Native
     NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
     {
         super( indexDescriptor.withId( 0 ) );
+    }
+
+    @Override
+    IndexLayout<NumberIndexKey,NativeIndexValue> createLayout()
+    {
+        return new NumberLayoutNonUnique();
+    }
+
+    @Override
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    {
+        return someUpdatesWithDuplicateValues();
     }
 
     @Override

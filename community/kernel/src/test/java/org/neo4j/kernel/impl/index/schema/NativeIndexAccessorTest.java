@@ -51,11 +51,11 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberAccessorFactory(),
-                        (LayoutTestUtilFactory) NumberNonUniqueLayoutTestUtil::new
+                        (LayoutTestUtilFactory) () -> new NumberLayoutTestUtil( descriptor )
                 },
                 {"String",
                         stringAccessorFactory(),
-                        (LayoutTestUtilFactory) StringNonUniqueLayoutTestUtil::new
+                        (LayoutTestUtilFactory) () -> new StringLayoutTestUtil( descriptor )
                 },
                 {"Date",
                         temporalAccessorFactory( ValueGroup.DATE ),

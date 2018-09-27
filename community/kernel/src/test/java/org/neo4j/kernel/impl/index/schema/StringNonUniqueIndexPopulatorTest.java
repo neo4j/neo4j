@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+
 public class StringNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopulatorTest<StringIndexKey,NativeIndexValue>
 {
     @Override
@@ -30,6 +32,6 @@ public class StringNonUniqueIndexPopulatorTest extends NativeNonUniqueIndexPopul
     @Override
     protected LayoutTestUtil<StringIndexKey,NativeIndexValue> createLayoutTestUtil()
     {
-        return new StringNonUniqueLayoutTestUtil();
+        return new StringLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
     }
 }

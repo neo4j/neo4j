@@ -26,11 +26,11 @@ public class NativeUniqueIndexPopulatorTest<KEY extends NativeIndexKey<KEY>, VAL
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberPopulatorFactory(),
-                        (LayoutTestUtilFactory) NumberUniqueLayoutTestUtil::new
+                        (LayoutTestUtilFactory) () -> new UniqueLayoutTestUtil<>( new NumberLayoutTestUtil( descriptor ) )
                 },
                 {"String",
                         (PopulatorFactory) StringIndexPopulator::new,
-                        (LayoutTestUtilFactory) StringUniqueLayoutTestUtil::new
+                        (LayoutTestUtilFactory) () -> new UniqueLayoutTestUtil<>( new StringLayoutTestUtil( descriptor ) )
                 },
                 {"Date",
                         temporalPopulatorFactory( ValueGroup.DATE ),
