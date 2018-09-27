@@ -31,9 +31,13 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted,
       query = "RETURN" +
         " reduce(acc=0, s IN ['1','22','1','333'] | acc + size(s)) AS result," +
-        " reduce(acc=0, s IN ['1','22','1','333'] | acc + null) AS nullValue")
+        " reduce(acc=0, s IN ['1','22','1','333'] | acc + null) AS nullExpression," +
+        " reduce(acc=0, s IN ['1',null,'1','333'] | acc + size(s)) AS nullElement")
 
-    result.toList.head should equal(Map("result" -> 7, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "result" -> 7,
+      "nullExpression" -> null,
+      "nullElement" -> null))
   }
 
   test("should reduce on nodes") {
@@ -52,9 +56,15 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should extract on values") {
     val result = executeWith(Configs.Interpreted,
-      query = "RETURN extract(s IN ['1','22','1','333'] | size(s)) AS result")
+      query = "RETURN" +
+        " extract(s IN ['1','22','1','333'] | size(s)) AS result," +
+        " extract(s IN ['1','22','1','333'] | null) AS nullExpression," +
+        " extract(s IN ['1',null,'1','333'] | size(s)) AS nullElement")
 
-    result.toList.head should equal(Map("result" -> List(1, 2, 1, 3)))
+    result.toList.head should equal(Map(
+      "result" -> List(1, 2, 1, 3),
+      "nullExpression" -> List(null, null, null, null),
+      "nullElement" -> List(1, null, 1, 3)))
   }
 
   test("should extract on nodes") {
@@ -87,9 +97,18 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should list comprehension on values, with predicate and extract") {
     val result = executeWith(Configs.Interpreted,
-      query = "RETURN [s IN ['1','22','1','333'] WHERE s STARTS WITH '1' | size(s)] AS result")
+      query = "RETURN" +
+        " [s IN ['1','22','1','333'] WHERE s STARTS WITH '1' | size(s)] AS result," +
+        " [s IN ['1','22','1','333'] WHERE null | size(s)] AS nullPredicate," +
+        " [s IN ['1',null,'1','333'] WHERE size(s)>0 | size(s)] AS nullElement," +
+        " [s IN ['1','22','1','333'] WHERE size(s)>1 | null] AS nullExtract")
 
-    result.toList.head should equal(Map("result" -> List(1, 1)))
+    result.toList.head should equal(Map(
+      "result" -> List(1, 1), // ['1', '1']
+      "nullPredicate" -> List(), // []
+      "nullElement" -> List(1, 1, 3), // ['1', '1', '333']
+      "nullExtract" -> List(null, null) // ['22', '333']
+    ))
   }
 
   test("should list comprehension on nodes") {
@@ -138,9 +157,14 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val result = executeWith(Configs.Interpreted,
       query = "RETURN" +
         " filter(s IN ['1','22','1','333'] WHERE s STARTS WITH '1') AS result," +
-        " filter(s IN ['1','22','1','333'] WHERE null) AS nullValue")
+        " filter(s IN ['1','22','1','333'] WHERE null) AS nullPredicate," +
+        " filter(s IN ['1',null,'1','333'] WHERE size(s)>1) AS nullElement")
 
-    result.toList.head should equal(Map("result" -> List("1", "1"), "nullValue" -> List()))
+    result.toList.head should equal(Map(
+      "result" -> List("1", "1"),
+      "nullPredicate" -> List(),
+      "nullElement" -> List("333")
+    ))
   }
 
   test("should filter on nodes") {
@@ -160,11 +184,18 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   test("should all predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
-        " all(s IN ['1','22','1','333'] WHERE size(s) > 0) AS true, " +
-        " all(s IN ['1','22','1','333'] WHERE size(s) > 1) AS false, " +
-        " all(s IN ['1','22','1','333'] WHERE null) AS nullValue")
+        " all(s IN ['1','22','1','333'] WHERE size(s) > 0) AS allTrue, " +
+        " all(s IN ['1','22','1','333'] WHERE size(s) > 1) AS someFalse, " +
+        " all(s IN ['1','22','1','333'] WHERE null) AS nullPredicate," +
+        " all(s IN ['1',null,'1','333'] WHERE size(s) > 0) AS allTrueWithNull," +
+        " all(s IN ['1',null,'1','333'] WHERE size(s) > 1) AS someFalseWithNull")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "allTrue" -> true,
+      "someFalse" -> false,
+      "nullPredicate" -> null,
+      "allTrueWithNull" -> null,
+      "someFalseWithNull" -> false))
   }
 
   test("should all predicate on nodes") {
@@ -188,11 +219,18 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   test("should any predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
-        " any(s IN ['1','22','1','333'] WHERE size(s) = 1) AS true, " +
-        " any(s IN ['1','22','1','333'] WHERE size(s) = 0) AS false, " +
-        " any(s IN ['1','22','1','333'] WHERE null) AS nullValue")
+        " any(s IN ['1','22','1','333'] WHERE size(s) = 1) AS someTrue, " +
+        " any(s IN ['1','22','1','333'] WHERE size(s) = 0) AS allFalse, " +
+        " any(s IN ['1','22','1','333'] WHERE null) AS nullPredicate," +
+        " any(s IN ['1',null,'1','333'] WHERE size(s) = 1) AS someTrueWithNull," +
+        " any(s IN ['1',null,'1','333'] WHERE size(s) = 0) AS allFalseWithNull")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "someTrue" -> true,
+      "allFalse" -> false,
+      "nullPredicate" -> null,
+      "someTrueWithNull" -> true,
+      "allFalseWithNull" -> null))
   }
 
   test("should any predicate on nodes") {
@@ -215,12 +253,20 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should none predicate on values") {
     val result = executeWith(Configs.Interpreted,
-      query = "RETURN " +
-        " none(s IN ['1','22','1','333'] WHERE size(s) = 0) AS true, " +
-        " none(s IN ['1','22','1','333'] WHERE size(s) = 1) AS false, " +
-        " none(s IN ['1','22','1','333'] WHERE null) AS nullValue")
+      query = "RETURN" +
+        " none(s IN ['1','22','1','333'] WHERE size(s) = 0) AS allFalse," +
+        " none(s IN ['1','22','1','333'] WHERE size(s) = 1) AS someTrue," +
+        " none(s IN ['1','22','1','333'] WHERE null) AS nullPredicate," +
+        " none(s IN ['1',null,'1','333'] WHERE size(s) = 0) AS allFalseWithNull," +
+        " none(s IN ['1',null,'1','333'] WHERE size(s) = 1) AS someTrueWithNull")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "allFalse" -> true,
+      "someTrue" -> false,
+      "nullPredicate" -> null,
+      "allFalseWithNull" -> null,
+      "someTrueWithNull" -> false
+    ))
   }
 
   test("should none predicate on nodes") {
@@ -244,11 +290,33 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   test("should single predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
-        " single(s IN ['1','22','1','333'] WHERE s = '333') AS true, " +
-        " single(s IN ['1','22','1','333'] WHERE s = '1') AS false, " +
-        " single(s IN ['1','22','1','333'] WHERE null) AS nullValue")
+        " single(s IN ['1','22','1','333'] WHERE s = '0') AS noneTrue," +
+        " single(s IN ['1','22','1','333'] WHERE s = '333') AS oneTrue," +
+        " single(s IN ['1','22','1','333'] WHERE s = '1') AS twoTrue," +
+        " single(s IN ['1','22','1','333'] WHERE null) AS nullPredicate," +
+        " single(s IN ['1',null,'1','333'] WHERE s = '0') AS noneTrueWithNull," +
+        " single(s IN ['1',null,'1','333'] WHERE s = '333') AS oneTrueWithNull")
 
-    result.toList.head should equal(Map("false" -> false, "true" -> true, "nullValue" -> null))
+    result.toList.head should equal(Map(
+      "noneTrue" -> false,
+      "oneTrue" -> true,
+      "twoTrue" -> false,
+      "nullPredicate" -> null,
+      "noneTrueWithNull" -> null,
+      "oneTrueWithNull" -> null))
+  }
+
+  // NOTE: should be merged with above test, but older Cypher versions fail on ONLY this case. it would be a shame to remove asserts all other cases.
+  test("should single predicate on values -- multiple true with null case") {
+    val costPlannerAndCurrentRuntimes = TestConfiguration(Versions(Versions.V3_4, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes.all)
+    val result = executeWith(Configs.Interpreted,
+      query = "RETURN " +
+        " single(s IN ['1',null,'1','333'] WHERE s = '1') AS twoTrueWithNull",
+      expectedDifferentResults =
+        Configs.Interpreted - costPlannerAndCurrentRuntimes)
+
+    result.toList.head should equal(Map(
+      "twoTrueWithNull" -> false))
   }
 
   test("should single predicate on nodes") {
