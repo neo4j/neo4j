@@ -178,6 +178,13 @@
       <artifactId>neo4j-cypher-planner-3.5</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-logging</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
 
     <!-- neo4j-cypher test -->
 

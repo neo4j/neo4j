@@ -117,24 +117,29 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
   /*
    * Return the primary and secondary compile to be used
+   *
+   * The primary compiler is the main compiler and the secondary compiler is used for compiling expressions for hot queries.
    */
   private def compilers(preParsedQuery: PreParsedQuery,
                         tracer: QueryCompilationEvent,
                         transactionalContext: TransactionalContext,
                         params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = preParsedQuery.expressionEngine match {
-    //if we are using compiled expressions we start interpreted and change to compiled when hot enough
-    case CypherExpressionEngineOption.compiled if config.recompilationLimit > 0 =>
+    //the default is to start with interpreted and change to compiled when hot enough
+    case CypherExpressionEngineOption.default if config.recompilationLimit > 0 =>
       val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.interpreted),
                                                  tracer, transactionalContext, params)
       val secondary: (Int) => Option[ExecutableQuery] =
         count => {
-          if (count > config.recompilationLimit) Some(masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.interpreted),
+          if (count > config.recompilationLimit) Some(masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.compiled),
                                                                              tracer, transactionalContext, params))
           else None
         }
 
       (primary, secondary)
-
+    //We have recompilationLimit == 0, go to compiled directly
+    case CypherExpressionEngineOption.default =>
+      (() => masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.compiled),
+                                    tracer, transactionalContext, params), (_) => None)
     //In the other cases we have no recompilation step
     case _ =>  (() => masterCompiler.compile(preParsedQuery,tracer, transactionalContext, params), (_) => None)
   }

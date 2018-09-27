@@ -114,7 +114,6 @@ case class CypherConfiguration(version: CypherVersion,
       csvBufferSize = csvBufferSize,
       nonIndexedLabelWarningThreshold = config.get(GraphDatabaseSettings.query_non_indexed_label_warning_threshold).longValue(),
       planWithMinimumCardinalityEstimates = planWithMinimumCardinalityEstimates,
-      useCompiledExpressions= expressionEngineOption == CypherExpressionEngineOption.compiled,
       lenientCreateRelationship = lenientCreateRelationship
     )
 }

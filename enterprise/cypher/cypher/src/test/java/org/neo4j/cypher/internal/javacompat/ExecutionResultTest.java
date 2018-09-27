@@ -34,6 +34,7 @@ import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.EnterpriseDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;

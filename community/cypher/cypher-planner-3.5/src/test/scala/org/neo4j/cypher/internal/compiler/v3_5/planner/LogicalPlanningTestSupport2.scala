@@ -83,7 +83,6 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     csvBufferSize = Configuration.DEFAULT_BUFFER_SIZE_4MB,
     nonIndexedLabelWarningThreshold = 10000,
     planWithMinimumCardinalityEstimates = true,
-    useCompiledExpressions = true,
     lenientCreateRelationship = false
   )
   val realConfig = new RealLogicalPlanningConfiguration(cypherCompilerConfig)

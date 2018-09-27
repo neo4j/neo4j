@@ -47,8 +47,12 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan, tokenCon
 
      // don't bother with small expressions, not worth it
     case e if sizeOf(e) > COMPILE_LIMIT => try {
-      new IntermediateCodeGeneration(physicalPlan.slotConfigurations(id)).compileExpression(e).map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
-                                                                                                                                          inner.toCommandExpression(id, expression)))
+      val ir = new IntermediateCodeGeneration(physicalPlan.slotConfigurations(id)).compileExpression(e)
+      if (ir.nonEmpty) {
+        log.debug(s"Compiling expression: $e")
+      }
+      ir.map(i => CompileWrappingExpression(CodeGeneration.compileExpression(i),
+                                                         inner.toCommandExpression(id, expression)))
     } catch {
       case t: Throwable =>
         //Something horrible happened, maybe we exceeded the bytecode size or introduced a bug so that we tried
@@ -76,8 +80,11 @@ class CompiledExpressionConverter(log: Log, physicalPlan: PhysicalPlan, tokenCon
         val compiled = for {(k, v) <- projections
                             c <- compiler.compileExpression(v)} yield slots.get(k).get.offset -> c
         if (compiled.size < projections.size) None
-        else Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(compiled)),
-                                            projections.isEmpty))
+        else {
+          log.debug(s" Compiling projection: $projections")
+          Some(CompileWrappingProjection(CodeGeneration.compileProjection(compiler.compileProjection(compiled)),
+                                         projections.isEmpty))
+        }
       } else None
     }
     catch {

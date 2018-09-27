@@ -50,12 +50,9 @@ case class PreParsedQuery(statement: String,
       case CypherUpdateStrategy.default => ""
       case _ => s"updateStrategy=${updateStrategy.name}"
     }
-    val expressionEngineInfo = expressionEngine match {
-      case option if option == CypherExpressionEngineOption.default => ""
-      case _ => s"expressionEngine=${expressionEngine.name}"
-    }
+
     val debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $debugFlags $statement"
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement"
   }
 }

@@ -88,7 +88,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val queryType = getQueryType(planState)
 
     val compileExpressions = preParsedQuery.expressionEngine match {
-      case CypherExpressionEngineOption.default | CypherExpressionEngineOption.compiled => true
+      case CypherExpressionEngineOption.compiled => true
       case _ => false
     }
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.notificationLogger,
