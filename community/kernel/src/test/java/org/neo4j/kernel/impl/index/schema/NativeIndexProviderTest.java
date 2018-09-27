@@ -334,19 +334,16 @@ public abstract class NativeIndexProviderTest
     protected abstract Value someValue();
 
     abstract IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                                        IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
-
-    abstract IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                                                IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector );
+            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector, boolean readOnly );
 
     private IndexProvider newProvider()
     {
-        return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate() );
+        return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate(), false );
     }
 
     private IndexProvider newReadOnlyProvider()
     {
-        return newReadOnlyProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate() );
+        return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate(), true );
     }
 
     private IndexSamplingConfig samplingConfig()

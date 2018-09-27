@@ -35,16 +35,9 @@ public class SpatialIndexProviderTest extends NativeIndexProviderTest
 {
     @Override
     IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                               Monitor monitor, RecoveryCleanupWorkCollector collector )
+            Monitor monitor, RecoveryCleanupWorkCollector collector, boolean readOnly )
     {
-        return new SpatialIndexProvider( pageCache, fs, dir, monitor, collector, false, Config.defaults() );
-    }
-
-    @Override
-    IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                                       Monitor monitor, RecoveryCleanupWorkCollector collector )
-    {
-        return new SpatialIndexProvider( pageCache, fs, dir, monitor, collector, true, Config.defaults() );
+        return new SpatialIndexProvider( pageCache, fs, dir, monitor, collector, readOnly, Config.defaults() );
     }
 
     @Override

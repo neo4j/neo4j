@@ -33,16 +33,9 @@ public class NumberIndexProviderTest extends NativeIndexProviderTest
 {
     @Override
     IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                               Monitor monitor, RecoveryCleanupWorkCollector collector )
+            Monitor monitor, RecoveryCleanupWorkCollector collector, boolean readOnly )
     {
-        return new NumberIndexProvider( pageCache, fs, dir, monitor, collector, false );
-    }
-
-    @Override
-    IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-                                       Monitor monitor, RecoveryCleanupWorkCollector collector )
-    {
-        return new NumberIndexProvider( pageCache, fs, dir, monitor, collector, true );
+        return new NumberIndexProvider( pageCache, fs, dir, monitor, collector, readOnly );
     }
 
     @Override

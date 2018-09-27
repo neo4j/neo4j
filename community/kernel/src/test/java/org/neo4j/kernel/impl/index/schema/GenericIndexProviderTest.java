@@ -45,15 +45,9 @@ public class GenericIndexProviderTest extends NativeIndexProviderTest
 
     @Override
     IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir, IndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector collector )
+            RecoveryCleanupWorkCollector collector, boolean readOnly )
     {
-        return new GenericNativeIndexProvider( 0, dir, pageCache, fs, monitor, collector, false, Config.defaults() );
+        return new GenericNativeIndexProvider( 0, dir, pageCache, fs, monitor, collector, readOnly, Config.defaults() );
     }
 
-    @Override
-    IndexProvider newReadOnlyProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir, IndexProvider.Monitor monitor,
-            RecoveryCleanupWorkCollector collector )
-    {
-        return new GenericNativeIndexProvider( 0, dir, pageCache, fs, monitor, collector, true, Config.defaults() );
-    }
 }
