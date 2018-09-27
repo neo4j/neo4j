@@ -26,12 +26,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 
+import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
+import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
@@ -57,6 +62,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
                         (LayoutUtilFactory) () -> new LocalDateTimeLayoutTestUtil( descriptor )},
                 {"Time", temporalAccessorFactory( ValueGroup.ZONED_TIME ),
                         (LayoutUtilFactory) () -> new TimeLayoutTestUtil( descriptor )},
+                {"Generic", genericAccessorFactory(), (LayoutUtilFactory) () -> new GenericLayoutTestUtil( descriptor )},
                 //{ Spatial has it's own subclass because it need to override some of the test methods }
         } );
     }
@@ -101,6 +107,15 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
             TemporalIndexFiles.FileLayout<DateIndexKey> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
             return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor );
         };
+    }
+
+    private static AccessorFactory<CompositeGenericKey,NativeIndexValue> genericAccessorFactory()
+    {
+        IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
+                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+        StandardConfiguration configuration = new StandardConfiguration();
+        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor ) ->
+                new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
     }
 
     @FunctionalInterface
