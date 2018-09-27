@@ -215,11 +215,11 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
           $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
           if ($option -eq $null) {
             $ShellArgs += @('-XX:+PrintGCDetails',
-            '-XX:+PrintGCDateStamps',
-            '-XX:+PrintGCApplicationStoppedTime',
-            '-XX:+PrintPromotionFailure',
-            '-XX:+PrintTenuringDistribution',
-            '-XX:+UseGCLogFileRotation')
+              '-XX:+PrintGCDateStamps',
+              '-XX:+PrintGCApplicationStoppedTime',
+              '-XX:+PrintPromotionFailure',
+              '-XX:+PrintTenuringDistribution',
+              '-XX:+UseGCLogFileRotation')
           } else {
             # The GC options _should_ be space delimited
             $ShellArgs += ($option.value -split ' ')
