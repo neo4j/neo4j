@@ -527,14 +527,13 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
         @Override
         public T getSingle()
         {
-            next = fetchNext();
-            if ( next == NO_ID )
+            if ( !hasNext() )
             {
                 return null;
             }
 
-            T item = materialize( next );
-            if ( fetchNext() != NO_ID )
+            T item = next();
+            if ( hasNext() )
             {
                 throw new NoSuchElementException();
             }
@@ -560,7 +559,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                 throw new NoSuchElementException();
             }
             T item = materialize( next );
-            next = fetchNext();
+            next = NOT_INITIALIZED;
             return item;
         }
 

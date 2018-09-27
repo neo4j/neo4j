@@ -25,15 +25,28 @@ import org.junit.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.index.lucene.unsafe.batchinsert.LuceneBatchInserterIndexProvider;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ExplicitIndexTest
@@ -66,6 +79,83 @@ public class ExplicitIndexTest
         {
             provider.shutdown();
             batchNode.shutdown();
+        }
+    }
+
+    @Test
+    public void shouldBeAbleToGetSingleHitAfterCallToHasNext()
+    {
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            // given
+            Index<Node> nodeIndex;
+            Index<Relationship> relationshipIndex;
+            try ( Transaction tx = db.beginTx() )
+            {
+                nodeIndex = db.index().forNodes( "MyIndex" );
+                relationshipIndex = db.index().forRelationships( "MyIndex" );
+                tx.success();
+            }
+            String key = "key";
+            String value = "value";
+            Node node;
+            Relationship relationship;
+            try ( Transaction tx = db.beginTx() )
+            {
+                node = db.createNode();
+                nodeIndex.add( node, key, value );
+
+                relationship = node.createRelationshipTo( node, MyRelTypes.TEST );
+                relationshipIndex.add( relationship, key, value );
+                tx.success();
+            }
+            assertFindSingleHit( db, nodeIndex, key, value, node );
+            assertFindSingleHit( db, relationshipIndex, key, value, relationship );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private <T extends PropertyContainer> void assertFindSingleHit( GraphDatabaseService db, Index<T> nodeIndex, String key, String value, T entity )
+    {
+        // when get using hasNext + next, then
+        assertEquals( entity, findSingle( db, nodeIndex, key, value, hits ->
+        {
+            assertTrue( hits.hasNext() );
+            T result = hits.next();
+            assertFalse( hits.hasNext() );
+            return result;
+        } ) );
+        // when get using getSingle, then
+        assertEquals( entity, findSingle( db, nodeIndex, key, value, hits ->
+        {
+            T result = hits.getSingle();
+            assertFalse( hits.hasNext() );
+            return result;
+        } ) );
+        // when get using hasNext + getSingle, then
+        assertEquals( entity, findSingle( db, nodeIndex, key, value, hits ->
+        {
+            assertTrue( hits.hasNext() );
+            T result = hits.getSingle();
+            assertFalse( hits.hasNext() );
+            return result;
+        } ) );
+    }
+
+    private <T extends PropertyContainer> T findSingle( GraphDatabaseService db, Index<T> index, String key, String value, Function<IndexHits<T>,T> getter )
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( IndexHits<T> hits = index.get( key, value ) )
+            {
+                T entity = getter.apply( hits );
+                tx.success();
+                return entity;
+            }
         }
     }
 }
