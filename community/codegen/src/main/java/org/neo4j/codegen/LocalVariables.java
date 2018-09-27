@@ -32,8 +32,12 @@ public class LocalVariables
     private final AtomicInteger counter = new AtomicInteger( 0 );
     private final Map<String,LocalVariable> localVariables = new HashMap<>();
 
-    public LocalVariable createNew( TypeReference type, String name )
+    LocalVariable createNew( TypeReference type, String name )
     {
+        if ( localVariables.containsKey( name ) )
+        {
+            throw new IllegalStateException( String.format( "Local variable %s already in scope", name  ) );
+        }
         LocalVariable localVariable = new LocalVariable( type, name, counter.getAndIncrement() );
         localVariables.put( name, localVariable );
         //if 64 bit types we need to give it one more index

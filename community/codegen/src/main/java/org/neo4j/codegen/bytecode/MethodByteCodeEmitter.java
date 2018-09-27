@@ -63,13 +63,11 @@ class MethodByteCodeEmitter implements MethodEmitter
     private final MethodVisitor methodVisitor;
     private final MethodDeclaration declaration;
     private final ExpressionVisitor expressionVisitor;
-    private final TypeReference base;
     private Deque<Block> stateStack = new LinkedList<>();
 
-    MethodByteCodeEmitter( ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference base )
+    MethodByteCodeEmitter( ClassVisitor classVisitor, MethodDeclaration declaration, TypeReference ignore )
     {
         this.declaration = declaration;
-        this.base = base;
         for ( Parameter parameter : declaration.parameters() )
         {
             TypeReference type = parameter.type();
