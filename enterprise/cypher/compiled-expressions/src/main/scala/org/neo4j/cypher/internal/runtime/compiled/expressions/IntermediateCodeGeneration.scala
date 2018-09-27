@@ -244,7 +244,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ExecutionContext innerContext = context.createClone();
         Iterator<AnyValue> listIterator = list.iterator();
         int matches = 0;
-        boolean isNull = true
+        boolean isNull = false;
         while( matches < 2 && listIterator.hasNext() )
         {
             AnyValue currentValue = listIterator.next();
@@ -254,12 +254,12 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             {
                 matches++;
             }
-            if (isMatch != Values.NO_VALUE)
+            if (isMatch == Values.NO_VALUE)
             {
-                isNull = false;
+                isNull = true;
             }
         }
-        return (isNull) ? Values.NO_VALUE : Values.booleanValue(matches == 1);
+        return (matches < 2 && isNull) ? Values.NO_VALUE : Values.booleanValue(matches == 1);
        */
       val innerContext = namer.nextVariableName()
       val iterVariable = namer.nextVariableName()
@@ -279,7 +279,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           // ListValue list = [evaluate collection expression];
           // ExecutionContext innerContext = context.createClone();
           // int matches = 0;
-          // boolean isNull = true;
+          // boolean isNull = false;
           declare[ListValue](listVar),
           assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
           declare[ExecutionContext](innerContext),
@@ -288,7 +288,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           declare[Int](matches),
           assign(matches, constant(0)),
           declare[Boolean](isNull),
-          assign(isNull, constant(true)),
+          assign(isNull, constant(false)),
           // Iterator<AnyValue> listIterator = list.iterator();
           // while( matches < 2 && listIterator.hasNext())
           // {
@@ -311,18 +311,18 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             condition(equal(load(isMatch), truthValue))(
               assign(matches, add(load(matches), constant(1)))
             ),
-            // if (isMatch != Values.NO_VALUE)
+            // if (isMatch == Values.NO_VALUE)
             // {
-            //     isNull=false;
+            //     isNull=true;
             // }
-            condition(notEqual(load(isMatch), noValue))(
-              assign(isNull, constant(false))
+            condition(equal(load(isMatch), noValue))(
+              assign(isNull, constant(true))
             )
           ):_*)
           },
           // }
-          // return isNull ? Values.NO_VALUE : Values.booleanValue(matches == 1);
-          ternary(load(isNull),
+          // return (matches < 2 && isNull) ? Values.NO_VALUE : Values.booleanValue(matches==1);
+          ternary(and(lessThan(load(matches), constant(2)), load(isNull)),
             noValue,
             invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(matches), constant(1))))
         )
@@ -336,13 +336,18 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ExecutionContext innerContext = context.createClone();
         Iterator<AnyValue> listIterator = list.iterator();
         Value isMatch = Values.NO_VALUE;
+        boolean isNull = false;
         while( isMatch != Values.TRUE && listIterator.hasNext() )
         {
             AnyValue currentValue = listIterator.next();
             innerContext.set([name from scope], currentValue);
             isMatch = [result from inner expression using innerContext]
+            if (isMatch == Values.NO_VALUE)
+            {
+                isNull = true;
+            }
         }
-        return (isMatch == Values.NO_VALUE) ? Values.NO_VALUE : Values.booleanValue(isMatch == Values.FALSE);
+        return (isNull && isMatch != Values.TRUE) ? Values.NO_VALUE : Values.booleanValue(isMatch == Values.FALSE);
        */
       val innerContext = namer.nextVariableName()
       val iterVariable = namer.nextVariableName()
@@ -356,10 +361,12 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val isMatch = namer.nextVariableName()
+        val isNull = namer.nextVariableName()
         val ops = Seq(
           // ListValue list = [evaluate collection expression];
           // ExecutionContext innerContext = context.createClone();
           // Value isMatch = Values.NO_VALUE;
+          // boolean isNull = false;
           declare[ListValue](listVar),
           assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
           declare[ExecutionContext](innerContext),
@@ -367,6 +374,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
           declare[Value](isMatch),
           assign(isMatch, noValue),
+          declare[Boolean](isNull),
+          assign(isNull, constant(false)),
           // Iterator<AnyValue> listIterator = list.iterator();
           // while( isMatch != Values.TRUE, && listIterator.hasNext() )
           // {
@@ -380,12 +389,19 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             // isMatch = [result from inner expression using innerContext]
-            assign(isMatch, nullCheck(inner)(inner.ir))
+            assign(isMatch, nullCheck(inner)(inner.ir)),
+            // if (isMatch == Values.NO_VALUE)
+            // {
+            //     isNull=true;
+            // }
+            condition(equal(load(isMatch), noValue))(
+              assign(isNull, constant(true))
+            )
           ):_*)
           },
           // }
-          // return (isMatch == Values.NO_VALUE) ? Values.NO_VALUE : Values.booleanValue(isMatch == Values.FALSE);
-          ternary(equal(load(isMatch), noValue),
+          // return (isNull && isMatch != Values.TRUE) ? Values.NO_VALUE : Values.booleanValue(isMatch == Values.FALSE);
+          ternary(and(load(isNull), notEqual(load(isMatch), truthValue)),
             noValue,
             invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(isMatch), falseValue)))
         )
@@ -399,13 +415,18 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ExecutionContext innerContext = context.createClone();
         Iterator<AnyValue> listIterator = list.iterator();
         Value isMatch = Values.FALSE;
-        while( isMatch==Values.FALSE && listIterator.hasNext() )
+        boolean isNull = false;
+        while( isMatch != Values.TRUE && listIterator.hasNext() )
         {
             AnyValue currentValue = listIterator.next();
             innerContext.set([name from scope], currentValue);
             isMatch = [result from inner expression using innerContext]
+            if (isMatch == Values.NO_VALUE)
+            {
+                isNull = true;
+            }
         }
-        return isMatch;
+        return (isNull && isMatch != Values.TRUE) ? Values.NO_VALUE : isMatch;
        */
       val innerContext = namer.nextVariableName()
       val iterVariable = namer.nextVariableName()
@@ -419,10 +440,12 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val isMatch = namer.nextVariableName()
+        val isNull = namer.nextVariableName()
         val ops = Seq(
           // ListValue list = [evaluate collection expression];
           // ExecutionContext innerContext = context.createClone();
           // Value isMatch = Values.FALSE;
+          // boolean isNull = false;
           declare[ListValue](listVar),
           assign(listVar, invokeStatic(method[CypherFunctions, ListValue, AnyValue]("makeTraversable"), collection.ir)),
           declare[ExecutionContext](innerContext),
@@ -430,25 +453,36 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
           declare[Value](isMatch),
           assign(isMatch, falseValue),
+          declare[Boolean](isNull),
+          assign(isNull, constant(false)),
           // Iterator<AnyValue> listIterator = list.iterator();
-          // while( isMatch==Values.FALSE listIterator.hasNext())
+          // while( isMatch != Values.TRUE listIterator.hasNext())
           // {
           //    AnyValue currentValue = listIterator.next();
           declare[java.util.Iterator[AnyValue]](iterVariable),
           assign(iterVariable, invoke(load(listVar), method[ListValue, java.util.Iterator[AnyValue]]("iterator"))),
-          loop(and(equal(load(isMatch), falseValue), invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext")))) {block(Seq(
+          loop(and(notEqual(load(isMatch), truthValue), invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext")))) {block(Seq(
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
             contextSet(scope.variable.name, load(innerContext), load(currentValue))
           ) ++ innerVars ++ Seq(
             // isMatch = [result from inner expression using innerContext]
-            assign(isMatch, nullCheck(inner)(inner.ir))
+            assign(isMatch, nullCheck(inner)(inner.ir)),
+            // if (isMatch == Values.NO_VALUE)
+            // {
+            //     isNull=true;
+            // }
+            condition(equal(load(isMatch), noValue))(
+              assign(isNull, constant(true))
+            )
           ):_*)
           },
           // }
-          // return isMatch;
-          load(isMatch)
+          // return (isNull && isMatch != Values.TRUE) ? Values.NO_VALUE : isMatch;
+          ternary(and(load(isNull), notEqual(load(isMatch), truthValue)),
+            noValue,
+            load(isMatch))
         )
         IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
           collection.nullCheck)
@@ -788,7 +822,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- internalCompileExpression(rhs, currentContext)
       } yield {
         val variableName = namer.nextVariableName()
-        val local = variable[Value](variableName, invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l.ir, r.ir))
+        val local = variable[Value](variableName, nullCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("equals"), l.ir, r.ir)))
         IntermediateExpression(load(variableName), l.fields ++ r.fields, l.variables ++ r.variables :+ local, Set(equal(load(variableName), noValue)))
       }
 
@@ -797,7 +831,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- internalCompileExpression(rhs, currentContext)
       } yield {
         val variableName = namer.nextVariableName()
-        val local = variable[Value](variableName, invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l.ir, r.ir))
+        val local = variable[Value](variableName, nullCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("notEquals"), l.ir, r.ir)))
         IntermediateExpression(load(variableName), l.fields ++ r.fields, l.variables ++ r.variables :+ local, Set(equal(load(variableName), noValue)))
       }
 
@@ -1166,7 +1200,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
     //slotted operations
     case ReferenceFromSlot(offset, name) =>
-      val localName = namer.variableName(name)
+      val localName = namer.nextVariableName()
       val nullCheck = slots.get(name).filter(_.nullable).map(_ => equal(getRefAt(offset, currentContext), noValue))
       val localVariable = variable[AnyValue](localName, nullCheck.map(c => ternary(c, noValue, getRefAt(offset, currentContext)))
         .getOrElse(getRefAt(offset, currentContext)))
