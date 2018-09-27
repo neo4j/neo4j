@@ -40,9 +40,6 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
 import static java.util.Collections.emptyMap;
-import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.configureRaftLogRotationAndPruning;
-import static org.neo4j.causalclustering.stresstests.ClusterConfiguration.enableRaftMessageLogging;
-import static org.neo4j.helper.DatabaseConfiguration.configureTxLogRotationAndPruning;
 import static org.neo4j.helper.StressTestingHelper.ensureExistsAndEmpty;
 
 class Resources
@@ -68,14 +65,15 @@ class Resources
         int numberOfCores = config.numberOfCores();
         int numberOfEdges = config.numberOfEdges();
         String workingDirectory = config.workingDir();
-        String txPrune = config.txPrune();
 
         this.clusterDir = ensureExistsAndEmpty( new File( workingDirectory, "cluster" ) );
         this.backupDir = ensureExistsAndEmpty( new File( workingDirectory, "backups" ) );
 
-        Map<String,String> coreParams = enableRaftMessageLogging(
-                configureRaftLogRotationAndPruning( configureTxLogRotationAndPruning( new HashMap<>(), txPrune ) ) );
-        Map<String,String> readReplicaParams = configureTxLogRotationAndPruning( new HashMap<>(), txPrune );
+        Map<String,String> coreParams = new HashMap<>();
+        Map<String,String> readReplicaParams = new HashMap<>();
+
+        config.populateCoreParams( coreParams );
+        config.populateReadReplicaParams( readReplicaParams );
 
         HazelcastDiscoveryServiceFactory discoveryServiceFactory = new HazelcastDiscoveryServiceFactory();
         cluster = new EnterpriseCluster( clusterDir, numberOfCores, numberOfEdges, discoveryServiceFactory, coreParams, emptyMap(), readReplicaParams,

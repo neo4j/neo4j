@@ -25,7 +25,10 @@ package org.neo4j.causalclustering.stresstests;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Map;
 
+import org.neo4j.causalclustering.core.CausalClusteringSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
@@ -52,6 +55,7 @@ public class Config
     private int shutdownDurationMinutes;
 
     private String txPrune;
+    private String checkpointPolicy;
 
     private Collection<Preparations> preparations;
     private Collection<Workloads> workloads;
@@ -73,6 +77,7 @@ public class Config
         shutdownDurationMinutes = envOrDefault( "SHUTDOWN_DURATION_MINUTES", 5 );
 
         txPrune = envOrDefault( "TX_PRUNE", "50 files" );
+        checkpointPolicy = envOrDefault( "CHECKPOINT_POLICY", GraphDatabaseSettings.check_point_policy.getDefaultValue() );
 
         preparations = envOrDefault( Preparations.class, "PREPARATIONS" );
         workloads = envOrDefault( Workloads.class, "WORKLOADS" );
@@ -174,11 +179,6 @@ public class Config
         return shutdownDurationMinutes;
     }
 
-    public String txPrune()
-    {
-        return txPrune;
-    }
-
     public void preparations( Preparations... preparations )
     {
         this.preparations = asList( preparations );
@@ -224,12 +224,30 @@ public class Config
         this.reelectIntervalSeconds = reelectIntervalSeconds;
     }
 
+    public void populateCoreParams( Map<String,String> params )
+    {
+        params.put( GraphDatabaseSettings.keep_logical_logs.name(), txPrune );
+        params.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
+        params.put( GraphDatabaseSettings.check_point_policy.name(), checkpointPolicy );
+
+        params.put( CausalClusteringSettings.raft_log_rotation_size.name(), "1K" );
+        params.put( CausalClusteringSettings.raft_log_pruning_frequency.name(), "250ms" );
+        params.put( CausalClusteringSettings.raft_log_pruning_strategy.name(), "keep_none" );
+    }
+
+    public void populateReadReplicaParams( Map<String,String> params )
+    {
+        params.put( GraphDatabaseSettings.keep_logical_logs.name(), txPrune );
+        params.put( GraphDatabaseSettings.logical_log_rotation_threshold.name(), "1M" );
+        params.put( GraphDatabaseSettings.check_point_policy.name(), checkpointPolicy );
+    }
+
     @Override
     public String toString()
     {
-        return "Config{" + "numberOfCores=" + numberOfCores + ", numberOfEdges=" + numberOfEdges + ", workingDir='" + workingDir + '\'' +
+        return "Config{" + "workingDir='" + workingDir + '\'' + ", numberOfCores=" + numberOfCores + ", numberOfEdges=" + numberOfEdges +
                 ", workDurationMinutes=" + workDurationMinutes + ", shutdownDurationMinutes=" + shutdownDurationMinutes + ", txPrune='" + txPrune + '\'' +
-                ", preparations=" + preparations + ", workloads=" + workloads + ", validations=" + validations + ", enableIndexes=" + enableIndexes +
-                ", reelectIntervalSeconds=" + reelectIntervalSeconds + '}';
+                ", checkpointPolicy='" + checkpointPolicy + '\'' + ", preparations=" + preparations + ", workloads=" + workloads + ", validations=" +
+                validations + ", enableIndexes=" + enableIndexes + ", reelectIntervalSeconds=" + reelectIntervalSeconds + '}';
     }
 }
