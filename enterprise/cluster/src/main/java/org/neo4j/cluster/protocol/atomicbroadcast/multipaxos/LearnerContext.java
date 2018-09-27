@@ -33,6 +33,11 @@ import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
 public interface LearnerContext
     extends TimeoutsContext, LoggingContext, ConfigurationContext
 {
+    /*
+     * How many instances the coordinator will allow to be open before taking drastic action and delivering them
+     */
+    int LEARN_GAP_THRESHOLD = 10;
+
     long getLastDeliveredInstanceId();
 
     void setLastDeliveredInstanceId( long lastDeliveredInstanceId );
