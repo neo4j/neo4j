@@ -82,7 +82,7 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     public void shouldReturnMatchingEntriesForRangePredicateWithInclusiveStartAndInclusiveEnd() throws Exception
     {
         // given
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.generateAddUpdatesFor( new Value[]{
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.generateAddUpdatesFor( new Value[]{
                 Values.pointValue( WGS84, -90, -90 ),
                 Values.pointValue( WGS84, -70, -70 ),
                 Values.pointValue( WGS84, -50, -50 ),
@@ -117,7 +117,7 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     {
         // It ok to not use random values here because we are only testing nesting of queries
         //noinspection unchecked
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.generateAddUpdatesFor( new Value[]{
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.generateAddUpdatesFor( new Value[]{
                 Values.pointValue( WGS84, -90, -90 ),
                 Values.pointValue( WGS84, -70, -70 ),
                 Values.pointValue( WGS84, -50, -50 ),
@@ -134,7 +134,7 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     {
         // It ok to not use random values here because we are only testing nesting of queries
         //noinspection unchecked
-        IndexEntryUpdate<IndexDescriptor>[] updates = layoutUtil.generateAddUpdatesFor( new Value[]{
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.generateAddUpdatesFor( new Value[]{
                 Values.pointValue( WGS84, -90, -90 ),
                 Values.pointValue( WGS84, -70, -70 ),
                 Values.pointValue( WGS84, -50, -50 ),

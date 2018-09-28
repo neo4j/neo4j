@@ -70,7 +70,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     StoreIndexDescriptor indexDescriptor;
-    ValueCreatorUtil<KEY,VALUE> layoutUtil;
+    ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
     private IndexDirectoryStructure indexDirectoryStructure;
     private File indexFile;
@@ -81,8 +81,8 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     @Before
     public void setup()
     {
-        layoutUtil = createValueCreatorUtil();
-        indexDescriptor = layoutUtil.indexDescriptor();
+        valueCreatorUtil = createValueCreatorUtil();
+        indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
@@ -100,7 +100,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
 
     private void copyValue( VALUE value, VALUE intoValue )
     {
-        layoutUtil.copyValue( value, intoValue );
+        valueCreatorUtil.copyValue( value, intoValue );
     }
 
     void verifyUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
@@ -122,7 +122,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
             int keyCompare = layout.compare( h1.key(), h2.key() );
             if ( keyCompare == 0 )
             {
-                return layoutUtil.compareIndexedPropertyValue( h1.key(), h2.key() );
+                return valueCreatorUtil.compareIndexedPropertyValue( h1.key(), h2.key() );
             }
             else
             {
