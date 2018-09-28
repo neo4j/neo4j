@@ -56,7 +56,7 @@ import static org.mockito.Mockito.when;
 public class ReplicatedTransactionStateMachineTest
 {
     private final NullLogProvider logProvider = NullLogProvider.getInstance();
-    private final CommandIndexTracker commandIndexTracker = mock( CommandIndexTracker.class );
+    private final CommandIndexTracker commandIndexTracker = new CommandIndexTracker();
     private final int batchSize = 16;
 
     @Test
@@ -163,6 +163,39 @@ public class ReplicatedTransactionStateMachineTest
         stateMachine.ensuredApplied();
 
         assertTrue( called.get() );
+    }
+
+    @Test
+    public void raftIndexIsRecorded() throws TransactionFailureException
+    {
+        // given
+        int txLockSessionId = Locks.Client.NO_LOCK_SESSION_ID;
+        long anyTransactionId = 1234;
+        long lastCommittedIndex = 1357;
+        long updatedCommandIndex = 2468;
+
+        // and
+        ReplicatedTransactionStateMachine stateMachine =
+                new ReplicatedTransactionStateMachine( commandIndexTracker, lockState( txLockSessionId ), batchSize, logProvider, PageCursorTracerSupplier.NULL,
+                        EmptyVersionContextSupplier.EMPTY );
+
+        ReplicatedTransaction replicatedTransaction = ReplicatedTransaction.from( physicalTx( txLockSessionId ) );
+
+        // and
+        TransactionCommitProcess localCommitProcess = createFakeTransactionCommitProcess( anyTransactionId );
+
+        // when
+        stateMachine.installCommitProcess( localCommitProcess, lastCommittedIndex );
+
+        // then
+        assertEquals( lastCommittedIndex, commandIndexTracker.getAppliedCommandIndex() );
+
+        // when
+        stateMachine.applyCommand( replicatedTransaction, updatedCommandIndex, result -> {});
+        stateMachine.ensuredApplied();
+
+        // then
+        assertEquals( updatedCommandIndex, commandIndexTracker.getAppliedCommandIndex() );
     }
 
     private TransactionCommitProcess createFakeTransactionCommitProcess( long txId ) throws TransactionFailureException

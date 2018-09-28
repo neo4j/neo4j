@@ -74,6 +74,7 @@ public class ReplicatedTransactionStateMachine implements StateMachine<Replicate
     public synchronized void installCommitProcess( TransactionCommitProcess commitProcess, long lastCommittedIndex )
     {
         this.lastCommittedIndex = lastCommittedIndex;
+        commandIndexTracker.setAppliedCommandIndex( lastCommittedIndex );
         log.info( format("Updated lastCommittedIndex to %d", lastCommittedIndex) );
         this.queue = new TransactionQueue( maxBatchSize, ( first, last ) ->
         {
