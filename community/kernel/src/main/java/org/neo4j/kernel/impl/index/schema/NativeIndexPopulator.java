@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -76,9 +77,9 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
+            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, OpenOption... openOptions )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, openOptions );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -46,7 +48,8 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
             IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex, boolean temporary )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ) );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ),
+                temporary ? new OpenOption[] {StandardOpenOption.DELETE_ON_CLOSE} : new OpenOption[0] );
         this.spatialSettings = spatialSettings;
         this.directoryStructure = directoryStructure;
         this.configuration = configuration;

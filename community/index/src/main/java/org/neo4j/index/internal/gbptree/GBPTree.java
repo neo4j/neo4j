@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.file.NoSuchFileException;
+import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -43,6 +44,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 import static java.lang.String.format;
+import static org.apache.commons.lang3.ArrayUtils.add;
 import static org.neo4j.helpers.Exceptions.withMessage;
 import static org.neo4j.index.internal.gbptree.Generation.generation;
 import static org.neo4j.index.internal.gbptree.Generation.stableGeneration;
@@ -352,6 +354,12 @@ public class GBPTree<KEY,VALUE> implements Closeable
     private final Monitor monitor;
 
     /**
+     * {@link OpenOption} additional options to pass to {@link PageCache#map(File, int, OpenOption...)}
+     * when opening backing paged file.
+     */
+    private final OpenOption[] openOptions;
+
+    /**
      * Whether or not this tree has been closed. Accessed and changed solely in
      * {@link #close()} to be able to close tree multiple times gracefully.
      */
@@ -440,15 +448,17 @@ public class GBPTree<KEY,VALUE> implements Closeable
      * or {@link #close()}
      * @param headerWriter writes header data if indexFile is created as a result of this call.
      * @param recoveryCleanupWorkCollector collects recovery cleanup jobs for execution after recovery.
+     * @param openOptions additional {@link OpenOption options} to provide to {@link PageCache#map(File, int, OpenOption...)}.
      * @throws UncheckedIOException on page cache error
      * @throws MetadataMismatchException if meta information does not match constructor parameters or meta page is missing
      */
     public GBPTree( PageCache pageCache, File indexFile, Layout<KEY,VALUE> layout, int tentativePageSize,
             Monitor monitor, Header.Reader headerReader, Consumer<PageCursor> headerWriter,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector ) throws MetadataMismatchException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OpenOption... openOptions ) throws MetadataMismatchException
     {
         this.indexFile = indexFile;
         this.monitor = monitor;
+        this.openOptions = openOptions;
         this.generation = Generation.generation( MIN_GENERATION, MIN_GENERATION + 1 );
         long rootId = IdSpace.MIN_TREE_NODE_ID;
         setRoot( rootId, Generation.unstableGeneration( generation ) );
@@ -558,9 +568,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
     }
 
-    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile ) throws IOException, MetadataMismatchException
+    private static PagedFile openExistingIndexFile( PageCache pageCache, File indexFile, OpenOption... openOptions )
+            throws IOException, MetadataMismatchException
     {
-        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize() );
+        PagedFile pagedFile = pageCache.map( indexFile, pageCache.pageSize(), openOptions );
         // This index already exists, verify meta data aligns with expectations
 
         boolean success = false;
@@ -599,7 +610,7 @@ public class GBPTree<KEY,VALUE> implements Closeable
         }
 
         // We need to create this index
-        PagedFile pagedFile = pageCache.map( indexFile, pageSize, StandardOpenOption.CREATE );
+        PagedFile pagedFile = pageCache.map( indexFile, pageSize, add( openOptions, StandardOpenOption.CREATE ) );
         created = true;
         return pagedFile;
     }
