@@ -93,7 +93,7 @@ public class ConcurrentCreateDropIndexIT
             Set<String> labels = new HashSet<>();
             for ( IndexDefinition index : indexes )
             {
-                assertTrue( labels.add( index.getLabel().name() ) );
+                assertTrue( labels.add( single( index.getLabels() ).name() ) );
             }
             tx.success();
         }
@@ -168,7 +168,7 @@ public class ConcurrentCreateDropIndexIT
 
             for ( IndexDefinition index : indexes )
             {
-                assertTrue( expectedIndexedLabels.remove( index.getLabel().name() ) );
+                assertTrue( expectedIndexedLabels.remove( single( index.getLabels() ).name() ) );
             }
         }
     }

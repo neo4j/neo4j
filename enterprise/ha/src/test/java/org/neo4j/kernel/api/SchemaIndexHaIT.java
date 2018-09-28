@@ -47,7 +47,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -88,6 +87,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.io.fs.FileUtils.deleteRecursively;
@@ -177,7 +177,7 @@ public class SchemaIndexHaIT
         assertEquals( "Unexpected new master", aSlave, newMaster );
         try ( Transaction tx = newMaster.beginTx() )
         {
-            IndexDefinition index = Iterables.single( newMaster.schema().getIndexes() );
+            IndexDefinition index = single( newMaster.schema().getIndexes() );
             awaitIndexOnline( index, newMaster, data );
             tx.success();
         }
@@ -230,7 +230,7 @@ public class SchemaIndexHaIT
             IndexDefinition index;
             try ( Transaction tx = master.beginTx() )
             {
-                index = Iterables.single( master.schema().getIndexes() );
+                index = single( master.schema().getIndexes() );
                 awaitIndexOnline( index, master, data );
                 tx.success();
             }
@@ -285,7 +285,7 @@ public class SchemaIndexHaIT
         IndexDefinition index;
         try ( Transaction tx = master.beginTx() )
         {
-            index = Iterables.single( master.schema().getIndexes() );
+            index = single( master.schema().getIndexes() );
             awaitIndexOnline( index, master, data );
             tx.success();
         }
@@ -400,7 +400,7 @@ public class SchemaIndexHaIT
         for ( Map.Entry<Object,Node> entry : expectedData.entrySet() )
         {
             assertEquals( asSet( entry.getValue() ),
-                    asUniqueSet( db.findNodes( index.getLabel(), Iterables.single( index.getPropertyKeys() ), entry.getKey() ) ) );
+                    asUniqueSet( db.findNodes( single( index.getLabels() ), single( index.getPropertyKeys() ), entry.getKey() ) ) );
         }
     }
 

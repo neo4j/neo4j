@@ -235,7 +235,7 @@ public class IndexConstraintsTest
         {
             index.drop();
             index = graphDb.schema()
-                    .indexFor( index.getLabel() )
+                    .indexFor( single( index.getLabels() ) )
                     .on( single( index.getPropertyKeys() ) )
                     .create();
         }

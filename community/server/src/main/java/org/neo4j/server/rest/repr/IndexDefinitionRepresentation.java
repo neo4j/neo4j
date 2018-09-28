@@ -26,6 +26,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 
 import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 public class IndexDefinitionRepresentation extends MappingRepresentation
 {
@@ -51,7 +52,25 @@ public class IndexDefinitionRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        serializer.putString( "label", indexDefinition.getLabel().name() );
+        if ( indexDefinition.isNodeIndex() )
+        {
+            serializer.putList( "labels", new ListRepresentation( RepresentationType.STRING,
+                    map( label -> ValueRepresentation.string( label.name() ), indexDefinition.getLabels() ) ) );
+            if ( !indexDefinition.isMultiTokenIndex() )
+            {
+                serializer.putString( "label", single( indexDefinition.getLabels() ).name() );
+            }
+        }
+        else
+        {
+            serializer.putList( "relationshipTypes", new ListRepresentation( RepresentationType.STRING,
+                    map( relType -> ValueRepresentation.string( relType.name() ), indexDefinition.getRelationshipTypes() ) ) );
+            if ( !indexDefinition.isMultiTokenIndex() )
+            {
+                serializer.putString( "relationshipType", single( indexDefinition.getRelationshipTypes() ).name() );
+            }
+        }
+
         Function<String,Representation> converter = ValueRepresentation::string;
         Iterable<Representation> propertyKeyRepresentations = map( converter, indexDefinition.getPropertyKeys() );
         serializer.putList( "property_keys", new ListRepresentation( RepresentationType.STRING,

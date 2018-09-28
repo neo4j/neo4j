@@ -27,6 +27,8 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl.labelNameList;
 
 abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinition
 {
@@ -41,7 +43,13 @@ abstract class NodeConstraintDefinition extends MultiPropertyConstraintDefinitio
     protected NodeConstraintDefinition( InternalSchemaActions actions, IndexDefinition indexDefinition )
     {
         super( actions, indexDefinition );
-        this.label = requireNonNull( indexDefinition.getLabel() );
+        if ( indexDefinition.isMultiTokenIndex() )
+        {
+            throw new IllegalArgumentException( "Node constraints do not support multi-token definitions. That is, they cannot apply to more than one label, " +
+                    "but an attempt was made to create a node constraint on the following labels: " +
+                    labelNameList( indexDefinition.getLabels(), "", "." ) );
+        }
+        this.label = single( indexDefinition.getLabels() );
     }
 
     @Override

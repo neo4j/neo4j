@@ -87,9 +87,13 @@ public class CypherResultSubGraph implements SubGraph
         }
         for ( IndexDefinition def : gds.schema().getIndexes() )
         {
-            if ( graph.getLabels().contains( def.getLabel() ) )
+            for ( Label label : def.getLabels() )
             {
-                graph.addIndex( def );
+                if ( graph.getLabels().contains( label ) )
+                {
+                    graph.addIndex( def );
+                    break;
+                }
             }
         }
         for ( ConstraintDefinition def : gds.schema().getConstraints() )

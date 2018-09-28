@@ -76,6 +76,7 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
 
         Map<String,Object> index = new HashMap<>();
         index.put( "label", labelName );
+        index.put( "labels", singletonList( labelName ) );
         index.put( "property_keys", singletonList( propertyKey ) );
 
         assertThat( serialized, equalTo( index ) );
@@ -101,6 +102,7 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
 
         Map<String,Object> index = new HashMap<>();
         index.put( "label", labelName );
+        index.put( "labels", singletonList( labelName ) );
         index.put( "property_keys", singletonList( propertyKey ) );
 
         assertThat( serializedList, hasItem( index ) );
@@ -160,10 +162,12 @@ public class SchemaIndexIT extends AbstractRestFunctionalTestBase
 
         Map<String,Object> index1 = new HashMap<>();
         index1.put( "label", labelName1 );
+        index1.put( "labels", singletonList( labelName1 ) );
         index1.put( "property_keys", singletonList( propertyKey1 ) );
 
         Map<String,Object> index2 = new HashMap<>();
         index2.put( "label", labelName2 );
+        index2.put( "labels", singletonList( labelName2 ) );
         index2.put( "property_keys", singletonList( propertyKey2 ) );
 
         assertThat( serializedList, hasItems( index1, index2 ) );

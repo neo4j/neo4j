@@ -180,7 +180,7 @@ public class HalfAppliedConstraintRecoveryIT
                     assertEquals( KEY, single( constraint.getPropertyKeys() ) );
                 }
                 IndexDefinition index = single( db.schema().getIndexes( LABEL ) );
-                assertEquals( LABEL.name(), index.getLabel().name() );
+                assertEquals( LABEL.name(), single( index.getLabels() ).name() );
                 if ( composite )
                 {
                     assertEquals( Arrays.asList( KEY, KEY2 ), Iterables.asList( index.getPropertyKeys() ) );

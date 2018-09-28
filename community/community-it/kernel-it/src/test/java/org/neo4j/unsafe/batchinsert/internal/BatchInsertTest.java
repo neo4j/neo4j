@@ -711,7 +711,7 @@ public class BatchInsertTest
         IndexDefinition definition = inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
         // THEN
-        assertEquals( "Hacker", definition.getLabel().name() );
+        assertEquals( "Hacker", single( definition.getLabels() ).name() );
         assertEquals( asCollection( iterator( "handle" ) ), Iterables.asCollection( definition.getPropertyKeys() ) );
         inserter.shutdown();
     }

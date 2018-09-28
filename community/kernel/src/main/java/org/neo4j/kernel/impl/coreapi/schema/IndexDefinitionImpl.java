@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
+import static org.neo4j.helpers.collection.Iterables.stream;
 
 public class IndexDefinitionImpl implements IndexDefinition
 {
@@ -295,6 +296,11 @@ public class IndexDefinitionImpl implements IndexDefinition
         }
         return "IndexDefinition[" + entityTokenType + ":" + entityTokens + " on:" + String.join( ",", propertyKeys ) + "]" +
                 (indexReference == null ? "" : " (" + indexReference + ")");
+    }
+
+    public static String labelNameList( Iterable<Label> labels, String prefix, String postfix )
+    {
+        return stream( labels ).map( Label::name ).collect( joining( ", ", prefix, postfix ) );
     }
 
     private void assertInUnterminatedTransaction()

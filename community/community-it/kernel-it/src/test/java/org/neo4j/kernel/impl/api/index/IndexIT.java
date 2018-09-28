@@ -67,6 +67,7 @@ import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
+import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
@@ -297,7 +298,7 @@ public class IndexIT extends KernelIntegrationTest
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertEquals( "Label1", index.getLabel().name() );
+            assertEquals( "Label1", single( index.getLabels() ).name() );
             assertEquals( asSet( "property1" ), Iterables.asSet( index.getPropertyKeys() ) );
             assertTrue( "index should be a constraint index", index.isConstraintIndex() );
 
@@ -326,7 +327,7 @@ public class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( @SuppressWarnings( "unused" ) org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
@@ -375,14 +376,14 @@ public class IndexIT extends KernelIntegrationTest
         transaction.schemaWrite().indexCreate( descriptor );
         commit();
 
-        try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
+        try ( @SuppressWarnings( "unused" ) org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
             Set<IndexDefinition> indexes = Iterables.asSet( db.schema().getIndexes() );
 
             // then
             assertEquals( 1, indexes.size() );
             IndexDefinition index = indexes.iterator().next();
-            assertEquals( LABEL, index.getLabel().name() );
+            assertEquals( LABEL, single( index.getLabels() ).name() );
             assertThat( index.getLabels(), containsInAnyOrder( label( LABEL ) ) );
             try
             {

@@ -43,9 +43,10 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 
-import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.eclipse.collections.impl.utility.Iterate.contains;
 import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.helpers.collection.Iterables.indexOf;
 import static org.neo4j.helpers.collection.Iterables.sort;
 import static org.neo4j.shell.Continuation.INPUT_COMPLETE;
@@ -55,7 +56,7 @@ public class Schema extends TransactionProvidingApp
     private static final String INDENT = "  ";
 
     private static final Function<IndexDefinition,String> LABEL_COMPARE_FUNCTION =
-            index -> index.getLabel().name();
+            index -> first( index.getLabels() ).name();
 
     {
         addOptionDefinition( "l", new OptionDefinition( OptionValueType.MUST,
@@ -243,7 +244,7 @@ public class Schema extends TransactionProvidingApp
     {
         for ( IndexDefinition index : indexesByLabelAndProperty( schema, labels, property ) )
         {
-            out.println( String.format( "%s: %1.1f%%", index.getLabel().name(),
+            out.println( String.format( "%s: %1.1f%%", index,
                     schema.getIndexPopulationProgress( index ).getCompletedPercentage() ) );
         }
     }
@@ -255,8 +256,7 @@ public class Schema extends TransactionProvidingApp
         {
             if ( schema.getIndexState( index ) != IndexState.ONLINE )
             {
-                out.println( String.format( "Awaiting :%s ON %s %s", index.getLabel().name(),
-                        asList( index.getPropertyKeys() ), IndexState.ONLINE ) );
+                out.println( String.format( "Awaiting %s %s", index, IndexState.ONLINE ) );
                 schema.awaitIndexOnline( index, 10000, TimeUnit.DAYS );
             }
         }
@@ -332,7 +332,7 @@ public class Schema extends TransactionProvidingApp
     private void reportNodeIndexes( Output out, org.neo4j.graphdb.schema.Schema schema, Label[] labels, String property,
             boolean verbose ) throws RemoteException
     {
-        ColumnPrinter printer = new ColumnPrinter( indent( "ON " ), "", "" );
+        ColumnPrinter printer = new ColumnPrinter( indent( "ON " ), "" );
         Iterable<IndexDefinition> indexes = indexesByLabelAndProperty( schema, labels, property );
 
         int i = 0;
@@ -342,13 +342,8 @@ public class Schema extends TransactionProvidingApp
             {
                 out.println( "Indexes" );
             }
-            String labelAndProperties = String.format( ":%s(%s)", index.getLabel().name(), commaSeparate( index
-                    .getPropertyKeys() ) );
-
             IndexState state = schema.getIndexState( index );
-            String uniqueOrNot = index.isConstraintIndex() ? "(for uniqueness constraint)" : "";
-
-            printer.add( labelAndProperties, state, uniqueOrNot );
+            printer.add( index, state );
             if ( verbose && state == IndexState.FAILED )
             {
                 printer.addRaw( schema.getIndexFailure( index ) );
@@ -363,26 +358,6 @@ public class Schema extends TransactionProvidingApp
         {
             printer.print( out );
         }
-    }
-
-    private String commaSeparate( Iterable<String> keys )
-    {
-        StringBuilder builder = new StringBuilder();
-        boolean first = true;
-        for ( String key : keys )
-        {
-            if ( !first )
-            {
-                builder.append( ", " );
-
-            }
-            else
-            {
-                first = false;
-            }
-            builder.append( key );
-        }
-        return builder.toString();
     }
 
     private Iterable<IndexDefinition> indexesByLabelAndProperty( org.neo4j.graphdb.schema.Schema schema,
@@ -470,7 +445,7 @@ public class Schema extends TransactionProvidingApp
         Iterable<IndexDefinition> indexes = schema.getIndexes();
         for ( final Label label : labels )
         {
-            indexes = filter( item -> item.getLabel().name().equals( label.name() ), indexes );
+            indexes = filter( index -> contains( index.getLabels(), label ), indexes );
         }
         return indexes;
     }

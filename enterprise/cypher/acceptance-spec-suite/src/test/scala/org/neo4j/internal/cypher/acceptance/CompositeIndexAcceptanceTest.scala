@@ -26,6 +26,7 @@ import java.time.{LocalDate, LocalTime, OffsetTime, ZoneOffset}
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
+import org.neo4j.helpers.collection.Iterators
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.values.storable.{CoordinateReferenceSystem, DurationValue, Values}

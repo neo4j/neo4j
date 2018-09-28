@@ -25,7 +25,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.schema.IndexDefinition;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -40,13 +40,14 @@ public class SchemaIndexRepresentationTest
         String labelName = "person";
         String propertyKey = "name";
         IndexDefinition definition = mock( IndexDefinition.class );
-        when( definition.getLabel() ).thenReturn( label( labelName ) );
-        when( definition.getPropertyKeys() ).thenReturn( asList( propertyKey ) );
+        when(  definition.isNodeIndex() ).thenReturn( true );
+        when( definition.getLabels() ).thenReturn( singletonList( label( labelName ) ) );
+        when( definition.getPropertyKeys() ).thenReturn( singletonList( propertyKey ) );
         IndexDefinitionRepresentation representation = new IndexDefinitionRepresentation( definition );
         Map<String, Object> serialized = RepresentationTestAccess.serialize( representation );
 
         // THEN
-        assertEquals( asList( propertyKey ), serialized.get( "property_keys" ) );
+        assertEquals( singletonList( propertyKey ), serialized.get( "property_keys" ) );
         assertEquals( labelName, serialized.get( "label" ) );
     }
 }

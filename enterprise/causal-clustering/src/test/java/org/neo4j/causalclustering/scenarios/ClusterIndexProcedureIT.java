@@ -53,6 +53,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.causalclustering.discovery.Cluster.dataMatchesEventually;
 import static org.neo4j.graphdb.schema.ConstraintType.NODE_KEY;
 import static org.neo4j.graphdb.schema.ConstraintType.UNIQUENESS;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 public class ClusterIndexProcedureIT
 {
@@ -184,7 +185,7 @@ public class ClusterIndexProcedureIT
             IndexDefinition indexDefinition = indexes.next();
             assertFalse( "not more than one index", indexes.hasNext() );
 
-            Label label = indexDefinition.getLabel();
+            Label label = single( indexDefinition.getLabels() );
             String property = indexDefinition.getPropertyKeys().iterator().next();
 
             // with correct pattern and provider

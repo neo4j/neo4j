@@ -120,25 +120,25 @@ public class ConstraintRecoveryIT
         db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabase( pathToDb );
 
         // then
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             assertEquals( 2, Iterables.count( db.getAllNodes() ) );
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             assertEquals( 0, Iterables.count( Iterables.asList( db.schema().getConstraints() ) ) );
         }
 
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             IndexDefinition orphanedConstraintIndex = single( db.schema().getIndexes() );
-            assertEquals( LABEL.name(), orphanedConstraintIndex.getLabel().name() );
+            assertEquals( LABEL.name(), single( orphanedConstraintIndex.getLabels() ).name() );
             assertEquals( KEY, single( orphanedConstraintIndex.getPropertyKeys() ) );
         }
 
