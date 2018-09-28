@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.opencypher.v9_0.util.helpers.fixedPoint
 import org.neo4j.cypher.internal.ir.v3_5.VarPatternLength
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.opencypher.v9_0.util.attribution.Attributes
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.expressions.SemanticDirection
@@ -74,6 +73,25 @@ class UnnestApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     rewrite(input) should equal(
       LeftOuterHashJoin(Set("a"), lhs, rhs)
+    )
+  }
+
+  test("should unnest optional expand") {
+    /*
+           Apply
+         LHS  OptionalExpand
+                  Arg
+     */
+    val argPlan = Argument(Set("a"))
+    val lhs = newMockedLogicalPlan("a")
+
+    val input =
+      Apply(lhs,
+        OptionalExpand(argPlan, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
+      )
+
+    rewrite(input) should equal(
+      OptionalExpand(lhs, "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")
     )
   }
 
