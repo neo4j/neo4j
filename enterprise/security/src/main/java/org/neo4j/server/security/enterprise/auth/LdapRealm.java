@@ -384,13 +384,9 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
         }
         catch ( AuthorizationException e )
         {
-            securityLog.error( withRealm( "Failed to get authorization info: '%s' caused by '%s'",
+            securityLog.warn( withRealm( "Failed to get authorization info: '%s' caused by '%s'",
                     e.getMessage(), e.getCause().getMessage() ) );
-            if ( isAuthorizationExceptionAnLdapReadTimeout( e ) )
-            {
-                throw new AuthProviderTimeoutException( LDAP_READ_TIMEOUT_CLIENT_MESSAGE, e );
-            }
-            throw new AuthProviderFailedException( LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE, e );
+            return null;
         }
     }
 

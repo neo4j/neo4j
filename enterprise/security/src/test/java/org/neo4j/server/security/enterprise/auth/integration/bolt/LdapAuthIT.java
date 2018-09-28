@@ -64,6 +64,7 @@ import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -107,7 +108,7 @@ interface TimeoutTests
                                                           "objectClass: organization\n\n" ) ),
         },
         loadedSchemas = {
-                @LoadSchema( name = "nis", enabled = true ),
+                @LoadSchema( name = "nis" ),
         } )
 @CreateLdapServer(
         transports = {@CreateTransport( protocol = "LDAP", port = 10389, address = "0.0.0.0" ),
@@ -128,9 +129,9 @@ interface TimeoutTests
 @ApplyLdifFiles( "ldap_test_data.ldif" )
 public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 {
-    public static final String LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS = "LDAP: error code 49 - INVALID_CREDENTIALS";
-    public static final String NON_ROUTABLE_IP = "192.0.2.0"; // Ip in the TEST-NET-1 range, reserved for documentation...
-    public static final String REFUSED_IP = "127.0.0.1"; // "0.6.6.6";
+    private static final String LDAP_ERROR_MESSAGE_INVALID_CREDENTIALS = "LDAP: error code 49 - INVALID_CREDENTIALS";
+    private static final String NON_ROUTABLE_IP = "192.0.2.0"; // Ip in the TEST-NET-1 range, reserved for documentation...
+    private static final String REFUSED_IP = "127.0.0.1"; // "0.6.6.6";
     private final String MD5_HASHED_abc123 = "{MD5}6ZoYxCjLONXyYIU2eJIuAw==";
     // Hashed 'abc123' (see ldap_test_data.ldif)
 
@@ -451,13 +452,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         String ldapReaderUser = "neo";
         String nativePassword = "nativePassword";
 
-        // this is ugly, but cannot be resolved until embedded gets security
-        GraphDatabaseFacade gds = (GraphDatabaseFacade) server.graphDatabaseService();
-        EnterpriseAuthAndUserManager authManager =
-                gds.getDependencyResolver().resolveDependency( EnterpriseAuthAndUserManager.class );
-
-        authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
-                .newUser( ldapReaderUser, nativePassword, false );
+        createNativeUser( ldapReaderUser, nativePassword );
 
         // Then
         // login user 'neo' with native auth provider and test that LDAP authorization gives correct permission
@@ -599,7 +594,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
                     .andThen( settings -> settings.put( SecuritySettings.ldap_read_timeout, "1s" ) ) );
 
             assertAuth( "neo", "abc123" );
-            assertLdapAuthorizationTimeout();
+            assertReadFails( "neo", "" );
         }
     }
 
@@ -617,7 +612,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
             } ) );
 
             assertAuth( "neo", "abc123" );
-            assertLdapAuthorizationTimeout();
+            assertReadFails( "neo", "" );
         }
     }
 
@@ -631,7 +626,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
                     .andThen( settings -> settings.put( SecuritySettings.ldap_read_timeout, "1s" ) ) );
 
             assertAuth( "neo", "abc123" );
-            assertLdapAuthorizationFailed();
+            assertReadFails( "neo", "" );
         }
     }
 
@@ -915,6 +910,32 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         // When
         reconnect();
         assertAuth( "simon", createdUserPassword, "native" );
+
+        // Then
+        assertReadSucceeds();
+    }
+
+    @Test
+    public void shouldBeAbleToAuthorizeUsingNativeWhenLdapFails() throws Throwable
+    {
+        restartNeo4jServerWithOverriddenSettings( settings ->
+        {
+            settings.put( SecuritySettings.auth_providers,
+                    SecuritySettings.LDAP_REALM_NAME + "," + SecuritySettings.NATIVE_REALM_NAME );
+            settings.put( SecuritySettings.ldap_server, "ldap://" + REFUSED_IP );
+            settings.put( SecuritySettings.native_authentication_enabled, "true" );
+            settings.put( SecuritySettings.native_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+        } );
+
+        // Given
+        // we have a native 'simon' that is read only
+        createNativeUser( "simon", createdUserPassword, PredefinedRoles.READER );
+
+        // When
+        assertAuth( "simon", createdUserPassword );
 
         // Then
         assertReadSucceeds();
@@ -1367,6 +1388,22 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         modifyLDAPAttribute( username, credentials, "gidnumber", gid );
     }
 
+    private void createNativeUser( String username, String password, String... roles ) throws IOException, InvalidArgumentsException
+    {
+        GraphDatabaseFacade gds = (GraphDatabaseFacade) server.graphDatabaseService();
+        EnterpriseAuthAndUserManager authManager =
+                gds.getDependencyResolver().resolveDependency( EnterpriseAuthAndUserManager.class );
+
+        authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
+                .newUser( username, password, false );
+
+        for ( String role : roles )
+        {
+            authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
+                    .addRoleToUser( role, username );
+        }
+    }
+
     private class DirectoryServiceWaitOnSearch implements AutoCloseable
     {
         private final Interceptor waitOnSearchInterceptor;
@@ -1531,7 +1568,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 
         private void resetProperty( String property, String value )
         {
-            if ( property != null )
+            if ( value == null )
             {
                 System.clearProperty( property );
             }

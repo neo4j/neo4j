@@ -306,7 +306,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
-        logProvider.assertExactly( error( "[%s]: failed to log in: invalid principal or credentials%s%s", "unknown", "", "" ) );
+        logProvider.assertExactly( error( "[%s]: failed to log in: %s", "unknown", "invalid principal or credentials" ) );
     }
 
     @Test
@@ -321,8 +321,8 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
 
         // Then
         assertThat( result, equalTo( AuthenticationResult.FAILURE ) );
-        logProvider.assertExactly( error( "[%s]: failed to log in: invalid principal or credentials%s%s",
-                escape( "unknown\n\t\r\"haxx0r\"" ), "", "" ) );
+        logProvider.assertExactly( error( "[%s]: failed to log in: %s",
+                escape( "unknown\n\t\r\"haxx0r\"" ), "invalid principal or credentials" ) );
     }
 
     @Test
