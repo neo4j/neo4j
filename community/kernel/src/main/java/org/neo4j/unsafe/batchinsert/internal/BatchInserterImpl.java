@@ -279,8 +279,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
 
-        List<Token> indexes = propertyKeyTokenStore.getTokens( 10000 );
-        propertyKeyTokens = new BatchTokenHolder( indexes );
+        propertyKeyTokens = new BatchTokenHolder( propertyKeyTokenStore.getTokens( Integer.MAX_VALUE ) );
         labelTokens = new BatchTokenHolder( labelTokenStore.getTokens( Integer.MAX_VALUE ) );
         List<RelationshipTypeToken> types = relationshipTypeTokenStore.getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
