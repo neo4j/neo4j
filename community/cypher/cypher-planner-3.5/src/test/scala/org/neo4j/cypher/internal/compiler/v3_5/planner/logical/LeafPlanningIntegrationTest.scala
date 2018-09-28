@@ -178,6 +178,35 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("should not plan apply that will hide a cartesian product") {
+    val plan = (new given {
+      indexOn("Awesome", "prop1")
+      indexOn("Awesome", "prop2")
+    } getLogicalPlanFor "MATCH (n:Awesome), (m:Awesome) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop1 = m.prop2 RETURN n")._2
+
+    plan should beLike {
+      case ValueHashJoin(
+        NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
+        NodeIndexSeek(_, _, _, RangeQueryExpression(_), _, _),
+        Equals(_, _)
+      ) => ()
+    }
+  }
+
+  test("should plan nested index join with apply where rhs depends on lhs") {
+    val plan = (new given {
+      indexOn("Awesome", "prop1")
+      indexOn("Awesome", "prop2")
+      indexOn("Awesome", "prop3")
+    } getLogicalPlanFor "MATCH (n:Awesome), (m:Awesome) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 = m.prop4 RETURN n")._2
+
+    plan should beLike {
+      case Selection(_, Apply(
+        NodeIndexSeek(_,_,_,RangeQueryExpression(_),_,_),
+        NodeIndexSeek(_,_,_,SingleQueryExpression(_),_,_))) => ()
+    }
+  }
+
   test("should plan index seek for multiple inequality predicates and prefer the index seek with the lower cost per row") {
     (new given {
       indexOn("Person", "name")

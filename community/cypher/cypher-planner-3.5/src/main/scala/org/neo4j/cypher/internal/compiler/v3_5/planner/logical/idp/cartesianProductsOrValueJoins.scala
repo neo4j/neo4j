@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningContext, QueryPlannerKit}
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.ir.v3_5.{InterestingOrder, QueryGraph}
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.{Equals, Expression}
 
 trait JoinDisconnectedQueryGraphComponents {
@@ -206,9 +206,14 @@ case object cartesianProductsOrValueJoins extends JoinDisconnectedQueryGraphComp
       // If none of the leaf-plans leverages the data from the RHS to use an index, let's not use this plan at all
       // The reason is that when this happens, we are producing a cartesian product disguising as an Apply, and
       // this confuses the cost model
-      val usedIndex = result.leaves.exists(_.indexUsage.nonEmpty)
+      val indexWithDependency = result.leaves.collect {
+        case NodeIndexSeek(_, _, _, valueExpr, _, _) =>
+          valueExpr.expressions.flatMap(_.dependencies)
+        case NodeUniqueIndexSeek(_, _, _, valueExpr, _, _) =>
+          valueExpr.expressions.flatMap(_.dependencies)
+      }.flatten
 
-      if (usedIndex)
+      if (indexWithDependency.nonEmpty)
         Some(PlannedComponent(context.planningAttributes.solveds.get(result.id).lastQueryGraph, result))
       else
         None

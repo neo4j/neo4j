@@ -414,6 +414,56 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     result.toList should be (empty)
   }
 
+  test("should solve nested index join with apply and index seek") {
+    graph.createIndex("L1", "prop1")
+    graph.createIndex("L2", "prop2")
+    graph.createIndex("L1", "prop3")
+
+    val node1 = createLabeledNode(Map("prop1" -> 13, "prop3" -> 1), "L1")
+    val node2 = createLabeledNode(Map("prop1" -> 23, "prop3" -> 1), "L1")
+    createLabeledNode(Map("prop1" -> 24, "prop3" -> 2), "L1")
+    createLabeledNode(Map("prop1" -> 1337, "prop3" -> 1), "L1")
+    createLabeledNode(Map("prop2" -> 13, "prop4" -> 1), "L2")
+    createLabeledNode(Map("prop2" -> 42, "prop4" -> 1), "L2")
+    createLabeledNode(Map("prop2" -> 1337, "prop4" -> 1), "L2")
+
+    val query = "MATCH(n:L1), (m:L2) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 = m.prop4 RETURN n"
+
+    // When
+    val plansToFail = Configs.All - Configs.Default - Configs.SlottedInterpreted - Configs.DefaultInterpreted
+    val result = executeWith(Configs.Interpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"),
+        expectPlansToFail = plansToFail))
+
+    // Then
+    result.toList should equal(List(Map("n" -> node1), Map("n" -> node2)))
+  }
+
+  test("should solve nested index join with apply and index range seek") {
+    graph.createIndex("L1", "prop1")
+    graph.createIndex("L2", "prop2")
+    graph.createIndex("L1", "prop3")
+
+    val node1 = createLabeledNode(Map("prop1" -> 13, "prop3" -> 1), "L1")
+    val node2 = createLabeledNode(Map("prop1" -> 23, "prop3" -> 1), "L1")
+    createLabeledNode(Map("prop1" -> 24, "prop3" -> 2), "L1")
+    createLabeledNode(Map("prop1" -> 1337, "prop3" -> 1), "L1")
+    createLabeledNode(Map("prop2" -> 13, "prop4" -> 2), "L2")
+    createLabeledNode(Map("prop2" -> 42, "prop4" -> 4), "L2")
+    createLabeledNode(Map("prop2" -> 1337, "prop4" -> 5), "L2")
+
+    val query = "MATCH(n:L1), (m:L2) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 < m.prop4 RETURN n"
+
+    // When
+    val plansToFail = Configs.All - Configs.Default - Configs.SlottedInterpreted - Configs.DefaultInterpreted
+    val result = executeWith(Configs.Interpreted, query,
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgument(":L1(prop3) < m.prop4"),
+        expectPlansToFail = plansToFail))
+
+    // Then
+    result.toList should equal(List(Map("n" -> node1), Map("n" -> node2)))
+  }
+
   private def setUpDatabaseForTests() {
     executeWith(Configs.Interpreted - Configs.Cost2_3,
       """CREATE (architect:Matrix { name:'The Architect' }),
