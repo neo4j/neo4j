@@ -24,5 +24,5 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 @FunctionalInterface
 interface ValueCreatorUtilFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
-    ValueCreatorUtil<KEY,VALUE> create( StoreIndexDescriptor descriptor );
+    ValueCreatorUtil<KEY,VALUE> create( StoreIndexDescriptor descriptor, double fractionDuplicates );
 }

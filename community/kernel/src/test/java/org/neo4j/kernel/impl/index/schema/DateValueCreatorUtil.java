@@ -25,8 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 public class DateValueCreatorUtil extends ValueCreatorUtil<DateIndexKey,NativeIndexValue>
 {
-    DateValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
+    DateValueCreatorUtil( StoreIndexDescriptor indexDescriptor, double fractionDuplicates )
     {
-        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.DATE ) );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.DATE ), fractionDuplicates );
     }
 }

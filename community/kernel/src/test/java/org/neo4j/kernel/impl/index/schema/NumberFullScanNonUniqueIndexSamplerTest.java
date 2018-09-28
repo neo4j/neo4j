@@ -98,7 +98,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
     @Override
     protected ValueCreatorUtil<NumberIndexKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new NumberValueCreatorUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
+        return new NumberValueCreatorUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ), ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

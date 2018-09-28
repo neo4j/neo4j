@@ -25,8 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 public class LocalTimeValueCreatorUtil extends ValueCreatorUtil<LocalTimeIndexKey,NativeIndexValue>
 {
-    LocalTimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
+    LocalTimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor, double fractionDuplicates )
     {
-        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ) );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ), fractionDuplicates );
     }
 }

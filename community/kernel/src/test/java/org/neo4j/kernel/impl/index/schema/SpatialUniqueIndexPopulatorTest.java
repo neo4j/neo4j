@@ -51,7 +51,7 @@ public class SpatialUniqueIndexPopulatorTest extends NativeIndexPopulatorTests.U
     @Override
     protected ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new UniqueValueCreatorUtil<>( new SpatialValueCreatorUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 ) ) );
+        return new SpatialValueCreatorUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 ), ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
     }
 
     @Override

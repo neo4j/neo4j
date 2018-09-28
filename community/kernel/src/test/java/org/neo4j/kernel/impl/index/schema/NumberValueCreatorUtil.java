@@ -25,19 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 class NumberValueCreatorUtil extends ValueCreatorUtil<NumberIndexKey,NativeIndexValue>
 {
-    NumberValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
+    NumberValueCreatorUtil( StoreIndexDescriptor indexDescriptor, double fractionDuplicates )
     {
-        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.NUMBER ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( NumberIndexKey key1, NumberIndexKey key2 )
-    {
-        int typeCompare = Byte.compare( key1.type, key2.type );
-        if ( typeCompare == 0 )
-        {
-            return Long.compare( key1.rawValueBits, key2.rawValueBits );
-        }
-        return typeCompare;
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.NUMBER ), fractionDuplicates );
     }
 }

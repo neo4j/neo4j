@@ -25,8 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 public class DurationValueCreatorUtil extends ValueCreatorUtil<DurationIndexKey,NativeIndexValue>
 {
-    DurationValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
+    DurationValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor, double fractionDuplicates )
     {
-        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.DURATION ) );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.DURATION ), fractionDuplicates );
     }
 }

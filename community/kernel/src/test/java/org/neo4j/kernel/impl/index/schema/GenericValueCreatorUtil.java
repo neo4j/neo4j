@@ -19,23 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.HashMap;
-
-import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 
 class GenericValueCreatorUtil extends ValueCreatorUtil<CompositeGenericKey,NativeIndexValue>
 {
-    private IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
-            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
-    StandardConfiguration configuration = new StandardConfiguration();
-
-    GenericValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
+    GenericValueCreatorUtil( StoreIndexDescriptor indexDescriptor, double fractionDuplicates )
     {
-        super( indexDescriptor, RandomValues.Type.values() );
+        super( indexDescriptor, RandomValues.Type.values(), fractionDuplicates );
     }
 }

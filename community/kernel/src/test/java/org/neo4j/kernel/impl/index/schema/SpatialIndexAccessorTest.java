@@ -57,7 +57,7 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     @Override
     protected ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new SpatialValueCreatorUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
+        return new SpatialValueCreatorUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ), ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

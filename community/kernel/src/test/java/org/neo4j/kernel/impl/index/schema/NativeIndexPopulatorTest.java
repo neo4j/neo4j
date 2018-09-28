@@ -162,7 +162,7 @@ public class NativeIndexPopulatorTest
         @Override
         ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
         {
-            return new UniqueValueCreatorUtil<>( valueCreatorUtilFactory.create( uniqueDescriptor ) );
+            return valueCreatorUtilFactory.create( uniqueDescriptor, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
         }
 
         @Override
@@ -204,7 +204,7 @@ public class NativeIndexPopulatorTest
         @Override
         ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
         {
-            return valueCreatorUtilFactory.create( nonUniqueDescriptor );
+            return valueCreatorUtilFactory.create( nonUniqueDescriptor, ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
         }
 
         @Override

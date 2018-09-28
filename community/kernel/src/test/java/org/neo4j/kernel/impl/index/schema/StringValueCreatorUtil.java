@@ -25,8 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndexValue>
 {
-    StringValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
+    StringValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor, double fractionDuplicates )
     {
-        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.TEXT ) );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.TEXT ), fractionDuplicates );
     }
 }

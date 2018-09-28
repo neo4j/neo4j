@@ -19,50 +19,19 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.test.rule.RandomRule;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Values;
-
-import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeIndexValue>
 {
-    private static final PointValue[] ALL_EXTREME_VALUES = new PointValue[]
+    SpatialValueCreatorUtil( StoreIndexDescriptor descriptor, double fractionDuplicates )
     {
-            Values.pointValue( WGS84, -180, -90 ),
-            Values.pointValue( WGS84, -180, 90 ),
-            Values.pointValue( WGS84, -1, -1 ),
-            Values.pointValue( WGS84, 0, 0 ),
-            Values.pointValue( WGS84, 180, -90 ),
-            Values.pointValue( WGS84, 180, 90 ),
-    };
-
-    SpatialValueCreatorUtil( StoreIndexDescriptor descriptor )
-    {
-        super( descriptor, new RandomValues.Type[]{RandomValues.Type.GEOGRAPHIC_POINT} );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
-    {
-        return someUpdatesWithDuplicateValues( randomRule );
+        super( descriptor, new RandomValues.Type[]{RandomValues.Type.GEOGRAPHIC_POINT}, fractionDuplicates );
     }
 
     @Override
     int compareIndexedPropertyValue( SpatialIndexKey key1, SpatialIndexKey key2 )
     {
         return Long.compare( key1.rawValueBits, key2.rawValueBits );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 }

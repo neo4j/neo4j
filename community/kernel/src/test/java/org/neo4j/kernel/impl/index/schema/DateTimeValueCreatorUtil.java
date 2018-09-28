@@ -25,8 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeIndexKey,NativeIndexValue>
 {
-    DateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
+    DateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor, double fractionDuplicates )
     {
-        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ) );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ), fractionDuplicates );
     }
 }

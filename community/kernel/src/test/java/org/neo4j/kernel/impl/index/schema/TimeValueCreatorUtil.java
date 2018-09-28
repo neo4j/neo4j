@@ -25,10 +25,8 @@ import org.neo4j.values.storable.ValueGroup;
 
 public class TimeValueCreatorUtil extends ValueCreatorUtil<ZonedTimeIndexKey,NativeIndexValue>
 {
-    static long MAX_NANOS_PER_DAY = 86399999999999L;
-
-    TimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
+    TimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor, double fractionDuplicates )
     {
-        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ) );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ), fractionDuplicates );
     }
 }

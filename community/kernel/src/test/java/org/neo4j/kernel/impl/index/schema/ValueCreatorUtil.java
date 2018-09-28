@@ -43,22 +43,26 @@ import org.neo4j.values.storable.Values;
 
 abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
+    static final double FRACTION_DUPLICATE_UNIQUE = 0;
+    static final double FRACTION_DUPLICATE_NON_UNIQUE = 0.1;
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
     private static final int N_VALUES = 10;
 
     final StoreIndexDescriptor indexDescriptor;
     private final RandomValues.Type[] supportedTypes;
+    private final double fractionDuplication;
 
     ValueCreatorUtil( ValueCreatorUtil delegate )
     {
-        this( delegate.indexDescriptor, delegate.supportedTypes );
+        this( delegate.indexDescriptor, delegate.supportedTypes, delegate.fractionDuplication );
     }
 
-    ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, RandomValues.Type[] supportedTypes )
+    ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, RandomValues.Type[] supportedTypes, double fractionDuplication )
     {
         this.indexDescriptor = indexDescriptor;
         this.supportedTypes = supportedTypes;
+        this.fractionDuplication = fractionDuplication;
     }
 
     int compareIndexedPropertyValue( KEY key1, KEY key2 )
@@ -71,9 +75,9 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
         return supportedTypes;
     }
 
-    protected double fractionDuplicates()
+    double fractionDuplicates()
     {
-        return 0.1;
+        return fractionDuplication;
     }
 
     IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )

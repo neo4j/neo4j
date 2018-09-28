@@ -129,7 +129,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
     {
-        return valueCreatorUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
+        return valueCreatorUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ), ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

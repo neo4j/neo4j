@@ -169,7 +169,7 @@ public class SpatialIndexSettingsTest
     private SpatialValueCreatorUtil createLayoutTestUtil( long indexId, int labelId )
     {
         StoreIndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( labelId, 666 ).withId( indexId );
-        return new SpatialValueCreatorUtil( descriptor );
+        return new SpatialValueCreatorUtil( descriptor, ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     private SpatialIndexProvider newSpatialIndexProvider( Config config )
