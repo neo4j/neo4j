@@ -21,9 +21,7 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 
 import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
 import org.neo4j.bolt.messaging.RequestMessage;
@@ -33,13 +31,13 @@ import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
 import org.neo4j.kernel.api.security.AuthToken;
-import org.neo4j.string.UTF8;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.test.AuthTokenUtil.assertAuthTokenMatches;
 
 class InitMessageDecoderTest
 {
@@ -183,23 +181,5 @@ class InitMessageDecoderTest
     {
         assertEquals( expected.userAgent(), ((InitMessage) actual).userAgent() );
         assertAuthTokenMatches( expected.authToken(), ((InitMessage) actual).authToken() );
-    }
-
-    private static void assertAuthTokenMatches( Map<String,Object> expected, Map<String,Object> actual )
-    {
-        assertEquals( expected.keySet(), actual.keySet() );
-        expected.forEach( ( key, expectedValue ) ->
-        {
-            Object actualValue = actual.get( key );
-            if ( AuthToken.containsSensitiveInformation( key ) )
-            {
-                byte[] expectedByteArray = expectedValue != null ? UTF8.encode( (String) expectedValue ) : null;
-                Arrays.equals( expectedByteArray, (byte[]) actualValue );
-            }
-            else
-            {
-                assertEquals( expectedValue, actualValue );
-            }
-        } );
     }
 }
