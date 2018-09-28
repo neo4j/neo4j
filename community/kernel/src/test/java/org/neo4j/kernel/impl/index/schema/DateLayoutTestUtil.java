@@ -25,6 +25,7 @@ import java.time.LocalDate;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -41,7 +42,7 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateIndexKey,NativeIndexV
             LocalDate.of( -1, 12, 31)
     };
 
-    DateLayoutTestUtil( IndexDescriptor indexDescriptor )
+    DateLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
     }

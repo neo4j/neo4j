@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
@@ -42,7 +43,7 @@ public class DurationLayoutTestUtil extends LayoutTestUtil<DurationIndexKey,Nati
             DurationValue.duration( 0, 0, 0, Long.MAX_VALUE),
     };
 
-    DurationLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
+    DurationLayoutTestUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }

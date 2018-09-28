@@ -25,6 +25,7 @@ import java.time.LocalDateTime;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -41,7 +42,7 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeInd
             LocalDateTime.of( -1, 12, 31, 23,59,59,999_999_999 )
     };
 
-    LocalDateTimeLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
+    LocalDateTimeLayoutTestUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }

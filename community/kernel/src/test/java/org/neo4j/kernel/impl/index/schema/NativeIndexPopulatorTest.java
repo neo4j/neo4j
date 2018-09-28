@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -138,7 +137,7 @@ public class NativeIndexPopulatorTest
         @Parameterized.Parameter( 2 )
         public LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory;
 
-        private static final IndexDescriptor uniqueDescriptor = TestIndexDescriptorFactory.uniqueForLabel( 42, 666 );
+        private static final StoreIndexDescriptor uniqueDescriptor = TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 );
 
         @Override
         NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException
@@ -171,7 +170,7 @@ public class NativeIndexPopulatorTest
         @Parameterized.Parameter( 2 )
         public LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory;
 
-        private static final IndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 );
+        private static final StoreIndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 );
 
         @Override
         NativeIndexPopulator<KEY,VALUE> createPopulator() throws IOException

@@ -26,6 +26,7 @@ import java.time.ZoneOffset;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -44,7 +45,7 @@ public class TimeLayoutTestUtil extends LayoutTestUtil<ZonedTimeIndexKey,NativeI
             OffsetTime.of( 23,59,59,999_999_999, ZoneOffset.ofHours( -18 ) ),
     };
 
-    TimeLayoutTestUtil( IndexDescriptor indexDescriptor )
+    TimeLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
     }

@@ -29,6 +29,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
@@ -61,7 +62,7 @@ class GenericLayoutTestUtil extends LayoutTestUtil<CompositeGenericKey,NativeInd
             new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
     StandardConfiguration configuration = new StandardConfiguration();
 
-    GenericLayoutTestUtil( IndexDescriptor indexDescriptor )
+    GenericLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
     }

@@ -24,6 +24,7 @@ import java.util.Collection;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -34,7 +35,7 @@ import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
 class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValue>
 {
-    StringLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
+    StringLayoutTestUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }

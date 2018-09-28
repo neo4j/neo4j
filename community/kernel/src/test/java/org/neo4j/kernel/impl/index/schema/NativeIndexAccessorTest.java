@@ -110,7 +110,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     LayoutTestUtil<KEY,VALUE> createLayoutTestUtil()
     {
-        return layoutTestUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return layoutTestUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
     }
 
     /* Helpers */

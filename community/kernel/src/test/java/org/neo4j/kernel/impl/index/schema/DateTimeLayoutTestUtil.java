@@ -26,6 +26,7 @@ import java.time.ZonedDateTime;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -44,7 +45,7 @@ public class DateTimeLayoutTestUtil extends LayoutTestUtil<ZonedDateTimeIndexKey
             ZonedDateTime.of( -1, 12, 31, 23,59,59,999_999_999, UTC )
     };
 
-    DateTimeLayoutTestUtil( IndexDescriptor schemaIndexDescriptor )
+    DateTimeLayoutTestUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }

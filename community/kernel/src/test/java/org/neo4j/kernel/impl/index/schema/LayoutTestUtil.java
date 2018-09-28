@@ -46,11 +46,6 @@ abstract class LayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nat
 
     final StoreIndexDescriptor indexDescriptor;
 
-    LayoutTestUtil( IndexDescriptor indexDescriptor )
-    {
-        this( indexDescriptor.withId( 0 ) );
-    }
-
     LayoutTestUtil( StoreIndexDescriptor indexDescriptor )
     {
         this.indexDescriptor = indexDescriptor;

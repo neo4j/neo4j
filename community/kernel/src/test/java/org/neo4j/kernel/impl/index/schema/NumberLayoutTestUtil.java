@@ -23,6 +23,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -50,9 +51,9 @@ class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValu
                     1234567890123456789L
             };
 
-    NumberLayoutTestUtil( IndexDescriptor indexDescriptor )
+    NumberLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor.withId( 0 ) );
+        super( indexDescriptor );
     }
 
     @Override
