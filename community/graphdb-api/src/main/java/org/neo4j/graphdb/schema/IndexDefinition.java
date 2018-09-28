@@ -38,7 +38,9 @@ public interface IndexDefinition
      * (that {@link #isMultiTokenIndex()} returns {@code false}). If this is not the case, then an {@link IllegalStateException} is thrown.
      *
      * @return the {@link Label label} this index definition is associated with.
+     * @deprecated This method is deprecated and will be removed in next major release. Please consider using {@link #getLabels()} instead.
      */
+    @Deprecated
     Label getLabel();
 
     /**
@@ -59,7 +61,9 @@ public interface IndexDefinition
      * (that {@link #isMultiTokenIndex()} returns {@code false}). If this is not the case, then an {@link IllegalStateException} is thrown.
      *
      * @return the {@link RelationshipType relationship type} this index definition is associated with.
+     * @deprecated This method is deprecated and will be removed in next major release. Please consider using {@link #getRelationshipTypes()} instead.
      */
+    @Deprecated
     RelationshipType getRelationshipType();
 
     /**
