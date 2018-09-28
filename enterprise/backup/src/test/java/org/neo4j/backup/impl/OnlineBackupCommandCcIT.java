@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
+import java.util.stream.LongStream;
 
 import org.neo4j.causalclustering.ClusterHelper;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -57,12 +58,16 @@ import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
@@ -72,10 +77,11 @@ import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptyMap;
+import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
 
@@ -280,6 +286,54 @@ public class OnlineBackupCommandCcIT
     }
 
     @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
+
+        // and backup client is told to rotate conveniently
+        Config config = Config
+                .builder()
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" )
+                .build();
+        File configOverrideFile = testDirectory.file( "neo4j-backup.conf" );
+        OnlineBackupCommandBuilder.writeConfigToFile( config, configOverrideFile );
+
+        // and we have a full backup
+        final String backupName = "backupName" + recordFormat;
+        String address = CausalClusteringTestHelpers.backupAddress( clusterLeader( cluster ).database() );
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--additional-config=" + configOverrideFile,
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+        transactions1M( cluster );
+        transactions1M( cluster ); // rotation, second tx log file
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--additional-config=" + configOverrideFile,
+                "--name=" + backupName ) );
+
+        // then there has been a rotation
+        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
+        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        assertEquals( 2, highestTxIdInLogFiles );
+
+        // and the original log has not been removed since the transactions are applied at start
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertEquals( 0, lowestTxIdInLogFiles );
+    }
+
+    @Test
     public void ipv6Enabled() throws Exception
     {
         // given
@@ -461,6 +515,23 @@ public class OnlineBackupCommandCcIT
         cluster.start();
         createSomeData( cluster );
         return cluster;
+    }
+
+    private static void transactions1M( Cluster cluster ) throws Exception
+    {
+        int numberOfTransactions = 500;
+        long sizeOfTransaction = (ByteUnit.mebiBytes( 1 ) / numberOfTransactions) + 1;
+        for ( int txId = 0; txId < numberOfTransactions; txId++ )
+        {
+            cluster.coreTx( ( coreGraphDatabase, transaction ) ->
+            {
+                Node node = coreGraphDatabase.createNode();
+                String longString = LongStream.range( 0, sizeOfTransaction ).map( l -> l % 10 ).mapToObj( Long::toString ).collect( joining( "" ) );
+                node.setProperty( "name", longString );
+                coreGraphDatabase.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
+                transaction.success();
+            } );
+        }
     }
 
     public static DbRepresentation createSomeData( Cluster cluster )

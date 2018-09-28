@@ -169,7 +169,7 @@ public class CoreStateDownloader
             CatchupResult catchupResult;
             try
             {
-                catchupResult = remoteStore.tryCatchingUp( primary, localStoreId, localDatabase.storeDir(), false );
+                catchupResult = remoteStore.tryCatchingUp( primary, localStoreId, localDatabase.storeDir(), false, false );
             }
             catch ( StoreCopyFailedException e )
             {

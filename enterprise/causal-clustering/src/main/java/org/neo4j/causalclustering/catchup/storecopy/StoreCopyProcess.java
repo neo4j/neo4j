@@ -56,7 +56,7 @@ public class StoreCopyProcess
     {
         try ( TemporaryStoreDirectory tempStore = new TemporaryStoreDirectory( fs, pageCache, localDatabase.storeDir() ) )
         {
-            remoteStore.copy( addressProvider, expectedStoreId, tempStore.storeDir() );
+            remoteStore.copy( addressProvider, expectedStoreId, tempStore.storeDir(), false );
             copiedStoreRecovery.recoverCopiedStore( tempStore.storeDir() );
             localDatabase.replaceWith( tempStore.storeDir() );
         }

@@ -41,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.LongStream;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -51,6 +52,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -65,6 +67,7 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.String.format;
+import static java.util.stream.Collectors.joining;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -345,6 +348,74 @@ public class OnlineBackupCommandHaIT
         // and the data isn't equal (sanity check)
         assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
         db2.shutdown();
+    }
+
+    @Test
+    public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
+    {
+        // given database exists with data
+        int port = PortAuthority.allocatePort();
+        startDb( port );
+        createSomeData( db );
+
+        // and backup client is told to rotate conveniently
+        Config config = Config
+                .builder()
+                .withSetting( GraphDatabaseSettings.logical_log_rotation_threshold, "1m" )
+                .build();
+        File configOverrideFile = testDirectory.file( "neo4j-backup.conf" );
+        OnlineBackupCommandBuilder.writeConfigToFile( config, configOverrideFile );
+
+        // and we have a full backup
+        String backupName = "backupName" + recordFormat;
+        String address = "localhost:" + port;
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir,
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--protocol=common",
+                "--additional-config=" + configOverrideFile,
+                "--name=" + backupName ) );
+
+        // and the database contains a few more transactions
+        transactions1M( db );
+        transactions1M( db ); // rotation, second tx log file
+
+        // when we perform an incremental backup
+        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( backupDir,
+                "--from", address,
+                "--cc-report-dir=" + backupDir,
+                "--backup-dir=" + backupDir,
+                "--protocol=common",
+                "--additional-config=" + configOverrideFile,
+                "--name=" + backupName ) );
+
+        // then there has been a rotation
+        BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
+        LogFiles logFiles = backupTransactionLogFilesHelper.readLogFiles( backupDir.toPath().resolve( backupName ).toFile() );
+        long highestTxIdInLogFiles = logFiles.getHighestLogVersion();
+        assertEquals( 2, highestTxIdInLogFiles );
+
+        // and the original log has not been removed since the transactions are applied at start
+        long lowestTxIdInLogFiles = logFiles.getLowestLogVersion();
+        assertEquals( 0, lowestTxIdInLogFiles );
+    }
+
+    private static void transactions1M( GraphDatabaseService db )
+    {
+        int numberOfTransactions = 500;
+        long sizeOfTransaction = (ByteUnit.mebiBytes( 1 ) / numberOfTransactions) + 1;
+        for ( int txId = 0; txId < numberOfTransactions; txId++ )
+        {
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node = db.createNode();
+                String longString = LongStream.range( 0, sizeOfTransaction ).map( l -> l % 10 ).mapToObj( Long::toString ).collect( joining( "" ) );
+                node.setProperty( "name", longString );
+                db.createNode().createRelationshipTo( node, RelationshipType.withName( "KNOWS" ) );
+                tx.success();
+            }
+        }
     }
 
     private void repeatedlyPopulateDatabase( GraphDatabaseService db, AtomicBoolean continueFlagReference )
