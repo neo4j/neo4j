@@ -48,7 +48,6 @@
       <outputDirectory/>
       <includes>
         <include>**/*.exe</include>
-        <include>**/2.x-config-migrator.jar</include>
       </includes>
     </fileSet>
     <!-- filter text files -->
