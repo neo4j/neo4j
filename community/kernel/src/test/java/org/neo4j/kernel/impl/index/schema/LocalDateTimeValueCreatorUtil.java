@@ -28,13 +28,7 @@ public class LocalDateTimeValueCreatorUtil extends ValueCreatorUtil<LocalDateTim
 {
     LocalDateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
-        super( schemaIndexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ) );
     }
 
     @Override

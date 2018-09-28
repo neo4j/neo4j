@@ -37,13 +37,7 @@ class GenericValueCreatorUtil extends ValueCreatorUtil<CompositeGenericKey,Nativ
 
     GenericValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.Type.values();
+        super( indexDescriptor, RandomValues.Type.values() );
     }
 
     @Override

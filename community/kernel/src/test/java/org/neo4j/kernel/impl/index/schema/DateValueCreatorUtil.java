@@ -28,13 +28,7 @@ public class DateValueCreatorUtil extends ValueCreatorUtil<DateIndexKey,NativeIn
 {
     DateValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.DATE );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.DATE ) );
     }
 
     @Override

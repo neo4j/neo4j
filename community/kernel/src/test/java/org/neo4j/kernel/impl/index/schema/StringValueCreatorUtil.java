@@ -30,7 +30,7 @@ class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndex
 {
     StringValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
-        super( schemaIndexDescriptor );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.TEXT ) );
     }
 
     @Override
@@ -39,11 +39,5 @@ class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndex
         return byteArrayCompare(
                 copyOf( key1.bytes, key1.bytesLength ),
                 copyOf( key2.bytes, key2.bytesLength ) );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.TEXT );
     }
 }

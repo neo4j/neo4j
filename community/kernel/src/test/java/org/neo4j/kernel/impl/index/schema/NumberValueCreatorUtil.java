@@ -27,13 +27,7 @@ class NumberValueCreatorUtil extends ValueCreatorUtil<NumberIndexKey,NativeIndex
 {
     NumberValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.NUMBER );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.NUMBER ) );
     }
 
     @Override

@@ -28,13 +28,7 @@ public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeInde
 {
     DateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
-        super( schemaIndexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ) );
     }
 
     @Override

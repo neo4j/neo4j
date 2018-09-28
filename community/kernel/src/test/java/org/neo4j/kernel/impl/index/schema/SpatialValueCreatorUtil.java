@@ -45,19 +45,13 @@ class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeInd
 
     SpatialValueCreatorUtil( StoreIndexDescriptor descriptor )
     {
-        super( descriptor );
+        super( descriptor, new RandomValues.Type[]{RandomValues.Type.GEOGRAPHIC_POINT} );
     }
 
     @Override
     IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
     {
         return someUpdatesWithDuplicateValues( randomRule );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return new RandomValues.Type[]{RandomValues.Type.GEOGRAPHIC_POINT};
     }
 
     @Override

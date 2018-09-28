@@ -28,13 +28,7 @@ public class DurationValueCreatorUtil extends ValueCreatorUtil<DurationIndexKey,
 {
     DurationValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
-        super( schemaIndexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.DURATION );
+        super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.DURATION ) );
     }
 
     @Override

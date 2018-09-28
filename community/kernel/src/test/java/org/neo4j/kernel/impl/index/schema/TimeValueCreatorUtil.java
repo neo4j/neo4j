@@ -30,13 +30,7 @@ public class TimeValueCreatorUtil extends ValueCreatorUtil<ZonedTimeIndexKey,Nat
 
     TimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.ZONED_TIME );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ) );
     }
 
     @Override

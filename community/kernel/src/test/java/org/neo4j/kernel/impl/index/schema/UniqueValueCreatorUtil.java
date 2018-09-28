@@ -19,22 +19,14 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.values.storable.RandomValues;
-
 class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends ValueCreatorUtil<KEY, VALUE>
 {
     private final ValueCreatorUtil<KEY, VALUE> delegate;
 
     UniqueValueCreatorUtil( ValueCreatorUtil<KEY, VALUE> delegate )
     {
-        super( delegate.indexDescriptor );
+        super( delegate.indexDescriptor, delegate.supportedTypes() );
         this.delegate = delegate;
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return delegate.supportedTypes();
     }
 
     @Override

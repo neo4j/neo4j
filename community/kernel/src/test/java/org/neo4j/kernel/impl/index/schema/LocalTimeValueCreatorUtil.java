@@ -28,13 +28,7 @@ public class LocalTimeValueCreatorUtil extends ValueCreatorUtil<LocalTimeIndexKe
 {
     LocalTimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-    }
-
-    @Override
-    RandomValues.Type[] supportedTypes()
-    {
-        return RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME );
+        super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ) );
     }
 
     @Override
