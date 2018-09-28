@@ -31,7 +31,6 @@ import java.util.HashMap;
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -111,29 +110,7 @@ public class NativeIndexPopulatorTest
         StandardConfiguration configuration = new StandardConfiguration();
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
-                        new SimpleDirectoryStructure( storeFile ), configuration, false );
-    }
-
-    private static class SimpleDirectoryStructure extends IndexDirectoryStructure
-    {
-        private final File indexFile;
-
-        SimpleDirectoryStructure( File indexFile )
-        {
-            this.indexFile = indexFile;
-        }
-
-        @Override
-        public File rootDirectory()
-        {
-            return indexFile.getParentFile();
-        }
-
-        @Override
-        public File directoryForIndex( long indexId )
-        {
-            return indexFile;
-        }
+                        SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
     }
 
     @FunctionalInterface

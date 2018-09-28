@@ -19,365 +19,106 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.hamcrest.Matchers;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-
-import java.io.File;
-import java.io.IOException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
-import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
-import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
+import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 
-public abstract class NativeIndexProviderTest
+@RunWith( Parameterized.class )
+public class NativeIndexProviderTest extends NativeIndexProviderTests
 {
-    @Rule
-    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule();
-
-    private static final int indexId = 1;
-    private static final int labelId = 1;
-    private static final int propId = 1;
-    private IndexProvider provider;
-    private final AssertableLogProvider logging = new AssertableLogProvider();
-    private final IndexProvider.Monitor monitor = new LoggingMonitor( logging.getLog( "test" ) );
-
-    @Before
-    public void setup() throws IOException
+    @Parameterized.Parameters( name = "{index} {0}" )
+    public static Object[][] data()
     {
-        File nativeSchemaIndexStoreDirectory = newProvider().directoryStructure().rootDirectory();
-        rules.fileSystem().mkdirs( nativeSchemaIndexStoreDirectory );
+        return new Object[][]{
+                {"Number",
+                        (ProviderFactory) NumberIndexProvider::new,
+                        POPULATING,
+                        Values.of( 1 )
+                },
+                {"String",
+                        (ProviderFactory) StringIndexProvider::new,
+                        POPULATING,
+                        Values.of( "string" )
+                },
+                {"Spatial",
+                        spatialProviderFactory(),
+                        ONLINE,
+                        Values.pointValue( CoordinateReferenceSystem.WGS84, 0, 0 )
+                },
+                {"Temporal",
+                        (ProviderFactory) TemporalIndexProvider::new,
+                        ONLINE,
+                        DateValue.date( 1, 1, 1 )
+                },
+                {"Generic",
+                        genericProviderFactory(),
+                        POPULATING,
+                        Values.of( 1 )
+                },
+        };
     }
 
-    /* getPopulator */
-
-    @Test
-    public void getPopulatorMustThrowIfInReadOnlyMode()
+    private static ProviderFactory genericProviderFactory()
     {
-        // given
-        provider = newReadOnlyProvider();
-
-        try
-        {
-            // when
-            provider.getPopulator( descriptor(), samplingConfig() );
-            fail( "Should have failed" );
-        }
-        catch ( UnsupportedOperationException e )
-        {
-            // then
-            // good
-        }
+        return ( pageCache, fs, dir, monitor, collector, readOnly ) ->
+                new GenericNativeIndexProvider( 0, dir, pageCache, fs, monitor, collector, readOnly, Config.defaults() );
     }
 
-    /* getOnlineAccessor */
-
-    @Test
-    public void shouldNotCheckConflictsWhenApplyingUpdatesInOnlineAccessor() throws IOException, IndexEntryConflictException
+    private static ProviderFactory spatialProviderFactory()
     {
-        // given
-        provider = newProvider();
-
-        // when
-        StoreIndexDescriptor descriptor = descriptorUnique();
-        try ( IndexAccessor accessor = provider.getOnlineAccessor( descriptor, samplingConfig() );
-              IndexUpdater indexUpdater = accessor.newUpdater( IndexUpdateMode.ONLINE ) )
-        {
-            Value value = someValue();
-            indexUpdater.process( IndexEntryUpdate.add( 1, descriptor.schema(), value ) );
-
-            // then
-            // ... expect no failure on duplicate value
-            indexUpdater.process( IndexEntryUpdate.add( 2, descriptor.schema(), value ) );
-        }
+        return ( pageCache, fs, dir, monitor, collector, readOnly ) ->
+                new SpatialIndexProvider( pageCache, fs, dir, monitor, collector, readOnly, Config.defaults() );
     }
 
-    /* getPopulationFailure */
+    @Parameterized.Parameter
+    public String name;
 
-    @Test
-    public void getPopulationFailureMustThrowIfNoFailure()
+    @Parameterized.Parameter( 1 )
+    public ProviderFactory providerFactory;
+
+    @Parameterized.Parameter( 2 )
+    public InternalIndexState expectedStateOnNonExistingSubIndex;
+
+    @Parameterized.Parameter( 3 )
+    public Value someValue;
+
+    @Override
+    protected InternalIndexState expectedStateOnNonExistingSubIndex()
     {
-        // given
-        provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
-        populator.create();
-        populator.close( true );
-
-        // when
-        // ... no failure on populator
-
-        // then
-        try
-        {
-            provider.getPopulationFailure( descriptor() );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-            assertThat( e.getMessage(), Matchers.containsString( Long.toString( indexId ) ) );
-        }
+        return expectedStateOnNonExistingSubIndex;
     }
 
-    @Test
-    public void getPopulationFailureMustThrowEvenIfFailureOnOtherIndex()
+    @Override
+    protected Value someValue()
     {
-        // given
-        provider = newProvider();
-
-        int nonFailedIndexId = NativeIndexProviderTest.indexId;
-        IndexPopulator nonFailedPopulator = provider.getPopulator( descriptor( nonFailedIndexId ), samplingConfig() );
-        nonFailedPopulator.create();
-        nonFailedPopulator.close( true );
-
-        int failedIndexId = 2;
-        IndexPopulator failedPopulator = provider.getPopulator( descriptor( failedIndexId ), samplingConfig() );
-        failedPopulator.create();
-
-        // when
-        failedPopulator.markAsFailed( "failure" );
-        failedPopulator.close( false );
-
-        // then
-        try
-        {
-            provider.getPopulationFailure( descriptor( nonFailedIndexId ) );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-            assertThat( e.getMessage(), Matchers.containsString( Long.toString( nonFailedIndexId ) ) );
-        }
+        return someValue;
     }
 
-    @Test
-    public void getPopulationFailureMustReturnReportedFailure()
+    @Override
+    IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir, IndexProvider.Monitor monitor,
+            RecoveryCleanupWorkCollector collector, boolean readOnly )
     {
-        // given
-        provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
-        populator.create();
-
-        // when
-        String failureMessage = "fail";
-        populator.markAsFailed( failureMessage );
-        populator.close( false );
-
-        // then
-        String populationFailure = provider.getPopulationFailure( descriptor() );
-        assertThat( populationFailure, is( failureMessage ) );
+        return providerFactory.create( pageCache, fs, dir, monitor, collector, readOnly );
     }
 
-    @Test
-    public void getPopulationFailureMustReturnReportedFailuresForDifferentIndexIds()
+    @FunctionalInterface
+    private interface ProviderFactory
     {
-        // given
-        provider = newProvider();
-        int first = 1;
-        int second = 2;
-        int third = 3;
-        IndexPopulator firstPopulator = provider.getPopulator( descriptor( first ), samplingConfig() );
-        firstPopulator.create();
-        IndexPopulator secondPopulator = provider.getPopulator( descriptor( second ), samplingConfig() );
-        secondPopulator.create();
-        IndexPopulator thirdPopulator = provider.getPopulator( descriptor( third ), samplingConfig() );
-        thirdPopulator.create();
-
-        // when
-        String firstFailure = "first failure";
-        firstPopulator.markAsFailed( firstFailure );
-        firstPopulator.close( false );
-        secondPopulator.close( true );
-        String thirdFailure = "third failure";
-        thirdPopulator.markAsFailed( thirdFailure );
-        thirdPopulator.close( false );
-
-        // then
-        assertThat( provider.getPopulationFailure( descriptor( first ) ), is( firstFailure ) );
-        assertThat( provider.getPopulationFailure( descriptor( third ) ), is( thirdFailure ) );
-        try
-        {
-            provider.getPopulationFailure( descriptor( second ) );
-            fail( "Should have failed" );
-        }
-        catch ( IllegalStateException e )
-        {
-            // good
-        }
-    }
-
-    @Test
-    public void getPopulationFailureMustPersistReportedFailure()
-    {
-        // given
-        provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
-        populator.create();
-
-        // when
-        String failureMessage = "fail";
-        populator.markAsFailed( failureMessage );
-        populator.close( false );
-
-        // then
-        provider = newProvider();
-        String populationFailure = provider.getPopulationFailure( descriptor() );
-        assertThat( populationFailure, is( failureMessage ) );
-    }
-
-    /* getInitialState */
-    // pattern: open populator, markAsFailed, close populator, getInitialState, getPopulationFailure
-
-    @Test
-    public void shouldReportCorrectInitialStateIfIndexDoesntExist()
-    {
-        // given
-        provider = newProvider();
-
-        // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
-
-        // then
-        InternalIndexState expected = expectedStateOnNonExistingSubIndex();
-        assertEquals( expected, state );
-        if ( InternalIndexState.POPULATING == expected )
-        {
-            logging.assertContainsLogCallContaining( "Failed to open index" );
-        }
-        else
-        {
-            logging.assertNoLogCallContaining( "Failed to open index" );
-        }
-    }
-
-    @Test
-    public void shouldReportInitialStateAsPopulatingIfPopulationStartedButIncomplete()
-    {
-        // given
-        provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
-        populator.create();
-
-        // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
-
-        // then
-        assertEquals( InternalIndexState.POPULATING, state );
-        populator.close( true );
-    }
-
-    @Test
-    public void shouldReportInitialStateAsFailedIfMarkedAsFailed()
-    {
-        // given
-        provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
-        populator.create();
-        populator.markAsFailed( "Just some failure" );
-        populator.close( false );
-
-        // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
-
-        // then
-        assertEquals( InternalIndexState.FAILED, state );
-    }
-
-    @Test
-    public void shouldReportInitialStateAsOnlineIfPopulationCompletedSuccessfully()
-    {
-        // given
-        provider = newProvider();
-        IndexPopulator populator = provider.getPopulator( descriptor(), samplingConfig() );
-        populator.create();
-        populator.close( true );
-
-        // when
-        InternalIndexState state = provider.getInitialState( descriptor() );
-
-        // then
-        assertEquals( InternalIndexState.ONLINE, state );
-    }
-
-    /* storeMigrationParticipant */
-
-    protected abstract InternalIndexState expectedStateOnNonExistingSubIndex();
-
-    protected abstract Value someValue();
-
-    abstract IndexProvider newProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir,
-            IndexProvider.Monitor monitor, RecoveryCleanupWorkCollector collector, boolean readOnly );
-
-    private IndexProvider newProvider()
-    {
-        return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate(), false );
-    }
-
-    private IndexProvider newReadOnlyProvider()
-    {
-        return newProvider( pageCache(), fs(), directoriesByProvider( baseDir() ), monitor, immediate(), true );
-    }
-
-    private IndexSamplingConfig samplingConfig()
-    {
-        return new IndexSamplingConfig( Config.defaults() );
-    }
-
-    private StoreIndexDescriptor descriptor()
-    {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
-    }
-
-    private StoreIndexDescriptor descriptor( long indexId )
-    {
-        return IndexDescriptorFactory.forSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
-    }
-
-    private StoreIndexDescriptor descriptorUnique()
-    {
-        return IndexDescriptorFactory.uniqueForSchema( forLabel( labelId, propId ), PROVIDER_DESCRIPTOR ).withId( indexId );
-    }
-
-    private PageCache pageCache()
-    {
-        return rules.pageCache();
-    }
-
-    private FileSystemAbstraction fs()
-    {
-        return rules.fileSystem();
-    }
-
-    private File baseDir()
-    {
-        return rules.directory().absolutePath();
+        IndexProvider create( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory dir, IndexProvider.Monitor monitor,
+                RecoveryCleanupWorkCollector collector, boolean readOnly );
     }
 }
