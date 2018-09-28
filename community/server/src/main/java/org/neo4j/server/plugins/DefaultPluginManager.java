@@ -34,10 +34,15 @@ import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public final class DefaultPluginManager implements PluginManager
 {
     private final Map<String/*name*/,ServerExtender> extensions = new HashMap<>();
 
+    @Deprecated
     public DefaultPluginManager( LogProvider logProvider )
     {
         Map<String,Pair<ServerPlugin,ServerExtender>> extensions = new HashMap<>();
@@ -75,6 +80,7 @@ public final class DefaultPluginManager implements PluginManager
         }
     }
 
+    @Deprecated
     @Override
     public Map<String,List<String>> getExensionsFor( Class<?> type )
     {
@@ -105,6 +111,7 @@ public final class DefaultPluginManager implements PluginManager
         return extender.getExtensionPoint( type, method );
     }
 
+    @Deprecated
     @Override
     public ExtensionPointRepresentation describe( String name, Class<?> type, String method )
             throws PluginLookupException
@@ -120,6 +127,7 @@ public final class DefaultPluginManager implements PluginManager
         return representation;
     }
 
+    @Deprecated
     @Override
     public List<ExtensionPointRepresentation> describeAll( String name ) throws PluginLookupException
     {
@@ -136,6 +144,7 @@ public final class DefaultPluginManager implements PluginManager
         return result;
     }
 
+    @Deprecated
     @Override
     public <T> Representation invoke( GraphDatabaseAPI graphDb, String name, Class<T> type, String method,
             T context, ParameterList params ) throws PluginLookupException, BadInputException,
@@ -156,6 +165,7 @@ public final class DefaultPluginManager implements PluginManager
         }
     }
 
+    @Deprecated
     @Override
     public Set<String> extensionNames()
     {

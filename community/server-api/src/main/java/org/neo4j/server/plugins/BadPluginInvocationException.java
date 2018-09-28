@@ -19,8 +19,13 @@
  */
 package org.neo4j.server.plugins;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public final class BadPluginInvocationException extends Exception
 {
+    @Deprecated
     public BadPluginInvocationException( Throwable cause )
     {
         super( cause );

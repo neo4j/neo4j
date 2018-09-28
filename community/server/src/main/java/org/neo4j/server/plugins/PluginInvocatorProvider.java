@@ -26,17 +26,23 @@ import org.neo4j.server.database.InjectableProvider;
 
 import com.sun.jersey.api.core.HttpContext;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 @Provider
 public class PluginInvocatorProvider extends InjectableProvider<PluginInvocator>
 {
     private final AbstractNeoServer neoServer;
 
+    @Deprecated
     public PluginInvocatorProvider( AbstractNeoServer neoServer )
     {
         super( PluginInvocator.class );
         this.neoServer = neoServer;
     }
 
+    @Deprecated
     @Override
     public PluginInvocator getValue( HttpContext c )
     {

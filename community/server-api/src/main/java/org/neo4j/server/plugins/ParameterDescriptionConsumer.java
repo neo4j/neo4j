@@ -19,9 +19,15 @@
  */
 package org.neo4j.server.plugins;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public interface ParameterDescriptionConsumer
 {
+    @Deprecated
     void describeParameter( String name, Class<?> type, boolean optional, String description );
 
+    @Deprecated
     void describeListParameter( String name, Class<?> type, boolean optional, String description );
 }

@@ -25,15 +25,21 @@ import java.util.Iterator;
 
 import org.neo4j.kernel.configuration.Config;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public class ConfigAdapter extends AbstractConfiguration
 {
     private final Config config;
 
+    @Deprecated
     public ConfigAdapter( Config config )
     {
         this.config = config;
     }
 
+    @Deprecated
     @Override
     public boolean isEmpty()
     {
@@ -41,24 +47,28 @@ public class ConfigAdapter extends AbstractConfiguration
         return config == null;
     }
 
+    @Deprecated
     @Override
     public boolean containsKey( String key )
     {
         return config.getValue( key ).isPresent();
     }
 
+    @Deprecated
     @Override
     public Object getProperty( String key )
     {
         return config.getValue( key ).orElse( null );
     }
 
+    @Deprecated
     @Override
     public Iterator<String> getKeys()
     {
         return config.getConfigValues().keySet().iterator();
     }
 
+    @Deprecated
     @Override
     protected void addPropertyDirect( String key, Object value )
     {

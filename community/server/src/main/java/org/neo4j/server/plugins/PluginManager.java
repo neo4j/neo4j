@@ -21,6 +21,10 @@ package org.neo4j.server.plugins;
 
 import org.neo4j.server.rest.repr.ExtensionInjector;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public interface PluginManager extends ExtensionInjector, PluginInvocator
 {
 }

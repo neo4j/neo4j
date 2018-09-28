@@ -21,7 +21,12 @@ package org.neo4j.server.plugins;
 
 import java.lang.reflect.Method;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 interface PluginPointFactory
 {
+    @Deprecated
     PluginPoint createFrom( ServerPlugin plugin, Method method, Class<?> discovery );
 }

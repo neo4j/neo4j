@@ -33,7 +33,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
  *  has to be supplied with the plugin jar to the Neo4j server.<br>
  *  The plugin might return a collection of {@link Injectable}s that can later be used with
  *  {@literal @Context} injections.
+ *  @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
  */
+@Deprecated
 public interface PluginLifecycle
 {
     /**
@@ -42,10 +44,12 @@ public interface PluginLifecycle
      * @param config server configuration
      * @return A list of {@link Injectable}s that will be available to resource dependency injection later
      */
+    @Deprecated
     Collection<Injectable<?>> start( GraphDatabaseService graphDatabaseService, Configuration config );
 
     /**
      * called to shutdown individual external resources or configurations
      */
+    @Deprecated
     void stop();
 }

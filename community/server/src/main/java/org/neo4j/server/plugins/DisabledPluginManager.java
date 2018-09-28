@@ -28,6 +28,10 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.ExtensionPointRepresentation;
 import org.neo4j.server.rest.repr.Representation;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public class DisabledPluginManager implements PluginManager
 {
     public static final PluginManager INSTANCE = new DisabledPluginManager();
@@ -36,30 +40,35 @@ public class DisabledPluginManager implements PluginManager
     {
     }
 
+    @Deprecated
     @Override
     public <T> Representation invoke( GraphDatabaseAPI graphDb, String name, Class<T> type, String method, T context, ParameterList params )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Deprecated
     @Override
     public ExtensionPointRepresentation describe( String name, Class<?> type, String method )
     {
         throw new UnsupportedOperationException();
     }
 
+    @Deprecated
     @Override
     public List<ExtensionPointRepresentation> describeAll( String extensionName )
     {
         return Collections.emptyList();
     }
 
+    @Deprecated
     @Override
     public Set<String> extensionNames()
     {
         return Collections.emptySet();
     }
 
+    @Deprecated
     @Override
     public Map<String,List<String>> getExensionsFor( Class<?> type )
     {

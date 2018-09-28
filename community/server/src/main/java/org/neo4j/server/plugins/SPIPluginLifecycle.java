@@ -23,11 +23,17 @@ import java.util.Collection;
 
 import org.neo4j.server.NeoServer;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public interface SPIPluginLifecycle extends PluginLifecycle
 {
 
+    @Deprecated
     Collection<Injectable<?>> start( NeoServer neoServer );
 
+    @Deprecated
     @Override
     void stop();
 }

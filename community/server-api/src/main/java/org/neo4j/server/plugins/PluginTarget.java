@@ -24,6 +24,10 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 @Target( ElementType.METHOD )
 @Retention( RetentionPolicy.RUNTIME )
 public @interface PluginTarget

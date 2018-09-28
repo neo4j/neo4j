@@ -23,12 +23,17 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.Representation;
 
+/**
+ * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
+ */
+@Deprecated
 public abstract class PluginPoint
 {
     private final String name;
     private final Class<?> extendsType;
     private final String description;
 
+    @Deprecated
     protected PluginPoint( Class<?> type, String name, String description )
     {
         this.extendsType = type;
@@ -36,30 +41,36 @@ public abstract class PluginPoint
         this.name = ServerPlugin.verifyName( name );
     }
 
+    @Deprecated
     protected PluginPoint( Class<?> type, String name )
     {
         this( type, name, null );
     }
 
+    @Deprecated
     public final String name()
     {
         return name;
     }
 
+    @Deprecated
     public final Class<?> forType()
     {
         return extendsType;
     }
 
+    @Deprecated
     public String getDescription()
     {
         return description;
     }
 
+    @Deprecated
     public abstract Representation invoke( GraphDatabaseAPI graphDb, Object context,
             ParameterList params ) throws BadInputException, BadPluginInvocationException,
             PluginInvocationFailureException;
 
+    @Deprecated
     protected void describeParameters( ParameterDescriptionConsumer consumer )
     {
     }
