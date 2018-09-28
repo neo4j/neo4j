@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.InternalNotification
 
 /**
   * Execution plan for performing schema writes, i.e. creating or dropping indexes and constraints.
@@ -50,4 +51,6 @@ case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => U
   override def runtimeName: RuntimeName = ProcedureRuntimeName
 
   override def metadata: Seq[Argument] = Nil
+
+  override def notifications: Set[InternalNotification] = Set.empty
 }

@@ -29,7 +29,6 @@ trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def build(params: MapValue,
-            notificationLogger: InternalNotificationLogger,
             readOnly: Boolean,
             queryProfile: QueryProfile): RuntimeResult
 }

@@ -107,12 +107,12 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
-                            notificationLogger: InternalNotificationLogger,
                             transactionalContext: TransactionalContext,
                             params: MapValue
                            ): LogicalPlanResult = {
 
     runSafely {
+      val notificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
       val syntacticQuery =
         getOrParse(preParsedQuery, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer))
 
@@ -151,7 +151,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
           .foreach(notificationLogger.log)
 
         val reusabilityState = createReusabilityState(logicalPlanState, planContext)
-        CacheableLogicalPlan(logicalPlanState, reusabilityState)
+        CacheableLogicalPlan(logicalPlanState, reusabilityState, notificationLogger.notifications)
       }
 
       // Filter the parameters to retain only those that are actually used in the query
@@ -174,7 +174,8 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         queryParamNames,
         ValueConversion.asValues(preparedQuery.extractedParams()),
         cacheableLogicalPlan.reusability,
-        context)
+        context,
+        cacheableLogicalPlan.notifications)
     }
   }
 

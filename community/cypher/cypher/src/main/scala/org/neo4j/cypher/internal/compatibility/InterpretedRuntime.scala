@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.PeriodicCommitInOpenTransactionException
+import org.opencypher.v9_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
@@ -53,7 +53,6 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
 
     new InterpretedExecutionPlan(periodicCommitInfo,
                                  resultBuilderFactory,
-                                 context.notificationLogger,
                                  InterpretedRuntimeName,
                                  context.readOnly)
   }
@@ -64,7 +63,6 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
     */
   class InterpretedExecutionPlan(periodicCommit: Option[PeriodicCommitInfo],
                                  resultBuilderFactory: ExecutionResultBuilderFactory,
-                                 notificationLogger: InternalNotificationLogger,
                                  override val runtimeName: RuntimeName,
                                  readOnly: Boolean) extends ExecutionPlan {
 
@@ -84,11 +82,12 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
         builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo, profileInformation))
 
       builder.build(params,
-                    notificationLogger,
                     readOnly,
                     profileInformation)
     }
 
     override def metadata: Seq[Argument] = Nil
+
+    override def notifications: Set[InternalNotification] = Set.empty
   }
 }

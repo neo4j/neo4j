@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.util.InternalNotification
 
 abstract class ExecutionPlan {
 
@@ -32,4 +33,17 @@ abstract class ExecutionPlan {
   def runtimeName: RuntimeName
 
   def metadata: Seq[Argument]
+
+  def notifications: Set[InternalNotification]
+}
+
+abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {
+  override def run(queryContext: QueryContext, doProfile: Boolean,
+                   params: MapValue): RuntimeResult = inner.run(queryContext, doProfile, params)
+
+  override def runtimeName: RuntimeName = inner.runtimeName
+
+  override def metadata: Seq[Argument] = inner.metadata
+
+  override def notifications: Set[InternalNotification] = inner.notifications
 }

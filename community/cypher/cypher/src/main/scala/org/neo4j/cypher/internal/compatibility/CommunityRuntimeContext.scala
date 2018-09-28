@@ -28,8 +28,7 @@ import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 /**
   * The regular community runtime context.
   */
-case class CommunityRuntimeContext(notificationLogger: InternalNotificationLogger,
-                                   tokenContext: TokenContext,
+case class CommunityRuntimeContext(tokenContext: TokenContext,
                                    readOnly: Boolean,
                                    config: CypherPlannerConfiguration) extends RuntimeContext {
 
@@ -37,12 +36,11 @@ case class CommunityRuntimeContext(notificationLogger: InternalNotificationLogge
 }
 
 case class CommunityRuntimeContextCreator(config: CypherPlannerConfiguration) extends RuntimeContextCreator[RuntimeContext] {
-  override def create(notificationLogger: InternalNotificationLogger,
-                      tokenContext: TokenContext,
+  override def create(tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
                       readOnly: Boolean,
                       ignore: Boolean
                      ): RuntimeContext =
-    CommunityRuntimeContext(notificationLogger, tokenContext, readOnly, config)
+    CommunityRuntimeContext(tokenContext, readOnly, config)
 }

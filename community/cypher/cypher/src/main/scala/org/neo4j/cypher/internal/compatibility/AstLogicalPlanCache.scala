@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal._
 import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.helpers.collection.Pair
+import org.opencypher.v9_0.util.InternalNotification
 
 /**
   * Cache which stores logical plans indexed by an AST statement.
@@ -54,4 +55,4 @@ object AstLogicalPlanCache {
 }
 
 case class CacheableLogicalPlan(logicalPlanState: LogicalPlanState,
-                                reusability: ReusabilityState)
+                                reusability: ReusabilityState, notifications: Set[InternalNotification])

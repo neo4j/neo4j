@@ -262,9 +262,9 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val resultWithExplain = executeWith(Configs.All,
       "explain match (a)-->(b), (c)-->(d) return *")
 
-    resultWithoutExplain shouldBe empty
+    resultWithoutExplain.notifications.toList shouldBe empty
     resultWithExplain.notifications.toList should equal(
-      List(CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(29, 1, 30), cartesianProduct(Set("c", "d").asJava))))
+      List(CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(37, 1, 38), cartesianProduct(Set("c", "d").asJava))))
   }
 
   test("warn for unfulfillable index seek when using dynamic property lookup with a single label") {

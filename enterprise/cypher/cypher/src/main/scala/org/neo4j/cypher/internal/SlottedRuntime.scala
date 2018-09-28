@@ -101,7 +101,6 @@ object SlottedRuntime extends CypherRuntime[EnterpriseRuntimeContext] with Debug
       new InterpretedExecutionPlan(
         periodicCommitInfo,
         resultBuilderFactory,
-        context.notificationLogger,
         SlottedRuntimeName,
         context.readOnly)
     }

@@ -54,7 +54,6 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
       pipeDecorator = newDecorator
 
     override def build(params: MapValue,
-                       notificationLogger: InternalNotificationLogger,
                        readOnly: Boolean,
                        queryProfile: QueryProfile): RuntimeResult = {
       val state = createQueryState(params)

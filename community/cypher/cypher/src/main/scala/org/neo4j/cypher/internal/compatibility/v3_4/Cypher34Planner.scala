@@ -52,7 +52,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger => InternalNotificationLoggerv3_5}
+import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger, InternalNotificationLogger => InternalNotificationLoggerv3_5}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
 case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
@@ -116,7 +116,6 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
-                            notificationLoggerv3_5: InternalNotificationLoggerv3_5,
                             transactionalContext: TransactionalContext,
                             params: MapValue
                            ): LogicalPlanResult = {
@@ -124,6 +123,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
     val inputPositionV3_4 = as3_4(preParsedQuery.offset)
     val inputPositionv3_5 = preParsedQuery.offset
     val notificationLoggerV3_4 = new RecordingNotificationLoggerV3_4(Some(inputPositionV3_4))
+    val notificationLoggerv3_5 = new RecordingNotificationLogger(Some(inputPositionv3_5))
 
     runSafely {
       val syntacticQuery =
@@ -203,7 +203,10 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
           .foreach(notificationLoggerv3_5.log)
 
         val reusabilityState = createReusabilityState(logicalPlanStatev3_5, planContextv3_5)
-        CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState)
+        // Log notifications/warnings from planning
+        notificationLoggerV3_4.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
+
+        CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState, notificationLoggerv3_5.notifications)
       }
 
       // 3.4 does not produce different plans for different parameter types.
@@ -219,15 +222,13 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         else
           createPlan()
 
-      // Log notifications/warnings from planning
-      notificationLoggerV3_4.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
-
       LogicalPlanResult(
         cacheableLogicalPlan.logicalPlanState,
         queryParamNames,
         ValueConversion.asValues(preparedQuery.extractedParams()),
         cacheableLogicalPlan.reusability,
-        contextv3_5)
+        contextv3_5,
+        cacheableLogicalPlan.notifications)
     }
   }
 

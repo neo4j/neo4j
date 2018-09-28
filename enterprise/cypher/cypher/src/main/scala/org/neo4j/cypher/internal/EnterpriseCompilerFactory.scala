@@ -135,8 +135,7 @@ case class RuntimeEnvironment(config:CypherRuntimeConfiguration, jobScheduler: J
   * Enterprise runtime context. Enriches the community runtime context with infrastructure needed for
   * query compilation and parallel execution.
   */
-case class EnterpriseRuntimeContext(notificationLogger: InternalNotificationLogger,
-                                    tokenContext: TokenContext,
+case class EnterpriseRuntimeContext(tokenContext: TokenContext,
                                     readOnly: Boolean,
                                     codeStructure: CodeStructure[GeneratedQuery],
                                     log: Log,
@@ -155,14 +154,12 @@ case class EnterpriseRuntimeContextCreator(codeStructure: CodeStructure[Generate
                                            morselRuntimeState: RuntimeEnvironment)
   extends RuntimeContextCreator[EnterpriseRuntimeContext] {
 
-  override def create(notificationLogger: InternalNotificationLogger,
-                      tokenContext: TokenContext,
+  override def create(tokenContext: TokenContext,
                       clock: Clock,
                       debugOptions: Set[String],
                       readOnly: Boolean,
                       compileExpressions: Boolean): EnterpriseRuntimeContext =
-    EnterpriseRuntimeContext(notificationLogger,
-                             tokenContext,
+    EnterpriseRuntimeContext(tokenContext,
                              readOnly,
                              codeStructure,
                              log,

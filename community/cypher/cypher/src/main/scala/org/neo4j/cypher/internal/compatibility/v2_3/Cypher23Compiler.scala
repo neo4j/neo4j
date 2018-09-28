@@ -116,14 +116,14 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
     override val compilerInfo = new CompilerInfo(inner.plannerUsed.name, inner.runtimeUsed.name, emptyList[IndexUsage])
 
     override def execute(transactionalContext: TransactionalContext,
-                         executionMode: CypherExecutionMode,
+                         preParsedQuery: PreParsedQuery,
                          params: MapValue): Result = {
       var map: mutable.Map[String, Any] = mutable.Map[String, Any]()
       params.foreach(new ThrowingBiConsumer[String, AnyValue, RuntimeException] {
         override def accept(t: String, u: AnyValue): Unit = map.put(t, valueHelper.fromValue(u))
       })
 
-      run(transactionalContext, executionMode, map.toMap)
+      run(transactionalContext, preParsedQuery.executionMode, map.toMap)
     }
   }
 

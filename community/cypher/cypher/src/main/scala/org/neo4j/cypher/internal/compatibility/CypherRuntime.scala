@@ -21,13 +21,19 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.ExecutionPlan
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.RuntimeName
+import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v3_5.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v3_5.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
+import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.values.virtual.MapValue
+import org.opencypher.v9_0.frontend.phases.{InternalNotificationLogger, RecordingNotificationLogger}
+import org.opencypher.v9_0.util.InternalNotification
 
 import scala.concurrent.duration.Duration
 import scala.util.Try
@@ -54,7 +60,6 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
   * Context in which the Runtime performs physical planning
   */
 abstract class RuntimeContext {
-  def notificationLogger: InternalNotificationLogger
   def tokenContext: TokenContext
   def readOnly: Boolean
   def config: CypherPlannerConfiguration
@@ -67,8 +72,7 @@ abstract class RuntimeContext {
   * @tparam CONTEXT type of runtime context created
   */
 trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
-  def create(notificationLogger: InternalNotificationLogger,
-             tokenContext: TokenContext,
+  def create(tokenContext: TokenContext,
              clock: Clock,
              debugOptions: Set[String],
              readOnly: Boolean,
@@ -106,7 +110,7 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
 
   override def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
     var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalPlan, context))
-
+    val logger = new RecordingNotificationLogger()
     for (runtime <- runtimes if executionPlan.isFailure) {
       executionPlan =
         Try(
@@ -116,12 +120,16 @@ class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CON
         )
 
       if (executionPlan.isFailure && requestedRuntime != CypherRuntimeOption.default)
-        context.notificationLogger.log(RuntimeUnsupportedNotification)
+        logger.log(RuntimeUnsupportedNotification)
     }
+    val notifications = logger.notifications
 
-    executionPlan.recover({
+    val plan = executionPlan.recover({
       case e: CantCompileQueryException => throw publicCannotCompile(e)
     }).get
+
+    if (notifications.isEmpty) plan
+    else ExecutionPlanWithNotifications(plan, notifications)
   }
 }
 
@@ -129,3 +137,8 @@ case class CypherRuntimeConfiguration(workers: Int,
                                       morselSize: Int,
                                       doSchedulerTracing: Boolean,
                                       waitTimeout: Duration)
+
+case class ExecutionPlanWithNotifications(inner: ExecutionPlan, extraNotifications: Set[InternalNotification]) extends DelegatingExecutionPlan(inner) {
+
+  override def notifications: Set[InternalNotification] = inner.notifications ++ extraNotifications
+}

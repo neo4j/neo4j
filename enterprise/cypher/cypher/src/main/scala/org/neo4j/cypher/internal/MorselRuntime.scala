@@ -43,6 +43,7 @@ import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.opencypher.v9_0.util.InternalNotification
 
 object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
 
@@ -68,10 +69,6 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     val dispatcher = context.runtimeEnvironment.getDispatcher(context.debugOptions)
     val tracer = context.runtimeEnvironment.tracer
     val fieldNames = state.statement().returnColumns.toArray
-
-    context.notificationLogger.log(
-      ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
-                                        "not recommended to be run on production systems"))
 
     VectorizedExecutionPlan(operators,
                             physicalPlan.slotConfigurations,
@@ -112,6 +109,9 @@ object MorselRuntime extends CypherRuntime[EnterpriseRuntimeContext] {
     override def runtimeName: RuntimeName = MorselRuntimeName
 
     override def metadata: Seq[Argument] = Nil
+
+    override def notifications: Set[InternalNotification] = Set(ExperimentalFeatureNotification("use the morsel runtime at your own peril, " +
+                                                                                                   "not recommended to be run on production systems"))
   }
 
   class VectorizedRuntimeResult(operators: Pipeline,

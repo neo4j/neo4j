@@ -43,7 +43,6 @@ class StandardInternalExecutionResult(context: QueryContext,
                                       runtimeResult: RuntimeResult,
                                       taskCloser: TaskCloser,
                                       override val queryType: InternalQueryType,
-                                      override val notifications: Set[Notification],
                                       override val executionMode: ExecutionMode,
                                       planDescriptionBuilder: PlanDescriptionBuilder)
   extends InternalExecutionResult {
@@ -243,6 +242,8 @@ class StandardInternalExecutionResult(context: QueryContext,
     }
 
   }
+
+  override def notifications: Iterable[Notification] = Set.empty
 }
 
 

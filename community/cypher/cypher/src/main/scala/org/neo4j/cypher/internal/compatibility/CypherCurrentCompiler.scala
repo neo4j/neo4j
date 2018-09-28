@@ -41,7 +41,7 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
-import org.opencypher.v9_0.util.TaskCloser
+import org.opencypher.v9_0.util.{InternalNotification, TaskCloser}
 
 import scala.collection.JavaConverters._
 
@@ -78,10 +78,8 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                        params: MapValue
                       ): ExecutableQuery = {
 
-    val planningNotificationLogger = new RecordingNotificationLogger(Some(preParsedQuery.offset))
-
     val logicalPlanResult =
-      planner.parseAndPlan(preParsedQuery, tracer, planningNotificationLogger, transactionalContext, params)
+      planner.parseAndPlan(preParsedQuery, tracer, transactionalContext, params)
 
     val planState = logicalPlanResult.logicalPlanState
     val logicalPlan = planState.logicalPlan
@@ -91,14 +89,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       case CypherExpressionEngineOption.compiled => true
       case _ => false
     }
-    val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.notificationLogger,
-                                               logicalPlanResult.plannerContext.planContext,
+
+    val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
                                                queryType == READ_ONLY,
                                                compileExpressions)
 
-    val executionPlan3_5 = runtime.compileToExecutable(planState, runtimeContext)
+    val executionPlan3_5: ExecutionPlan_v3_5 = runtime.compileToExecutable(planState, runtimeContext)
 
     new CypherExecutableQuery(
       logicalPlan,
@@ -107,7 +105,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       logicalPlanResult.logicalPlanState.planningAttributes.providedOrders,
       executionPlan3_5,
       preParsingNotifications,
-      planningNotificationLogger.notifications.map(asKernelNotification(planningNotificationLogger.offset)),
+      logicalPlanResult.notifications,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,
       logicalPlanResult.extractedParams,
@@ -155,7 +153,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         providedOrders: ProvidedOrders,
                                         executionPlan: ExecutionPlan_v3_5,
                                         preParsingNotifications: Set[Notification],
-                                        planningNotifications: Set[Notification],
+                                        planningNotifications: Set[InternalNotification],
                                         reusabilityState: ReusabilityState,
                                         override val paramNames: Seq[String],
                                         override val extractedParams: MapValue,
@@ -173,9 +171,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def execute(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode,
+    def execute(transactionalContext: TransactionalContext, preParsedQuery: PreParsedQuery,
                 params: MapValue): Result = {
-      val innerExecutionMode = executionMode match {
+      val innerExecutionMode = preParsedQuery.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
         case CypherExecutionMode.normal => NormalMode
@@ -195,10 +193,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
             taskCloser.close(success = true)
             val columns = columnNames(logicalPlan)
 
+            val allNotifications =
+              preParsingNotifications ++ (planningNotifications ++ executionPlan.notifications).map(asKernelNotification(Some(preParsedQuery.offset)))
             ExplainExecutionResult(columns,
                                    planDescriptionBuilder.explain(),
-                                   queryType,
-                                   preParsingNotifications ++ planningNotifications)
+                                   queryType, allNotifications)
           } else {
 
             val doProfile = innerExecutionMode == ProfileMode
@@ -209,7 +208,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                 runtimeResult,
                                                 taskCloser,
                                                 queryType,
-                                                preParsingNotifications,
                                                 innerExecutionMode,
                                                 planDescriptionBuilder)
           }

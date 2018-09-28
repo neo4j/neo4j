@@ -41,6 +41,7 @@ import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
+import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -58,6 +59,7 @@ import static org.neo4j.graphdb.impl.notification.NotificationCode.CREATE_UNIQUE
 import static org.neo4j.graphdb.impl.notification.NotificationCode.EAGER_LOAD_CSV;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.INDEX_HINT_UNFULFILLABLE;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.LENGTH_ON_NON_PATH;
+import static org.neo4j.graphdb.impl.notification.NotificationCode.MISSING_LABEL;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.RUNTIME_UNSUPPORTED;
 import static org.neo4j.graphdb.impl.notification.NotificationCode.UNBOUNDED_SHORTEST_PATH;
@@ -811,6 +813,29 @@ public class NotificationAcceptanceTest
     {
         Result res = db().execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n");
         assert res.getNotifications().iterator().hasNext();
+    }
+
+    @Test
+    public void shouldGiveCorrectPositionWhetherFromCacheOrNot()
+    {
+        // Given
+        String cachedQuery = "MATCH (a:L1) RETURN a";
+        String nonCachedQuery = "MATCH (a:L2) RETURN a";
+        //make sure we cache the query
+        for ( int i = 0; i < 10; i++ )
+        {
+            db().execute( cachedQuery ).resultAsString();
+        }
+
+        // When
+        Notification cachedNotification =
+                Iterables.asList( db().execute( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
+        Notification nonCachedNotication =
+                Iterables.asList( db().execute( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
+
+        // Then
+        assertThat( cachedNotification.getPosition(), equalTo( new InputPosition( 17, 1, 18 ) ) );
+        assertThat( nonCachedNotication.getPosition(), equalTo( new InputPosition( 17, 1, 18 ) ) );
     }
 
     private void assertNotifications( String query, Matcher<Iterable<Notification>> matchesExpectation )

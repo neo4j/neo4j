@@ -150,7 +150,6 @@ class StandardInternalExecutionResultTest extends CypherFunSuite {
       inner,
       new TaskCloser,
       queryType,
-      Set.empty,
       NormalMode,
       mock[PlanDescriptionBuilder]
     )
