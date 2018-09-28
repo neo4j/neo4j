@@ -54,6 +54,25 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
         this.indexDescriptor = indexDescriptor;
     }
 
+    abstract RandomValues.Type[] supportedTypes();
+
+    abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
+
+    protected double fractionDuplicates()
+    {
+        return 0.1;
+    }
+
+    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
+    {
+        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
+    }
+
+    StoreIndexDescriptor indexDescriptor()
+    {
+        return indexDescriptor;
+    }
+
     IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
     {
         Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator = randomUpdateGenerator( randomRule );
@@ -66,97 +85,17 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
         return result;
     }
 
-    abstract RandomValues.Type[] supportedTypes();
-
-    protected double fractionDuplicates()
-    {
-        return 0.1;
-    }
-
-    IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
-    {
-        return IndexQuery.range( 0, from, fromInclusive, to, toInclusive );
-    }
-
-    abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
-
-    StoreIndexDescriptor indexDescriptor()
-    {
-        return indexDescriptor;
-    }
-
-    void copyValue( VALUE value, VALUE intoValue )
-    {   // no-op until we decide to use value for something
-    }
-
     Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
     {
         Iterator<Value> valueIterator = randomValueGenerator( randomRule );
-        return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
-        {
-            private long currentEntityId;
-
-            @Override
-            protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
-            {
-                Value value = valueIterator.next();
-                return add( currentEntityId++, value );
-            }
-        };
+        return new RandomUpdateGenerator( valueIterator );
     }
 
     private Iterator<Value> randomValueGenerator( RandomRule randomRule )
     {
         RandomValues randomValues = randomRule.randomValues();
         double fractionDuplicates = fractionDuplicates();
-        return new PrefetchingIterator<Value>()
-        {
-            private final Set<Value> uniqueCompareValues = new HashSet<>();
-            private final List<Value> uniqueValues = new ArrayList<>();
-
-            @Override
-            protected Value fetchNextOrNull()
-            {
-                Value value;
-                if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                        randomValues.nextFloat() < fractionDuplicates )
-                {
-                    value = randomValues.among( uniqueValues );
-                }
-                else
-                {
-                    value = newUniqueValue( randomValues, uniqueCompareValues, uniqueValues );
-                }
-
-                return value;
-            }
-        };
-    }
-
-    private Value newUniqueValue( RandomValues random, Set<Value> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        Value value;
-        do
-        {
-            value = random.nextValueOfTypes( supportedTypes() );
-        }
-        while ( !uniqueCompareValues.add( value ) );
-        uniqueValues.add( value );
-        return value;
-    }
-
-    Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
-    {
-        Value[] values = new Value[updates.length];
-        for ( int i = 0; i < updates.length; i++ )
-        {
-            if ( updates[i].values().length > 1 )
-            {
-                throw new UnsupportedOperationException( "This method does not support composite entries" );
-            }
-            values[i] = updates[i].values()[0];
-        }
-        return values;
+        return new RandomValueGenerator( fractionDuplicates, randomValues );
     }
 
     IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
@@ -181,6 +120,20 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
         return indexEntryUpdates;
     }
 
+    Value[] extractValuesFromUpdates( IndexEntryUpdate<IndexDescriptor>[] updates )
+    {
+        Value[] values = new Value[updates.length];
+        for ( int i = 0; i < updates.length; i++ )
+        {
+            if ( updates[i].values().length > 1 )
+            {
+                throw new UnsupportedOperationException( "This method does not support composite entries" );
+            }
+            values[i] = updates[i].values()[0];
+        }
+        return values;
+    }
+
     protected IndexEntryUpdate<IndexDescriptor> add( long nodeId, Value value )
     {
         return IndexEntryUpdate.add( nodeId, indexDescriptor, value );
@@ -199,5 +152,72 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
     void sort( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
         Arrays.sort( updates, UPDATE_COMPARATOR );
+    }
+
+    void copyValue( VALUE value, VALUE intoValue )
+    {   // no-op until we decide to use value for something
+    }
+
+    private class RandomValueGenerator extends PrefetchingIterator<Value>
+    {
+        private final Set<Value> uniqueCompareValues;
+        private final List<Value> uniqueValues;
+        private final double fractionDuplicates;
+        private final RandomValues randomValues;
+
+        RandomValueGenerator( double fractionDuplicates, RandomValues randomValues )
+        {
+            this.fractionDuplicates = fractionDuplicates;
+            this.randomValues = randomValues;
+            this.uniqueCompareValues = new HashSet<>();
+            this.uniqueValues = new ArrayList<>();
+        }
+
+        @Override
+        protected Value fetchNextOrNull()
+        {
+            Value value;
+            if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
+                    randomValues.nextFloat() < fractionDuplicates )
+            {
+                value = randomValues.among( uniqueValues );
+            }
+            else
+            {
+                value = newUniqueValue( randomValues, uniqueCompareValues, uniqueValues );
+            }
+
+            return value;
+        }
+
+        private Value newUniqueValue( RandomValues random, Set<Value> uniqueCompareValues, List<Value> uniqueValues )
+        {
+            Value value;
+            do
+            {
+                value = random.nextValueOfTypes( supportedTypes() );
+            }
+            while ( !uniqueCompareValues.add( value ) );
+            uniqueValues.add( value );
+            return value;
+        }
+    }
+
+    private class RandomUpdateGenerator extends PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>
+    {
+        private final Iterator<Value> valueIterator;
+        private long currentEntityId;
+
+        RandomUpdateGenerator( Iterator<Value> valueIterator )
+        {
+            this.valueIterator = valueIterator;
+        }
+
+        @Override
+        protected IndexEntryUpdate<IndexDescriptor> fetchNextOrNull()
+        {
+            Value value = valueIterator.next();
+            return add( currentEntityId++, value );
+        }
     }
 }
