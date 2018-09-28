@@ -230,13 +230,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       }
 
     case Variable(name) =>
-      val variableName = namer.variableName(name)
-      val local = variable[AnyValue](variableName,
-                                     invokeStatic(
-                                       method[CompiledHelpers, AnyValue, ExecutionContext, String]("loadVariable"),
-                                       loadContext(currentContext),
-                                       constant(name)))
-      Some(IntermediateExpression(load(variableName), Seq.empty, Seq(local), Set(equal(load(variableName), noValue))))
+      val loadVar = invokeStatic(
+        method[CompiledHelpers, AnyValue, ExecutionContext, String]("loadVariable"),
+        loadContext(currentContext),  constant(name))
+
+      Some(IntermediateExpression(loadVar, Seq.empty, Seq.empty, Set(equal(loadVar, noValue))))
 
     case SingleIterablePredicate(scope, collectionExpression) =>
       /*
@@ -266,10 +264,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {collection <- internalCompileExpression(collectionExpression, currentContext)
            inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val matches = namer.nextVariableName()
@@ -299,8 +293,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             // Value isMatch = [result from inner expression using innerContext]
             // if (isMatch == Values.TRUE)
             // {
@@ -326,7 +319,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             noValue,
             invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(matches), constant(1))))
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables ++ inner.variables,
           collection.nullCheck)
       }
 
@@ -354,10 +347,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {collection <- internalCompileExpression(collectionExpression, currentContext)
            inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val isMatch = namer.nextVariableName()
@@ -386,8 +375,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             // isMatch = [result from inner expression using innerContext]
             assign(isMatch, nullCheck(inner)(inner.ir)),
             // if (isMatch == Values.NO_VALUE)
@@ -405,7 +393,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             noValue,
             invokeStatic(method[Values, BooleanValue, Boolean]("booleanValue"), equal(load(isMatch), falseValue)))
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables ++ inner.variables,
           collection.nullCheck)
       }
 
@@ -433,10 +421,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {collection <- internalCompileExpression(collectionExpression, currentContext)
            inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val isMatch = namer.nextVariableName()
@@ -465,8 +449,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             // isMatch = [result from inner expression using innerContext]
             assign(isMatch, nullCheck(inner)(inner.ir)),
             // if (isMatch == Values.NO_VALUE)
@@ -484,7 +467,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             noValue,
             load(isMatch))
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables ++ inner.variables,
           collection.nullCheck)
       }
 
@@ -507,10 +490,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {collection <- internalCompileExpression(collectionExpression, currentContext)
            inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val isMatch = namer.nextVariableName()
@@ -535,8 +514,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             // isMatch = [result from inner expression using innerContext]
             assign(isMatch, nullCheck(inner)(inner.ir))
             ):_*)
@@ -545,7 +523,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           // return isMatch;
           load(isMatch)
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables ++ inner.variables,
           collection.nullCheck)
       }
 
@@ -572,10 +550,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {collection <- internalCompileExpression(collectionExpression, currentContext)
            inner <- internalCompileExpression(scope.innerPredicate.get, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val filteredVars = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
@@ -601,8 +575,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             declare[Value](isFiltered),
             // Value isFiltered = [result from inner expression using innerContext]
             assign(isFiltered, nullCheck(inner)(inner.ir)),
@@ -618,7 +591,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           // return VirtualValues.fromList(extracted);
           invokeStatic(method[VirtualValues, ListValue, java.util.List[AnyValue]]("fromList"), load(filteredVars))
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables ++ inner.variables,
           collection.nullCheck)
       }
 
@@ -642,10 +615,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {collection <- internalCompileExpression(collectionExpression, currentContext)
            inner <- internalCompileExpression(scope.extractExpression.get, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val extractedVars = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
@@ -669,8 +638,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             //innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             //extracted.add([result from inner expression using innerContext]);
             invokeSideEffect(load(extractedVars), method[java.util.ArrayList[_], Boolean, Object]("add"),
                              nullCheck(inner)(inner.ir))):_*)
@@ -679,7 +647,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           // return VirtualValues.fromList(extracted);
           invokeStatic(method[VirtualValues, ListValue, java.util.List[AnyValue]]("fromList"), load(extractedVars))
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields,  collection.variables,
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields, collection.variables ++ inner.variables,
                                collection.nullCheck)
       }
 
@@ -703,10 +671,6 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            init <- internalCompileExpression(initExpression, currentContext)
            inner <- internalCompileExpression(scope.expression, Some(load(innerContext)))//Note we update the context here
       } yield {
-        //inner variables must be evaluated after we modify context
-        val innerVars: Seq[IntermediateRepresentation] = inner.variables.distinct.flatMap { v =>
-          Seq(declare(v.typ, v.name), assign(v.name, v.value))
-        }
         val listVar = namer.nextVariableName()
         val currentValue = namer.nextVariableName()
         val ops = Seq(
@@ -728,8 +692,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
             declare[AnyValue](currentValue),
             assign(currentValue, cast[AnyValue](invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Object]("next")))),
             // innerContext.set([name from scope], currentValue);
-            contextSet(scope.variable.name, load(innerContext), load(currentValue))
-          ) ++ innerVars ++ Seq(
+            contextSet(scope.variable.name, load(innerContext), load(currentValue)),
             //innerContext.set(acc, [inner expression using innerContext])
             contextSet(scope.accumulator.name, load(innerContext), nullCheck(inner)(inner.ir))
           ):_*)
@@ -737,8 +700,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           //return innerContext(acc);
           cast[AnyValue](invoke(load(innerContext), method[ExecutionContext, Object, Object]("apply"), constant(scope.accumulator.name)))
         )
-        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields ++ init.fields,  collection.variables ++ init.variables,
-                               collection.nullCheck ++ init.nullCheck)
+        IntermediateExpression(block(ops:_*), collection.fields ++ inner.fields ++ init.fields,  collection.variables ++
+          inner.variables ++ init.variables, collection.nullCheck ++ init.nullCheck)
       }
 
     //boolean operators
@@ -1200,20 +1163,16 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
 
     //slotted operations
     case ReferenceFromSlot(offset, name) =>
-      val localName = namer.nextVariableName()
-      val nullCheck = slots.get(name).filter(_.nullable).map(_ => equal(getRefAt(offset, currentContext), noValue))
-      val localVariable = variable[AnyValue](localName, nullCheck.map(c => ternary(c, noValue, getRefAt(offset, currentContext)))
-        .getOrElse(getRefAt(offset, currentContext)))
-
-      Some(IntermediateExpression(load(localName), Seq.empty, Seq(localVariable), Set(equal(load(localName), noValue))))
+      val nullCheck = slots.get(name).filter(_.nullable).map(_ => equal(getRefAt(offset, currentContext), noValue)).toSet
+      val loadRef =  getRefAt(offset, currentContext)
+      Some(IntermediateExpression(loadRef, Seq.empty, Seq.empty, nullCheck))
 
     case IdFromSlot(offset) =>
-      val localName = slots.nameOfLongSlot(offset).map(namer.variableName).getOrElse(namer.nextVariableName())
-      val nullCheck = slots.get(localName).filter(_.nullable).map(_ => equal(getLongAt(offset, currentContext), constant(-1L)))
+      val nameOfSlot = slots.nameOfLongSlot(offset)
+      val nullCheck = nameOfSlot.filter(n => slots(n).nullable).map(_ => equal(getLongAt(offset, currentContext), constant(-1L))).toSet
       val value = invokeStatic(method[Values, LongValue, Long]("longValue"), getLongAt(offset, currentContext))
-      val localVariable = variable[AnyValue](localName, nullCheck.map(c => ternary(c, noValue, value)).getOrElse(value))
 
-      Some(IntermediateExpression(load(localName), Seq.empty, Seq(localVariable), Set(equal(load(localName), noValue))))
+      Some(IntermediateExpression(value, Seq.empty, Seq.empty, nullCheck))
 
     case PrimitiveEquals(lhs, rhs) =>
       for {l <- internalCompileExpression(lhs, currentContext)
@@ -1812,11 +1771,11 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     val local = variable[AnyValue](returnValue, constant(null))
     val seenNull = namer.nextVariableName()
     val error = namer.nextVariableName()
-    val exceptionName = namer.nextVariableName()
     //this is setting up  a `if (returnValue != breakValue)`
     val ifNotBreakValue: IntermediateRepresentation => IntermediateRepresentation = condition(notEqual(load(returnValue), breakValue))
     //this is the inner block of the condition
     val inner = (e: IntermediateExpression) => {
+      val exceptionName = namer.nextVariableName()
       val loadValue = tryCatch[RuntimeException](exceptionName)(assign(returnValue, nullCheck(e)(invokeStatic(ASSERT_PREDICATE, e.ir))))(
         assign(error, load(exceptionName)))
 
@@ -1851,6 +1810,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
     val firstExpression = expressions.head
     val nullChecks = if (nullable) Seq(declare[Boolean](seenNull), assign(seenNull, constant(false))) else Seq.empty
     val nullCheckAssign = if (firstExpression.nullCheck.nonEmpty) Seq(assign(seenNull, equal(load(returnValue), noValue))) else Seq.empty
+    val exceptionName = namer.nextVariableName()
     val ir =
       block(
         //set up all temp variables
