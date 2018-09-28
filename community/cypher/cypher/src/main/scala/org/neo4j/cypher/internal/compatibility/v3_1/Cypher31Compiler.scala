@@ -32,6 +32,7 @@ import org.neo4j.cypher.internal.compiler.v3_1.{InfoLogger, ExplainMode => Expla
 import org.neo4j.cypher.internal.frontend.v3_1.{InputPosition => InputPosition3_1}
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.spi.v3_1.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.spi.v3_1.{TransactionalContextWrapper => TransactionalContextWrapperV3_1, _}
 import org.neo4j.function.ThrowingBiConsumer
@@ -80,7 +81,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode,
+    private def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode,
             params: Map[String, Any]): Result = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev3_1
@@ -107,9 +108,7 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
       }
     }
 
-    def isPeriodicCommit: Boolean = inner.isPeriodicCommit
-
-    def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = {
+    override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = {
       val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx))
       if (stale)
         NeedsReplan(0)
@@ -127,6 +126,9 @@ trait Cypher31Compiler extends CachingPlanner[PreparedQuerySyntax] with Compiler
 
       run(transactionalContext, preParsedQuery.executionMode, map.toMap)
     }
+
+    override def planDescription(): InternalPlanDescription =
+      InternalPlanDescription.error("Plan description is not available")
   }
 
   override def compile(preParsedQuery: PreParsedQuery,

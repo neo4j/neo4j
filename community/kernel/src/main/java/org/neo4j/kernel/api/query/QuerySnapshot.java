@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
@@ -69,6 +70,11 @@ public class QuerySnapshot
     public String queryText()
     {
         return query.queryText();
+    }
+
+    public ExecutionPlanDescription queryPlan()
+    {
+        return query.planDescription();
     }
 
     public MapValue queryParameters()

@@ -26,7 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -59,6 +61,7 @@ public class ExecutingQuery
     private final long startTimestampMillis;
     /** Uses write barrier of {@link #status}. */
     private long compilationCompletedNanos;
+    private Supplier<ExecutionPlanDescription> planDescriptionSupplier;
     private final long threadExecutingTheQueryId;
     @SuppressWarnings( {"unused", "FieldCanBeLocal"} )
     private final String threadExecutingTheQueryName;
@@ -116,10 +119,11 @@ public class ExecutingQuery
 
     // update state
 
-    public void compilationCompleted( CompilerInfo compilerInfo )
+    public void compilationCompleted( CompilerInfo compilerInfo, Supplier<ExecutionPlanDescription> planDescriptionSupplier )
     {
         this.compilerInfo = compilerInfo;
         this.compilationCompletedNanos = clock.nanos();
+        this.planDescriptionSupplier = planDescriptionSupplier;
         this.status = SimpleState.running(); // write barrier - must be last
     }
 
@@ -242,6 +246,11 @@ public class ExecutingQuery
     public String queryText()
     {
         return queryText;
+    }
+
+    public ExecutionPlanDescription planDescription()
+    {
+        return planDescriptionSupplier.get();
     }
 
     public MapValue queryParameters()

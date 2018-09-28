@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherExpressionEngineOption}
@@ -158,6 +159,14 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
 
     private val searchMonitor = kernelMonitors.newMonitor(classOf[IndexSearchMonitor])
     private val resourceMonitor = kernelMonitors.newMonitor(classOf[ResourceMonitor])
+    private val planDescriptionBuilder =
+      new PlanDescriptionBuilder(logicalPlan,
+        plannerName,
+        readOnly,
+        cardinalities,
+        providedOrders,
+        executionPlan.runtimeName,
+        executionPlan.metadata)
 
     private def getQueryContext(transactionalContext: TransactionalContext) = {
       val ctx = new TransactionBoundQueryContext(TransactionalContextWrapper(transactionalContext),
@@ -166,7 +175,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def execute(transactionalContext: TransactionalContext, preParsedQuery: PreParsedQuery,
+    override def execute(transactionalContext: TransactionalContext, preParsedQuery: PreParsedQuery,
                 params: MapValue): Result = {
       val innerExecutionMode = preParsedQuery.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
@@ -175,13 +184,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       }
       val taskCloser = new TaskCloser
       runSafely {
-
-        val queryContext = getQueryContext(transactionalContext)
-        taskCloser.addTask(queryContext.transactionalContext.close)
-        taskCloser.addTask(queryContext.resources.close)
-
-        val planDescriptionBuilder =
-          new PlanDescriptionBuilder(logicalPlan, plannerName, readOnly, cardinalities, providedOrders, executionPlan.runtimeName, executionPlan.metadata)
 
         val internalExecutionResult =
           if (innerExecutionMode == ExplainMode) {
@@ -194,6 +196,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                    planDescriptionBuilder.explain(),
                                    queryType, allNotifications)
           } else {
+
+            val queryContext = getQueryContext(transactionalContext)
+            taskCloser.addTask(queryContext.transactionalContext.close)
+            taskCloser.addTask(queryContext.resources.close)
 
             val doProfile = innerExecutionMode == ProfileMode
             val runtimeResult = executionPlan.run(queryContext, doProfile, params)
@@ -218,7 +224,9 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       } (e => taskCloser.close(false))
     }
 
-    def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
+    override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = reusabilityState
+
+    override def planDescription(): InternalPlanDescription = planDescriptionBuilder.explain()
   }
 
 }

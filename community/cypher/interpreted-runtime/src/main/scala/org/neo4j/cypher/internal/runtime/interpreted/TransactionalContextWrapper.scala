@@ -77,8 +77,6 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   def securityContext: SecurityContext = tc.securityContext
 
-  def notifyCompilationCompleted(compilerInfo: CompilerInfo): Unit = tc.executingQuery().compilationCompleted(compilerInfo)
-
   def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])

@@ -85,7 +85,7 @@ public class ExecutingQueryTest
         assertEquals( "planning", query.snapshot().status() );
 
         // when
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -124,7 +124,7 @@ public class ExecutingQueryTest
 
         // when
         clock.forward( 16, TimeUnit.MILLISECONDS );
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
         clock.forward( 200, TimeUnit.MILLISECONDS );
 
         // then
@@ -137,7 +137,7 @@ public class ExecutingQueryTest
     public void shouldReportWaitTime()
     {
         // given
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
 
         // then
         assertEquals( "running", query.snapshot().status() );
@@ -189,7 +189,7 @@ public class ExecutingQueryTest
     public void shouldReportQueryWaitTime()
     {
         // given
-        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ) );
+        query.compilationCompleted( new CompilerInfo( "the-planner", "the-runtime", emptyList() ), null );
 
         // when
         query.waitsForQuery( subQuery );

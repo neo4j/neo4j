@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.Result
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -43,6 +44,11 @@ trait ExecutableQuery {
     * The reusability state of this executable query.
     */
   def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState
+
+  /**
+    * Plan desc.
+    */
+  def planDescription(): InternalPlanDescription
 
   /**
     * Meta-data about the compiled used for this query.
