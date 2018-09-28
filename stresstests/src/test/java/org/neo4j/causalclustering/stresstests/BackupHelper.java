@@ -24,7 +24,9 @@ package org.neo4j.causalclustering.stresstests;
 
 import java.io.File;
 import java.net.ConnectException;
+import java.nio.channels.ClosedChannelException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.backup.impl.OnlineBackupCommandBuilder;
@@ -36,10 +38,16 @@ import org.neo4j.logging.Log;
 import static org.neo4j.backup.impl.SelectedBackupProtocol.CATCHUP;
 import static org.neo4j.causalclustering.core.CausalClusteringSettings.transaction_advertised_address;
 import static org.neo4j.helpers.Exceptions.findCauseOrSuppressed;
+import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class BackupHelper
 {
+    private static final Set<Class<? extends Throwable>> BENIGN_EXCEPTIONS = asSet(
+            ConnectException.class,
+            ClosedChannelException.class
+    );
+
     AtomicLong backupNumber = new AtomicLong();
     AtomicLong successfulBackups = new AtomicLong();
 
@@ -82,10 +90,10 @@ class BackupHelper
         }
         catch ( CommandFailed e )
         {
-            Optional<Throwable> connectException = findCauseOrSuppressed( e, t -> t instanceof ConnectException );
-            if ( connectException.isPresent() )
+            Optional<Throwable> benignException = findCauseOrSuppressed( e, t -> BENIGN_EXCEPTIONS.contains( t.getClass() ) );
+            if ( benignException.isPresent() )
             {
-                log.info( "Benign failure: " + connectException.get().getMessage() );
+                log.info( "Benign failure: " + benignException.get().getMessage() );
             }
             else
             {
