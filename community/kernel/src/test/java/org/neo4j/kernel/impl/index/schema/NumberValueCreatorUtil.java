@@ -57,12 +57,6 @@ class NumberValueCreatorUtil extends ValueCreatorUtil<NumberIndexKey,NativeIndex
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.typesOfGroup( ValueGroup.NUMBER );

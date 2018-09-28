@@ -51,12 +51,6 @@ public class TimeValueCreatorUtil extends ValueCreatorUtil<ZonedTimeIndexKey,Nat
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.typesOfGroup( ValueGroup.ZONED_TIME );

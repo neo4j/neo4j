@@ -48,12 +48,6 @@ public class LocalDateTimeValueCreatorUtil extends ValueCreatorUtil<LocalDateTim
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME );

@@ -51,12 +51,6 @@ public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeInde
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME );

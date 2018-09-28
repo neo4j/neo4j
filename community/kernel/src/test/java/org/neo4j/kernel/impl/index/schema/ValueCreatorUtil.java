@@ -34,7 +34,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
@@ -43,15 +42,35 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
 {
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
+    private static final int N_VALUES = 10;
 
     final StoreIndexDescriptor indexDescriptor;
+    private RandomValues randomValues;
 
+    /**
+     * Don't forget to {@link #setRandom(RandomValues)}. Done separately to make it easier to reset random while debugging.
+     */
     ValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         this.indexDescriptor = indexDescriptor;
     }
 
-    abstract IndexEntryUpdate<IndexDescriptor>[] someUpdates();
+    void setRandom( RandomValues randomValues )
+    {
+        this.randomValues = randomValues;
+    }
+
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    {
+        Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator = randomUpdateGenerator();
+        //noinspection unchecked
+        IndexEntryUpdate<IndexDescriptor>[] result = new IndexEntryUpdate[N_VALUES];
+        for ( int i = 0; i < N_VALUES; i++ )
+        {
+            result[i] = randomUpdateGenerator.next();
+        }
+        return result;
+    }
 
     abstract RandomValues.Type[] supportedTypes();
 
@@ -73,15 +92,15 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
     }
 
     void copyValue( VALUE value, VALUE intoValue )
-    {
+    {   // no-op until we decide to use value for something
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random )
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator()
     {
         double fractionDuplicates = fractionDuplicates();
         return new PrefetchingIterator<IndexEntryUpdate<IndexDescriptor>>()
         {
-            private final Set<Object> uniqueCompareValues = new HashSet<>();
+            private final Set<Value> uniqueCompareValues = new HashSet<>();
             private final List<Value> uniqueValues = new ArrayList<>();
             private long currentEntityId;
 
@@ -90,26 +109,22 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
             {
                 Value value;
                 if ( fractionDuplicates > 0 && !uniqueValues.isEmpty() &&
-                     random.nextFloat() < fractionDuplicates )
+                     randomValues.nextFloat() < fractionDuplicates )
                 {
-                    value = existingNonUniqueValue( random );
+                    value = randomValues.among( uniqueValues );
                 }
                 else
                 {
-                    value = newUniqueValue( random.randomValues(), uniqueCompareValues, uniqueValues );
+                    value = newUniqueValue( randomValues, uniqueCompareValues, uniqueValues );
                 }
 
                 return add( currentEntityId++, value );
             }
 
-            private Value existingNonUniqueValue( RandomRule randomRule )
-            {
-                return uniqueValues.get( randomRule.nextInt( uniqueValues.size() ) );
-            }
         };
     }
 
-    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Value> uniqueCompareValues, List<Value> uniqueValues )
     {
         Value value;
         do

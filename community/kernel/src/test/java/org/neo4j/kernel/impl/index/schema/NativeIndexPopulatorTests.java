@@ -370,7 +370,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = valueCreatorUtil.randomUpdateGenerator( random );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = valueCreatorUtil.randomUpdateGenerator();
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -378,7 +378,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( valueCreatorUtil.randomUpdateGenerator( random ), count );
+        verifyUpdates( valueCreatorUtil.randomUpdateGenerator(), count );
     }
 
     @Test
@@ -605,7 +605,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
             populator.create();
             IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates();
             populator.add( Arrays.asList( scanUpdates ) );
-            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
+            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator();
             Object[] updates = new Object[5];
             updates[0] = generator.next().values()[0].asObject();
             updates[1] = generator.next().values()[0].asObject();

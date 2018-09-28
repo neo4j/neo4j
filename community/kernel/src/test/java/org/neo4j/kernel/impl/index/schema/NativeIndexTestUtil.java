@@ -82,6 +82,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     public void setup()
     {
         valueCreatorUtil = createValueCreatorUtil();
+        valueCreatorUtil.setRandom( random.randomValues() );
         indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
         indexFile = directory.file( "index" );

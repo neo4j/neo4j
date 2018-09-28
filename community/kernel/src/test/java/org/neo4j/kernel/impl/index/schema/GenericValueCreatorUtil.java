@@ -68,12 +68,6 @@ class GenericValueCreatorUtil extends ValueCreatorUtil<CompositeGenericKey,Nativ
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.Type.values();

@@ -38,12 +38,6 @@ class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nati
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return delegate.someUpdatesNoDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return delegate.supportedTypes();
@@ -56,7 +50,7 @@ class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nati
     }
 
     @Override
-    Value newUniqueValue( RandomValues random, Set<Object> uniqueCompareValues, List<Value> uniqueValues )
+    Value newUniqueValue( RandomValues random, Set<Value> uniqueCompareValues, List<Value> uniqueValues )
     {
         return delegate.newUniqueValue( random, uniqueCompareValues, uniqueValues );
     }

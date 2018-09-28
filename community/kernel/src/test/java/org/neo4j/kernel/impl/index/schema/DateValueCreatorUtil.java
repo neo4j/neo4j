@@ -48,12 +48,6 @@ public class DateValueCreatorUtil extends ValueCreatorUtil<DateIndexKey,NativeIn
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesWithDuplicateValues();
-    }
-
-    @Override
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.typesOfGroup( ValueGroup.DATE );
