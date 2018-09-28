@@ -160,7 +160,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
         // when
         populator.add( Arrays.asList( updates ) );
@@ -175,7 +175,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
     {
         // given
         populator.create();
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
         try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
         {
             // when
@@ -219,7 +219,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         // given
         populator.create();
         @SuppressWarnings( "unchecked" )
-        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates();
+        IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
         // when
         applyInterleaved( updates, populator );
@@ -370,7 +370,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         populator.create();
         random.reset();
         Random updaterRandom = new Random( random.seed() );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = valueCreatorUtil.randomUpdateGenerator();
+        Iterator<IndexEntryUpdate<IndexDescriptor>> updates = valueCreatorUtil.randomUpdateGenerator( random );
 
         // when
         int count = interleaveLargeAmountOfUpdates( updaterRandom, updates );
@@ -378,7 +378,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         // then
         populator.close( true );
         random.reset();
-        verifyUpdates( valueCreatorUtil.randomUpdateGenerator(), count );
+        verifyUpdates( valueCreatorUtil.randomUpdateGenerator( random ), count );
     }
 
     @Test
@@ -491,7 +491,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             // given
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues();
+            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
 
             // when
             try
@@ -514,7 +514,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             // given
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues();
+            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
             IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor );
 
             // when
@@ -543,7 +543,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             // GIVEN
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates();
+            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdates( random );
 
             // WHEN
             populator.add( asList( updates ) );
@@ -568,7 +568,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             // given
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues();
+            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
 
             // when
             populator.add( Arrays.asList( updates ) );
@@ -583,7 +583,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             // given
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues();
+            IndexEntryUpdate<IndexDescriptor>[] updates = valueCreatorUtil.someUpdatesWithDuplicateValues( random );
             try ( IndexUpdater updater = populator.newPopulatingUpdater( null_property_accessor ) )
             {
                 // when
@@ -603,9 +603,9 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         {
             // GIVEN
             populator.create();
-            IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates();
+            IndexEntryUpdate<IndexDescriptor>[] scanUpdates = valueCreatorUtil.someUpdates( random );
             populator.add( Arrays.asList( scanUpdates ) );
-            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator();
+            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = valueCreatorUtil.randomUpdateGenerator( random );
             Object[] updates = new Object[5];
             updates[0] = generator.next().values()[0].asObject();
             updates[1] = generator.next().values()[0].asObject();

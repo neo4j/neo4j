@@ -19,38 +19,12 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
 class NumberValueCreatorUtil extends ValueCreatorUtil<NumberIndexKey,NativeIndexValue>
 {
-    private static final Number[] ALL_EXTREME_VALUES = new Number[]
-            {
-                    Byte.MAX_VALUE,
-                    Byte.MIN_VALUE,
-                    Short.MAX_VALUE,
-                    Short.MIN_VALUE,
-                    Integer.MAX_VALUE,
-                    Integer.MIN_VALUE,
-                    Long.MAX_VALUE,
-                    Long.MIN_VALUE,
-                    Float.MAX_VALUE,
-                    -Float.MAX_VALUE,
-                    Double.MAX_VALUE,
-                    -Double.MAX_VALUE,
-                    Double.POSITIVE_INFINITY,
-                    Double.NEGATIVE_INFINITY,
-                    0,
-                    // These two values below coerce to the same double
-                    1234567890123456788L,
-                    1234567890123456789L
-            };
-
     NumberValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
@@ -71,17 +45,5 @@ class NumberValueCreatorUtil extends ValueCreatorUtil<NumberIndexKey,NativeIndex
             return Long.compare( key1.rawValueBits, key2.rawValueBits );
         }
         return typeCompare;
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 }

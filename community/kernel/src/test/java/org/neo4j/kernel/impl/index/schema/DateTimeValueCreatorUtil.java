@@ -19,32 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.time.ZoneOffset;
-import java.time.ZonedDateTime;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static java.time.ZoneOffset.UTC;
-
 public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeIndexKey,NativeIndexValue>
 {
-    private static final ZonedDateTime[] ALL_EXTREME_VALUES = new ZonedDateTime[]
-    {
-            ZonedDateTime.of( -999999999, 1, 1, 0, 0, 0,  0, ZoneOffset.ofHours( -18 ) ),
-            ZonedDateTime.of( 999999999, 12, 31, 23, 59, 59,  999_999_999, ZoneOffset.ofHours( 18 ) ),
-            ZonedDateTime.of( 0, 1, 1, 0,0,0,0, UTC ),
-            ZonedDateTime.of( 0, 1, 1, 0,0,0,0, ZoneOffset.ofHours( -18 ) ),
-            ZonedDateTime.of( 0, 1, 1, 0,0,0,0, ZoneOffset.ofHours( 18 ) ),
-            ZonedDateTime.of( -1, 12, 31, 23,59,59,999_999_999, UTC )
-    };
-
     DateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
@@ -60,17 +41,5 @@ public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeInde
     int compareIndexedPropertyValue( ZonedDateTimeIndexKey key1, ZonedDateTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 }

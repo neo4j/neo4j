@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
@@ -78,9 +79,10 @@ public class SpatialIndexSettingsTest
     final DefaultFileSystemRule fs = new DefaultFileSystemRule();
     private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
+    private RandomRule randomRule = new RandomRule();
 
     @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule );
+    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( randomRule );
 
     private PageCache pageCache;
     private IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
@@ -182,7 +184,7 @@ public class SpatialIndexSettingsTest
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
         {
             // when
-            for ( IndexEntryUpdate<IndexDescriptor> update : layoutUtil.someUpdates() )
+            for ( IndexEntryUpdate<IndexDescriptor> update : layoutUtil.someUpdates( randomRule ) )
             {
                 updater.process( update );
             }

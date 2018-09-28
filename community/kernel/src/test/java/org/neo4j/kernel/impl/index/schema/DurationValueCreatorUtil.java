@@ -19,30 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
 public class DurationValueCreatorUtil extends ValueCreatorUtil<DurationIndexKey,NativeIndexValue>
 {
-    private static final DurationValue[] ALL_EXTREME_VALUES = new DurationValue[]
-    {
-            DurationValue.duration( -999999999L * 12 * 2, 0, 0, 0),
-            DurationValue.duration( 999999999L * 12 * 2, 0, 0, 0),
-            DurationValue.duration( 0, -999999999L * 12 * 28, 0, 0),
-            DurationValue.duration( 0, 999999999L * 12 * 28, 0, 0),
-            DurationValue.duration( 0, 0, Long.MIN_VALUE, 0),
-            DurationValue.duration( 0, 0, Long.MAX_VALUE, 0),
-            DurationValue.duration( 0, 0, 0, Long.MIN_VALUE),
-            DurationValue.duration( 0, 0, 0, Long.MAX_VALUE),
-    };
-
     DurationValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
@@ -58,17 +41,5 @@ public class DurationValueCreatorUtil extends ValueCreatorUtil<DurationIndexKey,
     int compareIndexedPropertyValue( DurationIndexKey key1, DurationIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 }

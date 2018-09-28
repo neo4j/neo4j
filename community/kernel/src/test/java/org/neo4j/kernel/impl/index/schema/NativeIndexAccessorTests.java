@@ -157,7 +157,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         // given
         IndexEntryUpdate<IndexDescriptor>[] updates = someUpdatesSingleType();
         processAll( updates );
-        Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator() );
+        Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
 
         for ( int i = 0; i < updates.length; i++ )
         {
@@ -200,7 +200,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     {
         // given
         Set<IndexEntryUpdate<IndexDescriptor>> expectedData = new HashSet<>();
-        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = valueCreatorUtil.randomUpdateGenerator();
+        Iterator<IndexEntryUpdate<IndexDescriptor>> newDataGenerator = valueCreatorUtil.randomUpdateGenerator( random );
 
         // when
         int rounds = 50;
@@ -229,7 +229,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         try ( IndexReader reader = accessor.newReader() )
         {
             // when
-            IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.randomUpdateGenerator().next();
+            IndexEntryUpdate<IndexDescriptor> update = valueCreatorUtil.randomUpdateGenerator( random ).next();
             long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.properties(), update.values()[0] );
 
             // then
@@ -256,7 +256,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             }
 
             // and when
-            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator() );
+            Iterator<IndexEntryUpdate<IndexDescriptor>> generator = filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) );
             long count = reader.countIndexedNodes( 123, valueCreatorUtil.indexDescriptor.properties(), generator.next().values()[0] );
 
             // then
@@ -788,7 +788,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
     private Value generateUniqueValue( IndexEntryUpdate<IndexDescriptor>[] updates )
     {
-        return filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator() ).next().values()[0];
+        return filter( skipExisting( updates ), valueCreatorUtil.randomUpdateGenerator( random ) ).next().values()[0];
     }
 
     private static Predicate<IndexEntryUpdate<IndexDescriptor>> skipExisting( IndexEntryUpdate<IndexDescriptor>[] existing )
@@ -995,7 +995,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
     {
-        RandomValues.Type type = randomValues.among( valueCreatorUtil.supportedTypes() );
+        RandomValues.Type type = random.randomValues().among( valueCreatorUtil.supportedTypes() );
         return someUpdatesOfTypes( true, type );
     }
 
@@ -1010,7 +1010,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         do
         {
             // Can not generate enough unique values of boolean
-            type = randomValues.among( types );
+            type = random.randomValues().among( types );
         }
         while ( type == RandomValues.Type.BOOLEAN );
         return someUpdatesOfTypes( false, type );
@@ -1031,7 +1031,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         int i = 0;
         while ( i < N_VALUES )
         {
-            Value value = randomValues.nextValueOfTypes( types );
+            Value value = random.randomValues().nextValueOfTypes( types );
             if ( allowDuplicates || !ArrayUtils.contains( values, value ) )
             {
                 values[i++] = value;

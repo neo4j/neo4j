@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.time.LocalTime;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
@@ -32,16 +26,6 @@ import org.neo4j.values.storable.Values;
 
 public class LocalTimeValueCreatorUtil extends ValueCreatorUtil<LocalTimeIndexKey,NativeIndexValue>
 {
-    private static final LocalTime[] ALL_EXTREME_VALUES = new LocalTime[]
-    {
-            LocalTime.of(0, 0, 0,  0),
-            LocalTime.of(0,0,0,1 ),
-            LocalTime.of(0,0,0,2 ),
-            LocalTime.of(0,0,0,3 ),
-            LocalTime.of(23,59,59,999_999_998 ),
-            LocalTime.of(23,59,59,999_999_999 )
-    };
-
     LocalTimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
@@ -57,17 +41,5 @@ public class LocalTimeValueCreatorUtil extends ValueCreatorUtil<LocalTimeIndexKe
     int compareIndexedPropertyValue( LocalTimeIndexKey key1, LocalTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 }

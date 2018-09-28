@@ -24,6 +24,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
@@ -48,9 +49,9 @@ class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeInd
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
     {
-        return someUpdatesWithDuplicateValues();
+        return someUpdatesWithDuplicateValues( randomRule );
     }
 
     @Override
@@ -66,13 +67,7 @@ class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeInd
     }
 
     @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
+    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
     {
         return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }

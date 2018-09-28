@@ -68,7 +68,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
         Value[] result = new NumberValue[size];
         for ( int i = 0; i < size; i++ )
         {
-            result[i] = randomValues.nextValueOfTypes( numberTypes );
+            result[i] = random.randomValues().nextValueOfTypes( numberTypes );
         }
         return result;
     }

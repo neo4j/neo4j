@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
-
-import java.time.LocalDate;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
@@ -32,16 +26,6 @@ import org.neo4j.values.storable.Values;
 
 public class DateValueCreatorUtil extends ValueCreatorUtil<DateIndexKey,NativeIndexValue>
 {
-    private static final LocalDate[] ALL_EXTREME_VALUES = new LocalDate[]
-    {
-            LocalDate.of( -999999999, 1, 1),
-            LocalDate.of( 999999999, 12, 31),
-            LocalDate.of( 0, 1, 1),
-            LocalDate.of( 0, 1, 2),
-            LocalDate.of( 0, 1, 3),
-            LocalDate.of( -1, 12, 31)
-    };
-
     DateValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
@@ -57,17 +41,5 @@ public class DateValueCreatorUtil extends ValueCreatorUtil<DateIndexKey,NativeIn
     int compareIndexedPropertyValue( DateIndexKey key1, DateIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( ALL_EXTREME_VALUES );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return generateAddUpdatesFor( ArrayUtils.addAll( ALL_EXTREME_VALUES, ALL_EXTREME_VALUES ) );
     }
 }

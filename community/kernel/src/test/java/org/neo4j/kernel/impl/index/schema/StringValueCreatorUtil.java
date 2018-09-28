@@ -19,18 +19,11 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
-import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOf;
-import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
 class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndexValue>
@@ -52,19 +45,5 @@ class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndex
     RandomValues.Type[] supportedTypes()
     {
         return RandomValues.typesOfGroup( ValueGroup.TEXT );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return generateAddUpdatesFor( STRINGS );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        Collection<String> duplicates = new ArrayList<>( asList( STRINGS ) );
-        duplicates.addAll( asList( STRINGS ) );
-        return generateAddUpdatesFor( duplicates.toArray() );
     }
 }

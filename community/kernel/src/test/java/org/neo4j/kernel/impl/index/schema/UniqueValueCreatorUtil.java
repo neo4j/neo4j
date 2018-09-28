@@ -19,13 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import java.util.List;
-import java.util.Set;
-
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Value;
 
 class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends ValueCreatorUtil<KEY, VALUE>
 {
@@ -47,24 +41,6 @@ class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nati
     int compareIndexedPropertyValue( KEY key1, KEY key2 )
     {
         return delegate.compareIndexedPropertyValue( key1, key2 );
-    }
-
-    @Override
-    Value newUniqueValue( RandomValues random, Set<Value> uniqueCompareValues, List<Value> uniqueValues )
-    {
-        return delegate.newUniqueValue( random, uniqueCompareValues, uniqueValues );
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesNoDuplicateValues()
-    {
-        return delegate.someUpdatesNoDuplicateValues();
-    }
-
-    @Override
-    IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues()
-    {
-        return delegate.someUpdatesWithDuplicateValues();
     }
 
     @Override
