@@ -70,8 +70,8 @@ public class SpatialIndexSettingsTest
 
     private StoreIndexDescriptor schemaIndexDescriptor1;
     private StoreIndexDescriptor schemaIndexDescriptor2;
-    private LayoutTestUtil<SpatialIndexKey,NativeIndexValue> layoutUtil1;
-    private LayoutTestUtil<SpatialIndexKey,NativeIndexValue> layoutUtil2;
+    private ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> layoutUtil1;
+    private ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> layoutUtil2;
     private long indexId1 = 1;
     private long indexId2 = 2;
 
@@ -91,8 +91,8 @@ public class SpatialIndexSettingsTest
         pageCache = pageCacheRule.getPageCache( fs );
 
         // Define two indexes based on different labels and different configuredSettings
-        layoutUtil1 = createLayoutTestUtil( indexId1, 42, configuredSettings1 );
-        layoutUtil2 = createLayoutTestUtil( indexId2, 43, configuredSettings2 );
+        layoutUtil1 = createLayoutTestUtil( indexId1, 42 );
+        layoutUtil2 = createLayoutTestUtil( indexId2, 43 );
         schemaIndexDescriptor1 = layoutUtil1.indexDescriptor();
         schemaIndexDescriptor2 = layoutUtil2.indexDescriptor();
 
@@ -148,7 +148,7 @@ public class SpatialIndexSettingsTest
         // and when creating and populating a third index with a third set of configuredSettings
         long indexId3 = 3;
         ConfiguredSpaceFillingCurveSettingsCache settings3 = new ConfiguredSpaceFillingCurveSettingsCache( config );
-        SpatialLayoutTestUtil layoutUtil3 = createLayoutTestUtil( indexId3, 44, settings3 );
+        SpatialValueCreatorUtil layoutUtil3 = createLayoutTestUtil( indexId3, 44 );
         StoreIndexDescriptor schemaIndexDescriptor3 = layoutUtil3.indexDescriptor();
         createEmptyIndex( schemaIndexDescriptor3, provider );
         addUpdates( provider, schemaIndexDescriptor3, layoutUtil3 );
@@ -164,10 +164,10 @@ public class SpatialIndexSettingsTest
         return new IndexSamplingConfig( Config.defaults() );
     }
 
-    private SpatialLayoutTestUtil createLayoutTestUtil( long indexId, int labelId, ConfiguredSpaceFillingCurveSettingsCache configuredSettings )
+    private SpatialValueCreatorUtil createLayoutTestUtil( long indexId, int labelId )
     {
         StoreIndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( labelId, 666 ).withId( indexId );
-        return new SpatialLayoutTestUtil( descriptor, configuredSettings.forCRS( crs ), crs );
+        return new SpatialValueCreatorUtil( descriptor );
     }
 
     private SpatialIndexProvider newSpatialIndexProvider( Config config )
@@ -176,7 +176,7 @@ public class SpatialIndexSettingsTest
     }
 
     private void addUpdates( SpatialIndexProvider provider, StoreIndexDescriptor schemaIndexDescriptor,
-            LayoutTestUtil<SpatialIndexKey,NativeIndexValue> layoutUtil ) throws IOException, IndexEntryConflictException
+            ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> layoutUtil ) throws IOException, IndexEntryConflictException
     {
         IndexAccessor accessor = provider.getOnlineAccessor( schemaIndexDescriptor, samplingConfig() );
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )

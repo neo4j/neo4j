@@ -27,20 +27,14 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-class UniqueLayoutTestUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends LayoutTestUtil<KEY, VALUE>
+class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends ValueCreatorUtil<KEY, VALUE>
 {
-    private final LayoutTestUtil<KEY, VALUE> delegate;
+    private final ValueCreatorUtil<KEY, VALUE> delegate;
 
-    UniqueLayoutTestUtil( LayoutTestUtil<KEY, VALUE> delegate )
+    UniqueValueCreatorUtil( ValueCreatorUtil<KEY, VALUE> delegate )
     {
         super( delegate.indexDescriptor );
         this.delegate = delegate;
-    }
-
-    @Override
-    IndexLayout<KEY,VALUE> createLayout()
-    {
-        return delegate.createLayout();
     }
 
     @Override

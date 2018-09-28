@@ -72,7 +72,7 @@ import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
-import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 import static org.neo4j.values.storable.Values.of;
 
 /**

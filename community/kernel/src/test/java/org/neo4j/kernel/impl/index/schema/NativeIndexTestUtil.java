@@ -70,7 +70,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
 
     StoreIndexDescriptor indexDescriptor;
-    LayoutTestUtil<KEY,VALUE> layoutUtil;
+    ValueCreatorUtil<KEY,VALUE> layoutUtil;
     IndexLayout<KEY,VALUE> layout;
     private IndexDirectoryStructure indexDirectoryStructure;
     private File indexFile;
@@ -81,9 +81,9 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     @Before
     public void setup()
     {
-        layoutUtil = createLayoutTestUtil();
+        layoutUtil = createValueCreatorUtil();
         indexDescriptor = layoutUtil.indexDescriptor();
-        layout = layoutUtil.createLayout();
+        layout = createLayout();
         indexFile = directory.file( "index" );
         pageCache = pageCacheRule.getPageCache( fs );
         randomValues = random.randomValues();
@@ -94,7 +94,9 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         return indexFile;
     }
 
-    abstract LayoutTestUtil<KEY,VALUE> createLayoutTestUtil();
+    abstract ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil();
+
+    abstract IndexLayout<KEY,VALUE> createLayout();
 
     private void copyValue( VALUE value, VALUE intoValue )
     {

@@ -46,47 +46,61 @@ public class NativeIndexPopulatorTest
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberPopulatorFactory(),
-                        (LayoutTestUtilFactory) NumberLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) NumberValueCreatorUtil::new,
+                        (IndexLayoutFactory) NumberLayoutNonUnique::new
                 },
                 {"String",
                         (PopulatorFactory) StringIndexPopulator::new,
-                        (LayoutTestUtilFactory) StringLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) StringValueCreatorUtil::new,
+                        (IndexLayoutFactory) StringLayout::new
                 },
                 {"Date",
                         temporalPopulatorFactory( ValueGroup.DATE ),
-                        (LayoutTestUtilFactory) DateLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) DateValueCreatorUtil::new,
+                        (IndexLayoutFactory) DateLayout::new
                 },
                 {"DateTime",
                         temporalPopulatorFactory( ValueGroup.ZONED_DATE_TIME ),
-                        (LayoutTestUtilFactory) DateTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) DateTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) ZonedDateTimeLayout::new
                 },
                 {"Duration",
                         temporalPopulatorFactory( ValueGroup.DURATION ),
-                        (LayoutTestUtilFactory) DurationLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) DurationValueCreatorUtil::new,
+                        (IndexLayoutFactory) DurationLayout::new
                 },
                 {"LocalDateTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutTestUtilFactory) LocalDateTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"LocalTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_TIME ),
-                        (LayoutTestUtilFactory) LocalTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) LocalTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) LocalTimeLayout::new
                 },
                 {"LocalDateTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutTestUtilFactory) LocalDateTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"Time",
                         temporalPopulatorFactory( ValueGroup.ZONED_TIME ),
-                        (LayoutTestUtilFactory) TimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) TimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) ZonedTimeLayout::new
                 },
                 {"Generic",
                         genericPopulatorFactory(),
-                        (LayoutTestUtilFactory) GenericLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) GenericValueCreatorUtil::new,
+                        (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings )
                 },
                 // todo { Spatial has it's own subclass because it need to override some of the test methods }
         } );
     }
+
+    private static final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
+    private static final StandardConfiguration configuration = new StandardConfiguration();
 
     private static PopulatorFactory<NumberIndexKey,NativeIndexValue> numberPopulatorFactory()
     {
@@ -104,9 +118,6 @@ public class NativeIndexPopulatorTest
 
     private static PopulatorFactory<CompositeGenericKey,NativeIndexValue> genericPopulatorFactory()
     {
-        IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
-                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
-        StandardConfiguration configuration = new StandardConfiguration();
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,
                         SimpleIndexDirectoryStructures.onIndexFile( storeFile ), configuration, false );
@@ -135,7 +146,10 @@ public class NativeIndexPopulatorTest
         public PopulatorFactory<KEY,VALUE> populatorFactory;
 
         @Parameterized.Parameter( 2 )
-        public LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory;
+        public ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory;
+
+        @Parameterized.Parameter( 3 )
+        public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
 
         private static final StoreIndexDescriptor uniqueDescriptor = TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 );
 
@@ -146,9 +160,15 @@ public class NativeIndexPopulatorTest
         }
 
         @Override
-        LayoutTestUtil<KEY,VALUE> createLayoutTestUtil()
+        ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
         {
-            return new UniqueLayoutTestUtil<>( layoutTestUtilFactory.create( uniqueDescriptor ) );
+            return new UniqueValueCreatorUtil<>( valueCreatorUtilFactory.create( uniqueDescriptor ) );
+        }
+
+        @Override
+        IndexLayout<KEY,VALUE> createLayout()
+        {
+            return indexLayoutFactory.create();
         }
     }
 
@@ -168,7 +188,10 @@ public class NativeIndexPopulatorTest
         public PopulatorFactory<KEY,VALUE> populatorFactory;
 
         @Parameterized.Parameter( 2 )
-        public LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory;
+        public ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory;
+
+        @Parameterized.Parameter( 3 )
+        public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
 
         private static final StoreIndexDescriptor nonUniqueDescriptor = TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 );
 
@@ -179,9 +202,15 @@ public class NativeIndexPopulatorTest
         }
 
         @Override
-        LayoutTestUtil<KEY,VALUE> createLayoutTestUtil()
+        ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
         {
-            return layoutTestUtilFactory.create( nonUniqueDescriptor );
+            return valueCreatorUtilFactory.create( nonUniqueDescriptor );
+        }
+
+        @Override
+        IndexLayout<KEY,VALUE> createLayout()
+        {
+            return indexLayoutFactory.create();
         }
     }
 }

@@ -34,8 +34,8 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 
 public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<NumberIndexKey,NativeIndexValue>
 {
@@ -96,8 +96,14 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
     }
 
     @Override
-    protected LayoutTestUtil<NumberIndexKey,NativeIndexValue> createLayoutTestUtil()
+    protected ValueCreatorUtil<NumberIndexKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new NumberLayoutTestUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ) );
+        return new NumberValueCreatorUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
+    }
+
+    @Override
+    IndexLayout<NumberIndexKey,NativeIndexValue> createLayout()
+    {
+        return new NumberLayoutNonUnique();
     }
 }

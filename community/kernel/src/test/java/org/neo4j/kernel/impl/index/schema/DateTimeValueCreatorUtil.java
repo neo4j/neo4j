@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -30,27 +31,23 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeIndexKey,NativeIndexValue>
+import static java.time.ZoneOffset.UTC;
+
+public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeIndexKey,NativeIndexValue>
 {
-    private static final LocalDateTime[] ALL_EXTREME_VALUES = new LocalDateTime[]
+    private static final ZonedDateTime[] ALL_EXTREME_VALUES = new ZonedDateTime[]
     {
-            LocalDateTime.of( -999999999, 1, 1, 0, 0, 0,  0),
-            LocalDateTime.of( 999999999, 12, 31, 23, 59, 59,  999_999_999),
-            LocalDateTime.of( 0, 1, 1, 0,0,0,0 ),
-            LocalDateTime.of( 0, 1, 1, 0,0,0,1),
-            LocalDateTime.of( 0, 1, 1, 0,0,0,2),
-            LocalDateTime.of( -1, 12, 31, 23,59,59,999_999_999 )
+            ZonedDateTime.of( -999999999, 1, 1, 0, 0, 0,  0, ZoneOffset.ofHours( -18 ) ),
+            ZonedDateTime.of( 999999999, 12, 31, 23, 59, 59,  999_999_999, ZoneOffset.ofHours( 18 ) ),
+            ZonedDateTime.of( 0, 1, 1, 0,0,0,0, UTC ),
+            ZonedDateTime.of( 0, 1, 1, 0,0,0,0, ZoneOffset.ofHours( -18 ) ),
+            ZonedDateTime.of( 0, 1, 1, 0,0,0,0, ZoneOffset.ofHours( 18 ) ),
+            ZonedDateTime.of( -1, 12, 31, 23,59,59,999_999_999, UTC )
     };
 
-    LocalDateTimeLayoutTestUtil( StoreIndexDescriptor schemaIndexDescriptor )
+    DateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
-    }
-
-    @Override
-    IndexLayout<LocalDateTimeIndexKey,NativeIndexValue> createLayout()
-    {
-        return new LocalDateTimeLayout();
     }
 
     @Override
@@ -62,11 +59,11 @@ public class LocalDateTimeLayoutTestUtil extends LayoutTestUtil<LocalDateTimeInd
     @Override
     RandomValues.Type[] supportedTypes()
     {
-        return RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME );
+        return RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME );
     }
 
     @Override
-    int compareIndexedPropertyValue( LocalDateTimeIndexKey key1, LocalDateTimeIndexKey key2 )
+    int compareIndexedPropertyValue( ZonedDateTimeIndexKey key1, ZonedDateTimeIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

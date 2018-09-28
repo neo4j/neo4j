@@ -21,19 +21,16 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
-public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,NativeIndexValue>
+class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeIndexValue>
 {
     private static final PointValue[] ALL_EXTREME_VALUES = new PointValue[]
     {
@@ -45,27 +42,9 @@ public class SpatialLayoutTestUtil extends LayoutTestUtil<SpatialIndexKey,Native
             Values.pointValue( WGS84, 180, 90 ),
     };
 
-    private final CoordinateReferenceSystem crs;
-    private final SpaceFillingCurve curve;
-
-    SpatialLayoutTestUtil( IndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
-    {
-        this( descriptor.withId( 0 ), settings, crs );
-    }
-
-    SpatialLayoutTestUtil( StoreIndexDescriptor descriptor, SpaceFillingCurveSettings settings, CoordinateReferenceSystem crs )
+    SpatialValueCreatorUtil( StoreIndexDescriptor descriptor )
     {
         super( descriptor );
-        this.curve = settings.curve();
-        this.crs = crs;
-        // The layout is the same, but we might consider supporting other CRS here, too.
-        assert crs == CoordinateReferenceSystem.WGS84;
-    }
-
-    @Override
-    IndexLayout<SpatialIndexKey,NativeIndexValue> createLayout()
-    {
-        return new SpatialLayout( crs, curve );
     }
 
     @Override

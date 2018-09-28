@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 @FunctionalInterface
-interface LayoutTestUtilFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
+interface ValueCreatorUtilFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
 {
-    LayoutTestUtil<KEY,VALUE> create( StoreIndexDescriptor descriptor );
+    ValueCreatorUtil<KEY,VALUE> create( StoreIndexDescriptor descriptor );
 }

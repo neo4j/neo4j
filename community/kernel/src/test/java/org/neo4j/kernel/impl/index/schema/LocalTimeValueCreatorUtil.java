@@ -21,45 +21,30 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import java.time.LocalTime;
+
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
-class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValue>
+public class LocalTimeValueCreatorUtil extends ValueCreatorUtil<LocalTimeIndexKey,NativeIndexValue>
 {
-    private static final Number[] ALL_EXTREME_VALUES = new Number[]
-            {
-                    Byte.MAX_VALUE,
-                    Byte.MIN_VALUE,
-                    Short.MAX_VALUE,
-                    Short.MIN_VALUE,
-                    Integer.MAX_VALUE,
-                    Integer.MIN_VALUE,
-                    Long.MAX_VALUE,
-                    Long.MIN_VALUE,
-                    Float.MAX_VALUE,
-                    -Float.MAX_VALUE,
-                    Double.MAX_VALUE,
-                    -Double.MAX_VALUE,
-                    Double.POSITIVE_INFINITY,
-                    Double.NEGATIVE_INFINITY,
-                    0,
-                    // These two values below coerce to the same double
-                    1234567890123456788L,
-                    1234567890123456789L
-            };
+    private static final LocalTime[] ALL_EXTREME_VALUES = new LocalTime[]
+    {
+            LocalTime.of(0, 0, 0,  0),
+            LocalTime.of(0,0,0,1 ),
+            LocalTime.of(0,0,0,2 ),
+            LocalTime.of(0,0,0,3 ),
+            LocalTime.of(23,59,59,999_999_998 ),
+            LocalTime.of(23,59,59,999_999_999 )
+    };
 
-    NumberLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
+    LocalTimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
-    }
-
-    @Override
-    IndexLayout<NumberIndexKey,NativeIndexValue> createLayout()
-    {
-        return new NumberLayoutNonUnique();
     }
 
     @Override
@@ -71,18 +56,13 @@ class NumberLayoutTestUtil extends LayoutTestUtil<NumberIndexKey,NativeIndexValu
     @Override
     RandomValues.Type[] supportedTypes()
     {
-        return RandomValues.typesOfGroup( ValueGroup.NUMBER );
+        return RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME );
     }
 
     @Override
-    int compareIndexedPropertyValue( NumberIndexKey key1, NumberIndexKey key2 )
+    int compareIndexedPropertyValue( LocalTimeIndexKey key1, LocalTimeIndexKey key2 )
     {
-        int typeCompare = Byte.compare( key1.type, key2.type );
-        if ( typeCompare == 0 )
-        {
-            return Long.compare( key1.rawValueBits, key2.rawValueBits );
-        }
-        return typeCompare;
+        return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }
 
     @Override

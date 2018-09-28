@@ -33,9 +33,9 @@ import static java.util.Arrays.copyOf;
 import static org.neo4j.values.storable.StringsLibrary.STRINGS;
 import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
 
-class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValue>
+class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndexValue>
 {
-    StringLayoutTestUtil( StoreIndexDescriptor schemaIndexDescriptor )
+    StringValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor );
     }
@@ -46,12 +46,6 @@ class StringLayoutTestUtil extends LayoutTestUtil<StringIndexKey,NativeIndexValu
         return byteArrayCompare(
                 copyOf( key1.bytes, key1.bytesLength ),
                 copyOf( key2.bytes, key2.bytesLength ) );
-    }
-
-    @Override
-    IndexLayout<StringIndexKey,NativeIndexValue> createLayout()
-    {
-        return new StringLayout();
     }
 
     @Override

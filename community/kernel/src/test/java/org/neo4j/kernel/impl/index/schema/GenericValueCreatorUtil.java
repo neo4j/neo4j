@@ -33,7 +33,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Values;
 
-class GenericLayoutTestUtil extends LayoutTestUtil<CompositeGenericKey,NativeIndexValue>
+class GenericValueCreatorUtil extends ValueCreatorUtil<CompositeGenericKey,NativeIndexValue>
 {
     // todo This is only here to have SOME values to start with. It will be replaced by random value generation later on.
     private static final Number[] SOME_VALUE = new Number[]
@@ -62,15 +62,9 @@ class GenericLayoutTestUtil extends LayoutTestUtil<CompositeGenericKey,NativeInd
             new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
     StandardConfiguration configuration = new StandardConfiguration();
 
-    GenericLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
+    GenericValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor );
-    }
-
-    @Override
-    IndexLayout<CompositeGenericKey,NativeIndexValue> createLayout()
-    {
-        return new GenericLayout( 1, spaceFillingCurveSettings );
     }
 
     @Override

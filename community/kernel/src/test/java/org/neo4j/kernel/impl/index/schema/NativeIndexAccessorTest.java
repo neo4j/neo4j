@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.Collections;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -49,56 +49,75 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberAccessorFactory(),
-                        (LayoutTestUtilFactory) NumberLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) NumberValueCreatorUtil::new,
+                        (IndexLayoutFactory) NumberLayoutNonUnique::new
                 },
                 {"String",
                         stringAccessorFactory(),
-                        (LayoutTestUtilFactory) StringLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) StringValueCreatorUtil::new,
+                        (IndexLayoutFactory) StringLayout::new
                 },
                 {"Date",
                         temporalAccessorFactory( ValueGroup.DATE ),
-                        (LayoutTestUtilFactory) DateLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) DateValueCreatorUtil::new,
+                        (IndexLayoutFactory) DateLayout::new
                 },
                 {"DateTime",
                         temporalAccessorFactory( ValueGroup.ZONED_DATE_TIME ),
-                        (LayoutTestUtilFactory) DateTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) DateTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) ZonedDateTimeLayout::new
                 },
                 {"Duration",
                         temporalAccessorFactory( ValueGroup.DURATION ),
-                        (LayoutTestUtilFactory) DurationLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) DurationValueCreatorUtil::new,
+                        (IndexLayoutFactory) DurationLayout::new
                 },
                 {"LocalDateTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutTestUtilFactory) LocalDateTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"LocalTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_TIME ),
-                        (LayoutTestUtilFactory) LocalTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) LocalTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) LocalTimeLayout::new
                 },
                 {"LocalDateTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (LayoutTestUtilFactory) LocalDateTimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"Time",
                         temporalAccessorFactory( ValueGroup.ZONED_TIME ),
-                        (LayoutTestUtilFactory) TimeLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) TimeValueCreatorUtil::new,
+                        (IndexLayoutFactory) ZonedTimeLayout::new
                 },
                 {"Generic",
                         genericAccessorFactory(),
-                        (LayoutTestUtilFactory) GenericLayoutTestUtil::new
+                        (ValueCreatorUtilFactory) GenericValueCreatorUtil::new,
+                        (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings )
                 },
                 //{ Spatial has it's own subclass because it need to override some of the test methods }
         } );
     }
 
+    private static final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
+            new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), Collections.emptyMap() );
+    private static final StandardConfiguration configuration = new StandardConfiguration();
+
     private final AccessorFactory<KEY,VALUE> accessorFactory;
-    private final LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory;
+    private final ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory;
+    private final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
 
     @SuppressWarnings( "unused" )
-    public NativeIndexAccessorTest( String name, AccessorFactory<KEY,VALUE> accessorFactory, LayoutTestUtilFactory<KEY,VALUE> layoutTestUtilFactory )
+    public NativeIndexAccessorTest( String name,
+            AccessorFactory<KEY,VALUE> accessorFactory,
+            ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory,
+            IndexLayoutFactory<KEY,VALUE> indexLayoutFactory )
     {
         this.accessorFactory = accessorFactory;
-        this.layoutTestUtilFactory = layoutTestUtilFactory;
+        this.valueCreatorUtilFactory = valueCreatorUtilFactory;
+        this.indexLayoutFactory = indexLayoutFactory;
     }
 
     @Override
@@ -108,9 +127,15 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     @Override
-    LayoutTestUtil<KEY,VALUE> createLayoutTestUtil()
+    ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
     {
-        return layoutTestUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
+        return valueCreatorUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ) );
+    }
+
+    @Override
+    IndexLayout<KEY,VALUE> createLayout()
+    {
+        return indexLayoutFactory.create();
     }
 
     /* Helpers */
@@ -135,9 +160,6 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
 
     private static AccessorFactory<CompositeGenericKey,NativeIndexValue> genericAccessorFactory()
     {
-        IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings =
-                new IndexSpecificSpaceFillingCurveSettingsCache( new ConfiguredSpaceFillingCurveSettingsCache( Config.defaults() ), new HashMap<>() );
-        StandardConfiguration configuration = new StandardConfiguration();
         return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor ) ->
                 new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
     }

@@ -21,36 +21,31 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import java.time.LocalDate;
-
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-public class DateLayoutTestUtil extends LayoutTestUtil<DateIndexKey,NativeIndexValue>
+public class DurationValueCreatorUtil extends ValueCreatorUtil<DurationIndexKey,NativeIndexValue>
 {
-    private static final LocalDate[] ALL_EXTREME_VALUES = new LocalDate[]
+    private static final DurationValue[] ALL_EXTREME_VALUES = new DurationValue[]
     {
-            LocalDate.of( -999999999, 1, 1),
-            LocalDate.of( 999999999, 12, 31),
-            LocalDate.of( 0, 1, 1),
-            LocalDate.of( 0, 1, 2),
-            LocalDate.of( 0, 1, 3),
-            LocalDate.of( -1, 12, 31)
+            DurationValue.duration( -999999999L * 12 * 2, 0, 0, 0),
+            DurationValue.duration( 999999999L * 12 * 2, 0, 0, 0),
+            DurationValue.duration( 0, -999999999L * 12 * 28, 0, 0),
+            DurationValue.duration( 0, 999999999L * 12 * 28, 0, 0),
+            DurationValue.duration( 0, 0, Long.MIN_VALUE, 0),
+            DurationValue.duration( 0, 0, Long.MAX_VALUE, 0),
+            DurationValue.duration( 0, 0, 0, Long.MIN_VALUE),
+            DurationValue.duration( 0, 0, 0, Long.MAX_VALUE),
     };
 
-    DateLayoutTestUtil( StoreIndexDescriptor indexDescriptor )
+    DurationValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
-        super( indexDescriptor );
-    }
-
-    @Override
-    IndexLayout<DateIndexKey,NativeIndexValue> createLayout()
-    {
-        return new DateLayout();
+        super( schemaIndexDescriptor );
     }
 
     @Override
@@ -62,11 +57,11 @@ public class DateLayoutTestUtil extends LayoutTestUtil<DateIndexKey,NativeIndexV
     @Override
     RandomValues.Type[] supportedTypes()
     {
-        return RandomValues.typesOfGroup( ValueGroup.DATE );
+        return RandomValues.typesOfGroup( ValueGroup.DURATION );
     }
 
     @Override
-    int compareIndexedPropertyValue( DateIndexKey key1, DateIndexKey key2 )
+    int compareIndexedPropertyValue( DurationIndexKey key1, DurationIndexKey key2 )
     {
         return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }

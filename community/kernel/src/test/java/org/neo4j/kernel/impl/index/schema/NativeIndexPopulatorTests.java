@@ -57,9 +57,9 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.impl.index.schema.LayoutTestUtil.countUniqueValues;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_ONLINE;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
 
 public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>

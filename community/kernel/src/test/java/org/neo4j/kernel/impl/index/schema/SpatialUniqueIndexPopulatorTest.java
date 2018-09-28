@@ -49,9 +49,14 @@ public class SpatialUniqueIndexPopulatorTest extends NativeIndexPopulatorTests.U
     }
 
     @Override
-    protected LayoutTestUtil<SpatialIndexKey,NativeIndexValue> createLayoutTestUtil()
+    protected ValueCreatorUtil<SpatialIndexKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new UniqueLayoutTestUtil<>(
-                new SpatialLayoutTestUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ), configuredSettings.forCRS( crs ), crs ) );
+        return new UniqueValueCreatorUtil<>( new SpatialValueCreatorUtil( TestIndexDescriptorFactory.uniqueForLabel( 42, 666 ).withId( 0 ) ) );
+    }
+
+    @Override
+    IndexLayout<SpatialIndexKey,NativeIndexValue> createLayout()
+    {
+        return new SpatialLayout( crs, configuredSettings.forCRS( crs ).curve() );
     }
 }
