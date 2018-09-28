@@ -25,7 +25,7 @@ class UniqueValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends Nati
 
     UniqueValueCreatorUtil( ValueCreatorUtil<KEY, VALUE> delegate )
     {
-        super( delegate.indexDescriptor, delegate.supportedTypes() );
+        super( delegate );
         this.delegate = delegate;
     }
 

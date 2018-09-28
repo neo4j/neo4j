@@ -22,18 +22,11 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 public class DurationValueCreatorUtil extends ValueCreatorUtil<DurationIndexKey,NativeIndexValue>
 {
     DurationValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.DURATION ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( DurationIndexKey key1, DurationIndexKey key2 )
-    {
-        return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }
 }

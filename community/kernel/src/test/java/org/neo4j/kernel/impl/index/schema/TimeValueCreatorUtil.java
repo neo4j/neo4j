@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 public class TimeValueCreatorUtil extends ValueCreatorUtil<ZonedTimeIndexKey,NativeIndexValue>
 {
@@ -31,11 +30,5 @@ public class TimeValueCreatorUtil extends ValueCreatorUtil<ZonedTimeIndexKey,Nat
     TimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( ZonedTimeIndexKey key1, ZonedTimeIndexKey key2 )
-    {
-        return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }
 }

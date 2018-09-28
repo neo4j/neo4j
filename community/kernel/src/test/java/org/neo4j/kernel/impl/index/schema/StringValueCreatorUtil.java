@@ -23,21 +23,10 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
-import static java.util.Arrays.copyOf;
-import static org.neo4j.values.storable.UTF8StringValue.byteArrayCompare;
-
 class StringValueCreatorUtil extends ValueCreatorUtil<StringIndexKey,NativeIndexValue>
 {
     StringValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.TEXT ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( StringIndexKey key1, StringIndexKey key2 )
-    {
-        return byteArrayCompare(
-                copyOf( key1.bytes, key1.bytesLength ),
-                copyOf( key2.bytes, key2.bytesLength ) );
     }
 }

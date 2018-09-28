@@ -22,18 +22,11 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 public class LocalTimeValueCreatorUtil extends ValueCreatorUtil<LocalTimeIndexKey,NativeIndexValue>
 {
     LocalTimeValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( LocalTimeIndexKey key1, LocalTimeIndexKey key2 )
-    {
-        return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }
 }

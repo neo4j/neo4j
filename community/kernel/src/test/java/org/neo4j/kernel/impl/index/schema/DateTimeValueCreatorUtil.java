@@ -22,18 +22,11 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 public class DateTimeValueCreatorUtil extends ValueCreatorUtil<ZonedDateTimeIndexKey,NativeIndexValue>
 {
     DateTimeValueCreatorUtil( StoreIndexDescriptor schemaIndexDescriptor )
     {
         super( schemaIndexDescriptor, RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( ZonedDateTimeIndexKey key1, ZonedDateTimeIndexKey key2 )
-    {
-        return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }
 }

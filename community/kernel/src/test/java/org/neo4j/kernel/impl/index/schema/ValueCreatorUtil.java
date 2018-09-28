@@ -50,18 +50,26 @@ abstract class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends N
     final StoreIndexDescriptor indexDescriptor;
     private final RandomValues.Type[] supportedTypes;
 
+    ValueCreatorUtil( ValueCreatorUtil delegate )
+    {
+        this( delegate.indexDescriptor, delegate.supportedTypes );
+    }
+
     ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, RandomValues.Type[] supportedTypes )
     {
         this.indexDescriptor = indexDescriptor;
         this.supportedTypes = supportedTypes;
     }
 
+    int compareIndexedPropertyValue( KEY key1, KEY key2 )
+    {
+        return Values.COMPARATOR.compare( key1.asValues()[0], key2.asValues()[0] );
+    }
+
     RandomValues.Type[] supportedTypes()
     {
         return supportedTypes;
     }
-
-    abstract int compareIndexedPropertyValue( KEY key1, KEY key2 );
 
     protected double fractionDuplicates()
     {

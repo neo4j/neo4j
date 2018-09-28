@@ -27,7 +27,6 @@ import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSett
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
-import org.neo4j.values.storable.Values;
 
 class GenericValueCreatorUtil extends ValueCreatorUtil<CompositeGenericKey,NativeIndexValue>
 {
@@ -38,11 +37,5 @@ class GenericValueCreatorUtil extends ValueCreatorUtil<CompositeGenericKey,Nativ
     GenericValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor, RandomValues.Type.values() );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( CompositeGenericKey key1, CompositeGenericKey key2 )
-    {
-        return Values.COMPARATOR.compare( key1.asValues()[0], key2.asValues()[0] );
     }
 }

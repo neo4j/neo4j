@@ -22,18 +22,11 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.Values;
 
 public class DateValueCreatorUtil extends ValueCreatorUtil<DateIndexKey,NativeIndexValue>
 {
     DateValueCreatorUtil( StoreIndexDescriptor indexDescriptor )
     {
         super( indexDescriptor, RandomValues.typesOfGroup( ValueGroup.DATE ) );
-    }
-
-    @Override
-    int compareIndexedPropertyValue( DateIndexKey key1, DateIndexKey key2 )
-    {
-        return Values.COMPARATOR.compare( key1.asValue(), key2.asValue() );
     }
 }
