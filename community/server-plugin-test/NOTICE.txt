@@ -74,7 +74,6 @@ BSD License
   asm-analysis
   asm-tree
   asm-util
-  JLine
   Scala Compiler
 
 Bouncy Castle License

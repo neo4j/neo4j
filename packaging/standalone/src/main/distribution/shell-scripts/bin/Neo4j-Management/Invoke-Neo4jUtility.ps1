@@ -76,13 +76,6 @@ function Invoke-Neo4jUtility
     $GetJavaParams = @{}
     switch ($Command.Trim().ToLower())
     {
-      "shell" {
-        Write-Verbose "Shell command specified"
-        $GetJavaParams = @{
-          StartingClass = 'org.neo4j.shell.StartClient';
-        }
-        break
-      }
       "admintool" {
         Write-Verbose "Admintool command specified"
         $GetJavaParams = @{

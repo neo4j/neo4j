@@ -343,7 +343,6 @@ BSD License
   hoek
   hoist-non-react-statics
   ieee754
-  JLine
   json-schema
   node-pre-gyp
   qs

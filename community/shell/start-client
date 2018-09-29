@@ -1,6 +1,0 @@
-#!/bin/bash
-
-mvn dependency:copy-dependencies
-LIB_FILES=`find target/dependency -follow -iname "*.jar"`
-LIB_FILES=`echo $LIB_FILES | sed -e 's/ /:/g'`
-java -cp $LIB_FILES:target/classes org.neo4j.shell.StartClient $@

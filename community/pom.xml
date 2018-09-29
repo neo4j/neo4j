@@ -68,7 +68,6 @@
     <module>graph-algo</module>
     <module>neo4j</module>
     <module>neo4j-community</module>
-    <module>shell</module>
     <module>import-tool</module>
     <module>server-api</module>
     <module>bolt</module>

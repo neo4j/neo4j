@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
-import org.neo4j.kernel.impl.query.clientconnection.ShellConnectionInfo;
 
 import static org.junit.Assert.assertEquals;
 
@@ -79,18 +78,5 @@ public class ClientConnectionInfoTest
 
         // then
         assertEquals( "embedded-session\t", connectionDetails );
-    }
-
-    @Test
-    public void connectionDetailsForShellSession()
-    {
-        // given
-        ClientConnectionInfo clientConnection = new ShellConnectionInfo( 1 ).withUsername( "FULL" );
-
-        // when
-        String connectionDetails = clientConnection.asConnectionDetails();
-
-        // then
-        assertEquals( "shell-session\tshell\t1\tFULL", connectionDetails );
     }
 }

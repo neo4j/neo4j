@@ -1,3 +1,0 @@
-mknode
-cd -a 0
-set "testshell_foo" "testshell_bar"

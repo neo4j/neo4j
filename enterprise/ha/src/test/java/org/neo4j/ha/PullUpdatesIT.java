@@ -44,7 +44,6 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -54,10 +53,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.ports.allocation.PortAuthority;
-import org.neo4j.shell.ShellClient;
-import org.neo4j.shell.ShellException;
-import org.neo4j.shell.ShellLobby;
-import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.ha.ClusterRule;
 
 import static java.lang.System.currentTimeMillis;
@@ -68,7 +63,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.kernel.impl.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.kernel.impl.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterAvailable;
 import static org.neo4j.kernel.impl.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
@@ -167,34 +161,6 @@ public class PullUpdatesIT
 
         assertEquals( lastClosedTxIdOnMaster + testTxsOnMaster, lastClosedTxIdOn( master ) );
         assertEquals( lastClosedTxIdOnSlave, lastClosedTxIdOn( slave ) );
-    }
-
-    @Test
-    public void pullUpdatesShellAppPullsUpdates() throws Throwable
-    {
-        ClusterManager.ManagedCluster cluster = clusterRule.withCluster( clusterOfSize( 2 ) ).
-                withSharedSetting( HaSettings.pull_interval, "0" ).
-                withSharedSetting( HaSettings.tx_push_factor, "0" ).
-                withSharedSetting( ShellSettings.remote_shell_enabled, Settings.TRUE ).
-                withInstanceSetting( ShellSettings.remote_shell_port, i -> String.valueOf( PortAuthority.allocatePort() ) ).
-                startCluster();
-
-        long commonNodeId = createNodeOnMaster( cluster );
-
-        setProperty( cluster.getMaster(), commonNodeId, 1 );
-
-        int shellPort = cluster.getAnySlave()
-                .getDependencyResolver().resolveDependency( Config.class )
-                .get( ShellSettings.remote_shell_port );
-
-        callPullUpdatesViaShell( shellPort );
-
-        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-        try ( Transaction tx = slave.beginTx() )
-        {
-            assertEquals( 1, slave.getNodeById( commonNodeId ).getProperty( "i" ) );
-            tx.success();
-        }
     }
 
     @Test
@@ -311,12 +277,6 @@ public class PullUpdatesIT
             tx.success();
             return id;
         }
-    }
-
-    private void callPullUpdatesViaShell( int port ) throws ShellException
-    {
-        ShellClient client = ShellLobby.newClient( port );
-        client.evaluate( "pullupdates" );
     }
 
     private void powerNap() throws InterruptedException

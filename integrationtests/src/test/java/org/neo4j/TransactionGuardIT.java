@@ -29,11 +29,8 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.io.Serializable;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
-import java.rmi.RemoteException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -50,7 +47,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -78,7 +74,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
@@ -86,12 +81,6 @@ import org.neo4j.server.database.SimpleGraphFactory;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.enterprise.helpers.EnterpriseServerBuilder;
 import org.neo4j.server.web.HttpHeaderUtils;
-import org.neo4j.shell.InterruptSignalHandler;
-import org.neo4j.shell.Response;
-import org.neo4j.shell.ShellException;
-import org.neo4j.shell.impl.CollectingOutput;
-import org.neo4j.shell.impl.SameJvmClient;
-import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.rule.CleanupRule;
@@ -101,7 +90,6 @@ import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 import org.neo4j.time.SystemNanoClock;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -256,58 +244,6 @@ public class TransactionGuardIT
         catch ( TransactionTerminatedException e )
         {
             assertThat( e.getMessage(), startsWith( "The transaction has been terminated." ) );
-        }
-
-        assertDatabaseDoesNotHaveNodes( database );
-    }
-
-    @Test
-    public void terminateLongRunningShellQuery() throws Exception
-    {
-        GraphDatabaseAPI database = startDatabaseWithTimeout();
-        KernelTransactionTimeoutMonitor timeoutMonitor =
-                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
-        SameJvmClient client = getShellClient( shellServer );
-        CollectingOutput commandOutput = new CollectingOutput();
-        try
-        {
-            execute( shellServer, commandOutput, client.getId(), "begin Transaction" );
-            fakeClock.forward( 3, TimeUnit.SECONDS );
-            timeoutMonitor.run();
-            execute( shellServer, commandOutput, client.getId(), "create (n);" );
-            execute( shellServer, commandOutput, client.getId(), "commit" );
-            fail( "Transaction should be already terminated." );
-        }
-        catch ( ShellException e )
-        {
-            assertThat( e.getMessage(), containsString( "The transaction has not completed within the specified timeout (dbms.transaction.timeout)" ) );
-            execute( shellServer, commandOutput, client.getId(), "rollback" );
-        }
-
-        assertDatabaseDoesNotHaveNodes( database );
-    }
-
-    @Test
-    public void terminateLongRunningShellPeriodicCommitQuery() throws Exception
-    {
-        GraphDatabaseAPI database = startDatabaseWithTimeout();
-        KernelTransactionTimeoutMonitor timeoutMonitor =
-                database.getDependencyResolver().resolveDependency( KernelTransactionTimeoutMonitor.class );
-        monitorSupplier.setTransactionTimeoutMonitor( timeoutMonitor );
-        GraphDatabaseShellServer shellServer = getGraphDatabaseShellServer( database );
-        try
-        {
-            SameJvmClient client = getShellClient( shellServer );
-            CollectingOutput commandOutput = new CollectingOutput();
-            URL url = prepareTestImportFile( 8 );
-            execute( shellServer, commandOutput, client.getId(),
-                    "USING PERIODIC COMMIT 5 LOAD CSV FROM '" + url + "' AS line CREATE ();" );
-            fail( "Transaction should be already terminated." );
-        }
-        catch ( ShellException e )
-        {
-            assertThat( e.getMessage(), containsString( "The transaction has been terminated." ) );
         }
 
         assertDatabaseDoesNotHaveNodes( database );
@@ -575,27 +511,6 @@ public class TransactionGuardIT
             }
         }
         return tempFile.toURI().toURL();
-    }
-
-    private Response execute( GraphDatabaseShellServer shellServer,
-            CollectingOutput output, Serializable clientId, String command ) throws ShellException
-    {
-        return shellServer.interpretLine( clientId, command, output );
-    }
-
-    private SameJvmClient getShellClient( GraphDatabaseShellServer shellServer ) throws ShellException, RemoteException
-    {
-        SameJvmClient client = new SameJvmClient( new HashMap<>(), shellServer,
-                new CollectingOutput(), InterruptSignalHandler.getHandler() );
-        cleanupRule.add( client );
-        return client;
-    }
-
-    private GraphDatabaseShellServer getGraphDatabaseShellServer( GraphDatabaseAPI database ) throws RemoteException
-    {
-        GraphDatabaseShellServer shellServer = new GraphDatabaseShellServer( database );
-        cleanupRule.add( shellServer );
-        return shellServer;
     }
 
     private void assertDatabaseDoesNotHaveNodes( GraphDatabaseAPI database )
