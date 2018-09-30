@@ -97,4 +97,24 @@ class TextValueFuzzTest
         }
     }
 
+    @Test
+    void shouldStartsWith()
+    {
+        for ( int i = 0; i < ITERATIONS; i++ )
+        {
+            String value = random.nextString();
+            String prefix;
+            if ( random.nextBoolean() )
+            {
+                prefix = value;
+            }
+            else
+            {
+                prefix = random.nextString();
+            }
+
+            assertConsistent( value, prefix, TextValue::startsWith );
+        }
+    }
+
 }

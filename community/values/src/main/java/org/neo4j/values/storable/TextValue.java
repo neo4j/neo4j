@@ -70,6 +70,8 @@ public abstract class TextValue extends ScalarValue
 
     public abstract TextValue plus( TextValue other );
 
+    public abstract boolean startsWith( TextValue other );
+
     public abstract int compareTo( TextValue other );
 
     @Override

@@ -142,6 +142,12 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
+    public boolean startsWith( TextValue other )
+    {
+        return value.startsWith( other.stringValue() );
+    }
+
+    @Override
     Matcher matcher( Pattern pattern )
     {
         return pattern.matcher( value );

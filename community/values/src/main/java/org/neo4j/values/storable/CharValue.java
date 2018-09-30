@@ -41,7 +41,7 @@ public final class CharValue extends TextValue
     @Override
     public boolean eq( Object other )
     {
-        return other != null && other instanceof Value && equals( (Value) other );
+        return other instanceof Value && equals( (Value) other );
     }
 
     @Override
@@ -197,6 +197,12 @@ public final class CharValue extends TextValue
     public TextValue plus( TextValue other )
     {
         return Values.stringValue( value + other.stringValue() );
+    }
+
+    @Override
+    public boolean startsWith( TextValue other )
+    {
+        return other.length() == 1 && other.stringValue().charAt( 0 ) == value;
     }
 
     public char value()

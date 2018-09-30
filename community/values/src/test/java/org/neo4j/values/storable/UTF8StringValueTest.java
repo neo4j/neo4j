@@ -217,7 +217,7 @@ class UTF8StringValueTest
         // Given
         TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
-        assertThrows(IndexOutOfBoundsException.class, () -> value.substring( -4, 3 ) );
+        assertThrows( IndexOutOfBoundsException.class, () -> value.substring( -4, 3 ) );
     }
 
     @Test
@@ -227,5 +227,33 @@ class UTF8StringValueTest
         TextValue value = utf8Value( "hello".getBytes( UTF_8 ) );
 
         assertThrows( IndexOutOfBoundsException.class, () -> value.substring( 4, -3 ) );
+    }
+
+
+    @Test
+    void shouldHandleStartsWithAndOffset()
+    {
+        // Given
+        byte[] bytes = "abcdefghijklmnoprstuvxyzABCDEFGHIJKLMNOPRSTUVXYZ".getBytes( UTF_8 );
+
+        for ( int offset = 0; offset <= bytes.length; offset++ )
+        {
+            for ( int length = 0; length < bytes.length - offset; length++ )
+            {
+                TextValue value = utf8Value( bytes, offset, length );
+
+                for ( int prefixOffset = 0; prefixOffset <= bytes.length; prefixOffset++ )
+                {
+                    for ( int prefixLength = 0; prefixLength < bytes.length - prefixOffset; prefixLength++ )
+                    {
+                        TextValue prefix = utf8Value( bytes, prefixOffset, prefixLength );
+                        assertThat( value.startsWith( prefix ),
+                                equalTo( prefixLength == 0 || prefixOffset == offset && prefixLength <= length ) );
+                    }
+                }
+
+
+            }
+        }
     }
 }

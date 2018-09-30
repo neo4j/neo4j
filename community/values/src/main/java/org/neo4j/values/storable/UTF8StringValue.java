@@ -338,6 +338,34 @@ public final class UTF8StringValue extends StringValue
     }
 
     @Override
+    public boolean startsWith( TextValue other )
+    {
+
+        if ( other instanceof UTF8StringValue )
+        {
+            int thisOffset = offset;
+            UTF8StringValue otherUtf8Value = (UTF8StringValue) other;
+            int prefixOffset = otherUtf8Value.offset;
+            int prefixCount = otherUtf8Value.byteLength;
+            if (prefixCount > byteLength)
+            {
+                return false;
+            }
+
+            while ( --prefixCount >= 0 )
+            {
+                if ( bytes[thisOffset++] != otherUtf8Value.bytes[prefixOffset++] )
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return value().startsWith( other.stringValue() );
+    }
+
+    @Override
     public TextValue reverse()
     {
         byte[] values = bytes;
@@ -515,22 +543,21 @@ public final class UTF8StringValue extends StringValue
         return bytes;
     }
 
-    static int codePoint( byte[] bytes, byte currentByte, int i, int bytesNeeded )
+    private static int codePoint( byte[] bytes, byte currentByte, int i, int bytesNeeded )
     {
         int codePoint;
-        byte[] values = bytes;
         switch ( bytesNeeded )
         {
         case 2:
-            codePoint = (currentByte << 4) | (values[i + 1] & HIGH_BIT_MASK);
+            codePoint = (currentByte << 4) | (bytes[i + 1] & HIGH_BIT_MASK);
             break;
         case 3:
-            codePoint = (currentByte << 9) | ((values[i + 1] & HIGH_BIT_MASK) << 6) | (values[i + 2] & HIGH_BIT_MASK);
+            codePoint = (currentByte << 9) | ((bytes[i + 1] & HIGH_BIT_MASK) << 6) | (bytes[i + 2] & HIGH_BIT_MASK);
             break;
         case 4:
-            codePoint = (currentByte << 14) | ((values[i + 1] & HIGH_BIT_MASK) << 12) |
-                        ((values[i + 2] & HIGH_BIT_MASK) << 6)
-                        | (values[i + 3] & HIGH_BIT_MASK);
+            codePoint = (currentByte << 14) | ((bytes[i + 1] & HIGH_BIT_MASK) << 12) |
+                        ((bytes[i + 2] & HIGH_BIT_MASK) << 6)
+                        | (bytes[i + 3] & HIGH_BIT_MASK);
             break;
         default:
             throw new IllegalArgumentException( "Malformed UTF8 value" );
