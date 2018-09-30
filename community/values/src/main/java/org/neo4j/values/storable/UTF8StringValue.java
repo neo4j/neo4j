@@ -384,7 +384,7 @@ public final class UTF8StringValue extends StringValue
             }
 
             final byte first = substring.bytes[substring.offset];
-            int max = offset + byteLength - substring.byteLength;
+            final int max = offset + byteLength - substring.byteLength;
             for ( int pos = offset; pos <= max; pos++ )
             {
                 //find first byte

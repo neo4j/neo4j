@@ -211,32 +211,32 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
 trait StringOperator {
   self: Predicate =>
   override def isMatch(m: ExecutionContext, state: QueryState) = (lhs(m, state), rhs(m, state)) match {
-    case (l: TextValue, r: TextValue) => Some(compare(l.stringValue(), r.stringValue()))
+    case (l: TextValue, r: TextValue) => Some(compare(l, r)
     case (_, _) => None
   }
 
   def lhs: Expression
   def rhs: Expression
-  def compare(a: String, b: String): Boolean
+  def compare(a: TextValue, b: TextValue): Boolean
   override def containsIsNull = false
   override def arguments = Seq(lhs, rhs)
   override def symbolTableDependencies = lhs.symbolTableDependencies ++ rhs.symbolTableDependencies
 }
 
 case class StartsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
-  override def compare(a: String, b: String) = a.startsWith(b)
+  override def compare(a: TextValue, b: TextValue) = a.startsWith(b)
 
   override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
 
 case class EndsWith(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
-  override def compare(a: String, b: String) = a.endsWith(b)
+  override def compare(a: TextValue, b: TextValue) = a.endsWith(b)
 
   override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
 
 case class Contains(lhs: Expression, rhs: Expression) extends Predicate with StringOperator {
-  override def compare(a: String, b: String) = a.contains(b)
+  override def compare(a: TextValue, b: TextValue) = a.contains(b)
 
   override def rewrite(f: (Expression) => Expression) = f(copy(lhs.rewrite(f), rhs.rewrite(f)))
 }
@@ -271,11 +271,8 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
     val lValue = lhsExpr(m, state)
     val rValue = regexExpr(m, state)
     (lValue, rValue) match {
-      case (lhs, rhs) if rhs == Values.NO_VALUE || lhs == Values.NO_VALUE => None
-      case (lhs, rhs) => CypherBoolean.regex(lhs, rhs) match {
-        case b: BooleanValue => Some(b.booleanValue())
-        case _ => None
-      }
+      case (lhs: TextValue, rhs) if rhs != Values.NO_VALUE => Some(CypherBoolean.regex(lhs, rhs).booleanValue())
+      case _ => None
     }
   }
 
