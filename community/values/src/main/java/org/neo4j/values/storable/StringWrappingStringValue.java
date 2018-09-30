@@ -154,6 +154,12 @@ final class StringWrappingStringValue extends StringValue
     }
 
     @Override
+    public boolean contains( TextValue other )
+    {
+        return value.contains( other.stringValue() );
+    }
+
+    @Override
     Matcher matcher( Pattern pattern )
     {
         return pattern.matcher( value );

@@ -230,7 +230,7 @@ class UTF8StringValueTest
     }
 
     @Test
-    void shouldHandleStartsWithAndEndsWithWhenOffset()
+    void shouldHandleStringPredicatesWithOffset()
     {
         // Given
         byte[] bytes = "abcdefghijklmnoprstuvxyzABCDEFGHIJKLMNOPRSTUVXYZ".getBytes( UTF_8 );
@@ -249,10 +249,14 @@ class UTF8StringValueTest
                         assertThat( value.startsWith( other ),
                                 equalTo( otherLength == 0 || otherOffset == offset && otherLength <= length ) );
                         assertThat( value.endsWith( other ),
-                                equalTo( otherLength == 0 || otherOffset >= offset && otherLength == length + offset - otherOffset ) );
+                                equalTo( otherLength == 0 ||
+                                         otherOffset >= offset && otherLength == length + offset - otherOffset ) );
+                        assertThat( value.contains( other ),
+                                equalTo( otherLength == 0 ||
+                                         otherOffset >= offset && otherLength <= length + offset - otherOffset ) );
+
                     }
                 }
-
 
             }
         }

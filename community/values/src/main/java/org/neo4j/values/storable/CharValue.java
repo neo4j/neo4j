@@ -211,6 +211,12 @@ public final class CharValue extends TextValue
         return startsWith( other );
     }
 
+    @Override
+    public boolean contains( TextValue other )
+    {
+        return startsWith( other );
+    }
+
     public char value()
     {
         return value;

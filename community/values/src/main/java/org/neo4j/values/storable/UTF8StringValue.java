@@ -363,6 +363,55 @@ public final class UTF8StringValue extends StringValue
         return value().endsWith( other.stringValue() );
     }
 
+    @Override
+    public boolean contains( TextValue other )
+    {
+
+        if ( other instanceof UTF8StringValue )
+        {
+            final UTF8StringValue substring = (UTF8StringValue) other;
+            if ( byteLength == 0 )
+            {
+                return substring.byteLength == 0;
+            }
+            if ( substring.byteLength == 0 )
+            {
+                return true;
+            }
+            if ( substring.byteLength > byteLength )
+            {
+                return false;
+            }
+
+            final byte first = substring.bytes[substring.offset];
+            int max = offset + byteLength - substring.byteLength;
+            for ( int pos = offset; pos <= max; pos++ )
+            {
+                //find first byte
+                if ( bytes[pos] != first )
+                {
+                    while ( ++pos <= max && bytes[pos] != first );
+                }
+
+                //Now we have the first byte match, look at the rest
+                if ( pos <= max )
+                {
+                    int i = pos + 1;
+                    final int end = pos + substring.byteLength;
+                    for ( int j = substring.offset + 1; i < end && bytes[i] == substring.bytes[j]; j++, i++);
+
+                    if ( i == end )
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        return value().contains( other.stringValue() );
+    }
+
     private boolean startsWith(UTF8StringValue prefix, int startPos)
     {
         int thisOffset = offset+ startPos;

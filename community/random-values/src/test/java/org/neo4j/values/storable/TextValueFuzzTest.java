@@ -98,7 +98,7 @@ class TextValueFuzzTest
     }
 
     @Test
-    void shouldHandleStartsWithAndEndsWith()
+    void shouldHandleStringPredicates()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
@@ -115,6 +115,7 @@ class TextValueFuzzTest
 
             assertConsistent( value, other, TextValue::startsWith );
             assertConsistent( value, other, TextValue::endsWith );
+            assertConsistent( value, other, TextValue::contains );
         }
     }
 
