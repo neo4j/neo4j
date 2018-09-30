@@ -343,26 +343,44 @@ public final class UTF8StringValue extends StringValue
 
         if ( other instanceof UTF8StringValue )
         {
-            int thisOffset = offset;
-            UTF8StringValue otherUtf8Value = (UTF8StringValue) other;
-            int prefixOffset = otherUtf8Value.offset;
-            int prefixCount = otherUtf8Value.byteLength;
-            if (prefixCount > byteLength)
-            {
-                return false;
-            }
-
-            while ( --prefixCount >= 0 )
-            {
-                if ( bytes[thisOffset++] != otherUtf8Value.bytes[prefixOffset++] )
-                {
-                    return false;
-                }
-            }
-            return true;
+            UTF8StringValue suffix = (UTF8StringValue) other;
+            return startsWith( suffix, 0 );
         }
 
         return value().startsWith( other.stringValue() );
+    }
+
+    @Override
+    public boolean endsWith( TextValue other )
+    {
+
+        if ( other instanceof UTF8StringValue )
+        {
+            UTF8StringValue suffix = (UTF8StringValue) other;
+            return startsWith( suffix, byteLength - suffix.byteLength );
+        }
+
+        return value().endsWith( other.stringValue() );
+    }
+
+    private boolean startsWith(UTF8StringValue prefix, int startPos)
+    {
+        int thisOffset = offset+ startPos;
+        int prefixOffset = prefix.offset;
+        int prefixCount = prefix.byteLength;
+        if (startPos < 0 || prefixCount > byteLength)
+        {
+            return false;
+        }
+
+        while ( --prefixCount >= 0 )
+        {
+            if ( bytes[thisOffset++] != prefix.bytes[prefixOffset++] )
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override

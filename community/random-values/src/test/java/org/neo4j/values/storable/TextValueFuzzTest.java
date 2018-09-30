@@ -98,22 +98,23 @@ class TextValueFuzzTest
     }
 
     @Test
-    void shouldStartsWith()
+    void shouldHandleStartsWithAndEndsWith()
     {
         for ( int i = 0; i < ITERATIONS; i++ )
         {
             String value = random.nextString();
-            String prefix;
+            String other;
             if ( random.nextBoolean() )
             {
-                prefix = value;
+                other = value;
             }
             else
             {
-                prefix = random.nextString();
+                other = random.nextString();
             }
 
-            assertConsistent( value, prefix, TextValue::startsWith );
+            assertConsistent( value, other, TextValue::startsWith );
+            assertConsistent( value, other, TextValue::endsWith );
         }
     }
 

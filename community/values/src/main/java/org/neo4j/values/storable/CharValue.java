@@ -205,6 +205,12 @@ public final class CharValue extends TextValue
         return other.length() == 1 && other.stringValue().charAt( 0 ) == value;
     }
 
+    @Override
+    public boolean endsWith( TextValue other )
+    {
+        return startsWith( other );
+    }
+
     public char value()
     {
         return value;

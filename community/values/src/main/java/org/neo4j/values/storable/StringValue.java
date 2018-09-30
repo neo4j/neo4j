@@ -240,6 +240,12 @@ public abstract class StringValue extends TextValue
         }
 
         @Override
+        public boolean endsWith( TextValue other )
+        {
+            return other.length() == 0;
+        }
+
+        @Override
         public TextValue toLower()
         {
             return this;
