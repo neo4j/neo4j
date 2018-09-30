@@ -176,6 +176,11 @@ public final class UTF8StringValue extends StringValue
         return hashFunction.update( hash, cpc.codePointCount );
     }
 
+    public int offset()
+    {
+        return offset;
+    }
+
     private static class CodePointCursor
     {
         byte[] values;

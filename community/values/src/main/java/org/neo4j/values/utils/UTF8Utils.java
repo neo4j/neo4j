@@ -42,12 +42,16 @@ public final class UTF8Utils
      */
     public static TextValue add( UTF8StringValue a, UTF8StringValue b )
     {
+        int offsetA = a.offset();
+        int lengthA = a.length();
         byte[] bytesA = a.bytes();
+        int offsetB = b.offset();
+        int lengthB = b.length();
         byte[] bytesB = b.bytes();
 
-        byte[] bytes = new byte[bytesA.length + bytesB.length];
-        System.arraycopy( bytesA, 0, bytes, 0, bytesA.length );
-        System.arraycopy( bytesB, 0, bytes, bytesA.length, bytesB.length );
+        byte[] bytes = new byte[lengthA + lengthB];
+        System.arraycopy( bytesA, offsetA, bytes, 0, lengthA );
+        System.arraycopy( bytesB, offsetB, bytes, lengthA, lengthB );
         return utf8Value( bytes );
     }
 }

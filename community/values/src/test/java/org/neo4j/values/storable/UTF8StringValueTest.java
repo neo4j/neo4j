@@ -23,6 +23,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import org.neo4j.values.utils.UTF8Utils;
+
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -148,6 +150,23 @@ public class UTF8StringValueTest
         assertSame( textValue, stringValue( "de" ) );
         assertThat( textValue.length(), equalTo( stringValue( "de" ).length() ) );
         assertSame( textValue.reverse(), stringValue( "ed" ) );
+    }
+
+    @Test
+    public void shouldHandleAdditionWithOffset()
+    {
+        // Given
+        byte[] bytes = "abcdefg".getBytes( UTF_8 );
+
+        // When
+        UTF8StringValue a = (UTF8StringValue) utf8Value( bytes, 1, 2 );
+        UTF8StringValue b = (UTF8StringValue) utf8Value( bytes, 3, 3 );
+
+        // Then
+       assertSame( UTF8Utils.add( a, a ), stringValue( "bcbc" ) );
+       assertSame( UTF8Utils.add( a, b ), stringValue( "bcdef" ) );
+       assertSame( UTF8Utils.add( b, a ), stringValue( "defbc" ) );
+       assertSame( UTF8Utils.add( b, b ), stringValue( "defdef" ) );
     }
 
     private void assertSame( TextValue lhs, TextValue rhs )
