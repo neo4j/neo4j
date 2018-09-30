@@ -88,7 +88,7 @@ import static org.neo4j.codegen.TypeReference.typeReference;
 @RunWith( Parameterized.class )
 public class CodeGenerationTest
 {
-    public static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
+    private static final MethodReference RUN = createMethod( Runnable.class, void.class, "run" );
 
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> generators()
@@ -96,7 +96,7 @@ public class CodeGenerationTest
         return Arrays.asList( new Object[]{SourceCode.SOURCECODE}, new Object[]{ByteCode.BYTECODE} );
     }
 
-    @Parameterized.Parameter( 0 )
+    @Parameterized.Parameter()
     public CodeGenerationStrategy<?> strategy;
 
     @Before
@@ -1847,6 +1847,31 @@ public class CodeGenerationTest
         assertTrue( Double.isNaN( generateDoubleMethod( Double.NaN ).get() ) );
     }
 
+    @Test
+    public void shouldGenerateInstanceOf() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( boolean.class, "isString",
+                    param( Object.class, "test" ) ) )
+            {
+               conditional.returns( Expression.instanceOf( typeReference( String.class ), conditional.load( "test" ) ) );
+            }
+
+            handle = simple.handle();
+        }
+
+
+        // when
+        MethodHandle isString = instanceMethod( handle.newInstance(), "isString", Object.class );
+
+        // then
+        assertTrue( (Boolean) isString.invoke( "this is surely a string" ) );
+        assertFalse( (Boolean) isString.invoke( "this is surely a string".length() ) );
+    }
+
     private Supplier<Double> generateDoubleMethod( double toBeReturned ) throws Throwable
     {
         createGenerator();
@@ -1921,22 +1946,22 @@ public class CodeGenerationTest
         throw new UnsupportedOperationException( "not implemented" );
     }
 
-    static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception
+    private static MethodHandle method( Class<?> target, String name, Class<?>... parameters ) throws Exception
     {
         return MethodHandles.lookup().unreflect( target.getMethod( name, parameters ) );
     }
 
-    public static MethodHandle instanceMethod( Object instance, String name, Class<?>... parameters ) throws Exception
+    private static MethodHandle instanceMethod( Object instance, String name, Class<?>... parameters ) throws Exception
     {
         return method( instance.getClass(), name, parameters ).bindTo( instance );
     }
 
-    static Object getField( Object instance, String field ) throws Exception
+    private static Object getField( Object instance, String field ) throws Exception
     {
         return instance.getClass().getField( field ).get( instance );
     }
 
-    static MethodHandle constructor( Class<?> target, Class<?>... parameters ) throws Exception
+    private static MethodHandle constructor( Class<?> target, Class<?>... parameters ) throws Exception
     {
         return MethodHandles.lookup().unreflectConstructor( target.getConstructor( parameters ) );
     }
@@ -1949,19 +1974,14 @@ public class CodeGenerationTest
         return generator.generateClass( PACKAGE, name, firstInterface, more );
     }
 
-    ClassGenerator generateClass( Class<?> base, String name, Class<?>... interfaces )
+    private ClassGenerator generateClass( Class<?> base, String name, Class<?>... interfaces )
     {
         return generator.generateClass( base, PACKAGE, name, interfaces );
     }
 
-    ClassGenerator generateClass( String name, TypeReference... interfaces )
+    private ClassGenerator generateClass( String name, TypeReference... interfaces )
     {
         return generator.generateClass( PACKAGE, name, interfaces );
-    }
-
-    ClassGenerator generateClass( TypeReference base, String name, TypeReference... interfaces )
-    {
-        return generator.generateClass( base, PACKAGE, name, interfaces );
     }
 
     public static class NamedBase

@@ -219,6 +219,12 @@ class JumpVisitor implements ExpressionVisitor
     }
 
     @Override
+    public void instanceOf( TypeReference type, Expression expression )
+    {
+        throw new IllegalArgumentException( "cast is not a boolean expression" );
+    }
+
+    @Override
     public void newArray( TypeReference type, Expression... constants )
     {
         throw new IllegalArgumentException( "'new' (array) is not a boolean expression" );

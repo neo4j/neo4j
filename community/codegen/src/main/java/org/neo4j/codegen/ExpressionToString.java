@@ -281,6 +281,16 @@ class ExpressionToString implements ExpressionVisitor
     }
 
     @Override
+    public void instanceOf( TypeReference type, Expression expression )
+    {
+        result.append( "instanceOf{type=" );
+        type.writeTo( result );
+        result.append( ", expression=" );
+        expression.accept( this );
+        result.append( "}" );
+    }
+
+    @Override
     public void newArray( TypeReference type, Expression... constants )
     {
         result.append( "newArray{type=" );

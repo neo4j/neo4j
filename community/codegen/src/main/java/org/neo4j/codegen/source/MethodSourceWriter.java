@@ -441,6 +441,13 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void instanceOf( TypeReference type, Expression expression )
+    {
+        expression.accept( this );
+        append( " instanceof " ).append( type.fullName() );
+    }
+
+    @Override
     public void newArray( TypeReference type, Expression... constants )
     {
         append( "new " ).append( type.fullName() ).append( "[]{" );

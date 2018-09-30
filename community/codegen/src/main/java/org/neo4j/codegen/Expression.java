@@ -703,6 +703,18 @@ public abstract class Expression extends ExpressionTemplate
         return cast( typeReference( type ), expression );
     }
 
+    public static Expression instanceOf( final TypeReference type, Expression expression )
+    {
+        return new Expression( type )
+        {
+            @Override
+            public void accept( ExpressionVisitor visitor )
+            {
+                visitor.instanceOf( type, expression );
+            }
+        };
+    }
+
     public static Expression cast( final TypeReference type, Expression expression )
     {
         return new Expression( type )

@@ -69,6 +69,8 @@ public interface ExpressionVisitor
 
     void cast( TypeReference type, Expression expression );
 
+    void instanceOf( TypeReference type, Expression expression );
+
     void newArray( TypeReference type, Expression... constants );
 
     void longToDouble( Expression expression );

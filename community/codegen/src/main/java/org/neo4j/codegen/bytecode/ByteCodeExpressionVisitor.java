@@ -82,6 +82,7 @@ import static org.objectweb.asm.Opcodes.IF_ICMPLT;
 import static org.objectweb.asm.Opcodes.IF_ICMPNE;
 import static org.objectweb.asm.Opcodes.ILOAD;
 import static org.objectweb.asm.Opcodes.IMUL;
+import static org.objectweb.asm.Opcodes.INSTANCEOF;
 import static org.objectweb.asm.Opcodes.INVOKEINTERFACE;
 import static org.objectweb.asm.Opcodes.INVOKESPECIAL;
 import static org.objectweb.asm.Opcodes.INVOKESTATIC;
@@ -535,6 +536,16 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         if ( !type.equals( expression.type() ) )
         {
             methodVisitor.visitTypeInsn( CHECKCAST, byteCodeName( type ) );
+        }
+    }
+
+    @Override
+    public void instanceOf( TypeReference type, Expression expression )
+    {
+        expression.accept( this );
+        if ( !type.equals( expression.type() ) )
+        {
+            methodVisitor.visitTypeInsn( INSTANCEOF, byteCodeName( type ) );
         }
     }
 
