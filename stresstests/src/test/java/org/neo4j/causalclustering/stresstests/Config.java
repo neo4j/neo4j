@@ -51,6 +51,8 @@ public class Config
     private int numberOfCores;
     private int numberOfEdges;
 
+    private boolean raftMessagesLog;
+
     private int workDurationMinutes;
     private int shutdownDurationMinutes;
 
@@ -72,6 +74,8 @@ public class Config
 
         numberOfCores = envOrDefault( "NUMBER_OF_CORES", 3 );
         numberOfEdges = envOrDefault( "NUMBER_OF_EDGES", 1 );
+
+        raftMessagesLog = envOrDefault( "ENABLE_RAFT_MESSAGES_LOG", false );
 
         workDurationMinutes = envOrDefault( "WORK_DURATION_MINUTES", 30 );
         shutdownDurationMinutes = envOrDefault( "SHUTDOWN_DURATION_MINUTES", 5 );
@@ -233,6 +237,9 @@ public class Config
         params.put( CausalClusteringSettings.raft_log_rotation_size.name(), "1K" );
         params.put( CausalClusteringSettings.raft_log_pruning_frequency.name(), "250ms" );
         params.put( CausalClusteringSettings.raft_log_pruning_strategy.name(), "keep_none" );
+
+        // this will overrides the test-default in CoreClusterMember
+        params.put( CausalClusteringSettings.raft_messages_log_enable.name(), Boolean.toString( raftMessagesLog ) );
     }
 
     public void populateReadReplicaParams( Map<String,String> params )
@@ -245,9 +252,9 @@ public class Config
     @Override
     public String toString()
     {
-        return "Config{" + "workingDir='" + workingDir + '\'' + ", numberOfCores=" + numberOfCores + ", numberOfEdges=" + numberOfEdges +
-                ", workDurationMinutes=" + workDurationMinutes + ", shutdownDurationMinutes=" + shutdownDurationMinutes + ", txPrune='" + txPrune + '\'' +
-                ", checkpointPolicy='" + checkpointPolicy + '\'' + ", preparations=" + preparations + ", workloads=" + workloads + ", validations=" +
-                validations + ", enableIndexes=" + enableIndexes + ", reelectIntervalSeconds=" + reelectIntervalSeconds + '}';
+        return "Config{" + "workingDir='" + workingDir + '\'' + ", numberOfCores=" + numberOfCores + ", numberOfEdges=" + numberOfEdges + ", raftMessagesLog=" +
+                raftMessagesLog + ", workDurationMinutes=" + workDurationMinutes + ", shutdownDurationMinutes=" + shutdownDurationMinutes + ", txPrune='" +
+                txPrune + '\'' + ", checkpointPolicy='" + checkpointPolicy + '\'' + ", preparations=" + preparations + ", workloads=" + workloads +
+                ", validations=" + validations + ", enableIndexes=" + enableIndexes + ", reelectIntervalSeconds=" + reelectIntervalSeconds + '}';
     }
 }
