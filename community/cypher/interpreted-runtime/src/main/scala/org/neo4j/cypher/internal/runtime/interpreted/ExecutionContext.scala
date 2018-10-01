@@ -97,10 +97,12 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   override def mergeWith(other: ExecutionContext): Unit = other match {
     case otherMapCtx: MapExecutionContext =>
       m ++= otherMapCtx.m
-      if (cachedProperties == null) {
-        cachedProperties = otherMapCtx.cachedProperties
-      } else if (otherMapCtx.cachedProperties != null) {
-        cachedProperties ++= otherMapCtx.cachedProperties
+      if (otherMapCtx.cachedProperties != null) {
+        if (cachedProperties == null) {
+          cachedProperties = otherMapCtx.cachedProperties.clone()
+        } else {
+          cachedProperties ++= otherMapCtx.cachedProperties
+        }
       } else {
         //otherMapCtx.cachedProperties is null so do nothing
       }
