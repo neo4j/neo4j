@@ -396,7 +396,7 @@ public class BasicAuthManagerTest extends InitialUserTest
 
     public static byte[] password( String passwordString )
     {
-        return passwordString.getBytes( StandardCharsets.UTF_8 );
+        return passwordString != null ? passwordString.getBytes( StandardCharsets.UTF_8 ) : null;
     }
 
     public static byte[] clearedPasswordWithSameLenghtAs( String passwordString )

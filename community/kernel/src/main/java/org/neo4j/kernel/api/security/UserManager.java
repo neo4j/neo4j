@@ -56,7 +56,10 @@ public interface UserManager
         @Override
         public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
         {
-            Arrays.fill( initialPassword, (byte) 0 );
+            if ( initialPassword != null )
+            {
+                Arrays.fill( initialPassword, (byte) 0 );
+            }
             return null;
         }
 
@@ -81,7 +84,10 @@ public interface UserManager
         @Override
         public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
         {
-            Arrays.fill( password, (byte) 0 );
+            if ( password != null )
+            {
+                Arrays.fill( password, (byte) 0 );
+            }
         }
 
         @Override

@@ -164,7 +164,10 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         finally
         {
             // Clear password
-            Arrays.fill( initialPassword, (byte) 0 );
+            if ( initialPassword != null )
+            {
+                Arrays.fill( initialPassword, (byte) 0 );
+            }
         }
     }
 
@@ -222,7 +225,10 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         finally
         {
             // Clear password
-            Arrays.fill( password, (byte) 0 );
+            if ( password != null )
+            {
+                Arrays.fill( password, (byte) 0 );
+            }
         }
     }
 

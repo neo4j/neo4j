@@ -482,7 +482,10 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         finally
         {
             // Clear password
-            Arrays.fill( initialPassword, (byte) 0 );
+            if ( initialPassword != null )
+            {
+                Arrays.fill( initialPassword, (byte) 0 );
+            }
         }
     }
 
@@ -676,7 +679,11 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         }
         finally
         {
-            Arrays.fill( password, (byte) 0 );
+            // Clear password
+            if ( password != null )
+            {
+                Arrays.fill( password, (byte) 0 );
+            }
         }
     }
 

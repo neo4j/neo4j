@@ -19,6 +19,8 @@
  */
 package org.neo4j.test;
 
+import org.hamcrest.BaseMatcher;
+import org.hamcrest.Description;
 import org.mockito.ArgumentMatcher;
 
 import java.io.Serializable;
@@ -35,12 +37,20 @@ import static org.mockito.internal.progress.ThreadSafeMockingProgress.mockingPro
 
 public class AuthTokenUtil
 {
-    public static boolean matches( Map<String,Object> expected, Map<String,Object> actual )
+    @SuppressWarnings( "unchecked" )
+    public static boolean matches( Map<String,Object> expected, Object actualObject )
     {
-        if ( expected == null || actual == null )
+        if ( expected == null || actualObject == null )
         {
-            return expected == actual;
+            return expected == actualObject;
         }
+
+        if ( !(actualObject instanceof Map<?,?>) )
+        {
+            return false;
+        }
+
+        Map<String,Object> actual = (Map<String,Object>) actualObject;
 
         if ( expected.size() != actual.size() )
         {
@@ -61,9 +71,9 @@ public class AuthTokenUtil
                     return false;
                 }
             }
-            else if ( expectedValue == null ^ actualValue == null )
+            else if ( expectedValue == null || actualValue == null )
             {
-                return false;
+                return expectedValue == actualValue;
             }
             else if ( !expectedValue.equals( actualValue ) )
             {
@@ -92,6 +102,33 @@ public class AuthTokenUtil
         } );
     }
 
+    public static class AuthTokenMatcher extends BaseMatcher<Map<String,Object>>
+    {
+        private final Map<String,Object> expectedValue;
+
+        public AuthTokenMatcher( Map<String,Object> expectedValue )
+        {
+            this.expectedValue = expectedValue;
+        }
+
+        @Override
+        public boolean matches( Object o )
+        {
+            return AuthTokenUtil.matches( expectedValue, o );
+        }
+
+        @Override
+        public void describeTo( Description description )
+        {
+            description.appendValue( this.expectedValue );
+        }
+    }
+
+    public static AuthTokenMatcher authTokenMatcher( Map<String,Object> authToken )
+    {
+        return new AuthTokenMatcher( authToken );
+    }
+
     public static class AuthTokenArgumentMatcher implements ArgumentMatcher<Map<String,Object>>, Serializable
     {
 
@@ -109,11 +146,11 @@ public class AuthTokenUtil
 
         public String toString()
         {
-            return "authTokenMatcher(" + wanted + ")";
+            return "authTokenArgumentMatcher(" + wanted + ")";
         }
     }
 
-    public static Map<String,Object> authTokenMatcher( Map<String,Object> authToken )
+    public static Map<String,Object> authTokenArgumentMatcher( Map<String,Object> authToken )
     {
         mockingProgress().getArgumentMatcherStorage().reportMatcher( new AuthTokenArgumentMatcher( authToken ) );
         return null;
