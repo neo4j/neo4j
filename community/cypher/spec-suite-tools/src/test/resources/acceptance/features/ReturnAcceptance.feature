@@ -209,3 +209,14 @@ Feature: ReturnAcceptance
       | result |
       | 8.0 |
     And no side effects
+
+  Scenario: Multiplying a float and an integer should be no problem
+    Given an empty graph
+    When executing query:
+      """
+      WITH 1.0 AS a, 1000 AS b RETURN a * (b / 10) AS result
+      """
+    Then the result should be:
+      | result |
+      | 100.0  |
+    And no side effects

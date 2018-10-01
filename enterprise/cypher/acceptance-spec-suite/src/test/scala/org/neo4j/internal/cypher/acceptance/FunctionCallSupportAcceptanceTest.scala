@@ -45,7 +45,7 @@ class FunctionCallSupportAcceptanceTest extends ProcedureCallAcceptanceTest {
     ))
   }
 
-  ignore("should not fail to type check this") { // Waiting for the next release of openCypher
+  test("should not fail to type check this") { // Waiting for the next release of openCypher
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
 
     // We just want to make sure that running the query does not throw exceptions
