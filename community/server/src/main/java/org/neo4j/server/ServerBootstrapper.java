@@ -216,11 +216,11 @@ public abstract class ServerBootstrapper implements Bootstrapper
     // Exit gracefully if possible
     private void installSignalHandlers()
     {
-        installSignalHandler( SIGTERM ); // SIGTERM is invoked when system service is stopped
-        installSignalHandler( SIGINT ); // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
+        installSignalHandler( SIGTERM, false ); // SIGTERM is invoked when system service is stopped
+        installSignalHandler( SIGINT, true ); // SIGINT is invoked when user hits ctrl-c  when running `neo4j console`
     }
 
-    private void installSignalHandler( String sig )
+    private void installSignalHandler( String sig, boolean tolerateErrors )
     {
         try
         {
@@ -229,8 +229,12 @@ public abstract class ServerBootstrapper implements Bootstrapper
         }
         catch ( Throwable e )
         {
-            // Happens on IBM JDK with IllegalArgumentException: Signal already used by VM: INT
-            log.warn( "Unable to install signal handler. Exit code may not be 0 on graceful shutdown.", e );
+            if ( !tolerateErrors )
+            {
+                throw e;
+            }
+            // Errors occur on IBM JDK with IllegalArgumentException: Signal already used by VM: INT
+            // I can't find anywhere where we send a SIGINT to neo4j process so I don't think this is that important
         }
     }
 
