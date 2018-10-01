@@ -81,7 +81,7 @@ class GeometryType extends Type
     @Override
     Value asValue( GenericKeyState state )
     {
-        assertHasCoordinates( state.long3, state.long1Array );
+        assertHasCoordinates( state );
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
         return asValue( state, crs, 0 );
     }
@@ -121,6 +121,15 @@ class GeometryType extends Type
     String toString( GenericKeyState state )
     {
         return format( "Geometry[tableId:%d, code:%d, rawValue:%d]", state.long1, state.long2, state.long0 );
+    }
+
+    @Override
+    void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    {
+        super.minimalSplitter( left, right, into );
+        // Set dimensions to 0 so that minimal splitters (i.e. point keys in internal nodes) doesn't have coordinate data,
+        // they don't need it since values aren't generated from internal keys anyway.
+        into.long3 = 0;
     }
 
     /**
@@ -166,7 +175,6 @@ class GeometryType extends Type
 
     static void putPoint( PageCursor cursor, long long0, long long3, long[] long1Array, int long1ArrayOffset )
     {
-        assertHasCoordinates( long3, long1Array );
         cursor.putLong( long0 );
         for ( int i = 0; i < long3; i++ )
         {
@@ -181,12 +189,11 @@ class GeometryType extends Type
      * markers for a query and so should never be used for writing into the tree or generating values from,
      * so practically it's not a problem, merely an inconvenience and slight inconsistency for this value type.
      *
-     * @param long3 holds dimension count.
-     * @param long1Array holds the coordinates.
+     * @param state holds the key state.
      */
-    static void assertHasCoordinates( long long3, long[] long1Array )
+    static void assertHasCoordinates( GenericKeyState state )
     {
-        if ( long3 == 0 || long1Array == null )
+        if ( state.long3 == 0 || state.long1Array == null )
         {
             throw new IllegalStateException( "This geometry key doesn't have coordinates and can therefore neither be persisted nor generate point value." );
         }
@@ -207,7 +214,7 @@ class GeometryType extends Type
         return true;
     }
 
-    static boolean readPoint( PageCursor cursor, GenericKeyState into )
+    private static boolean readPoint( PageCursor cursor, GenericKeyState into )
     {
         into.long0 = cursor.getLong();
         // into.long3 have just been read by readCrs, before this method is called

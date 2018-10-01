@@ -103,7 +103,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     @Override
     Value asValue( GenericKeyState state )
     {
-        assertHasCoordinates( state.long3, state.long1Array );
+        assertHasCoordinates( state );
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
         Point[] points = new Point[state.arrayLength];
         int dimensions = dimensions( state );
@@ -134,6 +134,15 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     {
         return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s]",
                 state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ) );
+    }
+
+    @Override
+    void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    {
+        super.minimalSplitter( left, right, into );
+        // Set dimensions to 0 so that minimal splitters (i.e. point keys in internal nodes) doesn't have coordinate data,
+        // they don't need it since values aren't generated from internal keys anyway.
+        into.long3 = 0;
     }
 
     private static boolean readGeometryArrayItem( PageCursor cursor, GenericKeyState into )
