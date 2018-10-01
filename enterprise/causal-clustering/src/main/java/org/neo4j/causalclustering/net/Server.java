@@ -59,7 +59,7 @@ public class Server extends SuspendableLifeCycle
     public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
                    String serverName )
     {
-        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName, true );
+        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName, false );
     }
 
     public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
@@ -78,7 +78,7 @@ public class Server extends SuspendableLifeCycle
 
     public Server( ChildInitializer childInitializer, ListenSocketAddress listenAddress, String serverName )
     {
-        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName, true );
+        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName, false );
     }
 
     @Override
