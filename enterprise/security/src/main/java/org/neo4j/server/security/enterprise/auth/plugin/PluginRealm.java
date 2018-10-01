@@ -381,7 +381,11 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
                     finally
                     {
                         // Clear credentials
-                        Arrays.fill( pluginApiAuthToken.credentials(), (char) 0 );
+                        char[] credentials = pluginApiAuthToken.credentials();
+                        if ( credentials != null )
+                        {
+                            Arrays.fill( credentials, (char) 0 );
+                        }
                     }
                 }
                 catch ( InvalidAuthTokenException e )
@@ -392,8 +396,15 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
             else if ( info.getCredentials() != null )
             {
                 // Authentication info is originating from a CacheableAuthenticationInfo or a CacheableAuthInfo
-                return secureHasher.getHashedCredentialsMatcher()
-                        .doCredentialsMatch( PluginShiroAuthToken.of( token ), info );
+                PluginShiroAuthToken pluginShiroAuthToken = PluginShiroAuthToken.of( token );
+                try
+                {
+                    return secureHasher.getHashedCredentialsMatcher().doCredentialsMatch( pluginShiroAuthToken, info );
+                }
+                finally
+                {
+                    pluginShiroAuthToken.clearCredentials();
+                }
             }
             else
             {
