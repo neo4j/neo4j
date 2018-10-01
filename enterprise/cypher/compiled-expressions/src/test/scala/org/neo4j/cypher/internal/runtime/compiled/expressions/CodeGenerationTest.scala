@@ -2002,6 +2002,122 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Then
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(stringValue("aaa")))
   }
+  test("nested list expressions local access only") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When
+    // none(bar IN ["a"] WHERE any(foo IN ["b"] WHERE bar = foo)) --> true
+    val compiledTrue = compile(
+      noneInList(
+        variable = "bar",
+        collection = listOf(literalString("a")),
+        predicate = anyInList(
+          variable = "foo",
+          collection = listOf(literalString("b")),
+          predicate = equals(varFor("bar"), varFor("foo")))))
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar = foo)) --> false
+    val compiledFalse = compile(
+      noneInList(
+        variable = "bar",
+        collection = listOf(literalString("a")),
+        predicate = anyInList(
+          variable = "foo",
+          collection = listOf(literalString("a")),
+          predicate = equals(varFor("bar"), varFor("foo")))))
+
+    //Then
+    compiledTrue.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("nested list expressions, outer expression accessing outer scope") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map("list" -> list(stringValue("a"))))
+
+    //When
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar <> foo)) --> true
+    val compiledTrue = compile(
+      noneInList(
+        variable = "bar",
+        collection = varFor("list"),
+        predicate = anyInList(
+          variable = "foo",
+          collection = listOf(literalString("a")),
+          predicate = notEquals(varFor("bar"), varFor("foo")))))
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar = foo)) --> false
+    val compiledFalse = compile(
+      noneInList(
+        variable = "bar",
+        collection = varFor("list"),
+        predicate = anyInList(
+          variable = "foo",
+          collection = listOf(literalString("a")),
+          predicate = equals(varFor("bar"), varFor("foo")))))
+
+    //Then
+    compiledTrue.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("nested list expressions, inner expression accessing outer scope") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map("list" -> list(stringValue("a"))))
+
+    //When
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar <> foo)) --> true
+    val compiledTrue = compile(
+      noneInList(
+        variable = "bar",
+        collection = listOf(literalString("a")),
+        predicate = anyInList(
+          variable = "foo",
+          collection = listOf(literalString("a")),
+          predicate = notEquals(varFor("bar"), varFor("foo")))))
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar = foo)) --> false
+    val compiledFalse = compile(
+      noneInList(
+        variable = "bar",
+        collection = varFor("list"),
+        predicate = anyInList(
+          variable = "foo",
+          collection = varFor("list"),
+          predicate = equals(varFor("bar"), varFor("foo")))))
+
+    //Then
+    compiledTrue.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
+  test("nested list expressions, both accessing outer scope") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map("list" -> list(stringValue("a"))))
+
+    //When
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar <> foo)) --> true
+    val compiledTrue = compile(
+      noneInList(
+        variable = "bar",
+        collection = varFor("list"),
+        predicate = anyInList(
+          variable = "foo",
+          collection = varFor("list"),
+          predicate = notEquals(varFor("bar"), varFor("foo")))))
+    // none(bar IN ["a"] WHERE any(foo IN ["a"] WHERE bar = foo)) --> false
+    val compiledFalse = compile(
+      noneInList(
+        variable = "bar",
+        collection = varFor("list"),
+        predicate = anyInList(
+          variable = "foo",
+          collection = varFor("list"),
+          predicate = equals(varFor("bar"), varFor("foo")))))
+
+    //Then
+    compiledTrue.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(true))
+    compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
+  }
+
 
 
   test("extract function local access only") {
