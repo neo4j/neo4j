@@ -241,28 +241,28 @@ public class StoreUpgradeIT
             ClusterManager clusterManager = new ClusterManager.Builder( haDir )
                     .withSeedDir( databaseDirectory ).withCluster( clusterOfSize( 2 ) ).build();
 
-            clusterManager.start();
-
-            ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
             HighlyAvailableGraphDatabase master;
             HighlyAvailableGraphDatabase slave;
             try
             {
+                clusterManager.start();
+                ClusterManager.ManagedCluster cluster = clusterManager.getCluster();
+
                 cluster.await( allSeesAllAsAvailable() );
 
                 master = cluster.getMaster();
                 checkInstance( store, master );
                 slave = cluster.getAnySlave();
                 checkInstance( store, slave );
-                cluster.shutdown();
+                clusterManager.safeShutdown();
+
+                assertConsistentStore( master.databaseLayout() );
+                assertConsistentStore( slave.databaseLayout() );
             }
             finally
             {
                 clusterManager.safeShutdown();
             }
-
-            assertConsistentStore( master.databaseLayout() );
-            assertConsistentStore( slave.databaseLayout() );
         }
     }
 
