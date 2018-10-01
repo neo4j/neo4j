@@ -39,10 +39,12 @@ import org.neo4j.graphdb.QueryExecutionException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.graphdb.impl.notification.NotificationDetail.Factory;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Procedure;
@@ -822,16 +824,19 @@ public class NotificationAcceptanceTest
         String cachedQuery = "MATCH (a:L1) RETURN a";
         String nonCachedQuery = "MATCH (a:L2) RETURN a";
         //make sure we cache the query
-        for ( int i = 0; i < 10; i++ )
+        GraphDatabaseAPI db = db();
+        int limit = db.getDependencyResolver().resolveDependency( Config.class )
+                .get( GraphDatabaseSettings.cypher_expression_recompilation_limit );
+        for ( int i = 0; i < limit + 1; i++ )
         {
-            db().execute( cachedQuery ).resultAsString();
+            db.execute( cachedQuery ).resultAsString();
         }
 
         // When
         Notification cachedNotification =
-                Iterables.asList( db().execute( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
+                Iterables.asList( db.execute( "EXPLAIN " + cachedQuery ).getNotifications() ).get( 0 );
         Notification nonCachedNotication =
-                Iterables.asList( db().execute( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
+                Iterables.asList( db.execute( "EXPLAIN " + nonCachedQuery ).getNotifications() ).get( 0 );
 
         // Then
         assertThat( cachedNotification.getPosition(), equalTo( new InputPosition( 17, 1, 18 ) ) );
