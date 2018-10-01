@@ -1162,14 +1162,19 @@ public final class CypherFunctions
         return container.get( asString( index ) );
     }
 
-    static String asString( AnyValue value )
+    public static TextValue asTextValue( AnyValue value )
     {
         if ( !(value instanceof TextValue) )
         {
             throw new CypherTypeException( format( "Expected %s to be a %s, but it was a %s", value,
-                    TextValue.class.getName(), value.getClass().getName()), null );
+                    TextValue.class.getName(), value.getClass().getName() ), null );
         }
-        return ((TextValue) value).stringValue();
+        return (TextValue) value;
+    }
+
+    static String asString( AnyValue value )
+    {
+       return asTextValue( value ).stringValue();
     }
 
     private static NumberValue asNumberValue( AnyValue value )

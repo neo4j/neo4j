@@ -1146,7 +1146,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("hell.*")))) should equal(Values.TRUE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("helo") , stringValue("hell.*")))) should equal(Values.FALSE)
     compiled.evaluate(ctx, db, map(Array("a", "b"), Array(Values.NO_VALUE, stringValue("hell.*")))) should equal(Values.NO_VALUE)
-    a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(longValue(42), longValue(42))))
+    a [CypherTypeException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("forty-two"), longValue(42))))
     an [InvalidSemanticsException] should be thrownBy compiled.evaluate(ctx, db, map(Array("a", "b"), Array(stringValue("hello"), stringValue("["))))
   }
 
@@ -1664,11 +1664,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                       equals(function("size", varFor("bar")), function("size", varFor("foo")))))
 
     //Then
-    compiled.evaluate(context, db, EMPTY_MAP) should equal(TRUE)
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("single function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(stringValue("a"), stringValue("aa"), stringValue("aaa"))
 
     //When, single(bar IN $a WHERE size(bar) = size($a))
@@ -1676,7 +1677,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                       equals(function("size", varFor("bar")), function("size", parameter("a")))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(TRUE)
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(Values.TRUE)
   }
 
 
@@ -1752,6 +1753,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("none function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(stringValue("a"), stringValue("aa"), stringValue("aaa"))
 
     //When,  none(bar IN $a WHERE size(bar) = size($a))
@@ -1759,7 +1761,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                   equals(function("size", varFor("bar")), function("size", parameter("a")))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(FALSE)
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(FALSE)
   }
 
   test("any in list function local access only") {
@@ -1829,11 +1831,12 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                   equals(function("size", varFor("bar")), function("size", varFor("foo")))))
 
     //Then
-    compiled.evaluate(context, db, EMPTY_MAP) should equal(TRUE)
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("any function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(stringValue("a"), stringValue("aa"), stringValue("aaa"))
 
     //When,  any(bar IN $a WHERE size(bar) = size($a))
@@ -1841,7 +1844,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                   equals(function("size", varFor("bar")), function("size", parameter("a")))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(TRUE)
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(Values.TRUE)
   }
 
   test("all in list function local access only") {
@@ -1916,6 +1919,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("all function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(stringValue("a"), stringValue("aa"), stringValue("aaa"))
 
     //When,  filter(bar IN $a WHERE size(bar) = size($a))
@@ -1923,7 +1927,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                   equals(function("size", varFor("bar")), function("size", parameter("a")))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(FALSE)
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(Values.FALSE)
   }
 
   test("filter function local access only") {
@@ -1988,6 +1992,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("filter function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(stringValue("a"), stringValue("aa"), stringValue("aaa"))
 
     //When,  filter(bar IN $a WHERE size(bar) = size($a))
@@ -1995,7 +2000,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                   equals(function("size", varFor("bar")), function("size", parameter("a")))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(stringValue("aaa")))
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(stringValue("aaa")))
   }
 
 
@@ -2049,6 +2054,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("extract function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(intValue(1), intValue(2), intValue(3))
 
     //When, extract(bar IN $a | size($a)
@@ -2056,7 +2062,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                    function("size", parameter("a"))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(intValue(3), intValue(3), intValue(3)))
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(intValue(3), intValue(3), intValue(3)))
   }
 
   test("reduce function local access only") {
@@ -2109,6 +2115,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   test("reduce function accessing the same parameter in inner and outer") {
     //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(intValue(1), intValue(2), intValue(3))
 
     //When, reduce(count = 0, bar IN $a | count + size($a))
@@ -2116,7 +2123,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
                                   add(function("size", parameter("a")), varFor("count"))))
 
     //Then
-    compiled.evaluate(ctx, db, map(Array("a"), Array(list))) should equal(intValue(9))
+    compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(intValue(9))
   }
 
   private def path(size: Int) =
@@ -2179,7 +2186,7 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
   private def ands(es: Expression*) = Ands(es.toSet)(pos)
 
-  private def not(e: Expression) = Not(e)(pos)
+  private def not(e: Expression) = expressions.Not(e)(pos)
 
   private def equals(lhs: Expression, rhs: Expression) = Equals(lhs, rhs)(pos)
 

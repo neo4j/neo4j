@@ -211,7 +211,7 @@ case class CachedNodePropertyExists(cachedNodeProperty: Expression) extends Pred
 trait StringOperator {
   self: Predicate =>
   override def isMatch(m: ExecutionContext, state: QueryState) = (lhs(m, state), rhs(m, state)) match {
-    case (l: TextValue, r: TextValue) => Some(compare(l, r)
+    case (l: TextValue, r: TextValue) => Some(compare(l, r))
     case (_, _) => None
   }
 
@@ -271,7 +271,9 @@ case class RegularExpression(lhsExpr: Expression, regexExpr: Expression)
     val lValue = lhsExpr(m, state)
     val rValue = regexExpr(m, state)
     (lValue, rValue) match {
-      case (lhs: TextValue, rhs) if rhs != Values.NO_VALUE => Some(CypherBoolean.regex(lhs, rhs).booleanValue())
+      case (lhs: TextValue, rhs) if rhs != Values.NO_VALUE =>
+        val rhsAsRegexString = converter(CastSupport.castOrFail[TextValue](rhs))
+        Some(CypherBoolean.regex(lhs, rhsAsRegexString).booleanValue())
       case _ => None
     }
   }

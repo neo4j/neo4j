@@ -95,74 +95,24 @@ public final class CypherBoolean
         return compare ? FALSE : TRUE;
     }
 
-    public static Value regex( AnyValue lhs, AnyValue rhs )
+    public static BooleanValue regex( TextValue lhs, TextValue rhs )
     {
-        String regexString = CypherFunctions.asString( rhs );
-        if ( lhs instanceof TextValue )
+        String regexString = rhs.stringValue();
+        try
         {
-            try
-            {
-                boolean matches = Pattern.compile( regexString ).matcher( ((TextValue) lhs).stringValue() ).matches();
-                return matches ? TRUE : FALSE;
-            }
-            catch ( PatternSyntaxException e )
-            {
-                throw new InvalidSemanticsException( "Invalid Regex: " + e.getMessage() );
-            }
-        }
-        else
-        {
-            return NO_VALUE;
-        }
-    }
-
-    public static Value regex( AnyValue text, Pattern pattern )
-    {
-        if ( text instanceof TextValue )
-        {
-            boolean matches = pattern.matcher( ((TextValue) text).stringValue() ).matches();
+            boolean matches = Pattern.compile( regexString ).matcher( lhs.stringValue() ).matches();
             return matches ? TRUE : FALSE;
         }
-        else
+        catch ( PatternSyntaxException e )
         {
-            return NO_VALUE;
+            throw new InvalidSemanticsException( "Invalid Regex: " + e.getMessage() );
         }
     }
 
-    public static Value startsWith( AnyValue lhs, AnyValue rhs )
+    public static BooleanValue regex( TextValue text, Pattern pattern )
     {
-        if ( lhs instanceof TextValue && rhs instanceof TextValue )
-        {
-            return ((TextValue) lhs).stringValue().startsWith( ((TextValue) rhs).stringValue() ) ? TRUE : FALSE;
-        }
-        else
-        {
-            return NO_VALUE;
-        }
-    }
-
-    public static Value endsWith( AnyValue lhs, AnyValue rhs )
-    {
-        if ( lhs instanceof TextValue && rhs instanceof TextValue )
-        {
-            return ((TextValue) lhs).stringValue().endsWith( ((TextValue) rhs).stringValue() ) ? TRUE : FALSE;
-        }
-        else
-        {
-            return NO_VALUE;
-        }
-    }
-
-    public static Value contains( AnyValue lhs, AnyValue rhs )
-    {
-        if ( lhs instanceof TextValue && rhs instanceof TextValue )
-        {
-            return ((TextValue) lhs).stringValue().contains( ((TextValue) rhs).stringValue() ) ? TRUE : FALSE;
-        }
-        else
-        {
-            return NO_VALUE;
-        }
+        boolean matches = pattern.matcher( text.stringValue() ).matches();
+        return matches ? TRUE : FALSE;
     }
 
     public static Value lessThan( AnyValue lhs, AnyValue rhs )

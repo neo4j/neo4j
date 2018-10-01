@@ -251,5 +251,16 @@ object CodeGeneration {
 
     // (to) expressions
     case Cast(to, expression) => Expression.cast(to, compileExpression(expression, block))
+
+    //  expressions instance of t
+    case InstanceOf(typ, expression) => Expression.instanceOf(typ, compileExpression(expression, block))
+
+    case Not(test) => Expression.not(compileExpression(test, block))
+
+    case e@OneTime(inner) =>
+      if (!e.isUsed) {
+        e.use()
+        compileExpression(inner, block)
+      } else Expression.EMPTY
   }
 }

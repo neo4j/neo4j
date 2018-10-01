@@ -543,10 +543,7 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
     public void instanceOf( TypeReference type, Expression expression )
     {
         expression.accept( this );
-        if ( !type.equals( expression.type() ) )
-        {
-            methodVisitor.visitTypeInsn( INSTANCEOF, byteCodeName( type ) );
-        }
+        methodVisitor.visitTypeInsn( INSTANCEOF, byteCodeName( type ) );
     }
 
     @Override

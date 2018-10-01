@@ -177,6 +177,13 @@ case class Eq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) 
 case class NotEq(lhs: IntermediateRepresentation, rhs: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
+  * Defines  !test
+  *
+  * @param test the expression to check
+  */
+case class Not(test: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
   *
   */
 case class IsNull(test: IntermediateRepresentation) extends IntermediateRepresentation
@@ -293,6 +300,13 @@ case class GetStatic(owner: TypeReference, output: TypeReference, name: String) 
   */
 case class NewInstance(constructor: Constructor, params: Seq[IntermediateRepresentation]) extends IntermediateRepresentation
 
+case class OneTime(inner: IntermediateRepresentation)(private var used: Boolean) extends IntermediateRepresentation {
+  def isUsed: Boolean = used
+  def use(): Unit = {
+    used = true
+  }
+}
+
 /**
   * Defines a constructor
   * @param owner the owner of the constructor, or the object to be instantiated
@@ -310,6 +324,13 @@ case class Constructor(owner: TypeReference, params: Seq[TypeReference]) {
   * @param expression the expression to cast
   */
 case class Cast(to: TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
+
+/**
+  * Instance of check if the given expression has the given type
+  * @param typ does expression have this type
+  * @param expression the expression to check
+  */
+case class InstanceOf(typ: TypeReference, expression: IntermediateRepresentation) extends IntermediateRepresentation
 
 /**
   * Defines a method
@@ -389,6 +410,8 @@ object IntermediateRepresentation {
 
   def cast[TO](expression: IntermediateRepresentation)(implicit to: Manifest[TO]) = Cast(typeRef(to), expression)
 
+  def instanceOf[T](expression: IntermediateRepresentation)(implicit t: Manifest[T]) = InstanceOf(typeRef(t), expression)
+
   def loadField(field: Field): IntermediateRepresentation = LoadField(field)
 
   def setField(field: Field, value: IntermediateRepresentation): IntermediateRepresentation = SetField(field, value)
@@ -455,4 +478,8 @@ object IntermediateRepresentation {
   def isNull(test: IntermediateRepresentation): IntermediateRepresentation = IsNull(test)
 
   def newInstance(constructor: Constructor, params: IntermediateRepresentation*) = NewInstance(constructor, params)
+
+  def not(test: IntermediateRepresentation) = Not(test)
+
+  def oneTime(expression: IntermediateRepresentation) = OneTime(expression)(used = false)
 }
