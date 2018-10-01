@@ -2118,8 +2118,6 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiledFalse.evaluate(context, db, EMPTY_MAP) should equal(booleanValue(false))
   }
 
-
-
   test("extract function local access only") {
     //Given
     val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)

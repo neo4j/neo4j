@@ -703,14 +703,14 @@ public abstract class Expression extends ExpressionTemplate
         return cast( typeReference( type ), expression );
     }
 
-    public static Expression instanceOf( final TypeReference type, Expression expression )
+    public static Expression instanceOf( final TypeReference typeToCheck, Expression expression )
     {
-        return new Expression( type )
+        return new Expression( typeReference( boolean.class ) )
         {
             @Override
             public void accept( ExpressionVisitor visitor )
             {
-                visitor.instanceOf( type, expression );
+                visitor.instanceOf( typeToCheck, expression );
             }
         };
     }

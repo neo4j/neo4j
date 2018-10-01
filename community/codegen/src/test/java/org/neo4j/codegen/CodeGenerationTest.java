@@ -1724,9 +1724,9 @@ public class CodeGenerationTest
                                         innerTry -> innerTry.expression( invoke( run.load( "body" ), RUN ) ),
                                         catchBlock1 -> catchBlock1.expression( invoke( run.load( "catcher1" ),
                                                 RUN ) ),
-                                        param( MyFirstException.class, "E" ) ),
+                                        param( MyFirstException.class, "E1" ) ),
                         catchBlock2 -> catchBlock2.expression( invoke( run.load( "catcher2" ), RUN ) ),
-                        param( MySecondException.class, "E" ) );
+                        param( MySecondException.class, "E2" ) );
 
             }
             handle = simple.handle();

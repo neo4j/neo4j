@@ -1387,7 +1387,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def hasLabel(nodeVar: String, labelVar: String, predVar: String) = {
     val local = locals(predVar)
 
-    handleEntityNotFound(generator, fields, _finalizers) { inner =>
+    handleEntityNotFound(generator, fields, _finalizers, context.namer) { inner =>
       val invoked =
         invoke(
           methodReference(typeRef[CompiledCursorUtils],
@@ -1406,7 +1406,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   override def relType(relVar: String, typeVar: String) = {
     val variable = locals(typeVar)
     val typeOfRel = invoke(generator.load(relCursor(relVar)),  method[RelationshipSelectionCursor, Int]("type"))
-    handleKernelExceptions(generator, fields, _finalizers) { inner =>
+    handleKernelExceptions(generator, fields, _finalizers, context.namer) { inner =>
       val res = invoke(tokenRead, relationshipTypeGetName, typeOfRel)
       inner.assign(variable, res)
       generator.load(variable.name())
@@ -1434,7 +1434,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetPropertyForVar(nodeVar: String, nodeVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers, context.namer) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1450,7 +1450,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def nodeGetPropertyById(nodeVar: String, nodeVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers, context.namer) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1485,7 +1485,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relationshipGetPropertyForVar(relIdVar: String, relVarType: CodeGenType, propIdVar: String, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers, context.namer) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1501,7 +1501,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
 
   override def relationshipGetPropertyById(relIdVar: String, relVarType: CodeGenType, propId: Int, propValueVar: String) = {
     val local = locals(propValueVar)
-    handleEntityNotFound(generator, fields, _finalizers) { body =>
+    handleEntityNotFound(generator, fields, _finalizers, context.namer) { body =>
       body.assign(local,
                     invoke(
                       methodReference(typeRef[CompiledCursorUtils],
@@ -1538,7 +1538,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
       })
     val boxedValue =
       if (codeGenType.isPrimitive) Expression.box(value) else value
-    handleKernelExceptions(generator, fields, _finalizers) { body =>
+    handleKernelExceptions(generator, fields, _finalizers, context.namer) { body =>
       val index = body.load(indexReference)
       body.assign(local,
                   invoke(

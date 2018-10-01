@@ -36,6 +36,7 @@ import org.neo4j.cypher.internal.codegen.{PrimitiveNodeStream, PrimitiveRelation
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.Provider
 import org.opencypher.v9_0.frontend.helpers.using
 import org.neo4j.cypher.internal.javacompat.ResultRowImpl
+import org.neo4j.cypher.internal.runtime.compiled.codegen.Namer
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.{ExecutionMode, QueryContext, QueryTransactionalContext}
 import org.neo4j.cypher.internal.spi.codegen.Methods.{newNodeProxyById, newRelationshipProxyById}
@@ -109,7 +110,7 @@ object Templates {
     methodReference(typeRef[IntStream], typeRef[IntStream], "of", typeRef[Array[Int]]),
     Expression.newArray(typeRef[Int], values: _*))
 
-  def handleEntityNotFound[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
+  def handleEntityNotFound[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit], namer: Namer)
                              (happyPath: CodeBlock => V)(onFailure: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
 
@@ -120,13 +121,15 @@ object Templates {
         innerError.put(innerError.self(), fields.skip, Expression.constant(true))
         result = onFailure(innerError)
       }
-    }, param[EntityNotFoundException]("enf"))
+    }, param[EntityNotFoundException](namer.newVarName()))
     result
   }
 
-  def handleEntityNotFoundAndKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
+  def handleEntityNotFoundAndKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit], namer: Namer)
                                                 (happyPath: CodeBlock => V)(onFailure: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
+    val e1 = namer.newVarName()
+    val e2 = namer.newVarName()
     generate.tryCatch(new Consumer[CodeBlock] {
       override def accept(outerBody: CodeBlock): Unit = {
         outerBody.tryCatch(new Consumer[CodeBlock] {
@@ -136,7 +139,7 @@ object Templates {
             innerError.put(innerError.self(), fields.skip, Expression.constant(true))
             result = onFailure(innerError)
           }
-        }, param[EntityNotFoundException]("enf"))
+        }, param[EntityNotFoundException](e1))
       }
     },new Consumer[CodeBlock] {
       override def accept(handle: CodeBlock): Unit = {
@@ -145,22 +148,22 @@ object Templates {
           Expression.newInstance(typeRef[CypherExecutionException]),
           MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
           Expression
-            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+            .invoke(handle.load(e2), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
                       Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
                         .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
-                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load(e2)
         ))
       }
-    }, param[KernelException]("e"))
+    }, param[KernelException](e2))
     result
   }
 
-  def handleKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
+  def handleKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit], namer: Namer)
                          (block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
-
+    val e = namer.newVarName()
     generate.tryCatch(new Consumer[CodeBlock] {
       override def accept(body: CodeBlock) = {
         result = block(body)
@@ -172,15 +175,15 @@ object Templates {
           Expression.newInstance(typeRef[CypherExecutionException]),
           MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
           Expression
-            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
+            .invoke(handle.load(e), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
                     Expression.invoke(
                       Expression.newInstance(typeRef[SilentTokenNameLookup]),
                       MethodReference
                         .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
-                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
+                      Expression.get(handle.self(), fields.tokenRead))), handle.load(e)
         ))
       }
-    }, param[KernelException]("e"))
+    }, param[KernelException](e))
 
     result
   }
