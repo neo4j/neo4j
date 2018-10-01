@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import org.junit.jupiter.api.Test;
 
+
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -153,6 +154,23 @@ class UTF8StringValueTest
         assertSame( textValue, stringValue( "de" ) );
         assertThat( textValue.length(), equalTo( stringValue( "de" ).length() ) );
         assertSame( textValue.reverse(), stringValue( "ed" ) );
+    }
+
+    @Test
+    public void shouldHandleAdditionWithOffset()
+    {
+        // Given
+        byte[] bytes = "abcdefg".getBytes( UTF_8 );
+
+        // When
+        UTF8StringValue a = (UTF8StringValue) utf8Value( bytes, 1, 2 );
+        UTF8StringValue b = (UTF8StringValue) utf8Value( bytes, 3, 3 );
+
+        // Then
+       assertSame( a.plus( a ),  stringValue( "bcbc" ) );
+       assertSame( a.plus( b ), stringValue( "bcdef" ) );
+       assertSame( b.plus( a ), stringValue( "defbc" ) );
+       assertSame( b.plus( b ), stringValue( "defdef" ) );
     }
 
     private void assertSame( TextValue lhs, TextValue rhs )
