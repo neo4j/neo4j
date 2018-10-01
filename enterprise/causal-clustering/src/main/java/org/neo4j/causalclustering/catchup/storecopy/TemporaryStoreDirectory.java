@@ -40,6 +40,7 @@ public class TemporaryStoreDirectory implements AutoCloseable
     private final DatabaseLayout tempDatabaseLayout;
     private final StoreFiles storeFiles;
     private LogFiles tempLogFiles;
+    private boolean keepStore;
 
     public TemporaryStoreDirectory( FileSystemAbstraction fs, PageCache pageCache, File parent ) throws IOException
     {
@@ -60,9 +61,17 @@ public class TemporaryStoreDirectory implements AutoCloseable
         return tempDatabaseLayout;
     }
 
+    void keepStore()
+    {
+        this.keepStore = true;
+    }
+
     @Override
     public void close() throws IOException
     {
-        storeFiles.delete( tempStoreDir, tempLogFiles );
+        if ( !keepStore )
+        {
+            storeFiles.delete( tempStoreDir, tempLogFiles );
+        }
     }
 }

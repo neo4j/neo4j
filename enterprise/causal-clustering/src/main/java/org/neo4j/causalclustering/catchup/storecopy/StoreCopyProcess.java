@@ -58,7 +58,19 @@ public class StoreCopyProcess
         {
             remoteStore.copy( addressProvider, expectedStoreId, tempStore.databaseLayout(),
                     false );
-            copiedStoreRecovery.recoverCopiedStore( tempStore.databaseLayout() );
+            try
+            {
+                copiedStoreRecovery.recoverCopiedStore( tempStore.databaseLayout() );
+            }
+            catch ( Throwable e )
+            {
+                /*
+                 * We keep the store until the next store copy attempt. If the exception
+                 * is fatal then the store will stay around for potential forensics.
+                 */
+                tempStore.keepStore();
+                throw e;
+            }
             localDatabase.replaceWith( tempStore.databaseLayout().databaseDirectory() );
         }
         log.info( "Replaced store successfully" );
