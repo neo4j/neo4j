@@ -335,6 +335,13 @@
                   <old>field org.neo4j.graphdb.InputPosition.empty</old>
                   <justification>Changes to this field should not be allowed</justification>
                 </item>
+                <item>
+                  <code>java.class.externalClassExposedInAPI</code>
+                  <new>class org.neo4j.helpers.HostnamePort</new>
+                  <package>org.neo4j.helpers</package>
+                  <classQualifiedName>org.neo4j.helpers.HostnamePort</classQualifiedName>
+                  <justification>This is meant to be exposed</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
