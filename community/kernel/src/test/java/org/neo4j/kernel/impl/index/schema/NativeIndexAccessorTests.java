@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
@@ -87,7 +86,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     private static final int N_VALUES = 10;
-    NativeIndexAccessor<KEY,VALUE> accessor;
+    private NativeIndexAccessor<KEY,VALUE> accessor;
 
     @Rule
     public ExpectedException expected = ExpectedException.none();
@@ -215,6 +214,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             applyUpdatesToExpectedData( expectedData, batch );
             // verifyUpdates
             forceAndCloseAccessor();
+            //noinspection unchecked
             verifyUpdates( expectedData.toArray( new IndexEntryUpdate[0] ) );
             setupAccessor();
         }
@@ -961,7 +961,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     @SafeVarargs
-    final void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
+    private final void processAll( IndexEntryUpdate<IndexDescriptor>... updates )
             throws IndexEntryConflictException
     {
         try ( IndexUpdater updater = accessor.newUpdater( ONLINE ) )
@@ -996,7 +996,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
     {
         RandomValues.Type type = random.randomValues().among( valueCreatorUtil.supportedTypes() );
-        return someUpdatesOfTypes( true, type );
+        return valueCreatorUtil.someUpdates( random, new RandomValues.Type[]{type}, true );
     }
 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates()
@@ -1013,31 +1013,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             type = random.randomValues().among( types );
         }
         while ( type == RandomValues.Type.BOOLEAN );
-        return someUpdatesOfTypes( false, type );
-    }
-
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates()
-    {
-        return someUpdatesOfTypes( true, valueCreatorUtil.supportedTypes() );
-    }
-
-    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesOfTypes( boolean allowDuplicates, RandomValues.Type... types )
-    {
-        if ( types.length < 1 )
-        {
-            throw new IllegalArgumentException( "Need at least one type, was " + Arrays.toString( types ) );
-        }
-        Value[] values = new Value[N_VALUES];
-        int i = 0;
-        while ( i < N_VALUES )
-        {
-            Value value = random.randomValues().nextValueOfTypes( types );
-            if ( allowDuplicates || !ArrayUtils.contains( values, value ) )
-            {
-                values[i++] = value;
-            }
-        }
-        return valueCreatorUtil.generateAddUpdatesFor( values );
+        return valueCreatorUtil.someUpdates( random, new RandomValues.Type[]{type}, false );
     }
 
     private RandomValues.Type[] supportedTypesExcludingNonOrderable()

@@ -51,18 +51,18 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
 
     final StoreIndexDescriptor indexDescriptor;
     private final RandomValues.Type[] supportedTypes;
-    private final double fractionDuplication;
+    private final double fractionDuplicates;
 
     ValueCreatorUtil( ValueCreatorUtil delegate )
     {
-        this( delegate.indexDescriptor, delegate.supportedTypes, delegate.fractionDuplication );
+        this( delegate.indexDescriptor, delegate.supportedTypes, delegate.fractionDuplicates );
     }
 
-    ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, RandomValues.Type[] supportedTypes, double fractionDuplication )
+    ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, RandomValues.Type[] supportedTypes, double fractionDuplicates )
     {
         this.indexDescriptor = indexDescriptor;
         this.supportedTypes = supportedTypes;
-        this.fractionDuplication = fractionDuplication;
+        this.fractionDuplicates = fractionDuplicates;
     }
 
     int compareIndexedPropertyValue( KEY key1, KEY key2 )
@@ -75,9 +75,9 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return supportedTypes;
     }
 
-    double fractionDuplicates()
+    private double fractionDuplicates()
     {
-        return fractionDuplication;
+        return fractionDuplicates;
     }
 
     IndexQuery rangeQuery( Value from, boolean fromInclusive, Value to, boolean toInclusive )
@@ -92,7 +92,19 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
 
     IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule randomRule )
     {
-        Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator = randomUpdateGenerator( randomRule );
+        return someUpdates( randomRule, supportedTypes(), fractionDuplicates() );
+    }
+
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, RandomValues.Type[] types, boolean allowDuplicates )
+    {
+        double fractionDuplicates = allowDuplicates ? FRACTION_DUPLICATE_NON_UNIQUE : FRACTION_DUPLICATE_UNIQUE;
+        return someUpdates( random, types, fractionDuplicates );
+    }
+
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, RandomValues.Type[] types, double fractionDuplicates )
+    {
+        RandomValueGenerator valueGenerator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates );
+        RandomUpdateGenerator randomUpdateGenerator = new RandomUpdateGenerator( valueGenerator );
         //noinspection unchecked
         IndexEntryUpdate<IndexDescriptor>[] result = new IndexEntryUpdate[N_VALUES];
         for ( int i = 0; i < N_VALUES; i++ )
@@ -102,28 +114,21 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return result;
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
-    {
-        Iterator<Value> valueIterator = randomValueGenerator( randomRule );
-        return new RandomUpdateGenerator( valueIterator );
-    }
-
-    private Iterator<Value> randomValueGenerator( RandomRule randomRule )
-    {
-        RandomValues randomValues = randomRule.randomValues();
-        double fractionDuplicates = fractionDuplicates();
-        return new RandomValueGenerator( fractionDuplicates, randomValues );
-    }
-
     IndexEntryUpdate<IndexDescriptor>[] someUpdatesWithDuplicateValues( RandomRule randomRule )
     {
-        Iterator<Value> valueIterator = randomValueGenerator( randomRule );
+        Iterator<Value> valueIterator = new RandomValueGenerator( randomRule.randomValues(), supportedTypes(), fractionDuplicates() );
         Value[] someValues = new Value[N_VALUES];
         for ( int i = 0; i < N_VALUES; i++ )
         {
             someValues[i] = valueIterator.next();
         }
         return generateAddUpdatesFor( ArrayUtils.addAll( someValues, someValues ) );
+    }
+
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
+    {
+        Iterator<Value> valueIterator = new RandomValueGenerator( randomRule.randomValues(), supportedTypes(), fractionDuplicates() );
+        return new RandomUpdateGenerator( valueIterator );
     }
 
     IndexEntryUpdate<IndexDescriptor>[] generateAddUpdatesFor( Value[] values )
@@ -179,11 +184,13 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     {
         private final Set<Value> uniqueCompareValues;
         private final List<Value> uniqueValues;
+        private final RandomValues.Type[] types;
         private final double fractionDuplicates;
         private final RandomValues randomValues;
 
-        RandomValueGenerator( double fractionDuplicates, RandomValues randomValues )
+        RandomValueGenerator( RandomValues randomValues, RandomValues.Type[] types, double fractionDuplicates )
         {
+            this.types = types;
             this.fractionDuplicates = fractionDuplicates;
             this.randomValues = randomValues;
             this.uniqueCompareValues = new HashSet<>();
@@ -212,7 +219,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
             Value value;
             do
             {
-                value = random.nextValueOfTypes( supportedTypes() );
+                value = random.nextValueOfTypes( types );
             }
             while ( !uniqueCompareValues.add( value ) );
             uniqueValues.add( value );
