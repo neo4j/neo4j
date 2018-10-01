@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -41,6 +42,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
@@ -54,9 +56,12 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertArrayEquals;
@@ -85,7 +90,6 @@ import static org.neo4j.values.storable.Values.of;
 public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         extends NativeIndexTestUtil<KEY,VALUE>
 {
-    private static final int N_VALUES = 10;
     private NativeIndexAccessor<KEY,VALUE> accessor;
 
     @Rule
@@ -98,6 +102,8 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     }
 
     abstract NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException;
+
+    abstract IndexCapability indexCapability();
 
     @After
     public void closeAccessor()
@@ -726,65 +732,81 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         assertFalse( iter.hasNext() );
     }
 
-    // TODO IndexOrder tests copied from old NumberIndexAccessor test, to be implemented generically
-//    @Test
-//    public void respectIndexOrder() throws Exception
-//    {
-//        // given
-//        IndexEntryUpdate<IndexDescriptor>[] someUpdates = someUpdates();
-//        processAll( someUpdates );
-//        Value[] expectedValues = valueCreatorUtil.extractValuesFromUpdates( someUpdates );
-//
-//        // when
-//        IndexReader reader = accessor.newReader();
-//        IndexQuery.RangePredicate<?> supportedQuery =
-//                IndexQuery.range( 0, Double.NEGATIVE_INFINITY, true, Double.POSITIVE_INFINITY, true );
-//
-//        for ( IndexOrder supportedOrder : NumberIndexProvider.CAPABILITY.orderCapability( ValueCategory.NUMBER ) )
-//        {
-//            if ( supportedOrder == IndexOrder.ASCENDING )
-//            {
-//                Arrays.sort( expectedValues, Values.COMPARATOR );
-//            }
-//            if ( supportedOrder == IndexOrder.DESCENDING )
-//            {
-//                Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
-//            }
-//
-//            SimpleNodeValueClient client = new SimpleNodeValueClient();
-//            reader.query( client, supportedOrder, client.needsValues(), supportedQuery );
-//            int i = 0;
-//            while ( client.next() )
-//            {
-//                assertEquals( "values in order", expectedValues[i++], client.values[0] );
-//            }
-//            assertEquals( "found all values", i, expectedValues.length );
-//        }
-//    }
-//
-//    // <READER ordering>
-//
-//    @Test
-//    public void throwForUnsupportedIndexOrder() throws Exception
-//    {
-//        // given
-//        // Unsupported index order for query
-//        IndexReader reader = accessor.newReader();
-//        IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
-//        IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, "Legolas" );
-//
-//        // then
-//        expected.expect( UnsupportedOperationException.class );
-//        expected.expectMessage( CoreMatchers.allOf(
-//                CoreMatchers.containsString( "unsupported order" ),
-//                CoreMatchers.containsString( unsupportedOrder.toString() ),
-//                CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
-//
-//        // when
-//        reader.query( new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery );
-//    }
-//
-//    // </READER ordering>
+    // <READER ordering>
+
+    @Test
+    public void respectIndexOrder() throws Exception
+    {
+        // given
+        int nUpdates = 10000;
+        RandomValues.Type[] types = supportedTypesExcludingNonOrderable();
+        Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator =
+                valueCreatorUtil.randomUpdateGenerator( random, types );
+        //noinspection unchecked
+        IndexEntryUpdate<IndexDescriptor>[] someUpdates = new IndexEntryUpdate[nUpdates];
+        for ( int i = 0; i < nUpdates; i++ )
+        {
+            someUpdates[i] = randomUpdateGenerator.next();
+        }
+        processAll( someUpdates );
+        Value[] allValues = valueCreatorUtil.extractValuesFromUpdates( someUpdates );
+
+        // when
+        IndexReader reader = accessor.newReader();
+        ValueGroup valueGroup = random.among( allValues ).valueGroup();
+        IndexQuery.RangePredicate<?> supportedQuery = IndexQuery.range( 0, valueGroup );
+
+        IndexOrder[] supportedOrders = indexCapability().orderCapability( valueGroup.category() );
+        for ( IndexOrder supportedOrder : supportedOrders )
+        {
+            if ( supportedOrder == IndexOrder.NONE )
+            {
+                continue;
+            }
+            Value[] expectedValues = Arrays.stream( allValues )
+                    .filter( v -> v.valueGroup() == valueGroup )
+                    .toArray( Value[]::new );
+            if ( supportedOrder == IndexOrder.ASCENDING )
+            {
+                Arrays.sort( expectedValues, Values.COMPARATOR );
+            }
+            if ( supportedOrder == IndexOrder.DESCENDING )
+            {
+                Arrays.sort( expectedValues, Values.COMPARATOR.reversed() );
+            }
+
+            SimpleNodeValueClient client = new SimpleNodeValueClient();
+            reader.query( client, supportedOrder, true, supportedQuery );
+            int i = 0;
+            while ( client.next() )
+            {
+                assertEquals( "values in order", expectedValues[i++], client.values[0] );
+            }
+            assertEquals( "found all values", i, expectedValues.length );
+        }
+    }
+
+    @Test
+    public void throwForUnsupportedIndexOrder() throws Exception
+    {
+        // given
+        // Unsupported index order for query
+        IndexReader reader = accessor.newReader();
+        IndexOrder unsupportedOrder = IndexOrder.DESCENDING;
+        IndexQuery.ExactPredicate unsupportedQuery = IndexQuery.exact( 0, PointValue.MAX_VALUE ); // <- Any spatial value would do
+
+        // then
+        expected.expect( UnsupportedOperationException.class );
+        expected.expectMessage( CoreMatchers.allOf(
+                CoreMatchers.containsString( "unsupported order" ),
+                CoreMatchers.containsString( unsupportedOrder.toString() ),
+                CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
+
+        // when
+        reader.query( new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery );
+    }
+
+    // </READER ordering>
 
     private Value generateUniqueValue( IndexEntryUpdate<IndexDescriptor>[] updates )
     {

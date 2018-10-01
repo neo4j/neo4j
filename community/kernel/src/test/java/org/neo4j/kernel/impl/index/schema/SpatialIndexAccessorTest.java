@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.gis.spatial.index.curves.StandardConfiguration;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -52,6 +53,12 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
         spatialFile = new SpatialIndexFiles.SpatialFile( CoordinateReferenceSystem.WGS84, configuredSettings, super.getIndexFile() );
         return new SpatialIndexAccessor.PartAccessor( pageCache, fs, spatialFile.getLayoutForNewIndex(), immediate(), monitor, indexDescriptor,
                 new StandardConfiguration() );
+    }
+
+    @Override
+    IndexCapability indexCapability()
+    {
+        return SpatialIndexProvider.CAPABILITY;
     }
 
     @Override
@@ -150,5 +157,10 @@ public class SpatialIndexAccessorTest extends NativeIndexAccessorTests<SpatialIn
     public void shouldReturnNoEntriesForRangePredicateOutsideAnyMatch()
     {
         // Accidental hits outside range is handled via a postfilter for spatial
+    }
+
+    @Override
+    public void respectIndexOrder()
+    {   // Spatial is non-orderable so test does not make sense
     }
 }

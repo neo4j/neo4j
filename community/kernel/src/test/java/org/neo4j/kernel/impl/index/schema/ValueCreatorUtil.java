@@ -127,7 +127,12 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
 
     Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule randomRule )
     {
-        Iterator<Value> valueIterator = new RandomValueGenerator( randomRule.randomValues(), supportedTypes(), fractionDuplicates() );
+        return randomUpdateGenerator( randomRule, supportedTypes() );
+    }
+
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random, RandomValues.Type[] types )
+    {
+        Iterator<Value> valueIterator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates() );
         return new RandomUpdateGenerator( valueIterator );
     }
 
