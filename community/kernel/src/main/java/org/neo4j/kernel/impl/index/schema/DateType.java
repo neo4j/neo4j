@@ -37,25 +37,25 @@ class DateType extends Type
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return GenericKeyState.SIZE_DATE;
+        return GenericKey.SIZE_DATE;
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from )
+    void copyValue( GenericKey to, GenericKey from )
     {
         to.long0 = from.long0;
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         return asValue( state.long0 );
     }
 
     @Override
-    int compareValue( GenericKeyState left, GenericKeyState right )
+    int compareValue( GenericKey left, GenericKey right )
     {
         return compare(
                 left.long0,
@@ -63,13 +63,13 @@ class DateType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         put( cursor, state.long0 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         return read( cursor, into );
     }
@@ -94,13 +94,13 @@ class DateType extends Type
         cursor.putLong( long0 );
     }
 
-    static boolean read( PageCursor cursor, GenericKeyState into )
+    static boolean read( PageCursor cursor, GenericKey into )
     {
         into.writeDate( cursor.getLong() );
         return true;
     }
 
-    void write( GenericKeyState state, long epochDay )
+    void write( GenericKey state, long epochDay )
     {
         state.long0 = epochDay;
     }

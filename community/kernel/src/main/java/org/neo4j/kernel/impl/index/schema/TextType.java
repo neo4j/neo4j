@@ -25,11 +25,11 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_STRING_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.TRUE;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.setCursorException;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.toNonNegativeShortExact;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_STRING_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.toNonNegativeShortExact;
 import static org.neo4j.kernel.impl.index.schema.StringIndexKey.lexicographicalUnsignedByteArrayCompare;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
@@ -56,13 +56,13 @@ class TextType extends Type
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
         return textKeySize( state.long0 );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from )
+    void copyValue( GenericKey to, GenericKey from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
@@ -73,7 +73,7 @@ class TextType extends Type
     }
 
     @Override
-    void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         int length = 0;
         if ( left.type == Types.TEXT )
@@ -84,7 +84,7 @@ class TextType extends Type
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         // There's a difference between composing a single text value and a array text values
         // and there's therefore no common "raw" variant of it
@@ -105,7 +105,7 @@ class TextType extends Type
     }
 
     @Override
-    int compareValue( GenericKeyState left, GenericKeyState right )
+    int compareValue( GenericKey left, GenericKey right )
     {
         return compare(
                 left.byteArray, left.long0, left.long2, left.long3,
@@ -113,13 +113,13 @@ class TextType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         put( cursor, state.byteArray, state.long0, state.long2 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         return read( cursor, size, into );
     }
@@ -169,7 +169,7 @@ class TextType extends Type
         cursor.putBytes( byteArray, 0, length );
     }
 
-    static boolean read( PageCursor cursor, int maxSize, GenericKeyState into )
+    static boolean read( PageCursor cursor, int maxSize, GenericKey into )
     {
         // For performance reasons cannot be redirected to writeString, due to byte[] reuse
         short rawLength = cursor.getShort();
@@ -188,7 +188,7 @@ class TextType extends Type
         return true;
     }
 
-    static void setCharType( GenericKeyState into, boolean isCharType )
+    static void setCharType( GenericKey into, boolean isCharType )
     {
         if ( isCharType )
         {
@@ -210,7 +210,7 @@ class TextType extends Type
         return booleanOf( long2 >> 1 );
     }
 
-    void write( GenericKeyState state, byte[] bytes, boolean isCharType )
+    void write( GenericKey state, byte[] bytes, boolean isCharType )
     {
         state.byteArray = bytes;
         state.long0 = bytes.length;
@@ -218,7 +218,7 @@ class TextType extends Type
     }
 
     @Override
-    void initializeAsHighest( GenericKeyState state )
+    void initializeAsHighest( GenericKey state )
     {
         super.initializeAsHighest( state );
         state.long3 = TRUE;
@@ -234,7 +234,7 @@ class TextType extends Type
         return (char) codePoint;
     }
 
-    private static void setBytesLength( GenericKeyState state, int length )
+    private static void setBytesLength( GenericKey state, int length )
     {
         if ( booleanOf( state.long1 ) || state.byteArray == null || state.byteArray.length < length )
         {

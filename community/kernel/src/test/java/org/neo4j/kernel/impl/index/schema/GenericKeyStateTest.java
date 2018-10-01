@@ -137,7 +137,7 @@ class GenericKeyStateTest
     {
         // Given
         PageCursor cursor = newPageCursor();
-        GenericKeyState writeState = newKeyState();
+        GenericKey writeState = newKeyState();
         Value value = valueGenerator.next();
         int offset = cursor.getOffset();
 
@@ -146,8 +146,8 @@ class GenericKeyStateTest
         writeState.put( cursor );
 
         // Then
-        GenericKeyState readState = newKeyState();
-        int size = writeState.stateSize();
+        GenericKey readState = newKeyState();
+        int size = writeState.size();
         cursor.setOffset( offset );
         assertTrue( readState.get( cursor, size ), "failed to read" );
         assertEquals( 0, readState.compareValueTo( writeState ), "key states are not equal" );
@@ -160,10 +160,10 @@ class GenericKeyStateTest
     void copyShouldCopy( ValueGenerator valueGenerator )
     {
         // Given
-        GenericKeyState from = newKeyState();
+        GenericKey from = newKeyState();
         Value value = valueGenerator.next();
         from.writeValue( value, NEUTRAL );
-        GenericKeyState to = genericKeyStateWithSomePreviousState( valueGenerator );
+        GenericKey to = genericKeyStateWithSomePreviousState( valueGenerator );
 
         // When
         to.copyFrom( from );
@@ -176,8 +176,8 @@ class GenericKeyStateTest
     void copyShouldCopyExtremeValues()
     {
         // Given
-        GenericKeyState extreme = newKeyState();
-        GenericKeyState copy = newKeyState();
+        GenericKey extreme = newKeyState();
+        GenericKey copy = newKeyState();
 
         for ( ValueGroup valueGroup : ValueGroup.values() )
         {
@@ -200,19 +200,19 @@ class GenericKeyStateTest
         // Given
         random.reset();
         List<Value> values = new ArrayList<>();
-        List<GenericKeyState> states = new ArrayList<>();
+        List<GenericKey> states = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
         {
             Value value = valueGenerator.next();
             values.add( value );
-            GenericKeyState state = newKeyState();
+            GenericKey state = newKeyState();
             state.writeValue( value, NEUTRAL );
             states.add( state );
         }
 
         // When
         values.sort( COMPARATOR );
-        states.sort( GenericKeyState::compareValueTo );
+        states.sort( GenericKey::compareValueTo );
 
         // Then
         for ( int i = 0; i < values.size(); i++ )
@@ -257,12 +257,12 @@ class GenericKeyStateTest
         // Given
         PageCursor cursor = newPageCursor();
         Value value = valueGenerator.next();
-        GenericKeyState state = newKeyState();
+        GenericKey state = newKeyState();
         state.writeValue( value, NEUTRAL );
         int offsetBefore = cursor.getOffset();
 
         // When
-        int reportedSize = state.stateSize();
+        int reportedSize = state.size();
         state.put( cursor );
         int offsetAfter = cursor.getOffset();
 
@@ -393,7 +393,7 @@ class GenericKeyStateTest
     {
         // Given a value that we dereference
         Value srcValue = Values.utf8Value( "First string".getBytes( StandardCharsets.UTF_8 ) );
-        GenericKeyState genericKeyState = newKeyState();
+        GenericKey genericKeyState = newKeyState();
         genericKeyState.writeValue( srcValue, NEUTRAL );
         Value dereferencedValue = genericKeyState.asValue();
         assertEquals( srcValue, dereferencedValue );
@@ -437,7 +437,7 @@ class GenericKeyStateTest
     private void shouldReadBackToExactOriginalValue( Value srcValue )
     {
         // given
-        GenericKeyState state = newKeyState();
+        GenericKey state = newKeyState();
         state.clear();
         state.writeValue( srcValue, NEUTRAL );
         Value retrievedValueAfterWrittenToState = state.asValue();
@@ -479,9 +479,9 @@ class GenericKeyStateTest
 
     private void assertHighest( Value value )
     {
-        GenericKeyState highestOfAll = newKeyState();
-        GenericKeyState highestInValueGroup = newKeyState();
-        GenericKeyState other = newKeyState();
+        GenericKey highestOfAll = newKeyState();
+        GenericKey highestInValueGroup = newKeyState();
+        GenericKey other = newKeyState();
         highestOfAll.initValueAsHighest( ValueGroup.UNKNOWN );
         highestInValueGroup.initValueAsHighest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -493,9 +493,9 @@ class GenericKeyStateTest
 
     private void assertLowest( Value value )
     {
-        GenericKeyState lowestOfAll = newKeyState();
-        GenericKeyState lowestInValueGroup = newKeyState();
-        GenericKeyState other = newKeyState();
+        GenericKey lowestOfAll = newKeyState();
+        GenericKey lowestInValueGroup = newKeyState();
+        GenericKey other = newKeyState();
         lowestOfAll.initValueAsLowest( ValueGroup.UNKNOWN );
         lowestInValueGroup.initValueAsLowest( value.valueGroup() );
         other.writeValue( value, NEUTRAL );
@@ -511,13 +511,13 @@ class GenericKeyStateTest
 
     private void assertValidMinimalSplitter( Value left, Value right )
     {
-        GenericKeyState leftState = newKeyState();
+        GenericKey leftState = newKeyState();
         leftState.writeValue( left, NEUTRAL );
-        GenericKeyState rightState = newKeyState();
+        GenericKey rightState = newKeyState();
         rightState.writeValue( right, NEUTRAL );
 
-        GenericKeyState minimalSplitter = newKeyState();
-        GenericKeyState.minimalSplitter( leftState, rightState, minimalSplitter );
+        GenericKey minimalSplitter = newKeyState();
+        rightState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertTrue( leftState.compareValueTo( minimalSplitter ) < 0,
                 "left state not less than minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
@@ -527,13 +527,13 @@ class GenericKeyStateTest
 
     private void assertValidMinimalSplitterForEqualValues( Value value )
     {
-        GenericKeyState leftState = newKeyState();
+        GenericKey leftState = newKeyState();
         leftState.writeValue( value, NEUTRAL );
-        GenericKeyState rightState = newKeyState();
+        GenericKey rightState = newKeyState();
         rightState.writeValue( value, NEUTRAL );
 
-        GenericKeyState minimalSplitter = newKeyState();
-        GenericKeyState.minimalSplitter( leftState, rightState, minimalSplitter );
+        GenericKey minimalSplitter = newKeyState();
+        rightState.minimalSplitter( leftState, rightState, minimalSplitter );
 
         assertEquals( 0, leftState.compareValueTo( minimalSplitter ),
                 "left state not equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
@@ -625,9 +625,9 @@ class GenericKeyStateTest
         return Stream.of( listValueGenerators( false ) );
     }
 
-    private GenericKeyState genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
+    private GenericKey genericKeyStateWithSomePreviousState( ValueGenerator valueGenerator )
     {
-        GenericKeyState to = newKeyState();
+        GenericKey to = newKeyState();
         if ( random.nextBoolean() )
         {
             // Previous value
@@ -644,9 +644,9 @@ class GenericKeyStateTest
         return ByteArrayPageCursor.wrap( PageCache.PAGE_SIZE );
     }
 
-    private GenericKeyState newKeyState()
+    private GenericKey newKeyState()
     {
-        return new GenericKeyState( noSpecificIndexSettings );
+        return new GenericKey( noSpecificIndexSettings );
     }
 
     @FunctionalInterface

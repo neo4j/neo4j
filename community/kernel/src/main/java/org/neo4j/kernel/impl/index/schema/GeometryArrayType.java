@@ -65,14 +65,14 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return GenericKeyState.SIZE_GEOMETRY_HEADER +
-                arrayKeySize( state, GenericKeyState.SIZE_GEOMETRY + dimensions( state ) * GenericKeyState.SIZE_GEOMETRY_COORDINATE );
+        return GenericKey.SIZE_GEOMETRY_HEADER +
+                arrayKeySize( state, GenericKey.SIZE_GEOMETRY + dimensions( state ) * GenericKey.SIZE_GEOMETRY_COORDINATE );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -86,7 +86,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
 
@@ -101,7 +101,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         assertHasCoordinates( state );
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
@@ -115,7 +115,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
         int dimensions = dimensions( state );
@@ -123,21 +123,21 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         readCrs( cursor, into );
         return readArray( cursor, ValueWriter.ArrayType.POINT, GeometryArrayType::readGeometryArrayItem, into );
     }
 
     @Override
-    String toString( GenericKeyState state )
+    String toString( GenericKey state )
     {
         return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s]",
                 state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ) );
     }
 
     @Override
-    void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         super.minimalSplitter( left, right, into );
         // Set dimensions to 0 so that minimal splitters (i.e. point keys in internal nodes) doesn't have coordinate data,
@@ -145,7 +145,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         into.long3 = 0;
     }
 
-    private static boolean readGeometryArrayItem( PageCursor cursor, GenericKeyState into )
+    private static boolean readGeometryArrayItem( PageCursor cursor, GenericKey into )
     {
         into.long0Array[into.currentArrayOffset] = cursor.getLong();
         int dimensions = dimensions( into );
@@ -162,7 +162,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         return true;
     }
 
-    void write( GenericKeyState state, int offset, long derivedSpaceFillingCurveValue, double[] coordinates )
+    void write( GenericKey state, int offset, long derivedSpaceFillingCurveValue, double[] coordinates )
     {
         state.long0Array[offset] = derivedSpaceFillingCurveValue;
         if ( offset == 0 )

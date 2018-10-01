@@ -43,13 +43,13 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, GenericKeyState.SIZE_DURATION );
+        return arrayKeySize( state, GenericKey.SIZE_DURATION );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -59,7 +59,7 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.long1Array = ensureBigEnough( key.long1Array, length );
@@ -67,7 +67,7 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
         key.long3Array = ensureBigEnough( key.long3Array, length );
     }
 
-    void write( GenericKeyState state, int offset, long months, long days, long totalAvgSeconds, int nanos )
+    void write( GenericKey state, int offset, long months, long days, long totalAvgSeconds, int nanos )
     {
         state.long0Array[offset] = totalAvgSeconds;
         state.long1Array[offset] = nanos;

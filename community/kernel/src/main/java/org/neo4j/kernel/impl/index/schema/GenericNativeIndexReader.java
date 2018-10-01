@@ -159,8 +159,8 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                     // the original geometry range have been split up into multiple sub-ranges and this invocation is for one of those sub-ranges.
                     // We can not take query inclusion / exclusion into consideration here because then we risk missing border values. Always use
                     // Inclusion.LOW / HIGH respectively and filter out points later on.
-                    treeKeyFrom.initFromDerivedSpatialValue( i, crs, range.min, LOW );
-                    treeKeyTo.initFromDerivedSpatialValue( i, crs, range.max + 1, HIGH );
+                    treeKeyFrom.stateSlot( i ).writePointDerived( crs, range.min, LOW );
+                    treeKeyTo.stateSlot( i ).writePointDerived( crs, range.max + 1, HIGH );
                 }
                 else
                 {
@@ -171,8 +171,8 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                 break;
             case stringPrefix:
                 StringPrefixPredicate prefixPredicate = (StringPrefixPredicate) predicate;
-                treeKeyFrom.initAsPrefixLow( i, prefixPredicate.prefix() );
-                treeKeyTo.initAsPrefixHigh( i, prefixPredicate.prefix() );
+                treeKeyFrom.stateSlot( i ).initAsPrefixLow( prefixPredicate.prefix() );
+                treeKeyTo.stateSlot( i ).initAsPrefixHigh( prefixPredicate.prefix() );
                 break;
             case stringSuffix:
             case stringContains:

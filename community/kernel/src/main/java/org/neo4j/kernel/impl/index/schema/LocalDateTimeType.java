@@ -38,26 +38,26 @@ class LocalDateTimeType extends Type
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return GenericKeyState.SIZE_LOCAL_DATE_TIME;
+        return GenericKey.SIZE_LOCAL_DATE_TIME;
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from )
+    void copyValue( GenericKey to, GenericKey from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         return asValue( state.long0, state.long1 );
     }
 
     @Override
-    int compareValue( GenericKeyState left, GenericKeyState right )
+    int compareValue( GenericKey left, GenericKey right )
     {
         return compare(
                 left.long0, left.long1,
@@ -65,13 +65,13 @@ class LocalDateTimeType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         put( cursor, state.long0, state.long1 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         return read( cursor, into );
     }
@@ -92,7 +92,7 @@ class LocalDateTimeType extends Type
         cursor.putInt( (int) long0 );
     }
 
-    static boolean read( PageCursor cursor, GenericKeyState into )
+    static boolean read( PageCursor cursor, GenericKey into )
     {
         into.writeLocalDateTime( cursor.getLong(), cursor.getInt() );
         return true;
@@ -110,7 +110,7 @@ class LocalDateTimeType extends Type
         return compare;
     }
 
-    void write( GenericKeyState state, long epochSecond, int nano )
+    void write( GenericKey state, long epochSecond, int nano )
     {
         state.long0 = nano;
         state.long1 = epochSecond;

@@ -40,25 +40,25 @@ class LocalTimeArrayType extends AbstractArrayType<LocalTime>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, GenericKeyState.SIZE_LOCAL_TIME );
+        return arrayKeySize( state, GenericKey.SIZE_LOCAL_TIME );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
-    void write( GenericKeyState state, int offset, long nanoOfDay )
+    void write( GenericKey state, int offset, long nanoOfDay )
     {
         state.long0Array[offset] = nanoOfDay;
     }

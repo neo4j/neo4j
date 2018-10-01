@@ -33,7 +33,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.BIGGEST_STATIC_SIZE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_STATIC_SIZE;
 
 /**
  * Validates Value[] tuples, whether or not they fit inside a {@link GBPTree} with a layout using {@link CompositeGenericKey}.
@@ -138,7 +138,7 @@ class GenericIndexKeyValidator implements Validator<Value[]>
 
     private static int stringWorstCaseLength( int stringLength )
     {
-        return GenericKeyState.SIZE_STRING_LENGTH + stringLength * 4;
+        return GenericKey.SIZE_STRING_LENGTH + stringLength * 4;
     }
 
     private int actualLength( Value[] values )

@@ -24,8 +24,8 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.TRUE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.TRUE;
 
 // <Boolean> as generic raw type is mostly for show, this class overrides default object:y behaviour to create primitive boolean[] array
 class BooleanArrayType extends AbstractArrayType<Boolean>
@@ -44,26 +44,26 @@ class BooleanArrayType extends AbstractArrayType<Boolean>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, GenericKeyState.SIZE_BOOLEAN );
+        return arrayKeySize( state, GenericKey.SIZE_BOOLEAN );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         boolean[] array = new boolean[state.arrayLength];
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -73,7 +73,7 @@ class BooleanArrayType extends AbstractArrayType<Boolean>
         return Values.of( array );
     }
 
-    void write( GenericKeyState state, int offset, boolean value )
+    void write( GenericKey state, int offset, boolean value )
     {
         state.long0Array[offset] = value ? TRUE : FALSE;
     }

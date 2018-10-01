@@ -42,7 +42,7 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     {
         return numberOfSlots == 1
                // An optimized version which has the GenericKeyState built-in w/o indirection
-               ? new SingleGenericKey( spatialSettings )
+               ? new GenericKey( spatialSettings )
                // A version which has an indirection to GenericKeyState[]
                : new CompositeGenericKey( numberOfSlots, spatialSettings );
     }
@@ -52,7 +52,7 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     {
         into.setEntityId( key.getEntityId() );
         into.setCompareId( key.getCompareId() );
-        into.copyValuesFrom( key );
+        into.copyFrom( key );
         return into;
     }
 
@@ -65,8 +65,7 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     @Override
     public void writeKey( PageCursor cursor, GenericKey key )
     {
-        cursor.putLong( key.getEntityId() );
-        key.write( cursor );
+        key.put( cursor );
     }
 
     @Override
@@ -75,11 +74,12 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
         if ( keySize < ENTITY_ID_SIZE )
         {
             into.initializeToDummyValue();
-            cursor.setCursorException( format( "Failed to read CompositeGenericKey due to keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
+            cursor.setCursorException( format( "Failed to read " + into.getClass().getSimpleName() +
+                    " due to keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
         }
 
         into.initialize( cursor.getLong() );
-        into.read( cursor, keySize );
+        into.get( cursor, keySize );
     }
 
     @Override
@@ -91,7 +91,9 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     @Override
     public void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
-        left.minimalSplitter( left, right, into );
+        right.minimalSplitter( left, right, into );
+        into.setCompareId( right.getCompareId() );
+        into.setEntityId( right.getEntityId() );
     }
 
     IndexSpecificSpaceFillingCurveSettingsCache getSpaceFillingCurveSettings()

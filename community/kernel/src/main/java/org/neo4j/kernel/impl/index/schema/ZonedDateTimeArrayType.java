@@ -44,13 +44,13 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, GenericKeyState.SIZE_ZONED_DATE_TIME );
+        return arrayKeySize( state, GenericKey.SIZE_ZONED_DATE_TIME );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -59,7 +59,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
         System.arraycopy( from.long3Array, 0, to.long3Array, 0, length );
     }
 
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.long1Array = ensureBigEnough( key.long1Array, length );
@@ -67,7 +67,7 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
         key.long3Array = ensureBigEnough( key.long3Array, length );
     }
 
-    void write( GenericKeyState state, int offset, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
+    void write( GenericKey state, int offset, long epochSecondUTC, int nano, short zoneId, int offsetSeconds )
     {
         state.long0Array[offset] = epochSecondUTC;
         state.long1Array[offset] = nano;

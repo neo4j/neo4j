@@ -54,19 +54,19 @@ class GeometryType extends Type
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        int coordinatesSize = dimensions( state ) * GenericKeyState.SIZE_GEOMETRY_COORDINATE;
-        return GenericKeyState.SIZE_GEOMETRY_HEADER + GenericKeyState.SIZE_GEOMETRY + coordinatesSize;
+        int coordinatesSize = dimensions( state ) * GenericKey.SIZE_GEOMETRY_COORDINATE;
+        return GenericKey.SIZE_GEOMETRY_HEADER + GenericKey.SIZE_GEOMETRY + coordinatesSize;
     }
 
-    static int dimensions( GenericKeyState state )
+    static int dimensions( GenericKey state )
     {
         return toIntExact( state.long3 );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from )
+    void copyValue( GenericKey to, GenericKey from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
@@ -79,14 +79,14 @@ class GeometryType extends Type
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         assertHasCoordinates( state );
         CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
         return asValue( state, crs, 0 );
     }
 
-    static PointValue asValue( GenericKeyState state, CoordinateReferenceSystem crs, int offset )
+    static PointValue asValue( GenericKey state, CoordinateReferenceSystem crs, int offset )
     {
         double[] coordinates = new double[dimensions( state )];
         for ( int i = 0; i < coordinates.length; i++ )
@@ -97,7 +97,7 @@ class GeometryType extends Type
     }
 
     @Override
-    int compareValue( GenericKeyState left, GenericKeyState right )
+    int compareValue( GenericKey left, GenericKey right )
     {
         return compare(
                 left.long0, left.long1, left.long2,
@@ -105,26 +105,26 @@ class GeometryType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         putCrs( cursor, state.long1, state.long2, state.long3 );
         putPoint( cursor, state.long0, state.long3, state.long1Array, 0 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         return readCrs( cursor, into ) && readPoint( cursor, into );
     }
 
     @Override
-    String toString( GenericKeyState state )
+    String toString( GenericKey state )
     {
         return format( "Geometry[tableId:%d, code:%d, rawValue:%d]", state.long1, state.long2, state.long0 );
     }
 
     @Override
-    void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         super.minimalSplitter( left, right, into );
         // Set dimensions to 0 so that minimal splitters (i.e. point keys in internal nodes) doesn't have coordinate data,
@@ -191,7 +191,7 @@ class GeometryType extends Type
      *
      * @param state holds the key state.
      */
-    static void assertHasCoordinates( GenericKeyState state )
+    static void assertHasCoordinates( GenericKey state )
     {
         if ( state.long3 == 0 || state.long1Array == null )
         {
@@ -205,7 +205,7 @@ class GeometryType extends Type
         cursor.putByte( (byte) (value >>> Short.SIZE) );
     }
 
-    static boolean readCrs( PageCursor cursor, GenericKeyState into )
+    static boolean readCrs( PageCursor cursor, GenericKey into )
     {
         int header = read3BInt( cursor );
         into.long1 = (header & MASK_TABLE_READ) >>> SHIFT_TABLE;
@@ -214,7 +214,7 @@ class GeometryType extends Type
         return true;
     }
 
-    private static boolean readPoint( PageCursor cursor, GenericKeyState into )
+    private static boolean readPoint( PageCursor cursor, GenericKey into )
     {
         into.long0 = cursor.getLong();
         // into.long3 have just been read by readCrs, before this method is called
@@ -234,7 +234,7 @@ class GeometryType extends Type
         return high << Short.SIZE | low;
     }
 
-    void write( GenericKeyState state, long derivedSpaceFillingCurveValue, double[] coordinate )
+    void write( GenericKey state, long derivedSpaceFillingCurveValue, double[] coordinate )
     {
         state.long0 = derivedSpaceFillingCurveValue;
         state.long1Array = ensureBigEnough( state.long1Array, coordinate.length );

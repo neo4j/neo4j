@@ -27,8 +27,7 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.setCursorException;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.toNonNegativeShortExact;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
 import static org.neo4j.kernel.impl.index.schema.NumberType.numberKeySize;
 
 // Raw Number type is mostly for show as internally specific primitive int/long/short etc. arrays are created instead
@@ -47,13 +46,13 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, numberKeySize( state.long1 ) ) + GenericKeyState.SIZE_NUMBER_TYPE;
+        return arrayKeySize( state, numberKeySize( state.long1 ) ) + GenericKey.SIZE_NUMBER_TYPE;
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         to.long1 = from.long1;
         initializeArray( to, length );
@@ -61,7 +60,7 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         initializeArray( key, length );
         switch ( arrayType )
@@ -89,14 +88,14 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    private void initializeArray( GenericKeyState key, int length )
+    private void initializeArray( GenericKey key, int length )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         // plain long1 for number type
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         byte numberType = (byte) state.long1;
         switch ( numberType )
@@ -144,13 +143,13 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         cursor.putByte( (byte) state.long1 );
         putArray( cursor, state, numberArrayElementWriter( state ) );
     }
 
-    private ArrayElementWriter numberArrayElementWriter( GenericKeyState key )
+    private ArrayElementWriter numberArrayElementWriter( GenericKey key )
     {
         switch ( (int) key.long1 )
         {
@@ -170,7 +169,7 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         into.long1 = cursor.getByte(); // number type, like: byte, int, short a.s.o.
         ValueWriter.ArrayType numberType = numberArrayTypeOf( (byte) into.long1 );
@@ -183,14 +182,14 @@ class NumberArrayType extends AbstractArrayType<Number>
     }
 
     @Override
-    void initializeAsLowest( GenericKeyState state )
+    void initializeAsLowest( GenericKey state )
     {
         state.initializeArrayMeta( 0 );
         initializeArray( state, 0, ValueWriter.ArrayType.BYTE );
     }
 
     @Override
-    void initializeAsHighest( GenericKeyState state )
+    void initializeAsHighest( GenericKey state )
     {
         state.initializeArrayMeta( 0 );
         initializeArray( state, 0, ValueWriter.ArrayType.BYTE );
@@ -219,7 +218,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    private ArrayElementReader numberArrayElementReader( GenericKeyState key )
+    private ArrayElementReader numberArrayElementReader( GenericKey key )
     {
         switch ( (int) key.long1 )
         {
@@ -264,7 +263,7 @@ class NumberArrayType extends AbstractArrayType<Number>
         }
     }
 
-    void write( GenericKeyState state, int offset, long value )
+    void write( GenericKey state, int offset, long value )
     {
         state.long0Array[offset] = value;
     }

@@ -21,31 +21,28 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.util.StringJoiner;
 
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
-import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.util.Preconditions;
-import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 /**
- * {@link GenericKey} which has an array of {@link GenericKeyState} inside and can therefore hold composite key state.
- * For single-keys please instead use the more efficient {@link SingleGenericKey}.
+ * {@link GenericKey} which has an array of {@link GenericKey} inside and can therefore hold composite key state.
+ * For single-keys please instead use the more efficient {@link GenericKey}.
  */
 class CompositeGenericKey extends GenericKey
 {
-    private GenericKeyState[] states;
+    @SuppressWarnings( { "unchecked", "rawtypes" } )
+    private GenericKey[] states;
 
     CompositeGenericKey( int slots, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings )
     {
         super( spatialSettings );
-        states = new GenericKeyState[slots];
+        states = new GenericKey[slots];
         for ( int i = 0; i < states.length; i++ )
         {
-            states[i] = new GenericKeyState( spatialSettings );
+            states[i] = new GenericKey( spatialSettings );
         }
     }
 
@@ -84,33 +81,12 @@ class CompositeGenericKey extends GenericKey
         states[stateSlot].initValueAsHighest( valueGroup );
     }
 
-    /**
-     * Special init method for when doing sub-queries for geometry range. This given slot will not be initialized with a {@link PointValue},
-     * but a 1D value which is derived from that point, calculated based on intersecting tiles.
-     *
-     * @see SpaceFillingCurve#getTilesIntersectingEnvelope(double[], double[], SpaceFillingCurveConfiguration)
-     */
-    void initFromDerivedSpatialValue( int stateSlot, CoordinateReferenceSystem crs, long derivedValue, Inclusion inclusion )
-    {
-        states[stateSlot].writePointDerived( crs, derivedValue, inclusion );
-    }
-
-    void initAsPrefixLow( int stateSlot, String prefix )
-    {
-        states[stateSlot].initAsPrefixLow( prefix );
-    }
-
-    void initAsPrefixHigh( int stateSlot, String prefix )
-    {
-        states[stateSlot].initAsPrefixHigh( prefix );
-    }
-
     @Override
     int compareValueTo( GenericKey other )
     {
         for ( int i = 0; i < states.length; i++ )
         {
-            int comparison = states[i].compareValueTo( other.stateSlot( i ) );
+            int comparison = states[i].compareValueToInternal( other.stateSlot( i ) );
             if ( comparison != 0 )
             {
                 return comparison;
@@ -120,7 +96,7 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void copyValuesFrom( GenericKey key )
+    void copyFrom( GenericKey key )
     {
         if ( key.numberOfStateSlots() != states.length )
         {
@@ -129,7 +105,7 @@ class CompositeGenericKey extends GenericKey
 
         for ( int i = 0; i < states.length; i++ )
         {
-            states[i].copyFrom( key.stateSlot( i ) );
+            states[i].copyFromInternal( key.stateSlot( i ) );
         }
     }
 
@@ -137,29 +113,30 @@ class CompositeGenericKey extends GenericKey
     int size()
     {
         int size = ENTITY_ID_SIZE;
-        for ( GenericKeyState state : states )
+        for ( GenericKey state : states )
         {
-            size += state.stateSize();
+            size += state.sizeInternal();
         }
         return size;
     }
 
     @Override
-    void write( PageCursor cursor )
+    void put( PageCursor cursor )
     {
-        for ( GenericKeyState state : states )
+        cursor.putLong( getEntityId() );
+        for ( GenericKey state : states )
         {
-            state.put( cursor );
+            state.putInternal( cursor );
         }
     }
 
     @Override
-    boolean read( PageCursor cursor, int keySize )
+    boolean get( PageCursor cursor, int keySize )
     {
         int offset = cursor.getOffset();
-        for ( GenericKeyState state : states )
+        for ( GenericKey state : states )
         {
-            if ( !state.get( cursor, keySize ) )
+            if ( !state.getInternal( cursor, keySize ) )
             {
                 initializeToDummyValue();
                 return false;
@@ -175,9 +152,9 @@ class CompositeGenericKey extends GenericKey
     void initializeToDummyValue()
     {
         setEntityId( Long.MIN_VALUE );
-        for ( GenericKeyState state : states )
+        for ( GenericKey state : states )
         {
-            state.initializeToDummyValue();
+            state.initializeToDummyValueInternal();
         }
     }
 
@@ -191,9 +168,9 @@ class CompositeGenericKey extends GenericKey
     public String toString()
     {
         StringJoiner joiner = new StringJoiner( ",", "[", "]" );
-        for ( GenericKeyState state : states )
+        for ( GenericKey state : states )
         {
-            joiner.add( state.toString() );
+            joiner.add( state.toStringInternal() );
         }
         return joiner.toString();
     }
@@ -212,26 +189,26 @@ class CompositeGenericKey extends GenericKey
 
         while ( compare == 0 && firstStateToDiffer < stateCount )
         {
-            GenericKeyState leftState = left.stateSlot( firstStateToDiffer );
-            GenericKeyState rightState = right.stateSlot( firstStateToDiffer );
+            GenericKey leftState = left.stateSlot( firstStateToDiffer );
+            GenericKey rightState = right.stateSlot( firstStateToDiffer );
             firstStateToDiffer++;
-            compare = leftState.compareValueTo( rightState );
+            compare = leftState.compareValueToInternal( rightState );
         }
         firstStateToDiffer--; // Rewind last increment
         for ( int i = 0; i < firstStateToDiffer; i++ )
         {
-            into.stateSlot( i ).copyFrom( right.stateSlot( i ) );
+            into.stateSlot( i ).copyFromInternal( right.stateSlot( i ) );
         }
         for ( int i = firstStateToDiffer; i < stateCount; i++ )
         {
-            GenericKeyState.minimalSplitter( left.stateSlot( i ), right.stateSlot( i ), into.stateSlot( i ) );
+            GenericKey leftState = left.stateSlot( i );
+            GenericKey rightState = right.stateSlot( i );
+            rightState.minimalSplitterInternal( leftState, rightState, into.stateSlot( i ) );
         }
-        into.setCompareId( right.getCompareId() );
-        into.setEntityId( right.getEntityId() );
     }
 
     @Override
-    GenericKeyState stateSlot( int slot )
+    GenericKey stateSlot( int slot )
     {
         return states[slot];
     }

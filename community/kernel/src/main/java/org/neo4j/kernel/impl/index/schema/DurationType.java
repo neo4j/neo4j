@@ -41,13 +41,13 @@ class DurationType extends Type
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return GenericKeyState.SIZE_DURATION;
+        return GenericKey.SIZE_DURATION;
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from )
+    void copyValue( GenericKey to, GenericKey from )
     {
         to.long0 = from.long0;
         to.long1 = from.long1;
@@ -56,13 +56,13 @@ class DurationType extends Type
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         return asValue( state.long0, state.long1, state.long2, state.long3 );
     }
 
     @Override
-    int compareValue( GenericKeyState left, GenericKeyState right )
+    int compareValue( GenericKey left, GenericKey right )
     {
         return compare(
                 left.long0, left.long1, left.long2, left.long3,
@@ -70,13 +70,13 @@ class DurationType extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         put( cursor, state.long0, state.long1, state.long2, state.long3 );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         return read( cursor, into );
     }
@@ -116,7 +116,7 @@ class DurationType extends Type
         cursor.putLong( long3 );
     }
 
-    static boolean read( PageCursor cursor, GenericKeyState into )
+    static boolean read( PageCursor cursor, GenericKey into )
     {
         // TODO unify order of fields
         long totalAvgSeconds = cursor.getLong();
@@ -127,7 +127,7 @@ class DurationType extends Type
         return true;
     }
 
-    void write( GenericKeyState state, long months, long days, long totalAvgSeconds, int nanos )
+    void write( GenericKey state, long months, long days, long totalAvgSeconds, int nanos )
     {
         state.long0 = totalAvgSeconds;
         state.long1 = nanos;

@@ -41,13 +41,13 @@ class LocalDateTimeArrayType extends AbstractArrayType<LocalDateTime>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, GenericKeyState.SIZE_LOCAL_DATE_TIME );
+        return arrayKeySize( state, GenericKey.SIZE_LOCAL_DATE_TIME );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
@@ -55,13 +55,13 @@ class LocalDateTimeArrayType extends AbstractArrayType<LocalDateTime>
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.long1Array = ensureBigEnough( key.long1Array, length );
     }
 
-    void write( GenericKeyState state, int offset, long epochSecond, int nano )
+    void write( GenericKey state, int offset, long epochSecond, int nano )
     {
         state.long0Array[offset] = nano;
         state.long1Array[offset] = epochSecond;

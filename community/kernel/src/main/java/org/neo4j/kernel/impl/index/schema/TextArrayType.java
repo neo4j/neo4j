@@ -26,10 +26,10 @@ import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.FALSE;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_ARRAY_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.setCursorException;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.toNonNegativeShortExact;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.FALSE;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ARRAY_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.toNonNegativeShortExact;
 import static org.neo4j.kernel.impl.index.schema.TextType.CHAR_TYPE_LENGTH_MARKER;
 import static org.neo4j.kernel.impl.index.schema.TextType.isCharValueType;
 import static org.neo4j.kernel.impl.index.schema.TextType.setCharType;
@@ -55,7 +55,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
         int stringArraySize = 0;
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -66,7 +66,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         to.long1 = FALSE;
         to.long2 = from.long2;
@@ -82,7 +82,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
         key.byteArrayArray = ensureBigEnough( key.byteArrayArray, length );
@@ -93,7 +93,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         short typeMarker = (short) (isCharValueType( state.long2 ) ? CHAR_TYPE_LENGTH_MARKER : 0);
         putArrayHeader( cursor, (short) (toNonNegativeShortExact( state.arrayLength ) | typeMarker) );
@@ -101,7 +101,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         short rawLength = cursor.getShort();
         boolean isCharType = (rawLength & CHAR_TYPE_LENGTH_MARKER) != 0;
@@ -129,7 +129,7 @@ class TextArrayType extends AbstractArrayType<String>
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         // no need to set bytes dereferenced because byte[][] owned by this class will be deserialized into String objects.
         if ( isCharValueType( state.long2 ) )
@@ -141,7 +141,7 @@ class TextArrayType extends AbstractArrayType<String>
         return super.asValue( state );
     }
 
-    private Value charArrayAsValue( GenericKeyState state )
+    private Value charArrayAsValue( GenericKey state )
     {
         char[] chars = new char[state.arrayLength];
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -156,7 +156,7 @@ class TextArrayType extends AbstractArrayType<String>
         return byteArray == null ? null : UTF8.decode( byteArray, 0, (int) long0 );
     }
 
-    void write( GenericKeyState state, int offset, byte[] bytes )
+    void write( GenericKey state, int offset, byte[] bytes )
     {
         state.byteArrayArray[offset] = bytes;
         state.long0Array[offset] = bytes.length;

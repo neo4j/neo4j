@@ -29,10 +29,10 @@ import org.neo4j.values.storable.ValueWriter;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.Integer.min;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.BIGGEST_REASONABLE_ARRAY_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.SIZE_ARRAY_LENGTH;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.setCursorException;
-import static org.neo4j.kernel.impl.index.schema.GenericKeyState.toNonNegativeShortExact;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.BIGGEST_REASONABLE_ARRAY_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.SIZE_ARRAY_LENGTH;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.setCursorException;
+import static org.neo4j.kernel.impl.index.schema.GenericKey.toNonNegativeShortExact;
 
 /**
  * Common ancestor of all array-types. Many of the methods are implemented by doing array looping and delegating array item operations
@@ -68,17 +68,17 @@ abstract class AbstractArrayType<T> extends Type
     }
 
     @Override
-    final void copyValue( GenericKeyState to, GenericKeyState from )
+    final void copyValue( GenericKey to, GenericKey from )
     {
         copyValue( to, from, from.arrayLength );
     }
 
-    abstract void copyValue( GenericKeyState to, GenericKeyState from, int arrayLength );
+    abstract void copyValue( GenericKey to, GenericKey from, int arrayLength );
 
-    abstract void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType );
+    abstract void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType );
 
     @Override
-    void minimalSplitter( GenericKeyState left, GenericKeyState right, GenericKeyState into )
+    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         int lastEqualIndex = -1;
         if ( left.type == right.type )
@@ -102,7 +102,7 @@ abstract class AbstractArrayType<T> extends Type
     }
 
     @Override
-    int compareValue( GenericKeyState left, GenericKeyState right )
+    int compareValue( GenericKey left, GenericKey right )
     {
         if ( left.isHighestArray || right.isHighestArray )
         {
@@ -122,7 +122,7 @@ abstract class AbstractArrayType<T> extends Type
     }
 
     @Override
-    Value asValue( GenericKeyState state )
+    Value asValue( GenericKey state )
     {
         T[] array = arrayCreator.apply( state.arrayLength );
         for ( int i = 0; i < state.arrayLength; i++ )
@@ -133,13 +133,13 @@ abstract class AbstractArrayType<T> extends Type
     }
 
     @Override
-    void putValue( PageCursor cursor, GenericKeyState state )
+    void putValue( PageCursor cursor, GenericKey state )
     {
         putArray( cursor, state, arrayElementWriter );
     }
 
     @Override
-    boolean readValue( PageCursor cursor, int size, GenericKeyState into )
+    boolean readValue( PageCursor cursor, int size, GenericKey into )
     {
         return readArray( cursor, arrayType, arrayElementReader, into );
     }
@@ -150,21 +150,21 @@ abstract class AbstractArrayType<T> extends Type
      * @param state key state to initialize as lowest of this type.
      */
     @Override
-    void initializeAsLowest( GenericKeyState state )
+    void initializeAsLowest( GenericKey state )
     {
         state.initializeArrayMeta( 0 );
         initializeArray( state, 0, arrayType );
     }
 
     @Override
-    void initializeAsHighest( GenericKeyState state )
+    void initializeAsHighest( GenericKey state )
     {
         state.initializeArrayMeta( 0 );
         initializeArray( state, 0, arrayType );
         state.isHighestArray = true;
     }
 
-    int arrayKeySize( GenericKeyState key, int elementSize )
+    int arrayKeySize( GenericKey key, int elementSize )
     {
         return SIZE_ARRAY_LENGTH + key.arrayLength * elementSize;
     }
@@ -174,7 +174,7 @@ abstract class AbstractArrayType<T> extends Type
         cursor.putShort( arrayLength );
     }
 
-    static void putArrayItems( PageCursor cursor, GenericKeyState key, ArrayElementWriter itemWriter )
+    static void putArrayItems( PageCursor cursor, GenericKey key, ArrayElementWriter itemWriter )
     {
         for ( int i = 0; i < key.arrayLength; i++ )
         {
@@ -182,13 +182,13 @@ abstract class AbstractArrayType<T> extends Type
         }
     }
 
-    static void putArray( PageCursor cursor, GenericKeyState key, ArrayElementWriter writer )
+    static void putArray( PageCursor cursor, GenericKey key, ArrayElementWriter writer )
     {
         putArrayHeader( cursor, toNonNegativeShortExact( key.arrayLength ) );
         putArrayItems( cursor, key, writer );
     }
 
-    static boolean readArray( PageCursor cursor, ValueWriter.ArrayType type, ArrayElementReader reader, GenericKeyState into )
+    static boolean readArray( PageCursor cursor, ValueWriter.ArrayType type, ArrayElementReader reader, GenericKey into )
     {
         if ( !setArrayLengthWhenReading( into, cursor, cursor.getShort() ) )
         {
@@ -206,7 +206,7 @@ abstract class AbstractArrayType<T> extends Type
         return true;
     }
 
-    static boolean setArrayLengthWhenReading( GenericKeyState state, PageCursor cursor, short arrayLength )
+    static boolean setArrayLengthWhenReading( GenericKey state, PageCursor cursor, short arrayLength )
     {
         state.arrayLength = arrayLength;
         if ( state.arrayLength < 0 || state.arrayLength > BIGGEST_REASONABLE_ARRAY_LENGTH )
@@ -221,24 +221,24 @@ abstract class AbstractArrayType<T> extends Type
     @FunctionalInterface
     interface ArrayElementComparator
     {
-        int compare( GenericKeyState o1, GenericKeyState o2, int i );
+        int compare( GenericKey o1, GenericKey o2, int i );
     }
 
     @FunctionalInterface
     interface ArrayElementReader
     {
-        boolean readFrom( PageCursor cursor, GenericKeyState into );
+        boolean readFrom( PageCursor cursor, GenericKey into );
     }
 
     @FunctionalInterface
     interface ArrayElementWriter
     {
-        void write( PageCursor cursor, GenericKeyState key, int i );
+        void write( PageCursor cursor, GenericKey key, int i );
     }
 
     @FunctionalInterface
     interface ArrayElementValueFactory<T>
     {
-        T from( GenericKeyState key, int i );
+        T from( GenericKey key, int i );
     }
 }

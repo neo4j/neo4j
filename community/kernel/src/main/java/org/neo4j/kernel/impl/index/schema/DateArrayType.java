@@ -40,25 +40,25 @@ class DateArrayType extends AbstractArrayType<LocalDate>
     }
 
     @Override
-    int valueSize( GenericKeyState state )
+    int valueSize( GenericKey state )
     {
-        return arrayKeySize( state, GenericKeyState.SIZE_DATE );
+        return arrayKeySize( state, GenericKey.SIZE_DATE );
     }
 
     @Override
-    void copyValue( GenericKeyState to, GenericKeyState from, int length )
+    void copyValue( GenericKey to, GenericKey from, int length )
     {
         initializeArray( to, length, null );
         System.arraycopy( from.long0Array, 0, to.long0Array, 0, length );
     }
 
     @Override
-    void initializeArray( GenericKeyState key, int length, ValueWriter.ArrayType arrayType )
+    void initializeArray( GenericKey key, int length, ValueWriter.ArrayType arrayType )
     {
         key.long0Array = ensureBigEnough( key.long0Array, length );
     }
 
-    public void write( GenericKeyState state, int offset, long epochDay )
+    public void write( GenericKey state, int offset, long epochDay )
     {
         state.long0Array[offset] = epochDay;
     }
