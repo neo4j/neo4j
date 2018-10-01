@@ -26,7 +26,7 @@ import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.helper.Workload;
 
-abstract class RepeatOnRandomMember extends Workload
+abstract class RepeatOnRandomMember extends Workload implements WorkOnMember
 {
     private final Cluster<?> cluster;
 
@@ -42,5 +42,6 @@ abstract class RepeatOnRandomMember extends Workload
         doWorkOnMember( cluster.randomMember( true ).orElseThrow( IllegalStateException::new ) );
     }
 
-    protected abstract void doWorkOnMember( ClusterMember member ) throws Exception;
+    @Override
+    public abstract void doWorkOnMember( ClusterMember member ) throws Exception;
 }

@@ -24,19 +24,7 @@ package org.neo4j.causalclustering.stresstests;
 
 import org.neo4j.causalclustering.discovery.ClusterMember;
 
-class StartStopRandomMember extends RepeatOnRandomMember
+interface WorkOnMember
 {
-    private final StartStopMember startStop;
-
-    StartStopRandomMember( Control control, Resources resources )
-    {
-        super( control, resources );
-        this.startStop = new StartStopMember( resources );
-    }
-
-    @Override
-    public void doWorkOnMember( ClusterMember member ) throws Exception
-    {
-        startStop.doWorkOnMember( member );
-    }
+    void doWorkOnMember( ClusterMember member ) throws Exception;
 }

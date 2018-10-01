@@ -44,7 +44,7 @@ class BackupRandomMember extends RepeatOnRandomMember
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember member ) throws Exception
+    public void doWorkOnMember( ClusterMember member ) throws Exception
     {
         Optional<File> backupDir = backupHelper.backup( member );
         if ( backupDir.isPresent() )

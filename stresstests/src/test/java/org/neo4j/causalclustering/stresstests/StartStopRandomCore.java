@@ -22,71 +22,21 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import java.io.File;
-import java.io.PrintStream;
-
-import org.neo4j.causalclustering.catchup.storecopy.CopiedStoreRecovery;
-import org.neo4j.causalclustering.catchup.storecopy.TemporaryStoreDirectory;
 import org.neo4j.causalclustering.discovery.ClusterMember;
-import org.neo4j.consistency.ConsistencyCheckService;
-import org.neo4j.graphdb.facade.GraphDatabaseDependencies;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Log;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
-
-import static org.neo4j.consistency.ConsistencyCheckTool.runConsistencyCheckTool;
-import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 class StartStopRandomCore extends RepeatOnRandomCore
 {
-    private final FileSystemAbstraction fs;
-    private final PageCache pageCache;
-    private final Log log;
+    private final StartStopMember startStop;
 
     StartStopRandomCore( Control control, Resources resources )
     {
         super( control, resources );
-        this.fs = resources.fileSystem();
-        this.pageCache = resources.pageCache();
-        this.log = resources.logProvider().getLog( getClass() );
+        this.startStop = new StartStopMember( resources );
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember member ) throws InterruptedException
+    public void doWorkOnMember( ClusterMember core ) throws Exception
     {
-        File databaseDirectory = member.database().databaseLayout().databaseDirectory();
-        log.info( "Stopping: " + member );
-        member.shutdown();
-        assertStoreConsistent( databaseDirectory );
-        Thread.sleep( 5000 );
-        log.info( "Starting: " + member );
-        member.start();
-    }
-
-    private void assertStoreConsistent( File storeDir )
-    {
-        File parent = storeDir.getParentFile();
-        try ( TemporaryStoreDirectory storeDirectory = new TemporaryStoreDirectory( fs, pageCache, parent );
-              JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-              PageCache pageCache = StandalonePageCacheFactory.createPageCache( fs, jobScheduler ) )
-        {
-            fs.copyRecursively( storeDir, storeDirectory.storeDir() );
-            new CopiedStoreRecovery( Config.defaults(), GraphDatabaseDependencies.newDependencies().kernelExtensions(),  pageCache )
-                    .recoverCopiedStore( storeDirectory.databaseLayout() );
-            ConsistencyCheckService.Result result = runConsistencyCheckTool( new String[]{storeDir.getAbsolutePath()},
-                    new PrintStream( NULL_OUTPUT_STREAM ), new PrintStream( NULL_OUTPUT_STREAM ) );
-            if ( !result.isSuccessful() )
-            {
-                throw new RuntimeException( "Not consistent database in " + storeDir );
-            }
-        }
-        catch ( Throwable e )
-        {
-            throw new RuntimeException( "Failed to run CC on " + storeDir, e );
-        }
+        startStop.doWorkOnMember( core );
     }
 }

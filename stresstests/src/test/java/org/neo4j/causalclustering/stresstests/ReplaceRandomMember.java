@@ -64,7 +64,7 @@ class ReplaceRandomMember extends RepeatOnRandomMember
     }
 
     @Override
-    protected void doWorkOnMember( ClusterMember oldMember ) throws Exception
+    public void doWorkOnMember( ClusterMember oldMember ) throws Exception
     {
         boolean replaceFromBackup = ThreadLocalRandom.current().nextBoolean();
 

@@ -22,21 +22,36 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
+import java.io.File;
+
 import org.neo4j.causalclustering.discovery.ClusterMember;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.logging.Log;
 
-class StartStopRandomMember extends RepeatOnRandomMember
+import static org.neo4j.causalclustering.stresstests.ConsistencyHelper.assertStoreConsistent;
+
+public class StartStopMember implements WorkOnMember
 {
-    private final StartStopMember startStop;
+    private final Log log;
+    private final FileSystemAbstraction fileSystem;
 
-    StartStopRandomMember( Control control, Resources resources )
+    StartStopMember( Resources resources )
     {
-        super( control, resources );
-        this.startStop = new StartStopMember( resources );
+        this.log = resources.logProvider().getLog( getClass() );
+        this.fileSystem = resources.fileSystem();
     }
 
     @Override
     public void doWorkOnMember( ClusterMember member ) throws Exception
     {
-        startStop.doWorkOnMember( member );
+        File databaseDirectory = member.database().databaseLayout().databaseDirectory();
+        log.info( "Stopping: " + member );
+        member.shutdown();
+
+        assertStoreConsistent( fileSystem, databaseDirectory );
+
+        Thread.sleep( 5000 );
+        log.info( "Starting: " + member );
+        member.start();
     }
 }
