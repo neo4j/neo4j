@@ -1863,7 +1863,6 @@ public class CodeGenerationTest
             handle = simple.handle();
         }
 
-
         // when
         MethodHandle isString = instanceMethod( handle.newInstance(), "isString", Object.class );
 

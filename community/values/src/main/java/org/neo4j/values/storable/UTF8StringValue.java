@@ -363,6 +363,7 @@ public final class UTF8StringValue extends StringValue
         return value().endsWith( other.stringValue() );
     }
 
+    @SuppressWarnings( "StatementWithEmptyBody" )
     @Override
     public boolean contains( TextValue other )
     {
@@ -390,7 +391,10 @@ public final class UTF8StringValue extends StringValue
                 //find first byte
                 if ( bytes[pos] != first )
                 {
-                    while ( ++pos <= max && bytes[pos] != first );
+                    while ( ++pos <= max && bytes[pos] != first )
+                    {
+                        //do nothing
+                    }
                 }
 
                 //Now we have the first byte match, look at the rest
@@ -398,7 +402,10 @@ public final class UTF8StringValue extends StringValue
                 {
                     int i = pos + 1;
                     final int end = pos + substring.byteLength;
-                    for ( int j = substring.offset + 1; i < end && bytes[i] == substring.bytes[j]; j++, i++);
+                    for ( int j = substring.offset + 1; i < end && bytes[i] == substring.bytes[j]; j++, i++ )
+                    {
+                        //do nothing
+                    }
 
                     if ( i == end )
                     {
@@ -412,12 +419,12 @@ public final class UTF8StringValue extends StringValue
         return value().contains( other.stringValue() );
     }
 
-    private boolean startsWith(UTF8StringValue prefix, int startPos)
+    private boolean startsWith( UTF8StringValue prefix, int startPos )
     {
-        int thisOffset = offset+ startPos;
+        int thisOffset = offset + startPos;
         int prefixOffset = prefix.offset;
         int prefixCount = prefix.byteLength;
-        if (startPos < 0 || prefixCount > byteLength)
+        if ( startPos < 0 || prefixCount > byteLength )
         {
             return false;
         }
