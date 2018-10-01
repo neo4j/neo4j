@@ -77,9 +77,15 @@ class PropertyReader implements PropertyAccessor
     private boolean visitPropertyRecordChain( long firstPropertyRecordId, Visitor<PropertyRecord,RuntimeException> visitor )
             throws CircularPropertyRecordChainException
     {
+        if ( Record.NO_NEXT_PROPERTY.is( firstPropertyRecordId ) )
+        {
+            return false;
+        }
+
         PrimitiveLongSet visitedPropertyRecordIds = Primitive.longSet( 8 );
+        visitedPropertyRecordIds.add( firstPropertyRecordId );
         long nextProp = firstPropertyRecordId;
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
         {
             PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE );
             nextProp = propRecord.getNextProp();
