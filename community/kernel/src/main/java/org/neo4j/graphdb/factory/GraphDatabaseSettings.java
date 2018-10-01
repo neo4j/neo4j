@@ -23,10 +23,7 @@ import java.io.File;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.neo4j.configuration.Description;
 import org.neo4j.configuration.Dynamic;
@@ -39,7 +36,6 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.BoltConnectorValidator;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigurationMigrator;
 import org.neo4j.kernel.configuration.GraphDatabaseConfigurationMigrator;
 import org.neo4j.kernel.configuration.Group;
@@ -53,9 +49,6 @@ import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE10;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE20;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10;
 import static org.neo4j.io.ByteUnit.kibiBytes;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
@@ -618,18 +611,16 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
-        NATIVE_BTREE10( 4, "native-btree", "1.0" ), // <-- default
-        NATIVE20( 3, "lucene+native", "2.0" ),
-        NATIVE10( 2, "lucene+native", "1.0" ),
-        LUCENE10( 1, "lucene", "1.0" );
+        NATIVE_BTREE10( "native-btree", "1.0" ),
+        NATIVE20( "lucene+native", "2.0" ),
+        NATIVE10( "lucene+native", "1.0" ),
+        LUCENE10( "lucene", "1.0" );
 
-        private final int priority; // Higher is better
         private final String providerName;
         private final String providerVersion;
 
-        SchemaIndex( int priority, String providerName, String providerVersion )
+        SchemaIndex( String providerName, String providerVersion )
         {
-            this.priority = priority;
             this.providerName = providerName;
             this.providerVersion = providerVersion;
         }
@@ -648,19 +639,6 @@ public class GraphDatabaseSettings implements LoadableConfig
         {
             return providerVersion;
         }
-
-        public int priority( Config config )
-        {
-            String configuredSchemaProvider = config.get( GraphDatabaseSettings.default_schema_provider );
-            return providerIdentifier().equals( configuredSchemaProvider ) ? 100 : priority;
-        }
-
-        public static SchemaIndex defaultProvider()
-        {
-            return Arrays.stream( values() )
-                    .max( Comparator.comparingInt( o -> o.priority ) )
-                    .orElseThrow( NoSuchElementException::new );
-        }
     }
 
     @Description(
@@ -674,11 +652,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "A native index has these limitations: " +
             "Index key (be it single or composite) size limit of 4039 bytes - transaction resulting in index key surpassing that will fail. " +
             "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
-    public static final Setting<String> default_schema_provider =
-            setting( "dbms.index.default_schema_provider",
-                    optionsIgnoreCase( NATIVE20.providerIdentifier(), NATIVE10.providerIdentifier(), LUCENE10.providerIdentifier(),
-                            NATIVE_BTREE10.providerIdentifier() ),
-                    null );
+    public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerIdentifier() );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
     public static final Setting<File> logical_logs_location =

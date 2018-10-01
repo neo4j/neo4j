@@ -48,7 +48,7 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     public NumberIndexProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
-        super( NATIVE_PROVIDER_DESCRIPTOR, 0, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        super( NATIVE_PROVIDER_DESCRIPTOR, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
     }
 
     @Override

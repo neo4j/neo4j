@@ -29,17 +29,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
-import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
@@ -94,11 +96,12 @@ public class HalfCreatedConstraintIT
     {
         try ( Transaction transaction = database.beginTx() )
         {
-            ThreadToStatementContextBridge statementBridge =
-                    ((GraphDatabaseAPI) database).getDependencyResolver().provideDependency( ThreadToStatementContextBridge.class ).get();
+            DependencyResolver resolver = ((GraphDatabaseAPI) database).getDependencyResolver();
+            ThreadToStatementContextBridge statementBridge = resolver.provideDependency( ThreadToStatementContextBridge.class ).get();
             KernelTransaction kernelTransaction = statementBridge.getKernelTransactionBoundToThisThread( true );
             LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 0 );
-            kernelTransaction.indexUniqueCreate( descriptor, Optional.empty() );
+            Config config = resolver.resolveDependency( Config.class );
+            kernelTransaction.indexUniqueCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ) );
             transaction.success();
         }
     }

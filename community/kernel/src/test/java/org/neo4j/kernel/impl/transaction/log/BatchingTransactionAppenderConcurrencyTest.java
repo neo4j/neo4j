@@ -108,7 +108,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
     private final LogFile logFile = mock( LogFile.class );
     private final LogRotation logRotation = LogRotation.NO_ROTATION;
-    private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10 );
+    private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
     private final IdOrderingQueue explicitIndexTransactionOrdering = IdOrderingQueue.BYPASS;

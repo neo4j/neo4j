@@ -83,9 +83,8 @@ public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusion
                 IndexProviderFactoryUtil.temporalProvider( pageCache, fs, childDirectoryStructure, monitor, recoveryCleanupWorkCollector, readOnly );
         LuceneIndexProvider lucene = IndexProviderFactoryUtil.luceneProvider( fs, childDirectoryStructure, monitor, config, operationalMode );
 
-        int priority = SCHEMA_INDEX.priority( config );
         return new FusionIndexProvider( EMPTY, number, spatial, temporal, lucene, new FusionSlotSelector10(),
-                DESCRIPTOR, priority, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
+                DESCRIPTOR, directoriesByProvider( databaseDirectory ), fs, archiveFailedIndex );
     }
 
     private static IndexDirectoryStructure.Factory subProviderDirectoryStructure( File databaseDirectory )

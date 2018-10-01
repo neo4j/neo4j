@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.scheduler.CentralJobScheduler;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -229,7 +228,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
         DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
                 pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
-        return life.add( new DefaultIndexProviderMap( extensions ) );
+        return life.add( new DefaultIndexProviderMap( extensions, config ) );
     }
 
     public DatabaseLayout databaseLayout()

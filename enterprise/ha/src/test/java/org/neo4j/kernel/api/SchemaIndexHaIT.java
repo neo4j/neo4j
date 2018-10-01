@@ -492,7 +492,7 @@ public class SchemaIndexHaIT
 
         ControlledIndexProvider( IndexProvider delegate )
         {
-            super( CONTROLLED_PROVIDER_DESCRIPTOR, 100 /*we want it to always win*/, given( delegate.directoryStructure() ) );
+            super( CONTROLLED_PROVIDER_DESCRIPTOR, given( delegate.directoryStructure() ) );
             this.delegate = delegate;
         }
 

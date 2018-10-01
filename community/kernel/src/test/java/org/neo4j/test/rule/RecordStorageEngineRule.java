@@ -21,6 +21,7 @@ package org.neo4j.test.rule;
 
 import java.util.function.Function;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -105,7 +106,7 @@ public class RecordStorageEngineRule extends ExternalResource
         when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( Iterables.empty() );
         IndexConfigStore indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         JobScheduler scheduler = life.add( createScheduler() );
-        Config config = Config.defaults();
+        Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, indexProvider.getProviderDescriptor().name() );
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( indexProvider );
@@ -113,14 +114,15 @@ public class RecordStorageEngineRule extends ExternalResource
         BufferingIdGeneratorFactory bufferingIdGeneratorFactory =
                 new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
                         new CommunityIdTypeConfigurationProvider() );
-        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies );
+        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
         life.add( indexProviderMap );
         return life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
-                NullLogProvider.getInstance(), mockedTokenHolders(),
+                logProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
                 IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue( 20 ), idGeneratorFactory,
+                new SynchronizedArrayIdOrderingQueue(), idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
                 RecoveryCleanupWorkCollector.immediate(), OperationalMode.single ) );
     }

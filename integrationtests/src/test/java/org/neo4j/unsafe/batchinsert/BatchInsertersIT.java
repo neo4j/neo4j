@@ -22,32 +22,44 @@
  */
 package org.neo4j.unsafe.batchinsert;
 
-import org.junit.Rule;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+
+import java.util.Map;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
-public class BatchInsertersIT
+@ExtendWith( TestDirectoryExtension.class )
+class BatchInsertersIT
 {
 
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldStartBatchInserterWithRealIndexProvider() throws Exception
+    void shouldStartBatchInserterWithRealIndexProvider() throws Exception
     {
-        BatchInserter inserter = inserter( testDirectory.databaseDir(), MapUtil.stringMap(), getKernelExtensions() );
-        //If we didn't throw, all good!
+        BatchInserter inserter = inserter( testDirectory.databaseDir(), getConfig(), getKernelExtensions() );
         inserter.shutdown();
     }
 
-    private Iterable<KernelExtensionFactory<?>> getKernelExtensions()
+    private static Map<String,String> getConfig()
+    {
+        return MapUtil.stringMap( default_schema_provider.name(), DESCRIPTOR.name() );
+    }
+
+    private static Iterable<KernelExtensionFactory<?>> getKernelExtensions()
     {
         return Iterables.asIterable( new NativeLuceneFusionIndexProviderFactory20() );
     }

@@ -39,6 +39,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 public class BatchInsertersTest
@@ -72,7 +74,7 @@ public class BatchInsertersTest
 
     private static Map<String,String> getConfig()
     {
-        return MapUtil.stringMap();
+        return MapUtil.stringMap( default_schema_provider.name(), DESCRIPTOR.name() );
     }
 
     private static void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter, EphemeralFileSystemAbstraction fileSystemAbstraction )

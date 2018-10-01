@@ -58,6 +58,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.locking.LockService.LockType;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -134,7 +135,9 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
     {
         TestGraphDatabaseFactory dbFactory = new TestGraphDatabaseFactory();
         dbFactory.setKernelExtensions( Collections.singletonList( new PredefinedIndexProviderFactory( indexProvider ) ) );
-        db = dbFactory.newImpermanentDatabase( graphDbDir );
+        db = dbFactory.newImpermanentDatabaseBuilder( graphDbDir )
+                      .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
+                      .newGraphDatabase();
     }
 
     @After

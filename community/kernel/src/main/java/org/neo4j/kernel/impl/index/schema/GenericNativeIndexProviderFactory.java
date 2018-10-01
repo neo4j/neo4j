@@ -64,11 +64,9 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
     public static GenericNativeIndexProvider create( PageCache pageCache, File storeDir, FileSystemAbstraction fs, IndexProvider.Monitor monitor, Config config,
             OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
-        int priority = GenericNativeIndexProvider.SCHEMA_INDEX.priority( config );
-
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
         boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);
-        return new GenericNativeIndexProvider( priority, directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
+        return new GenericNativeIndexProvider( directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
     }
 
     public interface Dependencies extends AbstractIndexProviderFactory.Dependencies

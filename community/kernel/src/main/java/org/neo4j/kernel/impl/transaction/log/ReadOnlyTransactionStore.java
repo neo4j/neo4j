@@ -45,7 +45,7 @@ public class ReadOnlyTransactionStore implements Lifecycle, LogicalTransactionSt
     public ReadOnlyTransactionStore( PageCache pageCache, FileSystemAbstraction fs, DatabaseLayout fromDatabaseLayout, Config config,
             Monitors monitors ) throws IOException
     {
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100 );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
         LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder
                 .activeFilesBuilder( fromDatabaseLayout, fs, pageCache ).withLogEntryReader( logEntryReader )

@@ -166,13 +166,11 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
-        return new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory, commitProcess,
-                transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+        return new KernelTransactionImplementation( Config.defaults(), statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory,
+                commitProcess, transactionMonitor, explicitIndexStateSupplier, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
-                new CanWrite(), AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
-                new StandardConstraintSemantics(), mock( SchemaState.class),
-                mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
+                new CanWrite(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
+                new StandardConstraintSemantics(), mock( SchemaState.class ), mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
     }
 
     public class CapturingCommitProcess implements TransactionCommitProcess

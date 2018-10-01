@@ -113,7 +113,7 @@ public class ExplicitBatchIndexApplierTest
         IndexConfigStore config = newIndexConfigStore( names, applierName );
 
         // WHEN multiple explicit index transactions are running, they should be done in order
-        SynchronizedArrayIdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue( 10 );
+        SynchronizedArrayIdOrderingQueue queue = new SynchronizedArrayIdOrderingQueue();
         final AtomicLong lastAppliedTxId = new AtomicLong( -1 );
         Race race = new Race();
         for ( long i = 0; i < 100; i++ )

@@ -126,20 +126,20 @@ public class OnlineIndexUpdates implements IndexUpdates
         EntityUpdates entityUpdates = nodePropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update :  updateService.convertToIndexUpdates( entityUpdates, EntityType.NODE ) )
+        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, EntityType.NODE ) )
         {
             updates.add( update );
         }
     }
 
-    private void gatherUpdatesFor( long reltionshipId, RelationshipCommand relationshipCommand, List<PropertyCommand> propertyCommands )
+    private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand, List<PropertyCommand> propertyCommands )
     {
-        EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( reltionshipId, relationshipCommand, propertyCommands );
+        EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
 
         EntityUpdates entityUpdates = relationshipPropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update :  updateService.convertToIndexUpdates( entityUpdates, EntityType.RELATIONSHIP ) )
+        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, EntityType.RELATIONSHIP ) )
         {
             updates.add( update );
         }

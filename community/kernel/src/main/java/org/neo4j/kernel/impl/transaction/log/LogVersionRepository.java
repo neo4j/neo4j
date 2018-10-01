@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
-
 public interface LogVersionRepository
 {
     long INITIAL_LOG_VERSION = 0;

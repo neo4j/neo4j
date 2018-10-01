@@ -55,6 +55,18 @@ public interface DependencyResolver
      */
     <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException;
 
+    /**
+     * Tries to resolve a dependencies that matches a given class.
+     *
+     * @param type the type of {@link Class} that the returned instances must implement.
+     * @param <T> the type that the returned instance must implement
+     * @return the list of resolved dependencies for the given type.
+     */
+    default <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type )
+    {
+        throw new UnsupportedOperationException( "not implemented" );
+    }
+
     <T> Supplier<T> provideDependency( Class<T> type, SelectionStrategy selector );
 
     <T> Supplier<T> provideDependency( Class<T> type );

@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -108,9 +109,10 @@ public class OnlineIndexUpdatesTest
         life = new LifeSupport();
         PageCache pageCache = storage.pageCache();
         DatabaseLayout databaseLayout = storage.directory().databaseLayout();
-        StoreFactory storeFactory =
-                new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
-                        storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, EMPTY.getProviderDescriptor().name() );
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
+                        storage.fileSystem(), logProvider, EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();
@@ -121,11 +123,11 @@ public class OnlineIndexUpdatesTest
         JobScheduler scheduler = JobSchedulerFactory.createScheduler();
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( EMPTY );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         life.add( providerMap );
-        indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler, providerMap,
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(), NullLogProvider.getInstance(),
-                IndexingService.NO_MONITOR, new DatabaseSchemaState( NullLogProvider.getInstance() ) );
+        indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, providerMap,
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(), logProvider,
+                IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ) );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );

@@ -78,8 +78,8 @@ public class BatchingTransactionAppenderRotationIT
 
         LogRotationImpl logRotation =
                 new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFiles, databaseHealth );
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1024 );
-        SynchronizedArrayIdOrderingQueue idOrderingQueue = new SynchronizedArrayIdOrderingQueue( 20 );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
+        SynchronizedArrayIdOrderingQueue idOrderingQueue = new SynchronizedArrayIdOrderingQueue();
 
         BatchingTransactionAppender transactionAppender =
                 new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore,

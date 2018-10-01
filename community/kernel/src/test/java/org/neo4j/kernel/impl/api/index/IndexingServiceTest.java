@@ -128,6 +128,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterators.asCollection;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -367,14 +368,15 @@ public class IndexingServiceTest
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
-        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ) ) );
+        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
+        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         StoreIndexDescriptor onlineIndex     = storeIndex( 1, 1, 1, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor failedIndex     = storeIndex( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, asList( onlineIndex, populatingIndex, failedIndex ),
                 logProvider, IndexingService.NO_MONITOR, schemaState ) );
 
@@ -407,7 +409,8 @@ public class IndexingServiceTest
         // given
         IndexProvider provider = mock( IndexProvider.class );
         when( provider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ) );
+        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ), config );
         providerMap.init();
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
@@ -415,7 +418,7 @@ public class IndexingServiceTest
         StoreIndexDescriptor populatingIndex = storeIndex( 2, 1, 2, PROVIDER_DESCRIPTOR );
         StoreIndexDescriptor failedIndex     = storeIndex( 3, 2, 2, PROVIDER_DESCRIPTOR );
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup,
                 asList( onlineIndex, populatingIndex, failedIndex ), logProvider, IndexingService.NO_MONITOR,
                 schemaState );
@@ -930,7 +933,8 @@ public class IndexingServiceTest
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
-        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ) ) );
+        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
+        IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
         List<StoreIndexDescriptor> indexes = new ArrayList<>();
@@ -952,7 +956,7 @@ public class IndexingServiceTest
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
 
-        life.add( IndexingServiceFactory.createIndexingService( Config.defaults(), mock( JobScheduler.class ), providerMap,
+        life.add( IndexingServiceFactory.createIndexingService( config, mock( JobScheduler.class ), providerMap,
                 mock( IndexStoreView.class ), mockLookup, indexes, logProvider, IndexingService.NO_MONITOR,
                 schemaState ) );
 
@@ -979,7 +983,8 @@ public class IndexingServiceTest
         IndexAccessor indexAccessor = mock( IndexAccessor.class );
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) )
                 .thenReturn( indexAccessor );
-        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ) );
+        Config config = Config.defaults( default_schema_provider, PROVIDER_DESCRIPTOR.name() );
+        DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( buildIndexDependencies( provider ), config );
         providerMap.init();
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
@@ -1002,7 +1007,7 @@ public class IndexingServiceTest
             when( mockLookup.labelGetName( i ) ).thenReturn( "Label" + i );
         }
 
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( Config.defaults(),
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config,
                 mock( JobScheduler.class ), providerMap, storeView, mockLookup, indexes,
                 logProvider, IndexingService.NO_MONITOR, schemaState );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
@@ -1127,7 +1132,7 @@ public class IndexingServiceTest
         verify( accessor, never() ).drop();
     }
 
-    private IndexProxy createIndexProxyMock( long indexId )
+    private static IndexProxy createIndexProxyMock( long indexId )
     {
         IndexProxy proxy = mock( IndexProxy.class );
         CapableIndexDescriptor descriptor = storeIndex( indexId, 1, 2, PROVIDER_DESCRIPTOR ).withoutCapabilities();
@@ -1190,7 +1195,7 @@ public class IndexingServiceTest
         }
     }
 
-    private Answer<Void> waitForLatch( final CountDownLatch latch )
+    private static Answer<Void> waitForLatch( final CountDownLatch latch )
     {
         return invocationOnMock ->
         {
@@ -1199,7 +1204,7 @@ public class IndexingServiceTest
         };
     }
 
-    private Answer<ResourceIterator<File>> newResourceIterator( final File theFile )
+    private static Answer<ResourceIterator<File>> newResourceIterator( final File theFile )
     {
         return invocationOnMock -> asResourceIterator(iterator( theFile ));
     }
@@ -1254,8 +1259,9 @@ public class IndexingServiceTest
         when( nameLookup.propertyKeyGetName( anyInt() ) ).thenAnswer( new NameLookupAnswer( "property" ) );
 
         Config config = Config.defaults( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, "false" );
+        config.augment( GraphDatabaseSettings.default_schema_provider, PROVIDER_DESCRIPTOR.name() );
 
-        DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider ) ) );
+        DefaultIndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( indexProvider ), config ) );
         return life.add( IndexingServiceFactory.createIndexingService( config,
                         life.add( JobSchedulerFactory.createScheduler() ), providerMap,
                         storeView,
@@ -1267,7 +1273,7 @@ public class IndexingServiceTest
         );
     }
 
-    private DataUpdates withData( EntityUpdates... updates )
+    private static DataUpdates withData( EntityUpdates... updates )
     {
         return new DataUpdates( updates );
     }
@@ -1403,20 +1409,18 @@ public class IndexingServiceTest
         }
     }
 
-    private StoreIndexDescriptor storeIndex( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor
-            providerDescriptor )
+    private static StoreIndexDescriptor storeIndex( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
     {
         return forSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withId( ruleId );
     }
 
-    private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor
-            providerDescriptor )
+    private static StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor providerDescriptor )
     {
         return uniqueForSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withId( ruleId );
     }
 
-    private StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor
-            providerDescriptor, long constraintId )
+    private static StoreIndexDescriptor constraintIndexRule( long ruleId, int labelId, int propertyKeyId, IndexProviderDescriptor providerDescriptor,
+            long constraintId )
     {
         return uniqueForSchema( forLabel( labelId, propertyKeyId ), providerDescriptor ).withIds( ruleId, constraintId );
     }

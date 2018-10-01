@@ -33,7 +33,7 @@ import org.neo4j.logging.LogProvider;
  */
 public class DatabaseSchemaState implements SchemaState
 {
-    private Map<Object, Object> state;
+    private final Map<Object, Object> state;
     private final Log log;
 
     public DatabaseSchemaState( LogProvider logProvider )

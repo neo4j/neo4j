@@ -36,7 +36,6 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -468,13 +467,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     @Override
-    public IndexProviderDescriptor indexProviderForNameOrDefault( Optional<String> providerName )
+    public IndexProviderDescriptor indexProviderByName( String providerName )
     {
-        if ( providerName.isPresent() )
-        {
-            return providerMap.lookup( providerName.get() ).getProviderDescriptor();
-        }
-        return providerMap.getDefaultProvider().getProviderDescriptor();
+        return providerMap.lookup( providerName ).getProviderDescriptor();
     }
 
     /**

@@ -24,16 +24,14 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.junit.Test;
 
-import java.util.Optional;
-
+import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class IndexCreateEnterpriseIT extends IndexCreateIT
 {
-    private static final IndexCreator NODE_KEY_CREATOR =
-            ( schemaWrite, descriptor, providerName ) -> schemaWrite.nodeKeyConstraintCreate( descriptor, Optional.of( providerName ) );
+    private static final IndexCreator NODE_KEY_CREATOR = SchemaWrite::nodeKeyConstraintCreate;
 
     @Override
     protected TestGraphDatabaseFactory createGraphDatabaseFactory()

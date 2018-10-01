@@ -97,6 +97,8 @@ import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService.EMPTY_WATCHER;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
@@ -129,6 +131,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
         // Satisfy non-satisfied dependencies
         Config config = dependency( mutableDependencies, Config.class, deps -> Config.defaults() );
+        config.augment( default_schema_provider, EMPTY.getProviderDescriptor().name() );
         LogService logService = dependency( mutableDependencies, LogService.class,
                 deps -> new SimpleLogService( NullLogProvider.getInstance() ) );
         IdGeneratorFactory idGeneratorFactory = dependency( mutableDependencies, IdGeneratorFactory.class,
@@ -145,7 +148,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                         NullLog.getInstance() ) );
         dependency( mutableDependencies, DiagnosticsManager.class,
                 deps -> new DiagnosticsManager( NullLog.getInstance() ) );
-        dependency( mutableDependencies, IndexProvider.class, deps -> IndexProvider.EMPTY );
+        dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
 
         dataSource = new NeoStoreDataSource( new TestDatabaseCreationContext( DEFAULT_DATABASE_NAME, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,

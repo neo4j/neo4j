@@ -25,6 +25,11 @@ public class SynchronizedArrayIdOrderingQueue implements IdOrderingQueue
     private int offerIndex;
     private int headIndex;
 
+    public SynchronizedArrayIdOrderingQueue()
+    {
+        this( 20 );
+    }
+
     public SynchronizedArrayIdOrderingQueue( int initialMaxSize )
     {
         this.queue = new long[initialMaxSize];

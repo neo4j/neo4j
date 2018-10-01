@@ -25,6 +25,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -51,27 +52,31 @@ class LuceneBatchInserterIndexProviderNewImplTest
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir() ) );
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem ) );
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), getConfig() ) );
-        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), getConfig(), getExtensions() ) );
+        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), getConfigWithProvider(), getExtensions() ) );
         createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem, getConfig() ) );
-        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem, getConfig(),
-                getExtensions() ) );
+        createEndCloseIndexProvider( BatchInserters.inserter( getStoreDir(), fileSystem, getConfigWithProvider(), getExtensions() ) );
     }
 
-    private void createEndCloseIndexProvider( BatchInserter inserter )
+    private static void createEndCloseIndexProvider( BatchInserter inserter )
     {
         LuceneBatchInserterIndexProviderNewImpl provider = new LuceneBatchInserterIndexProviderNewImpl( inserter );
         provider.shutdown();
         inserter.shutdown();
     }
 
-    private Iterable<KernelExtensionFactory<?>> getExtensions()
+    private static Iterable<KernelExtensionFactory<?>> getExtensions()
     {
         return Iterables.asIterable( new LuceneIndexProviderFactory() );
     }
 
-    private Map<String,String> getConfig()
+    private static Map<String,String> getConfigWithProvider()
     {
-        return MapUtil.stringMap();
+        return getConfig( GraphDatabaseSettings.default_schema_provider.name(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.name() );
+    }
+
+    private static Map<String,String> getConfig( String... entries )
+    {
+        return MapUtil.stringMap( entries );
     }
 
     private File getStoreDir()

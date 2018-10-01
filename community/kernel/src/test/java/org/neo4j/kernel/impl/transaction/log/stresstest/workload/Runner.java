@@ -69,7 +69,7 @@ public class Runner implements Callable<Long>
                 Lifespan life = new Lifespan() )
         {
             TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
-            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
+            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
             LogFiles logFiles = life.add( createLogFiles( transactionIdStore, fileSystem ) );
 
             TransactionAppender transactionAppender = life.add(

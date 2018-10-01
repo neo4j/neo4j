@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
@@ -186,12 +187,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private final Lock terminationReleaseLock = new ReentrantLock();
 
-    public KernelTransactionImplementation( StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHooks hooks,
-            ConstraintIndexCreator constraintIndexCreator, Procedures procedures, TransactionHeaderInformationFactory headerInformationFactory,
-            TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor, Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier,
-            Pool<KernelTransactionImplementation> pool, Clock clock, AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef,
-            TransactionTracer transactionTracer, LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine,
-            AccessCapability accessCapability, AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
+    public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
+            TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
+            TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
+            Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier, Pool<KernelTransactionImplementation> pool, Clock clock,
+            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
+            LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
+            AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
             IndexingProvidersService indexProviders, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
     {
@@ -230,7 +232,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         autoIndexing,
                         constraintIndexCreator,
                         constraintSemantics,
-                        indexProviders );
+                        indexProviders, config );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
@@ -404,7 +406,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
         return operations.indexUniqueCreate( schema, provider );
     }

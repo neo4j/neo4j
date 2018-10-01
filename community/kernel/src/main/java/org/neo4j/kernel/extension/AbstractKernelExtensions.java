@@ -92,13 +92,16 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
     }
 
     @Override
-    public <T> T resolveDependency( final Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
+    public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
     {
-        List<T> filteredAndCasted = life.getLifecycleInstances().stream()
-                .filter( type::isInstance )
-                .map( type::cast )
-                .collect( toList() );
-        return selector.select( type, filteredAndCasted );
+        Iterable<? extends T> typeDependencies = resolveTypeDependencies( type );
+        return selector.select( type, typeDependencies );
+    }
+
+    @Override
+    public <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type ) throws IllegalArgumentException
+    {
+        return life.getLifecycleInstances().stream().filter( type::isInstance ).map( type::cast ).collect( toList() );
     }
 
     private Object getKernelExtensionDependencies( KernelExtensionFactory<?> factory )

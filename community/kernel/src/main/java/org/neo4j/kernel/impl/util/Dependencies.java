@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.util;
 
 import org.eclipse.collections.api.RichIterable;
+import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.multimap.list.MutableListMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
 
@@ -27,6 +28,7 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.collection.Iterables;
 
 @SuppressWarnings( "unchecked" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
@@ -62,6 +64,17 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
 
         // Out of options
         throw new UnsatisfiedDependencyException( type );
+    }
+
+    @Override
+    public <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type )
+    {
+        MutableList<T> options = (MutableList<T>) typeDependencies.get( type );
+        if ( parent != null )
+        {
+            return Iterables.concat( options, parent.resolveTypeDependencies( type ) );
+        }
+        return options;
     }
 
     @Override

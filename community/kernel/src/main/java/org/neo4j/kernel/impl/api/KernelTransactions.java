@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.availability.AvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
@@ -105,6 +106,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final TokenHolders tokenHolders;
     private final String currentDatabaseName;
     private final Dependencies dataSourceDependencies;
+    private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
 
@@ -137,7 +139,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      */
     private volatile boolean stopped = true;
 
-    public KernelTransactions( StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
+    public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
             StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
             TransactionCommitProcess transactionCommitProcess, IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProviderLookup,
             TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
@@ -147,6 +149,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
             IndexingProvidersService indexProviders, TokenHolders tokenHolders, String currentDatabaseName, Dependencies dataSourceDependencies )
     {
+        this.config = config;
         this.statementLocksFactory = statementLocksFactory;
         this.constraintIndexCreator = constraintIndexCreator;
         this.statementOperations = statementOperations;
@@ -362,7 +365,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         public KernelTransactionImplementation newInstance()
         {
             KernelTransactionImplementation tx =
-                    new KernelTransactionImplementation( statementOperations, schemaWriteGuard, hooks,
+                    new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks,
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,

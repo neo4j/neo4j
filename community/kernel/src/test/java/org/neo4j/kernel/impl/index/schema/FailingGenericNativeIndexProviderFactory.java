@@ -72,7 +72,6 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
     }
 
     private final GenericNativeIndexProviderFactory actual;
-    private final int priority;
     private final EnumSet<FailureType> failureTypes;
 
     public FailingGenericNativeIndexProviderFactory( FailureType... failureTypes )
@@ -88,7 +87,6 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
             throw new IllegalArgumentException( "At least one failure type, otherwise there's no point in this provider" );
         }
         this.actual = actual;
-        this.priority = priority;
         this.failureTypes = EnumSet.of( failureTypes[0], copyOfRange( failureTypes, 1, failureTypes.length ) );
     }
 
@@ -96,7 +94,7 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
     public Lifecycle newInstance( KernelContext context, GenericNativeIndexProviderFactory.Dependencies dependencies )
     {
         IndexProvider actualProvider = actual.newInstance( context, dependencies );
-        return new IndexProvider( actualProvider.getProviderDescriptor(), priority, IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
+        return new IndexProvider( actualProvider.getProviderDescriptor(), IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
         {
             @Override
             public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )

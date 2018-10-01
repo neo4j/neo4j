@@ -71,12 +71,11 @@ public class FusionIndexProvider extends IndexProvider
             IndexProvider luceneProvider,
             SlotSelector slotSelector,
             IndexProviderDescriptor descriptor,
-            int priority,
             IndexDirectoryStructure.Factory directoryStructure,
             FileSystemAbstraction fs,
             boolean archiveFailedIndex )
     {
-        super( descriptor, priority, directoryStructure );
+        super( descriptor, directoryStructure );
         this.archiveFailedIndex = archiveFailedIndex;
         this.slotSelector = slotSelector;
         this.providers = new InstanceSelector<>();

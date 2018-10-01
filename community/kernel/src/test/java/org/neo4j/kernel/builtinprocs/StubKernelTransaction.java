@@ -61,7 +61,7 @@ public class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

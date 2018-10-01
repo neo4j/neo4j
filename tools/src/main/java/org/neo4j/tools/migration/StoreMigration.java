@@ -134,7 +134,7 @@ public class StoreMigration
                     .withConfig( config ).build();
             LogTailScanner tailScanner = new LogTailScanner( logFiles, new VersionAwareLogEntryReader<>(), monitors );
 
-            DefaultIndexProviderMap indexProviderMap = life.add( new DefaultIndexProviderMap( kernelExtensions ) );
+            DefaultIndexProviderMap indexProviderMap = life.add( new DefaultIndexProviderMap( kernelExtensions, config ) );
 
             // Add the kernel store migrator
             life.start();

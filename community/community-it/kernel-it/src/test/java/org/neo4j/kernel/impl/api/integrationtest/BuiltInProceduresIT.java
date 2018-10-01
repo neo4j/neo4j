@@ -36,7 +36,9 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.security.AnonymousContext;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -349,10 +351,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         }
 
         // Then
-        GraphDatabaseSettings.SchemaIndex expectedProvider = GraphDatabaseSettings.SchemaIndex.defaultProvider();
+        IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
+        IndexProvider provider = indexProviderMap.getDefaultProvider();
         Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
-                "key", expectedProvider.providerName(),
-                "version", expectedProvider.providerVersion() );
+                "key", provider.getProviderDescriptor().getKey(),
+                "version", provider.getProviderDescriptor().getVersion() );
         assertThat( result, containsInAnyOrder(
                 new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
                         "node_unique_property", 100D, pdm},

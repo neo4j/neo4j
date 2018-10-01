@@ -55,7 +55,7 @@ public class TemporalIndexProvider extends IndexProvider
                                   IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
                                   RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
-        super( TEMPORAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
+        super( TEMPORAL_PROVIDER_DESCRIPTOR, directoryStructure );
         this.pageCache = pageCache;
         this.fs = fs;
         this.monitor = monitor;

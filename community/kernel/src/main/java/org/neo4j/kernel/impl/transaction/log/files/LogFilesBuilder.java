@@ -73,6 +73,10 @@ public class LogFilesBuilder
     private String logFileName = TransactionLogFiles.DEFAULT_NAME;
     private boolean fileBasedOperationsOnly;
 
+    private LogFilesBuilder()
+    {
+    }
+
     /**
      * Builder for fully functional transactional log files.
      * Log files will be able to access store and external components information, perform rotations, etc.

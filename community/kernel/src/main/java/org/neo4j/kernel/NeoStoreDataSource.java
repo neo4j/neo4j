@@ -342,7 +342,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         {
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
 
-            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue( 20 );
+            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue();
 
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
@@ -459,7 +459,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         extensionsLife.add( new DatabaseKernelExtensions( new SimpleKernelContext( databaseLayout.databaseDirectory(), databaseInfo, dependencies ),
                 kernelExtensionFactories, dependencies, fail() ) );
 
-        indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies ) );
+        indexProviderMap = extensionsLife.add( new DefaultIndexProviderMap( dependencies, config ) );
         dependencies.satisfyDependency( indexProviderMap );
         extensionsLife.init();
         return extensionsLife;
@@ -516,7 +516,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering, TransactionIdStore transactionIdStore )
     {
-        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 100_000 );
+        TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
         if ( config.get( GraphDatabaseSettings.ephemeral ) )
         {
             config.augmentDefaults( GraphDatabaseSettings.keep_logical_logs, "1 files" );
@@ -599,7 +599,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         TransactionHooks hooks = new TransactionHooks();
 
         KernelTransactions kernelTransactions = life.add(
-                new KernelTransactions( statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
+                new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
                         transactionHeaderInformationFactory, transactionCommitProcess, indexConfigStore, explicitIndexProvider, hooks, transactionMonitor,
                         databaseAvailabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef, heapAllocationRef,
                         accessCapability, autoIndexing, explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,

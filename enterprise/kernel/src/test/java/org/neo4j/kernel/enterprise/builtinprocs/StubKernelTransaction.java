@@ -64,7 +64,7 @@ class StubKernelTransaction implements KernelTransaction
     }
 
     @Override
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
         return null;
     }

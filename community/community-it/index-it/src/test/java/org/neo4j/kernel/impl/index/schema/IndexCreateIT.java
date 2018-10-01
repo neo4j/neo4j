@@ -39,9 +39,8 @@ public class IndexCreateIT extends KernelIntegrationTest
 {
 
     private static final IndexCreator INDEX_CREATOR =
-            ( schemaWrite, descriptor, providerName ) -> schemaWrite.indexCreate( descriptor, Optional.of( providerName ), Optional.empty() );
-    private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR =
-            ( schemaWrite, descriptor, providerName ) -> schemaWrite.uniquePropertyConstraintCreate( descriptor, Optional.of( providerName ) );
+            ( schemaWrite, descriptor, providerName ) -> schemaWrite.indexCreate( descriptor, providerName, Optional.empty() );
+    private static final IndexCreator UNIQUE_CONSTRAINT_CREATOR = SchemaWrite::uniquePropertyConstraintCreate;
 
     @Test
     public void shouldCreateIndexWithSpecificExistingProviderName() throws KernelException

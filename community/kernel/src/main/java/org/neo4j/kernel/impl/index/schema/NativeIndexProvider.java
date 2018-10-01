@@ -54,10 +54,10 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     protected final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     protected final boolean readOnly;
 
-    protected NativeIndexProvider( IndexProviderDescriptor descriptor, int priority, Factory directoryStructureFactory, PageCache pageCache,
+    protected NativeIndexProvider( IndexProviderDescriptor descriptor, Factory directoryStructureFactory, PageCache pageCache,
             FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly )
     {
-        super( descriptor, priority, directoryStructureFactory );
+        super( descriptor, directoryStructureFactory );
         this.pageCache = pageCache;
         this.fs = fs;
         this.monitor = monitor;

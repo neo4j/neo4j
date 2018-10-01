@@ -26,7 +26,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
@@ -83,8 +82,8 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 public class IndexPopulationMissConcurrentUpdateIT
 {
     private static final String NAME_PROPERTY = "name";
-    private static long INITIAL_CREATION_NODE_ID_THRESHOLD = 30;
-    private static long SCAN_BARRIER_NODE_ID_THRESHOLD = 10;
+    private static final long INITIAL_CREATION_NODE_ID_THRESHOLD = 30;
+    private static final long SCAN_BARRIER_NODE_ID_THRESHOLD = 10;
 
     private final ControlledSchemaIndexProvider index = new ControlledSchemaIndexProvider();
 
@@ -97,7 +96,8 @@ public class IndexPopulationMissConcurrentUpdateIT
             TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
             return factory.addKernelExtension( index );
         }
-    }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE );
+    }.withSetting( GraphDatabaseSettings.multi_threaded_schema_index_population_enabled, Settings.FALSE )
+     .withSetting( GraphDatabaseSettings.default_schema_provider, ControlledSchemaIndexProvider.INDEX_PROVIDER.name() );
     // The single-threaded setting makes the test deterministic. The multi-threaded variant has the same problem tested below.
 
     @Before
@@ -127,7 +127,7 @@ public class IndexPopulationMissConcurrentUpdateIT
      * after it had read and cached that bit-set it would not apply the update and miss that entity in the scan and would end up with an index
      * that was inconsistent with the store.
      */
-    @Test
+    @Test( timeout = 60_000 )
     public void shouldNoticeConcurrentUpdatesWithinCurrentLabelIndexEntryRange() throws Exception
     {
         // given nodes [0...30]. Why 30, because this test ties into a bug regarding "caching" of bit-sets in label index reader,
@@ -204,6 +204,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         private final Set<Long> entitiesByScan = new ConcurrentSkipListSet<>();
         private final Set<Long> entitiesByUpdater = new ConcurrentSkipListSet<>();
         private volatile long populationAtId;
+        static IndexProviderDescriptor INDEX_PROVIDER = new IndexProviderDescriptor( "controlled", "1" );
 
         ControlledSchemaIndexProvider()
         {
@@ -213,9 +214,7 @@ public class IndexPopulationMissConcurrentUpdateIT
         @Override
         public Lifecycle newInstance( KernelContext context, Supplier noDependencies )
         {
-            return new IndexProvider( new IndexProviderDescriptor( "controlled", "1" ),
-                    Integer.MAX_VALUE, // take precedence over any other
-                    directoriesByProvider( new File( "not-even-persistent" ) ) )
+            return new IndexProvider( INDEX_PROVIDER, directoriesByProvider( new File( "not-even-persistent" ) ) )
             {
                 @Override
                 public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )

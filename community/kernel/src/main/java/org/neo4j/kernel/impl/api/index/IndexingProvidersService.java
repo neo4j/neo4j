@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Optional;
-
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
@@ -33,7 +31,7 @@ public interface IndexingProvidersService
      *
      * @param providerName name of the wanted index provider
      */
-    IndexProviderDescriptor indexProviderForNameOrDefault( Optional<String> providerName );
+    IndexProviderDescriptor indexProviderByName( String providerName );
 
     /**
      * Validate that the given value tuple can be stored in the index associated with the given schema.

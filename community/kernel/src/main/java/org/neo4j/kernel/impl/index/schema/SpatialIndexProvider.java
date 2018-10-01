@@ -61,7 +61,7 @@ public class SpatialIndexProvider extends IndexProvider
             IndexDirectoryStructure.Factory directoryStructure, Monitor monitor,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
-        super( SPATIAL_PROVIDER_DESCRIPTOR, 0, directoryStructure );
+        super( SPATIAL_PROVIDER_DESCRIPTOR, directoryStructure );
         this.pageCache = pageCache;
         this.fs = fs;
         this.monitor = monitor;

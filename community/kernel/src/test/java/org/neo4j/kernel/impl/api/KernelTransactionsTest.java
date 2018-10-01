@@ -46,6 +46,7 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -503,7 +504,7 @@ public class KernelTransactionsTest
         }
     }
 
-    private void stopKernelTransactions( KernelTransactions kernelTransactions )
+    private static void stopKernelTransactions( KernelTransactions kernelTransactions )
     {
         try
         {
@@ -608,7 +609,7 @@ public class KernelTransactionsTest
             StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
-        return new KernelTransactions( statementLocksFactory, null, statementOperations,
+        return new KernelTransactions( Config.defaults(), statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, null, null, new TransactionHooks(),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
@@ -661,7 +662,7 @@ public class KernelTransactionsTest
         return new TestKernelTransactionHandle( tx );
     }
 
-    private KernelTransaction getKernelTransaction( KernelTransactions transactions )
+    private static KernelTransaction getKernelTransaction( KernelTransactions transactions )
     {
         return transactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.none(), 0L );
     }
@@ -678,12 +679,12 @@ public class KernelTransactionsTest
                 AccessCapability accessCapability,
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
         {
-            super( statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory, transactionCommitProcess,
-                    indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, databaseAvailabilityGuard, tracers, storageEngine, procedures,
-                    transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                    accessCapability, autoIndexing, mock( ExplicitIndexStore.class ), versionContextSupplier,
-                    ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mock( IndexingProvidersService.class ), tokenHolders, DEFAULT_DATABASE_NAME, dataSourceDependencies );
+            super( Config.defaults(), statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
+                    transactionCommitProcess, indexConfigStore, explicitIndexProviderLookup, hooks, transactionMonitor, databaseAvailabilityGuard, tracers,
+                    storageEngine, procedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                    new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability, autoIndexing, mock( ExplicitIndexStore.class ),
+                    versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), mock( IndexingProvidersService.class ),
+                    tokenHolders, DEFAULT_DATABASE_NAME, dataSourceDependencies );
         }
 
         @Override

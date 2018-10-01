@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
@@ -80,6 +81,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.existsForRelType;
 import static org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory.uniqueForLabel;
@@ -138,7 +140,7 @@ public class OperationsLockTest
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
                  transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors, autoindexing,
-                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ) );
+                constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults() );
         operations.initialize();
 
         this.order = inOrder( locks, txState, storageReader );
@@ -464,7 +466,8 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeCreatingUniquenessConstraint() throws Exception
     {
         // given
-        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() ) ).thenReturn( 42L );
+        String defaultProvider = Config.defaults().get( default_schema_provider );
+        when( constraintIndexCreator.createUniquenessConstraintIndex( transaction, descriptor, defaultProvider ) ).thenReturn( 42L );
         when( storageReader.constraintsGetForSchema(  descriptor.schema() ) ).thenReturn( Collections.emptyIterator() );
 
         // when

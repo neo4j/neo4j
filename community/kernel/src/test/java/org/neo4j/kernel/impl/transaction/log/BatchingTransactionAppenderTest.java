@@ -86,7 +86,7 @@ public class BatchingTransactionAppenderTest
     private final LogFile logFile = mock( LogFile.class );
     private final LogFiles logFiles = mock( TransactionLogFiles.class );
     private final TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
-    private final TransactionMetadataCache positionCache = new TransactionMetadataCache( 10 );
+    private final TransactionMetadataCache positionCache = new TransactionMetadataCache();
 
     @Before
     public void setUp()
@@ -286,7 +286,7 @@ public class BatchingTransactionAppenderTest
         } ).when( channel ).prepareForFlush();
         doThrow( failure ).when( flushable ).flush();
         when( logFile.getWriter() ).thenReturn( channel );
-        TransactionMetadataCache metadataCache = new TransactionMetadataCache( 10 );
+        TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( databaseHealth );

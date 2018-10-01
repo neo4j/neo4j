@@ -189,13 +189,12 @@ public class IndexTxStateUpdater
                 } );
     }
 
-    private Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor, int[] indexPropertyIds )
+    private static Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor, int[] indexPropertyIds )
     {
         return getValueTuple( node, propertyCursor, NO_SUCH_PROPERTY_KEY, NO_VALUE, indexPropertyIds );
     }
 
-    private Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor,
-            int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds )
+    private static Value[] getValueTuple( NodeCursor node, PropertyCursor propertyCursor, int changedPropertyKeyId, Value changedValue, int[] indexPropertyIds )
     {
         Value[] values = new Value[indexPropertyIds.length];
         node.properties( propertyCursor );

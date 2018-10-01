@@ -29,8 +29,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 class IndexPopulationJobController
 {
-    private final Set<IndexPopulationJob> populationJobs =
-            Collections.newSetFromMap( new ConcurrentHashMap<IndexPopulationJob,Boolean>() );
+    private final Set<IndexPopulationJob> populationJobs = Collections.newSetFromMap( new ConcurrentHashMap<>() );
     private final JobScheduler scheduler;
 
     IndexPopulationJobController( JobScheduler scheduler )
@@ -64,8 +63,8 @@ class IndexPopulationJobController
 
     private static class IndexPopulationJobWrapper implements Runnable
     {
-        private IndexPopulationJob indexPopulationJob;
-        private IndexPopulationJobController jobController;
+        private final IndexPopulationJob indexPopulationJob;
+        private final IndexPopulationJobController jobController;
 
         IndexPopulationJobWrapper( IndexPopulationJob indexPopulationJob, IndexPopulationJobController jobController )
         {

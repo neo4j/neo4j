@@ -309,7 +309,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
                 new SimpleKernelContext( databaseDirectory, DatabaseInfo.TOOL, deps ),
                 kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
 
-        indexProviderMap = life.add( new DefaultIndexProviderMap( extensions ) );
+        indexProviderMap = life.add( new DefaultIndexProviderMap( extensions, config ) );
 
         TokenHolder propertyKeyTokenHolder = new DelegatingTokenHolder( this::createNewPropertyKeyId, TokenHolder.TYPE_PROPERTY_KEY );
         propertyKeyTokenHolder.setInitialTokens( propertyKeyTokenStore.getTokens() );

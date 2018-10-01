@@ -21,16 +21,19 @@ package org.neo4j.kernel.impl.transaction.state;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.extension.dependency.AllByPrioritySelectionStrategy;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static java.lang.String.format;
+import static java.util.Objects.requireNonNull;
 
 public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexProviderMap
 {
@@ -38,23 +41,22 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
     private final Map<String,IndexProvider> indexProvidersByName = new HashMap<>();
     private final DependencyResolver dependencies;
     private IndexProvider defaultIndexProvider;
+    private final Config config;
 
-    public DefaultIndexProviderMap( DependencyResolver dependencies )
+    public DefaultIndexProviderMap( DependencyResolver dependencies, Config config )
     {
         this.dependencies = dependencies;
+        this.config = config;
     }
 
     @Override
     public void init()
     {
-        AllByPrioritySelectionStrategy<IndexProvider> indexProviderSelection = new AllByPrioritySelectionStrategy<>();
-
-        defaultIndexProvider = dependencies.resolveDependency( IndexProvider.class, indexProviderSelection );
-        put( defaultIndexProvider.getProviderDescriptor(), defaultIndexProvider );
-        for ( IndexProvider provider : indexProviderSelection.lowerPrioritizedCandidates() )
+        Iterable<? extends IndexProvider> indexProviders = dependencies.resolveTypeDependencies( IndexProvider.class );
+        for ( IndexProvider provider : indexProviders )
         {
             IndexProviderDescriptor providerDescriptor = provider.getProviderDescriptor();
-            Objects.requireNonNull( providerDescriptor );
+            requireNonNull( providerDescriptor );
             IndexProvider existing = put( providerDescriptor, provider );
             if ( existing != null )
             {
@@ -62,13 +64,7 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
                         providerDescriptor + ". First loaded " + existing + " then " + provider );
             }
         }
-    }
-
-    private IndexProvider put( IndexProviderDescriptor providerDescriptor, IndexProvider provider )
-    {
-        IndexProvider existing = indexProvidersByDescriptor.putIfAbsent( providerDescriptor, provider );
-        indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
-        return existing;
+        initDefaultProvider();
     }
 
     @Override
@@ -121,5 +117,21 @@ public class DefaultIndexProviderMap extends LifecycleAdapter implements IndexPr
         {
             throw new IllegalStateException( "DefaultIndexProviderMap must be part of life cycle and initialized before getting providers." );
         }
+    }
+
+    private void initDefaultProvider()
+    {
+        String providerName = config.get( GraphDatabaseSettings.default_schema_provider );
+        IndexProvider configuredDefaultProvider = indexProvidersByName.get( providerName );
+        requireNonNull( configuredDefaultProvider, () -> format( "Configured default provider: `%s` not found. Available index providers: %s.", providerName,
+                indexProvidersByName.keySet().toString() ) );
+        defaultIndexProvider = configuredDefaultProvider;
+    }
+
+    private IndexProvider put( IndexProviderDescriptor providerDescriptor, IndexProvider provider )
+    {
+        IndexProvider existing = indexProvidersByDescriptor.putIfAbsent( providerDescriptor, provider );
+        indexProvidersByName.putIfAbsent( providerDescriptor.name(), provider );
+        return existing;
     }
 }

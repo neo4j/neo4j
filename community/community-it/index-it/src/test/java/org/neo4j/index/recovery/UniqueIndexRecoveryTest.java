@@ -36,7 +36,9 @@ import java.util.Random;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
@@ -71,13 +73,17 @@ public class UniqueIndexRecoveryTest
     private GraphDatabaseAPI db;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<KernelExtensionFactory> parameters()
+    public static Collection<Object[]> parameters()
     {
-        return asList( new LuceneIndexProviderFactory(), new NativeLuceneFusionIndexProviderFactory10(), new NativeLuceneFusionIndexProviderFactory20() );
+        return asList( new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory10(), NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR},
+                new Object[]{new NativeLuceneFusionIndexProviderFactory20(), NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR} );
     }
 
-    @Parameterized.Parameter
+    @Parameterized.Parameter( 0 )
     public KernelExtensionFactory<?> kernelExtensionFactory;
+    @Parameterized.Parameter( 1 )
+    public IndexProviderDescriptor descriptor;
 
     @Before
     public void before()
@@ -92,6 +98,7 @@ public class UniqueIndexRecoveryTest
     {
         return (GraphDatabaseAPI) factory
                 .newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
+                .setConfig( GraphDatabaseSettings.default_schema_provider, descriptor.name() )
                 .newGraphDatabase();
     }
 

@@ -23,8 +23,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
@@ -105,7 +106,7 @@ public class ConstraintIndexCreatorTest
                 new ConstraintIndexCreator( () -> kernel, indexingService, nodePropertyAccessor, logProvider );
 
         // when
-        long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, Optional.empty() );
+        long indexId = creator.createUniquenessConstraintIndex( createTransaction(), descriptor, getDefaultProvider() );
 
         // then
         assertEquals( INDEX_ID, indexId );
@@ -144,7 +145,7 @@ public class ConstraintIndexCreatorTest
         KernelTransactionImplementation transaction = createTransaction();
         try
         {
-            creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
+            creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
 
             fail( "expected exception" );
         }
@@ -157,7 +158,7 @@ public class ConstraintIndexCreatorTest
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
         SchemaDescriptor newIndex = index.schema();
-        verify( tx1 ).indexUniqueCreate( eq( newIndex ), eq( Optional.empty() ) );
+        verify( tx1 ).indexUniqueCreate( eq( newIndex ), eq( getDefaultProvider() ) );
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead, times( 2 ) ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
@@ -207,7 +208,7 @@ public class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
+        creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
 
         // then
         verify( transaction.statementLocks().pessimistic() )
@@ -237,7 +238,7 @@ public class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        long indexId = creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
+        long indexId = creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
 
         // then
         assertEquals( orphanedConstraintIndexId, indexId );
@@ -275,7 +276,7 @@ public class ConstraintIndexCreatorTest
         try
         {
             KernelTransactionImplementation transaction = createTransaction();
-            creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.empty() );
+            creator.createUniquenessConstraintIndex( transaction, descriptor, getDefaultProvider() );
             fail( "Should've failed" );
         }
         catch ( AlreadyConstrainedException e )
@@ -308,12 +309,12 @@ public class ConstraintIndexCreatorTest
 
         // when
         KernelTransactionImplementation transaction = createTransaction();
-        creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.of( providerDescriptor.name() ) );
+        creator.createUniquenessConstraintIndex( transaction, descriptor, providerDescriptor.name() );
 
         // then
         assertEquals( 1, kernel.transactions.size() );
         KernelTransactionImplementation transactionInstance = kernel.transactions.get( 0 );
-        verify( transactionInstance ).indexUniqueCreate( eq( descriptor ), eq( Optional.of( providerDescriptor.name() ) ) );
+        verify( transactionInstance ).indexUniqueCreate( eq( descriptor ), eq( providerDescriptor.name() ) );
         verify( schemaRead ).index( descriptor );
         verify( schemaRead ).indexGetCommittedId( any() );
         verifyNoMoreInteractions( schemaRead );
@@ -333,7 +334,7 @@ public class ConstraintIndexCreatorTest
         ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
         KernelTransactionImplementation transaction = createTransaction();
 
-        creator.createUniquenessConstraintIndex( transaction, descriptor, Optional.of( "indexProvider-1.0" ) );
+        creator.createUniquenessConstraintIndex( transaction, descriptor, "indexProviderByName-1.0" );
 
         logProvider.assertContainsLogCallContaining( "Starting constraint creation: %s." );
         logProvider.assertContainsLogCallContaining( "Constraint %s populated, starting verification." );
@@ -391,7 +392,7 @@ public class ConstraintIndexCreatorTest
             when( transaction.schemaWrite() ).thenReturn( schemaWrite );
             TransactionState transactionState = mock( TransactionState.class );
             when( transaction.txState() ).thenReturn( transactionState );
-            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ), any( Optional.class ) ) ).thenAnswer(
+            when( transaction.indexUniqueCreate( any( SchemaDescriptor.class ), any( String.class ) ) ).thenAnswer(
                     i -> IndexDescriptorFactory.uniqueForSchema( i.getArgument( 0 ) ) );
         }
         catch ( InvalidTransactionTypeKernelException e )
@@ -399,5 +400,10 @@ public class ConstraintIndexCreatorTest
             fail( "Expected write transaction" );
         }
         return transaction;
+    }
+
+    private static String getDefaultProvider()
+    {
+        return Config.defaults().get( GraphDatabaseSettings.default_schema_provider );
     }
 }

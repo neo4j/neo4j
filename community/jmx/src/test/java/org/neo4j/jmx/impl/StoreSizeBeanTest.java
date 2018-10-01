@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -80,14 +81,15 @@ class StoreSizeBeanTest
         logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( testDirectory.databaseDir(), fs ).build();
 
         Dependencies dependencies = new Dependencies();
-        DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
+        Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );
+        DataSourceManager dataSourceManager = new DataSourceManager( config );
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
 
         dependencies.satisfyDependency( indexProvider );
         dependencies.satisfyDependency( indexProvider2 );
 
-        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies );
+        DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
         indexProviderMap.init();
 
         // Setup all dependencies
@@ -106,7 +108,7 @@ class StoreSizeBeanTest
         dataSourceManager.start();
 
         // Create bean
-        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.databaseDir(), Config.defaults(), dataSourceManager );
+        KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.databaseDir(), config, dataSourceManager );
         ManagementData data = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
         storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
     }

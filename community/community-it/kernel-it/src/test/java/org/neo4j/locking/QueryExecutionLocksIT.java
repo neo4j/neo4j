@@ -36,6 +36,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.ExplicitIndexRead;
@@ -65,6 +66,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
@@ -658,9 +660,10 @@ public class QueryExecutionLocksIT
         }
 
         @Override
-        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+        public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
         {
-            return internal.indexUniqueCreate( schema, Optional.empty() );
+            String defaultProvider = Config.defaults().get( GraphDatabaseSettings.default_schema_provider );
+            return internal.indexUniqueCreate( schema, defaultProvider );
         }
 
         @Override

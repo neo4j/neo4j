@@ -43,6 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
@@ -173,7 +174,8 @@ public class IndexRestartIT
             db.shutdown();
         }
 
-        db = factory.newImpermanentDatabase();
+        db = factory.newImpermanentDatabaseBuilder()
+                    .setConfig( default_schema_provider, provider.getProviderDescriptor().name() ).newGraphDatabase();
     }
 
     private void stopDb()

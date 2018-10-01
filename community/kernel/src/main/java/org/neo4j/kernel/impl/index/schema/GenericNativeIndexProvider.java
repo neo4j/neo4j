@@ -120,10 +120,10 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<CompositeGen
     private final SpaceFillingCurveConfiguration configuration;
     private final boolean archiveFailedIndex;
 
-    public GenericNativeIndexProvider( int priority, IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
+    public GenericNativeIndexProvider( IndexDirectoryStructure.Factory directoryStructureFactory, PageCache pageCache,
             FileSystemAbstraction fs, Monitor monitor, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, boolean readOnly, Config config )
     {
-        super( DESCRIPTOR, priority, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
+        super( DESCRIPTOR, directoryStructureFactory, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly );
 
         this.configuredSettings = new ConfiguredSpaceFillingCurveSettingsCache( config );
         this.configuration = getConfiguredSpaceFillingCurveConfiguration( config );

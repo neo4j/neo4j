@@ -52,8 +52,10 @@ import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.Iterators.asUniqueSet;
 import static org.neo4j.kernel.api.impl.schema.LuceneIndexProvider.defaultDirectoryStructure;
+import static org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR;
 
 public class LuceneIndexRecoveryIT
 {
@@ -222,7 +224,8 @@ public class LuceneIndexRecoveryIT
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs.get() );
         factory.setKernelExtensions( Collections.singletonList( indexProviderFactory ) );
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
+        db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder()
+                .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();
     }
 
     private void killDb() throws Exception
@@ -309,7 +312,7 @@ public class LuceneIndexRecoveryIT
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                ExtensionType.DATABASE, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+                ExtensionType.DATABASE, PROVIDER_DESCRIPTOR.getKey() )
         {
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
@@ -331,21 +334,14 @@ public class LuceneIndexRecoveryIT
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
         return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                ExtensionType.DATABASE, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() )
+                ExtensionType.DATABASE, PROVIDER_DESCRIPTOR.getKey() )
         {
 
             @Override
             public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
-                        IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
-                {
-                    @Override
-                    public int compareTo( IndexProvider o )
-                    {
-                        return 1;
-                    }
-                };
+                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
+                        dependencies.getConfig(), context.databaseInfo().operationalMode );
             }
         };
     }

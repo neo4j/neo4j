@@ -57,7 +57,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
 
     public ControlledPopulationIndexProvider()
     {
-        super( PROVIDER_DESCRIPTOR, 10, IndexDirectoryStructure.NONE );
+        super( PROVIDER_DESCRIPTOR, IndexDirectoryStructure.NONE );
         setInitialIndexState( initialIndexState );
         when( mockedWriter.newReader() ).thenReturn( IndexReader.EMPTY );
     }
@@ -124,12 +124,6 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
     {
         throw new IllegalStateException();
-    }
-
-    @Override
-    public int compareTo( IndexProvider o )
-    {
-        return 1;
     }
 
     @Override

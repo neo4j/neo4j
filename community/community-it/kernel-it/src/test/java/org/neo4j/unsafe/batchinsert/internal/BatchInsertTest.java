@@ -59,6 +59,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
@@ -884,7 +885,7 @@ public class BatchInsertTest
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ) );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
 
         inserter.createDeferredSchemaIndex( label( "Hacker" ) ).on( "handle" ).create();
 
@@ -919,7 +920,7 @@ public class BatchInsertTest
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ) );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
 
         inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
 
@@ -956,7 +957,7 @@ public class BatchInsertTest
         when( provider.getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn( accessor );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ) );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
 
         long boggle = inserter.createNode( map( "handle", "b0ggl3" ), label( "Hacker" ) );
 
@@ -1394,9 +1395,11 @@ public class BatchInsertTest
         return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration() );
     }
 
-    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider ) throws Exception
+    private BatchInserter newBatchInserterWithIndexProvider( KernelExtensionFactory<?> provider, IndexProviderDescriptor providerDescriptor ) throws Exception
     {
-        return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration(), singletonList( provider ) );
+        Map<String,String> configuration = configuration();
+        configuration.put( GraphDatabaseSettings.default_schema_provider.name(), providerDescriptor.name() );
+        return BatchInserters.inserter( localTestDirectory.databaseDir(), fileSystemRule.get(), configuration, singletonList( provider ) );
     }
 
     private GraphDatabaseService switchToEmbeddedGraphDatabaseService( BatchInserter inserter )
@@ -1463,7 +1466,7 @@ public class BatchInsertTest
                 .thenReturn( populator );
 
         BatchInserter inserter = newBatchInserterWithIndexProvider(
-                singleInstanceIndexProviderFactory( KEY, provider ) );
+                singleInstanceIndexProviderFactory( KEY, provider ), provider.getProviderDescriptor() );
 
         inserter.createDeferredSchemaIndex( label("Hacker") ).on( "handle" ).create();
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );

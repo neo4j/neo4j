@@ -147,11 +147,11 @@ public class FusionIndexProviderTest
                 providers.get( SPATIAL ),
                 providers.get( TEMPORAL ),
                 providers.get( LUCENE ),
-                fusionVersion.slotSelector(), DESCRIPTOR, 10, NONE, mock( FileSystemAbstraction.class ), false );
+                fusionVersion.slotSelector(), DESCRIPTOR, NONE, mock( FileSystemAbstraction.class ), false );
         instanceSelector = new InstanceSelector<>( providers );
     }
 
-    private IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )
+    private static IndexProvider mockProvider( Class<? extends IndexProvider> providerClass, String name )
     {
         IndexProvider mock = mock( providerClass );
         when( mock.getProviderDescriptor() ).thenReturn( new IndexProviderDescriptor( name, "1" ) );

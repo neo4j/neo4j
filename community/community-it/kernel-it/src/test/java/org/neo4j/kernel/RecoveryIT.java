@@ -127,6 +127,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.ArrayUtil.array;
 import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -824,8 +825,12 @@ public class RecoveryIT
 
     private static GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
     {
-        return (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs ).setKernelExtensions(
-                singletonList( new IndexExtensionFactory( indexProvider ) ) ).newImpermanentDatabase( storeDir );
+        return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
+                .setKernelExtensions( singletonList( new IndexExtensionFactory( indexProvider ) ) )
+                .newImpermanentDatabaseBuilder( storeDir )
+                .setConfig( default_schema_provider, indexProvider.getProviderDescriptor().name() )
+                .newGraphDatabase();
     }
 
     private GraphDatabaseService startDatabase( File storeDir )

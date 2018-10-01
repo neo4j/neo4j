@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.io.IOException;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -93,7 +92,7 @@ public class ConstraintIndexCreator
      * and this tx committed, which will create the uniqueness constraint</li>
      * </ol>
      */
-    public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction, SchemaDescriptor descriptor, Optional<String> provider )
+    public long createUniquenessConstraintIndex( KernelTransactionImplementation transaction, SchemaDescriptor descriptor, String provider )
             throws TransactionFailureException, CreateConstraintFailureException,
             UniquePropertyValueValidationException, AlreadyConstrainedException
     {
@@ -221,8 +220,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private IndexReference getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema,
-            Optional<String> provider )
+    private IndexReference getOrCreateUniquenessConstraintIndex( SchemaRead schemaRead, TokenRead tokenRead, SchemaDescriptor schema, String provider )
             throws SchemaKernelException, IndexNotFoundKernelException
     {
         IndexReference descriptor = schemaRead.index( schema );
@@ -250,7 +248,7 @@ public class ConstraintIndexCreator
         return indexProxy.getDescriptor();
     }
 
-    public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, Optional<String> provider )
+    public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, String provider )
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {

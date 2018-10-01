@@ -32,11 +32,13 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 
 public class SchemaIndexWaitingAcceptanceTest
@@ -44,16 +46,16 @@ public class SchemaIndexWaitingAcceptanceTest
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
 
     @Rule
-    public ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule()
+    public final DatabaseRule rule = new ImpermanentDatabaseRule()
     {
         @Override
         protected void configure( GraphDatabaseFactory databaseFactory )
         {
-            List<KernelExtensionFactory<?>> extensions;
-            extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
+            super.configure( databaseFactory );
+            List<KernelExtensionFactory<?>> extensions = Collections.singletonList( singleInstanceIndexProviderFactory( "test", provider ) );
             ((TestGraphDatabaseFactory) databaseFactory).setKernelExtensions( extensions );
         }
-    };
+    }.withSetting( default_schema_provider, provider.getProviderDescriptor().name() );
 
     @Test
     public void shouldTimeoutWaitingForIndexToComeOnline()

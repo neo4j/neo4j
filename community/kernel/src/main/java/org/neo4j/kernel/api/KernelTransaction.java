@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import java.util.Map;
-import java.util.Optional;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -64,10 +63,10 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * Create unique index which will be used to support uniqueness constraint.
      *
      * @param schema schema to create unique index for.
-     * @param provider
+     * @param provider index provider identifier
      * @return IndexDescriptor for the index to be created.
      */
-    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider );
+    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider );
 
     /**
      * @return the security context this transaction is currently executing in.

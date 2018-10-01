@@ -25,8 +25,13 @@ import org.neo4j.helpers.collection.LruCache;
 
 public class TransactionMetadataCache
 {
+    private static final int DEFAULT_TRANSACTION_CACHE_SIZE = 100_000;
     private final LruCache<Long /*tx id*/, TransactionMetadata> txStartPositionCache;
 
+    public TransactionMetadataCache()
+    {
+        this( DEFAULT_TRANSACTION_CACHE_SIZE );
+    }
     public TransactionMetadataCache( int transactionCacheSize )
     {
         this.txStartPositionCache = new LruCache<>( "Tx start position cache", transactionCacheSize );

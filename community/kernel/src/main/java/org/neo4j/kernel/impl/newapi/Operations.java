@@ -27,6 +27,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.CastingIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -78,6 +79,7 @@ import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -122,26 +124,19 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final KernelToken token;
     private final StorageReader statement;
     private final AutoIndexing autoIndexing;
-    private DefaultNodeCursor nodeCursor;
     private final IndexTxStateUpdater updater;
-    private DefaultPropertyCursor propertyCursor;
-    private DefaultRelationshipScanCursor relationshipCursor;
     private final DefaultCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
     private final IndexingProvidersService indexProviders;
+    private final Config config;
+    private DefaultNodeCursor nodeCursor;
+    private DefaultPropertyCursor propertyCursor;
+    private DefaultRelationshipScanCursor relationshipCursor;
 
-    public Operations(
-            AllStoreHolder allStoreHolder,
-            IndexTxStateUpdater updater,
-            StorageReader statement,
-            KernelTransactionImplementation ktx,
-            KernelToken token,
-            DefaultCursors cursors,
-            AutoIndexing autoIndexing,
-            ConstraintIndexCreator constraintIndexCreator,
-            ConstraintSemantics constraintSemantics,
-            IndexingProvidersService indexProviders )
+    public Operations( AllStoreHolder allStoreHolder, IndexTxStateUpdater updater, StorageReader statement, KernelTransactionImplementation ktx,
+            KernelToken token, DefaultCursors cursors, AutoIndexing autoIndexing, ConstraintIndexCreator constraintIndexCreator,
+            ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config )
     {
         this.token = token;
         this.autoIndexing = autoIndexing;
@@ -153,6 +148,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         this.constraintIndexCreator = constraintIndexCreator;
         this.constraintSemantics = constraintSemantics;
         this.indexProviders = indexProviders;
+        this.config = config;
     }
 
     public void initialize()
@@ -722,8 +718,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public String nodeExplicitIndexSetConfiguration( String indexName, String key, String value )
             throws ExplicitIndexNotFoundKernelException
     {
-       ktx.assertOpen();
-       return allStoreHolder.explicitIndexStore().setNodeIndexConfiguration( indexName, key, value );
+        ktx.assertOpen();
+        return allStoreHolder.explicitIndexStore().setNodeIndexConfiguration( indexName, key, value );
     }
 
     @Override
@@ -920,33 +916,33 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public IndexReference indexCreate( SchemaDescriptor descriptor ) throws SchemaKernelException
     {
-        return indexCreate( descriptor, Optional.empty(), Optional.empty() );
+        return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), Optional.empty() );
     }
 
     @Override
     public IndexReference indexCreate( SchemaDescriptor descriptor,
-                                       Optional<String> provider,
-                                       Optional<String> name ) throws SchemaKernelException
+            String provider,
+            Optional<String> name ) throws SchemaKernelException
     {
         exclusiveSchemaLock( descriptor );
         ktx.assertOpen();
         assertValidDescriptor( descriptor, SchemaKernelException.OperationContext.INDEX_CREATION );
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
-        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
+        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
         ktx.txState().indexDoAdd( index );
         return index;
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, Optional<String> provider )
+    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
-        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderForNameOrDefault( provider );
+        IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
         IndexDescriptor index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
-                                                  Optional.empty(),
-                                                  providerDescriptor );
+                        Optional.empty(),
+                        providerDescriptor );
         ktx.txState().indexDoAdd( index );
         return index;
     }
@@ -988,11 +984,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor )
             throws SchemaKernelException
     {
-        return uniquePropertyConstraintCreate( descriptor, Optional.empty() );
+        return uniquePropertyConstraintCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ) );
     }
 
     @Override
-    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, Optional<String> provider )
+    public ConstraintDescriptor uniquePropertyConstraintCreate( SchemaDescriptor descriptor, String provider )
             throws SchemaKernelException
     {
         //Lock
@@ -1014,11 +1010,11 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     @Override
     public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor ) throws SchemaKernelException
     {
-        return nodeKeyConstraintCreate( descriptor, Optional.empty() );
+        return nodeKeyConstraintCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ) );
     }
 
     @Override
-    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, Optional<String> provider ) throws SchemaKernelException
+    public ConstraintDescriptor nodeKeyConstraintCreate( LabelSchemaDescriptor descriptor, String provider ) throws SchemaKernelException
     {
         //Lock
         exclusiveSchemaLock( descriptor );
@@ -1206,7 +1202,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private boolean propertyHasChanged( Value lhs, Value rhs )
+    private static boolean propertyHasChanged( Value lhs, Value rhs )
     {
         //It is not enough to check equality here since by our equality semantics `int == tofloat(int)` is `true`
         //so by only checking for equality users cannot change type of property without also "changing" the value.
@@ -1252,7 +1248,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidDescriptor( SchemaDescriptor descriptor, SchemaKernelException.OperationContext context )
+    private static void assertValidDescriptor( SchemaDescriptor descriptor, SchemaKernelException.OperationContext context )
             throws RepeatedPropertyInCompositeSchemaException
     {
         int numUnique = Arrays.stream( descriptor.getPropertyIds() ).distinct().toArray().length;
@@ -1262,14 +1258,14 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint, Optional<String> provider )
+    private void indexBackedConstraintCreate( IndexBackedConstraintDescriptor constraint, String provider )
             throws CreateConstraintFailureException
     {
         SchemaDescriptor descriptor = constraint.schema();
         try
         {
             if ( ktx.hasTxStateWithChanges() &&
-                 ktx.txState().indexDoUnRemove( constraint.ownedIndexDescriptor() ) ) // ..., DROP, *CREATE*
+                    ktx.txState().indexDoUnRemove( constraint.ownedIndexDescriptor() ) ) // ..., DROP, *CREATE*
             { // creation is undoing a drop
                 if ( !ktx.txState().constraintDoUnRemove( constraint ) ) // CREATE, ..., DROP, *CREATE*
                 { // ... the drop we are undoing did itself undo a prior create...
@@ -1306,7 +1302,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertValidIndex( IndexReference index ) throws NoSuchIndexException
+    private static void assertValidIndex( IndexReference index ) throws NoSuchIndexException
     {
         if ( index == IndexReference.NO_INDEX )
         {

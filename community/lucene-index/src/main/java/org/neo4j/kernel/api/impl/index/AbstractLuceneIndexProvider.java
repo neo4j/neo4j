@@ -46,10 +46,10 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     protected final OperationalMode operationalMode;
     protected final FileSystemAbstraction fileSystem;
 
-    protected AbstractLuceneIndexProvider( IndexProviderDescriptor descriptor, int priority, IndexDirectoryStructure.Factory directoryStructureFactory,
+    protected AbstractLuceneIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
             Config config, OperationalMode operationalMode, FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
     {
-        super( descriptor, priority, directoryStructureFactory );
+        super( descriptor, directoryStructureFactory );
         this.config = config;
         this.operationalMode = operationalMode;
         this.fileSystem = fileSystem;

@@ -28,8 +28,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.function.ThrowingSupplier;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexPopulationJob;
+import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
@@ -60,14 +62,16 @@ public class SchemaLoggingIT
 
         // then
         LogMatcherBuilder match = inLog( IndexPopulationJob.class );
-        GraphDatabaseSettings.SchemaIndex expectedProvider = GraphDatabaseSettings.SchemaIndex.defaultProvider();
+        IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
+        IndexProvider defaultProvider = indexProviderMap.getDefaultProvider();
+        IndexProviderDescriptor providerDescriptor = defaultProvider.getProviderDescriptor();
         logProvider.assertAtLeastOnce( match.info( "Index population started: [%s]", ":User(name) [provider: {key=" +
-                expectedProvider.providerName() + ", version=" + expectedProvider.providerVersion() + "}]" ) );
+                providerDescriptor.getKey() + ", version=" + providerDescriptor.getVersion() + "}]" ) );
 
-        assertEventually( (ThrowingSupplier<Object,Exception>) () -> null, new LogMessageMatcher( match, expectedProvider ), 1, TimeUnit.MINUTES );
+        assertEventually( (ThrowingSupplier<Object,Exception>) () -> null, new LogMessageMatcher( match, providerDescriptor ), 1, TimeUnit.MINUTES );
     }
 
-    private void createIndex( GraphDatabaseAPI db, String labelName, String property )
+    private static void createIndex( GraphDatabaseAPI db, String labelName, String property )
     {
         try ( Transaction tx = db.beginTx() )
         {
@@ -86,19 +90,19 @@ public class SchemaLoggingIT
     {
         private static final String CREATION_FINISHED = "Index creation finished. Index [%s] is %s.";
         private final LogMatcherBuilder match;
-        private final GraphDatabaseSettings.SchemaIndex expectedProvider;
+        private final IndexProviderDescriptor descriptor;
 
-        LogMessageMatcher( LogMatcherBuilder match, GraphDatabaseSettings.SchemaIndex expectedProvider )
+        LogMessageMatcher( LogMatcherBuilder match, IndexProviderDescriptor descriptor )
         {
             this.match = match;
-            this.expectedProvider = expectedProvider;
+            this.descriptor = descriptor;
         }
 
         @Override
         public boolean matches( Object item )
         {
             return logProvider.containsMatchingLogCall( match.info( CREATION_FINISHED,
-                    ":User(name) [provider: {key=" + expectedProvider.providerName() + ", version=" + expectedProvider.providerVersion() + "}]", "ONLINE" ) );
+                    ":User(name) [provider: {key=" + descriptor.getKey() + ", version=" + descriptor.getVersion() + "}]", "ONLINE" ) );
         }
 
         @Override
