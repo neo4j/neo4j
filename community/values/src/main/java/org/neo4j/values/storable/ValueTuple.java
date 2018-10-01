@@ -47,7 +47,7 @@ public class ValueTuple
 
     private final Value[] values;
 
-    public ValueTuple( Value[] values )
+    protected ValueTuple( Value[] values )
     {
         this.values = values;
     }
