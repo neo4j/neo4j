@@ -34,6 +34,7 @@ import org.neo4j.util.concurrent.Futures;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.neo4j.function.Suppliers.untilTimeExpired;
+import static org.neo4j.helpers.Exceptions.findCauseOrSuppressed;
 
 public class Control
 {
@@ -60,6 +61,12 @@ public class Control
 
     public synchronized void onFailure( Throwable cause )
     {
+        if ( !keepGoing() && findCauseOrSuppressed( cause, t -> t instanceof InterruptedException ).isPresent() )
+        {
+            log.info( "Ignoring interrupt at end of test", cause );
+            return;
+        }
+
         if ( failure == null )
         {
             failure = cause;
