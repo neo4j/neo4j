@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
 
 public class NativeIndexPopulatorTest
@@ -46,52 +47,52 @@ public class NativeIndexPopulatorTest
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberPopulatorFactory(),
-                        (ValueCreatorUtilFactory) NumberValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.NUMBER ),
                         (IndexLayoutFactory) NumberLayoutNonUnique::new
                 },
                 {"String",
                         (PopulatorFactory) StringIndexPopulator::new,
-                        (ValueCreatorUtilFactory) StringValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.TEXT ),
                         (IndexLayoutFactory) StringLayout::new
                 },
                 {"Date",
                         temporalPopulatorFactory( ValueGroup.DATE ),
-                        (ValueCreatorUtilFactory) DateValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.DATE ),
                         (IndexLayoutFactory) DateLayout::new
                 },
                 {"DateTime",
                         temporalPopulatorFactory( ValueGroup.ZONED_DATE_TIME ),
-                        (ValueCreatorUtilFactory) DateTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ),
                         (IndexLayoutFactory) ZonedDateTimeLayout::new
                 },
                 {"Duration",
                         temporalPopulatorFactory( ValueGroup.DURATION ),
-                        (ValueCreatorUtilFactory) DurationValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.DURATION ),
                         (IndexLayoutFactory) DurationLayout::new
                 },
                 {"LocalDateTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"LocalTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_TIME ),
-                        (ValueCreatorUtilFactory) LocalTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ),
                         (IndexLayoutFactory) LocalTimeLayout::new
                 },
                 {"LocalDateTime",
                         temporalPopulatorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"Time",
                         temporalPopulatorFactory( ValueGroup.ZONED_TIME ),
-                        (ValueCreatorUtilFactory) TimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ),
                         (IndexLayoutFactory) ZonedTimeLayout::new
                 },
                 {"Generic",
                         genericPopulatorFactory(),
-                        (ValueCreatorUtilFactory) GenericValueCreatorUtil::new,
+                        RandomValues.Type.values(),
                         (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings )
                 },
                 // todo { Spatial has it's own subclass because it need to override some of the test methods }
@@ -146,7 +147,7 @@ public class NativeIndexPopulatorTest
         public PopulatorFactory<KEY,VALUE> populatorFactory;
 
         @Parameterized.Parameter( 2 )
-        public ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory;
+        public RandomValues.Type[] supportedTypes;
 
         @Parameterized.Parameter( 3 )
         public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
@@ -162,7 +163,7 @@ public class NativeIndexPopulatorTest
         @Override
         ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
         {
-            return valueCreatorUtilFactory.create( uniqueDescriptor, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
+            return new ValueCreatorUtil<>( uniqueDescriptor, supportedTypes, ValueCreatorUtil.FRACTION_DUPLICATE_UNIQUE );
         }
 
         @Override
@@ -188,7 +189,7 @@ public class NativeIndexPopulatorTest
         public PopulatorFactory<KEY,VALUE> populatorFactory;
 
         @Parameterized.Parameter( 2 )
-        public ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory;
+        public RandomValues.Type[] supportedTypes;
 
         @Parameterized.Parameter( 3 )
         public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
@@ -204,7 +205,7 @@ public class NativeIndexPopulatorTest
         @Override
         ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
         {
-            return valueCreatorUtilFactory.create( nonUniqueDescriptor, ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
+            return new ValueCreatorUtil<>( nonUniqueDescriptor, supportedTypes, ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
         }
 
         @Override

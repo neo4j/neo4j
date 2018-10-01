@@ -26,16 +26,18 @@ import java.io.IOException;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.ValueGroup;
 
 import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
+import static org.neo4j.values.storable.RandomValues.typesOfGroup;
+import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil<NumberIndexKey,NativeIndexValue>
 {
@@ -63,7 +65,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
 
     private Value[] generateNumberValues()
     {
-        RandomValues.Type[] numberTypes = RandomValues.including( t -> t.valueGroup == ValueGroup.NUMBER );
+        RandomValues.Type[] numberTypes = RandomValues.including( t -> t.valueGroup == NUMBER );
         int size = 20;
         Value[] result = new NumberValue[size];
         for ( int i = 0; i < size; i++ )
@@ -98,7 +100,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
     @Override
     protected ValueCreatorUtil<NumberIndexKey,NativeIndexValue> createValueCreatorUtil()
     {
-        return new NumberValueCreatorUtil( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ), ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( forLabel( 42, 666 ).withId( 0 ), typesOfGroup( NUMBER ), FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override

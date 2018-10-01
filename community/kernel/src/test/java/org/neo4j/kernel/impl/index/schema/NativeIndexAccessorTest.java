@@ -33,12 +33,15 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
+
+import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
 
 @RunWith( Parameterized.class )
 public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> extends NativeIndexAccessorTests<KEY,VALUE>
@@ -49,52 +52,52 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
         return Arrays.asList( new Object[][]{
                 {"Number",
                         numberAccessorFactory(),
-                        (ValueCreatorUtilFactory) NumberValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.NUMBER ),
                         (IndexLayoutFactory) NumberLayoutNonUnique::new
                 },
                 {"String",
                         stringAccessorFactory(),
-                        (ValueCreatorUtilFactory) StringValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.TEXT ),
                         (IndexLayoutFactory) StringLayout::new
                 },
                 {"Date",
                         temporalAccessorFactory( ValueGroup.DATE ),
-                        (ValueCreatorUtilFactory) DateValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.DATE ),
                         (IndexLayoutFactory) DateLayout::new
                 },
                 {"DateTime",
                         temporalAccessorFactory( ValueGroup.ZONED_DATE_TIME ),
-                        (ValueCreatorUtilFactory) DateTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.ZONED_DATE_TIME ),
                         (IndexLayoutFactory) ZonedDateTimeLayout::new
                 },
                 {"Duration",
                         temporalAccessorFactory( ValueGroup.DURATION ),
-                        (ValueCreatorUtilFactory) DurationValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.DURATION ),
                         (IndexLayoutFactory) DurationLayout::new
                 },
                 {"LocalDateTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"LocalTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_TIME ),
-                        (ValueCreatorUtilFactory) LocalTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.LOCAL_TIME ),
                         (IndexLayoutFactory) LocalTimeLayout::new
                 },
                 {"LocalDateTime",
                         temporalAccessorFactory( ValueGroup.LOCAL_DATE_TIME ),
-                        (ValueCreatorUtilFactory) LocalDateTimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.LOCAL_DATE_TIME ),
                         (IndexLayoutFactory) LocalDateTimeLayout::new
                 },
                 {"Time",
                         temporalAccessorFactory( ValueGroup.ZONED_TIME ),
-                        (ValueCreatorUtilFactory) TimeValueCreatorUtil::new,
+                        RandomValues.typesOfGroup( ValueGroup.ZONED_TIME ),
                         (IndexLayoutFactory) ZonedTimeLayout::new
                 },
                 {"Generic",
                         genericAccessorFactory(),
-                        (ValueCreatorUtilFactory) GenericValueCreatorUtil::new,
+                        RandomValues.Type.values(),
                         (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings )
                 },
                 //{ Spatial has it's own subclass because it need to override some of the test methods }
@@ -106,17 +109,17 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
     private final AccessorFactory<KEY,VALUE> accessorFactory;
-    private final ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory;
+    private final RandomValues.Type[] supportedTypes;
     private final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
 
     @SuppressWarnings( "unused" )
     public NativeIndexAccessorTest( String name,
             AccessorFactory<KEY,VALUE> accessorFactory,
-            ValueCreatorUtilFactory<KEY,VALUE> valueCreatorUtilFactory,
+            RandomValues.Type[] supportedTypes,
             IndexLayoutFactory<KEY,VALUE> indexLayoutFactory )
     {
         this.accessorFactory = accessorFactory;
-        this.valueCreatorUtilFactory = valueCreatorUtilFactory;
+        this.supportedTypes = supportedTypes;
         this.indexLayoutFactory = indexLayoutFactory;
     }
 
@@ -129,7 +132,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     ValueCreatorUtil<KEY,VALUE> createValueCreatorUtil()
     {
-        return valueCreatorUtilFactory.create( TestIndexDescriptorFactory.forLabel( 42, 666 ).withId( 0 ), ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE );
+        return new ValueCreatorUtil<>( forLabel( 42, 666 ).withId( 0 ), supportedTypes, FRACTION_DUPLICATE_NON_UNIQUE );
     }
 
     @Override
