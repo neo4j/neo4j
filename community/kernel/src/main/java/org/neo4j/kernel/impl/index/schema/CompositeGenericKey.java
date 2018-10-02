@@ -72,13 +72,13 @@ class CompositeGenericKey extends GenericKey
     @Override
     void initValueAsLowest( int stateSlot, ValueGroup valueGroup )
     {
-        states[stateSlot].initValueAsLowest( valueGroup );
+        stateSlot( stateSlot ).initValueAsLowest( valueGroup );
     }
 
     @Override
     void initValueAsHighest( int stateSlot, ValueGroup valueGroup )
     {
-        states[stateSlot].initValueAsHighest( valueGroup );
+        stateSlot( stateSlot ).initValueAsHighest( valueGroup );
     }
 
     @Override
@@ -142,7 +142,7 @@ class CompositeGenericKey extends GenericKey
         {
             if ( !stateSlot( i ).getInternal( cursor, keySize ) )
             {
-                initializeToDummyValue();
+                // The slot's getInternal has already set cursor exception, if it so desired, with more specific information so don't do it here.
                 return false;
             }
             int offsetAfterRead = cursor.getOffset();

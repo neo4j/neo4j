@@ -306,9 +306,9 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
-        minimalSplitterInternal( left, right, into );
         into.setCompareId( right.getCompareId() );
         into.setEntityId( right.getEntityId() );
+        minimalSplitterInternal( left, right, into );
     }
 
     void minimalSplitterInternal( GenericKey left, GenericKey right, GenericKey into )
@@ -352,10 +352,16 @@ public class GenericKey extends NativeIndexKey<GenericKey>
             initializeToDummyValue();
             cursor.setCursorException( format( "Failed to read " + getClass().getSimpleName() +
                     " due to keySize < ENTITY_ID_SIZE, more precisely %d", size ) );
+            return false;
         }
 
         initialize( cursor.getLong() );
-        return getInternal( cursor, size );
+        if ( !getInternal( cursor, size ) )
+        {
+            initializeToDummyValue();
+            return false;
+        }
+        return true;
     }
 
     boolean getInternal( PageCursor cursor, int size )
