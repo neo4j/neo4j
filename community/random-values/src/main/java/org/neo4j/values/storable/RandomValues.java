@@ -76,7 +76,6 @@ import static org.neo4j.values.storable.Values.shortValue;
  */
 public class RandomValues
 {
-
     public interface Configuration
     {
         int stringMinLength();
@@ -123,9 +122,9 @@ public class RandomValues
         }
     }
 
-    private static final int MAX_ASCII_CODE_POINT = 0x7F;
     public static final int MAX_BMP_CODE_POINT = 0xFFFF;
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
+    static final int MAX_ASCII_CODE_POINT = 0x7F;
     private static final ValueType[] ALL_TYPES = ValueType.values();
     private static final ValueType[] ARRAY_TYPES = ValueType.arrayTypes();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;

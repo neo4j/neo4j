@@ -44,6 +44,15 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
     // Cartesian_3D is the CRS w/ highest table/code at the time of writing this. Update as more CRSs gets added.
     public static final PointValue MAX_VALUE = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
 
+    static final PointValue MIN_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS84, -180D, -90 );
+    static final PointValue MAX_VALUE_WGS84 = new PointValue( CoordinateReferenceSystem.WGS84, 180D, 90 );
+    static final PointValue MIN_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS84_3D, -180D, -90, Long.MIN_VALUE );
+    static final PointValue MAX_VALUE_WGS84_3D = new PointValue( CoordinateReferenceSystem.WGS84_3D, 180D, 90, Long.MAX_VALUE );
+    static final PointValue MIN_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.Cartesian, Long.MIN_VALUE, Long.MIN_VALUE );
+    static final PointValue MAX_VALUE_CARTESIAN = new PointValue( CoordinateReferenceSystem.Cartesian, Long.MAX_VALUE, Long.MAX_VALUE );
+    static final PointValue MIN_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
+    static final PointValue MAX_VALUE_CARTESIAN_3D = new PointValue( CoordinateReferenceSystem.Cartesian_3D, Long.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
+
     private CoordinateReferenceSystem crs;
     private double[] coordinate;
 
