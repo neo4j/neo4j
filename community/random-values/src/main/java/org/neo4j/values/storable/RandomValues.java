@@ -40,6 +40,8 @@ import java.util.function.Consumer;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
 
+import org.neo4j.function.Predicates;
+
 import static java.lang.Math.abs;
 import static java.time.LocalDate.ofEpochDay;
 import static java.time.LocalTime.ofNanoOfDay;
@@ -317,7 +319,7 @@ public class RandomValues
     public static Type[] excluding( Type[] among, Predicate<Type> exclude )
     {
         return Arrays.stream( among )
-                .filter( t -> !exclude.test( t ) )
+                .filter( Predicates.not( exclude ) )
                 .toArray( Type[]::new );
     }
 
