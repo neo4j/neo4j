@@ -39,8 +39,7 @@ public interface AuxiliaryTransactionStateProvider
      * Return the <em>identity key</em> that is used to identify the provider, if {@link TxStateHolder#auxiliaryTxState(Object)} needs to have a new auxiliary
      * transaction state instance created.
      * <p>
-     * Note that this is matched by object identity, so it is recommended to either be a unique interned string literal or constant, or the provider class
-     * object.
+     * Note that this object should have good equals and hashCode implementations, such that it cannot clash with keys from other providers.
      *
      * @return The key object used for identifying the auxiliary transaction state provider.
      */

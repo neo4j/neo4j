@@ -31,6 +31,7 @@ import org.neo4j.helpers.collection.Iterators;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class TestCopyOnWriteHashMap
@@ -69,5 +70,22 @@ public class TestCopyOnWriteHashMap
         map.remove( 1 );
         List<Entry<Integer,String>> entriesBeforeRemoval = Iterators.asList( entries );
         assertThat( entriesBeforeRemoval, containsInAnyOrder( allEntries ) );
+    }
+
+    @Test
+    public void snapshotShouldKeepData()
+    {
+        CopyOnWriteHashMap<Integer,String> map = new CopyOnWriteHashMap<>();
+        map.put( 0, "0" );
+        Map<Integer,String> snapshot = map.snapshot();
+        assertThat( snapshot.get( 0 ), is( "0" ) );
+        assertThat( map.remove( 0 ), is( "0" ) );
+        assertThat( snapshot.get( 0 ), is( "0" ) );
+    }
+
+    @Test( expected = UnsupportedOperationException.class )
+    public void snapshotMustBeUnmodifiable()
+    {
+        new CopyOnWriteHashMap<>().snapshot().put( 0, "0" );
     }
 }

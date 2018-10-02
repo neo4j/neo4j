@@ -20,86 +20,73 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Collection;
-import java.util.IdentityHashMap;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateCloseException;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateHolder;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateProvider;
+import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.storageengine.api.StorageCommand;
 
 public class KernelAuxTransactionStateManager implements AuxiliaryTransactionStateManager
 {
-    private volatile IdentityHashMap<Object, AuxiliaryTransactionStateProvider> providers;
+    private volatile CopyOnWriteHashMap<Object, AuxiliaryTransactionStateProvider> providers;
 
     public KernelAuxTransactionStateManager()
     {
-        providers = new IdentityHashMap<>();
+        providers = new CopyOnWriteHashMap<>();
     }
 
     @Override
     public void registerProvider( AuxiliaryTransactionStateProvider provider )
     {
-        Object key = provider.getIdentityKey();
-        synchronized ( this )
-        {
-            if ( !providers.containsKey( key ) )
-            {
-                IdentityHashMap<Object, AuxiliaryTransactionStateProvider> copy = new IdentityHashMap<>( providers );
-                copy.put( key, provider );
-                providers = copy;
-            }
-        }
+        providers.put( provider.getIdentityKey(), provider );
     }
 
     @Override
     public void unregisterProvider( AuxiliaryTransactionStateProvider provider )
     {
-        Object key = provider.getIdentityKey();
-        synchronized ( this )
-        {
-            if ( providers.containsKey( key ) )
-            {
-                IdentityHashMap<Object, AuxiliaryTransactionStateProvider> copy = new IdentityHashMap<>( providers );
-                copy.remove( key );
-                providers = copy;
-            }
-        }
+        providers.remove( provider.getIdentityKey() );
     }
 
     @Override
     public AuxiliaryTransactionStateHolder openStateHolder()
     {
-        return new AuxStateHolder( providers );
+        return new AuxStateHolder( providers.snapshot() );
     }
 
-    private static class AuxStateHolder implements AuxiliaryTransactionStateHolder
+    private static class AuxStateHolder implements AuxiliaryTransactionStateHolder, Function<Object,AuxiliaryTransactionState>
     {
-        private final IdentityHashMap<Object, AuxiliaryTransactionStateProvider> providers;
-        private final IdentityHashMap<Object, AuxiliaryTransactionState> openedStates;
+        private final Map<Object, AuxiliaryTransactionStateProvider> providers;
+        private final Map<Object, AuxiliaryTransactionState> openedStates;
 
-        AuxStateHolder( IdentityHashMap<Object,AuxiliaryTransactionStateProvider> providers )
+        AuxStateHolder( Map<Object,AuxiliaryTransactionStateProvider> providers )
         {
              this.providers = providers;
-            openedStates = new IdentityHashMap<>();
+            openedStates = new HashMap<>();
         }
 
         @Override
         public AuxiliaryTransactionState getState( Object providerIdentityKey )
         {
-            AuxiliaryTransactionState state = openedStates.get( providerIdentityKey );
-            if ( state == null )
+            return openedStates.computeIfAbsent( providerIdentityKey, this ); // Calls out to #apply(Object).
+        }
+
+        @Override
+        public AuxiliaryTransactionState apply( Object providerIdentityKey )
+        {
+            AuxiliaryTransactionStateProvider provider = providers.get( providerIdentityKey );
+            if ( provider != null )
             {
-                AuxiliaryTransactionStateProvider provider = providers.get( providerIdentityKey );
-                if ( provider != null )
-                {
-                    state = provider.createNewAuxiliaryTransactionState();
-                    openedStates.put( providerIdentityKey, state );
-                }
+                return provider.createNewAuxiliaryTransactionState();
             }
-            return state;
+            return null;
         }
 
         @Override
