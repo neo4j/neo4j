@@ -219,18 +219,24 @@ public class SchemaCalculator
                         // Even if we find property key on other rels with this type, set all of them nullable
                         nullableRelationshipTypes.add( typeId );
                     }
+
+                    propertyIds.addAll( oldPropertyKeySet );
                 }
                 else
                 {
-                    // we can and need to skip this if we found the empty set
-                    oldPropertyKeySet.removeAll( propertyIds );
-                    oldPropertyKeySet.forEach( id -> {
+                    Set<Integer> currentPropertyIdsHelperSet = new HashSet( propertyIds );
+                    propertyIds.removeAll( oldPropertyKeySet );  // only the brand new ones in propIds now
+                    oldPropertyKeySet.removeAll( currentPropertyIdsHelperSet );  // only the old ones that are not on the new rel
+
+                    propertyIds.addAll( oldPropertyKeySet );
+                    propertyIds.forEach( id -> {
                         Pair<Integer,Integer> key = Pair.of( typeId, id );
                         relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
                     } );
+
+                    propertyIds.addAll( currentPropertyIdsHelperSet );
                 }
 
-                propertyIds.addAll( oldPropertyKeySet );
                 relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
             }
             relationshipScanCursor.close();
@@ -271,18 +277,24 @@ public class SchemaCalculator
                         // Even if we find property key on other nodes with those labels, set all of them nullable
                         nullableLabelSets.add( labels );
                     }
+
+                    propertyIds.addAll( oldPropertyKeySet );
                 }
                 else
                 {
-                    // we can and need (!) to skip this if we found the empty set
-                    oldPropertyKeySet.removeAll( propertyIds );
-                    oldPropertyKeySet.forEach( id -> {
+                    Set<Integer> currentPropertyIdsHelperSet = new HashSet( propertyIds );
+                    propertyIds.removeAll( oldPropertyKeySet );  // only the brand new ones in propIds now
+                    oldPropertyKeySet.removeAll( currentPropertyIdsHelperSet );  // only the old ones that are not on the new node
+
+                    propertyIds.addAll( oldPropertyKeySet );
+                    propertyIds.forEach( id -> {
                         Pair<SortedLabels,Integer> key = Pair.of( labels, id );
                         labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
                     } );
+
+                    propertyIds.addAll( currentPropertyIdsHelperSet );
                 }
 
-                propertyIds.addAll( oldPropertyKeySet );
                 labelSetToPropertyKeysMapping.put( labels, propertyIds );
             }
             nodeCursor.close();
