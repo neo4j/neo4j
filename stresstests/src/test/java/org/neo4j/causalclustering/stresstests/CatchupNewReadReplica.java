@@ -22,35 +22,34 @@
  */
 package org.neo4j.causalclustering.stresstests;
 
-import io.netty.channel.Channel;
-
-import java.util.concurrent.TimeUnit;
+import java.io.IOException;
+import java.time.Clock;
+import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
 
-import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.discovery.Cluster;
 import org.neo4j.causalclustering.discovery.ClusterMember;
 import org.neo4j.causalclustering.discovery.ReadReplica;
-import org.neo4j.causalclustering.handlers.ExceptionMonitoringHandler;
-import org.neo4j.helper.IsConnectionResetByPeer;
-import org.neo4j.helper.IsStoreClosed;
+import org.neo4j.causalclustering.stresstests.LagEvaluator.Lag;
 import org.neo4j.helper.Workload;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.Log;
 
-import static org.neo4j.function.Predicates.await;
-import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.neo4j.function.Predicates.awaitForever;
+import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.ONLY;
 
 class CatchupNewReadReplica extends Workload
 {
-    private final Predicate<Throwable> isStoreClosed = new IsStoreClosed();
+    private static final long SAMPLE_INTERVAL_MS = 2000;
+    private static final long MAX_LAG_MS = 500;
+
     private final FileSystemAbstraction fs;
-    private Cluster<?> cluster;
+    private final Log log;
+    private final Cluster<?> cluster;
     private boolean deleteStore;
 
     CatchupNewReadReplica( Control control, Resources resources )
@@ -58,150 +57,80 @@ class CatchupNewReadReplica extends Workload
         super( control );
         this.fs = resources.fileSystem();
         this.cluster = resources.cluster();
+        this.log = resources.logProvider().getLog( getClass() );
     }
 
     @Override
-    protected void doWork()
+    protected void doWork() throws IOException
     {
         int newMemberId = cluster.readReplicas().size();
         final ReadReplica readReplica = cluster.addReadReplicaWithId( newMemberId );
 
-        Throwable ex = null;
-        Supplier<Throwable> monitoredException = null;
-        try
-        {
-            monitoredException = startAndRegisterExceptionMonitor( readReplica );
-            await( this::leaderTxId, // if the txId from the leader is -1, give up and retry later (leader switch?)
-                    leaderTxId -> leaderTxId < BASE_TX_ID || leaderTxId <= txId( readReplica, true ), // caught up?
-                    10, TimeUnit.MINUTES );
-        }
-        catch ( Throwable e )
-        {
-            ex = e;
-        }
-        finally
-        {
-            try
-            {
-                cluster.removeReadReplicaWithMemberId( newMemberId );
-                if ( ex == null && deleteStore )
-                {
-                    fs.deleteRecursively( readReplica.databaseDirectory() );
-                }
-                deleteStore = !deleteStore;
-            }
-            catch ( Throwable e )
-            {
-                ex = exception( ex, e );
-            }
-        }
-
-        if ( monitoredException != null && monitoredException.get() != null )
-        {
-            throw new RuntimeException( exception( monitoredException.get(), ex ) );
-        }
-
-        if ( ex != null )
-        {
-            throw new RuntimeException( ex );
-        }
-    }
-
-    private static Throwable exception( Throwable outer, Throwable inner )
-    {
-        if ( outer == null )
-        {
-            assert inner != null;
-            return inner;
-        }
-
-        if ( inner != null )
-        {
-            outer.addSuppressed( inner );
-        }
-
-        return outer;
-    }
-
-    private static Supplier<Throwable> startAndRegisterExceptionMonitor( ReadReplica readReplica )
-    {
+        log.info( "Adding " + readReplica );
         readReplica.start();
 
-        // the database is create when starting the edge...
-        final Monitors monitors =
-                readReplica.database().getDependencyResolver().resolveDependency( Monitors.class );
-        ExceptionMonitor exceptionMonitor = new ExceptionMonitor( new IsConnectionResetByPeer() );
-        monitors.addMonitorListener( exceptionMonitor, CatchUpClient.class.getName() );
-        return exceptionMonitor;
+        LagEvaluator lagEvaluator = new LagEvaluator( this::leaderTxId, () -> txId( readReplica ), Clock.systemUTC() );
+
+        awaitForever( () ->
+        {
+            if ( !control.keepGoing() )
+            {
+                return true;
+            }
+
+            Optional<Lag> lagEstimate = lagEvaluator.evaluate();
+
+            if ( lagEstimate.isPresent() )
+            {
+                log.info( lagEstimate.get().toString() );
+                return lagEstimate.get().timeLagMillis() < MAX_LAG_MS;
+            }
+            else
+            {
+                log.info( "Lag estimate not available" );
+                return false;
+            }
+        }, SAMPLE_INTERVAL_MS, MILLISECONDS );
+
+        if ( !control.keepGoing() )
+        {
+            return;
+        }
+
+        log.info( "Caught up" );
+        cluster.removeReadReplicaWithMemberId( newMemberId );
+
+        if ( deleteStore )
+        {
+            log.info( "Deleting store of " + readReplica );
+            fs.deleteRecursively( readReplica.databaseDirectory() );
+        }
+        deleteStore = !deleteStore;
     }
 
-    private long leaderTxId()
+    private OptionalLong leaderTxId()
     {
         try
         {
-            return txId( cluster.awaitLeader(), false );
+            return txId( cluster.awaitLeader() );
         }
         catch ( TimeoutException e )
         {
-            // whatever... we'll try again
-            return -1;
+            return OptionalLong.empty();
         }
     }
 
-    private long txId( ClusterMember member, boolean fail )
+    private OptionalLong txId( ClusterMember member )
     {
-        GraphDatabaseAPI database = member.database();
-        if ( database == null )
-        {
-            return errorValueOrThrow( fail, new IllegalStateException( "database is shutdown" ) );
-        }
-
         try
         {
-            return database.getDependencyResolver().resolveDependency( TransactionIdStore.class )
-                    .getLastClosedTransactionId();
+            GraphDatabaseAPI database = member.database();
+            TransactionIdStore txIdStore = database.getDependencyResolver().resolveDependency( TransactionIdStore.class, ONLY );
+            return OptionalLong.of( txIdStore.getLastClosedTransactionId() );
         }
         catch ( Throwable ex )
         {
-            return errorValueOrThrow( fail && !isStoreClosed.test( ex ), ex );
-        }
-    }
-
-    private static long errorValueOrThrow( boolean fail, Throwable error )
-    {
-        if ( fail )
-        {
-            throw new RuntimeException( error );
-        }
-        else
-        {
-            return -1;
-        }
-    }
-
-    private static class ExceptionMonitor implements ExceptionMonitoringHandler.Monitor, Supplier<Throwable>
-    {
-        private final AtomicReference<Throwable> exception = new AtomicReference<>();
-        private Predicate<Throwable> reject;
-
-        ExceptionMonitor( Predicate<Throwable> reject )
-        {
-            this.reject = reject;
-        }
-
-        @Override
-        public void exceptionCaught( Channel channel, Throwable cause )
-        {
-            if ( !reject.test( cause ) )
-            {
-                exception.set( cause );
-            }
-        }
-
-        @Override
-        public Throwable get()
-        {
-            return exception.get();
+            return OptionalLong.empty();
         }
     }
 }

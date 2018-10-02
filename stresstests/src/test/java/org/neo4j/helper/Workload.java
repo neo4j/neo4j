@@ -26,7 +26,7 @@ import org.neo4j.causalclustering.stresstests.Control;
 
 public abstract class Workload implements Runnable
 {
-    private final Control control;
+    protected final Control control;
     private final long sleepTimeMillis;
 
     public Workload( Control control )
