@@ -37,6 +37,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
 
 import static java.lang.System.currentTimeMillis;
 
@@ -281,7 +282,7 @@ public class RandomRule implements TestRule
         return randoms.nextValue();
     }
 
-    public Value nextValue( RandomValues.Type type )
+    public Value nextValue( ValueType type )
     {
         return randoms.nextValueOfType( type );
     }

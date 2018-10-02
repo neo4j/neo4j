@@ -76,78 +76,6 @@ import static org.neo4j.values.storable.Values.shortValue;
  */
 public class RandomValues
 {
-    public enum Type
-    {
-        BOOLEAN( ValueGroup.BOOLEAN, BooleanValue.class ),
-        BYTE( ValueGroup.NUMBER, ByteValue.class ),
-        SHORT( ValueGroup.NUMBER, ShortValue.class ),
-        INT( ValueGroup.NUMBER, IntValue.class ),
-        LONG( ValueGroup.NUMBER, LongValue.class ),
-        FLOAT( ValueGroup.NUMBER, FloatValue.class ),
-        DOUBLE( ValueGroup.NUMBER, DoubleValue.class ),
-        CHAR( ValueGroup.TEXT, CharValue.class ),
-        STRING( ValueGroup.TEXT, TextValue.class ),
-        STRING_ALPHANUMERIC( ValueGroup.TEXT, TextValue.class ),
-        STRING_ASCII( ValueGroup.TEXT, TextValue.class ),
-        STRING_BMP( ValueGroup.TEXT, TextValue.class ),
-        LOCAL_DATE_TIME( ValueGroup.LOCAL_DATE_TIME, LocalDateTimeValue.class ),
-        DATE( ValueGroup.DATE, DateValue.class ),
-        LOCAL_TIME( ValueGroup.LOCAL_TIME, LocalTimeValue.class ),
-        PERIOD( ValueGroup.DURATION, DurationValue.class ),
-        DURATION( ValueGroup.DURATION, DurationValue.class ),
-        TIME( ValueGroup.ZONED_TIME, TimeValue.class ),
-        DATE_TIME( ValueGroup.ZONED_DATE_TIME, DateTimeValue.class ),
-        CARTESIAN_POINT( ValueGroup.GEOMETRY, PointValue.class ),
-        CARTESIAN_POINT_3D( ValueGroup.GEOMETRY, PointValue.class ),
-        GEOGRAPHIC_POINT( ValueGroup.GEOMETRY, PointValue.class ),
-        GEOGRAPHIC_POINT_3D( ValueGroup.GEOMETRY, PointValue.class ),
-        BOOLEAN_ARRAY( ValueGroup.BOOLEAN_ARRAY, BooleanArray.class, true ),
-        BYTE_ARRAY( ValueGroup.NUMBER_ARRAY, ByteArray.class, true ),
-        SHORT_ARRAY( ValueGroup.NUMBER_ARRAY, ShortArray.class, true ),
-        INT_ARRAY( ValueGroup.NUMBER_ARRAY, IntArray.class, true ),
-        LONG_ARRAY( ValueGroup.NUMBER_ARRAY, LongArray.class, true ),
-        FLOAT_ARRAY( ValueGroup.NUMBER_ARRAY, FloatArray.class, true ),
-        DOUBLE_ARRAY( ValueGroup.NUMBER_ARRAY, DoubleArray.class, true ),
-        CHAR_ARRAY( ValueGroup.TEXT_ARRAY, CharArray.class, true ),
-        STRING_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
-        STRING_ALPHANUMERIC_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
-        STRING_ASCII_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
-        STRING_BMP_ARRAY( ValueGroup.TEXT_ARRAY, StringArray.class, true ),
-        LOCAL_DATE_TIME_ARRAY( ValueGroup.LOCAL_DATE_TIME_ARRAY, LocalDateTimeArray.class, true ),
-        DATE_ARRAY( ValueGroup.DATE_ARRAY, DateArray.class, true ),
-        LOCAL_TIME_ARRAY( ValueGroup.LOCAL_TIME_ARRAY, LocalTimeArray.class, true ),
-        PERIOD_ARRAY( ValueGroup.DURATION_ARRAY, DurationArray.class, true ),
-        DURATION_ARRAY( ValueGroup.DURATION_ARRAY, DurationArray.class, true ),
-        TIME_ARRAY( ValueGroup.ZONED_TIME_ARRAY, TimeArray.class, true ),
-        DATE_TIME_ARRAY( ValueGroup.ZONED_DATE_TIME_ARRAY, DateTimeArray.class, true ),
-        CARTESIAN_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true ),
-        CARTESIAN_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true ),
-        GEOGRAPHIC_POINT_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true ),
-        GEOGRAPHIC_POINT_3D_ARRAY( ValueGroup.GEOMETRY_ARRAY, PointArray.class, true );
-
-        public final ValueGroup valueGroup;
-        public final Class<? extends Value> valueClass;
-        public final boolean arrayType;
-
-        Type( ValueGroup valueGroup, Class<? extends Value> valueClass )
-        {
-            this( valueGroup, valueClass, false );
-        }
-
-        Type( ValueGroup valueGroup, Class<? extends Value> valueClass, boolean arrayType )
-        {
-            this.valueGroup = valueGroup;
-            this.valueClass = valueClass;
-            this.arrayType = arrayType;
-        }
-
-        static Type[] arrayTypes()
-        {
-            return Arrays.stream( Type.values() )
-                    .filter( t -> t.arrayType )
-                    .toArray( Type[]::new );
-        }
-    }
 
     public interface Configuration
     {
@@ -198,8 +126,8 @@ public class RandomValues
     private static final int MAX_ASCII_CODE_POINT = 0x7F;
     public static final int MAX_BMP_CODE_POINT = 0xFFFF;
     public static final Configuration DEFAULT_CONFIGURATION = new Default();
-    private static final Type[] ALL_TYPES = Type.values();
-    private static final Type[] ARRAY_TYPES = Type.arrayTypes();
+    private static final ValueType[] ALL_TYPES = ValueType.values();
+    private static final ValueType[] ARRAY_TYPES = ValueType.arrayTypes();
     private static final long NANOS_PER_SECOND = 1_000_000_000L;
 
     private final Generator generator;
@@ -291,43 +219,43 @@ public class RandomValues
      *
      * @see RandomValues
      */
-    public Value nextValueOfTypes( Type... types )
+    public Value nextValueOfTypes( ValueType... types )
     {
         return nextValueOfType( among( types ) );
     }
 
-    public static Type[] including( Predicate<Type> include )
+    public static ValueType[] including( Predicate<ValueType> include )
     {
-        return Arrays.stream( Type.values() )
+        return Arrays.stream( ValueType.values() )
                 .filter( include )
-                .toArray( Type[]::new );
+                .toArray( ValueType[]::new );
     }
 
     /**
      * Create an array containing all value types, excluding provided types.
      */
-    public static Type[] excluding( Type... exclude )
+    public static ValueType[] excluding( ValueType... exclude )
     {
-        return excluding( Type.values(), exclude );
+        return excluding( ValueType.values(), exclude );
     }
 
-    public static Type[] excluding( Type[] among, Type... exclude )
+    public static ValueType[] excluding( ValueType[] among, ValueType... exclude )
     {
         return excluding( among, t -> ArrayUtils.contains( exclude, t ) );
     }
 
-    public static Type[] excluding( Type[] among, Predicate<Type> exclude )
+    public static ValueType[] excluding( ValueType[] among, Predicate<ValueType> exclude )
     {
         return Arrays.stream( among )
                 .filter( Predicates.not( exclude ) )
-                .toArray( Type[]::new );
+                .toArray( ValueType[]::new );
     }
 
-    public static Type[] typesOfGroup( ValueGroup valueGroup )
+    public static ValueType[] typesOfGroup( ValueGroup valueGroup )
     {
-        return Arrays.stream( Type.values() )
+        return Arrays.stream( ValueType.values() )
                 .filter( t -> t.valueGroup == valueGroup )
-                .toArray( Type[]::new );
+                .toArray( ValueType[]::new );
     }
 
     /**
@@ -335,7 +263,7 @@ public class RandomValues
      *
      * @see RandomValues
      */
-    public Value nextValueOfType( Type type )
+    public Value nextValueOfType( ValueType type )
     {
         switch ( type )
         {

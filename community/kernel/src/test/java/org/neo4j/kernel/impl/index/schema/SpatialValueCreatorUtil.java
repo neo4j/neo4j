@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.values.storable.RandomValues;
+import org.neo4j.values.storable.ValueType;
 
 class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeIndexValue>
 {
     SpatialValueCreatorUtil( StoreIndexDescriptor descriptor, double fractionDuplicates )
     {
-        super( descriptor, new RandomValues.Type[]{RandomValues.Type.GEOGRAPHIC_POINT}, fractionDuplicates );
+        super( descriptor, new ValueType[]{ValueType.GEOGRAPHIC_POINT}, fractionDuplicates );
     }
 
     @Override

@@ -39,6 +39,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
@@ -50,7 +51,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     private static final int N_VALUES = 10;
 
     final StoreIndexDescriptor indexDescriptor;
-    private final RandomValues.Type[] supportedTypes;
+    private final ValueType[] supportedTypes;
     private final double fractionDuplicates;
 
     ValueCreatorUtil( ValueCreatorUtil delegate )
@@ -58,7 +59,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         this( delegate.indexDescriptor, delegate.supportedTypes, delegate.fractionDuplicates );
     }
 
-    ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, RandomValues.Type[] supportedTypes, double fractionDuplicates )
+    ValueCreatorUtil( StoreIndexDescriptor indexDescriptor, ValueType[] supportedTypes, double fractionDuplicates )
     {
         this.indexDescriptor = indexDescriptor;
         this.supportedTypes = supportedTypes;
@@ -70,7 +71,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return Values.COMPARATOR.compare( key1.asValues()[0], key2.asValues()[0] );
     }
 
-    RandomValues.Type[] supportedTypes()
+    ValueType[] supportedTypes()
     {
         return supportedTypes;
     }
@@ -95,13 +96,13 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return someUpdates( randomRule, supportedTypes(), fractionDuplicates() );
     }
 
-    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, RandomValues.Type[] types, boolean allowDuplicates )
+    IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, boolean allowDuplicates )
     {
         double fractionDuplicates = allowDuplicates ? FRACTION_DUPLICATE_NON_UNIQUE : FRACTION_DUPLICATE_UNIQUE;
         return someUpdates( random, types, fractionDuplicates );
     }
 
-    private IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, RandomValues.Type[] types, double fractionDuplicates )
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdates( RandomRule random, ValueType[] types, double fractionDuplicates )
     {
         RandomValueGenerator valueGenerator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates );
         RandomUpdateGenerator randomUpdateGenerator = new RandomUpdateGenerator( valueGenerator );
@@ -130,7 +131,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
         return randomUpdateGenerator( randomRule, supportedTypes() );
     }
 
-    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random, RandomValues.Type[] types )
+    Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator( RandomRule random, ValueType[] types )
     {
         Iterator<Value> valueIterator = new RandomValueGenerator( random.randomValues(), types, fractionDuplicates() );
         return new RandomUpdateGenerator( valueIterator );
@@ -189,11 +190,11 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
     {
         private final Set<Value> uniqueCompareValues;
         private final List<Value> uniqueValues;
-        private final RandomValues.Type[] types;
+        private final ValueType[] types;
         private final double fractionDuplicates;
         private final RandomValues randomValues;
 
-        RandomValueGenerator( RandomValues randomValues, RandomValues.Type[] types, double fractionDuplicates )
+        RandomValueGenerator( RandomValues randomValues, ValueType[] types, double fractionDuplicates )
         {
             this.types = types;
             this.fractionDuplicates = fractionDuplicates;

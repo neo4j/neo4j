@@ -54,11 +54,11 @@ import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.time.LocalDate.ofEpochDay;
@@ -632,7 +632,7 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
     public void testExactMatchOnRandomCompositeValues() throws Exception
     {
         // given
-        RandomValues.Type[] types = randomSetOfSupportedTypes();
+        ValueType[] types = randomSetOfSupportedTypes();
         List<IndexEntryUpdate<?>> updates = new ArrayList<>();
         Set<ValueTuple> duplicateChecker = new HashSet<>();
         for ( long id = 0; id < 10_000; id++ )

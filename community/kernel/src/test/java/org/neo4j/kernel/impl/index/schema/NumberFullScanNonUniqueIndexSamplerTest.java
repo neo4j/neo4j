@@ -30,6 +30,7 @@ import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
@@ -65,7 +66,7 @@ public class NumberFullScanNonUniqueIndexSamplerTest extends NativeIndexTestUtil
 
     private Value[] generateNumberValues()
     {
-        RandomValues.Type[] numberTypes = RandomValues.including( t -> t.valueGroup == NUMBER );
+        ValueType[] numberTypes = RandomValues.including( t -> t.valueGroup == NUMBER );
         int size = 20;
         Value[] result = new NumberValue[size];
         for ( int i = 0; i < size; i++ )

@@ -37,6 +37,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -81,8 +82,7 @@ public class IndexProvidedValuesTest extends KernelAPIReadTestBase<ReadTestSuppo
         {
             RandomValues randomValues = randomRule.randomValues();
 
-            RandomValues.Type[] allExceptNonSortable = RandomValues.excluding( RandomValues.Type.STRING,
-                                                                               RandomValues.Type.STRING_ARRAY );
+            ValueType[] allExceptNonSortable = RandomValues.excluding( ValueType.STRING, ValueType.STRING_ARRAY );
 
             for ( int i = 0; i < N_NODES; i++ )
             {

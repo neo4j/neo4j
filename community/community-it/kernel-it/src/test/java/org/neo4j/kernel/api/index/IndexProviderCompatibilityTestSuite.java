@@ -55,6 +55,7 @@ import org.neo4j.values.storable.LocalTimeValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 @RunWith( ParameterizedSuiteRunner.class )
@@ -99,21 +100,21 @@ public abstract class IndexProviderCompatibilityTestSuite
         return true;
     }
 
-    public RandomValues.Type[] supportedValueTypes()
+    public ValueType[] supportedValueTypes()
     {
         if ( !supportsSpatial() )
         {
             return RandomValues.excluding(
-                    RandomValues.Type.CARTESIAN_POINT,
-                    RandomValues.Type.CARTESIAN_POINT_ARRAY,
-                    RandomValues.Type.CARTESIAN_POINT_3D,
-                    RandomValues.Type.CARTESIAN_POINT_3D_ARRAY,
-                    RandomValues.Type.GEOGRAPHIC_POINT,
-                    RandomValues.Type.GEOGRAPHIC_POINT_ARRAY,
-                    RandomValues.Type.GEOGRAPHIC_POINT_3D,
-                    RandomValues.Type.GEOGRAPHIC_POINT_3D_ARRAY );
+                    ValueType.CARTESIAN_POINT,
+                    ValueType.CARTESIAN_POINT_ARRAY,
+                    ValueType.CARTESIAN_POINT_3D,
+                    ValueType.CARTESIAN_POINT_3D_ARRAY,
+                    ValueType.GEOGRAPHIC_POINT,
+                    ValueType.GEOGRAPHIC_POINT_ARRAY,
+                    ValueType.GEOGRAPHIC_POINT_3D,
+                    ValueType.GEOGRAPHIC_POINT_3D_ARRAY );
         }
-        return RandomValues.Type.values();
+        return ValueType.values();
     }
 
     public void consistencyCheck( IndexAccessor accessor )

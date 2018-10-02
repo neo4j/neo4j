@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueType;
 
 import static org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory.forLabel;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.FRACTION_DUPLICATE_NON_UNIQUE;
@@ -107,7 +108,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
                 },
                 {"Generic",
                         genericAccessorFactory(),
-                        RandomValues.Type.values(),
+                        ValueType.values(),
                         (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings ),
                         GenericNativeIndexProvider.CAPABILITY
                 },
@@ -120,14 +121,14 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     private static final StandardConfiguration configuration = new StandardConfiguration();
 
     private final AccessorFactory<KEY,VALUE> accessorFactory;
-    private final RandomValues.Type[] supportedTypes;
+    private final ValueType[] supportedTypes;
     private final IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
     private final IndexCapability indexCapability;
 
     @SuppressWarnings( "unused" )
     public NativeIndexAccessorTest( String name,
             AccessorFactory<KEY,VALUE> accessorFactory,
-            RandomValues.Type[] supportedTypes,
+            ValueType[] supportedTypes,
             IndexLayoutFactory<KEY,VALUE> indexLayoutFactory,
             IndexCapability indexCapability )
     {

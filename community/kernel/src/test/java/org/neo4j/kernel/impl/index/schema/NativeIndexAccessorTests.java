@@ -64,6 +64,7 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -743,7 +744,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     {
         // given
         int nUpdates = 10000;
-        RandomValues.Type[] types = supportedTypesExcludingNonOrderable();
+        ValueType[] types = supportedTypesExcludingNonOrderable();
         Iterator<IndexEntryUpdate<IndexDescriptor>> randomUpdateGenerator =
                 valueCreatorUtil.randomUpdateGenerator( random, types );
         //noinspection unchecked
@@ -1087,8 +1088,8 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleType()
     {
-        RandomValues.Type type = random.randomValues().among( valueCreatorUtil.supportedTypes() );
-        return valueCreatorUtil.someUpdates( random, new RandomValues.Type[]{type}, true );
+        ValueType type = random.randomValues().among( valueCreatorUtil.supportedTypes() );
+        return valueCreatorUtil.someUpdates( random, new ValueType[]{type}, true );
     }
 
     private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates()
@@ -1096,25 +1097,25 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         return someUpdatesSingleTypeNoDuplicates( valueCreatorUtil.supportedTypes() );
     }
 
-    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates( RandomValues.Type[] types )
+    private IndexEntryUpdate<IndexDescriptor>[] someUpdatesSingleTypeNoDuplicates( ValueType[] types )
     {
-        RandomValues.Type type;
+        ValueType type;
         do
         {
             // Can not generate enough unique values of boolean
             type = random.randomValues().among( types );
         }
-        while ( type == RandomValues.Type.BOOLEAN );
-        return valueCreatorUtil.someUpdates( random, new RandomValues.Type[]{type}, false );
+        while ( type == ValueType.BOOLEAN );
+        return valueCreatorUtil.someUpdates( random, new ValueType[]{type}, false );
     }
 
-    private RandomValues.Type[] supportedTypesExcludingNonOrderable()
+    private ValueType[] supportedTypesExcludingNonOrderable()
     {
         return RandomValues.excluding( valueCreatorUtil.supportedTypes(),
                 t -> t.valueGroup == ValueGroup.GEOMETRY ||
                         t.valueGroup == ValueGroup.GEOMETRY_ARRAY ||
-                        t == RandomValues.Type.STRING ||
-                        t == RandomValues.Type.STRING_ARRAY );
+                        t == ValueType.STRING ||
+                        t == ValueType.STRING_ARRAY );
     }
 
     // TODO: multiple query predicates... actually Lucene SimpleIndexReader only supports single predicate

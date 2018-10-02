@@ -33,8 +33,8 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -59,7 +59,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
     public void testExactMatchOnRandomValues() throws Exception
     {
         // given
-        RandomValues.Type[] types = randomSetOfSupportedTypes();
+        ValueType[] types = randomSetOfSupportedTypes();
         List<Value> values = generateValuesFromType( types );
         List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values );
         updateAndCommit( updates );
@@ -79,7 +79,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
     {
         Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
         // given
-        RandomValues.Type[] types = randomSetOfSupportedAndSortableTypes();
+        ValueType[] types = randomSetOfSupportedAndSortableTypes();
         List<Value> values = generateValuesFromType( types );
         List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values );
         updateAndCommit( updates );
@@ -89,7 +89,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
         for ( int i = 0; i < 100; i++ )
         {
             // Construct a random range query of random value type
-            RandomValues.Type type = random.among( types );
+            ValueType type = random.among( types );
             Value from = random.randomValues().nextValueOfType( type );
             Value to = random.randomValues().nextValueOfType( type );
             if ( Values.COMPARATOR.compare( from, to ) > 0 )
@@ -126,7 +126,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
                 .collect( Collectors.toList() );
     }
 
-    private List<Value> generateValuesFromType( RandomValues.Type[] types )
+    private List<Value> generateValuesFromType( ValueType[] types )
     {
         List<Value> values = new ArrayList<>();
         Set<Value> duplicateChecker = new HashSet<>();

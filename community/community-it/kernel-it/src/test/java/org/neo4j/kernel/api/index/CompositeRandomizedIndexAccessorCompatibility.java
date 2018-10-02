@@ -36,10 +36,10 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.equalTo;
@@ -74,7 +74,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
         public void testExactMatchOnRandomCompositeValues() throws Exception
         {
             // given
-            RandomValues.Type[] types = randomSetOfSupportedTypes();
+            ValueType[] types = randomSetOfSupportedTypes();
             List<IndexEntryUpdate<?>> updates = new ArrayList<>();
             Set<ValueTuple> duplicateChecker = new HashSet<>();
             for ( long id = 0; id < 30_000; id++ )
@@ -128,7 +128,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
         {
             Assume.assumeTrue( "Assume support for granular composite queries", testSuite.supportsGranularCompositeQueries() );
             // given
-            RandomValues.Type[] types = randomSetOfSupportedAndSortableTypes();
+            ValueType[] types = randomSetOfSupportedAndSortableTypes();
             List<ValueTuple> values = generateValuesFromType( types );
             List<IndexEntryUpdate<?>> updates = generateUpdatesFromValues( values );
             updateAndCommit( updates );
@@ -140,7 +140,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
             for ( int i = 0; i < 100; i++ )
             {
                 Value booleanValue = random.randomValues().nextBooleanValue();
-                RandomValues.Type type = random.among( types );
+                ValueType type = random.among( types );
                 Value from = random.randomValues().nextValueOfType( type );
                 Value to = random.randomValues().nextValueOfType( type );
                 if ( Values.COMPARATOR.compare( from, to ) > 0 )
@@ -190,7 +190,7 @@ public class CompositeRandomizedIndexAccessorCompatibility extends IndexAccessor
                                 .collect( Collectors.toList() );
         }
 
-        private List<ValueTuple> generateValuesFromType( RandomValues.Type[] types )
+        private List<ValueTuple> generateValuesFromType( ValueType[] types )
         {
             List<ValueTuple> values = new ArrayList<>();
             Set<ValueTuple> duplicateChecker = new HashSet<>();

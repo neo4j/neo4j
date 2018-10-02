@@ -45,6 +45,7 @@ import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
@@ -85,25 +86,25 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         }
     }
 
-    RandomValues.Type[] randomSetOfSupportedTypes()
+    ValueType[] randomSetOfSupportedTypes()
     {
-        RandomValues.Type[] supportedTypes = testSuite.supportedValueTypes();
+        ValueType[] supportedTypes = testSuite.supportedValueTypes();
         return random.randomValues().selection( supportedTypes, 2, supportedTypes.length, false );
     }
 
-    RandomValues.Type[] randomSetOfSupportedAndSortableTypes()
+    ValueType[] randomSetOfSupportedAndSortableTypes()
     {
-        RandomValues.Type[] types = randomSetOfSupportedTypes();
+        ValueType[] types = randomSetOfSupportedTypes();
         types = removeSpatialTypes( types ); // <- don't use spatial values
-        types = RandomValues.excluding( types, RandomValues.Type.STRING, RandomValues.Type.STRING_ARRAY ); // <- don't use strings outside of BMP
+        types = RandomValues.excluding( types, ValueType.STRING, ValueType.STRING_ARRAY ); // <- don't use strings outside of BMP
         return types;
     }
 
-    private RandomValues.Type[] removeSpatialTypes( RandomValues.Type[] types )
+    private ValueType[] removeSpatialTypes( ValueType[] types )
     {
         return Arrays.stream( types )
                 .filter( t -> !t.name().contains( "POINT" ) )
-                .toArray( RandomValues.Type[]::new );
+                .toArray( ValueType[]::new );
     }
 
     protected List<Long> query( IndexQuery... predicates ) throws Exception

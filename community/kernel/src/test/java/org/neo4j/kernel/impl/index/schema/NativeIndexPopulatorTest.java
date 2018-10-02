@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.ValueGroup;
+import org.neo4j.values.storable.ValueType;
 
 public class NativeIndexPopulatorTest
 {
@@ -92,7 +93,7 @@ public class NativeIndexPopulatorTest
                 },
                 {"Generic",
                         genericPopulatorFactory(),
-                        RandomValues.Type.values(),
+                        ValueType.values(),
                         (IndexLayoutFactory) () -> new GenericLayout( 1, spaceFillingCurveSettings )
                 },
                 // todo { Spatial has it's own subclass because it need to override some of the test methods }
@@ -147,7 +148,7 @@ public class NativeIndexPopulatorTest
         public PopulatorFactory<KEY,VALUE> populatorFactory;
 
         @Parameterized.Parameter( 2 )
-        public RandomValues.Type[] supportedTypes;
+        public ValueType[] supportedTypes;
 
         @Parameterized.Parameter( 3 )
         public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
@@ -189,7 +190,7 @@ public class NativeIndexPopulatorTest
         public PopulatorFactory<KEY,VALUE> populatorFactory;
 
         @Parameterized.Parameter( 2 )
-        public RandomValues.Type[] supportedTypes;
+        public ValueType[] supportedTypes;
 
         @Parameterized.Parameter( 3 )
         public IndexLayoutFactory<KEY,VALUE> indexLayoutFactory;
