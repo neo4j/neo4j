@@ -30,25 +30,20 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
-import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.scheduler.JobScheduler;
 
+import static java.lang.String.format;
 import static org.neo4j.helpers.Args.jarUsage;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckTool
 {
@@ -137,28 +132,26 @@ public class ConsistencyCheckTool
         return arguments.getBoolean( VERBOSE, false, true );
     }
 
-    private void checkDbState( DatabaseLayout databaseLayout, Config tuningConfiguration ) throws ToolFailureException
+    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws ToolFailureException
     {
-        try ( JobScheduler jobScheduler = createInitialisedScheduler();
-              PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration, jobScheduler ) )
+        if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
         {
-            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache,
-                    tuningConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
-            {
-                throw new ToolFailureException( Strings.joinAsLines(
-                        "Active logical log detected, this might be a source of inconsistencies.",
-                        "Please recover database before running the consistency check.",
-                        "To perform recovery please start database and perform clean shutdown." ) );
-            }
+            throw new ToolFailureException( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
+                    "Please recover database before running the consistency check.",
+                    "To perform recovery please start database and perform clean shutdown." ) );
         }
-        catch ( ToolFailureException tfe )
+    }
+
+    private boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration )
+    {
+        try
         {
-            throw tfe;
+            return isRecoveryRequired( databaseLayout, additionalConfiguration );
         }
         catch ( Exception e )
         {
             systemError.printf( "Failure when checking for recovery state: '%s', continuing as normal.%n", e );
+            return false;
         }
     }
 
@@ -172,8 +165,7 @@ public class ConsistencyCheckTool
         File storeDir = new File( unprefixedArguments.get( 0 ) );
         if ( !storeDir.isDirectory() )
         {
-            throw new ToolFailureException(
-                    Strings.joinAsLines( String.format( "'%s' is not a directory", storeDir ) ) + usage() );
+            throw new ToolFailureException( format( "'%s' is not a directory", storeDir ) + usage() );
         }
         return storeDir;
     }
@@ -192,8 +184,7 @@ public class ConsistencyCheckTool
             }
             catch ( IOException e )
             {
-                throw new ToolFailureException( String.format( "Could not read configuration file [%s]",
-                        configFilePath ), e );
+                throw new ToolFailureException( format( "Could not read configuration file [%s]", configFilePath ), e );
             }
         }
         return Config.defaults( specifiedConfig );

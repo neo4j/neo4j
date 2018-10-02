@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.recovery;
+package org.neo4j.kernel.recovery;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,6 +57,7 @@ class RecoveryRequiredCheckerTest
     private EphemeralFileSystemAbstraction fileSystem;
 
     private final Monitors monitors = new Monitors();
+
     private File storeDir;
     private DatabaseLayout databaseLayout;
 
@@ -149,14 +150,14 @@ class RecoveryRequiredCheckerTest
         return createSomeDataAndCrash( storeDir, fileSystem, Config.defaults() );
     }
 
-    private RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache )
+    private static RecoveryRequiredChecker getRecoveryCheckerWithDefaultConfig( FileSystemAbstraction fileSystem, PageCache pageCache )
     {
         return getRecoveryChecker( fileSystem, pageCache, Config.defaults() );
     }
 
-    private RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
+    private static RecoveryRequiredChecker getRecoveryChecker( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
-        return new RecoveryRequiredChecker( fileSystem, pageCache, config, monitors );
+        return new RecoveryRequiredChecker( fileSystem, pageCache, config );
     }
 
     private static FileSystemAbstraction createSomeDataAndCrash( File store, EphemeralFileSystemAbstraction fileSystem, Config config )

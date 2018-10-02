@@ -27,8 +27,10 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.kernel.spi.explicitindex.IndexProviders;
 
+@RecoveryExtension
 public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneKernelExtensionFactory.Dependencies>
 {
     public interface Dependencies

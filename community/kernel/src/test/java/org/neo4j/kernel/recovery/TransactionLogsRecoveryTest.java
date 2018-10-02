@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.recovery;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,12 +61,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
-import org.neo4j.kernel.recovery.DefaultRecoveryService;
-import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.kernel.recovery.RecoveryApplier;
-import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
@@ -167,7 +161,7 @@ class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
-            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository,  NO_MONITOR )
             {
                 private int nr;
@@ -267,7 +261,7 @@ class RecoveryTest
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader,
                     monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
-            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, NO_MONITOR )
             {
                 @Override
@@ -421,7 +415,7 @@ class RecoveryTest
             TransactionMetadataCache metadataCache = new TransactionMetadataCache();
             LogicalTransactionStore txStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, reader, monitors, false );
             CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( storeDir, logFiles, fileSystem );
-            life.add( new Recovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
+            life.add( new TransactionLogsRecovery( new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
                     txStore, versionRepository, NO_MONITOR )
             {
                 @Override

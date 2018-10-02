@@ -54,7 +54,7 @@ public class PhysicalLogicalTransactionStore implements LogicalTransactionStore
     private final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader;
     private final Monitors monitors;
     private final boolean failOnCorruptedLogFiles;
-    private LogFiles logFiles;
+    private final LogFiles logFiles;
 
     public PhysicalLogicalTransactionStore( LogFiles logFiles,
             TransactionMetadataCache transactionMetadataCache,

@@ -19,8 +19,8 @@
  */
 package recovery;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -34,18 +34,21 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Runtime.getRuntime;
 import static java.lang.System.exit;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
-public class TestRecoveryMultipleDataSources
+@ExtendWith( TestDirectoryExtension.class )
+class TestRecoveryMultipleDataSources
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     /**
      * Tests an issue where loading all relationship types and property indexes after
@@ -57,7 +60,7 @@ public class TestRecoveryMultipleDataSources
      * of it would be that there would seem to be no relationship types in the database.
      */
     @Test
-    public void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
+    void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
         File storeDir = testDirectory.storeDir();
@@ -95,9 +98,8 @@ public class TestRecoveryMultipleDataSources
             tx.success();
         }
 
-        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
-        );
+        CheckPointer checkPointer = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class );
+        checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
 
         try ( Transaction tx = db.beginTx() )
         {

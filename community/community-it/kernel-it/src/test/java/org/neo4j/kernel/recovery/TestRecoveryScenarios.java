@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package recovery;
+package org.neo4j.kernel.recovery;
 
 import org.junit.After;
 import org.junit.Before;
@@ -57,9 +57,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 
-/**
- * Arbitrary recovery scenarios boiled down to as small tests as possible
- */
 @RunWith( Parameterized.class )
 public class TestRecoveryScenarios
 {
@@ -70,7 +67,6 @@ public class TestRecoveryScenarios
 
     private final FlushStrategy flush;
 
-    @SuppressWarnings( "deprecation" )
     @Before
     public void before()
     {
@@ -323,7 +319,7 @@ public class TestRecoveryScenarios
         }
     }
 
-    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
+    private static TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
     {
         return new TestGraphDatabaseFactory().setFileSystem( fs );
     }

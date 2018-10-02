@@ -58,8 +58,7 @@ public class LogTailScanner
     private final LogTailScannerMonitor monitor;
     private final boolean failOnCorruptedLogFiles;
 
-    public LogTailScanner( LogFiles logFiles,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
+    public LogTailScanner( LogFiles logFiles, LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, Monitors monitors )
     {
         this( logFiles, logEntryReader, monitors, false );
     }
@@ -168,7 +167,7 @@ public class LogTailScanner
                 oldestStartEntryTransaction, oldestVersionFound, highestLogVersion, latestLogEntryVersion );
     }
 
-    private boolean hasUnreadableBytes( LogVersionedStoreChannel channel, long maxEntryReadEndPosition ) throws IOException
+    private static boolean hasUnreadableBytes( LogVersionedStoreChannel channel, long maxEntryReadEndPosition ) throws IOException
     {
         return channel.position() > maxEntryReadEndPosition;
     }

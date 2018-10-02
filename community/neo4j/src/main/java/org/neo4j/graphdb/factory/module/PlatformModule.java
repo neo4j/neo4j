@@ -27,8 +27,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -134,8 +132,6 @@ public class PlatformModule
 
     public final VersionContextSupplier versionContextSupplier;
 
-    public final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
-
     public final CollectionsFactorySupplier collectionsFactorySupplier;
 
     public final UsageData usageData;
@@ -167,10 +163,6 @@ public class PlatformModule
 
         jobScheduler = life.add( dependencies.satisfyDependency( createJobScheduler() ) );
         startDeferredExecutors(jobScheduler, externalDependencies.deferredExecutors());
-
-        // Cleanup after recovery, used by GBPTree, added to life in NeoStoreDataSource
-        recoveryCleanupWorkCollector = new GroupingRecoveryCleanupWorkCollector( jobScheduler );
-        dependencies.satisfyDependency( recoveryCleanupWorkCollector );
 
         // Database system information, used by UDC
         usageData = new UsageData( jobScheduler );

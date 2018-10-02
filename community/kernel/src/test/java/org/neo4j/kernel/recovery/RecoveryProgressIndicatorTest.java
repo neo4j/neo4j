@@ -66,8 +66,7 @@ public class RecoveryProgressIndicatorTest
         when( recoveryService.getTransactions( recoveryStartPosition ) ).thenReturn( transactionCursor );
 
         AssertableProgressReporter progressReporter = new AssertableProgressReporter( expectedMax );
-        Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor,
-                progressReporter, true );
+        TransactionLogsRecovery recovery = new TransactionLogsRecovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, true );
         recovery.init();
 
         progressReporter.verify();

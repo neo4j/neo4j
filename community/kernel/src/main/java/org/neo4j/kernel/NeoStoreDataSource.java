@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -100,7 +101,6 @@ import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
-import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.log.LogVersionUpgradeChecker;
 import org.neo4j.kernel.impl.transaction.log.LoggingLogFileMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogicalTransactionStore;
@@ -131,8 +131,6 @@ import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -142,14 +140,8 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
-import org.neo4j.kernel.recovery.CorruptedLogsTruncator;
-import org.neo4j.kernel.recovery.DefaultRecoveryService;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.kernel.recovery.LoggingLogTailScannerMonitor;
-import org.neo4j.kernel.recovery.Recovery;
-import org.neo4j.kernel.recovery.RecoveryMonitor;
-import org.neo4j.kernel.recovery.RecoveryService;
-import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
@@ -164,6 +156,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {
@@ -215,7 +208,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final boolean readOnly;
     private final IdController idController;
     private final DatabaseInfo databaseInfo;
-    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final VersionContextSupplier versionContextSupplier;
     private final AccessCapability accessCapability;
 
@@ -227,7 +219,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
-    private final boolean failOnCorruptedLogFiles;
     private final KernelAuxTransactionStateManager auxTxStateManager;
 
     public NeoStoreDataSource( DatabaseCreationContext context )
@@ -265,7 +256,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
         this.clock = context.getClock();
         this.accessCapability = context.getAccessCapability();
-        this.recoveryCleanupWorkCollector = context.getRecoveryCleanupWorkCollector();
 
         this.readOnly = context.getConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();
@@ -279,11 +269,9 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
         this.pageCache = context.getPageCache();
-        this.monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
-        this.failOnCorruptedLogFiles = context.getConfig().get( GraphDatabaseSettings.fail_on_corrupted_log_files );
-        auxTxStateManager = new KernelAuxTransactionStateManager();
+        this.auxTxStateManager = new KernelAuxTransactionStateManager();
     }
 
     // We do our own internal life management:
@@ -307,14 +295,15 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( databaseAvailability );
         dataSourceDependencies.satisfyDependency( idGeneratorFactory );
         dataSourceDependencies.satisfyDependency( idController );
-        dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
         dataSourceDependencies.satisfyDependency( auxTxStateManager );
+        dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+
+        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
+        dataSourceDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
+        dataSourceDependencies.satisfyDependency( lockService );
 
         life = new LifeSupport();
-        dataSourceDependencies.satisfyDependency( explicitIndexProvider );
         life.add( initializeExtensions( dataSourceDependencies ) );
-        life.add( recoveryCleanupWorkCollector );
-        dataSourceDependencies.satisfyDependency( lockService );
         life.add( indexConfigStore );
 
         FileSystemWatcherService watcherService = watcherServiceFactory.apply( databaseLayout.databaseDirectory() );
@@ -332,16 +321,17 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 .withConfig( config )
                 .withDependencies( dataSourceDependencies ).build();
 
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, failOnCorruptedLogFiles );
-        monitors.addMonitorListener(
-                new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
-        monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor(
-                logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
+        monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
+        monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
+        monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
+        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
         LogVersionUpgradeChecker.check( tailScanner, config );
 
         // Upgrade the store before we begin
         RecordFormats formats = selectStoreFormats( config, databaseLayout, fs, pageCache, logService );
         upgradeStore( formats, tailScanner );
+
+        performRecovery( fs, pageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
 
         // Build all modules and their services
         StorageEngine storageEngine = null;
@@ -356,26 +346,16 @@ public class NeoStoreDataSource extends LifecycleAdapter
 
             storageEngine = buildStorageEngine( explicitIndexProvider,
                     indexConfigStore, databaseSchemaState, explicitIndexTransactionOrdering, databaseInfo.operationalMode,
-                    versionContextSupplier );
+                    versionContextSupplier, recoveryCleanupWorkCollector );
             life.add( logFiles );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
-            LogVersionRepository logVersionRepository = dataSourceDependencies.resolveDependency( LogVersionRepository.class );
             NeoStoreTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
                     scheduler, storageEngine, logEntryReader, explicitIndexTransactionOrdering, transactionIdStore );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
-
-            buildRecovery( fs,
-                    transactionIdStore,
-                    tailScanner,
-                    monitors.newMonitor( RecoveryMonitor.class ),
-                    monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ),
-                    logFiles,
-                    storageEngine, transactionLogModule.logicalTransactionStore(), logVersionRepository
-            );
 
             // At the time of writing this comes from the storage engine (IndexStoreView)
             NodePropertyAccessor nodePropertyAccessor = dataSourceDependencies.resolveDependency( NodePropertyAccessor.class );
@@ -398,10 +378,10 @@ public class NeoStoreDataSource extends LifecycleAdapter
             this.transactionLogModule = transactionLogModule;
             this.kernelModule = kernelModule;
 
-            dataSourceDependencies.satisfyDependency( this );
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
+            dataSourceDependencies.satisfyDependency( this );
 
             executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
         }
@@ -496,10 +476,9 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 format, tailScanner, scheduler ).migrate( databaseLayout );
     }
 
-    private StorageEngine buildStorageEngine(
-            ExplicitIndexProvider explicitIndexProviderLookup, IndexConfigStore indexConfigStore,
-            SchemaState schemaState, SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering,
-            OperationalMode operationalMode, VersionContextSupplier versionContextSupplier )
+    private StorageEngine buildStorageEngine( ExplicitIndexProvider explicitIndexProviderLookup, IndexConfigStore indexConfigStore, SchemaState schemaState,
+            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering, OperationalMode operationalMode, VersionContextSupplier versionContextSupplier,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders,
@@ -539,8 +518,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 logFiles, logRotation, transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering,
                 databaseHealth ) );
         final LogicalTransactionStore logicalTransactionStore =
-                new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors,
-                        failOnCorruptedLogFiles );
+                new PhysicalLogicalTransactionStore( logFiles, transactionMetadataCache, logEntryReader, monitors, true );
 
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
@@ -557,25 +535,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
 
         return new NeoStoreTransactionLogModule( logicalTransactionStore, logFiles,
                 logRotation, checkPointer, appender, explicitIndexTransactionOrdering );
-    }
-
-    private void buildRecovery(
-            final FileSystemAbstraction fileSystemAbstraction,
-            TransactionIdStore transactionIdStore,
-            LogTailScanner tailScanner,
-            RecoveryMonitor recoveryMonitor,
-            RecoveryStartInformationProvider.Monitor positionMonitor,
-            final LogFiles logFiles,
-            StorageEngine storageEngine,
-            LogicalTransactionStore logicalTransactionStore,
-            LogVersionRepository logVersionRepository )
-    {
-        RecoveryService recoveryService = new DefaultRecoveryService( storageEngine, tailScanner, transactionIdStore,
-                logicalTransactionStore, logVersionRepository, positionMonitor );
-        CorruptedLogsTruncator logsTruncator = new CorruptedLogsTruncator( databaseLayout.databaseDirectory(), logFiles, fileSystemAbstraction );
-        ProgressReporter progressReporter = new LogProgressReporter( logService.getInternalLog( Recovery.class ) );
-        Recovery recovery = new Recovery( recoveryService, logsTruncator, recoveryMonitor, progressReporter, failOnCorruptedLogFiles );
-        life.add( recovery );
     }
 
     private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
@@ -615,8 +574,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
-        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
-                config );
+        final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures, config );
 
         kernel.registerTransactionHook( transactionEventHandlers );
         life.add( kernel );

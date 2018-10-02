@@ -23,7 +23,6 @@ import java.io.File;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -135,8 +134,6 @@ public interface DatabaseCreationContext
     AccessCapability getAccessCapability();
 
     StoreCopyCheckPointMutex getStoreCopyCheckPointMutex();
-
-    RecoveryCleanupWorkCollector getRecoveryCleanupWorkCollector();
 
     IdController getIdController();
 

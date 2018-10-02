@@ -114,7 +114,7 @@ public class RecoveryStartInformationProvider implements ThrowingSupplier<Recove
         }
     }
 
-    private RecoveryStartInformation createRecoveryInformation( LogPosition logPosition, long firstTxId )
+    private static RecoveryStartInformation createRecoveryInformation( LogPosition logPosition, long firstTxId )
     {
         return new RecoveryStartInformation( logPosition, firstTxId );
     }

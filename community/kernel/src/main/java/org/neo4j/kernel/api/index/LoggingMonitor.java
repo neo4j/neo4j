@@ -82,7 +82,7 @@ public class LoggingMonitor implements IndexProvider.Monitor
                 indexDescription( indexFile, indexDescriptor ), ExceptionUtils.getStackTrace( throwable ) ) );
     }
 
-    private String indexDescription( File indexFile, IndexDescriptor indexDescriptor )
+    private static String indexDescription( File indexFile, IndexDescriptor indexDescriptor )
     {
         return "descriptor=" + indexDescriptor.toString() + ", indexFile=" + indexFile.getAbsolutePath();
     }

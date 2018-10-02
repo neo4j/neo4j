@@ -20,9 +20,8 @@
 package org.neo4j.consistency;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
@@ -40,7 +39,6 @@ import java.util.TimeZone;
 
 import org.neo4j.consistency.ConsistencyCheckTool.ToolFailureException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -49,18 +47,22 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.LogTimeZone;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,16 +72,16 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
-public class ConsistencyCheckToolTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class ConsistencyCheckToolTest
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fs );
+    @Inject
+    private DefaultFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void runsConsistencyCheck() throws Exception
+    void runsConsistencyCheck() throws Exception
     {
         // given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
@@ -96,7 +98,7 @@ public class ConsistencyCheckToolTest
     }
 
     @Test
-    public void consistencyCheckerLogUseSystemTimezoneIfConfigurable() throws Exception
+    void consistencyCheckerLogUseSystemTimezoneIfConfigurable() throws Exception
     {
         TimeZone defaultTimeZone = TimeZone.getDefault();
         try
@@ -128,7 +130,7 @@ public class ConsistencyCheckToolTest
     }
 
     @Test
-    public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
+    void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
@@ -147,7 +149,7 @@ public class ConsistencyCheckToolTest
     }
 
     @Test
-    public void passesOnConfigurationIfProvided() throws Exception
+    void passesOnConfigurationIfProvided() throws Exception
     {
         // given
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
@@ -171,80 +173,69 @@ public class ConsistencyCheckToolTest
     }
 
     @Test
-    public void exitWithFailureIndicatingCorrectUsageIfNoArgumentsSupplied() throws Exception
+    void exitWithFailureIndicatingCorrectUsageIfNoArgumentsSupplied() throws Exception
     {
         // given
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
         String[] args = {};
 
-        try
-        {
-            // when
-            runConsistencyCheckToolWith( service, args );
-            fail( "should have thrown exception" );
-        }
-        catch ( ConsistencyCheckTool.ToolFailureException e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "USAGE:" ) );
-        }
+        ToolFailureException toolException = assertThrows( ToolFailureException.class, () -> runConsistencyCheckToolWith( service, args ) );
+        assertThat( toolException.getMessage(), containsString( "USAGE:" ) );
     }
 
     @Test
-    public void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
+    void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
     {
         // given
         File configFile = testDirectory.file( "nonexistent_file" );
         String[] args = {testDirectory.directory().getPath(), "-config", configFile.getPath()};
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
 
-        try
-        {
-            // when
-            runConsistencyCheckToolWith( service, args );
-            fail( "should have thrown exception" );
-        }
-        catch ( ConsistencyCheckTool.ToolFailureException e )
-        {
-            // then
-            assertThat( e.getMessage(), containsString( "Could not read configuration file" ) );
-            assertThat( e.getCause(), instanceOf( IOException.class ) );
-        }
+        ToolFailureException toolException = assertThrows( ToolFailureException.class, () -> runConsistencyCheckToolWith( service, args ) );
+        assertThat( toolException.getMessage(), containsString( "Could not read configuration file" ) );
+        assertThat( toolException.getCause(), instanceOf( IOException.class ) );
 
         verifyZeroInteractions( service );
     }
 
-    @Test( expected = ToolFailureException.class )
-    public void failWhenStoreWasNonCleanlyShutdown() throws Exception
+    @Test
+    void failWhenStoreWasNonCleanlyShutdown() throws Exception
     {
-        createGraphDbAndKillIt( Config.defaults() );
-
-        runConsistencyCheckToolWith( fs.get(), testDirectory.databaseDir().getAbsolutePath() );
+        assertThrows( ToolFailureException.class, () -> {
+            createGraphDbAndKillIt( Config.defaults() );
+            runConsistencyCheckToolWith( fs, testDirectory.databaseDir().getAbsolutePath() );
+        } );
     }
 
-    @Test( expected = ToolFailureException.class )
-    public void failOnNotCleanlyShutdownStoreWithLogsInCustomRelativeLocation() throws Exception
+    @Test
+    void failOnNotCleanlyShutdownStoreWithLogsInCustomRelativeLocation() throws Exception
     {
-        File customConfigFile = testDirectory.file( "customConfig" );
-        Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
-        createGraphDbAndKillIt( customConfig );
-        MapUtil.store( customConfig.getRaw(), customConfigFile );
-        String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
+        assertThrows( ToolFailureException.class, () ->
+        {
+            File customConfigFile = testDirectory.file( "customConfig" );
+            Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
+            createGraphDbAndKillIt( customConfig );
+            MapUtil.store( customConfig.getRaw(), customConfigFile );
+            String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
-        runConsistencyCheckToolWith( fs.get(), args );
+            runConsistencyCheckToolWith( fs, args );
+        } );
     }
 
-    @Test( expected = ToolFailureException.class )
-    public void failOnNotCleanlyShutdownStoreWithLogsInCustomAbsoluteLocation() throws Exception
+    @Test
+    void failOnNotCleanlyShutdownStoreWithLogsInCustomAbsoluteLocation() throws Exception
     {
-        File customConfigFile = testDirectory.file( "customConfig" );
-        File otherLocation = testDirectory.directory( "otherLocation" );
-        Config customConfig = Config.defaults( logical_logs_location, otherLocation.getAbsolutePath() );
-        createGraphDbAndKillIt( customConfig );
-        MapUtil.store( customConfig.getRaw(), customConfigFile );
-        String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
+        assertThrows( ToolFailureException.class, () ->
+        {
+            File customConfigFile = testDirectory.file( "customConfig" );
+            File otherLocation = testDirectory.directory( "otherLocation" );
+            Config customConfig = Config.defaults( logical_logs_location, otherLocation.getAbsolutePath() );
+            createGraphDbAndKillIt( customConfig );
+            MapUtil.store( customConfig.getRaw(), customConfigFile );
+            String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
-        runConsistencyCheckToolWith( fs.get(), args );
+            runConsistencyCheckToolWith( fs, args );
+        } );
     }
 
     private static void checkLogRecordTimeZone( ConsistencyCheckService service, String[] args, int hoursShift, String timeZoneSuffix )
@@ -255,7 +246,7 @@ public class ConsistencyCheckToolTest
         PrintStream printStream = new PrintStream( outputStream );
         runConsistencyCheckToolWith( service, printStream, args );
         String logLine = readLogLine( outputStream );
-        assertTrue( logLine, logLine.contains( timeZoneSuffix ) );
+        assertTrue( logLine.contains( timeZoneSuffix ), logLine );
     }
 
     private static String readLogLine( ByteArrayOutputStream outputStream ) throws IOException
@@ -265,10 +256,10 @@ public class ConsistencyCheckToolTest
         return bufferedReader.readLine();
     }
 
-    private void createGraphDbAndKillIt( Config config ) throws Exception
+    private void createGraphDbAndKillIt( Config config ) throws IOException
     {
-        final GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() )
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .setFileSystem( fs )
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( config.getRaw()  )
                 .newGraphDatabase();
@@ -279,8 +270,34 @@ public class ConsistencyCheckToolTest
             db.createNode( label( "BAR" ) );
             tx.success();
         }
+        File logFilesDirectory = getLogFilesDirectory( db );
 
-        fs.snapshot( db::shutdown );
+        File tempLogsDirectory = testDirectory.directory( "logs-temp" );
+        File tempStoreDirectory = testDirectory.directory( "tempDirectory" );
+
+        createStoreCopy( logFilesDirectory, tempLogsDirectory, tempStoreDirectory );
+
+        db.shutdown();
+
+        restoreStoreCopy( logFilesDirectory, tempLogsDirectory, tempStoreDirectory );
+    }
+
+    private static File getLogFilesDirectory( GraphDatabaseAPI db )
+    {
+        LogFiles logFiles = db.getDependencyResolver().resolveDependency( LogFiles.class );
+        return logFiles.logFilesDirectory();
+    }
+
+    private void restoreStoreCopy( File logFilesDirectory, File tempLogsDirectory, File tempStoreDirectory ) throws IOException
+    {
+        fs.copyRecursively( tempLogsDirectory, logFilesDirectory );
+        fs.copyRecursively( tempStoreDirectory, testDirectory.databaseDir() );
+    }
+
+    private void createStoreCopy( File logFilesDirectory, File tempLogsDirectory, File tempStoreDirectory ) throws IOException
+    {
+        fs.copyRecursively( logFilesDirectory, tempLogsDirectory );
+        fs.copyRecursively( testDirectory.databaseDir(), tempStoreDirectory );
     }
 
     private static void runConsistencyCheckToolWith( FileSystemAbstraction fileSystem, String... args )

@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -28,23 +29,26 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 
-public class LabelRecoveryTest
+@ExtendWith( EphemeralFileSystemExtension.class )
+class LabelRecoveryTest
 {
-    public final EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    @Inject
+    private EphemeralFileSystemAbstraction filesystem;
     private GraphDatabaseService database;
 
-    @After
-    public void tearDown() throws Exception
+    @AfterEach
+    void tearDown()
     {
         if ( database != null )
         {
             database.shutdown();
         }
-        fs.close();
     }
 
     /**
@@ -58,10 +62,10 @@ public class LabelRecoveryTest
      * next time that record would be ensured heavy.
      */
     @Test
-    public void shouldRecoverNodeWithDynamicLabelRecords()
+    void shouldRecoverNodeWithDynamicLabelRecords()
     {
         // GIVEN
-        database = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase();
+        database = new TestGraphDatabaseFactory().setFileSystem( filesystem ).newImpermanentDatabase();
         Node node;
         Label[] labels = new Label[] { label( "a" ),
                 label( "b" ),
@@ -86,7 +90,7 @@ public class LabelRecoveryTest
             node.setProperty( "prop", "value" );
             tx.success();
         }
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot();
+        EphemeralFileSystemAbstraction snapshot = filesystem.snapshot();
         database.shutdown();
         database = new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase();
 

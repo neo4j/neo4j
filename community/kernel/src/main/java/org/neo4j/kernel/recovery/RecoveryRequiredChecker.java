@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.recovery;
+package org.neo4j.kernel.recovery;
 
 import java.io.IOException;
 
@@ -32,42 +32,47 @@ import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.LogTailScanner;
-import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 
 import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONITOR;
 
 /**
- * An external tool that can determine if a given store will need recovery.
+ * Utility that can determine if a given store will need recovery.
  */
-public class RecoveryRequiredChecker
+class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
-    private final Monitors monitors;
-    private Config config;
+    private final Config config;
 
-    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config, Monitors monitors )
+    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
-        this.monitors = monitors;
     }
 
-    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
+    {
+        LogTailScanner tailScanner = getLogTailScanner( databaseLayout );
+        return isRecoveryRequiredAt( databaseLayout, tailScanner );
+    }
+
+    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout, LogTailScanner tailScanner )
     {
         // We need config to determine where the logical log files are
         if ( !NeoStores.isStorePresent( pageCache, databaseLayout ) )
         {
             return false;
         }
+        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
+    }
 
+    private LogTailScanner getLogTailScanner( DatabaseLayout databaseLayout ) throws IOException
+    {
         LogEntryReader<ReadableClosablePositionAwareChannel> reader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fs, pageCache )
-                                           .withConfig( config )
-                                           .withLogEntryReader( reader ).build();
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, monitors );
-        return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
+                .withConfig( config )
+                .withLogEntryReader( reader ).build();
+        return new LogTailScanner( logFiles, reader, new Monitors() );
     }
 }

@@ -83,13 +83,11 @@ public class DatabaseMigrator
     {
         LogProvider logProvider = logService.getInternalLogProvider();
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( pageCache ), format, tailScanner );
-        StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache,
-                logProvider );
+        StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase, progressMonitor, config, fs, pageCache, logProvider );
 
         ExplicitIndexMigrator explicitIndexMigrator = new ExplicitIndexMigrator( fs, explicitIndexProvider, logProvider );
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, jobScheduler );
-        NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator =
-                new NativeLabelScanStoreMigrator( fs, pageCache, config );
+        NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache, config );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
         indexProviderMap.accept(

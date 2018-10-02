@@ -21,10 +21,10 @@ package recovery;
 
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +33,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -60,16 +59,21 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.fail;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 
-public class RecoveryCleanupIT
+@ExtendWith( TestDirectoryExtension.class )
+class RecoveryCleanupIT
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     private GraphDatabaseService db;
     private File storeDir;
@@ -79,56 +83,54 @@ public class RecoveryCleanupIT
     private final String propKey = "propKey";
     private Map<Setting,String> testSpecificConfig = new HashMap<>();
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         storeDir = testDirectory.storeDir();
         testSpecificConfig.clear();
     }
 
-    @After
-    public void tearDown() throws InterruptedException
+    @AfterEach
+    void tearDown() throws InterruptedException
     {
         executor.shutdown();
         executor.awaitTermination( 10, TimeUnit.SECONDS );
     }
 
     @Test
-    public void recoveryCleanupShouldBlockCheckpoint() throws Throwable
+    void recoveryCleanupShouldBlockCheckpoint()
     {
-        // GIVEN
-        AtomicReference<Throwable> error = new AtomicReference<>();
-        try
+        assertTimeoutPreemptively( ofSeconds( 1000 ), () ->
         {
-            dirtyDatabase();
-
-            // WHEN
-            Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
-            LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
-            setMonitor( recoveryBarrierMonitor );
-            db = startDatabase();
-            recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
-
-            // THEN
-            Future<?> checkpointFuture = executor.submit( () -> reportError( () -> checkpoint( db ), error ) );
-            shouldWait( checkpointFuture );
-            recoveryCompleteBarrier.release();
-            checkpointFuture.get();
-
-            db.shutdown();
-        }
-        finally
-        {
-            Throwable throwable = error.get();
-            if ( throwable != null )
+            // GIVEN
+            try
             {
-                throw throwable;
+                dirtyDatabase();
+
+                // WHEN
+                Barrier.Control recoveryCompleteBarrier = new Barrier.Control();
+                LabelScanStore.Monitor recoveryBarrierMonitor = new RecoveryBarrierMonitor( recoveryCompleteBarrier );
+                setMonitor( recoveryBarrierMonitor );
+                Future<GraphDatabaseService> startDatabaseFuture = executor.submit( () -> db = startDatabase() );
+                recoveryCompleteBarrier.awaitUninterruptibly(); // Ensure we are mid recovery cleanup
+
+                // THEN
+                shouldWait( startDatabaseFuture );
+                recoveryCompleteBarrier.release();
+                startDatabaseFuture.get();
             }
-        }
+            finally
+            {
+                if ( db != null )
+                {
+                    db.shutdown();
+                }
+            }
+        } );
     }
 
     @Test
-    public void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    void scanStoreMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         // given
         dirtyDatabase();
@@ -151,19 +153,19 @@ public class RecoveryCleanupIT
     }
 
     @Test
-    public void nativeIndexFusion10MustLogCrashPointerCleanupDuringRecovery() throws Exception
+    void nativeIndexFusion10MustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE10, "native", "spatial", "temporal" );
     }
 
     @Test
-    public void nativeIndexFusion20MustLogCrashPointerCleanupDuringRecovery() throws Exception
+    void nativeIndexFusion20MustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE20, "string", "native", "spatial", "temporal" );
     }
 
     @Test
-    public void nativeIndexBTreeMustLogCrashPointerCleanupDuringRecovery() throws Exception
+    void nativeIndexBTreeMustLogCrashPointerCleanupDuringRecovery() throws Exception
     {
         nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10, "index" );
     }
@@ -191,9 +193,8 @@ public class RecoveryCleanupIT
         matchers.forEach( logProvider::assertContainsExactlyOneMessageMatching );
     }
 
-    private Matcher<String> indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
+    private static Matcher<String> indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
     {
-
         return Matchers.stringContainsInOrder( Iterables.asIterable(
                 logMessage,
                 "descriptor",
@@ -201,7 +202,7 @@ public class RecoveryCleanupIT
                 File.separator + subIndexProviderKey ) );
     }
 
-    private Matcher<String> indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
+    private static Matcher<String> indexRecoveryFinishedLogMatcher( String subIndexProviderKey )
     {
 
         return Matchers.stringContainsInOrder( Iterables.asIterable(
@@ -255,7 +256,7 @@ public class RecoveryCleanupIT
         }
     }
 
-    private void reportError( Race.ThrowingRunnable checkpoint, AtomicReference<Throwable> error )
+    private static void reportError( Race.ThrowingRunnable checkpoint, AtomicReference<Throwable> error )
     {
         try
         {
@@ -267,7 +268,7 @@ public class RecoveryCleanupIT
         }
     }
 
-    private void checkpoint( GraphDatabaseService db ) throws IOException
+    private static void checkpoint( GraphDatabaseService db ) throws IOException
     {
         CheckPointer checkPointer = checkPointer( db );
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
@@ -285,17 +286,9 @@ public class RecoveryCleanupIT
         }
     }
 
-    private void shouldWait( Future<?> future )throws InterruptedException, ExecutionException
+    private static void shouldWait( Future<?> future )
     {
-        try
-        {
-            future.get( 200L, TimeUnit.MILLISECONDS );
-            fail( "Expected timeout" );
-        }
-        catch ( TimeoutException e )
-        {
-            // good
-        }
+        assertThrows(TimeoutException.class, () -> future.get( 200L, TimeUnit.MILLISECONDS ));
     }
 
     private GraphDatabaseService startDatabase()
@@ -305,24 +298,24 @@ public class RecoveryCleanupIT
         return builder.newGraphDatabase();
     }
 
-    private DatabaseHealth databaseHealth( GraphDatabaseService db )
+    private static DatabaseHealth databaseHealth( GraphDatabaseService db )
     {
         return dependencyResolver( db ).resolveDependency( DatabaseHealth.class );
     }
 
-    private CheckPointer checkPointer( GraphDatabaseService db )
+    private static CheckPointer checkPointer( GraphDatabaseService db )
     {
         DependencyResolver dependencyResolver = dependencyResolver( db );
         return dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver()
                 .resolveDependency( CheckPointer.class );
     }
 
-    private DependencyResolver dependencyResolver( GraphDatabaseService db )
+    private static DependencyResolver dependencyResolver( GraphDatabaseService db )
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver();
     }
 
-    private class RecoveryBarrierMonitor extends LabelScanStore.Monitor.Adaptor
+    private static class RecoveryBarrierMonitor extends LabelScanStore.Monitor.Adaptor
     {
         private final Barrier.Control barrier;
 

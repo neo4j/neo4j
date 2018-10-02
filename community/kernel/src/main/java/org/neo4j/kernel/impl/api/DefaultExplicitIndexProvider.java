@@ -52,8 +52,8 @@ public class DefaultExplicitIndexProvider implements IndexProviders, ExplicitInd
         IndexImplementation provider = indexProviders.get( name );
         if ( provider == null )
         {
-            throw new IllegalArgumentException( "No index provider '" + name + "' found. Maybe the intended provider (or one more of its " + "dependencies) " +
-                    "aren't on the classpath or it failed to load." );
+            throw new IllegalArgumentException( "No index provider '" + name +
+                    "' found. Maybe the intended provider (or one more of its dependencies) aren't on the classpath or it failed to load." );
         }
         return provider;
     }

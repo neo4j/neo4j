@@ -26,7 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -59,7 +59,7 @@ public class NativeLabelScanStoreStartupIT
     public void scanStoreStartWithoutExistentIndex() throws Throwable
     {
         LabelScanStore labelScanStore = getLabelScanStore();
-        GroupingRecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
+        RecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
         labelScanStore.shutdown();
         workCollector.shutdown();
 
@@ -77,7 +77,7 @@ public class NativeLabelScanStoreStartupIT
     public void scanStoreRecreateCorruptedIndexOnStartup() throws Throwable
     {
         LabelScanStore labelScanStore = getLabelScanStore();
-        GroupingRecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
+        RecoveryCleanupWorkCollector workCollector = getGroupingRecoveryCleanupWorkCollector();
 
         createTestNode();
         long[] labels = readNodesForLabel( labelScanStore );
@@ -102,9 +102,9 @@ public class NativeLabelScanStoreStartupIT
         return getDependency( LabelScanStore.class );
     }
 
-    private GroupingRecoveryCleanupWorkCollector getGroupingRecoveryCleanupWorkCollector()
+    private RecoveryCleanupWorkCollector getGroupingRecoveryCleanupWorkCollector()
     {
-        return dbRule.getDependencyResolver().resolveDependency( GroupingRecoveryCleanupWorkCollector.class );
+        return dbRule.getDependencyResolver().resolveDependency( RecoveryCleanupWorkCollector.class );
     }
 
     private <T> T getDependency( Class<T> clazz )

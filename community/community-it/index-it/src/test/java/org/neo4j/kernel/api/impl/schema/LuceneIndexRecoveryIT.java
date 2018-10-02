@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -311,38 +312,52 @@ public class LuceneIndexRecoveryIT
 
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createAlwaysInitiallyPopulatingLuceneIndexFactory()
     {
-        return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                ExtensionType.DATABASE, PROVIDER_DESCRIPTOR.getKey() )
-        {
-            @Override
-            public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
-            {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
-                        IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
-                {
-                    @Override
-                    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
-                    {
-                        return InternalIndexState.POPULATING;
-                    }
-                };
-            }
-        };
+        return new PopulatingTestLuceneIndexExtension();
     }
 
     // Creates a lucene index factory with the shared in-memory directory
     private KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies> createLuceneIndexFactory()
     {
-        return new KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>(
-                ExtensionType.DATABASE, PROVIDER_DESCRIPTOR.getKey() )
-        {
+        return new TestLuceneIndexExtension();
+    }
 
-            @Override
-            public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+    @RecoveryExtension
+    private class TestLuceneIndexExtension extends KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
+    {
+
+        TestLuceneIndexExtension()
+        {
+            super( ExtensionType.DATABASE, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() );
+        }
+
+        @Override
+        public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+        {
+            return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
+                    dependencies.getConfig(), context.databaseInfo().operationalMode );
+        }
+    }
+
+    @RecoveryExtension
+    private class PopulatingTestLuceneIndexExtension extends KernelExtensionFactory<LuceneIndexProviderFactory.Dependencies>
+    {
+        PopulatingTestLuceneIndexExtension()
+        {
+            super( ExtensionType.DATABASE, LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR.getKey() );
+        }
+
+        @Override
+        public Lifecycle newInstance( KernelContext context, LuceneIndexProviderFactory.Dependencies dependencies )
+        {
+            return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ),
+                    IndexProvider.Monitor.EMPTY, dependencies.getConfig(), context.databaseInfo().operationalMode )
             {
-                return new LuceneIndexProvider( fs.get(), directoryFactory, defaultDirectoryStructure( context.directory() ), IndexProvider.Monitor.EMPTY,
-                        dependencies.getConfig(), context.databaseInfo().operationalMode );
-            }
-        };
+                @Override
+                public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+                {
+                    return InternalIndexState.POPULATING;
+                }
+            };
+        }
     }
 }

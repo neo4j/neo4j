@@ -118,7 +118,7 @@ public class CountsStoreRecoveryTest
         }
     }
 
-    private TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
+    private static TestGraphDatabaseFactory databaseFactory( FileSystemAbstraction fs )
     {
         return new TestGraphDatabaseFactory().setFileSystem( fs );
     }

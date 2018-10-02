@@ -26,7 +26,6 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -109,7 +108,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final SystemNanoClock clock;
     private final AccessCapability accessCapability;
     private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
-    private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
     private final IdController idController;
     private final DatabaseInfo databaseInfo;
     private final VersionContextSupplier versionContextSupplier;
@@ -162,7 +160,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, editionContext.getTransactionStartTimeout() );
         this.accessCapability = editionContext.getAccessCapability();
         this.storeCopyCheckPointMutex = new StoreCopyCheckPointMutex();
-        this.recoveryCleanupWorkCollector = platformModule.recoveryCleanupWorkCollector;
         this.databaseInfo = platformModule.databaseInfo;
         this.versionContextSupplier = platformModule.versionContextSupplier;
         this.collectionsFactorySupplier = platformModule.collectionsFactorySupplier;
@@ -374,12 +371,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
     {
         return storeCopyCheckPointMutex;
-    }
-
-    @Override
-    public RecoveryCleanupWorkCollector getRecoveryCleanupWorkCollector()
-    {
-        return recoveryCleanupWorkCollector;
     }
 
     @Override

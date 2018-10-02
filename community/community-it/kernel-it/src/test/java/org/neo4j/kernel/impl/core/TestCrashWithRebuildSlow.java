@@ -20,14 +20,14 @@
 package org.neo4j.kernel.impl.core;
 
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,8 +49,10 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -61,21 +63,19 @@ import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-/**
- * Test for making sure that slow id generator rebuild is exercised
- */
-public class TestCrashWithRebuildSlow
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class TestCrashWithRebuildSlow
 {
-    @Rule
-    public final TestDirectory testDir = TestDirectory.testDirectory();
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @Inject
+    private TestDirectory testDir;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
 
     @Test
-    public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
+    void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
-                .setFileSystem( fs.get() ).newImpermanentDatabaseBuilder( testDir.databaseDir() )
+                .setFileSystem( fs ).newImpermanentDatabaseBuilder( testDir.databaseDir() )
                 .setConfig( GraphDatabaseSettings.record_id_batch_size, "1" )
                 .newGraphDatabase();
         List<Long> deletedNodeIds = produceNonCleanDefraggedStringStore( db );
@@ -85,12 +85,13 @@ public class TestCrashWithRebuildSlow
         // mess up the check-sums in non-deterministic ways
         db.getDependencyResolver().resolveDependency( PageCache.class ).flushAndForce();
 
-        long checksumBefore = fs.get().checksum();
-        long checksumBefore2 = fs.get().checksum();
+        long checksumBefore = fs.checksum();
+        long checksumBefore2 = fs.checksum();
 
         assertThat( checksumBefore, Matchers.equalTo( checksumBefore2 ) );
 
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( db::shutdown );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot();
+        db.shutdown();
 
         long snapshotChecksum = snapshot.checksum();
         if ( snapshotChecksum != checksumBefore )
@@ -101,7 +102,7 @@ public class TestCrashWithRebuildSlow
             }
             try ( OutputStream out = new FileOutputStream( testDir.file( "fs.zip" ) ) )
             {
-                fs.get().dumpZip( out );
+                fs.dumpZip( out );
             }
         }
         assertThat( snapshotChecksum, equalTo( checksumBefore ) );
@@ -163,7 +164,7 @@ public class TestCrashWithRebuildSlow
                 nodes.add( node );
                 if ( previous != null )
                 {
-                    Relationship rel = previous.createRelationshipTo( node, MyRelTypes.TEST );
+                    previous.createRelationshipTo( node, MyRelTypes.TEST );
                 }
                 previous = node;
             }
@@ -193,18 +194,14 @@ public class TestCrashWithRebuildSlow
 
     private static void delete( Node node )
     {
-        for ( Relationship rel : node.getRelationships() )
-        {
-            rel.delete();
-        }
+        node.getRelationships().forEach( Relationship::delete );
         node.delete();
     }
 
     private static Map<IdType,Long> getHighIds( GraphDatabaseAPI db )
     {
-        final Map<IdType,Long> highIds = new HashMap<>();
-        NeoStores neoStores = db.getDependencyResolver().resolveDependency(
-                RecordStorageEngine.class ).testAccessNeoStores();
+        final Map<IdType,Long> highIds = new EnumMap<>( IdType.class );
+        NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         Visitor<CommonAbstractStore,RuntimeException> visitor = store ->
         {
             highIds.put( store.getIdType(), store.getHighId() );

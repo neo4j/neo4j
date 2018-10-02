@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.recovery;
+package org.neo4j.kernel.recovery;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
@@ -35,8 +35,10 @@ import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.test.mockito.matcher.LogMatchers.checkPoint;
@@ -46,24 +48,24 @@ import static org.neo4j.test.mockito.matcher.LogMatchers.containsExactly;
 import static org.neo4j.test.mockito.matcher.LogMatchers.logEntries;
 import static org.neo4j.test.mockito.matcher.LogMatchers.startEntry;
 
-public class KernelRecoveryTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class KernelRecoveryTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private EphemeralFileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldHandleWritesProperlyAfterRecovery() throws Exception
+    void shouldHandleWritesProperlyAfterRecovery() throws Exception
     {
         // Given
-        EphemeralFileSystemAbstraction fs = fsRule.get();
-        GraphDatabaseService db = newDB( fs );
+        GraphDatabaseService db = newDB( fileSystem );
 
         long node1 = createNode( db );
 
         // And given the power goes out
-        try ( EphemeralFileSystemAbstraction crashedFs = fs.snapshot() )
+        try ( EphemeralFileSystemAbstraction crashedFs = fileSystem.snapshot() )
         {
             db.shutdown();
             db = newDB( crashedFs );
@@ -78,12 +80,15 @@ public class KernelRecoveryTest
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),
                     commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 2 ),
 
+                    // checkpoint after recovery
+                    checkPoint( new LogPosition( 0, 133 ) ),
+
                     // Tx after recovery
                     startEntry( -1, -1 ), commandEntry( node2, NodeCommand.class ),
                     commandEntry( StatementConstants.ANY_LABEL, NodeCountsCommand.class ), commitEntry( 3 ),
 
                     // checkpoint
-                    checkPoint( new LogPosition( 0, 250 ) ) ) );
+                    checkPoint( new LogPosition( 0, 268 ) ) ) );
         }
     }
 

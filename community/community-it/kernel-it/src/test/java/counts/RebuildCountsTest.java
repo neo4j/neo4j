@@ -19,10 +19,10 @@
  */
 package counts;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
@@ -44,11 +45,13 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.index_background_sampling_enabled;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
@@ -56,38 +59,40 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class RebuildCountsTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class RebuildCountsTest
 {
     private static final int ALIENS = 16;
     private static final int HUMANS = 16;
     private static final Label ALIEN = label( "Alien" );
     private static final Label HUMAN = label( "Human" );
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private EphemeralFileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
+
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
 
     private GraphDatabaseService db;
     private File storeDir;
 
-    @Before
-    public void before() throws IOException
+    @BeforeEach
+    void before() throws IOException
     {
         storeDir = testDirectory.databaseDir();
-        restart( fsRule.get() );
+        restart( fileSystem );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         doCleanShutdown();
     }
 
     @Test
-    public void shouldRebuildMissingCountsStoreOnStart() throws IOException, TransactionFailureException
+    void shouldRebuildMissingCountsStoreOnStart() throws IOException, TransactionFailureException
     {
         // given
         createAliensAndHumans();
@@ -113,7 +118,7 @@ public class RebuildCountsTest
     }
 
     @Test
-    public void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException, TransactionFailureException
+    void shouldRebuildMissingCountsStoreAfterRecovery() throws IOException, TransactionFailureException
     {
         // given
         createAliensAndHumans();
@@ -194,7 +199,7 @@ public class RebuildCountsTest
     private FileSystemAbstraction shutdown()
     {
         doCleanShutdown();
-        return fsRule.get().snapshot();
+        return fileSystem.snapshot();
     }
 
     private void rotateLog() throws IOException
@@ -205,7 +210,7 @@ public class RebuildCountsTest
 
     private FileSystemAbstraction crash()
     {
-        return fsRule.get().snapshot();
+        return fileSystem.snapshot();
     }
 
     private void restart( FileSystemAbstraction fs ) throws IOException

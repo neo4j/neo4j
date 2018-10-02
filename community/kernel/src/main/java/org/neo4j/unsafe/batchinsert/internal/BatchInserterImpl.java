@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -45,7 +44,6 @@ import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -82,7 +80,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -167,7 +164,6 @@ import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.Boolean.parseBoolean;
-import static java.lang.String.format;
 import static java.util.Collections.emptyIterator;
 import static java.util.Collections.emptyList;
 import static org.neo4j.collection.PrimitiveLongCollections.map;
@@ -177,10 +173,10 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 import static org.neo4j.kernel.impl.api.index.IndexingService.NO_MONITOR;
+import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
-import static org.neo4j.util.Preconditions.checkState;
 
 public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvider
 {
@@ -320,7 +316,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
         indexStore = life.add( new IndexConfigStore( this.databaseLayout, fileSystem ) );
-        schemaCache = new SchemaCache( loadConstraintSemantics(), schemaStore, indexProviderMap );
+        schemaCache = new SchemaCache( getConstraintSemantics(), schemaStore, indexProviderMap );
 
         actions = new BatchSchemaActions();
 
@@ -533,7 +529,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private IndexProxy getIndexProxy( IndexingService indexingService, StoreIndexDescriptor descriptpr )
+    private static IndexProxy getIndexProxy( IndexingService indexingService, StoreIndexDescriptor descriptpr )
     {
         try
         {
@@ -1100,15 +1096,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     void forceFlushChanges()
     {
         flushStrategy.forceFlush();
-    }
-
-    private static ConstraintSemantics loadConstraintSemantics()
-    {
-        Iterable<ConstraintSemantics> semantics = Service.load( ConstraintSemantics.class );
-        List<ConstraintSemantics> candidates = Iterables.asList( semantics );
-        checkState( !candidates.isEmpty(), format( "At least one implementation of %s should be available.", ConstraintSemantics.class ) );
-
-        return Collections.max( candidates, Comparator.comparingInt( ConstraintSemantics::getPriority ) );
     }
 
     private class BatchSchemaActions implements InternalSchemaActions

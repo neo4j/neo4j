@@ -19,7 +19,12 @@
  */
 package org.neo4j.kernel.impl.constraints;
 
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
@@ -37,12 +42,24 @@ import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
+import static java.lang.String.format;
+import static org.neo4j.util.Preconditions.checkState;
+
 /**
  * Implements semantics of constraint creation and enforcement.
  */
 public abstract class ConstraintSemantics extends Service
 {
     private final int priority;
+
+    public static ConstraintSemantics getConstraintSemantics()
+    {
+        Iterable<ConstraintSemantics> semantics = Service.load( ConstraintSemantics.class );
+        List<ConstraintSemantics> candidates = Iterables.asList( semantics );
+        checkState( !candidates.isEmpty(), format( "At least one implementation of %s should be available.", ConstraintSemantics.class ) );
+
+        return Collections.max( candidates, Comparator.comparingInt( ConstraintSemantics::getPriority ) );
+    }
 
     protected ConstraintSemantics( String key, int priority )
     {

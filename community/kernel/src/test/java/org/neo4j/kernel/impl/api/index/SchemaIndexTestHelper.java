@@ -31,6 +31,7 @@ import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.recovery.RecoveryExtension;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Mockito.mock;
@@ -52,6 +53,7 @@ public class SchemaIndexTestHelper
         Config config();
     }
 
+    @RecoveryExtension
     private static class SingleInstanceIndexProviderFactory
         extends KernelExtensionFactory<SingleInstanceIndexProviderFactoryDependencies>
     {

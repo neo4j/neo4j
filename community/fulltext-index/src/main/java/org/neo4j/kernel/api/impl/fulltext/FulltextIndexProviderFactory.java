@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
@@ -50,6 +52,7 @@ import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByPr
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
 @Service.Implementation( KernelExtensionFactory.class )
+@RecoveryExtension
 public class FulltextIndexProviderFactory extends KernelExtensionFactory<FulltextIndexProviderFactory.Dependencies>
 {
     private static final String KEY = "fulltext";
@@ -136,7 +139,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
         return provider;
     }
 
-    private void logDependencyException( KernelContext context, Logger toolLog, Logger dbmsLog, String message )
+    private static void logDependencyException( KernelContext context, Logger toolLog, Logger dbmsLog, String message )
     {
         // We can for instance get unsatisfied dependency exceptions when the kernel extension is created as part of a consistency check run.
         if ( context.databaseInfo() == DatabaseInfo.TOOL )

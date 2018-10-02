@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.recovery;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,6 +57,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.ByteUnit;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -86,20 +87,15 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.FileOperation;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -111,20 +107,23 @@ import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Long.max;
+import static java.time.Duration.ofMillis;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.facade.GraphDatabaseDependencies.newDependencies;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
@@ -133,20 +132,21 @@ import static org.neo4j.helpers.collection.Iterables.asList;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.kernel.configuration.Config.defaults;
 
-public class RecoveryIT
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+class DatabaseRecoveryIT
 {
     private static final String[] TOKENS = new String[] {"Token1", "Token2", "Token3", "Token4", "Token5"};
 
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final RandomRule random = new RandomRule();
+    @Inject
+    private TestDirectory directory;
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
+    @Inject
+    private RandomRule random;
     private final AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
-    @Rule
-    public final RuleChain rules = RuleChain.outerRule( random ).around( fileSystemRule ).around( directory );
-
     @Test
-    public void idGeneratorsRebuildAfterRecovery() throws IOException
+    void idGeneratorsRebuildAfterRecovery() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.databaseDir() );
         int numberOfNodes = 10;
@@ -160,7 +160,7 @@ public class RecoveryIT
         }
 
         // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
-        File restoreDbStoreDir = copyTransactionLogs();
+        File restoreDbStoreDir = copyStore();
 
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
         try ( Transaction tx = recoveredDatabase.beginTx() )
@@ -176,7 +176,7 @@ public class RecoveryIT
     }
 
     @Test
-    public void reportProgressOnRecovery() throws IOException
+    void reportProgressOnRecovery() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.databaseDir() );
         for ( int i = 0; i < 10; i++ )
@@ -188,7 +188,7 @@ public class RecoveryIT
             }
         }
 
-        File restoreDbStoreDir = copyTransactionLogs();
+        File restoreDbStoreDir = copyStore();
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
         try ( Transaction transaction = recoveredDatabase.beginTx() )
         {
@@ -202,7 +202,7 @@ public class RecoveryIT
     }
 
     @Test
-    public void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
+    void shouldRecoverIdsCorrectlyWhenWeCreateAndDeleteANodeInTheSameRecoveryRun() throws IOException
     {
         GraphDatabaseService database = startDatabase( directory.databaseDir() );
         Label testLabel = Label.label( "testLabel" );
@@ -232,7 +232,7 @@ public class RecoveryIT
         }
 
         // copying only transaction log simulate non clean shutdown db that should be able to recover just from logs
-        File restoreDbStoreDir = copyTransactionLogs();
+        File restoreDbStoreDir = copyStore();
 
         // database should be restored and node should have expected properties
         GraphDatabaseService recoveredDatabase = startDatabase( restoreDbStoreDir );
@@ -247,80 +247,81 @@ public class RecoveryIT
         recoveredDatabase.shutdown();
     }
 
-    @Test( timeout = 60_000 )
-    public void recoveryShouldFixPartiallyAppliedSchemaIndexUpdates()
+    @Test
+    void recoveryShouldFixPartiallyAppliedSchemaIndexUpdates()
     {
-        Label label = Label.label( "Foo" );
-        String property = "Bar";
-
-        // cause failure during 'relationship.delete()' command application
-        ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ),
-                Command.RelationshipCommand.class );
-        adversary.disable();
-
-        File databaseDir = directory.databaseDir();
-        GraphDatabaseService db = AdversarialPageCacheGraphDatabaseFactory.create( fileSystemRule.get(), adversary )
-                .newEmbeddedDatabaseBuilder( databaseDir )
-                .newGraphDatabase();
-        try
+        assertTimeoutPreemptively( ofMillis( 60_000 ), () ->
         {
-            try ( Transaction tx = db.beginTx() )
-            {
-                db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
-                tx.success();
-            }
+            Label label = Label.label( "Foo" );
+            String property = "Bar";
 
-            long relationshipId = createRelationship( db );
-
-            TransactionFailureException txFailure = null;
-            try ( Transaction tx = db.beginTx() )
-            {
-                Node node = db.createNode( label );
-                node.setProperty( property, "B" );
-                db.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
-                tx.success();
-                adversary.enable();
-            }
-            catch ( TransactionFailureException e )
-            {
-                txFailure = e;
-            }
-            assertNotNull( txFailure );
+            // cause failure during 'relationship.delete()' command application
+            ClassGuardedAdversary adversary = new ClassGuardedAdversary( new CountingAdversary( 1, true ), Command.RelationshipCommand.class );
             adversary.disable();
 
-            healthOf( db ).healed(); // heal the db so it is possible to inspect the data
-
-            // now we can observe partially committed state: node is in the index and relationship still present
-            try ( Transaction tx = db.beginTx() )
+            File databaseDir = directory.databaseDir();
+            GraphDatabaseService db =
+                    AdversarialPageCacheGraphDatabaseFactory.create( fileSystem, adversary ).newEmbeddedDatabaseBuilder( databaseDir ).newGraphDatabase();
+            try
             {
-                assertNotNull( findNode( db, label, property, "B" ) );
-                assertNotNull( db.getRelationshipById( relationshipId ) );
-                tx.success();
+                try ( Transaction tx = db.beginTx() )
+                {
+                    db.schema().constraintFor( label ).assertPropertyIsUnique( property ).create();
+                    tx.success();
+                }
+
+                long relationshipId = createRelationship( db );
+
+                TransactionFailureException txFailure = null;
+                try ( Transaction tx = db.beginTx() )
+                {
+                    Node node = db.createNode( label );
+                    node.setProperty( property, "B" );
+                    db.getRelationshipById( relationshipId ).delete(); // this should fail because of the adversary
+                    tx.success();
+                    adversary.enable();
+                }
+                catch ( TransactionFailureException e )
+                {
+                    txFailure = e;
+                }
+                assertNotNull( txFailure );
+                adversary.disable();
+
+                healthOf( db ).healed(); // heal the db so it is possible to inspect the data
+
+                // now we can observe partially committed state: node is in the index and relationship still present
+                try ( Transaction tx = db.beginTx() )
+                {
+                    assertNotNull( findNode( db, label, property, "B" ) );
+                    assertNotNull( db.getRelationshipById( relationshipId ) );
+                    tx.success();
+                }
+
+                healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
+
+                // restart the database, now with regular page cache
+                File databaseDirectory = ((GraphDatabaseAPI) db).databaseLayout().databaseDirectory();
+                db.shutdown();
+                db = startDatabase( databaseDirectory );
+
+                // now we observe correct state: node is in the index and relationship is removed
+                try ( Transaction tx = db.beginTx() )
+                {
+                    assertNotNull( findNode( db, label, property, "B" ) );
+                    assertRelationshipNotExist( db, relationshipId );
+                    tx.success();
+                }
             }
-
-            healthOf( db ).panic( txFailure.getCause() ); // panic the db again to force recovery on the next startup
-
-            // restart the database, now with regular page cache
-            File databaseDirectory = ((GraphDatabaseAPI) db).databaseLayout().databaseDirectory();
-            db.shutdown();
-            db = startDatabase( databaseDirectory );
-
-            // now we observe correct state: node is in the index and relationship is removed
-            try ( Transaction tx = db.beginTx() )
+            finally
             {
-                assertNotNull( findNode( db, label, property, "B" ) );
-                assertRelationshipNotExist( db, relationshipId );
-                tx.success();
+                db.shutdown();
             }
-        }
-        finally
-        {
-            db.shutdown();
-        }
+        } );
     }
 
     @Test
-    public void shouldSeeSameIndexUpdatesDuringRecoveryAsFromNormalIndexApplication() throws Exception
+    void shouldSeeSameIndexUpdatesDuringRecoveryAsFromNormalIndexApplication() throws Exception
     {
         // Previously indexes weren't really participating in recovery, instead there was an after-phase
         // where nodes that was changed during recovery were reindexed. Do be able to do this reindexing
@@ -382,7 +383,7 @@ public class RecoveryIT
     }
 
     @Test
-    public void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception
+    void shouldSeeTheSameRecordsAtCheckpointAsAfterReverseRecovery() throws Exception
     {
         // given
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
@@ -652,7 +653,7 @@ public class RecoveryIT
         return Label.label( random.among( TOKENS ) );
     }
 
-    private void assertSameUpdates( Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash,
+    private static void assertSameUpdates( Map<Long,Collection<IndexEntryUpdate<?>>> updatesAtCrash,
             Map<Long,Collection<IndexEntryUpdate<?>>> recoveredUpdatesSnapshot )
     {
         // The UpdateCapturingIndexProvider just captures updates made to indexes. The order in this test
@@ -777,15 +778,7 @@ public class RecoveryIT
 
     private static void assertRelationshipNotExist( GraphDatabaseService db, long id )
     {
-        try
-        {
-            db.getRelationshipById( id );
-            fail( "Exception expected" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( NotFoundException.class ) );
-        }
+        assertThrows( NotFoundException.class, () -> db.getRelationshipById( id ) );
     }
 
     private static DatabaseHealth healthOf( GraphDatabaseService db )
@@ -801,26 +794,19 @@ public class RecoveryIT
         return Arrays.toString( strings );
     }
 
-    private File copyTransactionLogs() throws IOException
+    private File copyStore() throws IOException
     {
         File restoreDbStore = directory.storeDir( "restore-db" );
         File restoreDbStoreDir = directory.databaseDir( restoreDbStore );
-        move( fileSystemRule.get(), this.directory.databaseDir(), restoreDbStoreDir );
+        copy( fileSystem, this.directory.databaseDir(), restoreDbStoreDir );
         return restoreDbStoreDir;
     }
 
-    private static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
+    private static void copy( FileSystemAbstraction fs, File fromDirectory, File toDirectory ) throws IOException
     {
         assertTrue( fs.isDirectory( fromDirectory ) );
         assertTrue( fs.isDirectory( toDirectory ) );
-
-        LogFiles transactionLogFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( fromDirectory, fs ).build();
-        File[] logFiles = transactionLogFiles.logFiles();
-        for ( File logFile : logFiles )
-        {
-            FileOperation.MOVE.perform( fs, logFile.getName(), fromDirectory, false, toDirectory,
-                    ExistingTargetStrategy.FAIL );
-        }
+        fs.copyRecursively( fromDirectory, toDirectory );
     }
 
     private static GraphDatabaseAPI startDatabase( File storeDir, EphemeralFileSystemAbstraction fs, UpdateCapturingIndexProvider indexProvider )
@@ -982,7 +968,7 @@ public class RecoveryIT
         }
     }
 
-    public class UpdateCapturingIndexUpdater implements IndexUpdater
+    public static class UpdateCapturingIndexUpdater implements IndexUpdater
     {
         private final IndexUpdater actual;
         private final Collection<IndexEntryUpdate<?>> updatesTarget;
@@ -1007,6 +993,7 @@ public class RecoveryIT
         }
     }
 
+    @RecoveryExtension
     private static class IndexExtensionFactory extends KernelExtensionFactory<IndexExtensionFactory.Dependencies>
     {
         private final IndexProvider indexProvider;
@@ -1017,7 +1004,7 @@ public class RecoveryIT
 
         IndexExtensionFactory( IndexProvider indexProvider )
         {
-            super( "customExtension" );
+            super( ExtensionType.DATABASE, "customExtension" );
             this.indexProvider = indexProvider;
         }
 

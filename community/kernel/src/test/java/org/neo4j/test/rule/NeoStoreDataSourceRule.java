@@ -25,7 +25,6 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -157,7 +156,6 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
                 new StandardConstraintSemantics(), monitors, new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
-                RecoveryCleanupWorkCollector.immediate(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
                 file -> EMPTY_WATCHER, new GraphDatabaseFacade(), Iterables.empty() ) );
@@ -224,7 +222,6 @@ public class NeoStoreDataSourceRule extends ExternalResource
         private final SystemNanoClock clock;
         private final AccessCapability accessCapability;
         private final StoreCopyCheckPointMutex storeCopyCheckPointMutex;
-        private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IdController idController;
         private final DatabaseInfo databaseInfo;
         private final VersionContextSupplier versionContextSupplier;
@@ -244,9 +241,8 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing,
                 IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics,
                 Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
-                SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IdController idController, DatabaseInfo databaseInfo,
-                VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+                SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
+                DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<File,FileSystemWatcherService> watcherServiceFactory,
                 GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
         {
@@ -282,7 +278,6 @@ public class NeoStoreDataSourceRule extends ExternalResource
             this.clock = clock;
             this.accessCapability = accessCapability;
             this.storeCopyCheckPointMutex = storeCopyCheckPointMutex;
-            this.recoveryCleanupWorkCollector = recoveryCleanupWorkCollector;
             this.idController = idController;
             this.databaseInfo = databaseInfo;
             this.versionContextSupplier = versionContextSupplier;
@@ -501,12 +496,6 @@ public class NeoStoreDataSourceRule extends ExternalResource
         public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
         {
             return storeCopyCheckPointMutex;
-        }
-
-        @Override
-        public RecoveryCleanupWorkCollector getRecoveryCleanupWorkCollector()
-        {
-            return recoveryCleanupWorkCollector;
         }
 
         @Override
