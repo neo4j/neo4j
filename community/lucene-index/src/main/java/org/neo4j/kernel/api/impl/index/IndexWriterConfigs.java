@@ -121,4 +121,12 @@ public final class IndexWriterConfigs
         writerConfig.setRAMBufferSizeMB( POPULATION_RAM_BUFFER_SIZE_MB );
         return writerConfig;
     }
+
+    public static IndexWriterConfig transactionState( Analyzer analyzer )
+    {
+        IndexWriterConfig config = standard( analyzer );
+        // Index transaction state is never directly persisted, so never commit it on close.
+        config.setCommitOnClose( false );
+        return config;
+    }
 }
