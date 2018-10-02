@@ -47,7 +47,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     {
         // when
         Result result = db().execute( "CYPHER planner=rule RETURN 1" );
-        InputPosition position = InputPosition.empty;
 
         // then
         assertThat( result.getNotifications(), containsItem( deprecatedRulePlanner ) );
@@ -59,7 +58,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     {
         // when
         Result result = db().execute( "CYPHER runtime=compiled RETURN 1" );
-        InputPosition position = InputPosition.empty;
 
         // then
         assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );
