@@ -20,7 +20,7 @@
 
 #encoding: utf-8
 
-Feature: CreateExpression
+Feature: Create
 
   Scenario: Dependencies in creating multiple nodes
     Given an empty graph

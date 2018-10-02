@@ -209,5 +209,5 @@ Feature "VarLengthAcceptance": Scenario "Handles checking properties on relation
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on relationship identifier"
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in path - using ALL() function on path relationship properties"
 Feature "VarLengthAcceptance": Scenario "Handles checking properties on relationships in multistep path - using ALL() function on path relationship properties"
-Feature "CreateExpression": Scenario "Dependencies in creating multiple nodes"
-Feature "CreateExpression": Scenario "Dependencies in creating multiple rels"
+Feature "Create": Scenario "Dependencies in creating multiple nodes"
+Feature "Create": Scenario "Dependencies in creating multiple rels"
