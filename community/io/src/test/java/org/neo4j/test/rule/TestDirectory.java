@@ -61,7 +61,16 @@ import static java.lang.String.format;
 public class TestDirectory extends ExternalResource
 {
     private static final String DEFAULT_DATABASE_DIRECTORY = "graph.db";
-    // Used for generating unique directory names for the same tests across different runs of the JVM.
+    /**
+     * This value is mixed into the hash string, along with the test name,
+     * that we use for uniquely naming test directories.
+     * By getting a new value here, every time the JVM is started, we the same
+     * tests will get different directory names when executed many times in
+     * different JVMs.
+     * This way, the test results for many runs of the same tests are kept
+     * around, so they can easily be compared with each other. This is useful
+     * when you need to investigate a flaky test, for instance.
+     */
     private static final long JVM_EXECUTION_HASH = new Random().nextLong();
 
     private final FileSystemAbstraction fileSystem;
