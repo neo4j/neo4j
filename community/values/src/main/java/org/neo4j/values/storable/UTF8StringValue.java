@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.hashing.HashFunction;
 
+import static org.neo4j.values.storable.Values.utf8Value;
+
 /*
  * Just as a normal StringValue but is backed by a byte array and does string
  * serialization lazily when necessary.
@@ -176,9 +178,12 @@ public final class UTF8StringValue extends StringValue
         return hashFunction.update( hash, cpc.codePointCount );
     }
 
-    public int offset()
+    public TextValue plus( UTF8StringValue other )
     {
-        return offset;
+        byte[] newBytes = new byte[byteLength + other.byteLength];
+        System.arraycopy( bytes, offset, newBytes, 0, byteLength );
+        System.arraycopy( other.bytes, other.offset, newBytes, byteLength, other.byteLength );
+        return utf8Value( newBytes );
     }
 
     private static class CodePointCursor

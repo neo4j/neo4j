@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.values.utils.UTF8Utils;
 
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -163,10 +162,27 @@ public class UTF8StringValueTest
         UTF8StringValue b = (UTF8StringValue) utf8Value( bytes, 3, 3 );
 
         // Then
-       assertSame( UTF8Utils.add( a, a ), stringValue( "bcbc" ) );
-       assertSame( UTF8Utils.add( a, b ), stringValue( "bcdef" ) );
-       assertSame( UTF8Utils.add( b, a ), stringValue( "defbc" ) );
-       assertSame( UTF8Utils.add( b, b ), stringValue( "defdef" ) );
+        assertSame( a.plus( a ), stringValue( "bcbc" ) );
+        assertSame( a.plus( b ), stringValue( "bcdef" ) );
+        assertSame( b.plus( a ), stringValue( "defbc" ) );
+        assertSame( b.plus( b ), stringValue( "defdef" ) );
+    }
+
+    @Test
+    public void shouldHandleAdditionWithOffsetAndNonAscii()
+    {
+        // Given, two characters that require three bytes each
+        byte[] bytes = "ⲹ楡".getBytes( UTF_8 );
+
+        // When
+        UTF8StringValue a = (UTF8StringValue) utf8Value( bytes, 0, 3 );
+        UTF8StringValue b = (UTF8StringValue) utf8Value( bytes, 3, 3 );
+
+        // Then
+        assertSame( a.plus( a ), stringValue(  "ⲹⲹ" ) );
+        assertSame( a.plus( b ), stringValue(  "ⲹ楡" ) );
+        assertSame( b.plus( a ), stringValue(  "楡ⲹ") );
+        assertSame( b.plus( b ), stringValue( "楡楡" ) );
     }
 
     private void assertSame( TextValue lhs, TextValue rhs )

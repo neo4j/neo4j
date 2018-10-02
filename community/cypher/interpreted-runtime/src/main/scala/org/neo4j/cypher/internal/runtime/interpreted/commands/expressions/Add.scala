@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.util.v3_4.CypherTypeException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable.{UTF8StringValue, _}
-import org.neo4j.values.utils.UTF8Utils
 import org.neo4j.values.virtual.VirtualValues
 
 case class Add(a: Expression, b: Expression) extends Arithmetics(a, b) {
@@ -32,7 +31,7 @@ case class Add(a: Expression, b: Expression) extends Arithmetics(a, b) {
     (aVal, bVal) match {
       case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
       case (x: NumberValue, y: NumberValue) => x.plus(y)
-      case (x: UTF8StringValue, y: UTF8StringValue) => UTF8Utils.add(x, y)
+      case (x: UTF8StringValue, y: UTF8StringValue) => x.plus(y)
       case (x: TextValue, y: TextValue) => Values.stringValue(x.stringValue() + y.stringValue())
       case (IsList(x), IsList(y)) => VirtualValues.concat(x, y)
       case (IsList(x), y)         => VirtualValues.appendToList(x, y)
