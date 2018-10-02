@@ -27,6 +27,27 @@ import static org.neo4j.util.Preconditions.requirePositive;
 @Deprecated
 public class Numbers
 {
+
+    /**
+     * Checks if {@code value} is a power of 2.
+     * @param value the value to check
+     * @return {@code true} if {@code value} is a power of 2.
+     */
+    public static boolean isPowerOfTwo( long value )
+    {
+        return value > 0 && (value & (value - 1)) == 0;
+    }
+
+    /**
+     * Returns base 2 logarithm of the closest power of 2 that is less or equal to the {@code value}.
+     *
+     * @param value a positive long value
+     */
+    public static int log2floor( long value )
+    {
+        return (Long.SIZE - 1) - Long.numberOfLeadingZeros( requirePositive( value ) );
+    }
+
     public static short safeCastIntToUnsignedShort( int value )
     {
         if ( (value & ~0xFFFF) != 0 )

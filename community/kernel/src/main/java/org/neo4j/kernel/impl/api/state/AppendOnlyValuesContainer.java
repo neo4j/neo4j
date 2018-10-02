@@ -209,7 +209,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 
     private ByteBuffer addNewChunk( int size )
     {
-        final Memory memory = allocator.allocate( size );
+        final Memory memory = allocator.allocate( size, false );
         final ByteBuffer chunk = memory.asByteBuffer();
         allocated.add( memory );
         chunks.add( chunk );
@@ -689,7 +689,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 
         private void allocateBuf( int size )
         {
-            this.bufMemory = allocator.allocate( size );
+            this.bufMemory = allocator.allocate( size, false );
             this.buf = bufMemory.asByteBuffer();
         }
 

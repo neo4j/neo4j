@@ -20,6 +20,7 @@
 package org.neo4j.util;
 
 import static java.lang.String.format;
+import static org.neo4j.helpers.Numbers.isPowerOfTwo;
 
 /**
  * A set of static convenience methods for checking ctor/method parameters or state.
@@ -43,6 +44,22 @@ public final class Preconditions
         if ( value < 1 )
         {
             throw new IllegalArgumentException( "Expected positive long value, got " + value );
+        }
+        return value;
+    }
+
+    /**
+     * Ensures that {@code value} is a power of 2 or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param value a value for check
+     * @return {@code value} if it's a power of 2
+     * @throws IllegalArgumentException if {@code value} is not power of 2
+     */
+    public static long requirePowerOfTwo( long value )
+    {
+        if ( !isPowerOfTwo( value ) )
+        {
+            throw new IllegalArgumentException( "Expected long value to be a non zero power of 2, got " + value );
         }
         return value;
     }

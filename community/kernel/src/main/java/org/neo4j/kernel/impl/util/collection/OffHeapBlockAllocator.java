@@ -24,6 +24,9 @@ import org.neo4j.memory.MemoryAllocationTracker;
 
 public interface OffHeapBlockAllocator
 {
+    /**
+     * @return memory block of requested size; there's no guarantee whether allocated memory is zero-filled or dirty
+     */
     MemoryBlock allocate( long size, MemoryAllocationTracker tracker );
 
     void free( MemoryBlock block, MemoryAllocationTracker tracker );
