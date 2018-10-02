@@ -24,7 +24,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -58,10 +57,13 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -84,10 +86,15 @@ import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTRelationship;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.proc.Context.KERNEL_TRANSACTION;
 import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
+import static org.neo4j.kernel.api.proc.Key.key;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 
 public class BuiltInProceduresTest
 {
+    private static final Key<DependencyResolver> DEPENDENCY_RESOLVER = key( "DependencyResolver", DependencyResolver.class );
+    private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI = key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
+    private static final Key<Log> LOG = key( "Log", Log.class );
+
     private final List<IndexReference> indexes = new LinkedList<>();
     private final List<IndexReference> uniqueIndexes = new LinkedList<>();
     private final List<ConstraintDescriptor> constraints = new LinkedList<>();
@@ -102,10 +109,64 @@ public class BuiltInProceduresTest
     private final KernelTransaction tx = mock( KernelTransaction.class );
     private final DependencyResolver resolver = mock( DependencyResolver.class );
     private final GraphDatabaseAPI graphDatabaseAPI = mock( GraphDatabaseAPI.class );
+    private final IndexingService indexingService = mock( IndexingService.class );
     private final Log log = mock( Log.class );
 
     private final Procedures procs = new Procedures();
     private final ResourceTracker resourceTracker = new StubResourceManager();
+
+    @Before
+    public void setup() throws Exception
+    {
+        procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
+        procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
+        procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
+        procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
+
+        procs.registerComponent( Log.class, ctx -> ctx.get( LOG), false );
+        procs.registerType( Node.class, NTNode );
+        procs.registerType( Relationship.class, NTRelationship );
+        procs.registerType( Path.class, NTPath );
+
+        new SpecialBuiltInProcedures( "1.3.37", Edition.enterprise.toString() ).accept( procs );
+        procs.registerProcedure( BuiltInProcedures.class );
+        procs.registerProcedure( BuiltInDbmsProcedures.class );
+
+        when( tx.acquireStatement() ).thenReturn( statement );
+        when( tx.tokenRead() ).thenReturn( tokens );
+        when( tx.dataRead() ).thenReturn( read );
+        when( tx.schemaRead() ).thenReturn( schemaRead );
+
+        when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
+        when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
+        when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
+        when( schemaRead.indexesGetAll() ).thenAnswer(
+                i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
+        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexReference>) invocationOnMock -> {
+            SchemaDescriptor schema = invocationOnMock.getArgument( 0 );
+            int label = schema.keyId();
+            int prop = schema.getPropertyId();
+            return getIndexReference( label, prop );
+        } );
+        when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
+
+        when( tokens.propertyKeyName( anyInt() ) ).thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
+        when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
+        when( tokens.relationshipTypeName( anyInt() ) ).thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
+
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        CapableIndexDescriptor descriptor = mock( CapableIndexDescriptor.class );
+        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
+        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
+        when( descriptor.getId() ).thenReturn( 42L );
+
+        when( schemaRead.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaRead.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
+        when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
+        when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
+        when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
+        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
+    }
 
     @Test
     public void shouldListAllIndexes() throws Throwable
@@ -116,12 +177,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
                 "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property", 100D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
-    }
-
-    private Map<String,String> getIndexProviderDescriptorMap( IndexProviderDescriptor providerDescriptor )
-    {
-        return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L ) ) );
     }
 
     @Test
@@ -133,7 +189,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
                 "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ) ) ) );
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L ) ) );
     }
 
     @Test
@@ -224,7 +280,7 @@ public class BuiltInProceduresTest
                         "List all constraints in the database.", "READ" ),
                 record( "db.indexes", "db.indexes() :: (description :: STRING?, indexName :: STRING?, " +
                                       "tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, " +
-                                      "state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?)",
+                                      "state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?)",
                         "List all indexes in the database.", "READ" ),
                 record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
                 record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",
@@ -425,7 +481,12 @@ public class BuiltInProceduresTest
         verify( statement ).close();
     }
 
-    private Matcher<Object[]> record( Object... fields )
+    private static Map<String,String> getIndexProviderDescriptorMap( IndexProviderDescriptor providerDescriptor )
+    {
+        return MapUtil.stringMap( "key", providerDescriptor.getKey(), "version", providerDescriptor.getVersion() );
+    }
+
+    private static Matcher<Object[]> record( Object... fields )
     {
         return equalTo( fields );
     }
@@ -493,7 +554,7 @@ public class BuiltInProceduresTest
         }
     }
 
-    private Integer token( String name, Map<Integer,String> tokens )
+    private static Integer token( String name, Map<Integer,String> tokens )
     {
         IntSupplier allocateFromMap = () ->
         {
@@ -505,58 +566,6 @@ public class BuiltInProceduresTest
                      .filter( entry -> entry.getValue().equals( name ) )
                      .mapToInt( Map.Entry::getKey )
                      .findFirst().orElseGet( allocateFromMap );
-    }
-
-    @Before
-    public void setup() throws Exception
-    {
-        procs.registerComponent( KernelTransaction.class, ctx -> ctx.get( KERNEL_TRANSACTION ), false );
-        procs.registerComponent( DependencyResolver.class, ctx -> ctx.get( DEPENDENCY_RESOLVER ), false );
-        procs.registerComponent( GraphDatabaseAPI.class, ctx -> ctx.get( GRAPHDATABASEAPI ), false );
-        procs.registerComponent( SecurityContext.class, ctx -> ctx.get( SECURITY_CONTEXT ), true );
-
-        procs.registerComponent( Log.class, ctx -> ctx.get( LOG), false );
-        procs.registerType( Node.class, NTNode );
-        procs.registerType( Relationship.class, NTRelationship );
-        procs.registerType( Path.class, NTPath );
-
-        new SpecialBuiltInProcedures( "1.3.37", Edition.enterprise.toString() ).accept( procs );
-        procs.registerProcedure( BuiltInProcedures.class );
-        procs.registerProcedure( BuiltInDbmsProcedures.class );
-
-        when( tx.acquireStatement() ).thenReturn( statement );
-        when( tx.tokenRead() ).thenReturn( tokens );
-        when( tx.dataRead() ).thenReturn( read );
-        when( tx.schemaRead() ).thenReturn( schemaRead );
-
-        when( tokens.propertyKeyGetAllTokens() ).thenAnswer( asTokens( propKeys ) );
-        when( tokens.labelsGetAllTokens() ).thenAnswer( asTokens( labels ) );
-        when( tokens.relationshipTypesGetAllTokens() ).thenAnswer( asTokens( relTypes ) );
-        when( schemaRead.indexesGetAll() ).thenAnswer(
-                i -> Iterators.concat( indexes.iterator(), uniqueIndexes.iterator() ) );
-        when( schemaRead.index( any( SchemaDescriptor.class ) ) ).thenAnswer( (Answer<IndexReference>) invocationOnMock -> {
-            SchemaDescriptor schema = invocationOnMock.getArgument( 0 );
-            int label = schema.keyId();
-            int prop = schema.getPropertyId();
-            return getIndexReference( label, prop );
-        } );
-        when( schemaRead.constraintsGetAll() ).thenAnswer( i -> constraints.iterator() );
-
-        when( tokens.propertyKeyName( anyInt() ) )
-                .thenAnswer( invocation -> propKeys.get( invocation.getArgument( 0 ) ) );
-        when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
-        when( tokens.relationshipTypeName( anyInt() ) )
-                .thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
-
-        // Make it appear that labels are in use
-        // TODO: We really should just have `labelsInUse()` on the Kernel API directly,
-        //       it'd make testing much easier.
-        when( schemaRead.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
-        when( schemaRead.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
-        when( schemaRead.constraintsGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
-        when( read.countsForNode( anyInt() ) ).thenReturn( 1L );
-        when( read.countsForRelationship( anyInt(), anyInt(), anyInt() ) ).thenReturn( 1L );
-        when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.ONLINE );
     }
 
     private IndexReference getIndexReference( int label, int prop )
@@ -578,7 +587,7 @@ public class BuiltInProceduresTest
         throw new AssertionError(  );
     }
 
-    private Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )
+    private static Answer<Iterator<NamedToken>> asTokens( Map<Integer,String> tokens )
     {
         return i -> tokens.entrySet().stream()
                               .map( entry -> new NamedToken( entry.getValue(), entry.getKey() ) )
@@ -595,17 +604,9 @@ public class BuiltInProceduresTest
         ctx.put( LOG, log );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
+        when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService);
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         return Iterators.asList( procs.callProcedure(
                 ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args, resourceTracker ) );
     }
-
-    private static final Key<DependencyResolver> DEPENDENCY_RESOLVER =
-            Key.key( "DependencyResolver", DependencyResolver.class );
-
-    private static final Key<GraphDatabaseAPI> GRAPHDATABASEAPI =
-            Key.key( "GraphDatabaseAPI", GraphDatabaseAPI.class );
-
-    private static final Key<Log> LOG =
-            Key.key( "Log", Log.class );
 }

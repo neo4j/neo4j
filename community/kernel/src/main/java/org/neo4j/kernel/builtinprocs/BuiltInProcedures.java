@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.TokenAccess;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -119,6 +120,7 @@ public class BuiltInProcedures
         {
             TokenRead tokenRead = tx.tokenRead();
             TokenNameLookup tokens = new SilentTokenNameLookup( tokenRead );
+            IndexingService indexingService = resolver.resolveDependency( IndexingService.class );
 
             SchemaRead schemaRead = tx.schemaRead();
             List<IndexReference> indexes = asList( schemaRead.indexesGetAll() );
@@ -140,6 +142,8 @@ public class BuiltInProcedures
                     }
 
                     SchemaDescriptor schema = index.schema();
+                    IndexProxy indexProxy = indexingService.getIndexProxy( schema );
+                    long indexId = indexProxy.getDescriptor().getId();
                     List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
                     List<String> propertyNames = propertyNames( tokens, index );
                     String description = "INDEX ON " + schema.userDescription( tokens );
@@ -147,7 +151,8 @@ public class BuiltInProcedures
                     Map<String,String> providerDescriptorMap = indexProviderDescriptorMap( schemaRead.index( schema ) );
                     PopulationProgress progress = schemaRead.indexGetPopulationProgress( index );
                     IndexPopulationProgress indexProgress = new IndexPopulationProgress( progress.getCompleted(), progress.getTotal() );
-                    result.add( new IndexResult( description,
+                    result.add( new IndexResult( indexId,
+                                                 description,
                                                  index.name(),
                                                  tokenNames,
                                                  propertyNames,
@@ -860,8 +865,10 @@ public class BuiltInProcedures
         public final String type;
         public final Double progress;
         public final Map<String,String> provider;
+        public final long id;
 
-        private IndexResult( String description,
+        private IndexResult( long id,
+                             String description,
                              String indexName,
                              List<String> tokenNames,
                              List<String> properties,
@@ -870,6 +877,7 @@ public class BuiltInProcedures
                              Float progress,
                              Map<String,String> provider )
         {
+            this.id = id;
             this.description = description;
             this.indexName = indexName;
             this.tokenNames = tokenNames;
