@@ -143,14 +143,20 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
     }
   }
 
+  private def findPredicate(predicate: Predicate) = predicate match {
+    case CoercedPredicate(inner: ExtendedExpression)  => inner.legacy
+    case _ => predicate
+  }
+
   //TODO we shouldn't do this matching at runtime but instead figure this out in planning
   private def addAllOrNoneRelationshipExpander(ctx: ExecutionContext,
                                                currentExpander: Expander,
                                                all: Boolean,
                                                predicate: Predicate,
                                                relName: String,
+
                                                state: QueryState): Expander = {
-    predicate match {
+    findPredicate(predicate) match {
       case PropertyExists(_, propertyKey) =>
         currentExpander.addRelationshipFilter(
           if (all) propertyExistsExpander(propertyKey.name)
@@ -159,19 +165,6 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
         currentExpander.addRelationshipFilter(
           if (all) propertyNotExistsExpander(propertyKey.name)
           else propertyExistsExpander(propertyKey.name))
-      case CoercedPredicate(inner: ExtendedExpression) => inner.legacy match {
-        case PropertyExists(_, propertyKey) =>
-          currentExpander.addRelationshipFilter(
-            if (all) propertyExistsExpander(propertyKey.name)
-            else propertyNotExistsExpander(propertyKey.name))
-        case Not(PropertyExists(_, propertyKey)) =>
-          currentExpander.addRelationshipFilter(
-            if (all) propertyNotExistsExpander(propertyKey.name)
-            else propertyExistsExpander(propertyKey.name))
-        case _ => currentExpander.addRelationshipFilter(
-          if (all) cypherPositivePredicatesAsExpander(ctx, relName, predicate, state)
-          else cypherNegativePredicatesAsExpander(ctx, relName, predicate, state))
-      }
       case _ => currentExpander.addRelationshipFilter(
         if (all) cypherPositivePredicatesAsExpander(ctx, relName, predicate, state)
         else cypherNegativePredicatesAsExpander(ctx, relName, predicate, state))
@@ -183,24 +176,13 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                        predicate: Predicate, relName: String,
                                        currentNodePredicates: Seq[KernelPredicate[PropertyContainer]],
                                        state: QueryState): (Expander, Seq[KernelPredicate[PropertyContainer]]) = {
-    val filter = predicate match {
+    val filter = findPredicate(predicate) match {
       case PropertyExists(_, propertyKey) =>
         if (all) propertyExistsExpander(propertyKey.name)
         else propertyNotExistsExpander(propertyKey.name)
       case Not(PropertyExists(_, propertyKey)) =>
         if (all) propertyNotExistsExpander(propertyKey.name)
         else propertyExistsExpander(propertyKey.name)
-      case CoercedPredicate(inner: ExtendedExpression) => inner.legacy match {
-        case PropertyExists(_, propertyKey) =>
-          if (all) propertyExistsExpander(propertyKey.name)
-          else propertyNotExistsExpander(propertyKey.name)
-        case Not(PropertyExists(_, propertyKey)) =>
-          if (all) propertyNotExistsExpander(propertyKey.name)
-          else propertyExistsExpander(propertyKey.name)
-        case _ =>
-          if (all) cypherPositivePredicatesAsExpander(ctx, relName, predicate, state)
-          else cypherNegativePredicatesAsExpander(ctx, relName, predicate, state)
-      }
       case _ =>
         if (all) cypherPositivePredicatesAsExpander(ctx, relName, predicate, state)
         else cypherNegativePredicatesAsExpander(ctx, relName, predicate, state)
@@ -221,7 +203,7 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
   (Expander, Seq[KernelPredicate[PropertyContainer]]) =
     if (perStepPredicates.isEmpty) (relTypeAndDirExpander, Seq())
     else
-      perStepPredicates.foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[PropertyContainer]]())) {
+      perStepPredicates.map(findPredicate).foldLeft((relTypeAndDirExpander, Seq[KernelPredicate[PropertyContainer]]())) {
         case ((currentExpander, currentNodePredicates: Seq[KernelPredicate[PropertyContainer]]), predicate) =>
           predicate match {
             case NoneInList(relFunction, symbolName, innerPredicate) if isRelationshipsFunction(relFunction) =>
