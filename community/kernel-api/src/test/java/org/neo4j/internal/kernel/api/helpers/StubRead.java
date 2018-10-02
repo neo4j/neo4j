@@ -43,6 +43,12 @@ public class StubRead implements Read
     }
 
     @Override
+    public void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public long lockingNodeUniqueIndexSeek( IndexReference index,
             IndexQuery.ExactPredicate... predicates ) throws KernelException
     {

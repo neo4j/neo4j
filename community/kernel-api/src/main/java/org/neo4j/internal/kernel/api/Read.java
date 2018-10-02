@@ -20,6 +20,7 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 
 /**
  * Defines the graph read operations of the Kernel.
@@ -40,6 +41,15 @@ public interface Read
      */
     void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, IndexQuery... query )
             throws KernelException;
+
+    /**
+     * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]).
+     * For merely counting distinct values in an index, loop over and sum all counts.
+     *
+     * @param index {@link IndexReference} referencing index.
+     * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
+     */
+    void nodeIndexDistinctValues( IndexReference index, NodeValueIndexCursor cursor ) throws IndexNotFoundKernelException;
 
     /**
      * Returns node id of node found in unique index or -1 if no node was found.
