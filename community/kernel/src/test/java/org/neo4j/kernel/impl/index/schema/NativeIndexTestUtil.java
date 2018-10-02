@@ -66,7 +66,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     private final PageCacheRule pageCacheRule = new PageCacheRule( config().withAccessChecks( true ) );
     protected final RandomRule random = new RandomRule();
     @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
+    public final RuleChain rules = outerRule( random ).around( fs ).around( directory ).around( pageCacheRule );
 
     StoreIndexDescriptor indexDescriptor;
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
