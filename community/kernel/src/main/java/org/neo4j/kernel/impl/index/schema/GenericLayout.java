@@ -22,9 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 
-import static java.lang.String.format;
-import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.ENTITY_ID_SIZE;
-
 class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
 {
     private final int numberOfSlots;
@@ -50,8 +47,6 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     @Override
     public GenericKey copyKey( GenericKey key, GenericKey into )
     {
-        into.setEntityId( key.getEntityId() );
-        into.setCompareId( key.getCompareId() );
         into.copyFrom( key );
         return into;
     }
@@ -71,14 +66,6 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     @Override
     public void readKey( PageCursor cursor, GenericKey into, int keySize )
     {
-        if ( keySize < ENTITY_ID_SIZE )
-        {
-            into.initializeToDummyValue();
-            cursor.setCursorException( format( "Failed to read " + into.getClass().getSimpleName() +
-                    " due to keySize < ENTITY_ID_SIZE, more precisely %d", keySize ) );
-        }
-
-        into.initialize( cursor.getLong() );
         into.get( cursor, keySize );
     }
 
@@ -92,8 +79,6 @@ class GenericLayout extends IndexLayout<GenericKey,NativeIndexValue>
     public void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         right.minimalSplitter( left, right, into );
-        into.setCompareId( right.getCompareId() );
-        into.setEntityId( right.getEntityId() );
     }
 
     IndexSpecificSpaceFillingCurveSettingsCache getSpaceFillingCurveSettings()

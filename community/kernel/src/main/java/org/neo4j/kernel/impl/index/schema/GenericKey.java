@@ -153,6 +153,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     void initializeToDummyValue()
     {
+        setEntityId( Long.MIN_VALUE );
         initializeToDummyValueInternal();
     }
 
@@ -196,6 +197,8 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     /* </initializers> */
     void copyFrom( GenericKey key )
     {
+        setEntityId( key.getEntityId() );
+        setCompareId( key.getCompareId() );
         copyFromInternal( key );
     }
 
@@ -304,6 +307,8 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
     {
         minimalSplitterInternal( left, right, into );
+        into.setCompareId( right.getCompareId() );
+        into.setEntityId( right.getEntityId() );
     }
 
     void minimalSplitterInternal( GenericKey left, GenericKey right, GenericKey into )
@@ -342,6 +347,14 @@ public class GenericKey extends NativeIndexKey<GenericKey>
 
     boolean get( PageCursor cursor, int size )
     {
+        if ( size < ENTITY_ID_SIZE )
+        {
+            initializeToDummyValue();
+            cursor.setCursorException( format( "Failed to read " + getClass().getSimpleName() +
+                    " due to keySize < ENTITY_ID_SIZE, more precisely %d", size ) );
+        }
+
+        initialize( cursor.getLong() );
         return getInternal( cursor, size );
     }
 
@@ -665,12 +678,12 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     @Override
     public String toString()
     {
-        return toStringInternal();
+        return "[" + toStringInternal() + "],entityId=" + getEntityId();
     }
 
     String toStringInternal()
     {
-        return type.toString( this ) + "," + getEntityId();
+        return type.toString( this );
     }
 
     static void setCursorException( PageCursor cursor, String reason )

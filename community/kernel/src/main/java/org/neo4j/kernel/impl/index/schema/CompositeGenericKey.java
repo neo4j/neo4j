@@ -40,7 +40,7 @@ class CompositeGenericKey extends GenericKey
     {
         super( spatialSettings );
         states = new GenericKey[slots];
-        for ( int i = 0; i < states.length; i++ )
+        for ( int i = 0; i < slots; i++ )
         {
             states[i] = new GenericKey( spatialSettings );
         }
@@ -49,22 +49,22 @@ class CompositeGenericKey extends GenericKey
     @Override
     void writeValue( int stateSlot, Value value, Inclusion inclusion )
     {
-        states[stateSlot].writeValue( value, inclusion );
+        stateSlot( stateSlot ).writeValue( value, inclusion );
     }
 
     @Override
     void assertValidValue( int stateSlot, Value value )
     {
-        Preconditions.requireBetween( stateSlot, 0, states.length );
+        Preconditions.requireBetween( stateSlot, 0, numberOfStateSlots() );
     }
 
     @Override
     Value[] asValues()
     {
-        Value[] values = new Value[states.length];
-        for ( int i = 0; i < states.length; i++ )
+        Value[] values = new Value[numberOfStateSlots()];
+        for ( int i = 0; i < values.length; i++ )
         {
-            values[i] = states[i].asValue();
+            values[i] = stateSlot( i ).asValue();
         }
         return values;
     }
@@ -82,11 +82,12 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    int compareValueTo( GenericKey other )
+    int compareValueToInternal( GenericKey other )
     {
-        for ( int i = 0; i < states.length; i++ )
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
         {
-            int comparison = states[i].compareValueToInternal( other.stateSlot( i ) );
+            int comparison = stateSlot( i ).compareValueToInternal( other.stateSlot( i ) );
             if ( comparison != 0 )
             {
                 return comparison;
@@ -96,47 +97,50 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void copyFrom( GenericKey key )
+    void copyFromInternal( GenericKey key )
     {
-        if ( key.numberOfStateSlots() != states.length )
+        int slots = numberOfStateSlots();
+        if ( key.numberOfStateSlots() != slots )
         {
-            throw new IllegalArgumentException( "Different state lengths " + key.numberOfStateSlots() + " vs " + states.length );
+            throw new IllegalArgumentException( "Different state lengths " + key.numberOfStateSlots() + " vs " + slots );
         }
 
-        for ( int i = 0; i < states.length; i++ )
+        for ( int i = 0; i < slots; i++ )
         {
-            states[i].copyFromInternal( key.stateSlot( i ) );
+            stateSlot( i ).copyFromInternal( key.stateSlot( i ) );
         }
     }
 
     @Override
-    int size()
+    int sizeInternal()
     {
-        int size = ENTITY_ID_SIZE;
-        for ( GenericKey state : states )
+        int size = 0;
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
         {
-            size += state.sizeInternal();
+            size += stateSlot( i ).sizeInternal();
         }
         return size;
     }
 
     @Override
-    void put( PageCursor cursor )
+    void putInternal( PageCursor cursor )
     {
-        cursor.putLong( getEntityId() );
-        for ( GenericKey state : states )
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
         {
-            state.putInternal( cursor );
+            stateSlot( i ).putInternal( cursor );
         }
     }
 
     @Override
-    boolean get( PageCursor cursor, int keySize )
+    boolean getInternal( PageCursor cursor, int keySize )
     {
         int offset = cursor.getOffset();
-        for ( GenericKey state : states )
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
         {
-            if ( !state.getInternal( cursor, keySize ) )
+            if ( !stateSlot( i ).getInternal( cursor, keySize ) )
             {
                 initializeToDummyValue();
                 return false;
@@ -149,12 +153,12 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void initializeToDummyValue()
+    void initializeToDummyValueInternal()
     {
-        setEntityId( Long.MIN_VALUE );
-        for ( GenericKey state : states )
+        int slots = numberOfStateSlots();
+        for ( int i = 0; i < slots; i++ )
         {
-            state.initializeToDummyValueInternal();
+            stateSlot( i ).initializeToDummyValueInternal();
         }
     }
 
@@ -165,9 +169,9 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    public String toString()
+    public String toStringInternal()
     {
-        StringJoiner joiner = new StringJoiner( ",", "[", "]" );
+        StringJoiner joiner = new StringJoiner( "," );
         for ( GenericKey state : states )
         {
             joiner.add( state.toStringInternal() );
@@ -176,7 +180,7 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
-    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
+    void minimalSplitterInternal( GenericKey left, GenericKey right, GenericKey into )
     {
         int firstStateToDiffer = 0;
         int compare = 0;
