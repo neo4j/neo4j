@@ -40,7 +40,7 @@ import static org.neo4j.kernel.configuration.Settings.HOSTNAME_PORT;
 import static org.neo4j.kernel.configuration.Settings.INTEGER;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.optionsObeyCase;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.ha.HaSettings.BranchedDataCopyingStrategy.branch_then_copy;
 import static org.neo4j.kernel.ha.HaSettings.TxPushStrategy.fixed_ascending;
@@ -91,7 +91,7 @@ public class HaSettings implements LoadableConfig
     @Description( "Policy for how to handle branched data." )
     @Deprecated
     public static final Setting<BranchedDataPolicy> branched_data_policy = setting( "ha.branched_data_policy",
-            options( BranchedDataPolicy.class ), "keep_all" );
+            optionsObeyCase( BranchedDataPolicy.class ), "keep_all" );
 
     @Description( "Require authorization for access to the HA status endpoints." )
     @Deprecated
@@ -115,7 +115,7 @@ public class HaSettings implements LoadableConfig
     @Description( "Push strategy of a transaction to a slave during commit." )
     @Deprecated
     public static final Setting<TxPushStrategy> tx_push_strategy =
-            setting( "ha.tx_push_strategy", options( TxPushStrategy.class ), fixed_ascending.name() );
+            setting( "ha.tx_push_strategy", optionsObeyCase( TxPushStrategy.class ), fixed_ascending.name() );
 
     @Description( "Strategy for how to order handling of branched data on slaves and copying of the store from the" +
             " master. The default is copy_then_branch, which, when combined with the keep_last or keep_none branch" +
@@ -124,7 +124,7 @@ public class HaSettings implements LoadableConfig
             " a store." )
     @Deprecated
     public static final Setting<BranchedDataCopyingStrategy> branched_data_copying_strategy =
-            setting( "ha.branched_data_copying_strategy", options( BranchedDataCopyingStrategy.class ), branch_then_copy.name() );
+            setting( "ha.branched_data_copying_strategy", optionsObeyCase( BranchedDataCopyingStrategy.class ), branch_then_copy.name() );
 
     @Description( "Size of batches of transactions applied on slaves when pulling from master" )
     @Deprecated

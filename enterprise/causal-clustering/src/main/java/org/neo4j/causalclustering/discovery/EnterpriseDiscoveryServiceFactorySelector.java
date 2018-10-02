@@ -29,8 +29,8 @@ public class EnterpriseDiscoveryServiceFactorySelector extends DiscoveryServiceF
     {
         switch ( middleware )
         {
-        case hazelcast: return new HazelcastDiscoveryServiceFactory();
-        case akka: throw new UnsupportedOperationException( "Akka based discovery is Commercial release only" );
+        case HAZELCAST: return new HazelcastDiscoveryServiceFactory();
+        case AKKA: throw new UnsupportedOperationException( "Akka based discovery is Commercial release only" );
         default: throw new IllegalArgumentException( "Should have matched a discovery service factory to " + middleware );
         }
     }

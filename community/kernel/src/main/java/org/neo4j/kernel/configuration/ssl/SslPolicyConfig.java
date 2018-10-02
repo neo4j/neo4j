@@ -39,7 +39,7 @@ import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
-import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
@@ -109,7 +109,7 @@ public class SslPolicyConfig implements LoadableConfig
         this.revoked_dir = group.scope( derivedDefault( "revoked_dir", base_directory, "revoked" ) );
 
         this.private_key_password = group.scope( setting( "private_key_password", STRING, NO_DEFAULT ) );
-        this.client_auth = group.scope( setting( "client_auth", options( ClientAuth.class, true ), ClientAuth.REQUIRE.name() ) );
+        this.client_auth = group.scope( setting( "client_auth", optionsIgnoreCase( ClientAuth.class ), ClientAuth.REQUIRE.name() ) );
         this.tls_versions = group.scope( setting( "tls_versions", STRING_LIST, joinList( TLS_VERSION_DEFAULTS ) ) );
         this.ciphers = group.scope( setting( "ciphers", STRING_LIST, joinList( CIPHER_SUITES_DEFAULTS ) ) );
         this.verify_hostname = group.scope( setting( "verify_hostname", BOOLEAN, FALSE ) );

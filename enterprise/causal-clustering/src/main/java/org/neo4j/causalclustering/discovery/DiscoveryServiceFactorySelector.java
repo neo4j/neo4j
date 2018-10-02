@@ -27,7 +27,7 @@ import org.neo4j.kernel.configuration.Config;
 
 public abstract class DiscoveryServiceFactorySelector<T extends DiscoveryServiceFactory>
 {
-    public static DiscoveryImplementation DEFAULT = DiscoveryImplementation.hazelcast;
+    public static DiscoveryImplementation DEFAULT = DiscoveryImplementation.HAZELCAST;
 
     public T select( Config config )
     {
@@ -39,6 +39,7 @@ public abstract class DiscoveryServiceFactorySelector<T extends DiscoveryService
 
     public enum DiscoveryImplementation
     {
-        hazelcast, akka
+        HAZELCAST,
+        AKKA
     }
 }

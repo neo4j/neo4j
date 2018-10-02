@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.store.id.IdType;
 
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.list;
-import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
+import static org.neo4j.kernel.configuration.Settings.optionsObeyCase;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.store.id.IdType.NODE;
 import static org.neo4j.kernel.impl.store.id.IdType.RELATIONSHIP;
@@ -59,7 +59,7 @@ public class EnterpriseEditionSettings implements LoadableConfig
             "'HA' for operating as a member in an HA cluster, 'ARBITER' for a cluster member with no database in an HA cluster, " +
             "'CORE' for operating as a core member of a Causal Cluster, " +
             "or 'READ_REPLICA' for operating as a read replica member of a Causal Cluster." )
-    public static final Setting<Mode> mode = setting( "dbms.mode", options( Mode.class ), Mode.SINGLE.name() );
+    public static final Setting<Mode> mode = setting( "dbms.mode", optionsObeyCase( Mode.class ), Mode.SINGLE.name() );
 
     public enum Mode
     {

@@ -75,8 +75,8 @@ import static org.neo4j.kernel.configuration.Settings.list;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 import static org.neo4j.kernel.configuration.Settings.matches;
 import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.options;
 import static org.neo4j.kernel.configuration.Settings.optionsIgnoreCase;
+import static org.neo4j.kernel.configuration.Settings.optionsObeyCase;
 import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
@@ -189,12 +189,12 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher.default_language_version",
-            options( "2.3", "3.1", "3.3","3.5", DEFAULT ), DEFAULT );
+            optionsObeyCase( "2.3", "3.1", "3.3","3.5", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
             "cypher.planner",
-            options( "COST", "RULE", DEFAULT ), DEFAULT );
+            optionsObeyCase( "COST", "RULE", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the behavior when Cypher planner or runtime hints cannot be fulfilled. "
             + "If true, then non-conformance will result in an error, otherwise only a warning is generated." )
@@ -333,7 +333,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "Setting the algorithm to 'none' will cause the threshold to not decay over time." )
     @Internal
     public static final Setting<String> cypher_replan_algorithm = setting( "unsupported.cypher.replan_algorithm",
-            options( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
+            optionsObeyCase( "inverse", "exponential", "none", DEFAULT ), DEFAULT );
 
     @Description( "Enable using minimum cardinality estimates in the Cypher cost planner, so that cardinality " +
                   "estimates for logical plan operators are not allowed to go below certain thresholds even when " +
@@ -456,17 +456,17 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Debug log level threshold." )
     public static final Setting<Level> store_internal_log_level = setting( "dbms.logs.debug.level",
-            options( Level.class ), "INFO" );
+            optionsObeyCase( Level.class ), "INFO" );
 
     @Description( "Database timezone. Among other things, this setting influences which timezone the logs and monitoring procedures use." )
     public static final Setting<LogTimeZone> db_timezone =
-            setting( "dbms.db.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+            setting( "dbms.db.timezone", optionsObeyCase( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
     @Description( "Database logs timezone." )
     @Deprecated
     @ReplacedBy( "dbms.db.timezone" )
     public static final Setting<LogTimeZone> log_timezone =
-            setting( "dbms.logs.timezone", options( LogTimeZone.class ), LogTimeZone.UTC.name() );
+            setting( "dbms.logs.timezone", optionsObeyCase( LogTimeZone.class ), LogTimeZone.UTC.name() );
 
     @Description( "Database timezone for temporal functions. All Time and DateTime values that are created without " +
             "an explicit timezone will use this configured default timezone." )
@@ -1053,7 +1053,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Defines whether memory for transaction state should be allocated on- or off-heap." )
     public static final Setting<TransactionStateMemoryAllocation> tx_state_memory_allocation = buildSetting(
             "dbms.tx_state.memory_allocation",
-            options( TransactionStateMemoryAllocation.class, true ),
+            optionsIgnoreCase( TransactionStateMemoryAllocation.class ),
             TransactionStateMemoryAllocation.OFF_HEAP.name() ).build();
 
     @Description( "The maximum amount of off-heap memory that can be used to store transaction state data; it's a total amount of memory " +
@@ -1123,7 +1123,7 @@ public class GraphDatabaseSettings implements LoadableConfig
         {
             group = new GroupSettingSupport( Connector.class, key );
             enabled = group.scope( setting( "enabled", BOOLEAN, FALSE ) );
-            type = group.scope( setting( "type", options( ConnectorType.class ), NO_DEFAULT ) );
+            type = group.scope( setting( "type", optionsObeyCase( ConnectorType.class ), NO_DEFAULT ) );
         }
 
         public enum ConnectorType
@@ -1169,7 +1169,7 @@ public class GraphDatabaseSettings implements LoadableConfig
         {
             super( key, null );
             encryption_level = group.scope(
-                    setting( "tls_level", options( EncryptionLevel.class ), EncryptionLevel.OPTIONAL.name() ) );
+                    setting( "tls_level", optionsObeyCase( EncryptionLevel.class ), EncryptionLevel.OPTIONAL.name() ) );
             Setting<ListenSocketAddress> legacyAddressSetting = listenAddress( "address", 7687 );
             Setting<ListenSocketAddress> listenAddressSetting = legacyFallback( legacyAddressSetting,
                     listenAddress( "listen_address", 7687 ) );

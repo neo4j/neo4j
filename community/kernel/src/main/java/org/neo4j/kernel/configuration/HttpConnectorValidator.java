@@ -41,7 +41,7 @@ import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.describeOneOf;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
-import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.optionsObeyCase;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
 public class HttpConnectorValidator extends ConnectorValidator
@@ -76,7 +76,7 @@ public class HttpConnectorValidator extends ConnectorValidator
         break;
         case "type":
             setting =
-                    (BaseSetting) setting( settingName, options( Connector.ConnectorType.class ), NO_DEFAULT );
+                    (BaseSetting) setting( settingName, optionsObeyCase( Connector.ConnectorType.class ), NO_DEFAULT );
             setting.setDeprecated( true );
             setting.setDescription( "Connector type. This setting is deprecated and its value will instead be " +
                     "inferred from the name of the connector." );
@@ -177,7 +177,7 @@ public class HttpConnectorValidator extends ConnectorValidator
             defaultValue )
     {
         Setting<Encryption> s = setting( "dbms.connector." + name + ".encryption",
-                options( Encryption.class ), defaultValue.name() );
+                optionsObeyCase( Encryption.class ), defaultValue.name() );
 
         return new BaseSetting<Encryption>()
         {

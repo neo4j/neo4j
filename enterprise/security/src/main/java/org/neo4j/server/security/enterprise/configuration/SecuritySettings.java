@@ -47,7 +47,7 @@ import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
 import static org.neo4j.kernel.configuration.Settings.derivedSetting;
 import static org.neo4j.kernel.configuration.Settings.min;
-import static org.neo4j.kernel.configuration.Settings.options;
+import static org.neo4j.kernel.configuration.Settings.optionsObeyCase;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_DEFAULT_NAME;
@@ -312,7 +312,7 @@ public class SecuritySettings implements LoadableConfig
 
     @Description( "Security log level threshold." )
     public static final Setting<Level> security_log_level = setting( "dbms.logs.security.level",
-            options( Level.class ), "INFO" );
+            optionsObeyCase( Level.class ), "INFO" );
 
     @Description( "Set to log successful authentication events to the security log. " +
                   "If this is set to `false` only failed authentication events will be logged, which " +
