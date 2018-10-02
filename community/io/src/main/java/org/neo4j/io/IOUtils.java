@@ -21,10 +21,8 @@ package org.neo4j.io;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.lang.reflect.Constructor;
 import java.util.Collection;
-
-import org.neo4j.helpers.Exceptions;
+import java.util.function.BiFunction;
 
 /**
  * IO helper methods.
@@ -40,12 +38,12 @@ public final class IOUtils
      *
      * @param closeables the closeables to close
      * @param <T> the type of closeable
-     * @throws IOException
+     * @throws IOException if an exception was thrown by one of the close methods.
      * @see #closeAll(AutoCloseable[])
      */
     public static <T extends AutoCloseable> void closeAll( Collection<T> closeables ) throws IOException
     {
-        closeAll( closeables.toArray( new AutoCloseable[0] ) );
+        close( IOException::new, closeables.toArray( new AutoCloseable[0] ) );
     }
 
     /**
@@ -77,13 +75,7 @@ public final class IOUtils
      */
     public static <T extends AutoCloseable> void closeAllSilently( Collection<T> closeables )
     {
-        try
-        {
-            closeAll( closeables );
-        }
-        catch ( IOException ignored )
-        {
-        }
+        close( ( msg, cause ) -> null, closeables.toArray( new AutoCloseable[0] ) );
     }
 
     /**
@@ -94,12 +86,12 @@ public final class IOUtils
      *
      * @param closeables the closeables to close
      * @param <T> the type of closeable
-     * @throws IOException
+     * @throws IOException if an exception was thrown by one of the close methods.
      */
     @SafeVarargs
     public static <T extends AutoCloseable> void closeAll( T... closeables ) throws IOException
     {
-        closeAll( IOException.class, closeables );
+        close( IOException::new, closeables );
     }
 
     /**
@@ -111,64 +103,66 @@ public final class IOUtils
     @SafeVarargs
     public static <T extends AutoCloseable> void closeAllSilently( T... closeables )
     {
-        try
-        {
-            closeAll( closeables );
-        }
-        catch ( IOException ignored )
-        {
-        }
+        close( ( msg, cause ) -> null, closeables );
     }
 
     /**
-     * Close all given closeables and if something goes wrong throw exception of the given type.
-     * Exception class should have a public constructor that accepts {@link String} and {@link Throwable} like
-     * {@link RuntimeException#RuntimeException(String, Throwable)}
+     * Close all ofthe given closeables, and if something goes wrong, use the given constructor to create a {@link Throwable} instance with the specific cause
+     * attached. The remaining closeables will still be closed, in that case, and if they in turn throw any exceptions then these will be attached as
+     * suppressed exceptions.
      *
-     * @param throwableClass exception type to throw in case of failure
-     * @param closeables the closeables to close
-     * @param <T> the type of closeable
-     * @param <E> the type of exception
+     * @param constructor The function used to construct the parent throwable that will have the first thrown exception attached as a cause, and any
+     * remaining exceptions attached as suppressed exceptions. If this function returns {@code null}, then the exception is ignored.
+     * @param closeables an iterator of all the things to close, in order.
+     * @param <T> the type of things to close.
+     * @param <E> the type of the parent exception.
+     * @throws E when any {@link AutoCloseable#close()} throws exception
+     */
+    public static <T extends AutoCloseable, E extends Throwable> void close( BiFunction<String,Throwable,E> constructor, Collection<T> closeables ) throws E
+    {
+        close( constructor, closeables.toArray( new AutoCloseable[0] ) );
+    }
+
+    /**
+     * Close all ofthe given closeables, and if something goes wrong, use the given constructor to create a {@link Throwable} instance with the specific cause
+     * attached. The remaining closeables will still be closed, in that case, and if they in turn throw any exceptions then these will be attached as
+     * suppressed exceptions.
+     *
+     * @param constructor The function used to construct the parent throwable that will have the first thrown exception attached as a cause, and any
+     * remaining exceptions attached as suppressed exceptions. If this function returns {@code null}, then the exception is ignored.
+     * @param closeables all the things to close, in order.
+     * @param <T> the type of things to close.
+     * @param <E> the type of the parent exception.
      * @throws E when any {@link AutoCloseable#close()} throws exception
      */
     @SafeVarargs
-    public static <T extends AutoCloseable, E extends Throwable> void closeAll( Class<E> throwableClass,
-            T... closeables ) throws E
+    public static <T extends AutoCloseable, E extends Throwable> void close( BiFunction<String,Throwable,E> constructor, T... closeables ) throws E
     {
-        Throwable closeThrowable = null;
+        E closeThrowable = null;
         for ( T closeable : closeables )
         {
-            if ( closeable != null )
+            try
             {
-                try
+                if ( closeable != null )
                 {
                     closeable.close();
                 }
-                catch ( Throwable t )
+            }
+            catch ( Exception e )
+            {
+                if ( closeThrowable == null )
                 {
-                    closeThrowable = Exceptions.chain( closeThrowable, t );
+                    closeThrowable = constructor.apply( "Exception closing multiple resources.", e );
+                }
+                else
+                {
+                    closeThrowable.addSuppressed( e );
                 }
             }
         }
         if ( closeThrowable != null )
         {
-            throw newThrowable( throwableClass, "Exception closing multiple resources", closeThrowable );
-        }
-    }
-
-    private static <E extends Throwable> E newThrowable( Class<E> throwableClass, String message, Throwable cause )
-    {
-        try
-        {
-            Constructor<E> constructor = throwableClass.getConstructor( String.class, Throwable.class );
-            return constructor.newInstance( message, cause );
-        }
-        catch ( Throwable t )
-        {
-            RuntimeException runtimeException = new RuntimeException(
-                    "Unable to create exception to throw. Original message: " + message, t );
-            runtimeException.addSuppressed( cause );
-            throw runtimeException;
+            throw closeThrowable;
         }
     }
 }

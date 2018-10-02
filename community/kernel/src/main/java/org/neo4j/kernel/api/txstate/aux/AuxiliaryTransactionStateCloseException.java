@@ -21,7 +21,7 @@ package org.neo4j.kernel.api.txstate.aux;
 
 public class AuxiliaryTransactionStateCloseException extends RuntimeException
 {
-    public AuxiliaryTransactionStateCloseException( String message, Exception cause )
+    public AuxiliaryTransactionStateCloseException( String message, Throwable cause )
     {
         super( message, cause );
     }

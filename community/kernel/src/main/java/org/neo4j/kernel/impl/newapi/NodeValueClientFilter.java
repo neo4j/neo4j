@@ -35,10 +35,10 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 /**
  * This class filters acceptNode() calls from an index progressor, to assert that exact entries returned from the
  * progressor really match the exact property values. See also org.neo4j.kernel.impl.api.LookupFilter.
- *
+ * <p>
  * It works by acting as a man-in-the-middle between outer {@link NodeValueClient client} and inner {@link IndexProgressor}.
  * Interaction goes like:
- *
+ * <p>
  * Initialize:
  * <pre><code>
  * client
@@ -47,7 +47,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *                                 filter <- initialize(progressor) -- progressor
  * client <- initialize(filter) -- filter
  * </code></pre>
- *
+ * <p>
  * Progress:
  * <pre><code>
  * client -- next() ->       filter
@@ -61,7 +61,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *        -- :true ->        filter -- :true ->           progressor
  * client <----------------------------------------------
  * </code></pre>
- *
+ * <p>
  * Close:
  * <pre><code>
  * client -- close() -> filter
@@ -78,9 +78,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     private final org.neo4j.internal.kernel.api.Read read;
     private IndexProgressor progressor;
 
-    NodeValueClientFilter(
-            NodeValueClient target,
-            NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
+    NodeValueClientFilter( NodeValueClient target, NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
@@ -90,11 +88,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor,
-                            IndexProgressor progressor,
-                            IndexQuery[] query,
-                            IndexOrder indexOrder,
-                            boolean needsValues )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
     {
         this.progressor = progressor;
         target.initialize( descriptor, this, query, indexOrder, needsValues );
@@ -193,6 +187,6 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     @Override
     public void close()
     {
-        IOUtils.closeAll( RuntimeException.class, node, property, progressor );
+        IOUtils.close( RuntimeException::new, node, property, progressor );
     }
 }

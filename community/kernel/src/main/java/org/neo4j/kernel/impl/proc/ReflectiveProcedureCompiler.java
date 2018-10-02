@@ -735,9 +735,9 @@ class ReflectiveProcedureCompiler
                     Resource resourceToClose = closeableResource;
                     closeableResource = null;
 
-                    IOUtils.closeAll( ResourceCloseFailureException.class,
+                    IOUtils.close( ResourceCloseFailureException::new,
                             () -> resourceTracker.unregisterCloseableResource( resourceToClose ),
-                            resourceToClose::close );
+                            resourceToClose );
                 }
             }
 

@@ -68,4 +68,12 @@ public class IOUtilsTest
         IOUtils.closeAll( goodClosable1, faultyClosable, goodClosable2 );
     }
 
+    @Test
+    public void closeMustIgnoreNullResources() throws Exception
+    {
+        AutoCloseable a = () -> {};
+        AutoCloseable b = null;
+        AutoCloseable c = () -> {};
+        IOUtils.close( IOException::new, a, b, c );
+    }
 }

@@ -63,7 +63,7 @@ public class CloseableResourceManager implements ResourceManager
             Collection<AutoCloseable> resourcesToClose = closeableResources;
             closeableResources = null;
 
-            IOUtils.closeAll( ResourceCloseFailureException.class, resourcesToClose.toArray( new AutoCloseable[0] ) );
+            IOUtils.close( ResourceCloseFailureException::new, resourcesToClose.toArray( new AutoCloseable[0] ) );
         }
     }
 }

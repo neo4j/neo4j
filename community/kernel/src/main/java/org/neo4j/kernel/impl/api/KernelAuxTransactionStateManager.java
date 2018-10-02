@@ -36,7 +36,7 @@ import org.neo4j.storageengine.api.StorageCommand;
 
 public class KernelAuxTransactionStateManager implements AuxiliaryTransactionStateManager
 {
-    private volatile CopyOnWriteHashMap<Object, AuxiliaryTransactionStateProvider> providers;
+    private volatile CopyOnWriteHashMap<Object,AuxiliaryTransactionStateProvider> providers;
 
     public KernelAuxTransactionStateManager()
     {
@@ -63,12 +63,12 @@ public class KernelAuxTransactionStateManager implements AuxiliaryTransactionSta
 
     private static class AuxStateHolder implements AuxiliaryTransactionStateHolder, Function<Object,AuxiliaryTransactionState>
     {
-        private final Map<Object, AuxiliaryTransactionStateProvider> providers;
-        private final Map<Object, AuxiliaryTransactionState> openedStates;
+        private final Map<Object,AuxiliaryTransactionStateProvider> providers;
+        private final Map<Object,AuxiliaryTransactionState> openedStates;
 
         AuxStateHolder( Map<Object,AuxiliaryTransactionStateProvider> providers )
         {
-             this.providers = providers;
+            this.providers = providers;
             openedStates = new HashMap<>();
         }
 
@@ -121,25 +121,8 @@ public class KernelAuxTransactionStateManager implements AuxiliaryTransactionSta
         @Override
         public void close() throws AuxiliaryTransactionStateCloseException
         {
-            AuxiliaryTransactionStateCloseException exception = null;
-            for ( AuxiliaryTransactionState state : openedStates.values() )
-            {
-                try
-                {
-                    state.close();
-                }
-                catch ( Exception e )
-                {
-                    if ( exception == null )
-                    {
-                        exception = new AuxiliaryTransactionStateCloseException( "Failure when closing auxiliary transaction state.", e );
-                    }
-                    else
-                    {
-                        exception.addSuppressed( e );
-                    }
-                }
-            }
+            IOUtils.close( ( msg, cause ) -> new AuxiliaryTransactionStateCloseException( "Failure when closing auxiliary transaction state.", cause ),
+                    openedStates.values() );
         }
     }
 }

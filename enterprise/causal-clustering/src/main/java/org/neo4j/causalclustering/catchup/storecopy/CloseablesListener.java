@@ -47,7 +47,7 @@ class CloseablesListener implements AutoCloseable, GenericFutureListener<Future<
     @Override
     public void close()
     {
-        IOUtils.closeAll( RuntimeException.class, closeables.toArray( new AutoCloseable[closeables.size()] ) );
+        IOUtils.close( RuntimeException::new, closeables );
     }
 
     @Override
