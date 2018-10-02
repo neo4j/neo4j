@@ -1680,6 +1680,17 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(Values.TRUE)
   }
 
+  test("single on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, single(bar IN [] WHERE bar = 42)
+    val compiled = compile(singleInList("bar", literalList(), equals(literalInt(42), varFor("bar"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
 
   test("none in list function local access only") {
     //Given
@@ -1762,6 +1773,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     //Then
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(FALSE)
+  }
+
+  test("none on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, none(bar IN [] WHERE bar = 42)
+    val compiled = compile(noneInList("bar", literalList(),
+                                      equals(varFor("bar"), literalInt(42))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("any in list function local access only") {
@@ -1847,6 +1870,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(Values.TRUE)
   }
 
+  test("any on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, any(bar IN [] WHERE bar = 42)
+    val compiled = compile(anyInList("bar", literalList(),
+                                      equals(varFor("bar"), literalInt(42))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.FALSE)
+  }
+
   test("all in list function local access only") {
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
@@ -1922,12 +1957,24 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     val context = new MapExecutionContext(mutable.Map.empty)
     val list = VirtualValues.list(stringValue("a"), stringValue("aa"), stringValue("aaa"))
 
-    //When,  filter(bar IN $a WHERE size(bar) = size($a))
+    //When,  all(bar IN $a WHERE size(bar) = size($a))
     val compiled = compile(allInList("bar", parameter("a"),
                                   equals(function("size", varFor("bar")), function("size", parameter("a")))))
 
     //Then
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(Values.FALSE)
+  }
+
+  test("all on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, all(bar IN [] WHERE bar = 42)
+    val compiled = compile(allInList("bar", literalList(),
+                                      equals(varFor("bar"), literalInt(42))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.TRUE)
   }
 
   test("filter function local access only") {
@@ -2002,6 +2049,19 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     //Then
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(stringValue("aaa")))
   }
+
+  test("filter on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, filter(bar IN [] WHERE bar = 42)
+    val compiled = compile(filter("bar", literalList(),
+                                      equals(varFor("bar"), literalInt(42))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(VirtualValues.EMPTY_LIST)
+  }
+
   test("nested list expressions local access only") {
     //Given
     val context = new MapExecutionContext(mutable.Map.empty)
@@ -2179,6 +2239,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(VirtualValues.list(intValue(3), intValue(3), intValue(3)))
   }
 
+  test("extract on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, extaract(bar IN [] | bar = 42)
+    val compiled = compile(extract("bar", literalList(), literalInt(42)))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(VirtualValues.EMPTY_LIST)
+  }
+
+
   test("reduce function local access only") {
     //Given
     val context = new MapExecutionContext(mutable.Map.empty, mutable.Map.empty)
@@ -2238,6 +2310,18 @@ class CodeGenerationTest extends CypherFunSuite with AstConstructionTestSupport 
 
     //Then
     compiled.evaluate(context, db, map(Array("a"), Array(list))) should equal(intValue(9))
+  }
+
+  test("reduce on empty list") {
+    //Given
+    val context = new MapExecutionContext(mutable.Map.empty)
+
+    //When, reduce(count = 42, bar IN [] | count + 3)
+    val compiled = compile(reduce("count", literalInt(42), "bar", literalList(),
+                                  add(literalInt(3), varFor("count"))))
+
+    //Then
+    compiled.evaluate(context, db, EMPTY_MAP) should equal(Values.intValue(42))
   }
 
   private def path(size: Int) =

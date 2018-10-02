@@ -328,7 +328,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         ListValue list = [evaluate collection expression];
         ExecutionContext innerContext = context.createClone();
         Iterator<AnyValue> listIterator = list.iterator();
-        Value isMatch = Values.NO_VALUE;
+        Value isMatch = listIterator.hasNext() ? Values.NO_VALUE : Values.FALSE;
         boolean isNull = false;
         while( isMatch != Values.TRUE && listIterator.hasNext() )
         {
@@ -362,16 +362,17 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
           declare[ExecutionContext](innerContext),
           assign(innerContext,
                  invoke(loadContext(currentContext), method[ExecutionContext, ExecutionContext]("createClone"))),
+          declare[java.util.Iterator[AnyValue]](iterVariable),
+          assign(iterVariable, invoke(load(listVar), method[ListValue, java.util.Iterator[AnyValue]]("iterator"))),
           declare[Value](isMatch),
-          assign(isMatch, noValue),
+          //assign(isMatch, noValue),
+          assign(isMatch, ternary(invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext")), noValue, falseValue)),
           declare[Boolean](isNull),
           assign(isNull, constant(false)),
           // Iterator<AnyValue> listIterator = list.iterator();
           // while( isMatch != Values.TRUE, && listIterator.hasNext() )
           // {
           //    AnyValue currentValue = listIterator.next();
-          declare[java.util.Iterator[AnyValue]](iterVariable),
-          assign(iterVariable, invoke(load(listVar), method[ListValue, java.util.Iterator[AnyValue]]("iterator"))),
           loop(and(notEqual(load(isMatch), truthValue),
                    invoke(load(iterVariable), method[java.util.Iterator[AnyValue], Boolean]("hasNext")))) {
             block(Seq(
@@ -1347,7 +1348,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
       for {start <- internalCompileExpression(c.args(0), currentContext)
            end <- internalCompileExpression(c.args(1), currentContext)
       } yield IntermediateExpression(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue]("range"),
-                                                  start.ir, end.ir),
+                                                  nullCheck(start)(start.ir), nullCheck(end)(end.ir)),
                                      start.fields ++ end.fields,
                                      start.variables ++ end.variables, Set.empty)
 
@@ -1356,7 +1357,7 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            end <- internalCompileExpression(c.args(1), currentContext)
            step <- internalCompileExpression(c.args(2), currentContext)
       } yield IntermediateExpression(invokeStatic(method[CypherFunctions, ListValue, AnyValue, AnyValue, AnyValue]("range"),
-                                                  start.ir, end.ir, step.ir),
+                                                  nullCheck(start)(start.ir), nullCheck(end)(end.ir), nullCheck(step)(step.ir)),
                                      start.fields ++ end.fields ++ step.fields,
                                      start.variables ++ end.variables ++ step.variables, Set.empty)
 
@@ -1379,10 +1380,10 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
         //}
         def loop(expressions: List[IntermediateExpression]): IntermediateRepresentation = expressions match {
           case Nil => throw new InternalException("we should never exhaust this loop")
-          case expression :: Nil => assign(tempVariable, expression.ir)
+          case expression :: Nil => assign(tempVariable, nullCheck(expression)(expression.ir))
           case expression :: tail =>
             //tempVariable = hd; if (tempVariable == NO_VALUE){[continue with tail]}
-            if (expression.nullCheck.nonEmpty) block(assign(tempVariable, expression.ir),
+            if (expression.nullCheck.nonEmpty) block(assign(tempVariable, nullCheck(expression)(expression.ir)),
                                                      condition(expression.nullCheck.reduceLeft((acc,current) => or(acc, current)))(loop(tail)))
             // WHOAH[Keanu Reeves voice] if not nullable we don't even need to generate code for the coming expressions,
             else assign(tempVariable, expression.ir)

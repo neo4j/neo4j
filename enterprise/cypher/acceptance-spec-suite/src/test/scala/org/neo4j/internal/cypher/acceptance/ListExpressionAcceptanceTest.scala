@@ -61,6 +61,12 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     ))
   }
 
+  test("should reduce on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN reduce(acc=7, item IN [] | 7 + item) AS result")
+
+    result.toList should equal(List(Map("result" -> 7)))
+  }
+
   test("should extract on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN" +
@@ -93,6 +99,12 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       "nullExpression" -> List(null, null, null),
       "nullElement" -> List(1, 2, 3, null)
     ))
+  }
+
+  test("should extract on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN extract(item IN [] | 7 + item) AS result")
+
+    result.toList should equal(List(Map("result" -> Seq.empty)))
   }
 
   test("should list comprehension on values") {
@@ -202,6 +214,12 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     ))
   }
 
+  test("should filter on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN filter(item IN [] WHERE item > 7) AS result")
+
+    result.toList should equal(List(Map("result" -> Seq.empty)))
+  }
+
   test("should all predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN " +
@@ -242,6 +260,12 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       "nullPredicate" -> null,
       "allTrueWithNull" -> null,
       "someFalseWithNull" -> false))
+  }
+
+  test("should handle all predicate on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN all(item IN [] WHERE item > 7) AS result")
+
+    result.toList should equal(List(Map("result" -> true)))
   }
 
   test("should any predicate on values") {
@@ -286,6 +310,12 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       "allFalseWithNull" -> null))
   }
 
+  test("should handle any predicate on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN any(item IN [] WHERE item > 7) AS result")
+
+    result.toList should equal(List(Map("result" -> false)))
+  }
+
   test("should none predicate on values") {
     val result = executeWith(Configs.Interpreted,
       query = "RETURN" +
@@ -328,6 +358,12 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       "allFalseWithNull" -> null,
       "someTrueWithNull" -> false
     ))
+  }
+
+  test("should handle none predicate on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN none(item IN [] WHERE item > 7) AS result")
+
+    result.toList should equal(List(Map("result" -> true)))
   }
 
   test("should single predicate on values") {
@@ -389,5 +425,11 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       "noneTrueWithNull" -> null,
       "oneTrueWithNull" -> null,
       "twoTrueWithNull" -> false))
+  }
+
+  test("should handle single predicate on empty lists") {
+    val result = executeWith(Configs.Interpreted, "RETURN single(item IN [] WHERE item > 7) AS result")
+
+    result.toList should equal(List(Map("result" -> false)))
   }
 }
