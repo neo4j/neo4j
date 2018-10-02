@@ -465,7 +465,6 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Rel1: (node1)-[:R{prop1:"Test", prop2: 12, prop3: true}]->(node1)
         // Rel2: (node1)-[:R]->(node1)
 
-
         long nodeId1 = createEmptyNode();
         createRelationship( nodeId1, "R", nodeId1, Arrays.asList( "prop1", "prop2", "prop3" ),
                 Arrays.asList( Values.stringValue( "Test" ), Values.intValue( 12 ), Values.booleanValue( true ) ) );

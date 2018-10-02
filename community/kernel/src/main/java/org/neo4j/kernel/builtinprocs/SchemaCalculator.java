@@ -21,6 +21,7 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 import org.eclipse.collections.impl.factory.primitive.IntSets;
+import org.eclipse.collections.impl.set.mutable.primitive.IntHashSet;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -224,7 +225,8 @@ public class SchemaCalculator
                 }
                 else
                 {
-                    Set<Integer> currentPropertyIdsHelperSet = new HashSet( propertyIds );
+                    MutableIntSet currentPropertyIdsHelperSet = new IntHashSet( propertyIds.size() );
+                    currentPropertyIdsHelperSet.addAll( propertyIds );
                     propertyIds.removeAll( oldPropertyKeySet );  // only the brand new ones in propIds now
                     oldPropertyKeySet.removeAll( currentPropertyIdsHelperSet );  // only the old ones that are not on the new rel
 
@@ -282,7 +284,8 @@ public class SchemaCalculator
                 }
                 else
                 {
-                    Set<Integer> currentPropertyIdsHelperSet = new HashSet( propertyIds );
+                    MutableIntSet currentPropertyIdsHelperSet = new IntHashSet( propertyIds.size() );
+                    currentPropertyIdsHelperSet.addAll( propertyIds );
                     propertyIds.removeAll( oldPropertyKeySet );  // only the brand new ones in propIds now
                     oldPropertyKeySet.removeAll( currentPropertyIdsHelperSet );  // only the old ones that are not on the new node
 
