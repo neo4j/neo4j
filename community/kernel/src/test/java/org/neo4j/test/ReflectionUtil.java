@@ -19,10 +19,11 @@
  */
 package org.neo4j.test;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
-public class ReflectionUtil
+import static org.apache.commons.lang3.reflect.FieldUtils.readField;
+
+public final class ReflectionUtil
 {
     private ReflectionUtil()
     {
@@ -30,61 +31,18 @@ public class ReflectionUtil
 
     public static <T> T getPrivateField( Object target, String fieldName, Class<T> fieldType ) throws Exception
     {
-        Class<?> type = target.getClass();
-        Field field = getField( fieldName, type );
-        if ( !fieldType.isAssignableFrom( field.getType() ) )
-        {
-            throw new IllegalArgumentException( "Field type does not match " + field.getType() + " is no subclass of " +
-                                                "" + fieldType );
-        }
-        field.setAccessible( true );
-        return fieldType.cast( field.get( target ) );
+        return fieldType.cast( readField( target, fieldName, true ) );
     }
 
-    public static String verifyMethodExists( Class<?> owner, String methodName )
+    public static void verifyMethodExists( Class<?> owner, String methodName )
     {
         for ( Method method : owner.getDeclaredMethods() )
         {
-            if ( method.getName().equals( methodName ) )
+            if ( methodName.equals( method.getName() ) )
             {
-                return methodName;
+                return;
             }
         }
         throw new IllegalArgumentException( "Method '" + methodName + "' does not exist in class " + owner );
-    }
-
-    public static <T> void replaceValueInPrivateField( Object target, String fieldName, Class<T> fieldType, T value )
-            throws Exception
-    {
-        Class<?> type = target.getClass();
-        Field field = getField( fieldName, type );
-        if ( !fieldType.isAssignableFrom( field.getType() ) )
-        {
-            throw new IllegalArgumentException( "Field type does not match " + field.getType() + " is no subclass of " +
-                    "" + fieldType );
-        }
-        field.setAccessible( true );
-        field.set( target, value );
-    }
-
-    private static Field getField( String fieldName, Class<?> type ) throws NoSuchFieldException
-    {
-        if ( type == null )
-        {
-            throw new NoSuchFieldException( fieldName );
-        }
-        try
-        {
-            Field field = type.getDeclaredField( fieldName );
-            if ( field != null )
-            {
-                return field;
-            }
-        }
-        catch ( NoSuchFieldError | NoSuchFieldException e )
-        {
-            // Ignore - it might be in the super type
-        }
-        return getField( fieldName, type.getSuperclass() );
     }
 }
