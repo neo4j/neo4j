@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.index.schema.TemporalIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionSlotSelector00;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex.LUCENE10;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
@@ -45,9 +46,8 @@ import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory<LuceneIndexProviderFactory.Dependencies>
 {
-    private static final GraphDatabaseSettings.SchemaIndex SCHEMA_INDEX = GraphDatabaseSettings.SchemaIndex.LUCENE10;
-    private static final String KEY = SCHEMA_INDEX.providerName();
-    public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, SCHEMA_INDEX.providerVersion() );
+    private static final String KEY = LUCENE10.providerName();
+    public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, LUCENE10.providerVersion() );
 
     public LuceneIndexProviderFactory()
     {
