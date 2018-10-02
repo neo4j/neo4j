@@ -39,7 +39,6 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.configuration.ServerSettings;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +63,7 @@ public class BoltQueryLoggingIT
             .withConfig( GraphDatabaseSettings.log_queries, "true")
             .withConfig( new BoltConnector( "bolt" ).type, "BOLT" )
             .withConfig( new BoltConnector( "bolt" ).enabled, "true" )
-            .withConfig( new BoltConnector( "bolt" ).address, "localhost:" + PortAuthority.allocatePort() )
+            .withConfig( new BoltConnector( "bolt" ).address, "localhost:0" )
             .withConfig( new BoltConnector( "bolt" ).encryption_level, "DISABLED" )
             .withConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE );
     }

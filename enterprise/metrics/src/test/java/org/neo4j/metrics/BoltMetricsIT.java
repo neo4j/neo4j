@@ -39,7 +39,6 @@ import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -55,6 +54,7 @@ import static org.neo4j.metrics.source.db.BoltMetrics.MESSAGES_STARTED;
 import static org.neo4j.metrics.source.db.BoltMetrics.SESSIONS_STARTED;
 import static org.neo4j.metrics.source.db.BoltMetrics.TOTAL_PROCESSING_TIME;
 import static org.neo4j.metrics.source.db.BoltMetrics.TOTAL_QUEUE_TIME;
+import static org.neo4j.test.PortUtils.getBoltPort;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 
 public class BoltMetricsIT
@@ -70,15 +70,13 @@ public class BoltMetricsIT
     @Test
     public void shouldMonitorBolt() throws Throwable
     {
-        int port = PortAuthority.allocatePort();
-
         // Given
         File metricsFolder = testDirectory.directory( "metrics" );
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( new BoltConnector( "bolt" ).type, "BOLT" )
                 .setConfig( new BoltConnector( "bolt" ).enabled, "true" )
-                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:" + port )
+                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, "false" )
                 .setConfig( MetricsSettings.metricsEnabled, "false" )
                 .setConfig( MetricsSettings.boltMessagesEnabled, "true" )
@@ -90,7 +88,7 @@ public class BoltMetricsIT
 
         // When
         conn = new SocketConnection()
-                .connect( new HostnamePort( "localhost", port ) )
+                .connect( new HostnamePort( "localhost", getBoltPort( db ) ) )
                 .send( util.acceptedVersions( 1, 0, 0, 0 ) )
                 .send( util.chunk( new InitMessage( "TestClient",
                         map("scheme", "basic", "principal", "neo4j", "credentials", "neo4j") ) ) );

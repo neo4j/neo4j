@@ -34,13 +34,10 @@ import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.metrics.MetricsSettings;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.rest.web.DatabaseActions;
-
-import static org.neo4j.helpers.ListenSocketAddress.listenAddress;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -59,8 +56,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
         EnterpriseServerBuilder server = server();
         server.onRandomPorts();
         server.withProperty( new BoltConnector( "bolt" ).listen_address.name(), "localhost:0" );
-        server.withProperty( OnlineBackupSettings.online_backup_server.name(),
-                listenAddress( "127.0.0.1", PortAuthority.allocatePort() ) );
+        server.withProperty( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:0" );
         return server;
     }
 
@@ -122,7 +118,7 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     {
         Map<String, String> configuration = super.createConfiguration( temporaryFolder );
 
-        configuration.put( OnlineBackupSettings.online_backup_server.name(), listenAddress( "127.0.0.1", PortAuthority.allocatePort() ) );
+        configuration.put( OnlineBackupSettings.online_backup_server.name(), "127.0.0.1:0" );
         configuration.putIfAbsent( MetricsSettings.csvPath.name(), new File( temporaryFolder, "metrics" ).getAbsolutePath() );
 
         return configuration;

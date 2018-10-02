@@ -44,7 +44,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -56,6 +55,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.Connector.ConnectorType.BOLT;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
+import static org.neo4j.test.PortUtils.getBoltPort;
 
 public class BoltFailuresIT
 {
@@ -86,13 +86,11 @@ public class BoltFailuresIT
         sessionMonitor.throwInConnectionOpened();
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        int port = PortAuthority.allocatePort();
-
-        db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ), port );
+        db = startDbWithBolt( new GraphDatabaseFactory().setMonitors( monitors ) );
         try
         {
             // attempt to create a driver when server is unavailable
-            driver = createDriver( port );
+            driver = createDriver( getBoltPort( db ) );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -144,13 +142,11 @@ public class BoltFailuresIT
         monitorSetup.accept( sessionMonitor );
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        int port = PortAuthority.allocatePort();
-
-        db = startTestDb( monitors, port );
+        db = startTestDb( monitors );
 
         try
         {
-            driver = GraphDatabase.driver( "bolt://localhost:" + port, Config.build().withoutEncryption().toConfig() );
+            driver = GraphDatabase.driver( "bolt://localhost:" + getBoltPort( db ), Config.build().withoutEncryption().toConfig() );
             if ( shouldBeAbleToBeginTransaction )
             {
                 try ( Session session = driver.session();
@@ -175,10 +171,8 @@ public class BoltFailuresIT
         ThrowingSessionMonitor sessionMonitor = new ThrowingSessionMonitor();
         Monitors monitors = newMonitorsSpy( sessionMonitor );
 
-        int port = PortAuthority.allocatePort();
-
-        db = startTestDb( monitors, port );
-        driver = createDriver( port );
+        db = startTestDb( monitors );
+        driver = createDriver( getBoltPort( db ) );
 
         // open a session and start a transaction, this will force driver to obtain
         // a network connection and bind it to the transaction
@@ -201,17 +195,17 @@ public class BoltFailuresIT
         }
     }
 
-    private GraphDatabaseService startTestDb( Monitors monitors, int port )
+    private GraphDatabaseService startTestDb( Monitors monitors )
     {
-        return startDbWithBolt( newDbFactory().setMonitors( monitors ), port );
+        return startDbWithBolt( newDbFactory().setMonitors( monitors ) );
     }
 
-    private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory, int port )
+    private GraphDatabaseService startDbWithBolt( GraphDatabaseFactory dbFactory )
     {
         return dbFactory.newEmbeddedDatabaseBuilder( dir.storeDir() )
-                .setConfig( new BoltConnector( "0" ).type, BOLT.name() )
-                .setConfig( new BoltConnector( "0" ).enabled, TRUE )
-                .setConfig( new BoltConnector( "0" ).listen_address, "localhost:" + port )
+                .setConfig( new BoltConnector( "bolt" ).type, BOLT.name() )
+                .setConfig( new BoltConnector( "bolt" ).enabled, TRUE )
+                .setConfig( new BoltConnector( "bolt" ).listen_address, "localhost:0" )
                 .setConfig( GraphDatabaseSettings.auth_enabled, FALSE )
                 .setConfig( OnlineBackupSettings.online_backup_enabled, FALSE )
                 .newGraphDatabase();

@@ -53,7 +53,7 @@ public class MetricsExtension implements Lifecycle
 
         MetricRegistry registry = new MetricRegistry();
         reporter = new EventReporterBuilder( configuration, registry, logger, kernelContext, life, fileSystem,
-                scheduler ).build();
+                scheduler, dependencies.portRegister() ).build();
         metricsBuilt = new Neo4jMetricsBuilder( registry, reporter, configuration, logService, kernelContext,
                                                 dependencies, life ).build();
     }

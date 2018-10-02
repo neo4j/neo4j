@@ -73,7 +73,6 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleException;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.server.CommunityBootstrapper;
@@ -188,7 +187,7 @@ public class StoreUpgradeIT
             props.setProperty( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
             props.setProperty( new HttpConnector( "http" ).type.name(), "HTTP" );
             props.setProperty( new HttpConnector( "http" ).enabled.name(), "true" );
-            props.setProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+            props.setProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:0" );
             props.setProperty( new HttpConnector( "https" ).enabled.name(), Settings.FALSE );
             props.setProperty( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
             props.setProperty( new BoltConnector( "bolt" ).enabled.name(), Settings.FALSE );

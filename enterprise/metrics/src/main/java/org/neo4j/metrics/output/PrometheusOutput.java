@@ -36,6 +36,7 @@ import java.util.SortedMap;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 
@@ -48,15 +49,17 @@ public class PrometheusOutput implements Lifecycle, EventReporter
     private final HostnamePort hostnamePort;
     private final MetricRegistry registry;
     private final Log logger;
+    private final ConnectorPortRegister portRegister;
     private final Map<String,Object> registeredEvents = new ConcurrentHashMap<>();
     private final MetricRegistry eventRegistry;
 
-    PrometheusOutput( HostnamePort hostnamePort, MetricRegistry registry, Log logger )
+    PrometheusOutput( HostnamePort hostnamePort, MetricRegistry registry, Log logger, ConnectorPortRegister portRegister )
     {
         this.hostnamePort = hostnamePort;
         this.registry = registry;
         this.logger = logger;
-        eventRegistry = new MetricRegistry();
+        this.portRegister = portRegister;
+        this.eventRegistry = new MetricRegistry();
     }
 
     @Override
@@ -75,7 +78,8 @@ public class PrometheusOutput implements Lifecycle, EventReporter
         if ( server == null )
         {
             server = new PrometheusHttpServer( hostnamePort.getHost(), hostnamePort.getPort() );
-            logger.info( "Started publishing Prometheus metrics at http://" + hostnamePort + "/metrics" );
+            portRegister.register( "prometheus", server.getAddress() );
+            logger.info( "Started publishing Prometheus metrics at http://" + server.getAddress() + "/metrics" );
         }
     }
 
@@ -84,9 +88,10 @@ public class PrometheusOutput implements Lifecycle, EventReporter
     {
         if ( server != null )
         {
+            final String address = server.getAddress().toString();
             server.stop();
             server = null;
-            logger.info( "Stopped Prometheus endpoint at http://" + hostnamePort + "/metrics" );
+            logger.info( "Stopped Prometheus endpoint at http://" + address + "/metrics" );
         }
     }
 

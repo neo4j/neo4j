@@ -24,6 +24,7 @@ package org.neo4j.metrics;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -42,6 +43,8 @@ public class MetricsKernelExtensionFactory extends KernelExtensionFactory<Metric
         FileSystemAbstraction fileSystemAbstraction();
 
         JobScheduler scheduler();
+
+        ConnectorPortRegister portRegister();
     }
 
     public MetricsKernelExtensionFactory()

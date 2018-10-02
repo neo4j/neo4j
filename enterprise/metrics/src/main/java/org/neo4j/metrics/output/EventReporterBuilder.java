@@ -28,6 +28,7 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.Log;
@@ -48,11 +49,12 @@ public class EventReporterBuilder
     private final Log logger;
     private final KernelContext kernelContext;
     private final LifeSupport life;
+    private final ConnectorPortRegister portRegister;
     private FileSystemAbstraction fileSystem;
     private JobScheduler scheduler;
 
     public EventReporterBuilder( Config config, MetricRegistry registry, Log logger, KernelContext kernelContext,
-            LifeSupport life, FileSystemAbstraction fileSystem, JobScheduler scheduler )
+            LifeSupport life, FileSystemAbstraction fileSystem, JobScheduler scheduler, ConnectorPortRegister portRegister )
     {
         this.config = config;
         this.registry = registry;
@@ -61,6 +63,7 @@ public class EventReporterBuilder
         this.life = life;
         this.fileSystem = fileSystem;
         this.scheduler = scheduler;
+        this.portRegister = portRegister;
     }
 
     public CompositeEventReporter build()
@@ -86,7 +89,7 @@ public class EventReporterBuilder
         if ( config.get( prometheusEnabled ) )
         {
             HostnamePort server = config.get( prometheusEndpoint );
-            PrometheusOutput prometheusOutput = new PrometheusOutput( server, registry, logger );
+            PrometheusOutput prometheusOutput = new PrometheusOutput( server, registry, logger, portRegister );
             reporter.add( prometheusOutput );
             life.add( prometheusOutput );
         }

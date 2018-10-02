@@ -51,7 +51,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.ssl.ClientAuth;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -122,11 +121,11 @@ public class InProcessServerBuilderIT
                 .withConfig( httpConnector.type, "HTTP" )
                 .withConfig( httpConnector.enabled, "true" )
                 .withConfig( httpConnector.encryption, "NONE" )
-                .withConfig( httpConnector.listen_address, "localhost:" + PortAuthority.allocatePort())
+                .withConfig( httpConnector.listen_address, "localhost:0" )
                 .withConfig( httpsConnector.type, "HTTP" )
                 .withConfig( httpsConnector.enabled, "true" )
                 .withConfig( httpsConnector.encryption, "TLS" )
-                .withConfig( httpsConnector.listen_address, "localhost:" + PortAuthority.allocatePort() )
+                .withConfig( httpsConnector.listen_address, "localhost:0" )
                 .withConfig( GraphDatabaseSettings.dense_node_threshold, "20" )
                 // override legacy policy
                 .withConfig( "https.ssl_policy", "test" )

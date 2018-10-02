@@ -75,7 +75,6 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.SimpleGraphFactory;
 import org.neo4j.server.enterprise.OpenEnterpriseNeoServer;
@@ -470,7 +469,7 @@ public class TransactionGuardIT
                     .withProperty( boltConnector.encryption_level.name(),
                             BoltConnector.EncryptionLevel.DISABLED.name() )
                     .withProperty( GraphDatabaseSettings.auth_enabled.name(), Settings.FALSE );
-            serverBuilder.withProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:" + PortAuthority.allocatePort() );
+            serverBuilder.withProperty( new HttpConnector( "http" ).listen_address.name(), "localhost:0" );
             neoServer = serverBuilder.build();
             cleanupRule.add( neoServer );
             neoServer.start();

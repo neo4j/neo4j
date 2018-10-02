@@ -35,6 +35,7 @@ import java.util.TreeMap;
 import java.util.function.LongConsumer;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptySortedMap;
@@ -116,7 +117,7 @@ public class PrometheusOutputTest
     {
         DynamicAddressPrometheusOutput( String host, MetricRegistry registry, Log logger )
         {
-            super( new HostnamePort( host ), registry, logger );
+            super( new HostnamePort( host ), registry, logger, mock( ConnectorPortRegister.class ) );
         }
 
         String getServerAddress()

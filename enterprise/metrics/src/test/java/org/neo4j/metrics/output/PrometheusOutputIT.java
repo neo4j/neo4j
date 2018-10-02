@@ -35,7 +35,7 @@ import java.util.Scanner;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.EnterpriseGraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Settings;
-import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertTrue;
@@ -43,6 +43,7 @@ import static org.neo4j.metrics.MetricsSettings.prometheusEnabled;
 import static org.neo4j.metrics.MetricsSettings.prometheusEndpoint;
 import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_NODE;
 import static org.neo4j.metrics.source.db.EntityCountMetrics.COUNTS_RELATIONSHIP_TYPE;
+import static org.neo4j.test.PortUtils.getConnectorAddress;
 
 public class PrometheusOutputIT
 {
@@ -50,15 +51,13 @@ public class PrometheusOutputIT
     public TestDirectory testDirectory = TestDirectory.testDirectory();
 
     private GraphDatabaseService database;
-    private String serverAddress;
 
     @Before
     public void setUp()
     {
-        serverAddress = "localhost:" + PortAuthority.allocatePort();
         database = new EnterpriseGraphDatabaseFactory().newEmbeddedDatabaseBuilder( testDirectory.storeDir() )
                 .setConfig( prometheusEnabled, Settings.TRUE )
-                .setConfig( prometheusEndpoint, serverAddress )
+                .setConfig( prometheusEndpoint, "localhost:0" )
                 .newGraphDatabase();
     }
 
@@ -71,7 +70,7 @@ public class PrometheusOutputIT
     @Test
     public void httpEndpointShouldBeAvailableAndResponsive() throws IOException
     {
-        String url = "http://" + serverAddress + "/metrics";
+        String url = "http://" + getConnectorAddress( (GraphDatabaseAPI) database, "prometheus" ) + "/metrics";
         URLConnection connection = new URL( url ).openConnection();
         connection.setDoOutput( true );
         connection.connect();

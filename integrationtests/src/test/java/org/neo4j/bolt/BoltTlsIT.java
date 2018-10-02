@@ -37,12 +37,10 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.BoltConnector;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfig;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.ssl.SecureClient;
 import org.neo4j.ssl.SslContextFactory;
 import org.neo4j.ssl.SslResource;
@@ -54,6 +52,7 @@ import static org.junit.Assert.assertTrue;
 import static org.neo4j.ssl.SslContextFactory.SslParameters.protocols;
 import static org.neo4j.ssl.SslContextFactory.makeSslPolicy;
 import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
+import static org.neo4j.test.PortUtils.getBoltPort;
 
 @RunWith( Parameterized.class )
 public class BoltTlsIT
@@ -129,7 +128,7 @@ public class BoltTlsIT
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( bolt.enabled, "true" )
-                .setConfig( bolt.listen_address, ":" + PortAuthority.allocatePort() )
+                .setConfig( bolt.listen_address, "localhost:0" )
                 .setConfig( GraphDatabaseSettings.bolt_ssl_policy, "bolt" )
                 .setConfig( sslPolicy.allow_key_generation, "true" )
                 .setConfig( sslPolicy.base_directory, "certificates" )
@@ -152,13 +151,11 @@ public class BoltTlsIT
     public void shouldRespectProtocolSelection() throws Exception
     {
         // given
-        Config config = db.getDependencyResolver().resolveDependency( Config.class );
-        int boltPort = config.get( bolt.advertised_address ).getPort();
         SslContextFactory.SslParameters params = protocols( setup.clientTlsVersions ).ciphers();
         SecureClient client = new SecureClient( makeSslPolicy( sslResource, params ) );
 
         // when
-        client.connect( boltPort );
+        client.connect( getBoltPort( db ) );
 
         // then
         try
