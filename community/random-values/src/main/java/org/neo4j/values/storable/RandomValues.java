@@ -573,12 +573,23 @@ public class RandomValues
      */
     public DoubleValue nextDoubleValue()
     {
-        return doubleValue( generator.nextDouble() );
+        return doubleValue( nextDouble() );
+    }
+
+    /**
+     * Returns the next {@code double} between 0 (inclusive) and 1.0 (exclusive)
+     *
+     * @return {@code float}
+     * @see RandomValues
+     */
+    public double nextDouble()
+    {
+        return generator.nextDouble();
     }
 
     private double doubleBetween( double min, double max )
     {
-        return generator.nextDouble() * (max - min) + min;
+        return nextDouble() * (max - min) + min;
     }
 
     /**
@@ -996,7 +1007,7 @@ public class RandomValues
         double[] doubles = new double[length];
         for ( int i = 0; i < length; i++ )
         {
-            doubles[i] = generator.nextDouble();
+            doubles[i] = nextDouble();
         }
         return doubles;
     }

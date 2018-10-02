@@ -46,6 +46,7 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
 {
     static final double FRACTION_DUPLICATE_UNIQUE = 0;
     static final double FRACTION_DUPLICATE_NON_UNIQUE = 0.1;
+    private static final double FRACTION_EXTREME_VALUE = 0.25;
     private static final Comparator<IndexEntryUpdate<IndexDescriptor>> UPDATE_COMPARATOR = ( u1, u2 ) ->
             Values.COMPARATOR.compare( u1.values()[0], u2.values()[0] );
     private static final int N_VALUES = 10;
@@ -222,12 +223,24 @@ class ValueCreatorUtil<KEY extends NativeIndexKey<KEY>, VALUE extends NativeInde
 
         private Value newUniqueValue( RandomValues random, Set<Value> uniqueCompareValues, List<Value> uniqueValues )
         {
+            int attempts = 0;
+            int maxAttempts = 10; // To avoid infinite loop on booleans
             Value value;
             do
             {
-                value = random.nextValueOfTypes( types );
+                attempts++;
+                ValueType type = randomValues.among( types );
+                boolean useExtremeValue = attempts == 1 && randomValues.nextDouble() < FRACTION_EXTREME_VALUE;
+                if ( useExtremeValue )
+                {
+                    value = randomValues.among( type.extremeValues() );
+                }
+                else
+                {
+                    value = random.nextValueOfType( type );
+                }
             }
-            while ( !uniqueCompareValues.add( value ) );
+            while ( attempts < maxAttempts && !uniqueCompareValues.add( value ) );
             uniqueValues.add( value );
             return value;
         }
