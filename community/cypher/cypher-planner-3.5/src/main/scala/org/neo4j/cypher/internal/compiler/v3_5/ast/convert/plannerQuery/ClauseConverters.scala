@@ -439,6 +439,7 @@ object ClauseConverters {
     case With(false, ri, None, None, None, where)
       if !(builder.currentQueryGraph.hasOptionalPatterns || builder.currentQueryGraph.containsUpdates)
         && ri.items.forall(item => !containsAggregate(item.expression))
+        && builder.currentQueryGraph.shortestPathPatterns.isEmpty
         && ri.items.forall {
         case item: AliasedReturnItem => item.expression == item.variable
         case x => throw new InternalException("This should have been rewritten to an AliasedReturnItem.")

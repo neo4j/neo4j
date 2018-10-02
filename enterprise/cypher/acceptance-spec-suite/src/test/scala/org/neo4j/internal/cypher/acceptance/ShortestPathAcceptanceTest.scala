@@ -132,6 +132,37 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     result should equal(List(List(r1, r4)))
   }
 
+  test("shortest path with length predicate should lead to fallback") {
+    /* a-b-c, a-c */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeA, nodeC)
+
+    val result = executeWith(expectedToSucceed,
+      """MATCH p = shortestPath((src:A)-[r*]->(dest:C))
+        | WHERE length(p) > 1
+        | RETURN nodes(p) as nodes
+      """.stripMargin)
+
+    result.columnAs[List[Node]]("nodes").toList should equal(List(List(nodeA, nodeB, nodeC)))
+  }
+
+  test("shortest path with length predicate and WITH should prevent fallback") {
+    /* a-b-c, a-c */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeA, nodeC)
+
+    val result = executeWith(expectedToSucceed,
+    """MATCH p = shortestPath((src:A)-[r*]->(dest:C))
+      | WITH p
+      | WHERE length(p) > 1
+      | RETURN nodes(p) as nodes
+    """.stripMargin)
+
+    result.columnAs[List[Node]]("nodes").toList.size should equal(0)
+  }
+
   test("finds shortest path that fulfills predicate on nodes") {
     /* a-b-c-d */
     relate(nodeA, nodeB)
