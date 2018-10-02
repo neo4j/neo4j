@@ -103,13 +103,16 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     @Override
     Value asValue( GenericKey state )
     {
-        assertHasCoordinates( state );
-        CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
         Point[] points = new Point[state.arrayLength];
-        int dimensions = dimensions( state );
-        for ( int i = 0; i < points.length; i++ )
+        if ( points.length > 0 )
         {
-            points[i] = GeometryType.asValue( state, crs, dimensions * i );
+            assertHasCoordinates( state );
+            CoordinateReferenceSystem crs = CoordinateReferenceSystem.get( (int) state.long1, (int) state.long2 );
+            int dimensions = dimensions( state );
+            for ( int i = 0; i < points.length; i++ )
+            {
+                points[i] = GeometryType.asValue( state, crs, dimensions * i );
+            }
         }
         return Values.pointArray( points );
     }
