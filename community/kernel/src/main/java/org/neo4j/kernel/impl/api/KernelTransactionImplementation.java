@@ -232,7 +232,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         autoIndexing,
                         constraintIndexCreator,
                         constraintSemantics,
-                        indexProviders, config );
+                        indexProviders,
+                        config );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 

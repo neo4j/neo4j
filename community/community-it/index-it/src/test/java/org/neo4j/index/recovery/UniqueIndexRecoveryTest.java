@@ -28,23 +28,17 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 import java.util.Random;
 
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings.SchemaIndex;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
-import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
@@ -53,7 +47,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
-import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertFalse;
@@ -73,33 +66,18 @@ public class UniqueIndexRecoveryTest
     private GraphDatabaseAPI db;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> parameters()
+    public static SchemaIndex[] parameters()
     {
-        return asList( new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory10(), NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory20(), NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR} );
+        return SchemaIndex.values();
     }
 
-    @Parameterized.Parameter( 0 )
-    public KernelExtensionFactory<?> kernelExtensionFactory;
-    @Parameterized.Parameter( 1 )
-    public IndexProviderDescriptor descriptor;
+    @Parameterized.Parameter
+    public SchemaIndex schemaIndex;
 
     @Before
     public void before()
     {
-        List<KernelExtensionFactory<?>> extensionFactories = new ArrayList<>();
-        extensionFactories.add( kernelExtensionFactory );
-        factory.setKernelExtensions( extensionFactories );
-        db = newDb();
-    }
-
-    private GraphDatabaseAPI newDb()
-    {
-        return (GraphDatabaseAPI) factory
-                .newEmbeddedDatabaseBuilder( storeDir.absolutePath() )
-                .setConfig( GraphDatabaseSettings.default_schema_provider, descriptor.name() )
-                .newGraphDatabase();
+        db = (GraphDatabaseAPI) newDb();
     }
 
     @After
@@ -156,10 +134,16 @@ public class UniqueIndexRecoveryTest
     private void restart( File newStore )
     {
         db.shutdown();
-        db = newDb();
+        db = (GraphDatabaseAPI) newDb();
     }
 
-    private File snapshot( final File path ) throws IOException
+    private GraphDatabaseService newDb()
+    {
+        return factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() ).setConfig( GraphDatabaseSettings.default_schema_provider,
+                schemaIndex.providerIdentifier() ).newGraphDatabase();
+    }
+
+    private static File snapshot( final File path ) throws IOException
     {
         File snapshotDir = new File( path, "snapshot-" + new Random().nextInt() );
         FileUtils.copyRecursively( path, snapshotDir, pathName ->
