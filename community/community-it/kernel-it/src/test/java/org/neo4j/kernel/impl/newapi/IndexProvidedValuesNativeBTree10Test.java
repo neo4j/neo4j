@@ -44,7 +44,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
-public class IndexProvidedValuesTest extends KernelAPIReadTestBase<ReadTestSupport>
+public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
     @SuppressWarnings( "FieldCanBeLocal" )
     private static int N_NODES = 10000;

@@ -50,7 +50,7 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 
 @SuppressWarnings( "FieldCanBeLocal" )
-public class IndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSupport>
+public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static int N_NODES = 10000;
     private static int N_ITERATIONS = 100;
