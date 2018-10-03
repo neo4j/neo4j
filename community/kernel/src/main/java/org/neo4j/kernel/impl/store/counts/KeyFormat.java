@@ -105,7 +105,7 @@ class KeyFormat implements CountsVisitor
      *  0 1 2 3 4 5 6 7   8 9 A B C D E F
      * [t,0,0,0,i,i,i,i ; 0,0,0,0,0,0,0,k]
      *  t - index entry marker - "{@link #INDEX}"
-     *  k - entry (sub)type - "{@link #INDEX_STATS}"
+     *  k - entry (sub)type - "{@link #INDEX_SAMPLE}"
      *  i - index id
      * </pre>
      * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexSample(long , long, long)}.
