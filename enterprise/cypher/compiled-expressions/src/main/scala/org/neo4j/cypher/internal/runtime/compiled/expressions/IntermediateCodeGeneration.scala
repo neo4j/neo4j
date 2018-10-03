@@ -931,7 +931,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- internalCompileExpression(rhs, currentContext)} yield {
         val variableName = namer.nextVariableName()
         val local = variable[Value](variableName, noValue)
-        val lazySet = oneTime(nullCheck(l, r)(assign(variableName, invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("lessThanOrEqual"), l.ir, r.ir))))
+        val lazySet = oneTime(assign(variableName,
+                                     nullCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("lessThanOrEqual"), l.ir, r.ir))))
 
         val ops = block(lazySet, load(variableName))
         val nullChecks = block(lazySet, equal(load(variableName), noValue))
@@ -943,8 +944,8 @@ class IntermediateCodeGeneration(slots: SlotConfiguration) {
            r <- internalCompileExpression(rhs, currentContext)} yield {
         val variableName = namer.nextVariableName()
         val local = variable[Value](variableName, noValue)
-        val lazySet = oneTime(assign(variableName, nullCheck(l, r)(assign(variableName,
-                                                     invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("greaterThan"), l.ir, r.ir)))))
+        val lazySet = oneTime(assign(variableName,
+                                     nullCheck(l, r)(invokeStatic(method[CypherBoolean, Value, AnyValue, AnyValue]("greaterThan"), l.ir, r.ir))))
 
         val ops = block(lazySet, load(variableName))
         val nullChecks = block(lazySet, equal(load(variableName), noValue))

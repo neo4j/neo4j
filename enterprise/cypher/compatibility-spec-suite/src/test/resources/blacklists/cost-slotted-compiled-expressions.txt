@@ -1,0 +1,18 @@
+//TODO this file should be removed, and we shouldn't have a special file for compiled. However there is a bug in
+//the TCK where it mandates order of `keys()` which passes here but fails for slotted + interpreted
+
+// Unsupported YIELD -
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments and yields no results"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments that drops all result fields"
+
+// Type hierarchy bugs/coercion rules
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
+Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
+
+// Neo4j fails at runtime, should fail at compile time
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
+Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
+
+// To classify
+Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
