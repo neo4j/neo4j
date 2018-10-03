@@ -23,7 +23,6 @@
 package org.neo4j.server.security.enterprise.auth;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Set;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
@@ -143,12 +142,8 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
+        public User newUser( String username, String initialPassword, boolean requirePasswordChange )
         {
-            if ( initialPassword != null )
-            {
-                Arrays.fill( initialPassword, (byte) 0 );
-            }
             return null;
         }
 
@@ -171,12 +166,8 @@ public interface EnterpriseUserManager extends UserManager
         }
 
         @Override
-        public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
+        public void setUserPassword( String username, String password, boolean requirePasswordChange )
         {
-            if ( password != null )
-            {
-                Arrays.fill( password, (byte) 0 );
-            }
         }
 
         @Override

@@ -31,7 +31,6 @@ import java.util.concurrent.Executors;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
-import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 public class FlatFilePredictableStressIT extends FlatFileStressBase
@@ -85,7 +84,7 @@ public class FlatFilePredictableStressIT extends FlatFileStressBase
         {
             try
             {
-                flatFileRealm.newUser( username, UTF8.encode( password ), false );
+                flatFileRealm.newUser( username, password, false );
                 exists = true;
             }
             catch ( IOException e )
@@ -126,7 +125,7 @@ public class FlatFilePredictableStressIT extends FlatFileStressBase
             String newPassword = deviousPassword();
             try
             {
-                flatFileRealm.setUserPassword( username, UTF8.encode( newPassword ), false );
+                flatFileRealm.setUserPassword( username, newPassword, false );
                 password = newPassword;
             }
             catch ( IOException e )

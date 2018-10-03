@@ -37,7 +37,6 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.server.security.auth.CommunitySecurityModule;
 import org.neo4j.server.security.auth.FileUserRepository;
 import org.neo4j.server.security.auth.ListSnapshot;
-import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_PASSWORD;
 import static org.neo4j.kernel.api.security.UserManager.INITIAL_USER_NAME;
@@ -102,7 +101,7 @@ public class SetInitialPasswordCommand implements AdminCommand
                     new FileUserRepository( fileSystem, file, NullLogProvider.getInstance() );
             userRepository.start();
             userRepository.create(
-                    new User.Builder( INITIAL_USER_NAME, LegacyCredential.forPassword( UTF8.encode( password ) ) )
+                    new User.Builder( INITIAL_USER_NAME, LegacyCredential.forPassword( password ) )
                             .withRequiredPasswordChange( false )
                             .build()
                 );

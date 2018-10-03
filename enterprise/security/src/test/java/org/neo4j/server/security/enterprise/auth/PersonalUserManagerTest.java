@@ -44,7 +44,6 @@ import org.neo4j.server.security.enterprise.log.SecurityLog;
 
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 
 public class PersonalUserManagerTest
 {
@@ -66,7 +65,7 @@ public class PersonalUserManagerTest
         expectedException.expectMessage( "newUserException" );
 
         // When
-        userManager.newUser( "hewhoshallnotbenamed", password( "avada kedavra" ), false );
+        userManager.newUser( "hewhoshallnotbenamed", "avada kedavra", false );
         verify( log ).error( withSubject( SecurityContext.AUTH_DISABLED.subject(), "tried to create user `%s`: %s" ),
                 "hewhoshallnotbenamed", "newUserException" );
     }
@@ -104,7 +103,7 @@ public class PersonalUserManagerTest
         }
 
         @Override
-        public User newUser( String username, byte[] password, boolean changeRequired )
+        public User newUser( String username, String password, boolean changeRequired )
                 throws IOException, InvalidArgumentsException
         {
             if ( failNextCall )
@@ -144,7 +143,7 @@ public class PersonalUserManagerTest
         }
 
         @Override
-        public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
+        public void setUserPassword( String username, String password, boolean requirePasswordChange )
                 throws IOException, InvalidArgumentsException
         {
             if ( failNextCall )

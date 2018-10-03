@@ -21,10 +21,10 @@ package org.neo4j.server.security.auth;
 
 import java.io.IOException;
 import java.time.Clock;
-import java.util.Arrays;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.AuthenticationResult;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.security.User;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
-import org.neo4j.string.UTF8;
 
 import static org.neo4j.kernel.api.security.AuthToken.invalidToken;
 
@@ -88,7 +87,7 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
 
         if ( userRepository.numberOfUsers() == 0 )
         {
-            User neo4j = newUser( INITIAL_USER_NAME, UTF8.encode( INITIAL_PASSWORD ), true );
+            User neo4j = newUser( INITIAL_USER_NAME, INITIAL_PASSWORD, true );
             if ( initialUserRepository.numberOfUsers() > 0 )
             {
                 User user = initialUserRepository.getUserByName( INITIAL_USER_NAME );
@@ -117,58 +116,40 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
     @Override
     public LoginContext login( Map<String,Object> authToken ) throws InvalidAuthTokenException
     {
-        try
+        assertValidScheme( authToken );
+
+        String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
+        String password = AuthToken.safeCast( AuthToken.CREDENTIALS, authToken );
+
+        User user = userRepository.getUserByName( username );
+        AuthenticationResult result = AuthenticationResult.FAILURE;
+        if ( user != null )
         {
-            assertValidScheme( authToken );
-
-            String username = AuthToken.safeCast( AuthToken.PRINCIPAL, authToken );
-            byte[] password = AuthToken.safeCastCredentials( AuthToken.CREDENTIALS, authToken );
-
-            User user = userRepository.getUserByName( username );
-            AuthenticationResult result = AuthenticationResult.FAILURE;
-            if ( user != null )
+            result = authStrategy.authenticate( user, password );
+            if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
             {
-                result = authStrategy.authenticate( user, password );
-                if ( result == AuthenticationResult.SUCCESS && user.passwordChangeRequired() )
-                {
-                    result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
-                }
+                result = AuthenticationResult.PASSWORD_CHANGE_REQUIRED;
             }
-            return new BasicLoginContext( user, result );
         }
-        finally
-        {
-            AuthToken.clearCredentials( authToken );
-        }
+        return new BasicLoginContext( user, result );
     }
 
     @Override
-    public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
+    public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        try
-        {
-            userRepository.assertValidUsername( username );
+        userRepository.assertValidUsername( username );
 
-            passwordPolicy.validatePassword( initialPassword );
+        passwordPolicy.validatePassword( initialPassword );
 
-            User user = new User.Builder()
-                    .withName( username )
-                    .withCredentials( LegacyCredential.forPassword( initialPassword ) )
-                    .withRequiredPasswordChange( requirePasswordChange )
-                    .build();
-            userRepository.create( user );
+        User user = new User.Builder()
+                .withName( username )
+                .withCredentials( LegacyCredential.forPassword( initialPassword ) )
+                .withRequiredPasswordChange( requirePasswordChange )
+                .build();
+        userRepository.create( user );
 
-            return user;
-        }
-        finally
-        {
-            // Clear password
-            if ( initialPassword != null )
-            {
-                Arrays.fill( initialPassword, (byte) 0 );
-            }
-        }
+        return user;
     }
 
     @Override
@@ -195,40 +176,42 @@ public class BasicAuthManager implements AuthManager, UserManager, UserManagerSu
         return userRepository.getUserByName( username );
     }
 
-    @Override
-    public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
+    void setPassword( AuthSubject authSubject, String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
+        if ( !authSubject.hasUsername( username ) )
+        {
+            throw new AuthorizationViolationException( "Invalid attempt to change the password for user " + username );
+        }
+
+        setUserPassword( username, password, requirePasswordChange );
+    }
+
+    @Override
+    public void setUserPassword( String username, String password, boolean requirePasswordChange )
+            throws IOException, InvalidArgumentsException
+    {
+        User existingUser = getUser( username );
+
+        passwordPolicy.validatePassword( password );
+
+        if ( existingUser.credentials().matchesPassword( password ) )
+        {
+            throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
+        }
+
         try
         {
-            User existingUser = getUser( username );
-
-            passwordPolicy.validatePassword( password );
-
-            if ( existingUser.credentials().matchesPassword( password ) )
-            {
-                throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
-            }
-
-            try
-            {
-                User updatedUser = existingUser.augment().withCredentials( LegacyCredential.forPassword( password ) ).withRequiredPasswordChange(
-                        requirePasswordChange ).build();
-                userRepository.update( existingUser, updatedUser );
-            }
-            catch ( ConcurrentModificationException e )
-            {
-                // try again
-                setUserPassword( username, password, requirePasswordChange );
-            }
+            User updatedUser = existingUser.augment()
+                    .withCredentials( LegacyCredential.forPassword( password ) )
+                    .withRequiredPasswordChange( requirePasswordChange )
+                    .build();
+            userRepository.update( existingUser, updatedUser );
         }
-        finally
+        catch ( ConcurrentModificationException e )
         {
-            // Clear password
-            if ( password != null )
-            {
-                Arrays.fill( password, (byte) 0 );
-            }
+            // try again
+            setUserPassword( username, password, requirePasswordChange );
         }
     }
 

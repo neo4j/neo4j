@@ -71,7 +71,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
 
@@ -105,7 +104,7 @@ public class InternalFlatFileRealmTest
         authManager.init();
         authManager.start();
 
-        authManager.getUserManager().newUser( "mike", password( "123" ), false );
+        authManager.getUserManager().newUser( "mike", "123", false );
     }
 
     @Test

@@ -28,7 +28,6 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
-import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.values.virtual.MapValue;
 
 public class InitMessageDecoder implements RequestMessageDecoder
@@ -65,13 +64,7 @@ public class InitMessageDecoder implements RequestMessageDecoder
         MapValue authTokenValue = unpacker.unpackMap();
         PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
         Map<String,Object> tokenMap = new HashMap<>( authTokenValue.size() );
-        authTokenValue.foreach( ( key, value ) ->
-        {
-            Object convertedValue = AuthToken.CREDENTIALS.equals( key ) || AuthToken.NEW_CREDENTIALS.equals( key ) ?
-                                    writer.sensitiveValueAsObject( value, key ) :
-                                    writer.valueAsObject( value );
-            tokenMap.put( key, convertedValue );
-        } );
+        authTokenValue.foreach( ( key, value ) -> tokenMap.put( key, writer.valueAsObject( value ) ) );
         return tokenMap;
     }
 }

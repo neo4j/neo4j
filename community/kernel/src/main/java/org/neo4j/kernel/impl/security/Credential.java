@@ -21,23 +21,14 @@ package org.neo4j.kernel.impl.security;
 
 public interface Credential
 {
-    boolean matchesPassword( byte[] password );
-
-    /**
-     * For testing purposes only!
-     * Use method that takes byte[]
-     */
-    default boolean matchesPassword( String password )
-    {
-        throw new UnsupportedOperationException( "Use `boolean matchesPassword( byte[] password )` instead" );
-    }
+    boolean matchesPassword( String password );
 
     String serialize();
 
     Credential INACCESSIBLE = new Credential()
     {
         @Override
-        public boolean matchesPassword( byte[] password )
+        public boolean matchesPassword( String password )
         {
             return false;
         }

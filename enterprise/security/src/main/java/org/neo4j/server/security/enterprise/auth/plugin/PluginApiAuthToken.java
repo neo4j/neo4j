@@ -22,9 +22,6 @@
  */
 package org.neo4j.server.security.enterprise.auth.plugin;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
@@ -65,20 +62,12 @@ public class PluginApiAuthToken implements AuthToken
         return parameters;
     }
 
-    void clearCredentials()
-    {
-        if ( credentials != null )
-        {
-            Arrays.fill( credentials, (char) 0 );
-        }
-    }
-
-    public static PluginApiAuthToken of( String principal, char[] credentials, Map<String,Object> parameters )
+    public static AuthToken of( String principal, char[] credentials, Map<String,Object> parameters )
     {
         return new PluginApiAuthToken( principal, credentials, parameters );
     }
 
-    public static PluginApiAuthToken createFromMap( Map<String,Object> authTokenMap ) throws InvalidAuthTokenException
+    public static AuthToken createFromMap( Map<String,Object> authTokenMap ) throws InvalidAuthTokenException
     {
         String scheme = org.neo4j.kernel.api.security.AuthToken
                 .safeCast( org.neo4j.kernel.api.security.AuthToken.SCHEME_KEY, authTokenMap );
@@ -86,27 +75,26 @@ public class PluginApiAuthToken implements AuthToken
         // Always require principal
         String principal = org.neo4j.kernel.api.security.AuthToken.safeCast( PRINCIPAL, authTokenMap );
 
-        byte[] credentials = null;
+        String credentials = null;
         if ( scheme.equals( org.neo4j.kernel.api.security.AuthToken.BASIC_SCHEME ) )
         {
             // Basic scheme requires credentials
-            credentials = org.neo4j.kernel.api.security.AuthToken.safeCastCredentials( CREDENTIALS, authTokenMap );
+            credentials = org.neo4j.kernel.api.security.AuthToken.safeCast( CREDENTIALS, authTokenMap );
         }
         else
         {
             // Otherwise credentials are optional
             Object credentialsObject = authTokenMap.get( CREDENTIALS );
-            if ( credentialsObject instanceof byte[] )
+            if ( credentialsObject instanceof String )
             {
-                credentials = (byte[]) credentialsObject;
+                credentials = (String) credentialsObject;
             }
         }
         Map<String,Object> parameters = org.neo4j.kernel.api.security.AuthToken.safeCastMap( PARAMETERS, authTokenMap );
 
         return PluginApiAuthToken.of(
                 principal,
-                // Convert UTF8 byte[] to char[] (this should not create any intermediate copies)
-                credentials != null ? StandardCharsets.UTF_8.decode( ByteBuffer.wrap( credentials ) ).array() : null,
+                credentials != null ? credentials.toCharArray() : null,
                 parameters );
     }
 }

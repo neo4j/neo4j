@@ -57,7 +57,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.server.security.enterprise.auth.AuthTestUtil.listOf;
 
@@ -94,8 +93,8 @@ public class LdapCachingTest
         authManager.init();
         authManager.start();
 
-        authManager.getUserManager().newUser( "mike", password( "123" ), false );
-        authManager.getUserManager().newUser( "mats", password( "456" ), false );
+        authManager.getUserManager().newUser( "mike", "123", false );
+        authManager.getUserManager().newUser( "mats", "456", false );
     }
 
     private static Config getLdapConfig()

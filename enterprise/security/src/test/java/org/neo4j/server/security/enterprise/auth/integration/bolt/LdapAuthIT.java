@@ -83,7 +83,6 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
 import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
 import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_AUTHORIZATION_FAILURE_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_REFUSED_CLIENT_MESSAGE;
 import static org.neo4j.server.security.enterprise.auth.LdapRealm.LDAP_CONNECTION_TIMEOUT_CLIENT_MESSAGE;
@@ -1396,7 +1395,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
                 gds.getDependencyResolver().resolveDependency( EnterpriseAuthAndUserManager.class );
 
         authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
-                .newUser( username, password( password ), false );
+                .newUser( username, password, false );
 
         for ( String role : roles )
         {

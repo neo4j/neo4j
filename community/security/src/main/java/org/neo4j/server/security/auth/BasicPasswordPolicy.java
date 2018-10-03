@@ -25,10 +25,10 @@ import org.neo4j.kernel.api.security.PasswordPolicy;
 public class BasicPasswordPolicy implements PasswordPolicy
 {
     @Override
-    public void validatePassword( byte[] password )
+    public void validatePassword( String password )
             throws InvalidArgumentsException
     {
-        if ( password == null || password.length == 0 )
+        if ( password == null || password.isEmpty() )
         {
             throw new InvalidArgumentsException( "A password cannot be empty." );
         }

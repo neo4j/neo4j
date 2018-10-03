@@ -64,7 +64,6 @@ import org.neo4j.server.security.auth.UserRepository;
 import org.neo4j.server.security.auth.exception.ConcurrentModificationException;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
-import org.neo4j.string.UTF8;
 
 import static java.lang.String.format;
 import static java.util.Collections.emptySet;
@@ -228,7 +227,7 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         {
             if ( userRepository.numberOfUsers() == 0 )
             {
-                User neo4j = newUser( INITIAL_USER_NAME, UTF8.encode( INITIAL_PASSWORD ), true );
+                User neo4j = newUser( INITIAL_USER_NAME, INITIAL_PASSWORD, true );
                 if ( initialUserRepository.numberOfUsers() > 0 )
                 {
                     User initUser = initialUserRepository.getUserByName( INITIAL_USER_NAME );
@@ -394,11 +393,11 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
         ShiroAuthToken shiroAuthToken = (ShiroAuthToken) token;
 
         String username;
-        byte[] password;
+        String password;
         try
         {
             username = AuthToken.safeCast( AuthToken.PRINCIPAL, shiroAuthToken.getAuthTokenMap() );
-            password = AuthToken.safeCastCredentials( AuthToken.CREDENTIALS, shiroAuthToken.getAuthTokenMap() );
+            password = AuthToken.safeCast( AuthToken.CREDENTIALS, shiroAuthToken.getAuthTokenMap() );
         }
         catch ( InvalidAuthTokenException e )
         {
@@ -459,34 +458,23 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     @Deprecated
     @Override
-    public User newUser( String username, byte[] initialPassword, boolean requirePasswordChange )
+    public User newUser( String username, String initialPassword, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
-        try
-        {
-            userRepository.assertValidUsername( username );
-            passwordPolicy.validatePassword( initialPassword );
+        userRepository.assertValidUsername( username );
+        passwordPolicy.validatePassword( initialPassword );
 
-            User user = new User.Builder()
-                    .withName( username )
-                    .withCredentials( LegacyCredential.forPassword( initialPassword ) )
-                    .withRequiredPasswordChange( requirePasswordChange )
-                    .build();
-            synchronized ( this )
-            {
-                userRepository.create( user );
-            }
-
-            return user;
-        }
-        finally
+        User user = new User.Builder()
+                .withName( username )
+                .withCredentials( LegacyCredential.forPassword( initialPassword ) )
+                .withRequiredPasswordChange( requirePasswordChange )
+                .build();
+        synchronized ( this )
         {
-            // Clear password
-            if ( initialPassword != null )
-            {
-                Arrays.fill( initialPassword, (byte) 0 );
-            }
+            userRepository.create( user );
         }
+
+        return user;
     }
 
     @Deprecated
@@ -646,45 +634,34 @@ public class InternalFlatFileRealm extends AuthorizingRealm implements RealmLife
 
     @Deprecated
     @Override
-    public void setUserPassword( String username, byte[] password, boolean requirePasswordChange )
+    public void setUserPassword( String username, String password, boolean requirePasswordChange )
             throws IOException, InvalidArgumentsException
     {
+        User existingUser = getUser( username );
+        passwordPolicy.validatePassword( password );
+        if ( existingUser.credentials().matchesPassword( password ) )
+        {
+            throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
+        }
+
         try
         {
-            User existingUser = getUser( username );
-            passwordPolicy.validatePassword( password );
-            if ( existingUser.credentials().matchesPassword( password ) )
+            User updatedUser = existingUser.augment()
+                    .withCredentials( LegacyCredential.forPassword( password ) )
+                    .withRequiredPasswordChange( requirePasswordChange )
+                    .build();
+            synchronized ( this )
             {
-                throw new InvalidArgumentsException( "Old password and new password cannot be the same." );
+                userRepository.update( existingUser, updatedUser );
             }
-
-            try
-            {
-                User updatedUser = existingUser.augment()
-                        .withCredentials( LegacyCredential.forPassword( password ) )
-                        .withRequiredPasswordChange( requirePasswordChange )
-                        .build();
-                synchronized ( this )
-                {
-                    userRepository.update( existingUser, updatedUser );
-                }
-            }
-            catch ( ConcurrentModificationException e )
-            {
-                // try again
-                setUserPassword( username, password, requirePasswordChange );
-            }
-
-            clearCacheForUser( username );
         }
-        finally
+        catch ( ConcurrentModificationException e )
         {
-            // Clear password
-            if ( password != null )
-            {
-                Arrays.fill( password, (byte) 0 );
-            }
+            // try again
+            setUserPassword( username, password, requirePasswordChange );
         }
+
+        clearCacheForUser( username );
     }
 
     @Deprecated

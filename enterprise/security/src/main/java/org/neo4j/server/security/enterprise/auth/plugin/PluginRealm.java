@@ -33,7 +33,6 @@ import org.apache.shiro.subject.PrincipalCollection;
 import java.nio.file.Path;
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -186,37 +185,29 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
         {
             try
             {
-                PluginApiAuthToken pluginAuthToken =
+                AuthToken pluginAuthToken =
                         PluginApiAuthToken.createFromMap( ((ShiroAuthToken) token).getAuthTokenMap() );
-                try
+                if ( authPlugin != null )
                 {
-                    if ( authPlugin != null )
+                    AuthInfo authInfo = authPlugin.authenticateAndAuthorize( pluginAuthToken );
+                    if ( authInfo != null )
                     {
-                        AuthInfo authInfo = authPlugin.authenticateAndAuthorize( pluginAuthToken );
-                        if ( authInfo != null )
-                        {
-                            PluginAuthInfo pluginAuthInfo =
-                                    PluginAuthInfo.createCacheable( authInfo, getName(), secureHasher );
+                        PluginAuthInfo pluginAuthInfo =
+                                PluginAuthInfo.createCacheable( authInfo, getName(), secureHasher );
 
-                            cacheAuthorizationInfo( pluginAuthInfo );
+                        cacheAuthorizationInfo( pluginAuthInfo );
 
-                            return pluginAuthInfo;
-                        }
-                    }
-                    else if ( authenticationPlugin != null )
-                    {
-                        org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
-                                authenticationPlugin.authenticate( pluginAuthToken );
-                        if ( authenticationInfo != null )
-                        {
-                            return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );
-                        }
+                        return pluginAuthInfo;
                     }
                 }
-                finally
+                else if ( authenticationPlugin != null )
                 {
-                    // Clear credentials
-                    pluginAuthToken.clearCredentials();
+                    org.neo4j.server.security.enterprise.auth.plugin.spi.AuthenticationInfo authenticationInfo =
+                            authenticationPlugin.authenticate( pluginAuthToken );
+                    if ( authenticationInfo != null )
+                    {
+                        return PluginAuthenticationInfo.createCacheable( authenticationInfo, getName(), secureHasher );
+                    }
                 }
             }
             catch ( org.neo4j.server.security.enterprise.auth.plugin.api.AuthenticationException |
@@ -374,19 +365,7 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
                 try
                 {
                     AuthToken pluginApiAuthToken = PluginApiAuthToken.createFromMap( authToken );
-                    try
-                    {
-                        return customCredentialsMatcher.doCredentialsMatch( pluginApiAuthToken );
-                    }
-                    finally
-                    {
-                        // Clear credentials
-                        char[] credentials = pluginApiAuthToken.credentials();
-                        if ( credentials != null )
-                        {
-                            Arrays.fill( credentials, (char) 0 );
-                        }
-                    }
+                    return customCredentialsMatcher.doCredentialsMatch( pluginApiAuthToken );
                 }
                 catch ( InvalidAuthTokenException e )
                 {
@@ -396,15 +375,8 @@ public class PluginRealm extends AuthorizingRealm implements RealmLifecycle, Shi
             else if ( info.getCredentials() != null )
             {
                 // Authentication info is originating from a CacheableAuthenticationInfo or a CacheableAuthInfo
-                PluginShiroAuthToken pluginShiroAuthToken = PluginShiroAuthToken.of( token );
-                try
-                {
-                    return secureHasher.getHashedCredentialsMatcher().doCredentialsMatch( pluginShiroAuthToken, info );
-                }
-                finally
-                {
-                    pluginShiroAuthToken.clearCredentials();
-                }
+                return secureHasher.getHashedCredentialsMatcher()
+                        .doCredentialsMatch( PluginShiroAuthToken.of( token ), info );
             }
             else
             {

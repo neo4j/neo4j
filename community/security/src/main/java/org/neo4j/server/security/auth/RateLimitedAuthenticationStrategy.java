@@ -80,7 +80,7 @@ public class RateLimitedAuthenticationStrategy implements AuthenticationStrategy
     }
 
     @Override
-    public AuthenticationResult authenticate( User user, byte[] password )
+    public AuthenticationResult authenticate( User user, String password )
     {
         AuthenticationMetadata authMetadata = authMetadataFor( user.name() );
 

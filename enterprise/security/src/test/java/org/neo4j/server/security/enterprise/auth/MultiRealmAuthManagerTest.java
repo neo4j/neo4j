@@ -31,7 +31,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.function.ToIntFunction;
-import java.util.Map;
 
 import org.neo4j.commandline.admin.security.SetDefaultAdminCommand;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -67,14 +66,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.Strings.escape;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.clearedPasswordWithSameLenghtAs;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.auth.SecurityTestUtils.authToken;
 import static org.neo4j.test.assertion.Assert.assertException;
 
@@ -336,7 +332,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        userManager.newUser( "foo", password( "bar" ), true );
+        userManager.newUser( "foo", "bar", true );
 
         // Then
         User user = users.getUserByName( "foo" );
@@ -439,7 +435,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         final User user = newUser( "jake", "abc123", false );
         users.create( user );
         manager.start();
-        when( authStrategy.authenticate( user,  password( "abc123" ) ) ).thenReturn( AuthenticationResult.SUCCESS );
+        when( authStrategy.authenticate( user, "abc123" ) ).thenReturn( AuthenticationResult.SUCCESS );
 
         // When
         userManager.activateUser( "jake", false );
@@ -496,7 +492,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         manager.start();
 
         // When
-        userManager.setUserPassword( "jake", password( "hello, world!" ), false );
+        userManager.setUserPassword( "jake", "hello, world!", false );
 
         // Then
         User user = userManager.getUser( "jake" );
@@ -529,7 +525,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         // When
         try
         {
-            userManager.setUserPassword( "unknown", password( "hello, world!" ), false );
+            userManager.setUserPassword( "unknown", "hello, world!", false );
             fail( "exception expected" );
         }
         catch ( InvalidArgumentsException e )
@@ -540,23 +536,23 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
 
     private void createTestUsers() throws Throwable
     {
-        userManager.newUser( "morpheus", password( "abc123" ), false );
+        userManager.newUser( "morpheus", "abc123", false );
         userManager.newRole( "admin", "morpheus" );
         setMockAuthenticationStrategyResult( "morpheus", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "trinity", password( "abc123" ), false );
+        userManager.newUser( "trinity", "abc123", false );
         userManager.newRole( "architect", "trinity" );
         setMockAuthenticationStrategyResult( "trinity", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "tank", password( "abc123" ), false );
+        userManager.newUser( "tank", "abc123", false );
         userManager.newRole( "publisher", "tank" );
         setMockAuthenticationStrategyResult( "tank", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "neo", password( "abc123" ), false );
+        userManager.newUser( "neo", "abc123", false );
         userManager.newRole( "reader", "neo" );
         setMockAuthenticationStrategyResult( "neo", "abc123", AuthenticationResult.SUCCESS );
 
-        userManager.newUser( "smith", password( "abc123" ), false );
+        userManager.newUser( "smith", "abc123", false );
         userManager.newRole( "agent", "smith" );
         setMockAuthenticationStrategyResult( "smith", "abc123", AuthenticationResult.SUCCESS );
     }
@@ -571,7 +567,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         // When
         SecurityContext securityContext = manager.login( authToken( "neo4j", "neo4j" ) )
                 .authorize( token, GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-        userManager.setUserPassword( "neo4j", password( "1234" ), false );
+        userManager.setUserPassword( "neo4j", "1234", false );
         securityContext.subject().logout();
 
         setMockAuthenticationStrategyResult( "neo4j", "1234", AuthenticationResult.SUCCESS );
@@ -692,127 +688,6 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
         assertFalse( securityContext.mode().allowsSchemaWrites() );
     }
 
-    @Test
-    public void shouldClearPasswordOnLogin() throws Throwable
-    {
-        // Given
-        when( authStrategy.authenticate( any(), any() ) ).thenReturn( AuthenticationResult.SUCCESS );
-
-        manager.start();
-        userManager.newUser( "jake", password( "abc123" ), true );
-        byte[] password = password( "abc123" );
-        Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );
-
-        // When
-        manager.login( authToken );
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-        assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-    }
-
-    @Test
-    public void shouldClearPasswordOnInvalidAuthToken() throws Throwable
-    {
-        // Given
-        manager.start();
-        byte[] password = password( "abc123" );
-        Map<String,Object> authToken = AuthToken.newBasicAuthToken( "jake", password );
-        authToken.put( AuthToken.SCHEME_KEY, null ); // Null is not a valid scheme
-
-        // When
-        try
-        {
-            manager.login( authToken );
-            fail( "exception expected" );
-        }
-        catch ( InvalidAuthTokenException e )
-        {
-            // expected
-        }
-        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-        assertThat( authToken.get( AuthToken.CREDENTIALS ), equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-    }
-
-    @Test
-    public void shouldClearPasswordOnNewUser() throws Throwable
-    {
-        // Given
-        manager.start();
-        byte[] password = password( "abc123" );
-
-        // When
-        userManager.newUser( "jake", password, true );
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-        User user = userManager.getUser( "jake" );
-        assertTrue( user.credentials().matchesPassword( "abc123" ) );
-    }
-
-    @Test
-    public void shouldClearPasswordOnNewUserAlreadyExists() throws Throwable
-    {
-        // Given
-        manager.start();
-        userManager.newUser( "jake", password( "abc123" ), true );
-        byte[] password = password( "abc123" );
-
-        // When
-        try
-        {
-            userManager.newUser( "jake", password, true );
-            fail( "exception expected" );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            // expected
-        }
-
-        // Then
-        assertThat( password, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-    }
-
-    @Test
-    public void shouldClearPasswordOnSetUserPassword() throws Throwable
-    {
-        // Given
-        manager.start();
-        userManager.newUser( "jake", password( "old" ), false );
-        byte[] newPassword = password( "abc123" );
-
-        // When
-        userManager.setUserPassword( "jake", newPassword, false );
-
-        // Then
-        assertThat( newPassword, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-        User user = userManager.getUser( "jake" );
-        assertTrue( user.credentials().matchesPassword( "abc123" ) );
-    }
-
-    @Test
-    public void shouldClearPasswordOnSetUserPasswordWithInvalidPassword() throws Throwable
-    {
-        // Given
-        manager.start();
-        userManager.newUser( "jake", password( "abc123" ), false );
-        byte[] newPassword = password( "abc123" );
-
-        // When
-        try
-        {
-            userManager.setUserPassword( "jake", newPassword, false );
-            fail( "exception expected" );
-        }
-        catch ( InvalidArgumentsException e )
-        {
-            // expected
-        }
-
-        // Then
-        assertThat( newPassword, equalTo( clearedPasswordWithSameLenghtAs( "abc123" ) ) );
-    }
-
     private AssertableLogProvider.LogMatcher info( String message )
     {
         return inLog( this.getClass() ).info( message );
@@ -831,7 +706,7 @@ public class MultiRealmAuthManagerTest extends InitialUserTest
     private void setMockAuthenticationStrategyResult( String username, String password, AuthenticationResult result )
     {
         final User user = users.getUserByName( username );
-        when( authStrategy.authenticate( user, password( password ) ) ).thenReturn( result );
+        when( authStrategy.authenticate( user, password ) ).thenReturn( result );
     }
 
     @Override

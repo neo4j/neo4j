@@ -25,7 +25,6 @@ package org.neo4j.kernel.enterprise.api.security;
 import java.util.Map;
 
 import org.neo4j.kernel.api.security.AuthManager;
-import org.neo4j.kernel.api.security.AuthToken;
 import org.neo4j.kernel.api.security.exception.InvalidAuthTokenException;
 
 public interface EnterpriseAuthManager extends AuthManager
@@ -43,7 +42,6 @@ public interface EnterpriseAuthManager extends AuthManager
         @Override
         public EnterpriseLoginContext login( Map<String,Object> authToken )
         {
-            AuthToken.clearCredentials( authToken );
             return EnterpriseLoginContext.AUTH_DISABLED;
         }
 

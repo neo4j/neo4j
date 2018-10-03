@@ -105,7 +105,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.TransactionTimedOut;
 import static org.neo4j.procedure.Mode.READ;
 import static org.neo4j.procedure.Mode.WRITE;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ADMIN;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.ARCHITECT;
 import static org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles.EDITOR;
@@ -186,13 +185,13 @@ public abstract class ProcedureInteractionTestBase<S>
         procedures.registerProcedure( ClassWithProcedures.class );
         procedures.registerFunction( ClassWithFunctions.class );
         userManager = neo.getLocalUserManager();
-        userManager.newUser( "noneSubject", password( "abc" ), false );
-        userManager.newUser( "pwdSubject", password( "abc" ), true );
-        userManager.newUser( "adminSubject", password( "abc" ), false );
-        userManager.newUser( "schemaSubject", password( "abc" ), false );
-        userManager.newUser( "writeSubject", password( "abc" ), false );
-        userManager.newUser( "editorSubject", password( "abc" ), false );
-        userManager.newUser( "readSubject", password( "123" ), false );
+        userManager.newUser( "noneSubject", "abc", false );
+        userManager.newUser( "pwdSubject", "abc", true );
+        userManager.newUser( "adminSubject", "abc", false );
+        userManager.newUser( "schemaSubject", "abc", false );
+        userManager.newUser( "writeSubject", "abc", false );
+        userManager.newUser( "editorSubject", "abc", false );
+        userManager.newUser( "readSubject", "123", false );
         // Currently admin role is created by default
         userManager.addRoleToUser( ADMIN, "adminSubject" );
         userManager.addRoleToUser( ARCHITECT, "schemaSubject" );

@@ -86,7 +86,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.log_queries_rotati
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logs_directory;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.internal.kernel.api.security.AuthSubject.AUTH_DISABLED;
-import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 
 public class QueryLoggerIT
 {
@@ -143,8 +142,8 @@ public class QueryLoggerIT
         db = new EmbeddedInteraction( databaseBuilder, config );
 
         // create users
-        db.getLocalUserManager().newUser( "mats", password( "neo4j" ), false );
-        db.getLocalUserManager().newUser( "andres", password( "neo4j" ), false );
+        db.getLocalUserManager().newUser( "mats", "neo4j", false );
+        db.getLocalUserManager().newUser( "andres", "neo4j", false );
         db.getLocalUserManager().addRoleToUser( "architect", "mats" );
         db.getLocalUserManager().addRoleToUser( "reader", "andres" );
 
@@ -178,7 +177,7 @@ public class QueryLoggerIT
         db = new EmbeddedInteraction( databaseBuilder, Collections.emptyMap() );
         GraphDatabaseFacade graph = db.getLocalGraph();
 
-        db.getLocalUserManager().setUserPassword( "neo4j", password( "123" ), false );
+        db.getLocalUserManager().setUserPassword( "neo4j", "123", false );
 
         EnterpriseLoginContext subject = db.login( "neo4j", "123" );
         db.executeQuery( subject, "UNWIND range(0, 10) AS i CREATE (:Foo {p: i})", Collections.emptyMap(),

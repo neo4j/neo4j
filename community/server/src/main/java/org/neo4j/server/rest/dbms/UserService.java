@@ -42,7 +42,6 @@ import org.neo4j.server.rest.repr.ExceptionRepresentation;
 import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
-import org.neo4j.string.UTF8;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static org.neo4j.server.rest.dbms.AuthorizedRequestWrapper.getLoginContextFromUserPrincipal;
@@ -134,7 +133,7 @@ public class UserService
             else
             {
                 UserManager userManager = userManagerSupplier.getUserManager( loginContext.subject(), false );
-                userManager.setUserPassword( username, UTF8.encode( newPassword ), false );
+                userManager.setUserPassword( username, newPassword, false );
             }
         }
         catch ( IOException e )
