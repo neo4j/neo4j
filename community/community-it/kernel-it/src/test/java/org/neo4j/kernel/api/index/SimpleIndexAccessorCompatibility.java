@@ -103,7 +103,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 5L, descriptor.schema(), "b" ) ) );
 
         assertThat( query( IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, "A" ) ), equalTo( Collections.singletonList( 2L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, "A" ) ), equalTo( singletonList( 2L ) ) );
         assertThat( query( IndexQuery.stringPrefix( 1, "ba" ) ), equalTo( EMPTY_LIST ) );
         assertThat( query( IndexQuery.stringPrefix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
@@ -170,7 +170,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         for ( NodeAndValue entry : valueSet1 )
         {
             List<Long> result = query( IndexQuery.exact( propertyKeyId, entry.value ) );
-            assertThat( result, equalTo( Collections.singletonList( entry.nodeId ) ) );
+            assertThat( result, equalTo( singletonList( entry.nodeId ) ) );
         }
     }
 
@@ -198,6 +198,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void testIndexRangeSeekByText() throws Exception
     {
         testIndexRangeSeek( () -> random.randomValues().nextTextValue() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByChar() throws Exception
+    {
+        testIndexRangeSeek( () -> random.randomValues().nextCharValue() );
     }
 
     @Test
@@ -285,6 +291,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
     public void testIndexRangeSeekByTextArray() throws Exception
     {
         testIndexRangeSeekArray( () -> random.randomValues().nextBasicMultilingualPlaneTextArray() );
+    }
+
+    @Test
+    public void testIndexRangeSeekByCharArray() throws Exception
+    {
+        testIndexRangeSeekArray( () -> random.randomValues().nextCharArray() );
     }
 
     @Test
@@ -1050,15 +1062,12 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
         private Value nextRandomValidArrayValue()
         {
             Value value;
-            while ( true )
+            do
             {
                 value = random.randomValues().nextArray();
                 // todo remove when spatial is supported by all
-                if ( testSuite.supportsSpatial() || !Values.isGeometryArray( value ) )
-                {
-                    break;
-                }
             }
+            while ( !testSuite.supportsSpatial() && Values.isGeometryArray( value ) );
             return value;
         }
     }
@@ -1097,7 +1106,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 2L, descriptor.schema(), "b" ),
                     add( 3L, descriptor.schema(), "c" ) ) );
 
-            assertThat( query( exact( 1, "a" ) ), equalTo( asList( 1L ) ) );
+            assertThat( query( exact( 1, "a" ) ), equalTo( singletonList( 1L ) ) );
             assertThat( query( IndexQuery.exists( 1 ) ), equalTo( asList( 1L, 2L, 3L ) ) );
         }
     }
