@@ -71,13 +71,20 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                        CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
                        RecordAccess records )
     {
-        Collection<PropertyRecord> properties = propertyReader.getPropertyRecordChain( record );
-        cacheAccess.client().putPropertiesToCache(properties);
-        if ( indexes != null )
+        try
         {
-            matchIndexesToNode( record, engine, records, properties );
+            Collection<PropertyRecord> properties = propertyReader.getPropertyRecordChain( record.getNextProp() );
+            cacheAccess.client().putPropertiesToCache(properties);
+            if ( indexes != null )
+            {
+                matchIndexesToNode( record, engine, records, properties );
+            }
+            checkProperty( record, engine, properties );
         }
-        checkProperty( record, engine, properties );
+        catch ( PropertyReader.CircularPropertyRecordChainException e )
+        {
+            engine.report().propertyChainContainsCircularReference( e.propertyRecordClosingTheCircle() );
+        }
     }
 
     /**
