@@ -207,7 +207,7 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
       # Parse Java config settings - GC
       $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.enabled' -Neo4jServer $Neo4jServer)
       if (($option -ne $null) -and ($option.value.ToLower() -eq 'true')) {
-        $ShellArgs += "-Xloggc:`"$($Neo4jServer.Home)/gc.log`""
+        $ShellArgs += "-Xloggc:`"$($Neo4jServer.LogDir)/gc.log`""
 
         $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
         if ($option -eq $null) {

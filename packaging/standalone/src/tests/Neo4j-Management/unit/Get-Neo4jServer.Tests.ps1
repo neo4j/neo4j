@@ -160,5 +160,15 @@ InModuleScope Neo4j-Management {
         Assert-MockCalled Write-Warning -Times 1
       }
     }
+
+    Context "Log directory doesn't exist" {
+      global:New-MockNeo4jInstall -RootDir 'TestDrive:\neo4j'
+      Mock Get-Neo4jEnv { 'TestDrive:\neo4j\logs' } -ParameterFilter { $Name -eq 'NEO4J_LOGS' }
+
+      It "Should create it" {
+        $neoServer = Get-Neo4jServer -Neo4jHome 'TestDrive:\neo4j\' -ErrorAction Stop
+        Test-Path -PathType Container $neoServer.LogDir | Should Be $true
+      }
+    }
   }
 }
