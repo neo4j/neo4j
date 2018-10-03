@@ -96,20 +96,6 @@ public class Control
 
     private void threadDump()
     {
-        int exitCode = -1;
-        try
-        {
-            exitCode = DumpUtils.threadDumpUsingSignal().waitFor();
-        }
-        catch ( Throwable e )
-        {
-            log.error( "Thread dump using signal failed exceptionally", e );
-        }
-
-        if ( exitCode != 0 )
-        {
-            // fallback
-            System.out.println( DumpUtils.threadDump() );
-        }
+        log.info( DumpUtils.threadDump() );
     }
 }

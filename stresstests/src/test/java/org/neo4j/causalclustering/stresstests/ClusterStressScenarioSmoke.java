@@ -31,7 +31,10 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.causalclustering.stresstests.ClusterStressTesting.stressTest;
+import static org.neo4j.helpers.Exceptions.findCauseOrSuppressed;
 
 public class ClusterStressScenarioSmoke
 {
@@ -72,6 +75,21 @@ public class ClusterStressScenarioSmoke
     {
         config.workloads( Workloads.CreateNodesWithProperties, Workloads.ReplaceRandomMember );
         stressTest( config, fileSystem, pageCache );
+    }
+
+    @Test
+    public void simulateFailure() throws Exception
+    {
+        try
+        {
+            config.workloads( Workloads.FailingWorkload, Workloads.StartStopRandomCore );
+            stressTest( config, fileSystem, pageCache );
+            fail( "Should throw" );
+        }
+        catch ( RuntimeException rte )
+        {
+            assertTrue( findCauseOrSuppressed( rte, e -> e.getMessage().equals( FailingWorkload.MESSAGE ) ).isPresent() );
+        }
     }
 
     @Test

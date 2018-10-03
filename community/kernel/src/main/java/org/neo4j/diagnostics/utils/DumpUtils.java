@@ -19,7 +19,6 @@
  */
 package org.neo4j.diagnostics.utils;
 
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;
 import java.lang.management.ThreadInfo;
@@ -103,27 +102,5 @@ public class DumpUtils
         }
 
         return sb.toString();
-    }
-
-    /**
-     * Gets the thread dump using an alternate method which makes the process spit it out exactly
-     * as it usually looks, with basic information regarding the heap, deadlock detection, etc.
-     *
-     * Note that this might be fragile and not work on some systems.
-     * Could be good to replace this with something based on jnr-posix in the future.
-     */
-    public static Process threadDumpUsingSignal() throws IOException
-    {
-        // SIGQUIT tells the JVM to generate a thread dump
-        return Runtime.getRuntime().exec( "kill -SIGQUIT " + getPid() );
-    }
-
-    /**
-     * Note that this might be fragile and not work on some systems.
-     * Could be good to replace this with something based on jnr-posix in the future.
-     */
-    public static int getPid()
-    {
-        return Integer.valueOf( ManagementFactory.getRuntimeMXBean().getName().split( "@" )[0] );
     }
 }

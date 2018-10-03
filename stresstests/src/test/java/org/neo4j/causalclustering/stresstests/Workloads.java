@@ -97,6 +97,14 @@ enum Workloads
                 {
                     return new IdReuse.ReelectionWorkload( control, resources, config );
                 }
+            },
+    FailingWorkload
+            {
+                @Override
+                Workload create( Control control, Resources resources, Config config )
+                {
+                    return new FailingWorkload( control );
+                }
             };
 
     abstract Workload create( Control control, Resources resources, Config config );
