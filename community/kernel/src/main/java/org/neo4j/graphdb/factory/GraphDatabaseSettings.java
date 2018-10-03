@@ -618,20 +618,15 @@ public class GraphDatabaseSettings implements LoadableConfig
         NATIVE10( "lucene+native", "1.0" ),
         LUCENE10( "lucene", "1.0" );
 
-        private final String providerName;
+        private final String providerKey;
         private final String providerVersion;
-        private final String providerIdentifier;
+        private final String providerName;
 
-        SchemaIndex( String providerName, String providerVersion )
+        SchemaIndex( String providerKey, String providerVersion )
         {
-            this.providerName = providerName;
+            this.providerKey = providerKey;
             this.providerVersion = providerVersion;
-            this.providerIdentifier = toIdentifier( providerName, providerVersion );
-        }
-
-        public String providerIdentifier()
-        {
-            return providerIdentifier;
+            this.providerName = toProviderName( providerKey, providerVersion );
         }
 
         public String providerName()
@@ -639,12 +634,17 @@ public class GraphDatabaseSettings implements LoadableConfig
             return providerName;
         }
 
+        public String providerKey()
+        {
+            return providerKey;
+        }
+
         public String providerVersion()
         {
             return providerVersion;
         }
 
-        private static String toIdentifier( String providerName, String providerVersion )
+        private static String toProviderName( String providerName, String providerVersion )
         {
             return providerName + "-" + providerVersion;
         }
@@ -661,7 +661,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "A native index has these limitations: " +
             "Index key (be it single or composite) size limit of 4039 bytes - transaction resulting in index key surpassing that will fail. " +
             "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
-    public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerIdentifier() );
+    public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerName() );
 
     @Description( "Location where Neo4j keeps the logical transaction logs." )
     public static final Setting<File> logical_logs_location =

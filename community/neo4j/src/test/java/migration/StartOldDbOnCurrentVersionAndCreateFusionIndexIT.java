@@ -146,15 +146,15 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerIdentifier() );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.LUCENE10.providerName() );
         GraphDatabaseService db = builder.newGraphDatabase();
         createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier() );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() );
         db = builder.newGraphDatabase();
         createIndexDataAndShutdown( db, Provider.FUSION_10.label );
 
-        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
+        builder.setConfig( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
         db = builder.newGraphDatabase();
         createIndexDataAndShutdown( db, Provider.FUSION_20.label );
         System.out.println( "Db created in " + storeDir.getAbsolutePath() );

@@ -171,7 +171,7 @@ public class RecoveryCleanupIT
     private void nativeIndexMustLogCrashPointerCleanupDuringRecovery( GraphDatabaseSettings.SchemaIndex setting, String... subTypes ) throws Exception
     {
         // given
-        setTestConfig( GraphDatabaseSettings.default_schema_provider, setting.providerIdentifier() );
+        setTestConfig( GraphDatabaseSettings.default_schema_provider, setting.providerName() );
         dirtyDatabase();
 
         // when

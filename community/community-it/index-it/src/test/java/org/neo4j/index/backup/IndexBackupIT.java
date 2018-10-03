@@ -68,7 +68,7 @@ public class IndexBackupIT
     public void concurrentLuceneIndexSnapshotUseDifferentSnapshots() throws Exception
     {
         Label label = Label.label( "testLabel" );
-        database.withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerIdentifier() );
+        database.withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
         prepareDatabase( label );
 
         forceCheckpoint( checkPointer );

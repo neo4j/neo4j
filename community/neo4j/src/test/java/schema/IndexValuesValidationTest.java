@@ -76,7 +76,7 @@ class IndexValuesValidationTest
     @Test
     void validateIndexedNodePropertiesInLucene()
     {
-        setUp( default_schema_provider.name(), GraphDatabaseSettings.SchemaIndex.NATIVE10.providerIdentifier() );
+        setUp( default_schema_provider.name(), GraphDatabaseSettings.SchemaIndex.NATIVE10.providerName() );
         Label label = Label.label( "indexedNodePropertiesTestLabel" );
         String propertyName = "indexedNodePropertyName";
 

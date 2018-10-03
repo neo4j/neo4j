@@ -257,7 +257,7 @@ public class MemoryRecommendationsCommandTest
         {
             GraphDatabaseService db =
                     new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory )
-                            .setConfig( default_schema_provider, schemaIndex.providerIdentifier() )
+                            .setConfig( default_schema_provider, schemaIndex.providerName() )
                             .newGraphDatabase();
             String key = "key-" + schemaIndex.name();
             try

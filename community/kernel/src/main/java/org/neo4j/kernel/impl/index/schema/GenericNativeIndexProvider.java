@@ -104,7 +104,7 @@ import static org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSetting
  */
 public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,NativeIndexValue,GenericLayout>
 {
-    public static final String KEY = NATIVE_BTREE10.providerName();
+    public static final String KEY = NATIVE_BTREE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
 

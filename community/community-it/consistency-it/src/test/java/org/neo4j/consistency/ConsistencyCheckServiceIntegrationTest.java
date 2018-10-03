@@ -264,7 +264,7 @@ public class ConsistencyCheckServiceIntegrationTest
         String propKey = "propKey";
 
         // Given a lucene index
-        GraphDatabaseService db = getGraphDatabaseService( databaseLayout.databaseDirectory(), defaultSchemaProvider, LUCENE10.providerIdentifier() );
+        GraphDatabaseService db = getGraphDatabaseService( databaseLayout.databaseDirectory(), defaultSchemaProvider, LUCENE10.providerName() );
         createIndex( db, label, propKey );
         try ( Transaction tx = db.beginTx() )
         {
@@ -276,7 +276,7 @@ public class ConsistencyCheckServiceIntegrationTest
 
         ConsistencyCheckService service = new ConsistencyCheckService();
         Config configuration =
-                Config.defaults( settings( defaultSchemaProvider, NATIVE20.providerIdentifier() ) );
+                Config.defaults( settings( defaultSchemaProvider, NATIVE20.providerName() ) );
         Result result = runFullConsistencyCheck( service, configuration, databaseLayout );
         assertTrue( result.isSuccessful() );
     }

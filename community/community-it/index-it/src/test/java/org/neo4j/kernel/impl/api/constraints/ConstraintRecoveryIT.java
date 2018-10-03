@@ -87,7 +87,7 @@ public class ConstraintRecoveryIT
         // This test relies on behaviour that is specific to the Lucene populator, where uniqueness is controlled
         // after index has been populated, which is why we're using NATIVE20 and index booleans (they end up in Lucene)
         db = (GraphDatabaseAPI) dbFactory.newImpermanentDatabaseBuilder( pathToDb )
-                .setConfig( default_schema_provider, NATIVE20.providerIdentifier() )
+                .setConfig( default_schema_provider, NATIVE20.providerName() )
                 .newGraphDatabase();
 
         try ( Transaction tx = db.beginTx() )

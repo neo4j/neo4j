@@ -39,7 +39,7 @@ public class LuceneIndexProviderCompatibilitySuiteTest extends IndexProviderComp
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( default_schema_provider.name(), LUCENE10.providerIdentifier() ) );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), LUCENE10.providerName() ) );
         OperationalMode mode = OperationalMode.single;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return LuceneIndexProviderFactory.newInstance( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

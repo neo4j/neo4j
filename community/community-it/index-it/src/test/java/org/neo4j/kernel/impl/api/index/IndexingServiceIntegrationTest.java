@@ -88,7 +88,7 @@ public class IndexingServiceIntegrationTest
         database = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerIdentifier() )
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerName() )
                 .newGraphDatabase();
         createData( database, 100 );
     }

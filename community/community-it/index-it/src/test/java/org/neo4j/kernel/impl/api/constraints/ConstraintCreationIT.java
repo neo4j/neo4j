@@ -52,7 +52,7 @@ public class ConstraintCreationIT
     public void shouldNotLeaveLuceneIndexFilesHangingAroundIfConstraintCreationFails()
     {
         // given
-        db.withSetting( default_schema_provider, NATIVE20.providerIdentifier() ); // <-- includes Lucene sub-provider
+        db.withSetting( default_schema_provider, NATIVE20.providerName() ); // <-- includes Lucene sub-provider
         attemptAndFailConstraintCreation();
 
         // then

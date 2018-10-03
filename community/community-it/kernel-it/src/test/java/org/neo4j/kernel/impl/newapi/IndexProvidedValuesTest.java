@@ -59,7 +59,7 @@ public class IndexProvidedValuesTest extends KernelAPIReadTestBase<ReadTestSuppo
     public ReadTestSupport newTestSupport()
     {
         ReadTestSupport readTestSupport = new ReadTestSupport();
-        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerIdentifier() );
+        readTestSupport.addSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName() );
         return readTestSupport;
     }
 

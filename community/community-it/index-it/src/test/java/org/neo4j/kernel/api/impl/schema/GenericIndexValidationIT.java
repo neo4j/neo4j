@@ -75,7 +75,7 @@ public class GenericIndexValidationIT
     private static final int WIGGLE_ROOM = 50;
 
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerIdentifier() );
+    public DatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerName() );
 
     @ClassRule
     public static RandomRule random = new RandomRule();

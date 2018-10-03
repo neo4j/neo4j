@@ -140,7 +140,7 @@ public class UniqueIndexRecoveryTest
     private GraphDatabaseService newDb()
     {
         return factory.newEmbeddedDatabaseBuilder( storeDir.absolutePath() ).setConfig( GraphDatabaseSettings.default_schema_provider,
-                schemaIndex.providerIdentifier() ).newGraphDatabase();
+                schemaIndex.providerName() ).newGraphDatabase();
     }
 
     private static File snapshot( final File path ) throws IOException

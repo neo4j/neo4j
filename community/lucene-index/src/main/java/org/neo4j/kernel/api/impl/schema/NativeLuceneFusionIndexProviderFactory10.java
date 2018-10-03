@@ -46,7 +46,7 @@ import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 @Service.Implementation( KernelExtensionFactory.class )
 public class NativeLuceneFusionIndexProviderFactory10 extends NativeLuceneFusionIndexProviderFactory<NativeLuceneFusionIndexProviderFactory10.Dependencies>
 {
-    private static final String KEY = NATIVE10.providerName();
+    private static final String KEY = NATIVE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE10.providerVersion() );
 
     public NativeLuceneFusionIndexProviderFactory10()

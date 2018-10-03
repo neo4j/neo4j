@@ -377,7 +377,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private StoreIndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
-        IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerIdentifier() );
+        IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerName() );
         IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
         return labelNameIdMap.values().stream()
                 .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), providerDescriptor ).withId( index ) )

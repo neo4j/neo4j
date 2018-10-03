@@ -40,7 +40,7 @@ public class GenericIndexProviderCompatibilitySuiteTest extends IndexProviderCom
     protected IndexProvider createIndexProvider( PageCache pageCache, FileSystemAbstraction fs, File graphDbDir )
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
-        Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE_BTREE10.providerIdentifier() ) );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE_BTREE10.providerName() ) );
         OperationalMode mode = OperationalMode.single;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return GenericNativeIndexProviderFactory.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );

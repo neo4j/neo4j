@@ -46,7 +46,7 @@ import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 @Service.Implementation( KernelExtensionFactory.class )
 public class LuceneIndexProviderFactory extends AbstractIndexProviderFactory<LuceneIndexProviderFactory.Dependencies>
 {
-    private static final String KEY = LUCENE10.providerName();
+    private static final String KEY = LUCENE10.providerKey();
     public static final IndexProviderDescriptor PROVIDER_DESCRIPTOR = new IndexProviderDescriptor( KEY, LUCENE10.providerVersion() );
 
     public LuceneIndexProviderFactory()

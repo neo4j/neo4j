@@ -68,14 +68,14 @@ public class DefaultSchemaIndexConfigTest
     public void shouldUseConfiguredIndexProvider() throws IndexNotFoundKernelException
     {
         // given
-        GraphDatabaseService db = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerIdentifier() ).newGraphDatabase();
+        GraphDatabaseService db = dbBuilder.setConfig( default_schema_provider, provider == null ? null : provider.providerName() ).newGraphDatabase();
         try
         {
             // when
             createIndex( db );
 
             // then
-            assertIndexProvider( db, provider == null ? GenericNativeIndexProvider.DESCRIPTOR.name() : provider.providerIdentifier() );
+            assertIndexProvider( db, provider == null ? GenericNativeIndexProvider.DESCRIPTOR.name() : provider.providerName() );
         }
         finally
         {

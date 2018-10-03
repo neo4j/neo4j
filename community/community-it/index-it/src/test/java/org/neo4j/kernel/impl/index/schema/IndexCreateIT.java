@@ -90,7 +90,7 @@ public class IndexCreateIT extends KernelIntegrationTest
         {
             // given
             SchemaWrite schemaWrite = schemaWriteInNewTransaction();
-            String provider = indexSetting.providerIdentifier();
+            String provider = indexSetting.providerName();
             LabelSchemaDescriptor descriptor = forLabel( labelId++, 0 );
             creator.create( schemaWrite, descriptor, provider );
 
