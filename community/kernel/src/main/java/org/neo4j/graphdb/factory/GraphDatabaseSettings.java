@@ -620,16 +620,18 @@ public class GraphDatabaseSettings implements LoadableConfig
 
         private final String providerName;
         private final String providerVersion;
+        private final String providerIdentifier;
 
         SchemaIndex( String providerName, String providerVersion )
         {
             this.providerName = providerName;
             this.providerVersion = providerVersion;
+            this.providerIdentifier = toIdentifier( providerName, providerVersion );
         }
 
         public String providerIdentifier()
         {
-            return providerName + "-" + providerVersion;
+            return providerIdentifier;
         }
 
         public String providerName()
@@ -640,6 +642,11 @@ public class GraphDatabaseSettings implements LoadableConfig
         public String providerVersion()
         {
             return providerVersion;
+        }
+
+        private static String toIdentifier( String providerName, String providerVersion )
+        {
+            return providerName + "-" + providerVersion;
         }
     }
 

@@ -26,8 +26,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
 import java.io.File;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -65,9 +63,9 @@ public class BatchInsertIndexProviderTest
     public RuleChain ruleChain = RuleChain.outerRule( storeDir ).around( fileSystemRule ).around( pageCacheRule );
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<GraphDatabaseSettings.SchemaIndex> data()
+    public static GraphDatabaseSettings.SchemaIndex[] data()
     {
-        return Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() );
+        return GraphDatabaseSettings.SchemaIndex.values();
     }
 
     public BatchInsertIndexProviderTest( GraphDatabaseSettings.SchemaIndex schemaIndex )

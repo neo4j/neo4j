@@ -26,11 +26,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProviderFactory;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
@@ -40,7 +41,6 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 import static org.neo4j.unsafe.batchinsert.BatchInserters.inserter;
 
 public class BatchInsertersTest
@@ -69,12 +69,12 @@ public class BatchInsertersTest
 
     private static Iterable<KernelExtensionFactory<?>> getKernelExtensions()
     {
-        return Iterables.asIterable( new NativeLuceneFusionIndexProviderFactory20() );
+        return Iterables.asIterable( new GenericNativeIndexProviderFactory() );
     }
 
     private static Map<String,String> getConfig()
     {
-        return MapUtil.stringMap( default_schema_provider.name(), DESCRIPTOR.name() );
+        return MapUtil.stringMap( default_schema_provider.name(), GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerIdentifier() );
     }
 
     private static void verifyProvidedFileSystemOpenAfterShutdown( BatchInserter inserter, EphemeralFileSystemAbstraction fileSystemAbstraction )

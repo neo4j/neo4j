@@ -27,8 +27,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -43,15 +41,10 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -59,7 +52,6 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
@@ -81,19 +73,13 @@ public class IndexingServiceIntegrationTest
     private GraphDatabaseService database;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<Object[]> parameters()
+    public static GraphDatabaseSettings.SchemaIndex[] parameters()
     {
-        return asList(
-                new Object[]{new LuceneIndexProviderFactory(), LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory10(), NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR},
-                new Object[]{new NativeLuceneFusionIndexProviderFactory20(), NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR} );
+        return GraphDatabaseSettings.SchemaIndex.values();
     }
 
-    @Parameterized.Parameter( 0 )
-    public KernelExtensionFactory<?> kernelExtensionFactory;
-
-    @Parameterized.Parameter( 1 )
-    public IndexProviderDescriptor indexDescriptor;
+    @Parameterized.Parameter()
+    public GraphDatabaseSettings.SchemaIndex schemaIndex;
 
     @Before
     public void setUp()
@@ -101,9 +87,8 @@ public class IndexingServiceIntegrationTest
         EphemeralFileSystemAbstraction fileSystem = fileSystemRule.get();
         database = new TestGraphDatabaseFactory()
                 .setFileSystem( fileSystem )
-                .setKernelExtensions( Collections.singletonList( kernelExtensionFactory ) )
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.default_schema_provider, indexDescriptor.name() )
+                .setConfig( GraphDatabaseSettings.default_schema_provider, schemaIndex.providerIdentifier() )
                 .newGraphDatabase();
         createData( database, 100 );
     }

@@ -56,8 +56,7 @@ public class DefaultSchemaIndexConfigTest
     @Parameterized.Parameters( name = "{0}" )
     public static List<GraphDatabaseSettings.SchemaIndex> providers()
     {
-        List<GraphDatabaseSettings.SchemaIndex> providers = new ArrayList<>();
-        providers.addAll( Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() ) );
+        List<GraphDatabaseSettings.SchemaIndex> providers = new ArrayList<>( Arrays.asList( GraphDatabaseSettings.SchemaIndex.values() ) );
         providers.add( null ); // <-- to exercise the default option
         return providers;
     }

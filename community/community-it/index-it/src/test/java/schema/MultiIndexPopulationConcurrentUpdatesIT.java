@@ -28,7 +28,6 @@ import org.junit.runners.Parameterized;
 
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,6 +38,7 @@ import java.util.stream.Collectors;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -54,10 +54,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.impl.schema.LuceneIndexProviderFactory;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory10;
-import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -91,7 +89,6 @@ import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
@@ -116,15 +113,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private StoreIndexDescriptor[] rules;
 
     @Parameterized.Parameters( name = "{0}" )
-    public static Collection<IndexProviderDescriptor> parameters()
+    public static GraphDatabaseSettings.SchemaIndex[] parameters()
     {
-        return asList( LuceneIndexProviderFactory.PROVIDER_DESCRIPTOR,
-                NativeLuceneFusionIndexProviderFactory10.DESCRIPTOR,
-                NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR );
+        return GraphDatabaseSettings.SchemaIndex.values();
     }
 
     @Parameterized.Parameter
-    public IndexProviderDescriptor indexDescriptor;
+    public GraphDatabaseSettings.SchemaIndex schemaIndex;
 
     private IndexingService indexService;
     private int propertyId;
@@ -382,8 +377,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private StoreIndexDescriptor[] createIndexRules( Map<String,Integer> labelNameIdMap, int propertyId )
     {
+        IndexProvider lookup = getIndexProviderMap().lookup( schemaIndex.providerIdentifier() );
+        IndexProviderDescriptor providerDescriptor = lookup.getProviderDescriptor();
         return labelNameIdMap.values().stream()
-                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), indexDescriptor ).withId( index ) )
+                .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), providerDescriptor ).withId( index ) )
                 .toArray( StoreIndexDescriptor[]::new );
     }
 
