@@ -43,7 +43,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
-class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.PartPopulator<?>> implements IndexPopulator
+class TemporalIndexPopulator extends TemporalIndexCache<WorkSyncedNativeIndexPopulator<?,?>> implements IndexPopulator
 {
     TemporalIndexPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles, PageCache pageCache,
                             FileSystemAbstraction fs, IndexProvider.Monitor monitor )
@@ -54,7 +54,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void create()
     {
-        forAll( NativeIndexPopulator::clear, this );
+        forAll( p -> p.getActual().clear(), this );
 
         // We must make sure to have at least one subindex:
         // to be able to persist failure and to have the right state in the beginning
@@ -67,7 +67,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void drop()
     {
-        forAll( NativeIndexPopulator::drop, this );
+        forAll( IndexPopulator::drop, this );
     }
 
     @Override
@@ -102,7 +102,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     public synchronized void close( boolean populationCompletedSuccessfully )
     {
         closeInstantiateCloseLock();
-        for ( NativeIndexPopulator part : this )
+        for ( IndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
         }
@@ -111,7 +111,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     @Override
     public synchronized void markAsFailed( String failure )
     {
-        for ( NativeIndexPopulator part : this )
+        for ( IndexPopulator part : this )
         {
             part.markAsFailed( failure );
         }
@@ -129,7 +129,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
     public IndexSample sampleResult()
     {
         List<IndexSample> samples = new ArrayList<>();
-        for ( PartPopulator<?> partPopulator : this )
+        for ( IndexPopulator partPopulator : this )
         {
             samples.add( partPopulator.sampleResult() );
         }
@@ -151,7 +151,7 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
     }
 
-    static class PartFactory implements TemporalIndexCache.Factory<PartPopulator<?>>
+    static class PartFactory implements TemporalIndexCache.Factory<WorkSyncedNativeIndexPopulator<?,?>>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
@@ -172,46 +172,46 @@ class TemporalIndexPopulator extends TemporalIndexCache<TemporalIndexPopulator.P
         }
 
         @Override
-        public PartPopulator<?> newDate()
+        public WorkSyncedNativeIndexPopulator<?,?> newDate()
         {
             return create( temporalIndexFiles.date() );
         }
 
         @Override
-        public PartPopulator<?> newLocalDateTime()
+        public WorkSyncedNativeIndexPopulator<?,?> newLocalDateTime()
         {
             return create( temporalIndexFiles.localDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newZonedDateTime()
+        public WorkSyncedNativeIndexPopulator<?,?> newZonedDateTime()
         {
             return create( temporalIndexFiles.zonedDateTime() );
         }
 
         @Override
-        public PartPopulator<?> newLocalTime()
+        public WorkSyncedNativeIndexPopulator<?,?> newLocalTime()
         {
             return create( temporalIndexFiles.localTime() );
         }
 
         @Override
-        public PartPopulator<?> newZonedTime()
+        public WorkSyncedNativeIndexPopulator<?,?> newZonedTime()
         {
             return create( temporalIndexFiles.zonedTime() );
         }
 
         @Override
-        public PartPopulator<?> newDuration()
+        public WorkSyncedNativeIndexPopulator<?,?> newDuration()
         {
             return create( temporalIndexFiles.duration() );
         }
 
-        private <KEY extends NativeIndexSingleValueKey<KEY>> PartPopulator<KEY> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
+        private <KEY extends NativeIndexSingleValueKey<KEY>> WorkSyncedNativeIndexPopulator<KEY,?> create( TemporalIndexFiles.FileLayout<KEY> fileLayout )
         {
             PartPopulator<KEY> populator = new PartPopulator<>( pageCache, fs, fileLayout, monitor, descriptor );
             populator.create();
-            return populator;
+            return new WorkSyncedNativeIndexPopulator<>( populator );
         }
     }
 }

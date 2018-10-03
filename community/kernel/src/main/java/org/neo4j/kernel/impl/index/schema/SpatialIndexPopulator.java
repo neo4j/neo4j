@@ -46,7 +46,7 @@ import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 
-class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.PartPopulator> implements IndexPopulator
+class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue>> implements IndexPopulator
 {
     SpatialIndexPopulator( StoreIndexDescriptor descriptor, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
             FileSystemAbstraction fs, IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
@@ -57,7 +57,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void create()
     {
-        forAll( NativeIndexPopulator::clear, this );
+        forAll( p -> p.getActual().clear(), this );
 
         // We must make sure to have at least one subindex:
         // to be able to persist failure and to have the right state in the beginning
@@ -70,7 +70,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void drop()
     {
-        forAll( NativeIndexPopulator::drop, this );
+        forAll( IndexPopulator::drop, this );
     }
 
     @Override
@@ -85,7 +85,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
         for ( Map.Entry<CoordinateReferenceSystem,List<IndexEntryUpdate<?>>> entry : batchMap.entrySet() )
         {
-            PartPopulator partPopulator = select( entry.getKey() );
+            IndexPopulator partPopulator = select( entry.getKey() );
             partPopulator.add( entry.getValue() );
         }
     }
@@ -106,7 +106,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     public synchronized void close( boolean populationCompletedSuccessfully )
     {
         closeInstantiateCloseLock();
-        for ( NativeIndexPopulator part : this )
+        for ( IndexPopulator part : this )
         {
             part.close( populationCompletedSuccessfully );
         }
@@ -115,7 +115,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     @Override
     public synchronized void markAsFailed( String failure )
     {
-        for ( NativeIndexPopulator part : this )
+        for ( IndexPopulator part : this )
         {
             part.markAsFailed( failure );
         }
@@ -133,7 +133,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
     public IndexSample sampleResult()
     {
         List<IndexSample> samples = new ArrayList<>();
-        for ( PartPopulator partPopulator : this )
+        for ( IndexPopulator partPopulator : this )
         {
             samples.add( partPopulator.sampleResult() );
         }
@@ -172,7 +172,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
     }
 
-    static class PartFactory implements Factory<PartPopulator>
+    static class PartFactory implements Factory<WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue>>
     {
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
@@ -193,16 +193,16 @@ class SpatialIndexPopulator extends SpatialIndexCache<SpatialIndexPopulator.Part
         }
 
         @Override
-        public PartPopulator newSpatial( CoordinateReferenceSystem crs )
+        public WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue> newSpatial( CoordinateReferenceSystem crs )
         {
             return create( spatialIndexFiles.forCrs( crs ).getLayoutForNewIndex() );
         }
 
-        private PartPopulator create( SpatialIndexFiles.SpatialFileLayout fileLayout )
+        private WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue> create( SpatialIndexFiles.SpatialFileLayout fileLayout )
         {
             PartPopulator populator = new PartPopulator( pageCache, fs, fileLayout, monitor, descriptor, configuration );
             populator.create();
-            return populator;
+            return new WorkSyncedNativeIndexPopulator<>( populator );
         }
     }
 }

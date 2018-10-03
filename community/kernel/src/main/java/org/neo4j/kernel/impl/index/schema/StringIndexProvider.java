@@ -62,7 +62,7 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
     @Override
     protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor )
     {
-        return new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor );
+        return new WorkSyncedNativeIndexPopulator<>( new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor ) );
     }
 
     @Override
