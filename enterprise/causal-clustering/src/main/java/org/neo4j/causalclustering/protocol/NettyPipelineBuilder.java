@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.function.Predicate;
 
 import org.neo4j.causalclustering.messaging.MessageGate;
+import org.neo4j.function.ThrowingAction;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
@@ -233,8 +234,8 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
-                log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause );
-                ctx.close();
+                swallow( () -> log.error( format( "Exception in inbound for channel: %s", ctx.channel() ), cause ) );
+                swallow( ctx::close );
             }
 
             @Override
@@ -256,8 +257,8 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                     promise.addListener( (ChannelFutureListener) future -> {
                         if ( !future.isSuccess() )
                         {
-                            log.error( format( "Exception in outbound for channel: %s", future.channel() ), future.cause() );
-                            ctx.close();
+                            swallow( () -> log.error( format( "Exception in outbound for channel: %s", future.channel() ), future.cause() ) );
+                            swallow( ctx::close );
                         }
                     } );
                 }
@@ -281,8 +282,8 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
             @Override
             public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause )
             {
-                log.error( format( "Exception in outbound for channel: %s", ctx.channel() ), cause );
-                ctx.close();
+                swallow( () -> log.error( format( "Exception in outbound for channel: %s", ctx.channel() ), cause ) );
+                swallow( ctx::close );
             }
 
             // netty can only handle bytes in the form of ByteBuf, so if you reach this then you are
@@ -301,6 +302,20 @@ public abstract class NettyPipelineBuilder<O extends ProtocolInstaller.Orientati
                 }
             }
         } );
+    }
+
+    /**
+     * An throwable-swallowing execution of an action. Used in last-resort exception handlers.
+     */
+    private void swallow( ThrowingAction<Exception> action )
+    {
+        try
+        {
+            action.apply();
+        }
+        catch ( Throwable ignored )
+        {
+        }
     }
 
     private static class HandlerInfo
