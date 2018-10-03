@@ -58,7 +58,6 @@ import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.TokenAccess;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.procedure.Context;
@@ -76,7 +75,9 @@ import static org.neo4j.procedure.Mode.WRITE;
 @SuppressWarnings( {"unused", "WeakerAccess"} )
 public class BuiltInProcedures
 {
+    private static final int NOT_EXISTING_INDEX_ID = -1;
     public static final String EXPLICIT_INDEX_DEPRECATION = "This procedure is deprecated by the schema and full-text indexes, and will be removed in 4.0.";
+
     @Context
     public KernelTransaction tx;
 
@@ -142,8 +143,7 @@ public class BuiltInProcedures
                     }
 
                     SchemaDescriptor schema = index.schema();
-                    IndexProxy indexProxy = indexingService.getIndexProxy( schema );
-                    long indexId = indexProxy.getDescriptor().getId();
+                    long indexId = getIndexId( indexingService, schema );
                     List<String> tokenNames = Arrays.asList( tokens.entityTokensGetNames( schema.entityType(), schema.getEntityTokenIds() ) );
                     List<String> propertyNames = propertyNames( tokens, index );
                     String description = "INDEX ON " + schema.userDescription( tokens );
@@ -658,6 +658,18 @@ public class BuiltInProcedures
         }
         // Failures will be expressed as exceptions before the return
         return Stream.of( new BooleanResult( Boolean.TRUE ) );
+    }
+
+    private static long getIndexId( IndexingService indexingService, SchemaDescriptor schema )
+    {
+        try
+        {
+            return indexingService.getIndexId( schema );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            return NOT_EXISTING_INDEX_ID;
+        }
     }
 
     private static Map<String,String> indexProviderDescriptorMap( IndexReference indexReference )

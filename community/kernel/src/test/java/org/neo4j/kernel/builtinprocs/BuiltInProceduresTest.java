@@ -57,13 +57,11 @@ import org.neo4j.kernel.api.proc.BasicContext;
 import org.neo4j.kernel.api.proc.Key;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
-import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
@@ -154,11 +152,7 @@ public class BuiltInProceduresTest
         when( tokens.nodeLabelName( anyInt() ) ).thenAnswer( invocation -> labels.get( invocation.getArgument( 0 ) ) );
         when( tokens.relationshipTypeName( anyInt() ) ).thenAnswer( invocation -> relTypes.get( invocation.getArgument( 0 ) ) );
 
-        IndexProxy indexProxy = mock( IndexProxy.class );
-        CapableIndexDescriptor descriptor = mock( CapableIndexDescriptor.class );
-        when( indexingService.getIndexProxy( any( SchemaDescriptor.class ) ) ).thenReturn( indexProxy );
-        when( indexProxy.getDescriptor() ).thenReturn( descriptor );
-        when( descriptor.getId() ).thenReturn( 42L );
+        when( indexingService.getIndexId( any( SchemaDescriptor.class ) ) ).thenReturn( 42L );
 
         when( schemaRead.constraintsGetForRelationshipType( anyInt() ) ).thenReturn( emptyIterator() );
         when( schemaRead.indexesGetForLabel( anyInt() ) ).thenReturn( emptyIterator() );
@@ -604,7 +598,7 @@ public class BuiltInProceduresTest
         ctx.put( LOG, log );
         when( graphDatabaseAPI.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( Procedures.class ) ).thenReturn( procs );
-        when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService);
+        when( resolver.resolveDependency( IndexingService.class ) ).thenReturn( indexingService );
         when( schemaRead.indexGetPopulationProgress( any( IndexReference.class) ) ).thenReturn( PopulationProgress.DONE );
         return Iterators.asList( procs.callProcedure(
                 ctx, ProcedureSignature.procedureName( name.split( "\\." ) ), args, resourceTracker ) );
