@@ -126,11 +126,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = preParsedQuery.expressionEngine match {
     //the default is to start with interpreted and change to compiled when hot enough
     case CypherExpressionEngineOption.default if config.recompilationLimit > 0 =>
-      val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.interpreted),
+      val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery,
                                                  tracer, transactionalContext, params)
       val secondary: (Int) => Option[ExecutableQuery] =
         count => {
-          if (count > config.recompilationLimit) Some(masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.compiled),
+          if (count > config.recompilationLimit) Some(masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
                                                                              tracer, transactionalContext, params))
           else None
         }

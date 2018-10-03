@@ -35,7 +35,8 @@ case class PreParsedQuery(statement: String,
                           runtime: CypherRuntimeOption,
                           updateStrategy: CypherUpdateStrategy,
                           expressionEngine: CypherExpressionEngineOption,
-                          debugOptions: Set[String]) {
+                          debugOptions: Set[String],
+                          recompilationLimitReached: Boolean = false) {
 
   val statementWithVersionAndPlanner: String = {
     val plannerInfo = planner match {
@@ -51,8 +52,15 @@ case class PreParsedQuery(statement: String,
       case _ => s"updateStrategy=${updateStrategy.name}"
     }
 
+    val expressionEngineInfo = expressionEngine match {
+      case CypherExpressionEngineOption.compiled => s"expressionEngine=${expressionEngine.name}"
+      case _ => ""
+    }
+
     val debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
 
-    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $debugFlags $statement"
+    s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $debugFlags $statement"
   }
+
+  def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled || recompilationLimitReached
 }

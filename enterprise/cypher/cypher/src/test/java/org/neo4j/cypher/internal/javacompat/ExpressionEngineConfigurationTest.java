@@ -86,6 +86,20 @@ class ExpressionEngineConfigurationTest
                 "CYPHER expressionEngine=INTERPRETED RETURN sin(cos(sin(cos(rand()))))" );
     }
 
+    @Test
+    void shouldUseCompiledExpressionsEvenIfPotentiallyCached()
+    {
+        // Given
+        String query = "RETURN sin(cos(sin(cos(rand()))))";
+        GraphDatabaseService db = withEngineAndLimit( "INTERPRETED", 0 );
+
+        // When
+        db.execute( query );
+
+        // Then
+        assertUsingCompiled( db, "CYPHER expressionEngine=COMPILED " + query );
+    }
+
     private GraphDatabaseService withEngineAndLimit( String engine, int limit )
     {
 

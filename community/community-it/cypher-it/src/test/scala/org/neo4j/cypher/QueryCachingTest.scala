@@ -22,15 +22,20 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.config.Setting
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.JavaConversions._
-import scala.collection.mutable
+import scala.collection.{Map, mutable}
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
+
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_expression_engine -> "DEFAULT",
+                                                               GraphDatabaseSettings.cypher_expression_recompilation_limit -> "1")
 
   test("re-uses cached plan across different execution modes") {
     // ensure label exists
@@ -159,7 +164,7 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
     val query = "RETURN $n + 3 < 6"
     val params: Map[String, AnyRef] = Map("n" -> Long.box(42))
 
-    graph.execute(s"CYPHER expressionEngine=compiled $query", params).resultAsString()
+    graph.execute(query, params).resultAsString()
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
     val expected = List(

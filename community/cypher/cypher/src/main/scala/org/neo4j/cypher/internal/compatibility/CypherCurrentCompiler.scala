@@ -85,16 +85,11 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val logicalPlan = planState.logicalPlan
     val queryType = getQueryType(planState)
 
-    val compileExpressions = preParsedQuery.expressionEngine match {
-      case CypherExpressionEngineOption.compiled => true
-      case _ => false
-    }
-
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.planContext,
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
                                                queryType == READ_ONLY,
-                                               compileExpressions)
+                                               preParsedQuery.useCompiledExpressions)
 
     val executionPlan3_5: ExecutionPlan_v3_5 = runtime.compileToExecutable(planState, runtimeContext)
 
