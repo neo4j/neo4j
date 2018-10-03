@@ -97,7 +97,6 @@ class BackupHelper
             }
             else
             {
-                log.error( "Unexpected failure", e );
                 throw e;
             }
         }
