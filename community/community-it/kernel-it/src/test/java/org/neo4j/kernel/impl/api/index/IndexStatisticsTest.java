@@ -429,19 +429,15 @@ public class IndexStatisticsTest
                 {
                     fail( join( mismatches.toArray(), format( "%n" ) ) );
                 }
-            }
-            // Node count == indexed node count
-            int nodesInIndex;
-            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
-            {
+                // Node count == indexed node count
                 ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exists( propertyKeyId ) );
-                nodesInIndex = 0;
+                int nodesInIndex = 0;
                 while ( cursor.next() )
                 {
                     nodesInIndex++;
                 }
+                assertEquals( nodesInStore, nodesInIndex );
             }
-            assertEquals( nodesInStore, nodesInIndex );
         }
     }
 
