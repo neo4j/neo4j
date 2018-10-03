@@ -713,16 +713,16 @@ public class FileUtils
      * Calculates the size of a given directory or file given the provided abstract filesystem.
      *
      * @param fs the filesystem abstraction to use
-     * @param path to the file or directory.
+     * @param file to the file or directory.
      * @return the size, in bytes, of the file or the total size of the content in the directory, including
      * subdirectories.
      */
-    public static long size( FileSystemAbstraction fs, File path )
+    public static long size( FileSystemAbstraction fs, File file )
     {
-        if ( fs.isDirectory( path ) )
+        if ( fs.isDirectory( file ) )
         {
             long size = 0L;
-            File[] files = fs.listFiles( path );
+            File[] files = fs.listFiles( file );
             if ( files == null )
             {
                 return 0L;
@@ -735,7 +735,7 @@ public class FileUtils
         }
         else
         {
-            return fs.getFileSize( path );
+            return fs.getFileSize( file );
         }
     }
 }

@@ -19,13 +19,12 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mockito;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +34,8 @@ import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.ext.udc.UdcConstants;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.Edition;
@@ -49,37 +50,42 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.udc.UsageDataKeys.Features.bolt;
 
-public class DefaultUdcInformationCollectorTest
+@ExtendWith( TestDirectoryExtension.class )
+class DefaultUdcInformationCollectorTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
 
     private final DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
     private final NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
+    private final DefaultFileSystemAbstraction fileSystem = mock( DefaultFileSystemAbstraction.class );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new StubIdGeneratorFactory() );
+        dependencies.satisfyDependencies( fileSystem );
         when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
+        when( dataSource.getDatabaseLayout() ).thenReturn( DatabaseLayout.of( new File( "database" ) ) );
         when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
 
         dataSourceManager.start();
@@ -87,55 +93,55 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldIncludeTheMacAddress()
+    void shouldIncludeTheMacAddress()
     {
         assertNotNull( collector.getUdcParams().get( UdcConstants.MAC ) );
     }
 
     @Test
-    public void shouldIncludeTheNumberOfProcessors()
+    void shouldIncludeTheNumberOfProcessors()
     {
         assertNotNull( collector.getUdcParams().get( UdcConstants.NUM_PROCESSORS ) );
     }
 
     @Test
-    public void shouldIncludeTotalMemorySize()
+    void shouldIncludeTotalMemorySize()
     {
         assertNotNull( collector.getUdcParams().get( UdcConstants.TOTAL_MEMORY ) );
     }
 
     @Test
-    public void shouldIncludeHeapSize()
+    void shouldIncludeHeapSize()
     {
         assertNotNull( collector.getUdcParams().get( UdcConstants.HEAP_SIZE ) );
     }
 
     @Test
-    public void shouldIncludeNodeIdsInUse()
+    void shouldIncludeNodeIdsInUse()
     {
         assertEquals( "100", collector.getUdcParams().get( UdcConstants.NODE_IDS_IN_USE ) );
     }
 
     @Test
-    public void shouldIncludeRelationshipIdsInUse()
+    void shouldIncludeRelationshipIdsInUse()
     {
         assertEquals( "200", collector.getUdcParams().get( UdcConstants.RELATIONSHIP_IDS_IN_USE ) );
     }
 
     @Test
-    public void shouldIncludePropertyIdsInUse()
+    void shouldIncludePropertyIdsInUse()
     {
         assertEquals( "400", collector.getUdcParams().get( UdcConstants.PROPERTY_IDS_IN_USE ) );
     }
 
     @Test
-    public void shouldIncludeLabelIdsInUse()
+    void shouldIncludeLabelIdsInUse()
     {
         assertEquals( "300", collector.getUdcParams().get( UdcConstants.LABEL_IDS_IN_USE ) );
     }
 
     @Test
-    public void shouldIncludeVersionEditionAndMode()
+    void shouldIncludeVersionEditionAndMode()
     {
         // Given
         usageData.set( UsageDataKeys.version, "1.2.3" );
@@ -149,7 +155,7 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldIncludeRecentClientNames()
+    void shouldIncludeRecentClientNames()
     {
         // Given
         usageData.get( UsageDataKeys.clientNames ).add( "SteveBrookClient/1.0" );
@@ -166,7 +172,7 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldIncludePopularFeatures()
+    void shouldIncludePopularFeatures()
     {
         // Given
         usageData.get( UsageDataKeys.features ).flag( bolt );
@@ -176,48 +182,28 @@ public class DefaultUdcInformationCollectorTest
     }
 
     @Test
-    public void shouldReportStoreSizes() throws Throwable
+    void shouldReportStoreSizes() throws Throwable
     {
         UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
 
-        when( dataSource.listStoreFiles( false ) ).thenReturn( asResourceIterator( testFiles().iterator() ) );
+        when( fileSystem.getFileSize( Mockito.any() ) ).thenReturn( 152L );
         Map<String, String> udcParams = collector.getUdcParams();
 
         assertThat( udcParams.get( "storesize" ), is( "152" ) );
     }
 
-    private Set<StoreFileMetadata> testFiles() throws Exception
-    {
-        File foo = testDirectory.file( "neostore.foo.db" );
-        File bar = testDirectory.file( "neostore.bar.keys" );
-        File baz = testDirectory.file( "neostore.baz.names" );
-
-        ensureSize( foo, 23 );
-        ensureSize( bar, 42 );
-        ensureSize( baz, 87 );
-
-        return new HashSet<>( toMeta( foo, bar, baz ) );
-    }
-
-    private Set<StoreFileMetadata> toMeta( File... files )
+    private static Set<StoreFileMetadata> toMeta( File... files )
     {
         return Arrays.stream( files )
                 .map( file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE ) )
                 .collect( Collectors.toCollection( HashSet::new ) );
     }
 
-    private void ensureSize( File foo, int size ) throws IOException
-    {
-        try ( FileOutputStream fos = new FileOutputStream( foo ) )
-        {
-            fos.write( new byte[size] );
-        }
-    }
-
     private static class StubIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType, Long> idsInUse = new HashMap<>();
 
+        StubIdGeneratorFactory()
         {
             idsInUse.put( IdType.NODE, 100L );
             idsInUse.put( IdType.RELATIONSHIP, 200L );

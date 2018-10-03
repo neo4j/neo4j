@@ -20,7 +20,6 @@
 package org.neo4j.ext.udc.impl;
 
 import java.io.File;
-import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.net.InetAddress;
@@ -33,16 +32,17 @@ import java.util.Properties;
 import java.util.regex.Pattern;
 
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -173,32 +173,13 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         {
             return;
         }
-
-        try ( ResourceIterator<StoreFileMetadata> files = neoStoreDataSource.listStoreFiles( false ) )
-        {
-            addStoreFileSizes( udcFields, files );
-        }
-        catch ( IOException | NullPointerException ignored )
-        {
-            // we just didn't report store file sizes this time around
-        }
+        DependencyResolver dependencyResolver = neoStoreDataSource.getDependencyResolver();
+        FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+        long databaseSize = FileUtils.size( fileSystem, neoStoreDataSource.getDatabaseLayout().databaseDirectory() );
+        add( udcFields, STORE_SIZE, databaseSize );
     }
 
-    private void addStoreFileSizes( Map<String,String> udcFields, ResourceIterator<StoreFileMetadata> files )
-    {
-        long size = 0;
-
-        while ( files.hasNext() )
-        {
-            File file = files.next().file();
-
-            size += file.length();
-        }
-
-        add( udcFields, STORE_SIZE, size );
-    }
-
-    private String determineOsDistribution()
+    private static String determineOsDistribution()
     {
         if ( System.getProperties().getProperty( "os.name", "" ).equals( "Linux" ) )
         {
@@ -245,7 +226,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
     }
 
-    private String determineTags( Map<String,String> jarNamesForTags, String classPath )
+    private static String determineTags( Map<String,String> jarNamesForTags, String classPath )
     {
         StringBuilder result = new StringBuilder();
         for ( Map.Entry<String,String> entry : jarNamesForTags.entrySet() )
@@ -263,13 +244,13 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return result.substring( 1 );
     }
 
-    private String getClassPath()
+    private static String getClassPath()
     {
         RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
         return runtime.getClassPath();
     }
 
-    private String determineMacAddress()
+    private static String determineMacAddress()
     {
         String formattedMac = "0";
         try
@@ -299,17 +280,17 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return formattedMac;
     }
 
-    private int determineNumberOfProcessors()
+    private static int determineNumberOfProcessors()
     {
         return Runtime.getRuntime().availableProcessors();
     }
 
-    private long determineTotalMemory()
+    private static long determineTotalMemory()
     {
         return OsBeanUtil.getTotalPhysicalMemory();
     }
 
-    private long determineHeapSize()
+    private static long determineHeapSize()
     {
         return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
     }
@@ -339,7 +320,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return neoStoreDataSource.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).getNumberOfIdsInUse();
     }
 
-    private String toCommaString( Object values )
+    private static String toCommaString( Object values )
     {
         StringBuilder result = new StringBuilder();
         if ( values instanceof Iterable )
@@ -364,7 +345,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return result.toString();
     }
 
-    private void add( Map<String,String> udcFields, String name, Object value )
+    private static void add( Map<String,String> udcFields, String name, Object value )
     {
         if ( value == null )
         {
@@ -378,7 +359,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         udcFields.put( name, str );
     }
 
-    private String removeUdcPrefix( String propertyName )
+    private static String removeUdcPrefix( String propertyName )
     {
         if ( propertyName.startsWith( UDC_PROPERTY_PREFIX ) )
         {
@@ -387,12 +368,12 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return propertyName;
     }
 
-    private String sanitizeUdcProperty( String propertyValue )
+    private static String sanitizeUdcProperty( String propertyValue )
     {
         return propertyValue.replace( ' ', '_' );
     }
 
-    private Map<String,String> determineSystemProperties()
+    private static Map<String,String> determineSystemProperties()
     {
         Map<String,String> relevantSysProps = new HashMap<>();
         Properties sysProps = System.getProperties();

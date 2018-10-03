@@ -127,9 +127,9 @@ public class DefaultFileSystemAbstraction implements FileSystemAbstraction
     }
 
     @Override
-    public long getFileSize( File fileName )
+    public long getFileSize( File file )
     {
-        return fileName.length();
+        return file.length();
     }
 
     @Override
