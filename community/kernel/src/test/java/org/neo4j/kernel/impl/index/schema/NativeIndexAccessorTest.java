@@ -182,7 +182,7 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
         };
     }
 
-    private static AccessorFactory<CompositeGenericKey,NativeIndexValue> genericAccessorFactory()
+    private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
         return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor ) ->
                 new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );

@@ -42,6 +42,7 @@ import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
+import org.neo4j.values.storable.ValueType;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -59,7 +60,7 @@ public class IndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSuppor
 
     private TreeSet<NodeValueTuple> singlePropValues = new TreeSet<>( COMPARATOR );
     private TreeSet<NodeValueTuple> doublePropValues = new TreeSet<>( COMPARATOR );
-    private RandomValues.Type[] targetedTypes;
+    private ValueType[] targetedTypes;
 
     @Override
     public ReadTestSupport newTestSupport()
@@ -86,17 +87,17 @@ public class IndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSuppor
 
         RandomValues randomValues = randomRule.randomValues();
 
-        RandomValues.Type[] allExceptNonOrderable = RandomValues.excluding(
-                RandomValues.Type.STRING,
-                RandomValues.Type.STRING_ARRAY,
-                RandomValues.Type.GEOGRAPHIC_POINT,
-                RandomValues.Type.GEOGRAPHIC_POINT_ARRAY,
-                RandomValues.Type.GEOGRAPHIC_POINT_3D,
-                RandomValues.Type.GEOGRAPHIC_POINT_3D_ARRAY,
-                RandomValues.Type.CARTESIAN_POINT,
-                RandomValues.Type.CARTESIAN_POINT_ARRAY,
-                RandomValues.Type.CARTESIAN_POINT_3D,
-                RandomValues.Type.CARTESIAN_POINT_3D_ARRAY
+        ValueType[] allExceptNonOrderable = RandomValues.excluding(
+                ValueType.STRING,
+                ValueType.STRING_ARRAY,
+                ValueType.GEOGRAPHIC_POINT,
+                ValueType.GEOGRAPHIC_POINT_ARRAY,
+                ValueType.GEOGRAPHIC_POINT_3D,
+                ValueType.GEOGRAPHIC_POINT_3D_ARRAY,
+                ValueType.CARTESIAN_POINT,
+                ValueType.CARTESIAN_POINT_ARRAY,
+                ValueType.CARTESIAN_POINT_3D,
+                ValueType.CARTESIAN_POINT_3D_ARRAY
         );
         targetedTypes = randomValues.selection( allExceptNonOrderable, 1, allExceptNonOrderable.length, false );
         try ( Transaction tx = graphDb.beginTx() )
@@ -136,7 +137,7 @@ public class IndexProvidedOrderTest extends KernelAPIReadTestBase<ReadTestSuppor
         IndexReference index = schemaRead.index( label, prop );
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
-            RandomValues.Type type = randomValues.among( targetedTypes );
+            ValueType type = randomValues.among( targetedTypes );
             IndexOrder[] order = index.orderCapability( type.valueGroup.category() );
             for ( IndexOrder indexOrder : order )
             {

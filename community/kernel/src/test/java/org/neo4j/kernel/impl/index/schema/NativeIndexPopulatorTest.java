@@ -118,7 +118,7 @@ public class NativeIndexPopulatorTest
         };
     }
 
-    private static PopulatorFactory<CompositeGenericKey,NativeIndexValue> genericPopulatorFactory()
+    private static PopulatorFactory<GenericKey,NativeIndexValue> genericPopulatorFactory()
     {
         return ( pageCache, fs, storeFile, layout, monitor, descriptor ) ->
                 new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, spaceFillingCurveSettings,

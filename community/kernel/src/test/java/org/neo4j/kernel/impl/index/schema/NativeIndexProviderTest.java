@@ -75,7 +75,7 @@ public class NativeIndexProviderTest extends NativeIndexProviderTests
     private static ProviderFactory genericProviderFactory()
     {
         return ( pageCache, fs, dir, monitor, collector, readOnly ) ->
-                new GenericNativeIndexProvider( 0, dir, pageCache, fs, monitor, collector, readOnly, Config.defaults() );
+                new GenericNativeIndexProvider( dir, pageCache, fs, monitor, collector, readOnly, Config.defaults() );
     }
 
     private static ProviderFactory spatialProviderFactory()
