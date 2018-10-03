@@ -19,17 +19,19 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
+
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -38,7 +40,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
-public class PropertyReader implements NodePropertyAccessor
+class PropertyReader implements NodePropertyAccessor
 {
     private final PropertyStore propertyStore;
     private final NodeStore nodeStore;
@@ -49,22 +51,15 @@ public class PropertyReader implements NodePropertyAccessor
         this.nodeStore = storeAccess.getRawNeoStores().getNodeStore();
     }
 
-    Collection<PropertyRecord> getPropertyRecordChain( PrimitiveRecord entityRecord )
+    Collection<PropertyRecord> getPropertyRecordChain( long firstPropertyRecordId ) throws CircularPropertyRecordChainException
     {
-        return getPropertyRecordChain( entityRecord.getNextProp() );
-    }
-
-    private Collection<PropertyRecord> getPropertyRecordChain( long firstId )
-    {
-        long nextProp = firstId;
-        List<PropertyRecord> toReturn = new LinkedList<>();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
+        List<PropertyRecord> records = new ArrayList<>();
+        visitPropertyRecordChain( firstPropertyRecordId, record ->
         {
-            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE );
-            toReturn.add( propRecord );
-            nextProp = propRecord.getNextProp();
-        }
-        return toReturn;
+            records.add( record );
+            return false; // please continue
+        } );
+        return records;
     }
 
     List<PropertyBlock> propertyBlocks( Collection<PropertyRecord> records )
@@ -80,18 +75,31 @@ public class PropertyReader implements NodePropertyAccessor
         return propertyBlocks;
     }
 
-    private List<PropertyBlock> propertyBlocks( PrimitiveRecord entityRecord )
+    private boolean visitPropertyRecordChain( long firstPropertyRecordId, Visitor<PropertyRecord,RuntimeException> visitor )
+            throws CircularPropertyRecordChainException
     {
-        Collection<PropertyRecord> records = propertyStore.getPropertyRecordChain( entityRecord.getNextProp() );
-        List<PropertyBlock> propertyBlocks = new ArrayList<>();
-        for ( PropertyRecord record : records )
+        if ( Record.NO_NEXT_PROPERTY.is( firstPropertyRecordId ) )
         {
-            for ( PropertyBlock block : record )
+            return false;
+        }
+
+        MutableLongSet visitedPropertyRecordIds = new LongHashSet( 8 );
+        visitedPropertyRecordIds.add( firstPropertyRecordId );
+        long nextProp = firstPropertyRecordId;
+        while ( !Record.NO_NEXT_PROPERTY.is( nextProp ) )
+        {
+            PropertyRecord propRecord = propertyStore.getRecord( nextProp, propertyStore.newRecord(), FORCE );
+            nextProp = propRecord.getNextProp();
+            if ( !Record.NO_NEXT_PROPERTY.is( nextProp ) && !visitedPropertyRecordIds.add( nextProp ) )
             {
-                propertyBlocks.add( block );
+                throw new CircularPropertyRecordChainException( propRecord );
+            }
+            if ( visitor.visit( propRecord ) )
+            {
+                return true;
             }
         }
-        return propertyBlocks;
+        return false;
     }
 
     public Value propertyValue( PropertyBlock block )
@@ -105,14 +113,61 @@ public class PropertyReader implements NodePropertyAccessor
         NodeRecord nodeRecord = nodeStore.newRecord();
         if ( nodeStore.getRecord( nodeId, nodeRecord, FORCE ).inUse() )
         {
-            for ( PropertyBlock block : propertyBlocks( nodeRecord ) )
+            SpecificValueVisitor visitor = new SpecificValueVisitor( propertyKeyId );
+            try
             {
-                if ( block.getKeyIndexId() == propertyKeyId )
+                if ( visitPropertyRecordChain( nodeRecord.getNextProp(), visitor ) )
                 {
-                    return propertyValue( block );
+                    return visitor.foundPropertyValue;
                 }
+            }
+            catch ( CircularPropertyRecordChainException e )
+            {
+                // If we discover a circular reference and still haven't found the property then we won't find it.
+                // There are other places where this circular reference will be logged as an inconsistency,
+                // so simply catch this exception here and let this method return NO_VALUE below.
             }
         }
         return Values.NO_VALUE;
+    }
+
+    private class SpecificValueVisitor implements Visitor<PropertyRecord,RuntimeException>
+    {
+        private final int propertyKeyId;
+        private Value foundPropertyValue;
+
+        SpecificValueVisitor( int propertyKeyId )
+        {
+            this.propertyKeyId = propertyKeyId;
+        }
+
+        @Override
+        public boolean visit( PropertyRecord element ) throws RuntimeException
+        {
+            for ( PropertyBlock block : element )
+            {
+                if ( block.getKeyIndexId() == propertyKeyId )
+                {
+                    foundPropertyValue = propertyValue( block );
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    static class CircularPropertyRecordChainException extends Exception
+    {
+        private final PropertyRecord propertyRecord;
+
+        CircularPropertyRecordChainException( PropertyRecord propertyRecord )
+        {
+            this.propertyRecord = propertyRecord;
+        }
+
+        PropertyRecord propertyRecordClosingTheCircle()
+        {
+            return propertyRecord;
+        }
     }
 }

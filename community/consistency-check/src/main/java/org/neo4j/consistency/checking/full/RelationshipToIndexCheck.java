@@ -60,29 +60,37 @@ public class RelationshipToIndexCheck implements RecordCheck<RelationshipRecord,
     public void check( RelationshipRecord record, CheckerEngine<RelationshipRecord,ConsistencyReport.RelationshipConsistencyReport> engine,
             RecordAccess records )
     {
-        IntObjectMap<PropertyBlock> propertyMap = null;
-        for ( StoreIndexDescriptor index : relationshipIndexes )
+        try
         {
-            SchemaDescriptor schema = index.schema();
-            if ( ArrayUtils.contains( schema.getEntityTokenIds(), record.getType() ) )
+            IntObjectMap<PropertyBlock> propertyMap = null;
+            for ( StoreIndexDescriptor index : relationshipIndexes )
             {
-                if ( propertyMap == null )
+                SchemaDescriptor schema = index.schema();
+                if ( ArrayUtils.contains( schema.getEntityTokenIds(), record.getType() ) )
                 {
-                    Collection<PropertyRecord> propertyRecs = propertyReader.getPropertyRecordChain( record );
-                    propertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
-                }
-
-                if ( entityIntersectsSchema( propertyMap, schema ) )
-                {
-                    Value[] values = getPropertyValues( propertyReader, propertyMap, schema.getPropertyIds() );
-                    try ( IndexReader reader = indexes.accessorFor( index ).newReader() )
+                    if ( propertyMap == null )
                     {
-                        long entityId = record.getId();
-                        long count = reader.countIndexedNodes( entityId, schema.getPropertyIds(), values );
-                        reportIncorrectIndexCount( values, engine, index, count );
+                        Collection<PropertyRecord> propertyRecs = propertyReader.getPropertyRecordChain( record.getNextProp() );
+                        propertyMap = properties( propertyReader.propertyBlocks( propertyRecs ) );
+                    }
+
+                    if ( entityIntersectsSchema( propertyMap, schema ) )
+                    {
+                        Value[] values = getPropertyValues( propertyReader, propertyMap, schema.getPropertyIds() );
+                        try ( IndexReader reader = indexes.accessorFor( index ).newReader() )
+                        {
+                            long entityId = record.getId();
+                            long count = reader.countIndexedNodes( entityId, schema.getPropertyIds(), values );
+                            reportIncorrectIndexCount( values, engine, index, count );
+                        }
                     }
                 }
             }
+        }
+        catch ( PropertyReader.CircularPropertyRecordChainException e )
+        {
+            // The property chain contains a circular reference and is therefore not sane.
+            // Skip it, since this inconsistency has been reported by PropertyChain checker already.
         }
     }
 

@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStorage;
@@ -97,6 +98,7 @@ import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -2090,6 +2092,75 @@ public class FullCheckIntegrationTest
 
         // Then
         assertTrue( stats.isConsistent() );
+    }
+
+    @Test
+    public void shouldReportCircularNodePropertyRecordChain() throws Exception
+    {
+        shouldReportCircularPropertyRecordChain( RecordType.NODE, ( tx, next, propertyRecordId ) -> tx.create(
+                new NodeRecord( next.node() ).initialize( true, propertyRecordId, false, -1, Record.NO_LABELS_FIELD.longValue() ) ) );
+    }
+
+    @Test
+    public void shouldReportCircularRelationshipPropertyRecordChain() throws Exception
+    {
+        int relType = createRelType();
+        shouldReportCircularPropertyRecordChain( RecordType.RELATIONSHIP, ( tx, next, propertyRecordId ) ->
+        {
+            long node = next.node();
+            long relationship = next.relationship();
+            tx.create( new NodeRecord( node ).initialize( true, -1, false, relationship, Record.NO_LABELS_FIELD.longValue() ) );
+            RelationshipRecord relationshipRecord = new RelationshipRecord( relationship );
+            relationshipRecord.setFirstNode( node );
+            relationshipRecord.setSecondNode( node );
+            relationshipRecord.setType( relType );
+            relationshipRecord.setNextProp( propertyRecordId );
+            tx.create( relationshipRecord );
+        } );
+    }
+
+    private void shouldReportCircularPropertyRecordChain( RecordType expectedInconsistentRecordType, EntityCreator entityCreator ) throws Exception
+    {
+        // Given
+        fixture.apply( new GraphStoreFixture.Transaction()
+        {
+            @Override
+            protected void transactionData( TransactionDataBuilder tx, IdGenerator next )
+            {
+                // Create property chain A --> B --> C --> D
+                //                             ↑           │
+                //                             └───────────┘
+                long a = next.property();
+                long b = next.property();
+                long c = next.property();
+                long d = next.property();
+                tx.create( propertyRecordWithSingleIntProperty( a, next.propertyKey(), -1, b ) );
+                tx.create( propertyRecordWithSingleIntProperty( b, next.propertyKey(), a, c ) );
+                tx.create( propertyRecordWithSingleIntProperty( c, next.propertyKey(), b, d ) );
+                tx.create( propertyRecordWithSingleIntProperty( d, next.propertyKey(), c, b ) );
+                entityCreator.create( tx, next, a );
+            }
+
+            private PropertyRecord propertyRecordWithSingleIntProperty( long id, int propertyKeyId, long prev, long next )
+            {
+                PropertyRecord record = new PropertyRecord( id ).initialize( true, prev, next );
+                PropertyBlock block = new PropertyBlock();
+                PropertyStore.encodeValue( block, propertyKeyId, Values.intValue( 10 ), null, null, false );
+                record.addPropertyBlock( block );
+                return record;
+            }
+        } );
+
+        // When
+        ConsistencySummaryStatistics stats = check();
+
+        // Then report will be filed on Node inconsistent with the Property completing the circle
+        on( stats ).verify( expectedInconsistentRecordType, 1 );
+    }
+
+    private interface EntityCreator
+    {
+        void create( TransactionDataBuilder tx, IdGenerator next, long propertyRecordId );
     }
 
     private ConsistencySummaryStatistics check() throws ConsistencyCheckIncompleteException
