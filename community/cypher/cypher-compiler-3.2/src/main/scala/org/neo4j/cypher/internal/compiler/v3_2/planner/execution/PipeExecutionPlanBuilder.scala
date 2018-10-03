@@ -289,11 +289,11 @@ case class ActualPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe, r
 
       case PruningVarExpand(_, IdName(from), dir, types, IdName(toName), minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
-        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)()
+        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)(id = id)
 
       case FullPruningVarExpand(_, IdName(from), dir, types, IdName(toName), minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
-        FullPruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)()
+        FullPruningVarLengthExpandPipe(source, from, toName, LazyTypes(types), dir, minLength, maxLength, predicate)(id = id)
 
       case Sort(_, sortItems) =>
         SortPipe(source, sortItems.map(translateSortDescription))(id = id)
