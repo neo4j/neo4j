@@ -19,6 +19,8 @@
  */
 package org.neo4j.graphdb.schema;
 
+import java.util.Optional;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexManager;
@@ -133,4 +135,10 @@ public interface IndexDefinition
      * @return {@code true} if this is a composite index.
      */
     boolean isCompositeIndex();
+
+    /**
+     * Get the name given to this index when it was created, if any.
+     * If the index was not given any name, then the string {@code "Unnamed index"} is returned instead.
+     */
+    String getName();
 }

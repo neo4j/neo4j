@@ -214,7 +214,7 @@ public class SchemaAcceptanceTest
             }
             catch ( ConstraintViolationException e )
             {
-                assertThat( e.getMessage(), containsString( "No index was found for :MY_LABEL(my_property_key)." ) );
+                assertThat( e.getMessage(), containsString( "No such INDEX ON :MY_LABEL(my_property_key)." ) );
             }
             tx.success();
         }
@@ -238,7 +238,7 @@ public class SchemaAcceptanceTest
         }
         catch ( ConstraintViolationException e )
         {
-            assertThat( e.getMessage(), containsString( "No index was found for :MY_LABEL(my_property_key)." ) );
+            assertThat( e.getMessage(), containsString( "No such INDEX ON :MY_LABEL(my_property_key)." ) );
         }
 
         // THEN

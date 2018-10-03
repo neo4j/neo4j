@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Node;
  * A builder for entering details about an index to create. After all details have been entered
  * {@link #create()} must be called for the index to actually be created. An index creator knows
  * which {@link Label label} it is to be created for.
- *
+ * <p>
  * All methods except {@link #create()} will return an {@link IndexCreator} which should be
  * used for further interaction.
  *
@@ -38,13 +38,22 @@ public interface IndexCreator
     /**
      * Includes the given {@code propertyKey} in this index, such that {@link Node nodes} with
      * the assigned {@link Label label} and this property key will have its values indexed.
-     *
+     * <p>
      * NOTE: currently only a single property key per index is supported.
      *
      * @param propertyKey the property key to include in this index to be created.
      * @return an {@link IndexCreator} instance to be used for further interaction.
      */
     IndexCreator on( String propertyKey );
+
+    /**
+     * Assign a name to the index, which will then be returned from {@link IndexDefinition#getName()}, and can be used for finding the index with
+     * {@link Schema#getIndexByName(String)}.
+     *
+     * @param indexName the name to give the index.
+     * @return an {@link IndexCreator} instance to be used for further interaction.
+     */
+    IndexCreator withName( String indexName );
 
     /**
      * Creates an index with the details specified by the other methods in this interface.

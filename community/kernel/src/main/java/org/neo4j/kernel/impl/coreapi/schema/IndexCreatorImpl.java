@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.coreapi.schema;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Optional;
 
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Label;
@@ -32,16 +33,18 @@ public class IndexCreatorImpl implements IndexCreator
     private final Collection<String> propertyKeys;
     private final Label label;
     private final InternalSchemaActions actions;
+    private final Optional<String> indexName;
 
     public IndexCreatorImpl( InternalSchemaActions actions, Label label )
     {
-        this( actions, label, new ArrayList<>() );
+        this( actions, label, Optional.empty(), new ArrayList<>() );
     }
 
-    private IndexCreatorImpl( InternalSchemaActions actions, Label label, Collection<String> propertyKeys )
+    private IndexCreatorImpl( InternalSchemaActions actions, Label label, Optional<String> indexName, Collection<String> propertyKeys )
     {
         this.actions = actions;
         this.label = label;
+        this.indexName = indexName;
         this.propertyKeys = propertyKeys;
 
         assertInUnterminatedTransaction();
@@ -51,7 +54,14 @@ public class IndexCreatorImpl implements IndexCreator
     public IndexCreator on( String propertyKey )
     {
         assertInUnterminatedTransaction();
-        return new IndexCreatorImpl( actions, label, copyAndAdd( propertyKeys, propertyKey) );
+        return new IndexCreatorImpl( actions, label, indexName, copyAndAdd( propertyKeys, propertyKey) );
+    }
+
+    @Override
+    public IndexCreator withName( String indexName )
+    {
+        assertInUnterminatedTransaction();
+        return new IndexCreatorImpl( actions, label, Optional.ofNullable( indexName ), propertyKeys );
     }
 
     @Override
@@ -64,7 +74,7 @@ public class IndexCreatorImpl implements IndexCreator
             throw new ConstraintViolationException( "An index needs at least one property key to index" );
         }
 
-        return actions.createIndexDefinition( label, propertyKeys.toArray( new String[0] ) );
+        return actions.createIndexDefinition( label, indexName, propertyKeys.toArray( new String[0] ) );
     }
 
     private void assertInUnterminatedTransaction()

@@ -44,6 +44,15 @@ public interface SchemaWrite
      * Create index from schema descriptor
      *
      * @param descriptor description of the index
+     * @param name name of the index
+     * @return the newly created index
+     */
+    IndexReference indexCreate( SchemaDescriptor descriptor, Optional<String> name ) throws SchemaKernelException;
+
+    /**
+     * Create index from schema descriptor
+     *
+     * @param descriptor description of the index
      * @param provider name of the desired index provider implementation
      * @param name name of the index
      * @return the newly created index

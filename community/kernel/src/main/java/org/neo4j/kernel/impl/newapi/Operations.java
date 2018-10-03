@@ -920,6 +920,12 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     }
 
     @Override
+    public IndexReference indexCreate( SchemaDescriptor descriptor, Optional<String> indexName ) throws SchemaKernelException
+    {
+        return indexCreate( descriptor, config.get( GraphDatabaseSettings.default_schema_provider ), indexName );
+    }
+
+    @Override
     public IndexReference indexCreate( SchemaDescriptor descriptor,
             String provider,
             Optional<String> name ) throws SchemaKernelException

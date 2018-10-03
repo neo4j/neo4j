@@ -483,11 +483,11 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
     }
 
-    private IndexReference createIndex( int labelId, int[] propertyKeyIds )
+    private IndexReference createIndex( int labelId, int[] propertyKeyIds, Optional<String> indexName )
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, propertyKeyIds );
         IndexProviderDescriptor providerDescriptor = indexProviderMap.getDefaultProvider().getProviderDescriptor();
-        StoreIndexDescriptor schemaRule = IndexDescriptorFactory.forSchema( schema, Optional.empty(), providerDescriptor ).withId( schemaStore.nextId() );
+        StoreIndexDescriptor schemaRule = IndexDescriptorFactory.forSchema( schema, indexName, providerDescriptor ).withId( schemaStore.nextId() );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( schemaRule ) )
         {
@@ -1125,14 +1125,14 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String... propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, Optional<String> indexName, String... propertyKeys )
         {
             int labelId = getOrCreateLabelId( label.name() );
             int[] propertyKeyIds = getOrCreatePropertyKeyIds( propertyKeys );
 
             validateIndexCanBeCreated( labelId, propertyKeyIds );
 
-            IndexReference indexReference = createIndex( labelId, propertyKeyIds );
+            IndexReference indexReference = createIndex( labelId, propertyKeyIds, indexName );
             return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
         }
 

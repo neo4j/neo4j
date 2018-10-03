@@ -107,7 +107,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     @Override
     public String name()
     {
-        return userSuppliedName.orElse( "Unnamed index" );
+        return userSuppliedName.orElse( UNNAMED_INDEX );
     }
 
     public IndexProviderDescriptor providerDescriptor()

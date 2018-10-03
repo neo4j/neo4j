@@ -162,4 +162,12 @@ public interface Schema
      *             FAILED state
      */
     void awaitIndexesOnline( long duration, TimeUnit unit );
+
+    /**
+     * Get an {@link IndexDefinition} by the given name of the index.
+     * @param indexName The given name of the index.
+     * @return The index with that given name.
+     * @throws IllegalArgumentException if there is no index with that given name.
+     */
+    IndexDefinition getIndexByName( String indexName );
 }

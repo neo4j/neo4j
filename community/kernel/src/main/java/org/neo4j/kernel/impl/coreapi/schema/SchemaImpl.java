@@ -24,6 +24,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -239,6 +241,32 @@ public class SchemaImpl implements Schema
 
             onlineIndexes.add( index );
         }
+    }
+
+    @Override
+    public IndexDefinition getIndexByName( String indexName )
+    {
+        Objects.requireNonNull( indexName );
+        Iterator<IndexDefinition> indexes = getIndexes().iterator();
+        IndexDefinition index = null;
+        while ( indexes.hasNext() )
+        {
+            IndexDefinition candidate = indexes.next();
+            if ( candidate.getName().equals( indexName ) )
+            {
+                if ( index != null )
+                {
+                    throw new IllegalStateException( "Multiple indexes found by the name '" + indexName + "'. " +
+                            "Try iterating Schema#getIndexes() and filter by name instead." );
+                }
+                index = candidate;
+            }
+        }
+        if ( index == null )
+        {
+            throw new IllegalArgumentException( "No index found with the name '" + indexName + "'." );
+        }
+        return index;
     }
 
     @Override
@@ -514,7 +542,7 @@ public class SchemaImpl implements Schema
         }
 
         @Override
-        public IndexDefinition createIndexDefinition( Label label, String... propertyKeys )
+        public IndexDefinition createIndexDefinition( Label label, Optional<String> indexName, String... propertyKeys )
         {
             KernelTransaction transaction = safeAcquireTransaction( transactionSupplier );
 
@@ -522,13 +550,12 @@ public class SchemaImpl implements Schema
             {
                 try
                 {
-                    IndexDefinition indexDefinition = new IndexDefinitionImpl( this, null, new Label[]{label}, propertyKeys, false );
                     TokenWrite tokenWrite = transaction.tokenWrite();
                     int labelId = tokenWrite.labelGetOrCreateForName( label.name() );
-                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, indexDefinition );
+                    int[] propertyKeyIds = getOrCreatePropertyKeyIds( tokenWrite, propertyKeys );
                     LabelSchemaDescriptor descriptor = forLabel( labelId, propertyKeyIds );
-                    transaction.schemaWrite().indexCreate( descriptor );
-                    return indexDefinition;
+                    IndexReference indexReference = transaction.schemaWrite().indexCreate( descriptor, indexName );
+                    return new IndexDefinitionImpl( this, indexReference, new Label[]{label}, propertyKeys, false );
                 }
 
                 catch ( IllegalTokenNameException e )
