@@ -20,16 +20,14 @@
 package org.neo4j.bolt.v3.messaging.decoder;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.bolt.messaging.Neo4jPack;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
-import org.neo4j.bolt.v1.messaging.decoder.PrimitiveOnlyValueWriter;
+import org.neo4j.bolt.v1.messaging.decoder.InitMessageDecoder;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
-import org.neo4j.values.virtual.MapValue;
 
 public class HelloMessageDecoder implements RequestMessageDecoder
 {
@@ -55,10 +53,7 @@ public class HelloMessageDecoder implements RequestMessageDecoder
     @Override
     public RequestMessage decode( Neo4jPack.Unpacker unpacker ) throws IOException
     {
-        MapValue helloMeta = unpacker.unpackMap();
-        PrimitiveOnlyValueWriter writer = new PrimitiveOnlyValueWriter();
-        Map<String,Object> meta = new HashMap<>( helloMeta.size() );
-        helloMeta.foreach( ( key, value ) -> meta.put( key, writer.valueAsObject( value ) ) );
+        Map<String,Object> meta = InitMessageDecoder.readMetaDataMap( unpacker );
         return new HelloMessage( meta );
     }
 }

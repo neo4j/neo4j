@@ -21,16 +21,16 @@ package org.neo4j.bolt.v1.messaging.decoder;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.neo4j.bolt.messaging.Neo4jPack.Unpacker;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.messaging.RequestMessageDecoder;
 import org.neo4j.bolt.runtime.BoltResponseHandler;
+import org.neo4j.bolt.security.auth.AuthTokenDecoderTest;
 import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.packstream.PackedInputArray;
-import org.neo4j.kernel.api.security.AuthToken;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -39,7 +39,7 @@ import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.serialize;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.test.AuthTokenUtil.assertAuthTokenMatches;
 
-class InitMessageDecoderTest
+class InitMessageDecoderTest extends AuthTokenDecoderTest
 {
     private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
     private final RequestMessageDecoder decoder = new InitMessageDecoder( responseHandler );
@@ -73,73 +73,11 @@ class InitMessageDecoderTest
         assertEquals( originalMessage, deserializedMessage );
     }
 
-    @Test
-    void shouldDecodeAuthTokenWithStringCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( AuthToken.CREDENTIALS, "password" );
-    }
-
-    @Test
-    void shouldDecodeAuthTokenWithEmptyStringCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( AuthToken.CREDENTIALS, "" );
-    }
-
-    @Test
-    void shouldDecodeAuthTokenWithNullCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( AuthToken.CREDENTIALS, null );
-    }
-
-    @Test
-    void shouldDecodeAuthTokenWithStringNewCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( AuthToken.NEW_CREDENTIALS, "password" );
-    }
-
-    @Test
-    void shouldDecodeAuthTokenWithEmptyStringNewCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( AuthToken.NEW_CREDENTIALS, "" );
-    }
-
-    @Test
-    void shouldDecodeAuthTokenWithNullNewCredentials() throws Exception
-    {
-        testShouldDecodeAuthToken( AuthToken.NEW_CREDENTIALS, null );
-    }
-
-    @Test
-    void shouldFailToDecodeAuthTokenWithCredentialsOfUnsupportedTypes() throws Exception
-    {
-        for ( Object value : valuesWithInvalidTypes )
-        {
-            testShouldFailToDecodeAuthToken( AuthToken.CREDENTIALS, value,
-                    "INIT message authentication token field '" + AuthToken.CREDENTIALS + "' should be a UTF-8 encoded string" );
-        }
-    }
-
-    @Test
-    void shouldFailToDecodeAuthTokenWithNewCredentialsOfUnsupportedType() throws Exception
-    {
-        for ( Object value : valuesWithInvalidTypes )
-        {
-            testShouldFailToDecodeAuthToken( AuthToken.NEW_CREDENTIALS, value,
-                    "INIT message authentication token field '" + AuthToken.NEW_CREDENTIALS + "' should be a UTF-8 encoded string" );
-        }
-    }
-
-    private static Object[] valuesWithInvalidTypes = {
-            // This is not an exhaustive list
-            new char[]{ 'p', 'a', 's', 's' },
-            Collections.emptyList(),
-            Collections.emptyMap()
-    };
-
-    private void testShouldDecodeAuthToken( String fieldName, Object fieldValue ) throws Exception
+    @Override
+    protected void testShouldDecodeAuthToken( Map<String,Object> authToken ) throws Exception
     {
         Neo4jPackV1 neo4jPack = new Neo4jPackV1();
-        InitMessage originalMessage = new InitMessage( "My Driver", map( AuthToken.PRINCIPAL, "neo4j", fieldName, fieldValue ) );
+        InitMessage originalMessage = new InitMessage( "My Driver", authToken );
 
         PackedInputArray innput = new PackedInputArray( serialize( neo4jPack, originalMessage ) );
         Unpacker unpacker = neo4jPack.newUnpacker( innput );
@@ -152,11 +90,11 @@ class InitMessageDecoderTest
         assertInitMessageMatches( originalMessage, deserializedMessage );
     }
 
-    private void testShouldFailToDecodeAuthToken( String fieldName, Object fieldValue, String expectedErrorMessage ) throws Exception
+    @Override
+    protected void testShouldFailToDecodeAuthToken( Map<String,Object> authToken, String expectedErrorMessage ) throws Exception
     {
         Neo4jPackV1 neo4jPack = new Neo4jPackV1();
-        InitMessage originalMessage = new InitMessage( "My Driver",
-                map( AuthToken.PRINCIPAL, "neo4j", fieldName, fieldValue ) );
+        InitMessage originalMessage = new InitMessage( "My Driver", authToken );
 
         PackedInputArray innput = new PackedInputArray( serialize( neo4jPack, originalMessage ) );
         Unpacker unpacker = neo4jPack.newUnpacker( innput );
