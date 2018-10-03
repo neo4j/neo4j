@@ -138,9 +138,9 @@ object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
     */
   private def extractProjectItem(projection: QueryProjection, name: String): Option[((String, Expression), Boolean)] = {
     projection match {
-      case RegularQueryProjection(projections, _) => projections.get(name).map(exp => (name -> exp, true))
-      case DistinctQueryProjection(projections, _) => projections.get(name).map(exp => (name -> exp, false))
-      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _) =>
+      case RegularQueryProjection(projections, _, _) => projections.get(name).map(exp => (name -> exp, true))
+      case DistinctQueryProjection(projections, _, _) => projections.get(name).map(exp => (name -> exp, false))
+      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, _, _) =>
         (groupingExpressions ++ aggregationExpressions).get(name).map(exp => (name -> exp, false))
     }
   }

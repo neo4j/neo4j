@@ -44,14 +44,16 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
 
   private def calculateCardinalityForQueryHorizon(in: Cardinality, horizon: QueryHorizon): Cardinality = horizon match {
     // Normal projection with LIMIT integer literal
-    case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit: IntegerLiteral))) =>
+    case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit: IntegerLiteral)), _) =>
       Cardinality.min(in, limit.value.toDouble)
+      //TODO: do something about WHERE
 
     // Normal projection with LIMIT
-    case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit))) =>
+    case RegularQueryProjection(_, QueryShuffle(_, _, Some(limit)), _) =>
       val cannotEvaluateStableValue =
         simpleExpressionEvaluator.hasParameters(limit) ||
           !simpleExpressionEvaluator.isDeterministic(limit)
+      //TODO: do something about WHERE
 
       val limitCardinality =
         if (cannotEvaluateStableValue) GraphStatistics.DEFAULT_LIMIT_CARDINALITY

@@ -360,6 +360,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     annotate(Selection(coercePredicates(predicates), left), solved, providedOrders.get(left.id), context)
   }
 
+  def planHorizonSelection(left: LogicalPlan, predicates: Seq[Expression], reported: Seq[Expression], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(left.id).updateTailOrSelf(_.updateHorizon {
+      case p: QueryProjection => p.addPredicates(reported: _*)
+      case _ => throw new IllegalArgumentException("You can only plan HorizonSelection after a projection")
+    })
+    annotate(Selection(coercePredicates(predicates), left), solved, providedOrders.get(left.id), context)
+  }
+
   def planSelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, context: LogicalPlanningContext): LogicalPlan =
     annotate(SelectOrAntiSemiApply(outer, inner, expr), solveds.get(outer.id), providedOrders.get(outer.id), context)
 

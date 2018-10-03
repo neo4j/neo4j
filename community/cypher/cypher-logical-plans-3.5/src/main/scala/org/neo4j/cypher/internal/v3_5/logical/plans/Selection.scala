@@ -44,3 +44,9 @@ object Selection {
     Selection(Ands(predicates.toSet)(predicates.head.position), source)
   }
 }
+
+object SelectionMatcher {
+  def unapply(arg: Selection): Option[(Seq[Expression], LogicalPlan)] = Some(
+  (arg.predicate.exprs.toSeq, arg.source)
+  )
+}

@@ -41,20 +41,42 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
         val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(aggregatingProjection.groupingExpressions)
-        sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, context)
+        val sorted = sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, context)
+        if (aggregatingProjection.selections.isEmpty) {
+          sorted
+        } else {
+          val predicates = aggregatingProjection.selections.flatPredicates
+          val (rewrittenSorted, rewrittenPredicates) = PatternExpressionSolver()(sorted, predicates, query.interestingOrder, context)
+          context.logicalPlanProducer.planHorizonSelection(rewrittenSorted, rewrittenPredicates, predicates, context)
+        }
 
       case regularProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query, query.interestingOrder, context)
-        if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
-          context.logicalPlanProducer.planEmptyProjection(plan, context)
+        val projected =
+          if (regularProjection.projections.isEmpty && query.tail.isEmpty) {
+            context.logicalPlanProducer.planEmptyProjection(plan, context)
+          } else {
+            projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.interestingOrder, context)
+          }
+        if (regularProjection.selections.isEmpty) {
+          projected
         } else {
-          projection(sortedAndLimited, regularProjection.projections, regularProjection.projections, query.interestingOrder, context)
+          val predicates = regularProjection.selections.flatPredicates
+          val (rewrittenProjected, rewrittenPredicates) = PatternExpressionSolver()(projected, predicates, query.interestingOrder, context)
+          context.logicalPlanProducer.planHorizonSelection(rewrittenProjected, rewrittenPredicates, predicates, context)
         }
 
       case distinctProjection: DistinctQueryProjection =>
         val distinctPlan = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
         val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(distinctProjection.groupingKeys)
-        sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, context)
+        val sorted = sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, context)
+        if (distinctProjection.selections.isEmpty) {
+          sorted
+        } else {
+          val predicates = distinctProjection.selections.flatPredicates
+          val (rewrittenSorted, rewrittenPredicates) = PatternExpressionSolver()(sorted, predicates, query.interestingOrder, context)
+          context.logicalPlanProducer.planHorizonSelection(rewrittenSorted, rewrittenPredicates, predicates, context)
+        }
 
       case UnwindProjection(variable, expression) =>
         val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), query.interestingOrder, context)

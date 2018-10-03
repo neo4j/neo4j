@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v3_5.planner.BeLikeMatcher.beLike
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5.{SimplePatternLength, VarPatternLength}
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
@@ -202,4 +203,105 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     result should equal(expected)
   }
+
+  test("WHERE clause on WITH uses argument from previous WITH"){
+    val result = planFor( """
+                      WITH 0.1 AS p
+                      MATCH (n1)
+                      WITH n1 LIMIT 10 WHERE rand() < p
+                      RETURN n1""")._2
+
+    result should beLike {
+      case
+        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
+        Limit(
+        Apply(
+        Projection(_, _),
+        AllNodesScan("n1", _)
+        ), _, _)
+        ) => ()
+    }
+  }
+
+  test("WHERE clause on WITH DISTINCT uses argument from previous WITH"){
+    val result = planFor( """
+                      WITH 0.1 AS p
+                      MATCH (n1)
+                      WITH DISTINCT n1, p LIMIT 10 WHERE rand() < p
+                      RETURN n1""")._2
+
+    result should beLike {
+      case
+        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
+        Limit(
+        Distinct(
+        Apply(
+        Projection(_, _),
+        AllNodesScan("n1", _)
+        ),_), _, _)
+        ) => ()
+    }
+  }
+
+  test("WHERE clause on WITH AGGREGATION uses argument from previous WITH"){
+    val result = planFor( """
+                      WITH 0.1 AS p
+                      MATCH (n1)
+                      WITH count(n1) AS n, p WHERE rand() < p
+                      RETURN n""")._2
+
+    result should beLike {
+      case
+        SelectionMatcher(Seq(LessThan(FunctionInvocation(Namespace(List()),FunctionName("rand"),false,Vector()),Variable("p"))),
+        Aggregation(
+        Apply(
+        Projection(_, _),
+        AllNodesScan("n1", _)
+        ), _, _)
+        ) => ()
+    }
+  }
+
+  test("WHERE clause on WITH with PatternExpression"){
+    val result = planFor( """
+                      MATCH (n1)-->(n2)
+                      WITH n1 LIMIT 10 WHERE NOT (n1)<--(n2)
+                      RETURN n1""")._2
+
+    result should beLike {
+      case
+        Selection(_,
+        RollUpApply(_,_,_,_,_)
+        ) => ()
+    }
+  }
+
+  test("WHERE clause on WITH DISTINCT with PatternExpression"){
+    val result = planFor( """
+                      MATCH (n1)-->(n2)
+                      WITH DISTINCT n1, n2 LIMIT 10 WHERE NOT (n1)<--(n2)
+                      RETURN n1""")._2
+
+    result should beLike {
+      case
+        Selection(_,
+        RollUpApply(_,_,_,_,_)
+        ) => ()
+    }
+  }
+
+  test("WHERE clause on WITH AGGREGATION with PatternExpression"){
+    val result = planFor( """
+                      MATCH (n1)-->(n2)
+                      WITH count(n1) AS n, n2 LIMIT 10 WHERE NOT ()<--(n2)
+                      RETURN n""")._2
+
+    result should beLike {
+      case
+        Selection(_,
+        RollUpApply(_,_,_,_,_)
+        ) => ()
+    }
+  }
+
 }

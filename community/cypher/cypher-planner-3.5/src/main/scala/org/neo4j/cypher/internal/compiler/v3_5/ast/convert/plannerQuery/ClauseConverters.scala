@@ -115,11 +115,11 @@ object ClauseConverters {
 
   def findRequiredOrder(horizon: QueryHorizon): InterestingOrder = {
     val requiredOrderColumns = horizon match {
-      case RegularQueryProjection(projections, shuffle) =>
+      case RegularQueryProjection(projections, shuffle, _) =>
         extractColumnsFromHorizon(shuffle, projections)
-      case AggregatingQueryProjection(groupingExpressions, _, shuffle) =>
+      case AggregatingQueryProjection(groupingExpressions, _, shuffle, _) =>
         extractColumnsFromHorizon(shuffle, groupingExpressions)
-      case DistinctQueryProjection(groupingExpressions, shuffle) =>
+      case DistinctQueryProjection(groupingExpressions, shuffle, _) =>
         extractColumnsFromHorizon(shuffle, groupingExpressions)
       case _ => Seq.empty
     }
@@ -464,14 +464,15 @@ object ClauseConverters {
 
       val queryProjection =
         asQueryProjection(distinct, returnItems).
-          withShuffle(shuffle)
+          withShuffle(shuffle).
+          withSelection(selections)
 
       val requiredOrder = findRequiredOrder(queryProjection)
 
       builder.
         withHorizon(queryProjection).
         withInterestingOrder(requiredOrder).
-        withTail(RegularPlannerQuery(QueryGraph(selections = selections)))
+        withTail(RegularPlannerQuery(QueryGraph()))
 
     case _ =>
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
