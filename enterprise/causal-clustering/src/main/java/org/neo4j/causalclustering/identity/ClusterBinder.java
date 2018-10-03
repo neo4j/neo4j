@@ -22,6 +22,8 @@
  */
 package org.neo4j.causalclustering.identity;
 
+import com.hazelcast.core.OperationTimeoutException;
+
 import java.io.IOException;
 import java.time.Clock;
 import java.time.Duration;
@@ -132,17 +134,22 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
             }
         } );
 
+        long endTime = clock.millis() + timeout.toMillis();
+        boolean shouldRetryPublish = false;
+
         if ( clusterIdStorage.exists() )
         {
             clusterId = clusterIdStorage.readState();
-            publishClusterId( clusterId );
+            do
+            {
+                shouldRetryPublish = publishClusterId( clusterId );
+            } while ( shouldRetryPublish && clock.millis() < endTime );
             monitor.boundToCluster( clusterId );
             return new BoundState( clusterId );
         }
 
         CoreSnapshot snapshot = null;
         CoreTopology topology;
-        long endTime = clock.millis() + timeout.toMillis();
 
         do
         {
@@ -158,15 +165,14 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
                 clusterId = new ClusterId( UUID.randomUUID() );
                 snapshot = coreBootstrapper.bootstrap( topology.members().keySet() );
                 monitor.bootstrapped( snapshot, clusterId );
-                publishClusterId( clusterId );
+                shouldRetryPublish = publishClusterId( clusterId );
             }
-            else
-            {
-                retryWaiter.apply();
-            }
-        } while ( clusterId == null && clock.millis() < endTime );
 
-        if ( clusterId == null )
+            retryWaiter.apply();
+
+        } while ( ( clusterId == null || shouldRetryPublish ) && clock.millis() < endTime );
+
+        if ( clusterId == null || shouldRetryPublish )
         {
             throw new TimeoutException( format(
                     "Failed to join a cluster with members %s. Another member should have published " +
@@ -183,12 +189,23 @@ public class ClusterBinder implements Supplier<Optional<ClusterId>>
         return Optional.ofNullable( clusterId );
     }
 
-    private void publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
+    private boolean publishClusterId( ClusterId localClusterId ) throws BindingException, InterruptedException
     {
-        boolean success = topologyService.setClusterId( localClusterId, dbName );
-        if ( !success )
+        boolean shouldRetry = false;
+        try
         {
-            throw new BindingException( "Failed to publish: " + localClusterId );
+            boolean success = topologyService.setClusterId( localClusterId, dbName );
+
+            if ( !success )
+            {
+                throw new BindingException( "Failed to publish: " + localClusterId );
+            }
         }
+        catch ( OperationTimeoutException e )
+        {
+            shouldRetry = true;
+        }
+
+        return shouldRetry;
     }
 }

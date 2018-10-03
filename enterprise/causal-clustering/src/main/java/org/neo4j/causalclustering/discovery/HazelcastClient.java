@@ -228,21 +228,21 @@ public class HazelcastClient extends SafeLifecycle implements TopologyService
     {
         hzInstance.perform( hazelcastInstance ->
         {
-            String uuid = hazelcastInstance.getLocalEndpoint().getUuid();
+            String hzId = hazelcastInstance.getLocalEndpoint().getUuid();
             String addresses = connectorAddresses.toString();
-            log.debug( "Adding read replica into cluster (%s -> %s)", uuid, addresses );
+            log.debug( "Adding read replica into cluster (%s -> %s)", hzId, addresses );
 
-            hazelcastInstance.getMap( READ_REPLICAS_DB_NAME_MAP ).put( uuid, dbName, timeToLive, MILLISECONDS);
+            hazelcastInstance.getMap( READ_REPLICAS_DB_NAME_MAP ).put( hzId, dbName, timeToLive, MILLISECONDS);
 
-            hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP ).put( uuid, transactionSource.toString(), timeToLive, MILLISECONDS );
+            hazelcastInstance.getMap( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP ).put( hzId, transactionSource.toString(), timeToLive, MILLISECONDS );
 
-            hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP ).put( uuid, myself.getUuid().toString(), timeToLive, MILLISECONDS );
+            hazelcastInstance.getMap( READ_REPLICA_MEMBER_ID_MAP ).put( hzId, myself.getUuid().toString(), timeToLive, MILLISECONDS );
 
-            refreshGroups( hazelcastInstance, uuid, groups );
+            refreshGroups( hazelcastInstance, hzId, groups );
 
             // this needs to be last as when we read from it in HazelcastClusterTopology.readReplicas
             // we assume that all the other maps have been populated if an entry exists in this one
-            hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP ).put( uuid, addresses, timeToLive, MILLISECONDS );
+            hazelcastInstance.getMap( READ_REPLICA_BOLT_ADDRESS_MAP ).put( hzId, addresses, timeToLive, MILLISECONDS );
         } );
     }
 }

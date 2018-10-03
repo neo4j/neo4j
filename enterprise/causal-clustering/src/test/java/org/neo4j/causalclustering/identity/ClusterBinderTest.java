@@ -22,6 +22,7 @@
  */
 package org.neo4j.causalclustering.identity;
 
+import com.hazelcast.core.OperationTimeoutException;
 import org.junit.Test;
 
 import java.time.Duration;
@@ -32,6 +33,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
@@ -42,6 +44,7 @@ import org.neo4j.causalclustering.discovery.CoreServerInfo;
 import org.neo4j.causalclustering.discovery.CoreTopology;
 import org.neo4j.causalclustering.discovery.CoreTopologyService;
 import org.neo4j.causalclustering.discovery.TestTopology;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.time.Clocks;
@@ -53,8 +56,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -73,6 +78,52 @@ public class ClusterBinderTest
     {
         return new ClusterBinder( clusterIdStorage, new StubSimpleStorage<>(), topologyService, clock, () -> clock.forward( 1, TimeUnit.SECONDS ),
                 Duration.of( 3_000, MILLIS ), coreBootstrapper, dbName, minCoreHosts, new Monitors() );
+    }
+
+    @Test
+    public void shouldRetryWhenPublishFailsWithTransientErrors() throws Throwable
+    {
+        // given
+        Map<MemberId,CoreServerInfo> members = IntStream.range(0, minCoreHosts)
+                .mapToObj( i -> Pair.of( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i, false ) ) )
+                .collect( Collectors.toMap( Pair::first, Pair::other ) );
+
+        CoreTopology bootstrappableTopology = new CoreTopology( null, true, members );
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+
+        when( topologyService.setClusterId( any(), anyString() ) )
+                .thenThrow( OperationTimeoutException.class ) // Cause a retry one
+                .thenReturn( true ); // Then succeed
+        when( topologyService.localCoreServers() ).thenReturn( bootstrappableTopology );
+
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
+
+        // when
+        binder.bindToCluster();
+
+        // then
+        verify( topologyService, atLeast( 2 ) ).setClusterId( any(), anyString() );
+    }
+
+    @Test( expected = TimeoutException.class )
+    public void shouldTimeoutIfPublishContinuallyFailsWithTransientErrors() throws Throwable
+    {
+        // given
+        Map<MemberId,CoreServerInfo> members = IntStream.range(0, minCoreHosts)
+                .mapToObj( i -> Pair.of( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i, false ) ) )
+                .collect( Collectors.toMap( Pair::first, Pair::other ) );
+
+        CoreTopology bootstrappableTopology = new CoreTopology( null, true, members );
+        CoreTopologyService topologyService = mock( CoreTopologyService.class );
+
+        when( topologyService.setClusterId( any(), anyString() ) )
+                .thenThrow( OperationTimeoutException.class ); // Causes a retry
+        when( topologyService.localCoreServers() ).thenReturn( bootstrappableTopology );
+
+        ClusterBinder binder = clusterBinder( new StubSimpleStorage<>(), topologyService );
+
+        // when
+        binder.bindToCluster();
     }
 
     @Test
@@ -177,10 +228,9 @@ public class ClusterBinderTest
     public void shouldBootstrapWhenBootstrappable() throws Throwable
     {
         // given
-        Map<MemberId,CoreServerInfo> members = new HashMap<>();
-
-        IntStream.range(0, minCoreHosts).forEach( i ->
-                members.put( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i, false ) ) );
+        Map<MemberId,CoreServerInfo> members = IntStream.range(0, minCoreHosts)
+                .mapToObj( i -> Pair.of( new MemberId( UUID.randomUUID() ), TestTopology.addressesForCore( i, false ) ) )
+                .collect( Collectors.toMap( Pair::first, Pair::other ) );
 
         CoreTopology bootstrappableTopology = new CoreTopology( null, true, members );
 

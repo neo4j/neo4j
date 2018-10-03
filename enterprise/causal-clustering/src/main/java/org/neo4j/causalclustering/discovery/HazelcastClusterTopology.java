@@ -32,6 +32,7 @@ import com.hazelcast.core.MultiMap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -186,10 +187,10 @@ public final class HazelcastClusterTopology
 
     private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance, Log log )
     {
-        List<String> missingAttrKeys = new ArrayList<>();
+        Set<String> missingAttrKeys = new HashSet<>();
         Map<String,IMap<String,String>> validatedSimpleAttrMaps = new HashMap<>();
 
-        for ( String attrMapKey: simpleRRAttrMapKeys )
+        for ( String attrMapKey : simpleRRAttrMapKeys )
         {
             IMap<String,String> attrMap = hazelcastInstance.getMap( attrMapKey );
             if ( attrMap == null )
@@ -208,10 +209,11 @@ public final class HazelcastClusterTopology
             missingAttrKeys.add( SERVER_GROUPS_MULTIMAP );
         }
 
-        int totalNumAttrMaps = simpleRRAttrMapKeys.size() + 1;
         if ( !missingAttrKeys.isEmpty() )
         {
-            if ( missingAttrKeys.size() != totalNumAttrMaps )
+            // We might well not have any read replicas, in which case missing maps is not an error, but we *can't* have some maps and not others
+            boolean missingAllKeys = missingAttrKeys.containsAll( simpleRRAttrMapKeys ) && missingAttrKeys.contains( SERVER_GROUPS_MULTIMAP );
+            if ( !missingAllKeys )
             {
                 String missingAttrs = String.join( ", ", missingAttrKeys );
                 log.warn( "Some, but not all, of the read replica attribute maps are null, including %s", missingAttrs );
