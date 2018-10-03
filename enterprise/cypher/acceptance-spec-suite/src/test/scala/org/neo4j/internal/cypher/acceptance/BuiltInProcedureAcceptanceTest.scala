@@ -25,6 +25,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.graphdb.{Label, Node, Relationship}
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
+import org.scalatest.LoneElement._
 
 import scala.collection.JavaConversions._
 
@@ -343,20 +344,20 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     graph.execute("CALL db.awaitIndexes(10)")
 
     // when
-    val listResult = executeWith(config, "CALL db.indexes()")
+    val mapResult = executeWith(config, "CALL db.indexes()").toList.loneElement
 
-    listResult.toList should equal(
-      List(Map("description" -> "INDEX ON :Person(name)",
-        "indexName" -> "index_28",
-        "tokenNames" -> List("Person"),
-        "properties" -> List( "name" ),
-        "state" -> "ONLINE",
-        "progress" -> 100D,
-        "type" -> "node_unique_property",
-        "id" -> 28,
-        "provider" -> Map(
-          "version" -> "1.0",
-          "key" -> "lucene+native"))))
+    // then
+    mapResult should have size 8
+    mapResult("description") should equal("INDEX ON :Person(name)")
+    mapResult("indexName").asInstanceOf[String] should startWith("index_")
+    mapResult("tokenNames") should equal(List("Person"))
+    mapResult("properties") should equal(List("name"))
+    mapResult("state") should equal("ONLINE")
+    mapResult("progress") should equal(100D)
+    mapResult("type") should equal("node_unique_property")
+    mapResult("provider") should equal(Map(
+               "version" -> "1.0",
+                "key" -> "lucene+native"))
   }
 
   test("should create node key constraint from built-in-procedure") {
@@ -374,19 +375,19 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     graph.execute("CALL db.awaitIndexes(10)")
 
     // when
-    val listResult = executeWith(config, "CALL db.indexes()")
+    val mapResult = executeWith(config, "CALL db.indexes()").toList.loneElement
 
-    listResult.toList should equal(
-      List(Map("description" -> "INDEX ON :Person(name)",
-        "indexName" -> "index_28",
-        "tokenNames" -> List("Person"),
-        "properties" -> List( "name" ),
-        "state" -> "ONLINE",
-        "progress" -> 100D,
-        "type" -> "node_unique_property",
-        "id" -> 28,
-        "provider" -> Map(
-          "version" -> "1.0",
-          "key" -> "lucene+native"))))
+    // then
+    mapResult should have size 8
+    mapResult("description") should equal("INDEX ON :Person(name)")
+    mapResult("indexName").asInstanceOf[String] should startWith("index_")
+    mapResult("tokenNames") should equal(List("Person"))
+    mapResult("properties") should equal(List("name"))
+    mapResult("state") should equal("ONLINE")
+    mapResult("progress") should equal(100D)
+    mapResult("type") should equal("node_unique_property")
+    mapResult("provider") should equal(Map(
+      "version" -> "1.0",
+      "key" -> "lucene+native"))
   }
 }

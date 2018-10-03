@@ -299,7 +299,8 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
         | RETURN p
       """.stripMargin
 
-    val configs = Configs.CommunityInterpreted + TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
+    val configs = Configs.CommunityInterpreted + TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted) +
+      TestScenario(Versions.Default, Planners.Default, Runtimes.SlottedWithCompiledExpressions)
 
     val result = executeWith(configs, query)
     val path = result.toList.head("p").asInstanceOf[Path]

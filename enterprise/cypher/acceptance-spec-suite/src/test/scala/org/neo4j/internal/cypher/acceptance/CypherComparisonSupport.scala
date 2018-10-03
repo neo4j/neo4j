@@ -447,7 +447,7 @@ object CypherComparisonSupport {
   object Runtimes {
 
     // Default behaves different from specifying a specific runtime - thus it's included
-    val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, Interpreted, ProcedureOrSchema, Default)
+    val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted, ProcedureOrSchema, Default)
 
     implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
@@ -456,6 +456,8 @@ object CypherComparisonSupport {
     object CompiledBytecode extends Runtime(Set("COMPILED"), "runtime=compiled")
 
     object Slotted extends Runtime(Set("SLOTTED"), "runtime=slotted")
+
+    object SlottedWithCompiledExpressions extends Runtime(Set("SLOTTED"), "runtime=slotted expressionEngine=COMPILED")
 
     object Interpreted extends Runtime(Set("INTERPRETED"), "runtime=interpreted")
 
@@ -631,7 +633,7 @@ object CypherComparisonSupport {
     def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
 
     def Interpreted: TestConfiguration =
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
         TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
@@ -642,7 +644,7 @@ object CypherComparisonSupport {
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
         TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
-    def SlottedInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted)
+    def SlottedInterpreted: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions))
 
     def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
 
@@ -666,7 +668,7 @@ object CypherComparisonSupport {
 
     def Version3_5: TestConfiguration =
       TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions)) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
 
     def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
@@ -708,7 +710,7 @@ object CypherComparisonSupport {
       */
     def AbsolutelyAll: TestConfiguration =
       TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted,
+        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions,
                                                                        Runtimes.ProcedureOrSchema)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
