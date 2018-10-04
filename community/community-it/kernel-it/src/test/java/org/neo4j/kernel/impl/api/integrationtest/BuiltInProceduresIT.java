@@ -133,7 +133,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.indexes",
                         "db.indexes() :: (description :: STRING?, indexName :: STRING?, " +
                         "tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
-                        "type :: STRING?, progress :: FLOAT?, provider :: MAP?)",
+                        "type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?)",
                         "List all indexes in the database.", "READ"} ),
                 equalTo( new Object[]{"db.awaitIndex",
                         "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
@@ -358,11 +358,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 "version", provider.getProviderDescriptor().getVersion() );
         assertThat( result, containsInAnyOrder(
                 new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
-                        "node_unique_property", 100D, pdm},
+                        "node_unique_property", 100D, pdm, 1L},
                 new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ),
-                        singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm},
+                        singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm, 6L},
                 new Object[]{"INDEX ON :Person(foo, bar)", "Unnamed index", singletonList( "Person" ),
-                        Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm}
+                        Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm, 4L}
         ) );
         commit();
     }

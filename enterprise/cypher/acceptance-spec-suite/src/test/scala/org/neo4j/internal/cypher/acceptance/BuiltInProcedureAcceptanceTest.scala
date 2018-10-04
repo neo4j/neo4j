@@ -284,6 +284,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "state" -> "ONLINE",
         "progress" -> 100D,
         "type" -> "node_label_property",
+        "id" -> 1,
         "provider" -> Map(
           "version" -> GenericNativeIndexProvider.DESCRIPTOR.getVersion,
           "key" -> GenericNativeIndexProvider.DESCRIPTOR.getKey))))
@@ -321,6 +322,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "state" -> "ONLINE",
         "progress" -> 100D,
         "type" -> "node_label_property",
+        "id" -> 1,
         "provider" -> Map(
           "version" -> "1.0",
           "key" -> "lucene+native"))))
@@ -351,6 +353,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "state" -> "ONLINE",
         "progress" -> 100D,
         "type" -> "node_unique_property",
+        "id" -> 28,
         "provider" -> Map(
           "version" -> "1.0",
           "key" -> "lucene+native"))))
@@ -381,6 +384,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "state" -> "ONLINE",
         "progress" -> 100D,
         "type" -> "node_unique_property",
+        "id" -> 28,
         "provider" -> Map(
           "version" -> "1.0",
           "key" -> "lucene+native"))))
