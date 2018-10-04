@@ -33,7 +33,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
 
   // Need to override so that graph.execute will not throw an exception
   override def databaseConfig(): collection.Map[Setting[_], String] = super.databaseConfig() ++ Map(
-    GraphDatabaseSettings.default_schema_provider -> GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerIdentifier
+    GraphDatabaseSettings.default_schema_provider -> GraphDatabaseSettings.SchemaIndex.NATIVE_BTREE10.providerName
   )
 
   override def beforeEach(): Unit = {
