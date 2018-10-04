@@ -76,31 +76,6 @@ public interface CatchupAddressProvider
     }
 
     /**
-     * Uses given strategy for both primary and secondary address.
-     */
-    class UpstreamStrategyBoundAddressProvider implements CatchupAddressProvider
-    {
-        private final UpstreamStrategyAddressSupplier upstreamStrategyAddressSupplier;
-
-        public UpstreamStrategyBoundAddressProvider( TopologyService topologyService, UpstreamDatabaseStrategySelector strategySelector )
-        {
-            upstreamStrategyAddressSupplier = new UpstreamStrategyAddressSupplier( strategySelector, topologyService );
-        }
-
-        @Override
-        public AdvertisedSocketAddress primary() throws CatchupAddressResolutionException
-        {
-            return upstreamStrategyAddressSupplier.get();
-        }
-
-        @Override
-        public AdvertisedSocketAddress secondary() throws CatchupAddressResolutionException
-        {
-            return upstreamStrategyAddressSupplier.get();
-        }
-    }
-
-    /**
      * Uses leader address as primary and given upstream strategy as secondary address.
      */
     class PrioritisingUpstreamStrategyBasedAddressProvider implements CatchupAddressProvider
