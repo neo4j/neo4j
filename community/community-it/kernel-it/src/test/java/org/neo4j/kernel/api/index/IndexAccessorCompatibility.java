@@ -94,9 +94,10 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
 
     ValueType[] randomSetOfSupportedAndSortableTypes()
     {
-        ValueType[] types = randomSetOfSupportedTypes();
+        ValueType[] types = testSuite.supportedValueTypes();
         types = removeSpatialTypes( types ); // <- don't use spatial values
         types = RandomValues.excluding( types, ValueType.STRING, ValueType.STRING_ARRAY ); // <- don't use strings outside of BMP
+        types = random.randomValues().selection( types, 2, types.length, false );
         return types;
     }
 
