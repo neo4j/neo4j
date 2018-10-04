@@ -170,7 +170,7 @@ case class CommunityPipeBuilder(monitors: Monitors, recurse: LogicalPlan => Pipe
 
       case PruningVarExpand(_, from, dir, types, toName, minLength, maxLength, predicates) =>
         val predicate = varLengthPredicate(predicates)
-        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)()
+        PruningVarLengthExpandPipe(source, from, toName, LazyTypes(types.toArray), dir, minLength, maxLength, predicate)(id = id)
 
       case Sort(_, sortItems) =>
         SortPipe(source, sortItems.map(translateColumnOrder))(id = id)

@@ -659,6 +659,26 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
         assertDbHits(14)(result)("Filter")
       }
 
+  test("profile pruning var length expand"){
+    //some graph
+    val a = createLabeledNode("Start")
+    val b1 = createLabeledNode("Node")
+    val b2 = createLabeledNode("Node")
+    val b3 = createLabeledNode("Node")
+    val b4 = createLabeledNode("Node")
+    relate(a, b1, "T1")
+    relate(b1, b2, "T1")
+    relate(b2, b3, "T1")
+    relate(b2, b4, "T1")
+
+    val query = "profile match (b:Start)-[*3]->(d) return count(distinct d)"
+    val result = executeWith(Configs.Interpreted, query)
+
+    assertRows(2)(result)("VarLengthExpand(Pruning)")
+    assertDbHits(7)(result)("VarLengthExpand(Pruning)")
+
+  }
+
   private def assertRows(expectedRows: Int)(result: InternalExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(getArgument[Rows](plan).value === expectedRows, s" wrong row count for plan: ${plan.name}")
