@@ -271,6 +271,7 @@ public class StoreCopyClient
                 .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, tempStore.getAbsolutePath() )
                 .setConfig( GraphDatabaseSettings.allow_upgrade, config.get( GraphDatabaseSettings.allow_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.default_schema_provider, config.get( GraphDatabaseSettings.default_schema_provider) )
                 .newGraphDatabase();
     }
 

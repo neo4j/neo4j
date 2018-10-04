@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.TestHighlyAvailableGraphDatabaseFactory;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema.IndexState;
@@ -149,7 +150,9 @@ public class SchemaIndexHaIT
     {
         // GIVEN a cluster of 3
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
-        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster();
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory )
+                .withSharedSetting( GraphDatabaseSettings.default_schema_provider, CONTROLLED_PROVIDER_DESCRIPTOR.name() )
+                .startCluster();
         HighlyAvailableGraphDatabase firstMaster = cluster.getMaster();
 
         // where the master gets some data created as well as an index
@@ -201,7 +204,9 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory( IS_MASTER );
 
-        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster();
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory )
+                .withSharedSetting( GraphDatabaseSettings.default_schema_provider, NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.name() )
+                .startCluster();
 
         try
         {
@@ -263,7 +268,9 @@ public class SchemaIndexHaIT
         // GIVEN
         ControlledGraphDatabaseFactory dbFactory = new ControlledGraphDatabaseFactory();
 
-        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory ).startCluster();
+        ManagedCluster cluster = clusterRule.withDbFactory( dbFactory )
+                .withSharedSetting( GraphDatabaseSettings.default_schema_provider, CONTROLLED_PROVIDER_DESCRIPTOR.name() )
+                .startCluster();
         cluster.await( allSeesAllAsAvailable(), 120 );
 
         HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
