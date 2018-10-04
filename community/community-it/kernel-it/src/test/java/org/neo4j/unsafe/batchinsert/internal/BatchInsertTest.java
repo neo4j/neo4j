@@ -146,7 +146,7 @@ public class BatchInsertTest
     private static final IndexDescriptor internalIndex = TestIndexDescriptorFactory.forLabel( 0, 0 );
     private static final IndexDescriptor internalUniqueIndex = TestIndexDescriptorFactory.uniqueForLabel( 0, 0 );
 
-    @Parameterized.Parameters( name = "{index} denseNodeThreshold={0}")
+    @Parameterized.Parameters( name = "{index} denseNodeThreshold={0}" )
     public static Collection<Integer> data()
     {
         return Arrays.asList( 5, parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() ) );
