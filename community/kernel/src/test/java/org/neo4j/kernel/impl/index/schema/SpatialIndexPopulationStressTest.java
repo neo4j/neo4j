@@ -28,6 +28,11 @@ import org.neo4j.values.storable.Value;
 
 public class SpatialIndexPopulationStressTest extends IndexPopulationStressTest
 {
+    public SpatialIndexPopulationStressTest()
+    {
+        super( false, false );
+    }
+
     @Override
     IndexProvider newProvider( IndexDirectoryStructure.Factory directory )
     {

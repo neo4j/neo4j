@@ -19,15 +19,16 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-public class TemporalIndexPopulationStressTest extends IndexPopulationStressTest
+import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+
+public class StringIndexPopulationStressTest extends IndexPopulationStressTest
 {
-    public TemporalIndexPopulationStressTest()
+    public StringIndexPopulationStressTest()
     {
         super( false, true );
     }
@@ -35,17 +36,12 @@ public class TemporalIndexPopulationStressTest extends IndexPopulationStressTest
     @Override
     IndexProvider newProvider( IndexDirectoryStructure.Factory directory )
     {
-        return new TemporalIndexProvider( rules.pageCache(),
-                                          rules.fileSystem(),
-                                          directory,
-                                          IndexProvider.Monitor.EMPTY,
-                                          RecoveryCleanupWorkCollector.immediate(),
-                                          false );
+        return new StringIndexProvider( rules.pageCache(), rules.fileSystem(), directory, IndexProvider.Monitor.EMPTY, immediate(), false );
     }
 
     @Override
     Value randomValue( RandomValues random )
     {
-        return random.nextTemporalValue();
+        return random.nextAlphaNumericTextValue();
     }
 }

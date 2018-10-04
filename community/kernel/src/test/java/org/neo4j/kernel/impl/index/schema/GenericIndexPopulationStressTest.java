@@ -22,30 +22,27 @@ package org.neo4j.kernel.impl.index.schema;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 
-public class TemporalIndexPopulationStressTest extends IndexPopulationStressTest
+public class GenericIndexPopulationStressTest extends IndexPopulationStressTest
 {
-    public TemporalIndexPopulationStressTest()
+    public GenericIndexPopulationStressTest()
     {
-        super( false, true );
+        super( true, true );
     }
 
     @Override
     IndexProvider newProvider( IndexDirectoryStructure.Factory directory )
     {
-        return new TemporalIndexProvider( rules.pageCache(),
-                                          rules.fileSystem(),
-                                          directory,
-                                          IndexProvider.Monitor.EMPTY,
-                                          RecoveryCleanupWorkCollector.immediate(),
-                                          false );
+        return new GenericNativeIndexProvider( directory, rules.pageCache(), rules.fileSystem(), IndexProvider.Monitor.EMPTY,
+                RecoveryCleanupWorkCollector.immediate(), false, Config.defaults() );
     }
 
     @Override
     Value randomValue( RandomValues random )
     {
-        return random.nextTemporalValue();
+        return random.nextValue();
     }
 }

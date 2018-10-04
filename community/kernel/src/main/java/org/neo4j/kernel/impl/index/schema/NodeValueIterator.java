@@ -37,6 +37,8 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
 {
     private boolean closed;
     private IndexProgressor progressor;
+    private boolean needsValues;
+    private Value[] values;
 
     @Override
     protected boolean fetchNext()
@@ -59,18 +61,25 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
                             boolean needsValues )
     {
         this.progressor = progressor;
+        this.needsValues = needsValues;
     }
 
     @Override
     public boolean acceptNode( long reference, Value... values )
     {
+        this.values = values;
         return next( reference );
+    }
+
+    public Value[] getValues()
+    {
+        return values;
     }
 
     @Override
     public boolean needsValues()
     {
-        return false;
+        return needsValues;
     }
 
     @Override

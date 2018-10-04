@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -58,6 +59,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     private final ThreadLocal<ThreadLocalPopulator> threadLocalPopulators;
     // Just a complete list of all part populators, because we can't ask ThreadLocal to provide this to us.
     private final List<ThreadLocalPopulator> partPopulators = new CopyOnWriteArrayList<>();
+    private final AtomicInteger nextPartId = new AtomicInteger();
     private NativeIndexPopulator<KEY,VALUE> completePopulator;
     private String failure;
     // There are various access points considered to be the "first" after population is completed,
@@ -73,8 +75,12 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         this.layout = layout;
         this.threadLocalPopulators = new ThreadLocal<ThreadLocalPopulator>()
         {
+            /**
+             * Creates a new part populator. It can be synchronized because it simplifies the implementation
+             * and virtually all time is spent in PageCache#map method inside populator.create, which is synchronized anyway.
+             */
             @Override
-            protected synchronized ThreadLocalPopulator initialValue()
+            protected ThreadLocalPopulator initialValue()
             {
                 if ( closed )
                 {
@@ -85,7 +91,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
                     throw new IllegalStateException( "Already merged" );
                 }
 
-                File file = new File( baseIndexFile + "-part-" + partPopulators.size() );
+                File file = new File( baseIndexFile + "-part-" + nextPartId.getAndIncrement() );
                 NativeIndexPopulator<KEY,VALUE> populator = partSupplier.part( file );
                 ThreadLocalPopulator tlPopulator = new ThreadLocalPopulator( populator );
                 partPopulators.add( tlPopulator );
