@@ -651,6 +651,25 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.executionPlanDescription() should includeSomewhere.aPlan("Filter").withDBHits(14)
   }
 
+  test("profile pruning var length expand"){
+    //some graph
+    val a = createLabeledNode("Start")
+    val b1 = createLabeledNode("Node")
+    val b2 = createLabeledNode("Node")
+    val b3 = createLabeledNode("Node")
+    val b4 = createLabeledNode("Node")
+    relate(a, b1, "T1")
+    relate(b1, b2, "T1")
+    relate(b2, b3, "T1")
+    relate(b2, b4, "T1")
+
+    val query = "profile match (b:Start)-[*3]->(d) return count(distinct d)"
+    val result = profileWithExecute(Configs.Interpreted, query)
+
+    result.executionPlanDescription() should includeSomewhere.aPlan("VarLengthExpand(Pruning)").withRows(2).withDBHits(7)
+
+  }
+
   type Planner = (String, Map[String, Any]) => RewindableExecutionResult
 
   def profileWithPlanner(planner: Planner, q: String, params: Map[String, Any]): RewindableExecutionResult = {
