@@ -85,7 +85,6 @@ public class CatchupPollingProcessTest
     private final LocalDatabase localDatabase = mock( LocalDatabase.class );
     private final TopologyService topologyService = mock( TopologyService.class );
     private final AdvertisedSocketAddress coreMemberAddress = new AdvertisedSocketAddress( "hostname", 1234 );
-    private final CatchupAddressProvider catchupAddressProvider = CatchupAddressProvider.fromSingleAddress( coreMemberAddress );
 
     {
         when( localDatabase.storeId() ).thenReturn( storeId );
@@ -130,13 +129,12 @@ public class CatchupPollingProcessTest
 
         // when
         when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
-                any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
-                new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 10 ) );
+                any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 10 ) );
 
         timerService.invoke( TX_PULLER_TIMER );
 
         // then
-        verify( catchUpClient, times( 2 ) ).makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
+        verify( catchUpClient, times( 1 ) ).makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) );
     }
 
@@ -219,7 +217,6 @@ public class CatchupPollingProcessTest
         // given
         when( catchUpClient.<TxStreamFinishedResponse>makeBlockingRequest( any( AdvertisedSocketAddress.class ), any( TxPullRequest.class ),
                 any( CatchUpResponseCallback.class ) ) ).thenReturn( new TxStreamFinishedResponse( CatchupResult.E_TRANSACTION_PRUNED, 0 ),
-                new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_BATCH, 10 ),
                 new TxStreamFinishedResponse( CatchupResult.SUCCESS_END_OF_STREAM, 15 ) );
 
         // when

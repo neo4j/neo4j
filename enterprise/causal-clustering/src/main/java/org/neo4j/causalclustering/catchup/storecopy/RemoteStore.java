@@ -46,7 +46,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.causalclustering.catchup.CatchupResult.E_TRANSACTION_PRUNED;
-import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_BATCH;
 import static org.neo4j.causalclustering.catchup.CatchupResult.SUCCESS_END_OF_STREAM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
@@ -166,13 +165,10 @@ public class RemoteStore
         {
             log.info( "Pulling transactions from %s starting with txId: %d", from, fromTxId );
             CatchupResult lastStatus;
-            do
-            {
-                TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
-                lastStatus = result.catchupResult();
-                previousTxId = result.lastTxId();
-            }
-            while ( lastStatus == SUCCESS_END_OF_BATCH );
+
+            TxPullRequestResult result = txPullClient.pullTransactions( from, expectedStoreId, previousTxId, writer );
+            lastStatus = result.catchupResult();
+            previousTxId = result.lastTxId();
 
             return lastStatus;
         }

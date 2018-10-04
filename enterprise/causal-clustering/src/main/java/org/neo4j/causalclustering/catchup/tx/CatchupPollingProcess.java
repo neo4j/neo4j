@@ -289,8 +289,6 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         switch ( response.status() )
         {
-        case SUCCESS_END_OF_BATCH:
-            return true;
         case SUCCESS_END_OF_STREAM:
             log.debug( "Successfully pulled transactions from tx id %d", lastQueuedTxId );
             upToDateFuture.complete( Boolean.TRUE );
