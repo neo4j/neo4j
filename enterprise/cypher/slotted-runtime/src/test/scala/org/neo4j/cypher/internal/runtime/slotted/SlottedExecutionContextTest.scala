@@ -20,7 +20,9 @@
 package org.neo4j.cypher.internal.runtime.slotted
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.neo4j.values.storable.BooleanValue
 import org.opencypher.v9_0.util.{InputPosition, InternalException}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue
@@ -57,6 +59,33 @@ class SlottedExecutionContextTest extends CypherFunSuite {
     val result = SlottedExecutionContext(slots(0, 2))
 
     intercept[InternalException](result.copyFrom(input, 0, 4))
+  }
+
+  test("mergeWith - cached properties on rhs only") {
+    // given
+    val slots =
+      SlotConfiguration.empty
+      .newCachedProperty(prop("n", "name"))
+      .newCachedProperty(prop("n", "extra cached"))
+
+    val extraCachedOffset = offsetFor(prop("n", "extra cached"), slots)
+
+    val lhsCtx = SlottedExecutionContext(slots)
+
+    val rhsCtx = SlottedExecutionContext(slots)
+    rhsCtx.setCachedProperty(prop("n", "name"), stringValue("b"))
+
+    // when
+    lhsCtx.mergeWith(rhsCtx)
+
+    // then
+    def cachedPropAt(key: CachedNodeProperty, ctx: ExecutionContext) =
+      ctx.getCachedPropertyAt(offsetFor(key, slots))
+
+    cachedPropAt(prop("n", "name"), lhsCtx) should be(stringValue("b"))
+    cachedPropAt(prop("n", "name"), rhsCtx) should be(stringValue("b"))
+
+    mutatingLeftDoesNotAffectRight(rhsCtx, lhsCtx, extraCachedOffset)
   }
 
   test("mergeWith() includes cached node properties") {
@@ -101,4 +130,20 @@ class SlottedExecutionContextTest extends CypherFunSuite {
 
   private def prop(node: String, prop: String) =
     CachedNodeProperty(node, PropertyKeyName(prop)(InputPosition.NONE))(InputPosition.NONE)
+
+  private def mutatingLeftDoesNotAffectRight(left: ExecutionContext, right: ExecutionContext, extraCachedOffset: Int): Unit = {
+    // given
+    left should not be theSameInstanceAs(right)
+    left.getCachedPropertyAt(extraCachedOffset) should equal(null)
+    right.getCachedPropertyAt(extraCachedOffset) should equal(null)
+
+    // when (left is modified)
+    left.setCachedPropertyAt(extraCachedOffset, BooleanValue.FALSE)
+
+    // then (only left should be modified)
+    left.getCachedPropertyAt(extraCachedOffset) should equal(BooleanValue.FALSE)
+    right.getCachedPropertyAt(extraCachedOffset) should equal(null)
+  }
+
+  private def offsetFor(key: CachedNodeProperty, slots: SlotConfiguration) = slots.getCachedNodePropertyOffsetFor(key)
 }
