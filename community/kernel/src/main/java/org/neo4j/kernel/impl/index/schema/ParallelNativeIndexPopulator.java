@@ -40,6 +40,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
+import static org.neo4j.helpers.collection.Iterables.safeForAll;
 import static org.neo4j.io.IOUtils.closeAll;
 
 /**
@@ -79,6 +80,10 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
                 {
                     throw new IllegalStateException( "Already closed" );
                 }
+                if ( merged )
+                {
+                    throw new IllegalStateException( "Already merged" );
+                }
 
                 File file = new File( baseIndexFile + "-part-" + partPopulators.size() );
                 NativeIndexPopulator<KEY,VALUE> populator = populatorSupplier.apply( file );
@@ -101,8 +106,19 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     @Override
     public void drop()
     {
-        partPopulators.forEach( p -> p.populator.drop() );
-        completePopulator.drop();
+        try
+        {
+            closeAndDropAllParts();
+        }
+        finally
+        {
+            completePopulator.drop();
+        }
+    }
+
+    private void closeAndDropAllParts()
+    {
+        safeForAll( p -> p.populator.drop(), partPopulators );
     }
 
     @Override
@@ -154,7 +170,6 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         {
             if ( populationCompletedSuccessfully )
             {
-                // We're already merged at this point, so it's only to close the complete tree
                 ensureMerged();
                 completePopulator.close( true );
             }
@@ -171,7 +186,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         }
         finally
         {
-            partPopulators.forEach( p -> p.populator.drop() );
+            closeAndDropAllParts();
         }
     }
 
@@ -202,6 +217,11 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         completePopulator.consistencyCheck();
     }
 
+    /**
+     * Will ensure that the merge have been done. This is a method which is called in several places because depending on population
+     * parameters and scenarios different methods of this populator will be considered the first method after population to operate
+     * on the complete index.
+     */
     private void ensureMerged()
     {
         if ( !merged )
