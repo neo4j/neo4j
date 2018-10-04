@@ -76,12 +76,14 @@ public class ClusterId
     public static class Marshal extends SafeChannelMarshal<ClusterId>
     {
         public static final Marshal INSTANCE = new Marshal();
+        private static final UUID NIL = new UUID( 0L, 0L );
 
         @Override
         public void marshal( ClusterId clusterId, WritableChannel channel ) throws IOException
         {
-            channel.putLong( clusterId.uuid.getMostSignificantBits() );
-            channel.putLong( clusterId.uuid.getLeastSignificantBits() );
+            UUID uuid = clusterId == null ? NIL : clusterId.uuid;
+            channel.putLong( uuid.getMostSignificantBits() );
+            channel.putLong( uuid.getLeastSignificantBits() );
         }
 
         @Override
@@ -89,7 +91,9 @@ public class ClusterId
         {
             long mostSigBits = channel.getLong();
             long leastSigBits = channel.getLong();
-            return new ClusterId( new UUID( mostSigBits, leastSigBits ) );
+            UUID uuid = new UUID( mostSigBits, leastSigBits );
+
+            return uuid.equals( NIL ) ? null : new ClusterId( uuid );
         }
     }
 }
