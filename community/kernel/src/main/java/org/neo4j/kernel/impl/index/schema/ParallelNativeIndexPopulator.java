@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.cursor.RawCursor;
@@ -303,7 +303,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     {
         private final NativeIndexPopulator<KEY,VALUE> populator;
         // Main populator thread adds and the thread owning this thread-local populator polls
-        private final Queue<Collection<IndexEntryUpdate<?>>> updates = new ConcurrentLinkedDeque<>();
+        private final Queue<Collection<IndexEntryUpdate<?>>> updates = new ConcurrentLinkedQueue<>();
 
         ThreadLocalPopulator( NativeIndexPopulator<KEY,VALUE> populator )
         {
