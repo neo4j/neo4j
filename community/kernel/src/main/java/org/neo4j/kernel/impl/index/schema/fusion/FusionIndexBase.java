@@ -23,7 +23,7 @@ import java.util.Arrays;
 import java.util.function.Function;
 
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -68,15 +68,7 @@ public abstract class FusionIndexBase<T>
      */
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, Iterable<T> subjects ) throws E
     {
-        E exception = null;
-        for ( T instance : subjects )
-        {
-            exception = consume( exception, consumer, instance );
-        }
-        if ( exception != null )
-        {
-            throw exception;
-        }
+        Iterables.safeForAll( consumer, subjects );
     }
 
     /**
@@ -101,18 +93,5 @@ public abstract class FusionIndexBase<T>
     public static <T, E extends Exception> void forAll( ThrowingConsumer<T,E> consumer, T[] subjects ) throws E
     {
         forAll( consumer, Arrays.asList( subjects ) );
-    }
-
-    private static <E extends Exception, T> E consume( E exception, ThrowingConsumer<T,E> consumer, T instance )
-    {
-        try
-        {
-            consumer.accept( instance );
-        }
-        catch ( Exception e )
-        {
-            exception = Exceptions.chain( exception, (E) e );
-        }
-        return exception;
     }
 }
