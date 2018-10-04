@@ -200,6 +200,16 @@ public class BuiltInProcedures
         }
     }
 
+    @Description( "Wait for all indexes to be resampled (for example: CALL db.awaitIndexResampling(\"500\"))." )
+    @Procedure( name = "db.awaitIndexResampling", mode = READ )
+    public void awaitIndexResampling( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout ) throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.awaitIndexResampling( timeout );
+        }
+    }
+
     @Description( "Schedule resampling of all outdated indexes." )
     @Procedure( name = "db.resampleOutdatedIndexes", mode = READ )
     public void resampleOutdatedIndexes()

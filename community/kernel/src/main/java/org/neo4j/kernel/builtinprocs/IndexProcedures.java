@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -29,6 +30,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
+import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -42,6 +44,8 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.register.Register;
+import org.neo4j.register.Registers;
 
 public class IndexProcedures implements AutoCloseable
 {
@@ -85,6 +89,49 @@ public class IndexProcedures implements AutoCloseable
         indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
     }
 
+    public void awaitIndexResampling( long timeout ) throws ProcedureException
+    {
+        final Iterator<IndexReference> indexes = ktx.schemaRead().indexesGetAll();
+        final Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
+        final long t0 = System.currentTimeMillis();
+        final long timeoutMillis = 1000 * timeout;
+
+        while ( indexes.hasNext() )
+        {
+            final IndexReference index = indexes.next();
+            try
+            {
+                final long updateCount = readUpdates( index, ktx, register );
+                if ( updateCount > 0 )
+                {
+                    boolean hasTimedOut;
+
+                    do
+                    {
+                        Thread.sleep( 1 );
+                        hasTimedOut = System.currentTimeMillis() - t0 >= timeoutMillis;
+                    }
+                    while ( updateCount <= readUpdates( index, ktx, register ) && !hasTimedOut );
+
+                    if ( hasTimedOut )
+                    {
+                        throw new ProcedureException( Status.Procedure.ProcedureTimedOut, "Indexes were not resampled within %s %s", timeout,
+                                TimeUnit.SECONDS );
+                    }
+                }
+            }
+            catch ( IndexNotFoundKernelException e )
+            {
+                throw new ProcedureException( e.status(), e.getMessage(), e );
+            }
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( e );
+            }
+        }
+    }
+
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException
     {
         return createIndex( indexSpecification, providerName, "index created",
@@ -99,6 +146,12 @@ public class IndexProcedures implements AutoCloseable
     public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String indexSpecification, String providerName ) throws ProcedureException
     {
         return createIndex( indexSpecification, providerName, "node key constraint online", SchemaWrite::nodeKeyConstraintCreate );
+    }
+
+    private long readUpdates( IndexReference index, Transaction tx, Register.DoubleLongRegister register ) throws IndexNotFoundKernelException
+    {
+        tx.schemaRead().indexUpdatesAndSize( index, register );
+        return register.readFirst();
     }
 
     private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName, String statusMessage,
