@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Function;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -68,7 +67,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     // from being created beyond that point.
     private volatile boolean closed;
 
-    ParallelNativeIndexPopulator( File baseIndexFile, IndexLayout<KEY,VALUE> layout, Function<File,NativeIndexPopulator<KEY,VALUE>> populatorSupplier )
+    ParallelNativeIndexPopulator( File baseIndexFile, IndexLayout<KEY,VALUE> layout, NativeIndexPopulatorPartSupplier<KEY,VALUE> partSupplier )
     {
         this.layout = layout;
         this.threadLocalPopulators = new ThreadLocal<ThreadLocalPopulator>()
@@ -86,14 +85,14 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
                 }
 
                 File file = new File( baseIndexFile + "-part-" + partPopulators.size() );
-                NativeIndexPopulator<KEY,VALUE> populator = populatorSupplier.apply( file );
+                NativeIndexPopulator<KEY,VALUE> populator = partSupplier.part( file );
                 ThreadLocalPopulator tlPopulator = new ThreadLocalPopulator( populator );
                 partPopulators.add( tlPopulator );
                 populator.create();
                 return tlPopulator;
             }
         };
-        this.completePopulator = populatorSupplier.apply( baseIndexFile );
+        this.completePopulator = partSupplier.part( baseIndexFile );
     }
 
     @Override
