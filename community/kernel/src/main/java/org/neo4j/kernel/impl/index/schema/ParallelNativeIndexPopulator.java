@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.collection.Iterables.safeForAll;
 import static org.neo4j.io.IOUtils.closeAll;
@@ -293,6 +294,12 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         {
             part.applyQueuedUpdates();
         }
+    }
+
+    @VisibleForTesting
+    NativeIndexReader<KEY,VALUE> newReader()
+    {
+        return completePopulator.newReader();
     }
 
     /**

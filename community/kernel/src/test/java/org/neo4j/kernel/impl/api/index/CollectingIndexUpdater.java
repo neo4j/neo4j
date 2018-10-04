@@ -24,9 +24,9 @@ import java.util.ArrayList;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
-public abstract class CollectingIndexUpdater implements IndexUpdater
+public class CollectingIndexUpdater implements IndexUpdater
 {
-    protected final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
+    public final ArrayList<IndexEntryUpdate<?>> updates = new ArrayList<>();
 
     @Override
     public void process( IndexEntryUpdate<?> update )
@@ -35,5 +35,10 @@ public abstract class CollectingIndexUpdater implements IndexUpdater
         {
             updates.add( update );
         }
+    }
+
+    @Override
+    public void close()
+    {
     }
 }
