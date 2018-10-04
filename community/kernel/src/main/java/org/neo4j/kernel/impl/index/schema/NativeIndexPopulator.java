@@ -153,6 +153,11 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
+        return newPopulatingUpdater();
+    }
+
+    IndexUpdater newPopulatingUpdater()
+    {
         IndexUpdater updater = new CollectingIndexUpdater<KEY,VALUE>()
         {
             @Override

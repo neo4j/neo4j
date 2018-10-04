@@ -57,7 +57,6 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     private final List<ThreadLocalPopulator> partPopulators = new CopyOnWriteArrayList<>();
     private NativeIndexPopulator<KEY,VALUE> completePopulator;
     private String failure;
-    private volatile NodePropertyAccessor propertyAccessor;
     // There are various access points considered to be the "first" after population is completed,
     // be it verifyDeferredConstraints, sampleResult or some other call. Regardless all of those methods
     // have to be able to merge the parts into the real index. This is what this flag is all about.
@@ -120,14 +119,15 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
     {
         ensureMerged();
-        partPopulators.forEach( p -> p.populator.verifyDeferredConstraints( nodePropertyAccessor ) );
+        completePopulator.verifyDeferredConstraints( nodePropertyAccessor );
     }
 
     @Override
     public IndexUpdater newPopulatingUpdater( NodePropertyAccessor accessor )
     {
+        // Native index populators don't make use of NodePropertyAccessor, so just ignore it
+
         // Don't have an explicit updatesPopulator, instead record these updates and then each populator will have to apply next time they notice.
-        propertyAccessor = accessor;
         return new CollectingIndexUpdater<KEY,VALUE>()
         {
             @Override
@@ -259,12 +259,13 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     public void markAsFailed( String failure )
     {
         this.failure = failure;
-        partPopulators.forEach( p -> p.populator.markAsFailed( failure ) );
+        completePopulator.markAsFailed( failure );
     }
 
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
+        completePopulator.includeSample( update );
     }
 
     @Override
@@ -320,7 +321,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         {
             if ( !updates.isEmpty() )
             {
-                try ( IndexUpdater updater = populator.newPopulatingUpdater( propertyAccessor ) )
+                try ( IndexUpdater updater = populator.newPopulatingUpdater() )
                 {
                     Collection<IndexEntryUpdate<?>> batch;
                     while ( (batch = updates.poll()) != null )
