@@ -30,7 +30,7 @@ import java.util.function.Supplier;
 import org.neo4j.causalclustering.catchup.CatchUpClient;
 import org.neo4j.causalclustering.catchup.CatchUpClientException;
 import org.neo4j.causalclustering.catchup.CatchUpResponseAdaptor;
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider.SingleAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.StoreCopyFailedException;
@@ -93,7 +93,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
     private final StoreCopyProcess storeCopyProcess;
     private final Supplier<DatabaseHealth> databaseHealthSupplier;
     private final CatchUpClient catchUpClient;
-    private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+    private final UpstreamDatabaseStrategySelector selectionStrategy;
     private final TimerService timerService;
     private final long txPullIntervalMillis;
     private final BatchingTxApplier applier;
@@ -116,7 +116,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         this.log = logProvider.getLog( getClass() );
         this.enableDisableOnStoreCopy = enableDisableOnSoreCopy;
         this.catchUpClient = catchUpClient;
-        this.selectionStrategyPipeline = selectionStrategy;
+        this.selectionStrategy = selectionStrategy;
         this.timerService = timerService;
         this.txPullIntervalMillis = txPullIntervalMillis;
         this.applier = applier;
@@ -198,7 +198,7 @@ public class CatchupPollingProcess extends LifecycleAdapter
         MemberId upstream;
         try
         {
-            upstream = selectionStrategyPipeline.bestUpstreamDatabase();
+            upstream = selectionStrategy.bestUpstreamDatabase();
         }
         catch ( UpstreamDatabaseSelectionException e )
         {
@@ -325,11 +325,11 @@ public class CatchupPollingProcess extends LifecycleAdapter
 
         try
         {
-            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider upstreamStrategyBoundAddressProvider =
-                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
-            storeCopyProcess.replaceWithStoreFrom( upstreamStrategyBoundAddressProvider, localStoreId );
+            MemberId source = selectionStrategy.bestUpstreamDatabase();
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ) );
+            storeCopyProcess.replaceWithStoreFrom( new SingleAddressProvider( fromAddress ), localStoreId );
         }
-        catch ( IOException | StoreCopyFailedException e )
+        catch ( IOException | StoreCopyFailedException | UpstreamDatabaseSelectionException | TopologyLookupException e )
         {
             log.warn( "Error copying store. Will retry shortly.", e );
             return;

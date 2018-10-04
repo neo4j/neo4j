@@ -24,7 +24,7 @@ package org.neo4j.causalclustering.readreplica;
 
 import java.io.IOException;
 
-import org.neo4j.causalclustering.catchup.CatchupAddressProvider;
+import org.neo4j.causalclustering.catchup.CatchupAddressProvider.SingleAddressProvider;
 import org.neo4j.causalclustering.catchup.storecopy.DatabaseShutdownException;
 import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.catchup.storecopy.RemoteStore;
@@ -54,20 +54,20 @@ class ReadReplicaStartupProcess implements Lifecycle
     private final Log userLog;
 
     private final TimeoutStrategy timeoutStrategy;
-    private final UpstreamDatabaseStrategySelector selectionStrategyPipeline;
+    private final UpstreamDatabaseStrategySelector selectionStrategy;
     private final TopologyService topologyService;
 
     private String lastIssue;
     private final StoreCopyProcess storeCopyProcess;
 
     ReadReplicaStartupProcess( RemoteStore remoteStore, LocalDatabase localDatabase, Lifecycle txPulling,
-            UpstreamDatabaseStrategySelector selectionStrategyPipeline, TimeoutStrategy timeoutStrategy, LogProvider debugLogProvider,
+            UpstreamDatabaseStrategySelector selectionStrategy, TimeoutStrategy timeoutStrategy, LogProvider debugLogProvider,
             LogProvider userLogProvider, StoreCopyProcess storeCopyProcess, TopologyService topologyService )
     {
         this.remoteStore = remoteStore;
         this.localDatabase = localDatabase;
         this.txPulling = txPulling;
-        this.selectionStrategyPipeline = selectionStrategyPipeline;
+        this.selectionStrategy = selectionStrategy;
         this.timeoutStrategy = timeoutStrategy;
         this.debugLog = debugLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
@@ -99,7 +99,7 @@ class ReadReplicaStartupProcess implements Lifecycle
             MemberId source = null;
             try
             {
-                source = selectionStrategyPipeline.bestUpstreamDatabase();
+                source = selectionStrategy.bestUpstreamDatabase();
                 syncStoreWithUpstream( source );
                 syncedWithUpstream = true;
             }
@@ -163,15 +163,12 @@ class ReadReplicaStartupProcess implements Lifecycle
             debugLog.info( "Local database is empty, attempting to replace with copy from upstream server %s", source );
 
             debugLog.info( "Finding store id of upstream server %s", source );
-            AdvertisedSocketAddress fromAddress =
-                    topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ) );
+            AdvertisedSocketAddress fromAddress = topologyService.findCatchupAddress( source ).orElseThrow( () -> new TopologyLookupException( source ) );
             StoreId storeId = remoteStore.getStoreId( fromAddress );
 
             debugLog.info( "Copying store from upstream server %s", source );
             localDatabase.delete();
-            CatchupAddressProvider.UpstreamStrategyBoundAddressProvider addressProvider =
-                    new CatchupAddressProvider.UpstreamStrategyBoundAddressProvider( topologyService, selectionStrategyPipeline );
-            storeCopyProcess.replaceWithStoreFrom( addressProvider, storeId );
+            storeCopyProcess.replaceWithStoreFrom( new SingleAddressProvider( fromAddress ), storeId );
 
             debugLog.info( "Restarting local database after copy.", source );
         }
