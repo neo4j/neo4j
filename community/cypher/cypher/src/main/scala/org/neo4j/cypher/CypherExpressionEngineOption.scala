@@ -25,5 +25,6 @@ case object CypherExpressionEngineOption extends CypherOptionCompanion[CypherExp
   case object default extends CypherExpressionEngineOption("default")
   case object interpreted extends CypherExpressionEngineOption("interpreted")
   case object compiled extends CypherExpressionEngineOption("compiled")
-  val all: Set[CypherExpressionEngineOption] = Set(interpreted, compiled)
+  case object onlyWhenHot extends CypherExpressionEngineOption("only_when_hot")
+  val all: Set[CypherExpressionEngineOption] = Set(interpreted, compiled, onlyWhenHot)
 }

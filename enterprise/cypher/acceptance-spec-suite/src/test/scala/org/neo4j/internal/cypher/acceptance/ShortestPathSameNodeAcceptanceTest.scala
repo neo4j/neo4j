@@ -37,7 +37,7 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ru
   val expectedToFail = TestConfiguration(
     Versions(Versions.Default, V3_1, V3_4),
     Planners(Planners.Cost, Planners.Rule, Planners.Default),
-    Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default, Runtimes.ProcedureOrSchema))
+    Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions, Runtimes.Default, Runtimes.ProcedureOrSchema))
 
   def setupModel(db: GraphDatabaseCypherService) {
     db.inTx {

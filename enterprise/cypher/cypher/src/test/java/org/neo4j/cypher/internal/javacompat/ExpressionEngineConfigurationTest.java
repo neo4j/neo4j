@@ -39,23 +39,36 @@ class ExpressionEngineConfigurationTest
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Test
-    void shouldNotUseCompiledExpressionsFirstTimeWithDefaultSettings()
+    void shouldBeUsingInterpretedByDefault()
     {
-        assertNotUsingCompiled( withEngineAndLimit( "DEFAULT", 1 ), "RETURN sin(cos(sin(cos(rand()))))" );
+        // Given
+        String query = "RETURN sin(cos(sin(cos(rand()))))";
+        GraphDatabaseService db = withEngineAndLimit( "DEFAULT", 0 );
+        int manyTimes = 10;
+        for ( int i = 0; i < manyTimes; i++ )
+        {
+            assertNotUsingCompiled( db, query );
+        }
+    }
+
+    @Test
+    void shouldNotUseCompiledExpressionsFirstTimeWithJitEnabled()
+    {
+        assertNotUsingCompiled( withEngineAndLimit( "ONLY_WHEN_HOT", 1 ), "RETURN sin(cos(sin(cos(rand()))))" );
     }
 
     @Test
     void shouldUseCompiledExpressionsFirstTimeWhenLimitIsZero()
     {
-        assertUsingCompiled( withEngineAndLimit( "DEFAULT", 0 ), "RETURN sin(cos(sin(cos(rand()))))" );
+        assertUsingCompiled( withEngineAndLimit( "ONLY_WHEN_HOT", 0 ), "RETURN sin(cos(sin(cos(rand()))))" );
     }
 
     @Test
-    void shouldUseCompiledExpressionsWhenQueryIsHotWithDefaultSettings()
+    void shouldUseCompiledExpressionsWhenQueryIsHotWithJitEnabled()
     {
         // Given
         String query = "RETURN sin(cos(sin(cos(rand()))))";
-        GraphDatabaseService db = withEngineAndLimit( "DEFAULT", 3 );
+        GraphDatabaseService db = withEngineAndLimit( "ONLY_WHEN_HOT", 3 );
 
         // When
         db.execute( query );
@@ -75,7 +88,7 @@ class ExpressionEngineConfigurationTest
     @Test
     void shouldUseCompiledExpressionsFirstTimeWhenExplicitlyAskedFor()
     {
-        assertUsingCompiled( withEngineAndLimit( "DEFAULT", 42 ),
+        assertUsingCompiled( withEngineAndLimit( "ONLY_WHEN_HOT", 42 ),
                 "CYPHER expressionEngine=COMPILED RETURN sin(cos(sin(cos(rand()))))" );
     }
 

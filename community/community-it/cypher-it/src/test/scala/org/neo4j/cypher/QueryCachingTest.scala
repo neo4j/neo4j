@@ -34,7 +34,7 @@ import scala.collection.{Map, mutable}
 
 class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with TableDrivenPropertyChecks {
 
-  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_expression_engine -> "DEFAULT",
+  override def databaseConfig(): Map[Setting[_], String] = Map(GraphDatabaseSettings.cypher_expression_engine -> "ONLY_WHEN_HOT",
                                                                GraphDatabaseSettings.cypher_expression_recompilation_limit -> "1")
 
   test("re-uses cached plan across different execution modes") {

@@ -186,7 +186,9 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
 
-    failWithError(TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema, Runtimes.Interpreted, Runtimes.Slotted)) +
+    failWithError(TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.ProcedureOrSchema,
+                                                                                 Runtimes.Interpreted, Runtimes.Slotted,
+                                                                                 Runtimes.SlottedWithCompiledExpressions)) +
       TestConfiguration(Versions.all, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
       TestConfiguration(Versions.V2_3, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)),
       query, message = List("Expected a string value, but got 42","Expected a string value, but got Int(42)","Expected two strings, but got London and 42"),

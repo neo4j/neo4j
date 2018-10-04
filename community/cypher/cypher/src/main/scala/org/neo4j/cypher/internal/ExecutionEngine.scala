@@ -124,8 +124,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
                         tracer: QueryCompilationEvent,
                         transactionalContext: TransactionalContext,
                         params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = preParsedQuery.expressionEngine match {
-    //the default is to start with interpreted and change to compiled when hot enough
-    case CypherExpressionEngineOption.default if config.recompilationLimit > 0 =>
+    //check if we need to jit compiling of queries
+    case CypherExpressionEngineOption.onlyWhenHot if config.recompilationLimit > 0 =>
       val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery,
                                                  tracer, transactionalContext, params)
       val secondary: (Int) => Option[ExecutableQuery] =
@@ -137,11 +137,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
       (primary, secondary)
     //We have recompilationLimit == 0, go to compiled directly
-    case CypherExpressionEngineOption.default =>
-      (() => masterCompiler.compile(preParsedQuery.copy(expressionEngine = CypherExpressionEngineOption.compiled),
+    case CypherExpressionEngineOption.onlyWhenHot =>
+      (() => masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
                                     tracer, transactionalContext, params), (_) => None)
     //In the other cases we have no recompilation step
-    case _ =>  (() => masterCompiler.compile(preParsedQuery,tracer, transactionalContext, params), (_) => None)
+    case _ =>  (() => masterCompiler.compile(preParsedQuery, tracer, transactionalContext, params), (_) => None)
   }
 
   private def getOrCompile(context: TransactionalContext,

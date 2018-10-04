@@ -246,7 +246,7 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "never be compiled." )
     @Internal
     public static final Setting<String> cypher_expression_engine = setting(
-            "unsupported.cypher.expression_engine", optionsIgnoreCase( "INTERPRETED", "COMPILED", DEFAULT ), "INTERPRETED" );
+            "unsupported.cypher.expression_engine", optionsIgnoreCase( "INTERPRETED", "COMPILED", "ONLY_WHEN_HOT", DEFAULT ), DEFAULT );
 
     @Description( "Number of uses before an expression is considered for compilation" )
     @Internal

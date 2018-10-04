@@ -53,8 +53,8 @@ case class PreParsedQuery(statement: String,
     }
 
     val expressionEngineInfo = expressionEngine match {
-      case CypherExpressionEngineOption.compiled => s"expressionEngine=${expressionEngine.name}"
-      case _ => ""
+      case CypherExpressionEngineOption.default | CypherExpressionEngineOption.onlyWhenHot => ""
+      case _ => s"expressionEngine=${expressionEngine.name}"
     }
 
     val debugFlags = debugOptions.map(flag => s"debug=$flag").mkString(" ")
@@ -62,5 +62,6 @@ case class PreParsedQuery(statement: String,
     s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $debugFlags $statement"
   }
 
-  def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled || recompilationLimitReached
+  def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled ||
+    (expressionEngine == CypherExpressionEngineOption.onlyWhenHot && recompilationLimitReached)
 }
