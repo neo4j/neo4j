@@ -187,23 +187,12 @@ public final class HazelcastClusterTopology
 
     private static Map<MemberId,ReadReplicaInfo> readReplicas( HazelcastInstance hazelcastInstance, Log log )
     {
-        Set<String> missingAttrKeys = new HashSet<>();
-        Map<String,IMap<String,String>> validatedSimpleAttrMaps = new HashMap<>();
-
-        for ( String attrMapKey : simpleRRAttrMapKeys )
-        {
-            IMap<String,String> attrMap = hazelcastInstance.getMap( attrMapKey );
-            if ( attrMap == null )
-            {
-                missingAttrKeys.add( attrMapKey );
-            }
-            else
-            {
-                validatedSimpleAttrMaps.put( attrMapKey, attrMap );
-            }
-        }
+        Pair<Set<String>,Map<String,IMap<String,String>>> validatedSimpleAttrMaps = validatedSimpleAttrMaps( hazelcastInstance );
+        Set<String> missingAttrKeys = validatedSimpleAttrMaps.first();
+        Map<String,IMap<String,String>> simpleAttrMaps = validatedSimpleAttrMaps.other();
 
         MultiMap<String,String> serverGroupsMap = hazelcastInstance.getMultiMap( SERVER_GROUPS_MULTIMAP );
+
         if ( serverGroupsMap == null )
         {
             missingAttrKeys.add( SERVER_GROUPS_MULTIMAP );
@@ -222,22 +211,50 @@ public final class HazelcastClusterTopology
             return emptyMap();
         }
 
-        Stream<String> readReplicaHzIds = validatedSimpleAttrMaps.get( READ_REPLICA_BOLT_ADDRESS_MAP ).keySet().stream();
+        Stream<String> readReplicaHzIds = simpleAttrMaps.get( READ_REPLICA_BOLT_ADDRESS_MAP ).keySet().stream();
 
         Map<MemberId,ReadReplicaInfo> validatedReadReplicas = readReplicaHzIds
-                .flatMap( hzId -> Streams.ofNullable( buildReadReplicaFromAttrMap( hzId, validatedSimpleAttrMaps, serverGroupsMap, log ) ) )
+                .flatMap( hzId -> Streams.ofNullable( buildReadReplicaFromAttrMap( hzId, simpleAttrMaps, serverGroupsMap, log ) ) )
                 .collect( Collectors.toMap( Pair::first, Pair::other ) );
 
         return validatedReadReplicas;
     }
 
-    private static Pair<MemberId,ReadReplicaInfo> buildReadReplicaFromAttrMap( String hzId, Map<String,IMap<String,String>> validatedSimpleAttrMaps,
+    /**
+     * Retrieves the various maps containing attributes about read replicas from hazelcast. If any maps do not exist, keep track of their keys for logging.
+     */
+    private static Pair<Set<String>,Map<String,IMap<String,String>>> validatedSimpleAttrMaps( HazelcastInstance hazelcastInstance )
+    {
+        Set<String> missingAttrKeys = new HashSet<>();
+        Map<String,IMap<String,String>> validatedSimpleAttrMaps = new HashMap<>();
+
+        for ( String attrMapKey : simpleRRAttrMapKeys )
+        {
+            IMap<String,String> attrMap = hazelcastInstance.getMap( attrMapKey );
+            if ( attrMap == null )
+            {
+                missingAttrKeys.add( attrMapKey );
+            }
+            else
+            {
+                validatedSimpleAttrMaps.put( attrMapKey, attrMap );
+            }
+        }
+
+        return Pair.of( missingAttrKeys, validatedSimpleAttrMaps );
+    }
+
+    /**
+     * Given a hazelcast member id and a set of non-null attribute maps, this method builds a discovery representation of a read replica
+     * (i.e. `Pair<MemberId,ReadReplicaInfo>`). Any missing attributes which are missing for a given hazelcast member id are logged and this
+     * method will return null.
+     */
+    private static Pair<MemberId,ReadReplicaInfo> buildReadReplicaFromAttrMap( String hzId, Map<String,IMap<String,String>> simpleAttrMaps,
             MultiMap<String,String> serverGroupsMap, Log log )
     {
 
-        Map<String,String> memberAttrs = validatedSimpleAttrMaps.entrySet().stream()
-                .collect( Collectors.toMap( Map.Entry::getKey, e -> e.getValue().get( hzId ) ) );
-        Collection<String> serverGroups = serverGroupsMap.get( hzId );
+        Map<String,String> memberAttrs = simpleAttrMaps.entrySet().stream().collect( Collectors.toMap( Map.Entry::getKey, e -> e.getValue().get( hzId ) ) );
+        Collection<String> memberServerGroups = serverGroupsMap.get( hzId );
 
         for ( Map.Entry<String,String> attr : memberAttrs.entrySet() )
         {
@@ -248,7 +265,7 @@ public final class HazelcastClusterTopology
             }
         }
 
-        if ( serverGroups == null )
+        if ( memberServerGroups == null )
         {
             log.warn( "Missing attribute %s for read replica with hz id %s", SERVER_GROUPS_MULTIMAP, hzId );
             return null;
@@ -258,7 +275,7 @@ public final class HazelcastClusterTopology
         AdvertisedSocketAddress catchupAddress = socketAddress( memberAttrs.get( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP ), AdvertisedSocketAddress::new );
         MemberId memberId = new MemberId( UUID.fromString( memberAttrs.get( READ_REPLICA_MEMBER_ID_MAP ) ) );
         String memberDbName = memberAttrs.get( READ_REPLICAS_DB_NAME_MAP );
-        Set<String> serverGroupSet = asSet( serverGroups );
+        Set<String> serverGroupSet = asSet( memberServerGroups );
 
         ReadReplicaInfo rrInfo = new ReadReplicaInfo( boltAddresses, catchupAddress, serverGroupSet, memberDbName );
         return Pair.of( memberId, rrInfo );
