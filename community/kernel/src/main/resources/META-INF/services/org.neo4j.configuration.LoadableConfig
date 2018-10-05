@@ -3,3 +3,4 @@ org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory$Configuration
 org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig
 org.neo4j.kernel.configuration.ssl.SslPolicyConfig
 org.neo4j.kernel.impl.index.schema.config.SpatialIndexSettings
+org.neo4j.kernel.configuration.ssl.SslSystemSettings
