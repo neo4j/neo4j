@@ -39,8 +39,10 @@ import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.internal.Version;
 
 import static java.util.Collections.singletonList;
@@ -288,9 +290,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int labelId2 = transaction.tokenWrite().labelGetOrCreateForName( "Age" );
         int propertyKeyId1 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "foo" );
         int propertyKeyId2 = transaction.tokenWrite().propertyKeyGetOrCreateForName( "bar" );
-        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1 ) );
-        transaction.schemaWrite().uniquePropertyConstraintCreate( forLabel( labelId2, propertyKeyId1 ) );
-        transaction.schemaWrite().indexCreate( forLabel( labelId1, propertyKeyId1, propertyKeyId2 ) );
+        LabelSchemaDescriptor personFooDescriptor = forLabel( labelId1, propertyKeyId1 );
+        LabelSchemaDescriptor ageFooDescriptor = forLabel( labelId2, propertyKeyId1 );
+        LabelSchemaDescriptor personFooBarDescriptor = forLabel( labelId1, propertyKeyId1, propertyKeyId2 );
+        transaction.schemaWrite().indexCreate( personFooDescriptor );
+        transaction.schemaWrite().uniquePropertyConstraintCreate( ageFooDescriptor );
+        transaction.schemaWrite().indexCreate( personFooBarDescriptor );
         commit();
 
         //let indexes come online
@@ -312,15 +317,18 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // Then
         IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
+        IndexingService indexingService = db.getDependencyResolver().resolveDependency( IndexingService.class );
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
                 "key", provider.getProviderDescriptor().getKey(), "version", provider.getProviderDescriptor().getVersion() );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE", "node_unique_property", 100D, pdm, 1L},
-                new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ), singletonList( "foo" ), "ONLINE", "node_label_property", 100D,
-                        pdm, 6L},
-                new Object[]{"INDEX ON :Person(foo, bar)", "Unnamed index", singletonList( "Person" ), Arrays.asList( "foo", "bar" ), "ONLINE",
-                        "node_label_property", 100D, pdm, 4L} ) );
+                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
+                        "node_unique_property", 100D, pdm, indexingService.getIndexId( ageFooDescriptor )},
+                new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ),
+                        singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooDescriptor )},
+                new Object[]{"INDEX ON :Person(foo, bar)", "Unnamed index", singletonList( "Person" ),
+                        Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooBarDescriptor )}
+        ) );
         commit();
     }
 }
