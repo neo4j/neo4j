@@ -70,6 +70,8 @@ public interface PageSwapperFactory
      * the responsibility of informing the PagedFile via this callback.
      * @param createIfNotExist When true, creates the given file if it does not exist, instead of throwing an
      * exception.
+     * @param noChannelStriping When true, overrides channel striping behaviour,
+     * setting it to a single channel per mapped file.
      * @return A working PageSwapper instance for the given file.
      * @throws IOException If the PageSwapper could not be created, for
      * instance if the underlying file could not be opened, or the given file does not exist and createIfNotExist is
@@ -79,7 +81,8 @@ public interface PageSwapperFactory
             File file,
             int filePageSize,
             PageEvictionCallback onEviction,
-            boolean createIfNotExist ) throws IOException;
+            boolean createIfNotExist,
+            boolean noChannelStriping ) throws IOException;
 
     /**
      * Forces all prior writes made through all non-closed PageSwappers that this factory has created, to all the

@@ -49,7 +49,8 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
             File file,
             int filePageSize,
             PageEvictionCallback onEviction,
-            boolean createIfNotExist ) throws IOException
+            boolean createIfNotExist,
+            boolean noChannelStriping ) throws IOException
     {
         if ( !fs.fileExists( file ) )
         {
@@ -62,7 +63,7 @@ public class SingleFilePageSwapperFactory implements PageSwapperFactory
                 throw new NoSuchFileException( file.getPath(), null, "Cannot map non-existing file" );
             }
         }
-        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction );
+        return new SingleFilePageSwapper( file, fs, filePageSize, onEviction, noChannelStriping );
     }
 
     @Override

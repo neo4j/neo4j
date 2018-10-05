@@ -17,26 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import java.io.File;
 import java.nio.file.OpenOption;
 
-/**
- * {@link OpenOption}s that are specific to {@link PageCache#map(File, int, OpenOption...)},
- * and not normally supported by file systems.
- */
-public enum PageCacheOpenOptions implements OpenOption
-{
-    /**
-     * Map the file even if the specified file page size conflicts with an existing mapping of that file.
-     * If so, the given file page size will be ignored and a {@link PagedFile} will be returned that uses the
-     * file page size of the existing mapping.
-     */
-    ANY_PAGE_SIZE,
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 
-    /**
-     * Mapped file will only use a single channel, overriding the otherwise configured striping amount, e.g. one channel per core.
-     */
-    NO_CHANNEL_STRIPING
+class MuninnPageCacheNoChannelStripingTest extends MuninnPageCacheTest
+{
+    MuninnPageCacheNoChannelStripingTest()
+    {
+        // Think of this as calling a super constructor accepting this argument. See more comments on this field declaration.
+        openOptions = new OpenOption[] {PageCacheOpenOptions.NO_CHANNEL_STRIPING};
+    }
 }

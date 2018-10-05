@@ -66,7 +66,7 @@ public class SingleFilePageSwapper implements PageSwapper
     }
 
     // Exponent of 2 of how many channels we open per file:
-    private static final int channelStripePower = Integer.getInteger(
+    private static final int globalChannelStripePower = Integer.getInteger(
             "org.neo4j.io.pagecache.implSingleFilePageSwapper.channelStripePower",
             defaultChannelStripePower() );
 
@@ -74,8 +74,9 @@ public class SingleFilePageSwapper implements PageSwapper
     private static final int channelStripeShift = Integer.getInteger(
             "org.neo4j.io.pagecache.implSingleFilePageSwapper.channelStripeShift", 4 );
 
-    private static final int channelStripeCount = 1 << channelStripePower;
-    private static final int channelStripeMask = channelStripeCount - 1;
+    private static final int globalChannelStripeCount = 1 << globalChannelStripePower;
+    private static final int globalChannelStripeMask = stripeMask( globalChannelStripeCount );
+
     private static final int tokenChannelStripe = 0;
     private static final long tokenFilePageId = 0;
 
@@ -84,6 +85,12 @@ public class SingleFilePageSwapper implements PageSwapper
 
     private static final ThreadLocal<ByteBuffer> proxyCache = new ThreadLocal<>();
     private static final MethodHandle positionLockGetter = getPositionLockGetter();
+
+    private static int stripeMask( int count )
+    {
+        assert Integer.bitCount( count ) == 1;
+        return count - 1;
+    }
 
     private static MethodHandle getPositionLockGetter()
     {
@@ -133,6 +140,8 @@ public class SingleFilePageSwapper implements PageSwapper
     private final StoreChannel[] channels;
     private FileLock fileLock;
     private final boolean hasPositionLock;
+    private final int channelStripeCount;
+    private final int channelStripeMask;
 
     // Guarded by synchronized(this). See tryReopen() and close().
     private boolean closed;
@@ -140,14 +149,21 @@ public class SingleFilePageSwapper implements PageSwapper
     @SuppressWarnings( "unused" ) // Accessed through unsafe
     private volatile long fileSize;
 
-    public SingleFilePageSwapper(
-            File file,
-            FileSystemAbstraction fs,
-            int filePageSize,
-            PageEvictionCallback onEviction ) throws IOException
+    public SingleFilePageSwapper( File file, FileSystemAbstraction fs, int filePageSize, PageEvictionCallback onEviction, boolean noChannelStriping )
+            throws IOException
     {
         this.fs = fs;
         this.file = file;
+        if ( noChannelStriping )
+        {
+            this.channelStripeCount = 1;
+            this.channelStripeMask = stripeMask( channelStripeCount );
+        }
+        else
+        {
+            this.channelStripeCount = globalChannelStripeCount;
+            this.channelStripeMask = globalChannelStripeMask;
+        }
         this.channels = new StoreChannel[channelStripeCount];
         for ( int i = 0; i < channelStripeCount; i++ )
         {
@@ -223,7 +239,7 @@ public class SingleFilePageSwapper implements PageSwapper
         return channels[stripe];
     }
 
-    private static int stripe( long filePageId )
+    private int stripe( long filePageId )
     {
         return (int) (filePageId >>> channelStripeShift) & channelStripeMask;
     }

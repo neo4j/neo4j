@@ -24,6 +24,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -60,6 +62,12 @@ import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assume.assumeThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.test.matchers.ByteArrayMatcher.byteArray;
 import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
@@ -126,8 +134,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
-    void swappingInMustFillPageWithData() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void swappingInMustFillPageWithData( int noChannelStriping ) throws Exception
     {
         byte[] bytes = new byte[] { 1, 2, 3, 4 };
         StoreChannel channel = getFs().create( getFile() );
@@ -135,15 +144,16 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.close();
 
         PageSwapperFactory factory = createSwapperFactory();
-        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
+        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, bool( noChannelStriping ) );
         long target = createPage( 4 );
         swapper.read( 0, target, sizeOfAsInt( target ) );
 
         assertThat( array( target ), byteArray( bytes ) );
     }
 
-    @Test
-    void mustZeroFillPageBeyondEndOfFile() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void mustZeroFillPageBeyondEndOfFile( int noChannelStriping ) throws Exception
     {
         byte[] bytes = new byte[] {
                 // --- page 0:
@@ -156,15 +166,16 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         channel.close();
 
         PageSwapperFactory factory = createSwapperFactory();
-        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
+        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, bool( noChannelStriping ) );
         long target = createPage( 4 );
         swapper.read( 1, target, sizeOfAsInt( target ) );
 
         assertThat( array( target ), byteArray( new byte[]{5, 6, 0, 0} ) );
     }
 
-    @Test
-    void swappingOutMustWritePageToFile() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void swappingOutMustWritePageToFile( int noChannelStriping ) throws Exception
     {
         getFs().create( getFile() ).close();
 
@@ -172,7 +183,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         long page = createPage( expected );
 
         PageSwapperFactory factory = createSwapperFactory();
-        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
+        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, bool( noChannelStriping ) );
         swapper.write( 0, page );
 
         InputStream stream = getFs().openAsInputStream( getFile() );
@@ -189,8 +200,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return page;
     }
 
-    @Test
-    void swappingOutMustNotOverwriteDataBeyondPage() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void swappingOutMustNotOverwriteDataBeyondPage( int noChannelStriping ) throws Exception
     {
         byte[] initialData = new byte[] {
                 // --- page 0:
@@ -216,7 +228,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         long page = createPage( change );
 
         PageSwapperFactory factory = createSwapperFactory();
-        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false );
+        PageSwapper swapper = createSwapper( factory, getFile(), 4, null, false, bool( noChannelStriping ) );
         swapper.write( 1, page );
 
         InputStream stream = getFs().openAsInputStream( getFile() );
@@ -229,16 +241,17 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
     /**
      * The OverlappingFileLockException is thrown when tryLock is called on the same file *in the same JVM*.
      */
-    @Test
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
     @DisabledOnOs( OS.WINDOWS )
-    void creatingSwapperForFileMustTakeLockOnFile() throws Exception
+    void creatingSwapperForFileMustTakeLockOnFile( int noChannelStriping ) throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
         fileSystem.create( file ).close();
 
-        PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false );
+        PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false, bool( noChannelStriping ) );
 
         try
         {
@@ -251,9 +264,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
     @DisabledOnOs( OS.WINDOWS )
-    void creatingSwapperForInternallyLockedFileMustThrow() throws Exception
+    void creatingSwapperForInternallyLockedFileMustThrow( int noChannelStriping ) throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -264,13 +278,14 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try ( FileLock fileLock = channel.tryLock() )
         {
             assertThat( fileLock, is( not( nullValue() ) ) );
-            assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true ) );
+            assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true, bool( noChannelStriping ) ) );
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
     @DisabledOnOs( OS.WINDOWS )
-    void creatingSwapperForExternallyLockedFileMustThrow() throws Exception
+    void creatingSwapperForExternallyLockedFileMustThrow( int noChannelStriping ) throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
@@ -307,7 +322,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         try
         {
-            assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true ) );
+            assertThrows( FileLockException.class, () -> createSwapper( factory, file, 4, NO_CALLBACK, true, bool( noChannelStriping ) ) );
         }
         finally
         {
@@ -317,16 +332,17 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
     @DisabledOnOs( OS.WINDOWS )
-    void mustUnlockFileWhenThePageSwapperIsClosed() throws Exception
+    void mustUnlockFileWhenThePageSwapperIsClosed( int noChannelStriping ) throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
         fileSystem.create( file ).close();
 
-        createSwapper( factory, file, 4, NO_CALLBACK, false ).close();
+        createSwapper( factory, file, 4, NO_CALLBACK, false, false ).close();
 
         try ( StoreFileChannel channel = fileSystem.open( file, OpenMode.READ_WRITE );
               FileLock fileLock = channel.tryLock() )
@@ -335,16 +351,17 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
     @DisabledOnOs( OS.WINDOWS )
-    void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt() throws Exception
+    void fileMustRemainLockedEvenIfChannelIsClosedByStrayInterrupt( int noChannelStriping ) throws Exception
     {
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( fileSystem, Configuration.EMPTY );
         File file = testDir.file( "file" );
         fileSystem.create( file ).close();
 
-        PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false );
+        PageSwapper pageSwapper = createSwapper( factory, file, 4, NO_CALLBACK, false, bool( noChannelStriping ) );
 
         try
         {
@@ -361,9 +378,10 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
     @DisabledOnOs( OS.WINDOWS )
-    void mustCloseFilesIfTakingFileLockThrows() throws Exception
+    void mustCloseFilesIfTakingFileLockThrows( int noChannelStriping ) throws Exception
     {
         final AtomicInteger openFilesCounter = new AtomicInteger();
         PageSwapperFactory factory = createSwapperFactory();
@@ -388,7 +406,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         try ( StoreChannel ch = fileSystem.create( file );
                 FileLock ignore = ch.tryLock() )
         {
-            createSwapper( factory, file, 4, NO_CALLBACK, false ).close();
+            createSwapper( factory, file, 4, NO_CALLBACK, false, bool( noChannelStriping ) ).close();
             fail( "Creating a page swapper for a locked channel should have thrown" );
         }
         catch ( FileLockException e )
@@ -420,8 +438,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         return buffer;
     }
 
-    @Test
-    void mustHandleMischiefInPositionedRead() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void mustHandleMischiefInPositionedRead( int noChannelStriping ) throws Exception
     {
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
@@ -430,7 +449,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( getFs(), Configuration.EMPTY );
         File file = getFile();
-        PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
+        PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true, bool( noChannelStriping ) );
         try
         {
             long page = createPage( data );
@@ -443,7 +462,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
-        swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, false );
+        swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, false, bool( noChannelStriping ) );
 
         long page = createPage( bytesTotal );
 
@@ -462,8 +481,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
-    void mustHandleMischiefInPositionedWrite() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void mustHandleMischiefInPositionedWrite( int noChannelStriping ) throws Exception
     {
         int bytesTotal = 512;
         byte[] data = new byte[bytesTotal];
@@ -475,7 +495,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory();
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
-        PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
+        PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true, bool( noChannelStriping ) );
 
         long page = createPage( bytesTotal );
 
@@ -500,8 +520,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
-    void mustHandleMischiefInPositionedVectoredRead() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void mustHandleMischiefInPositionedVectoredRead( int noChannelStriping ) throws Exception
     {
         int bytesTotal = 512;
         int bytesPerPage = 32;
@@ -512,7 +533,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory();
         factory.open( getFs(), Configuration.EMPTY );
         File file = getFile();
-        PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true );
+        PageSwapper swapper = createSwapper( factory, file, bytesTotal, NO_CALLBACK, true, bool( noChannelStriping ) );
         try
         {
             long page = createPage( data );
@@ -525,7 +546,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
 
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
-        swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, false );
+        swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, false, bool( noChannelStriping ) );
 
         long[] pages = new long[pageCount];
         for ( int i = 0; i < pageCount; i++ )
@@ -556,8 +577,9 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         }
     }
 
-    @Test
-    void mustHandleMischiefInPositionedVectoredWrite() throws Exception
+    @ParameterizedTest
+    @ValueSource( ints = {0, 1} )
+    void mustHandleMischiefInPositionedVectoredWrite( int noChannelStriping ) throws Exception
     {
         int bytesTotal = 512;
         int bytesPerPage = 32;
@@ -571,7 +593,7 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         PageSwapperFactory factory = createSwapperFactory();
         RandomAdversary adversary = new RandomAdversary( 0.5, 0.0, 0.0 );
         factory.open( new AdversarialFileSystemAbstraction( adversary, getFs() ), Configuration.EMPTY );
-        PageSwapper swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, true );
+        PageSwapper swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, true, bool( noChannelStriping ) );
 
         long[] writePages = new long[pageCount];
         long[] readPages = new long[pageCount];
@@ -608,5 +630,40 @@ public class SingleFilePageSwapperTest extends PageSwapperTest
         {
             swapper.close();
         }
+    }
+
+    @Test
+    void mustDisableStripingIfToldTo() throws IOException
+    {
+        // given
+        int bytesPerPage = 32;
+        PageSwapperFactory factory = createSwapperFactory();
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        StoreChannel channel = mock( StoreChannel.class );
+        when( channel.tryLock() ).thenReturn( mock( FileLock.class ) );
+        when( fs.create( any( File.class ) ) ).thenReturn( channel );
+        when( fs.open( any( File.class ), any() ) ).thenReturn( channel );
+
+        // when
+        factory.open( fs, Configuration.EMPTY );
+        PageSwapper swapper = createSwapper( factory, file, bytesPerPage, NO_CALLBACK, true, true );
+        try
+        {
+            // then
+            verify( fs, times( 1 ) ).open( eq( file ), any( OpenMode.class ) );
+        }
+        finally
+        {
+            swapper.close();
+        }
+    }
+
+    /*
+     * Funny how @{@link ParameterizedTest} doesn't have support for booleans so this test is using int instead, acting as boolean.
+     * Good ol' C-style.
+     */
+    private boolean bool( int noChannelStriping )
+    {
+        return noChannelStriping == 1;
     }
 }

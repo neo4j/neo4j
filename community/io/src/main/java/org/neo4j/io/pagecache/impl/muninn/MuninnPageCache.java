@@ -340,6 +340,7 @@ public class MuninnPageCache implements PageCache
         boolean truncateExisting = false;
         boolean deleteOnClose = false;
         boolean anyPageSize = false;
+        boolean noChannelStriping = false;
         for ( OpenOption option : openOptions )
         {
             if ( option.equals( StandardOpenOption.CREATE ) )
@@ -357,6 +358,10 @@ public class MuninnPageCache implements PageCache
             else if ( option.equals( PageCacheOpenOptions.ANY_PAGE_SIZE ) )
             {
                 anyPageSize = true;
+            }
+            else if ( option.equals( PageCacheOpenOptions.NO_CHANNEL_STRIPING ) )
+            {
+                noChannelStriping = true;
             }
             else if ( !ignoredOpenOptions.contains( option ) )
             {
@@ -409,7 +414,8 @@ public class MuninnPageCache implements PageCache
                 pageCursorTracerSupplier,
                 versionContextSupplier,
                 createIfNotExists,
-                truncateExisting );
+                truncateExisting,
+                noChannelStriping );
         pagedFile.incrementRefCount();
         pagedFile.markDeleteOnClose( deleteOnClose );
         current = new FileMapping( file, pagedFile );
