@@ -31,7 +31,8 @@ import org.neo4j.helpers.collection.Iterators;
 
 /**
  * Every class which contains settings should implement this interface to allow the configuration to find the
- * settings via service loading.
+ * settings via service loading. Note that service loading requires you to additionally list the service class
+ * under META-INF/services/org.neo4j.configuration.LoadableConfig
  */
 public interface LoadableConfig
 {
