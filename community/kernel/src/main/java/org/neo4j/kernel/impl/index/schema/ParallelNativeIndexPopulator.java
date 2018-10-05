@@ -73,32 +73,24 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     ParallelNativeIndexPopulator( File baseIndexFile, IndexLayout<KEY,VALUE> layout, NativeIndexPopulatorPartSupplier<KEY,VALUE> partSupplier )
     {
         this.layout = layout;
-        this.threadLocalPopulators = new ThreadLocal<ThreadLocalPopulator>()
+        this.threadLocalPopulators = ThreadLocal.withInitial( () ->
         {
-            /**
-             * Creates a new part populator. It can be synchronized because it simplifies the implementation
-             * and virtually all time is spent in PageCache#map method inside populator.create, which is synchronized anyway.
-             */
-            @Override
-            protected ThreadLocalPopulator initialValue()
+            if ( closed )
             {
-                if ( closed )
-                {
-                    throw new IllegalStateException( "Already closed" );
-                }
-                if ( merged )
-                {
-                    throw new IllegalStateException( "Already merged" );
-                }
-
-                File file = new File( baseIndexFile + "-part-" + nextPartId.getAndIncrement() );
-                NativeIndexPopulator<KEY,VALUE> populator = partSupplier.part( file );
-                ThreadLocalPopulator tlPopulator = new ThreadLocalPopulator( populator );
-                partPopulators.add( tlPopulator );
-                populator.create();
-                return tlPopulator;
+                throw new IllegalStateException( "Already closed" );
             }
-        };
+            if ( merged )
+            {
+                throw new IllegalStateException( "Already merged" );
+            }
+
+            File file = new File( baseIndexFile + "-part-" + nextPartId.getAndIncrement() );
+            NativeIndexPopulator<KEY,VALUE> populator = partSupplier.part( file );
+            ThreadLocalPopulator tlPopulator = new ThreadLocalPopulator( populator );
+            partPopulators.add( tlPopulator );
+            populator.create();
+            return tlPopulator;
+        } );
         this.completePopulator = partSupplier.part( baseIndexFile );
     }
 
