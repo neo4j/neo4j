@@ -26,10 +26,20 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 
-public abstract class CollectingIndexUpdater<KEY extends NativeIndexKey<KEY>,VALUE extends NativeIndexValue> implements IndexUpdater
+/**
+ * Collects updates from {@link #process(IndexEntryUpdate)} and passes them to the {@link Applier} on {@link #close()}.
+ */
+public class CollectingIndexUpdater implements IndexUpdater
 {
+    private final Applier applier;
+
     private boolean closed;
     private final Collection<IndexEntryUpdate<?>> updates = new ArrayList<>();
+
+    public CollectingIndexUpdater( Applier applier )
+    {
+        this.applier = applier;
+    }
 
     @Override
     public void process( IndexEntryUpdate<?> update )
@@ -42,11 +52,15 @@ public abstract class CollectingIndexUpdater<KEY extends NativeIndexKey<KEY>,VAL
     public void close() throws IndexEntryConflictException
     {
         assertOpen();
-        apply( updates );
-        closed = true;
+        try
+        {
+            applier.accept( updates );
+        }
+        finally
+        {
+            closed = true;
+        }
     }
-
-    protected abstract void apply( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException;
 
     private void assertOpen()
     {
@@ -54,5 +68,10 @@ public abstract class CollectingIndexUpdater<KEY extends NativeIndexKey<KEY>,VAL
         {
             throw new IllegalStateException( "Updater has been closed" );
         }
+    }
+
+    public interface Applier
+    {
+        void accept( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException;
     }
 }

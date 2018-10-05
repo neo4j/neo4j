@@ -158,15 +158,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     IndexUpdater newPopulatingUpdater()
     {
-        IndexUpdater updater = new CollectingIndexUpdater<KEY,VALUE>()
-        {
-            @Override
-            protected void apply( Collection<IndexEntryUpdate<?>> updates ) throws IndexEntryConflictException
-            {
-                processUpdates( updates, updatesConflictDetector );
-            }
-        };
-
+        IndexUpdater updater = new CollectingIndexUpdater( updates -> processUpdates( updates, updatesConflictDetector ) );
         if ( descriptor.type() == UNIQUE )
         {
             // The index population detects conflicts on the fly, however for updates coming in we're in a position

@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.IndexSample;
@@ -224,14 +225,7 @@ public class IndexCRUDIT
         @Override
         public IndexUpdater newUpdater( final IndexUpdateMode mode )
         {
-            return new CollectingIndexUpdater()
-            {
-                @Override
-                public void close()
-                {
-                    updatesCommitted.addAll( updates );
-                }
-            };
+            return new CollectingIndexUpdater( updatesCommitted::addAll );
         }
 
         @Override

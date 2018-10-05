@@ -57,7 +57,6 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.scheduler.JobScheduler;
@@ -165,8 +164,8 @@ class ParallelNativeIndexPopulatorTest
             {
                 NativeIndexPopulator partPopulator = partPopulators.get( thread );
                 verify( partPopulator, times( batchCountPerThread * 3 ) ).add( anyCollection() );
-                CollectingIndexUpdater updater = (CollectingIndexUpdater) partPopulator.newPopulatingUpdater();
-                assertEquals( 10, updater.updates.size() );
+                CountingIndexUpdater updater = (CountingIndexUpdater) partPopulator.newPopulatingUpdater();
+                assertEquals( 10, updater.count );
             }
         }
     }
@@ -287,7 +286,7 @@ class ParallelNativeIndexPopulatorTest
     private NativeIndexPopulator<GenericKey,NativeIndexValue> mockNativeIndexPopulator()
     {
         NativeIndexPopulator<GenericKey,NativeIndexValue> populator = mock( NativeIndexPopulator.class );
-        when( populator.newPopulatingUpdater() ).thenReturn( new CollectingIndexUpdater() );
+        when( populator.newPopulatingUpdater() ).thenReturn( new CountingIndexUpdater() );
         return populator;
     }
 
@@ -342,5 +341,21 @@ class ParallelNativeIndexPopulatorTest
 
     private static class CustomFailure extends RuntimeException
     {
+    }
+
+    private static class CountingIndexUpdater implements IndexUpdater
+    {
+        private int count;
+
+        @Override
+        public void process( IndexEntryUpdate<?> update )
+        {
+            count++;
+        }
+
+        @Override
+        public void close()
+        {
+        }
     }
 }

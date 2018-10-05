@@ -53,6 +53,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -354,26 +355,22 @@ public class IndexRecoveryIT
         @Override
         public IndexUpdater newUpdater( final IndexUpdateMode mode )
         {
-            return new CollectingIndexUpdater()
+            return new CollectingIndexUpdater( updates ->
             {
-                @Override
-                public void close()
+                switch ( mode )
                 {
-                    switch ( mode )
-                    {
-                        case ONLINE:
-                            regularUpdates.addAll( updates );
-                            break;
+                    case ONLINE:
+                        regularUpdates.addAll( updates );
+                        break;
 
-                        case RECOVERY:
-                            batchedUpdates.addAll( updates );
-                            break;
+                    case RECOVERY:
+                        batchedUpdates.addAll( updates );
+                        break;
 
-                        default:
-                            throw new UnsupportedOperationException(  );
-                    }
+                    default:
+                        throw new UnsupportedOperationException(  );
                 }
-            };
+            } );
         }
     }
 

@@ -152,20 +152,16 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
         // Native index populators don't make use of NodePropertyAccessor, so just ignore it
 
         // Don't have an explicit updatesPopulator, instead record these updates and then each populator will have to apply next time they notice.
-        return new CollectingIndexUpdater<KEY,VALUE>()
+        return new CollectingIndexUpdater( updates ->
         {
-            @Override
-            protected void apply( Collection<IndexEntryUpdate<?>> updates )
+            // Ensure there's at least one part populator active. This is for a case where an index population is started
+            // and the only data coming in is from the populating updater.
+            if ( partPopulators.isEmpty() )
             {
-                // Ensure there's at least one part populator active. This is for a case where an index population is started
-                // and the only data coming in is from the populating updater.
-                if ( partPopulators.isEmpty() )
-                {
-                    threadLocalPopulators.get();
-                }
-                partPopulators.forEach( p -> p.updates.add( updates ) );
+                threadLocalPopulators.get();
             }
-        };
+            partPopulators.forEach( p -> p.updates.add( updates ) );
+        } );
     }
 
     @Override
