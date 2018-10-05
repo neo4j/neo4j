@@ -65,6 +65,7 @@
     <module>legacy</module>
     <module>lucene-index</module>
     <module>lucene-index-upgrade</module>
+    <module>fulltext-index</module>
     <module>graph-algo</module>
     <module>neo4j</module>
     <module>neo4j-community</module>
