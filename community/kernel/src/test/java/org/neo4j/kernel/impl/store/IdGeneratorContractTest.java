@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public abstract class IdGeneratorContractTest
 {
@@ -32,7 +32,7 @@ public abstract class IdGeneratorContractTest
     protected abstract IdGenerator openIdGenerator( int grabSize );
 
     @Test
-    public void shouldReportCorrectHighId()
+    void shouldReportCorrectHighId()
     {
         // given
         try ( IdGenerator idGenerator = createIdGenerator( 2 ) )

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
@@ -30,26 +28,20 @@ import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 public class IdGeneratorImplContractTest extends IdGeneratorContractTest
 {
-    private EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private TestDirectory testDirectory = TestDirectory.testDirectory(fsRule.get());
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory );
-
+    @Inject
     private EphemeralFileSystemAbstraction fs;
-
-    @Before
-    public void doBefore()
-    {
-        fs = fsRule.get();
-    }
+    @Inject
+    private TestDirectory testDirectory;
 
     @Override
     protected IdGenerator createIdGenerator( int grabSize )
@@ -64,8 +56,8 @@ public class IdGeneratorImplContractTest extends IdGeneratorContractTest
         return new IdGeneratorImpl( fs, idGeneratorFile(), grabSize, 1000, false, IdType.NODE, () -> 0L );
     }
 
-    @After
-    public void verifyFileCleanup()
+    @AfterEach
+    void verifyFileCleanup()
     {
         File file = idGeneratorFile();
         if ( file.exists() )
