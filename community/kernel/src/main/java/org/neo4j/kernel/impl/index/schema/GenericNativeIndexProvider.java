@@ -165,7 +165,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    public IndexCapability getCapability()
+    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
     {
         return CAPABILITY;
     }
@@ -188,6 +188,18 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.YES;
+        }
+
+        @Override
+        public boolean isFulltextIndex()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isEventuallyConsistent()
+        {
+            return false;
         }
 
         private boolean supportOrdering( ValueCategory[] valueCategories )

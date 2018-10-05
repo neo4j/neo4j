@@ -61,6 +61,23 @@ public interface IndexCapability
     IndexValueCapability valueCapability( ValueCategory... valueCategories );
 
     /**
+     * Fulltext indexes have many restrictions and special capabilities that means they are not substitudes for general indexes, and therefor
+     * should not be planned to be used for IndexSeeks, for instance.
+     * <p>
+     * Perhaps in a future version we will change this into an "index kind" enum or something, but this is all we need for now.
+     *
+     * @return {@code true} if this index is a fulltext schema index, {@code false} otherwise.
+     */
+    boolean isFulltextIndex();
+
+    /**
+     * It is possible for some indexes to be <em>eventually consistent</em>, meaning that they might not reflect newly committed changes.
+     *
+     * @return {@code true} if this index is eventually consistent, {@code false} otherwise.
+     */
+    boolean isEventuallyConsistent();
+
+    /**
      * @return an array of limitations that this index has. It could be anything that planning could look at and
      * either try to avoid or issue warning for.
      */
@@ -86,6 +103,18 @@ public interface IndexCapability
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
             return IndexValueCapability.NO;
+        }
+
+        @Override
+        public boolean isFulltextIndex()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isEventuallyConsistent()
+        {
+            return false;
         }
     };
 }

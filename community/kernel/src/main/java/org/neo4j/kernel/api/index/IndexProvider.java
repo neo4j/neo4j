@@ -171,7 +171,7 @@ public abstract class IndexProvider extends LifecycleAdapter
                 }
 
                 @Override
-                public IndexCapability getCapability()
+                public IndexCapability getCapability( StoreIndexDescriptor descriptor )
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }
@@ -237,8 +237,10 @@ public abstract class IndexProvider extends LifecycleAdapter
 
     /**
      * Return {@link IndexCapability} for this index provider.
+     *
+     * @param descriptor The specific {@link StoreIndexDescriptor} to get the capabilities for, in case it matters.
      */
-    public abstract IndexCapability getCapability();
+    public abstract IndexCapability getCapability( StoreIndexDescriptor descriptor );
 
     /**
      * @return a description of this index provider

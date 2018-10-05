@@ -878,9 +878,9 @@ public class RecoveryIT
         }
 
         @Override
-        public IndexCapability getCapability()
+        public IndexCapability getCapability( StoreIndexDescriptor descriptor )
         {
-            return actual.getCapability();
+            return actual.getCapability( descriptor );
         }
 
         @Override

@@ -107,7 +107,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
             case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }
-        Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability))
+        if (reference.isFulltextIndex || reference.isEventuallyConsistent) {
+          // Ignore fulltext indexes for now, because we don't know how to correctly plan for and query them. Not yet, anyway.
+          // Also, ignore eventually consistent indexes. Those are for explicit querying via procesures.
+          None
+        } else {
+          Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability))
+        }
       case _ => None
     }
 

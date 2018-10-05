@@ -110,7 +110,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability()
+    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
     {
         return IndexCapability.NO_CAPABILITY;
     }

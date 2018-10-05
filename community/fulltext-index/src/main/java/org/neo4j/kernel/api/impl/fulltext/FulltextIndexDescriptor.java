@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
-public class FulltextIndexDescriptor extends StoreIndexDescriptor
+class FulltextIndexDescriptor extends StoreIndexDescriptor
 {
     private final List<String> propertyNames;
     private final Analyzer analyzer;
@@ -42,7 +42,7 @@ public class FulltextIndexDescriptor extends StoreIndexDescriptor
         this.eventuallyConsistent = eventuallyConsistent;
     }
 
-    public Collection<String> propertyNames()
+    Collection<String> propertyNames()
     {
         return propertyNames;
     }
@@ -57,8 +57,15 @@ public class FulltextIndexDescriptor extends StoreIndexDescriptor
         return analyzerName;
     }
 
+    @Override
     public boolean isEventuallyConsistent()
     {
         return eventuallyConsistent;
+    }
+
+    @Override
+    public boolean isFulltextIndex()
+    {
+        return true;
     }
 }

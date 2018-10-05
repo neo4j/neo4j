@@ -181,9 +181,9 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
             }
 
             @Override
-            public IndexCapability getCapability()
+            public IndexCapability getCapability( StoreIndexDescriptor descriptor )
             {
-                return actualProvider.getCapability();
+                return actualProvider.getCapability( descriptor );
             }
 
             @Override

@@ -157,9 +157,9 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability()
+    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
     {
-        Iterable<IndexCapability> capabilities = providers.transform( IndexProvider::getCapability );
+        Iterable<IndexCapability> capabilities = providers.transform( indexProvider -> indexProvider.getCapability( descriptor ) );
         return new UnionIndexCapability( capabilities )
         {
             @Override

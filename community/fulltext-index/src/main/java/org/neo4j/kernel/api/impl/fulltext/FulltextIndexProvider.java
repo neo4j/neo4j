@@ -30,6 +30,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -59,6 +60,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+
+import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
 
 class FulltextIndexProvider extends AbstractLuceneIndexProvider implements FulltextAdapter, AuxiliaryTransactionStateProvider
 {
@@ -108,6 +111,41 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
     }
 
     @Override
+    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    {
+        FulltextIndexDescriptor fulltextIndexDescriptor;
+        if ( descriptor instanceof FulltextIndexDescriptor )
+        {
+            // We got our own index descriptor type, so we can ask it directly.
+            fulltextIndexDescriptor = (FulltextIndexDescriptor) descriptor;
+            return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+        }
+        SchemaDescriptor schema = descriptor.schema();
+        if ( schema instanceof FulltextSchemaDescriptor )
+        {
+            // The fulltext schema descriptor is readily available with our settings.
+            // This could be the situation where the index creation is about to be committed.
+            // In that case, the schema descriptor is our own legit type, but the StoreIndexDescriptor is generic.
+            FulltextSchemaDescriptor fulltextSchemaDescriptor = (FulltextSchemaDescriptor) schema;
+            return new FulltextIndexCapability( fulltextSchemaDescriptor.isEventuallyConsistent() );
+        }
+        // The schema descriptor is probably a generic multi-token descriptor.
+        // This happens if it was loaded from the schema store instead of created by our provider.
+        // This would be the case when the IndexingService is starting up, and if so, we probably have an online accessor that we can ask instead.
+        FulltextIndexAccessor accessor = getOpenOnlineAccessor( descriptor );
+        if ( accessor != null )
+        {
+            fulltextIndexDescriptor = accessor.getDescriptor();
+            return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+        }
+        // All of the above has failed, so we need to load the settings in from the storage directory of the index.
+        // This situation happens during recovery.
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+        fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+    }
+
+    @Override
     public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
@@ -130,7 +168,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
     public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-        FulltextIndexDescriptor fulltextIndexDescriptor = FulltextIndexSettings.readOrInitialiseDescriptor(
+        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(
                 descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
                 .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
@@ -153,7 +191,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
     {
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
 
-        FulltextIndexDescriptor fulltextIndexDescriptor = FulltextIndexSettings.readOrInitialiseDescriptor(
+        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(
                 descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
                 .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )

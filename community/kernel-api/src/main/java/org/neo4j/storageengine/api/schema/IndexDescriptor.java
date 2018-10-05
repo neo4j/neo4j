@@ -127,6 +127,18 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         return IndexValueCapability.NO;
     }
 
+    @Override
+    public boolean isFulltextIndex()
+    {
+        return false;
+    }
+
+    @Override
+    public boolean isEventuallyConsistent()
+    {
+        return false;
+    }
+
     /**
      * Returns a user friendly description of what this index indexes.
      *

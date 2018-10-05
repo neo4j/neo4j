@@ -134,7 +134,7 @@ public class TemporalIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability()
+    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
     {
         return CAPABILITY;
     }
@@ -178,6 +178,18 @@ public class TemporalIndexProvider extends IndexProvider
                 return IndexValueCapability.PARTIAL;
             }
             return IndexValueCapability.NO;
+        }
+
+        @Override
+        public boolean isFulltextIndex()
+        {
+            return false;
+        }
+
+        @Override
+        public boolean isEventuallyConsistent()
+        {
+            return false;
         }
 
         private boolean support( ValueCategory[] valueCategories )

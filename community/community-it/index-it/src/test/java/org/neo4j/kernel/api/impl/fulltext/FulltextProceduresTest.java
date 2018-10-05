@@ -51,6 +51,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Entity;
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -80,9 +81,11 @@ import org.neo4j.values.storable.ValueGroup;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -1958,6 +1961,72 @@ public class FulltextProceduresTest
             }
             expectedException.expect( QueryExecutionException.class );
             db.execute( format( DROP, schemaIndexName ) ).close();
+        }
+    }
+
+    @Test
+    public void fulltextIndexMustNotBeAvailableForRegularIndexSeeks()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            tx.success();
+        }
+        String valueToQueryFor = "value to query for";
+        try ( Transaction tx = db.beginTx() )
+        {
+            awaitIndexesOnline();
+            List<Value> values = generateRandomNonStringValues();
+            for ( Value value : values )
+            {
+                db.createNode( LABEL ).setProperty( PROP, value.asObject() );
+            }
+            db.createNode( LABEL ).setProperty( PROP, valueToQueryFor );
+            tx.success();
+        }
+        Map<String,Object> params = new HashMap<>();
+        params.put( "prop", valueToQueryFor );
+        try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertThat( result.stream().count(), is( 1L ) );
+            String planDescription = result.getExecutionPlanDescription().toString();
+            assertThat( planDescription, containsString( "NodeByLabelScan" ) );
+            assertThat( planDescription, not( containsString( "IndexSeek" ) ) );
+        }
+    }
+
+    @Test
+    public void fulltextIndexMustNotBeAvailableForRegularIndexSeeksAfterShutDown()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            tx.success();
+        }
+        db.shutdown();
+        db = createDatabase();
+        String valueToQueryFor = "value to query for";
+        try ( Transaction tx = db.beginTx() )
+        {
+            awaitIndexesOnline();
+            List<Value> values = generateRandomNonStringValues();
+            for ( Value value : values )
+            {
+                db.createNode( LABEL ).setProperty( PROP, value.asObject() );
+            }
+            db.createNode( LABEL ).setProperty( PROP, valueToQueryFor );
+            tx.success();
+        }
+        Map<String,Object> params = new HashMap<>();
+        params.put( "prop", valueToQueryFor );
+        try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertThat( result.stream().count(), is( 1L ) );
+            String planDescription = result.getExecutionPlanDescription().toString();
+            assertThat( planDescription, containsString( "NodeByLabelScan" ) );
+            assertThat( planDescription, not( containsString( "IndexSeek" ) ) );
         }
     }
 

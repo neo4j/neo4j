@@ -314,7 +314,7 @@ public class IndexPopulationMissConcurrentUpdateIT
                 }
 
                 @Override
-                public IndexCapability getCapability()
+                public IndexCapability getCapability( StoreIndexDescriptor descriptor )
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }

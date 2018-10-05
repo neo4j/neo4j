@@ -17,54 +17,43 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api.schema;
+package org.neo4j.kernel.api.impl.fulltext;
 
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexLimitation;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.values.storable.ValueCategory;
 
-/**
- * A committed index with specified capabilities.
- */
-public class CapableIndexDescriptor extends StoreIndexDescriptor
+class FulltextIndexCapability implements IndexCapability
 {
-    private final IndexCapability indexCapability;
+    private final boolean isEventuallyConsistent;
 
-    public CapableIndexDescriptor( StoreIndexDescriptor indexDescriptor, IndexCapability indexCapability )
+    FulltextIndexCapability( boolean isEventuallyConsistent )
     {
-        super( indexDescriptor );
-        this.indexCapability = indexCapability;
+        this.isEventuallyConsistent = isEventuallyConsistent;
     }
 
     @Override
     public IndexOrder[] orderCapability( ValueCategory... valueCategories )
     {
-        return indexCapability.orderCapability( valueCategories );
+        return ORDER_NONE;
     }
 
     @Override
     public IndexValueCapability valueCapability( ValueCategory... valueCategories )
     {
-        return indexCapability.valueCapability( valueCategories );
-    }
-
-    @Override
-    public IndexLimitation[] limitations()
-    {
-        return indexCapability.limitations();
+        return IndexValueCapability.NO;
     }
 
     @Override
     public boolean isFulltextIndex()
     {
-        return indexCapability.isFulltextIndex();
+        return true;
     }
 
     @Override
     public boolean isEventuallyConsistent()
     {
-        return indexCapability.isEventuallyConsistent();
+        return isEventuallyConsistent;
     }
 }

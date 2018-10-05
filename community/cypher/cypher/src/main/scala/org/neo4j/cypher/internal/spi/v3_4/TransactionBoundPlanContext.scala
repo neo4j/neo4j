@@ -87,6 +87,7 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
     txSupplier().schemaRead.indexGetState(reference) match {
       case InternalIndexState.ONLINE => reference match {
         case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.schema().getEntityTokenIds()(0), cir.properties, cir.limitations().map(kernelToCypher).toSet))
+        case ref if ref.isFulltextIndex || ref.isEventuallyConsistent => None
         case _ => Some(IndexDescriptor(reference.schema().getEntityTokenIds()(0), reference.properties))
       }
       case _ => None

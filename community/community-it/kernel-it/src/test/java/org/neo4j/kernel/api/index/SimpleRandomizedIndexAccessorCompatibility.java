@@ -106,7 +106,7 @@ public class SimpleRandomizedIndexAccessorCompatibility extends IndexAccessorCom
             List<Long> expectedIds = expectedIds( sortedValues, from, to, fromInclusive, toInclusive );
 
             // Depending on order capabilities we verify ids or order and ids.
-            IndexOrder[] indexOrders = indexProvider.getCapability().orderCapability( predicate.valueGroup().category() );
+            IndexOrder[] indexOrders = indexProvider.getCapability( descriptor ).orderCapability( predicate.valueGroup().category() );
             for ( IndexOrder order : indexOrders )
             {
                 List<Long> actualIds = assertInOrder( order, predicate );

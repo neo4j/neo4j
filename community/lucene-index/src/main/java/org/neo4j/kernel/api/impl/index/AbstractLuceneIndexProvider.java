@@ -74,7 +74,7 @@ public abstract class AbstractLuceneIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability()
+    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
     {
         return IndexCapability.NO_CAPABILITY;
     }
