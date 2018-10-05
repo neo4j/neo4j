@@ -54,13 +54,10 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -79,18 +76,20 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 import static org.neo4j.values.storable.Values.longValue;
 
 @ExtendWith( TestDirectoryExtension.class )
 class ParallelNativeIndexPopulatorTest
 {
     private static final int THREADS = 4;
-    private static final LabelSchemaDescriptor DESCRIPTOR = SchemaDescriptorFactory.forLabel( 1, 1 );
+    private static final StoreIndexDescriptor DESCRIPTOR = forSchema( forLabel( 1, 1 ), GenericNativeIndexProvider.DESCRIPTOR ).withId( 1 );
 
     @Inject
-    private TestDirectory directory;
+    TestDirectory directory;
 
     private final Config defaults = defaults();
     private final ConfiguredSpaceFillingCurveSettingsCache settingsCache = new ConfiguredSpaceFillingCurveSettingsCache( defaults );
@@ -233,9 +232,8 @@ class ParallelNativeIndexPopulatorTest
             try ( PageCache pageCache = new MuninnPageCache( swapper, 1_000, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, EMPTY, jobScheduler ) )
             {
                 // given
-                StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( DESCRIPTOR.schema(), GenericNativeIndexProvider.DESCRIPTOR ).withId( 1 );
                 NativeIndexPopulatorPartSupplier<GenericKey,NativeIndexValue> partSupplier =
-                        file -> new GenericNativeIndexPopulator( pageCache, (FileSystemAbstraction) fs, file, layout, IndexProvider.Monitor.EMPTY, descriptor,
+                        file -> new GenericNativeIndexPopulator( pageCache, (FileSystemAbstraction) fs, file, layout, IndexProvider.Monitor.EMPTY, DESCRIPTOR,
                                 spatialSettings, directoriesByProvider( directory.directory() ).forProvider( GenericNativeIndexProvider.DESCRIPTOR ),
                                 mock( SpaceFillingCurveConfiguration.class ), false, !file.equals( baseIndexFile ) );
                 ParallelNativeIndexPopulator<GenericKey,NativeIndexValue> populator = new ParallelNativeIndexPopulator<>( baseIndexFile, layout, partSupplier );
@@ -334,7 +332,7 @@ class ParallelNativeIndexPopulatorTest
         }
     }
 
-    private IndexEntryUpdate<LabelSchemaDescriptor> update( long id )
+    private IndexEntryUpdate<?> update( long id )
     {
         return add( id, DESCRIPTOR, longValue( id ) );
     }
