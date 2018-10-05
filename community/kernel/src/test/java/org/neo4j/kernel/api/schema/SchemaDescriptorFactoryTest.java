@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.api.schema;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertArray;
 
-public class SchemaDescriptorFactoryTest
+class SchemaDescriptorFactoryTest
 {
 
     private static final int REL_TYPE_ID = 0;
     private static final int LABEL_ID = 0;
 
     @Test
-    public void shouldCreateLabelDescriptors()
+    void shouldCreateLabelDescriptors()
     {
         LabelSchemaDescriptor labelDesc;
         labelDesc = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
@@ -49,7 +49,7 @@ public class SchemaDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateRelTypeDescriptors()
+    void shouldCreateRelTypeDescriptors()
     {
         RelationTypeSchemaDescriptor relTypeDesc;
         relTypeDesc = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
@@ -66,7 +66,7 @@ public class SchemaDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateEqualLabels()
+    void shouldCreateEqualLabels()
     {
         LabelSchemaDescriptor desc1 = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
         LabelSchemaDescriptor desc2 = SchemaDescriptorFactory.forLabel( LABEL_ID, 1 );
@@ -74,7 +74,7 @@ public class SchemaDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateEqualRelTypes()
+    void shouldCreateEqualRelTypes()
     {
         RelationTypeSchemaDescriptor desc1 = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
         RelationTypeSchemaDescriptor desc2 = SchemaDescriptorFactory.forRelType( REL_TYPE_ID, 1 );
@@ -82,7 +82,7 @@ public class SchemaDescriptorFactoryTest
     }
 
     @Test
-    public void shouldGiveNiceUserDescriptions()
+    void shouldGiveNiceUserDescriptions()
     {
         assertThat( SchemaDescriptorFactory.forLabel( 1, 2 ).userDescription( SchemaTestUtil.simpleNameLookup ),
                 equalTo( ":Label1(property2)" ) );

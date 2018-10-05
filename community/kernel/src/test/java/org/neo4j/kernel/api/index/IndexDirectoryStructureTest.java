@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.fs.FileUtils.path;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProviderKey;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 
-public class IndexDirectoryStructureTest
+class IndexDirectoryStructureTest
 {
     private final IndexProviderDescriptor provider = new IndexProviderDescriptor( "test", "0.5" );
     private final File databaseStoreDir = new File( "db" ).getAbsoluteFile();
@@ -40,7 +40,7 @@ public class IndexDirectoryStructureTest
     private final long indexId = 15;
 
     @Test
-    public void shouldSeeCorrectDirectoriesForProviderKey()
+    void shouldSeeCorrectDirectoriesForProviderKey()
     {
         assertCorrectDirectories( directoriesByProviderKey( databaseStoreDir ).forProvider( provider ),
                 path( baseIndexDirectory, provider.getKey() ),
@@ -48,7 +48,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldSeeCorrectDirectoriesForProvider()
+    void shouldSeeCorrectDirectoriesForProvider()
     {
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( provider ),
                 path( baseIndexDirectory, provider.getKey() + "-" + provider.getVersion() ),
@@ -56,7 +56,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldSeeCorrectDirectoriesForSubProvider()
+    void shouldSeeCorrectDirectoriesForSubProvider()
     {
         IndexDirectoryStructure parentStructure = directoriesByProvider( databaseStoreDir ).forProvider( provider );
         IndexProviderDescriptor subProvider = new IndexProviderDescriptor( "sub", "0.3" );
@@ -67,7 +67,7 @@ public class IndexDirectoryStructureTest
     }
 
     @Test
-    public void shouldHandleWeirdCharactersInProviderKey()
+    void shouldHandleWeirdCharactersInProviderKey()
     {
         IndexProviderDescriptor providerWithWeirdName = new IndexProviderDescriptor( "native+lucene", "1.0" );
         assertCorrectDirectories( directoriesByProvider( databaseStoreDir ).forProvider( providerWithWeirdName ),

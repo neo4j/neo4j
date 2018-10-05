@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -33,9 +33,9 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -43,15 +43,15 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TestPlaceboTransaction
+class TestPlaceboTransaction
 {
     private Transaction placeboTx;
     private Node resource;
     private KernelTransaction kernelTransaction;
     private Locks locks;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
         ThreadToStatementContextBridge bridge = mock( ThreadToStatementContextBridge.class );
         Statement statement = mock( Statement.class );
@@ -65,7 +65,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldRollbackParentByDefault()
+    void shouldRollbackParentByDefault()
     {
         // When
         placeboTx.close();
@@ -75,7 +75,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldRollbackParentIfFailureCalled()
+    void shouldRollbackParentIfFailureCalled()
     {
         // When
         placeboTx.failure();
@@ -86,7 +86,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldNotRollbackParentIfSuccessCalled()
+    void shouldNotRollbackParentIfSuccessCalled()
     {
         // When
         placeboTx.success();
@@ -97,7 +97,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void successCannotOverrideFailure()
+    void successCannotOverrideFailure()
     {
         // When
         placeboTx.failure();
@@ -110,7 +110,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void canAcquireReadLock()
+    void canAcquireReadLock()
     {
         // when
         placeboTx.acquireReadLock( resource );
@@ -120,7 +120,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void canAcquireWriteLock()
+    void canAcquireWriteLock()
     {
         // when
         placeboTx.acquireWriteLock( resource );
@@ -130,7 +130,7 @@ public class TestPlaceboTransaction
     }
 
     @Test
-    public void shouldReturnTerminationReason()
+    void shouldReturnTerminationReason()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )

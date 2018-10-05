@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
 
@@ -32,22 +32,20 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 
-import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class TopLevelTransactionTest
+class TopLevelTransactionTest
 {
     @Test
-    public void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
+    void shouldThrowTransientExceptionOnTransientKernelException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -58,18 +56,11 @@ public class TopLevelTransactionTest
 
         // WHEN
         transaction.success();
-        try
-        {
-            transaction.close();
-            fail( "Should have failed" );
-        }
-        catch ( TransientTransactionFailureException e )
-        {   // THEN Good
-        }
+        assertThrows( TransientTransactionFailureException.class, transaction::close );
     }
 
     @Test
-    public void shouldThrowTransactionExceptionOnTransientKernelException() throws Exception
+    void shouldThrowTransactionExceptionOnTransientKernelException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -79,18 +70,11 @@ public class TopLevelTransactionTest
 
         // WHEN
         transaction.success();
-        try
-        {
-            transaction.close();
-            fail( "Should have failed" );
-        }
-        catch ( org.neo4j.graphdb.TransactionFailureException e )
-        {   // THEN Good
-        }
+        assertThrows( org.neo4j.graphdb.TransactionFailureException.class, transaction::close );
     }
 
     @Test
-    public void shouldLetThroughTransientFailureException() throws Exception
+    void shouldLetThroughTransientFailureException() throws Exception
     {
         // GIVEN
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
@@ -100,18 +84,11 @@ public class TopLevelTransactionTest
 
         // WHEN
         transaction.success();
-        try
-        {
-            transaction.close();
-            fail( "Should have failed" );
-        }
-        catch ( TransientFailureException e )
-        {   // THEN Good
-        }
+        assertThrows( TransientFailureException.class, transaction::close );
     }
 
     @Test
-    public void shouldShowTransactionTerminatedExceptionAsTransient() throws Exception
+    void shouldShowTransactionTerminatedExceptionAsTransient() throws Exception
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         doReturn( true ).when( kernelTransaction ).isOpen();
@@ -120,20 +97,12 @@ public class TopLevelTransactionTest
         TopLevelTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
         transaction.success();
-        try
-        {
-            transaction.close();
-            fail( "Should have failed" );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( TransientTransactionFailureException.class ) );
-            assertSame( error, e.getCause() );
-        }
+        TransientTransactionFailureException exception = assertThrows( TransientTransactionFailureException.class, transaction::close );
+        assertSame( error, exception.getCause() );
     }
 
     @Test
-    public void shouldReturnTerminationReason()
+    void shouldReturnTerminationReason()
     {
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         when( kernelTransaction.getReasonIfTerminated() ).thenReturn( Optional.empty() )

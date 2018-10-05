@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.txtracking;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
@@ -33,8 +33,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class TransactionIdTrackerTest
+class TransactionIdTrackerTest
 {
     private static final Duration DEFAULT_DURATION = ofSeconds( 10 );
 
@@ -52,15 +52,15 @@ public class TransactionIdTrackerTest
 
     private TransactionIdTracker transactionIdTracker;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         when( databaseAvailabilityGuard.isAvailable() ).thenReturn( true );
         transactionIdTracker = new TransactionIdTracker( () -> transactionIdStore, databaseAvailabilityGuard );
     }
 
     @Test
-    public void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
+    void shouldReturnImmediatelyForBaseTxIdOrLess() throws Exception
     {
         // when
         transactionIdTracker.awaitUpToDate( BASE_TX_ID, ofSeconds( 5 ) );
@@ -70,7 +70,7 @@ public class TransactionIdTrackerTest
     }
 
     @Test
-    public void shouldWaitForRequestedVersion() throws Exception
+    void shouldWaitForRequestedVersion() throws Exception
     {
         // given
         long version = 5L;
@@ -83,50 +83,34 @@ public class TransactionIdTrackerTest
     }
 
     @Test
-    public void shouldPropagateTimeoutException() throws Exception
+    void shouldPropagateTimeoutException() throws Exception
     {
         // given
         long version = 5L;
         TimeoutException timeoutException = new TimeoutException();
         doThrow( timeoutException ).when( transactionIdStore ).awaitClosedTransactionId( anyLong(), anyLong() );
 
-        try
-        {
-            // when
-            transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 50 ) );
-            fail( "should have thrown" );
-        }
-        catch ( TransactionFailureException ex )
-        {
-            // then
-            assertEquals( Status.Transaction.InstanceStateChanged, ex.status() );
-            assertEquals( timeoutException, ex.getCause() );
-        }
+        TransactionFailureException exception =
+                assertThrows( TransactionFailureException.class, () -> transactionIdTracker.awaitUpToDate( version + 1, ofMillis( 50 ) ) );
+        assertEquals( Status.Transaction.InstanceStateChanged, exception.status() );
+        assertEquals( timeoutException, exception.getCause() );
     }
 
     @Test
-    public void shouldNotWaitIfTheDatabaseIsUnavailable() throws Exception
+    void shouldNotWaitIfTheDatabaseIsUnavailable() throws Exception
     {
         // given
         when( databaseAvailabilityGuard.isAvailable() ).thenReturn( false );
 
-        try
-        {
-            // when
-            transactionIdTracker.awaitUpToDate( 1000, ofMillis( 60_000 ) );
-            fail( "should have thrown" );
-        }
-        catch ( TransactionFailureException ex )
-        {
-            // then
-            assertEquals( Status.General.DatabaseUnavailable, ex.status() );
-        }
+        TransactionFailureException exception =
+                assertThrows( TransactionFailureException.class, () -> transactionIdTracker.awaitUpToDate( 1000, ofMillis( 60_000 ) ) );
+        assertEquals( Status.General.DatabaseUnavailable, exception.status() );
 
         verify( transactionIdStore, never() ).awaitClosedTransactionId( anyLong(), anyLong() );
     }
 
     @Test
-    public void shouldReturnNewestTransactionId()
+    void shouldReturnNewestTransactionId()
     {
         when( transactionIdStore.getLastClosedTransactionId() ).thenReturn( 42L );
         when( transactionIdStore.getLastCommittedTransactionId() ).thenReturn( 4242L );

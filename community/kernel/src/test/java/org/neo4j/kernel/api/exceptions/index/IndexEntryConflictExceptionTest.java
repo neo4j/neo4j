@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
@@ -32,13 +32,13 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 
-public class IndexEntryConflictExceptionTest
+class IndexEntryConflictExceptionTest
 {
-    public static final int labelId = 1;
-    public static final Value value = Values.of( "hi" );
+    private static final int labelId = 1;
+    private static final Value value = Values.of( "hi" );
 
     @Test
-    public void shouldMakeEntryConflicts()
+    void shouldMakeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2 );
         IndexEntryConflictException e = new IndexEntryConflictException( 0L, 1L, value );
@@ -48,7 +48,7 @@ public class IndexEntryConflictExceptionTest
     }
 
     @Test
-    public void shouldMakeEntryConflictsForOneNode()
+    void shouldMakeEntryConflictsForOneNode()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2 );
         IndexEntryConflictException e = new IndexEntryConflictException( 0L, StatementConstants.NO_SUCH_NODE, value );
@@ -58,7 +58,7 @@ public class IndexEntryConflictExceptionTest
     }
 
     @Test
-    public void shouldMakeCompositeEntryConflicts()
+    void shouldMakeCompositeEntryConflicts()
     {
         LabelSchemaDescriptor schema = SchemaDescriptorFactory.forLabel( labelId, 2, 3, 4 );
         ValueTuple values = ValueTuple.of( true, "hi", new long[]{6L, 4L} );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.security;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -30,10 +30,10 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.nullValue;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
-public class AuthTokenTest
+class AuthTokenTest
 {
     @Test
-    public void shouldMakeBasicAuthToken()
+    void shouldMakeBasicAuthToken()
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -43,7 +43,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeBasicAuthTokenWithRealm()
+    void shouldMakeBasicAuthTokenWithRealm()
     {
         Map<String, Object> token = AuthToken.newBasicAuthToken( "me", "my secret", "my realm" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -53,7 +53,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeCustomAuthTokenAndBasicScheme()
+    void shouldMakeCustomAuthTokenAndBasicScheme()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "basic" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -63,7 +63,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeCustomAuthTokenAndCustomcScheme()
+    void shouldMakeCustomAuthTokenAndCustomcScheme()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme" );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));
@@ -73,7 +73,7 @@ public class AuthTokenTest
     }
 
     @Test
-    public void shouldMakeCustomAuthTokenAndCustomcSchemeWithParameters()
+    void shouldMakeCustomAuthTokenAndCustomcSchemeWithParameters()
     {
         Map<String, Object> token = AuthToken.newCustomAuthToken( "me", "my secret", "my realm", "my scheme", map("a", "A", "b", "B") );
         assertThat("Should have correct username", token.get(AuthToken.PRINCIPAL), equalTo("me"));

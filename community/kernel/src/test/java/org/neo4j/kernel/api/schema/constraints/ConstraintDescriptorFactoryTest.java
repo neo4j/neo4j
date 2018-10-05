@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.schema.constraints;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
@@ -28,13 +28,13 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
-public class ConstraintDescriptorFactoryTest
+class ConstraintDescriptorFactoryTest
 {
     private static final int LABEL_ID = 0;
     private static final int REL_TYPE_ID = 0;
 
     @Test
-    public void shouldCreateExistsConstraintDescriptors()
+    void shouldCreateExistsConstraintDescriptors()
     {
         ConstraintDescriptor desc;
 
@@ -48,7 +48,7 @@ public class ConstraintDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateUniqueConstraintDescriptors()
+    void shouldCreateUniqueConstraintDescriptors()
     {
         ConstraintDescriptor desc;
 
@@ -58,7 +58,7 @@ public class ConstraintDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateNodeKeyConstraintDescriptors()
+    void shouldCreateNodeKeyConstraintDescriptors()
     {
         ConstraintDescriptor desc;
 
@@ -68,7 +68,7 @@ public class ConstraintDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateConstraintDescriptorsFromSchema()
+    void shouldCreateConstraintDescriptorsFromSchema()
     {
         ConstraintDescriptor desc;
 
@@ -86,7 +86,7 @@ public class ConstraintDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateEqualDescriptors()
+    void shouldCreateEqualDescriptors()
     {
         ConstraintDescriptor desc1;
         ConstraintDescriptor desc2;
@@ -105,7 +105,7 @@ public class ConstraintDescriptorFactoryTest
     }
 
     @Test
-    public void shouldGiveNiceUserDescriptions()
+    void shouldGiveNiceUserDescriptions()
     {
         assertThat( ConstraintDescriptorFactory.existsForLabel( 1, 2 ).userDescription( simpleNameLookup ),
                 equalTo( "Constraint( EXISTS, :Label1(property2) )" ) );

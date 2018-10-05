@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.values.storable.Value;
@@ -30,17 +28,15 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class IndexEntryUpdateTest
+class IndexEntryUpdateTest
 {
     private final Value[] multiValue = new Value[]{Values.of( "value" ), Values.of( "value2" )};
     private final Value singleValue = Values.of( "value" );
 
-    @Rule
-    public ExpectedException thrown = ExpectedException.none();
-
     @Test
-    public void indexEntryUpdatesShouldBeEqual()
+    void indexEntryUpdatesShouldBeEqual()
     {
         IndexEntryUpdate<?> a = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> b = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
@@ -49,7 +45,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void addShouldRetainValues()
+    void addShouldRetainValues()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> multi = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4, 5 ), multiValue );
@@ -59,7 +55,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void removeShouldRetainValues()
+    void removeShouldRetainValues()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         IndexEntryUpdate<?> multi = IndexEntryUpdate
@@ -70,23 +66,21 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void addShouldThrowIfAskedForChanged()
+    void addShouldThrowIfAskedForChanged()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
-        thrown.expect( UnsupportedOperationException.class );
-        single.beforeValues();
+        assertThrows( UnsupportedOperationException.class, single::beforeValues );
     }
 
     @Test
-    public void removeShouldThrowIfAskedForChanged()
+    void removeShouldThrowIfAskedForChanged()
     {
         IndexEntryUpdate<?> single = IndexEntryUpdate.remove( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
-        thrown.expect( UnsupportedOperationException.class );
-        single.beforeValues();
+        assertThrows( UnsupportedOperationException.class, single::beforeValues );
     }
 
     @Test
-    public void updatesShouldEqualRegardlessOfCreationMethod()
+    void updatesShouldEqualRegardlessOfCreationMethod()
     {
         IndexEntryUpdate<?> singleAdd = IndexEntryUpdate.add( 0, SchemaDescriptorFactory.forLabel( 3, 4 ), singleValue );
         Value[] singleAsArray = {singleValue};
@@ -106,7 +100,7 @@ public class IndexEntryUpdateTest
     }
 
     @Test
-    public void changedShouldRetainValues()
+    void changedShouldRetainValues()
     {
         Value singleAfter = Values.of( "Hello" );
         IndexEntryUpdate<?> singleChange = IndexEntryUpdate

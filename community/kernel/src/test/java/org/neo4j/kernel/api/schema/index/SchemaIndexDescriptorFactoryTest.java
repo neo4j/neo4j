@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.schema.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -30,12 +30,12 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.assertEquality;
 import static org.neo4j.kernel.api.schema.SchemaTestUtil.simpleNameLookup;
 
-public class SchemaIndexDescriptorFactoryTest
+class SchemaIndexDescriptorFactoryTest
 {
     private static final int LABEL_ID = 0;
 
     @Test
-    public void shouldCreateIndexDescriptors()
+    void shouldCreateIndexDescriptors()
     {
         IndexDescriptor desc;
 
@@ -45,7 +45,7 @@ public class SchemaIndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateUniqueIndexDescriptors()
+    void shouldCreateUniqueIndexDescriptors()
     {
         IndexDescriptor desc;
 
@@ -55,7 +55,7 @@ public class SchemaIndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateIndexDescriptorsFromSchema()
+    void shouldCreateIndexDescriptorsFromSchema()
     {
         IndexDescriptor desc;
 
@@ -69,7 +69,7 @@ public class SchemaIndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldCreateEqualDescriptors()
+    void shouldCreateEqualDescriptors()
     {
         IndexDescriptor desc1;
         IndexDescriptor desc2;
@@ -83,7 +83,7 @@ public class SchemaIndexDescriptorFactoryTest
     }
 
     @Test
-    public void shouldGiveNiceUserDescriptions()
+    void shouldGiveNiceUserDescriptions()
     {
         assertThat( TestIndexDescriptorFactory.forLabel( 1, 2 ).userDescription( simpleNameLookup ),
                     equalTo( "Index( GENERAL, :Label1(property2) )" ) );

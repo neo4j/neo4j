@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.api.query;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static java.util.Collections.emptyList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
 
-public class CompilerInfoTest
+class CompilerInfoTest
 {
     @Test
-    public void plannerInfoShouldBeInSmallCase()
+    void plannerInfoShouldBeInSmallCase()
     {
         // given
         CompilerInfo compilerInfo = new CompilerInfo( "PLANNER", "RUNTIME", emptyList() );

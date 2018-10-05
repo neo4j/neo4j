@@ -19,25 +19,25 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.RelationshipType;
 
-import static org.junit.Assert.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
-public class TestTraversal
+class TestTraversal
 {
-    private static RelationshipType T1 = withName( "T1" );
-    private static RelationshipType T2 = withName( "T2" );
-    private static RelationshipType T3 = withName( "T3" );
+    private static final RelationshipType T1 = withName( "T1" );
+    private static final RelationshipType T2 = withName( "T2" );
+    private static final RelationshipType T3 = withName( "T3" );
 
     @Test
-    public void canCreateExpanderWithMultipleTypesAndDirections()
+    void canCreateExpanderWithMultipleTypesAndDirections()
     {
         assertNotNull( PathExpanders.forTypesAndDirections( T1, INCOMING, T2,
                 OUTGOING, T3, BOTH ) );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
@@ -29,13 +29,13 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class IndexPopulationFailedKernelExceptionTest
+class IndexPopulationFailedKernelExceptionTest
 {
 
     private static final TokenNameLookup TOKEN_NAME_LOOKUP = SchemaUtil.idTokenNameLookup;
 
     @Test
-    public void shouldHandleMultiplePropertiesInConstructor1()
+    void shouldHandleMultiplePropertiesInConstructor1()
     {
         // Given
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );
@@ -50,7 +50,7 @@ public class IndexPopulationFailedKernelExceptionTest
     }
 
     @Test
-    public void shouldHandleMultiplePropertiesInConstructor2()
+    void shouldHandleMultiplePropertiesInConstructor2()
     {
         // Given
         LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 0, 42, 43, 44 );

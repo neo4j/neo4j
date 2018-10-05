@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.mockito.verification.VerificationMode;
 
@@ -37,12 +37,12 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.mock;
@@ -52,7 +52,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.logging.NullLog.getInstance;
 
-public class DatabaseAvailabilityGuardTest
+class DatabaseAvailabilityGuardTest
 {
     private static final AvailabilityRequirement REQUIREMENT_1 = new DescriptiveAvailabilityRequirement( "Requirement 1" );
     private static final AvailabilityRequirement REQUIREMENT_2 = new DescriptiveAvailabilityRequirement( "Requirement 2" );
@@ -60,7 +60,7 @@ public class DatabaseAvailabilityGuardTest
     private final Clock clock = Clocks.systemClock();
 
     @Test
-    public void logOnAvailabilityChange()
+    void logOnAvailabilityChange()
     {
         // Given
         Log log = mock( Log.class );
@@ -102,7 +102,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse()
+    void givenAccessGuardWith2ConditionsWhenAwaitThenTimeoutAndReturnFalse()
     {
         // Given
         Log log = mock( Log.class );
@@ -114,11 +114,11 @@ public class DatabaseAvailabilityGuardTest
         boolean result = databaseAvailabilityGuard.isAvailable( 1000 );
 
         // Then
-        assertThat( result, equalTo( false ) );
+        assertFalse( result );
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout()
+    void givenAccessGuardWith2ConditionsWhenAwaitThenActuallyWaitGivenTimeout()
     {
         // Given
         Log log = mock( Log.class );
@@ -134,12 +134,12 @@ public class DatabaseAvailabilityGuardTest
 
         // Then
         long waitTime = end - start;
-        assertThat( result, equalTo( false ) );
+        assertFalse( result );
         assertThat( waitTime, greaterThanOrEqualTo( timeout ) );
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse()
+    void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitThenTimeoutAndReturnFalse()
     {
         // Given
         Log log = mock( Log.class );
@@ -162,7 +162,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue()
+    void givenAccessGuardWith2ConditionsWhenGrantEachAndAwaitThenTrue()
     {
         // Given
         Log log = mock( Log.class );
@@ -178,7 +178,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse()
+    void givenAccessGuardWith2ConditionsWhenGrantTwiceAndDenyOnceAndAwaitThenTimeoutAndReturnFalse()
     {
         // Given
         Log log = mock( Log.class );
@@ -203,7 +203,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue()
+    void givenAccessGuardWith2ConditionsWhenGrantOnceAndAwaitAndGrantAgainThenReturnTrue()
     {
         // Given
         Log log = mock( Log.class );
@@ -219,7 +219,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void givenAccessGuardWithConditionWhenGrantThenNotifyListeners()
+    void givenAccessGuardWithConditionWhenGrantThenNotifyListeners()
     {
         // Given
         Log log = mock( Log.class );
@@ -247,11 +247,11 @@ public class DatabaseAvailabilityGuardTest
         databaseAvailabilityGuard.fulfill( REQUIREMENT_1 );
 
         // Then
-        assertThat( notified.get(), equalTo( true ) );
+        assertTrue( notified.get() );
     }
 
     @Test
-    public void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners()
+    void givenAccessGuardWithConditionWhenGrantAndDenyThenNotifyListeners()
     {
         // Given
         Log log = mock( Log.class );
@@ -280,11 +280,11 @@ public class DatabaseAvailabilityGuardTest
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         // Then
-        assertThat( notified.get(), equalTo( true ) );
+        assertTrue( notified.get() );
     }
 
     @Test
-    public void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess()
+    void givenAccessGuardWithConditionWhenShutdownThenInstantlyDenyAccess()
     {
         // Given
         Clock clock = Mockito.mock( Clock.class );
@@ -300,7 +300,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void shouldExplainWhoIsBlockingAccess()
+    void shouldExplainWhoIsBlockingAccess()
     {
         // Given
         Log log = mock( Log.class );
@@ -315,7 +315,7 @@ public class DatabaseAvailabilityGuardTest
     }
 
     @Test
-    public void shouldExplainBlockersOnCheckAvailable() throws Exception
+    void shouldExplainBlockersOnCheckAvailable() throws Exception
     {
         // GIVEN
         DatabaseAvailabilityGuard databaseAvailabilityGuard = getDatabaseAvailabilityGuard( Clocks.systemClock(), getInstance() );
@@ -326,15 +326,8 @@ public class DatabaseAvailabilityGuardTest
         databaseAvailabilityGuard.require( REQUIREMENT_1 );
 
         // THEN
-        try
-        {
-            databaseAvailabilityGuard.checkAvailable();
-            fail( "Should not be available" );
-        }
-        catch ( UnavailableException e )
-        {
-            assertThat( e.getMessage(), containsString( REQUIREMENT_1.description() ) );
-        }
+        UnavailableException unavailableException = assertThrows( UnavailableException.class, databaseAvailabilityGuard::checkAvailable );
+        assertThat( unavailableException.getMessage(), containsString( REQUIREMENT_1.description() ) );
     }
 
     private static void verifyLogging( Log log, VerificationMode mode )
