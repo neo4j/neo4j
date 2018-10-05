@@ -230,7 +230,7 @@ class ParallelNativeIndexPopulatorTest
         {
             SingleFilePageSwapperFactory swapper = new SingleFilePageSwapperFactory();
             swapper.open( fs, defaults );
-            try ( PageCache pageCache = new MuninnPageCache( swapper, 10_000, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, EMPTY, jobScheduler ) )
+            try ( PageCache pageCache = new MuninnPageCache( swapper, 1_000, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL, EMPTY, jobScheduler ) )
             {
                 // given
                 StoreIndexDescriptor descriptor = IndexDescriptorFactory.forSchema( DESCRIPTOR.schema(), GenericNativeIndexProvider.DESCRIPTOR ).withId( 1 );
@@ -242,7 +242,7 @@ class ParallelNativeIndexPopulatorTest
                 try
                 {
                     populator.create();
-                    applyBatchesInParallel( populator, 10 );
+                    applyBatchesInParallel( populator, 100 );
 
                     // when
                     method.accept( populator );
