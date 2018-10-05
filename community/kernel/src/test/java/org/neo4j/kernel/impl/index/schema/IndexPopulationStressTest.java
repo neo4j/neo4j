@@ -54,6 +54,7 @@ import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -89,6 +90,7 @@ public abstract class IndexPopulationStressTest
 
     private IndexPopulator populator;
     private IndexProvider indexProvider;
+    private boolean prevAccessCheck;
 
     protected IndexPopulationStressTest( boolean canHandlePopulationConcurrentlyWithAdd, boolean hasValues )
     {
@@ -118,11 +120,13 @@ public abstract class IndexPopulationStressTest
 
         populator = indexProvider.getPopulator( descriptor, samplingConfig );
         when( nodePropertyAccessor.getNodePropertyValue( anyLong(), anyInt() ) ).thenThrow( UnsupportedOperationException.class );
+        prevAccessCheck = UnsafeUtil.exchangeNativeAccessCheckEnabled( false );
     }
 
     @After
     public void teardown()
     {
+        UnsafeUtil.exchangeNativeAccessCheckEnabled( prevAccessCheck );
         if ( populator != null )
         {
             populator.close( true );
