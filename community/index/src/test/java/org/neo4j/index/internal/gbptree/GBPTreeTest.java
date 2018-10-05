@@ -852,7 +852,7 @@ public class GBPTreeTest
         }
     }
 
-    @Test( timeout = 5_000L )
+    @Test( timeout = 50_000L )
     public void closeShouldLockOutWriter() throws Exception
     {
         // GIVEN
