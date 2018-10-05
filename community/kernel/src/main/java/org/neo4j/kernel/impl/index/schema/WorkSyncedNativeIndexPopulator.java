@@ -54,7 +54,7 @@ class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE exte
 
     /**
      * Method visible due to the complex nature of the "part" populators in the legacy temporal/spatial implementations.
-     * This can go as soon as they dissappear.
+     * This can go as soon as they disappear.
      */
     NativeIndexPopulator<KEY,VALUE> getActual()
     {
