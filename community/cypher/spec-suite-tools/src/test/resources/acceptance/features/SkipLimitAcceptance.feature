@@ -172,3 +172,18 @@ Feature: SkipLimitAcceptance
       | id |
       | 1  |
     And no side effects
+
+  Scenario: Top with limit 0
+    And having executed:
+      """
+      CREATE (:A {id:0})
+      """
+    When executing query:
+      """
+      MATCH (n:A)
+      RETURN n.id AS id
+      ORDER BY id LIMIT 0
+      """
+    Then the result should be, in order:
+      | id |
+    And no side effects

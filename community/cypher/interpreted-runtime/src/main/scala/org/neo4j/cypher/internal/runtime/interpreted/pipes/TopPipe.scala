@@ -25,11 +25,10 @@ import org.neo4j.cypher.internal.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.opencypher.v9_0.util.attribution.Id
-import org.neo4j.values.AnyValue
-
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
@@ -42,22 +41,43 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
 
   countExpression.registerOwningPipe(this)
 
+  private val initialFallbackSortArraySize = Int.MaxValue/8 // This should not be too big so as to risk out-of-memory on the first allocation
+
   protected override def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     if (input.isEmpty) Iterator.empty
     else {
       val first = input.next()
-      val count = countExpression(first, state).asInstanceOf[NumberValue].longValue().toInt
-      val topTable = new DefaultComparatorTopTable(comparator, count)
-      topTable.add(first)
-
-      input.foreach {
-        ctx =>
-          topTable.add(ctx)
+      val longCount = countExpression(first, state).asInstanceOf[NumberValue].longValue()
+      if (longCount <= 0) {
+        Iterator.empty
       }
+      else if (longCount > Int.MaxValue) {
+        // For count values larger than the maximum 32-bit integer we fallback on a full sort instead of allocating a huge top table
+        // (Instead of throw new IllegalArgumentException(s"ORDER BY + LIMIT $longCount exceeds the maximum value of ${Int.MaxValue}"))
+        // NOTE: If the _input size_ is larger than Int.MaxValue this will still fail, since an array cannot hold that many elements
+        val buffer = new mutable.ArrayBuffer[ExecutionContext](initialFallbackSortArraySize)
+        buffer += first
+        buffer ++= input
+        val array = buffer.toArray
+        java.util.Arrays.sort(array, comparator)
+        var c: Long = 0 // Counter to be used inside of stream
+        array.toStream.takeWhile { _ => c = c + 1; c <= longCount }.iterator
+      }
+      else {
+        // The main case: allocate a table of size count to hold the top rows
+        val count = longCount.toInt
+        val topTable = new DefaultComparatorTopTable(comparator, count)
+        topTable.add(first)
 
-      topTable.sort()
+        input.foreach {
+          ctx =>
+            topTable.add(ctx)
+        }
 
-      topTable.iterator.asScala
+        topTable.sort()
+
+        topTable.iterator.asScala
+      }
     }
   }
 }

@@ -104,6 +104,38 @@ class TopSlottedPipeTest extends CypherFunSuite {
     result should equal(list(10, null))
   }
 
+  test("should handle limit 0") {
+    val input = randomlyShuffledIntDataFromZeroUntil(5)
+    val result = singleColumnTopWithInput(
+      input, orderBy = AscendingOrder, limit = 0
+    )
+    result should equal(List.empty)
+  }
+
+  test("should handle negative limit") {
+    val input = randomlyShuffledIntDataFromZeroUntil(5)
+    val result = singleColumnTopWithInput(
+      input, orderBy = AscendingOrder, limit = -1
+    )
+    result should equal(List.empty)
+  }
+
+  test("should handle limit of Int.MaxValue") {
+    val input = randomlyShuffledIntDataFromZeroUntil(5)
+    val result = singleColumnTopWithInput(
+      input, orderBy = AscendingOrder, limit = Int.MaxValue
+    )
+    result should equal(list(0, 1, 2, 3, 4))
+  }
+
+  test("should handle limit larger than Int.MaxValue") {
+    val input = randomlyShuffledIntDataFromZeroUntil(5)
+    val result = singleColumnTopWithInput(
+      input, orderBy = AscendingOrder, limit = Int.MaxValue.asInstanceOf[Long]*2
+    )
+    result should equal(list(0, 1, 2, 3, 4))
+  }
+
   test("returning top 1 from 5 possible should return lowest") {
     val result = singleColumnTopWithInput(
       randomlyShuffledIntDataFromZeroUntil(5), orderBy = AscendingOrder, limit = 1
@@ -205,7 +237,7 @@ object TopSlottedPipeTestSupport {
     data
   }
 
-  private def createTopPipe(source: Pipe, orderBy: List[ColumnOrder], limit: Int, withTies: Boolean) = {
+  private def createTopPipe(source: Pipe, orderBy: List[ColumnOrder], limit: Long, withTies: Boolean) = {
     val comparator = ExecutionContextOrdering.asComparator(orderBy)
     if (withTies) {
       assert(limit == 1)
@@ -219,7 +251,7 @@ object TopSlottedPipeTestSupport {
     }
   }
 
-  def singleColumnTopWithInput(data: Iterable[Any], orderBy: TestColumnOrder, limit: Int, withTies: Boolean = false): List[Any] = {
+  def singleColumnTopWithInput(data: Iterable[Any], orderBy: TestColumnOrder, limit: Long, withTies: Boolean = false): List[Any] = {
     val slots = SlotConfiguration.empty
       .newReference("a", nullable = true, CTAny)
 
