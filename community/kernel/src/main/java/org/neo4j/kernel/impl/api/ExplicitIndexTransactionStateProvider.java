@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateProvider;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateProvider;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 

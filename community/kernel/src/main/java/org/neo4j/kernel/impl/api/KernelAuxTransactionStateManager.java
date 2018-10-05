@@ -26,11 +26,11 @@ import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateCloseException;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateHolder;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateManager;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateProvider;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateCloseException;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateHolder;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateProvider;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.storageengine.api.StorageCommand;
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionState;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
 
 public interface TxStateHolder
 {

@@ -44,7 +44,7 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateManager;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;

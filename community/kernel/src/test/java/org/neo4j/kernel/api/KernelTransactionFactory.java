@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api;
 
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.Pool;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -28,7 +27,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
-import org.neo4j.kernel.api.txstate.aux.AuxiliaryTransactionStateManager;
+import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
