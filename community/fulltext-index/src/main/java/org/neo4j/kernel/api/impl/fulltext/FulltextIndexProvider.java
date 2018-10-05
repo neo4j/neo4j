@@ -37,14 +37,18 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexProvider;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
+import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
+import org.neo4j.kernel.api.impl.schema.LuceneSchemaIndexBuilder;
+import org.neo4j.kernel.api.impl.schema.SchemaIndex;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
 import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
@@ -55,6 +59,8 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityType;
@@ -63,7 +69,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
 
-class FulltextIndexProvider extends AbstractLuceneIndexProvider implements FulltextAdapter, AuxiliaryTransactionStateProvider
+class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, AuxiliaryTransactionStateProvider
 {
     private static final String TX_STATE_PROVIDER_KEY = "FULLTEXT SCHEMA INDEX TRANSACTION STATE";
 
@@ -77,12 +83,13 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
     private final ConcurrentMap<StoreIndexDescriptor,FulltextIndexAccessor> openOnlineAccessors;
+    private final IndexStorageFactory indexStorageFactory;
 
     FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
             FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory, OperationalMode operationalMode,
             JobScheduler scheduler, AuxiliaryTransactionStateManager auxiliaryTransactionStateManager, Log log )
     {
-        super( descriptor, directoryStructureFactory, config, operationalMode, fileSystem, directoryFactory );
+        super( descriptor, directoryStructureFactory );
         this.fileSystem = fileSystem;
         this.config = config;
         this.tokenHolders = tokenHolders;
@@ -94,6 +101,30 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
         defaultEventuallyConsistentSetting = Boolean.toString( config.get( FulltextConfig.eventually_consistent ) );
         indexUpdateSink = new IndexUpdateSink( scheduler, config.get( FulltextConfig.eventually_consistent_index_update_queue_max_length ) );
         openOnlineAccessors = new ConcurrentHashMap<>();
+        indexStorageFactory = buildIndexStorageFactory( fileSystem, directoryFactory );
+    }
+
+    private IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )
+    {
+        return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
+    }
+
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, StoreIndexDescriptor descriptor ) throws IOException
+    {
+        try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
+        {
+            if ( index.exists() )
+            {
+                index.open();
+                return index.isOnline();
+            }
+            return false;
+        }
+    }
+
+    private PartitionedIndexStorage getIndexStorage( long indexId )
+    {
+        return indexStorageFactory.indexStorageOf( indexId );
     }
 
     @Override
@@ -107,7 +138,7 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
     public void stop() throws Throwable
     {
         auxiliaryTransactionStateManager.unregisterProvider( this );
-        super.stop();
+        indexStorageFactory.close();
     }
 
     @Override
@@ -143,6 +174,17 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
         PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
         fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
         return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
+    }
+
+    @Override
+    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    {
+        String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
+        if ( failure == null )
+        {
+            throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
+        }
+        return failure;
     }
 
     @Override
@@ -216,6 +258,12 @@ class FulltextIndexProvider extends AbstractLuceneIndexProvider implements Fullt
     FulltextIndexAccessor getOpenOnlineAccessor( StoreIndexDescriptor descriptor )
     {
         return openOnlineAccessors.get( descriptor );
+    }
+
+    @Override
+    public StoreMigrationParticipant storeMigrationParticipant( final FileSystemAbstraction fs, PageCache pageCache )
+    {
+        return new SchemaIndexMigrator( fs, this );
     }
 
     @Override
