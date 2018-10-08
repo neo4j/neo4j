@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
+import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
 
@@ -107,6 +108,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public static final String KEY = NATIVE_BTREE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
+    private static final boolean parallelPopulation = FeatureToggles.flag( GenericNativeIndexProvider.class, "parallelPopulation", true );
 
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
@@ -153,9 +155,18 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     @Override
     protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
     {
-        return new ParallelNativeIndexPopulator<>( storeFile, layout, file ->
-                new GenericNativeIndexPopulator( pageCache, fs, file, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
-                        directoryStructure(), configuration, archiveFailedIndex, !file.equals( storeFile ) ) );
+        if ( parallelPopulation )
+        {
+            return new ParallelNativeIndexPopulator<>( storeFile, layout, file ->
+                    new GenericNativeIndexPopulator( pageCache, fs, file, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                            directoryStructure(), configuration, archiveFailedIndex, !file.equals( storeFile ) ) );
+        }
+        else
+        {
+            return new WorkSyncedNativeIndexPopulator<>(
+                    new GenericNativeIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor, layout.getSpaceFillingCurveSettings(),
+                            directoryStructure(), configuration, archiveFailedIndex, false ) );
+        }
     }
 
     @Override
