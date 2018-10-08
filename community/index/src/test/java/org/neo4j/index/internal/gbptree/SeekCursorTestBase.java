@@ -1689,6 +1689,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
             duplicate.next();
             insert( i, i, duplicate ); // Create successor of leaf
             expected.add( i );
+            cursor.forceRetry();
 
             while ( seek.next() )
             {
@@ -1722,6 +1723,7 @@ abstract class SeekCursorTestBase<KEY, VALUE>
 
             // and corrupt successor pointer
             corruptGSPP( duplicate, TreeNode.BYTE_POS_SUCCESSOR );
+            cursor.forceRetry();
 
             // then
             assertThrows( TreeInconsistencyException.class, () ->

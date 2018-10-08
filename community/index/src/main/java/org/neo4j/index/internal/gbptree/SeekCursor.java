@@ -382,6 +382,13 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private final Consumer<Throwable> exceptionDecorator;
 
+    /**
+     * Normally {@link #readHeader()} is called when {@link #concurrentWriteHappened} is {@code true}. However this flag
+     * guards for cases where the header must be read an {@link #concurrentWriteHappened} is {@code false},
+     * such as when moving over to the next sibling and continuing reading.
+     */
+    private boolean forceReadHeader;
+
     @SuppressWarnings( "unchecked" )
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
@@ -596,9 +603,12 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             resultOnTrack = false;
 
             // Where we are
-            if ( !readHeader() || isInternal )
+            if ( concurrentWriteHappened || forceReadHeader || !seekForward )
             {
-                continue;
+                if ( !readHeader() || isInternal )
+                {
+                    continue;
+                }
             }
 
             if ( verifyExpectedFirstAfterGoToNext )
@@ -893,6 +903,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
         // Find the left-most key within from-range
         keyCount = TreeNode.keyCount( cursor );
 
+        forceReadHeader = false;
         return keyCountIsSane( keyCount );
     }
 
@@ -956,6 +967,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 {
                     // It is likely that first key in right sibling is a next hit.
                     // Continue using scan
+                    forceReadHeader = true;
                     pos = -1;
                 }
                 return true;
