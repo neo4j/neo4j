@@ -19,25 +19,31 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
-import org.junit.Test;
-import org.mockito.Matchers;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+
+import org.junit.Test;
+import org.mockito.Matchers;
 
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.MessageArgumentMatcher;
 import org.neo4j.cluster.statemachine.State;
+import org.neo4j.logging.Log;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -211,5 +217,91 @@ public class LearnerStateTest
         // Then
         assertSame( state, learner );
         verify( context, times(1) ).setLastKnownLearnedInstanceInCluster( payload, instanceId );
+    }
+
+    @Test
+    public void shouldCloseTheGapIfItsTheCoordinator() throws Throwable
+    {
+        // Given
+        // A coordinator that knows that the last Paxos instance delivered is 3
+        LearnerState learner = LearnerState.learner;
+        org.neo4j.cluster.InstanceId memberId = new org.neo4j.cluster.InstanceId( 42 );
+        long lastDelivered = 3L;
+
+        LearnerContext context = mock( LearnerContext.class );
+        when( context.isMe( any() ) ).thenReturn( true );
+        when( context.getCoordinator() ).thenReturn( memberId ); // so it's the coordinator
+        when( context.getLastDeliveredInstanceId() ).thenReturn( lastDelivered );
+        // and has this list of pending instances (up to id 14)
+        List<PaxosInstance> pendingInstances = new LinkedList<>();
+        for ( int i = 1; i < 12; i++ ) // start at 1 because instance 3 is already delivered
+        {
+            InstanceId instanceId = new InstanceId( lastDelivered + i );
+            PaxosInstance value = new PaxosInstance( mock( PaxosInstanceStore.class ), instanceId );
+            value.closed( "", "" );
+            when( context.getPaxosInstance( instanceId ) ).thenReturn( value );
+            pendingInstances.add( value );
+        }
+        when( context.getLog( any() ) ).thenReturn( mock( Log.class ) );
+
+        Message<LearnerMessage> incomingInstance = Message.to( LearnerMessage.learn, URI.create( "c:/1" ), new LearnerMessage.LearnState( new Object() ) )
+                .setHeader( Message.FROM, "c:/2" )
+                .setHeader( Message.CONVERSATION_ID, "conversation-id" )
+                .setHeader( InstanceId.INSTANCE, "" + ( lastDelivered + LearnerContext.LEARN_GAP_THRESHOLD + 1 ) );
+
+        // When
+        // it receives a message with Paxos instance id 1 greater than the threshold
+        learner.handle( context, incomingInstance, mock( MessageHolder.class ) );
+
+        // Then
+        // it delivers everything pending and marks the context appropriately
+        for ( PaxosInstance pendingInstance : pendingInstances )
+        {
+            assertTrue( pendingInstance.isState( PaxosInstance.State.delivered ) );
+            verify( context, times(1 ) ).setLastDeliveredInstanceId( pendingInstance.id.id );
+        }
+    }
+
+    @Test
+    public void shouldNotCloseTheGapIfItsTheCoordinatorAndTheGapIsSmallerThanTheThreshold() throws Throwable
+    {
+        // Given
+        // A coordinator that knows that the last Paxos instance delivered is 3
+        long lastDelivered = 3L;
+        LearnerState learner = LearnerState.learner;
+        org.neo4j.cluster.InstanceId memberId = new org.neo4j.cluster.InstanceId( 42 );
+
+        LearnerContext context = mock( LearnerContext.class );
+        when( context.isMe( any() ) ).thenReturn( true );
+        when( context.getCoordinator() ).thenReturn( memberId ); // so it's the coordinator
+        when( context.getLastDeliveredInstanceId() ).thenReturn( lastDelivered );
+        // and has this list of pending instances (up to id 14)
+        List<PaxosInstance> pendingInstances = new LinkedList<>();
+        for ( int i = 1; i < 12; i++ ) // start at 1 because instance 3 is already delivered
+        {
+            InstanceId instanceId = new InstanceId( lastDelivered + i );
+            PaxosInstance value = new PaxosInstance( mock( PaxosInstanceStore.class ), instanceId );
+            value.closed( "", "" );
+            when( context.getPaxosInstance( instanceId ) ).thenReturn( value );
+            pendingInstances.add( value );
+        }
+        when( context.getLog( any() ) ).thenReturn( mock( Log.class ) );
+
+        Message<LearnerMessage> incomingInstance = Message.to( LearnerMessage.learn, URI.create( "c:/1" ), new LearnerMessage.LearnState( new Object() ) )
+                .setHeader( Message.FROM, "c:/2" )
+                .setHeader( Message.CONVERSATION_ID, "conversation-id" )
+                .setHeader( InstanceId.INSTANCE, "" + ( lastDelivered + LearnerContext.LEARN_GAP_THRESHOLD ) );
+
+        // When
+        // it receives a message with Paxos instance id at the threshold
+        learner.handle( context, incomingInstance, mock( MessageHolder.class ) );
+
+        // Then
+        // it waits and doesn't deliver anything
+        for ( PaxosInstance pendingInstance : pendingInstances )
+        {
+            assertFalse( pendingInstance.isState( PaxosInstance.State.delivered ) );
+        }
+        verify( context, times( 0 ) ).setLastDeliveredInstanceId( anyLong() );
     }
 }
