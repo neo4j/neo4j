@@ -657,7 +657,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 if ( insideEndRange( exactMatch, cachedLength ) )
                 {
                     // This seems to be a result that should be part of our result set
-                    if ( insidePrevKey( cachedLength ) )
+                    if ( cachedLength > 0 /*no need to check "inside prev" for consecutive keys*/ || insidePrevKey( cachedLength ) )
                     {
                         cachedLength++;
                     }
