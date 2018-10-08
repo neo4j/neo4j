@@ -66,6 +66,10 @@ public class TestEnterpriseGraphDatabaseFactory extends TestGraphDatabaseFactory
             {
                 File absoluteStoreDir = storeDir.getAbsoluteFile();
                 File databasesRoot = absoluteStoreDir.getParentFile();
+                if ( !config.isConfigured( GraphDatabaseSettings.shutdown_transaction_end_timeout ) )
+                {
+                    config.augment( GraphDatabaseSettings.shutdown_transaction_end_timeout, "0s" );
+                }
                 config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
                 config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
                 config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );

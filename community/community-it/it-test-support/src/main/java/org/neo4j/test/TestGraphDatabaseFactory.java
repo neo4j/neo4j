@@ -127,7 +127,6 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
     {
         // Reduce the default page cache memory size to 8 mega-bytes for test databases.
         builder.setConfig( GraphDatabaseSettings.pagecache_memory, "8m" );
-        builder.setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" );
         builder.setConfig( new BoltConnector( "bolt" ).type, BOLT.name() );
         builder.setConfig( new BoltConnector( "bolt" ).enabled, "false" );
     }
@@ -281,6 +280,10 @@ public class TestGraphDatabaseFactory extends GraphDatabaseFactory
         {
             File absoluteStoreDir = storeDir.getAbsoluteFile();
             File databasesRoot = absoluteStoreDir.getParentFile();
+            if ( !config.isConfigured( GraphDatabaseSettings.shutdown_transaction_end_timeout ) )
+            {
+                config.augment( GraphDatabaseSettings.shutdown_transaction_end_timeout, "0s" );
+            }
             config.augment( GraphDatabaseSettings.ephemeral, Settings.FALSE );
             config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
             config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );

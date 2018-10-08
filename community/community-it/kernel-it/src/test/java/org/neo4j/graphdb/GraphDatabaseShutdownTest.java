@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.locking.LockCountVisitor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
@@ -179,7 +178,6 @@ public class GraphDatabaseShutdownTest
     {
         return (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "1s" )
                 .newGraphDatabase();
     }
 }

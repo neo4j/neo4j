@@ -29,6 +29,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.impl.MyRelTypes;
@@ -50,7 +51,8 @@ import static org.junit.Assert.fail;
 public class GraphDatabaseServiceTest
 {
     @ClassRule
-    public static final DatabaseRule globalDb = new ImpermanentDatabaseRule();
+    public static final DatabaseRule globalDb = new ImpermanentDatabaseRule()
+                                            .withSetting( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" );
 
     private final ExpectedException exception = ExpectedException.none();
     private final TestDirectory testDirectory = TestDirectory.testDirectory();
@@ -432,6 +434,7 @@ public class GraphDatabaseServiceTest
 
     private GraphDatabaseService getTemporaryDatabase()
     {
-        return new TestGraphDatabaseFactory().newImpermanentDatabase( testDirectory.directory( "impermanent" ) );
+        return new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder( testDirectory.directory( "impermanent" ) )
+                .setConfig( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" ).newGraphDatabase();
     }
 }
