@@ -48,7 +48,7 @@ import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEA
 public class StringCollisionValuesTest
 {
     @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, getClass() );
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
     @Rule
     public final RandomRule random = new RandomRule().withConfiguration( new RandomValues.Default()
     {

@@ -27,7 +27,6 @@ import org.junit.Test;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -50,7 +49,7 @@ public class RecordRelationshipScanCursorTest
     private static final long RELATIONSHIP_ID = 1L;
 
     @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, getClass() );
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
     @Rule
     public final RandomRule random = new RandomRule();
 

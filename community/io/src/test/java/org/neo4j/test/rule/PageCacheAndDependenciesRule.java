@@ -24,12 +24,12 @@ import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-import java.util.function.Supplier;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
+
+import static org.neo4j.test.rule.PageCacheRule.config;
 
 /**
  * Very often when you want a {@link PageCacheRule} you also want {@link TestDirectory} and some {@link FileSystemRule}.
@@ -38,31 +38,45 @@ import org.neo4j.test.rule.fs.FileSystemRule;
  */
 public class PageCacheAndDependenciesRule implements TestRule
 {
-    private final RuleChain chain;
-    private final FileSystemRule<? extends FileSystemAbstraction> fs;
-    private final TestDirectory directory;
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private RuleChain chain;
+    private FileSystemRule<? extends FileSystemAbstraction> fs;
+    private TestDirectory directory;
+    private PageCacheRule pageCacheRule;
+    private PageCacheRule.PageCacheConfig pageCacheConfig = config();
+    private Class<?> clazz;
 
-    public PageCacheAndDependenciesRule()
+    public PageCacheAndDependenciesRule with( FileSystemRule<? extends FileSystemAbstraction> fs )
     {
-        this( EphemeralFileSystemRule::new, null );
+        this.fs = fs;
+        return this;
     }
 
-    /**
-     * @param fsSupplier as {@link Supplier} to make it clear that it is this class that owns the created
-     * {@link FileSystemRule} instance.
-     * @param clazz class to make distinctions for test directories
-     */
-    public PageCacheAndDependenciesRule( Supplier<FileSystemRule<? extends FileSystemAbstraction>> fsSupplier, Class<?> clazz )
+    public PageCacheAndDependenciesRule with( PageCacheRule.PageCacheConfig config )
     {
-        this.fs = fsSupplier.get();
-        this.directory = TestDirectory.testDirectory( clazz, fs );
-        this.chain = RuleChain.outerRule( fs ).around( directory ).around( pageCacheRule );
+        this.pageCacheConfig = config;
+        return this;
+    }
+
+    public PageCacheAndDependenciesRule with( Class<?> clazz )
+    {
+        this.clazz = clazz;
+        return this;
     }
 
     @Override
     public Statement apply( Statement base, Description description )
     {
+        if ( chain == null )
+        {
+            if ( fs == null )
+            {
+                fs = new EphemeralFileSystemRule();
+            }
+            this.pageCacheRule = new PageCacheRule( pageCacheConfig );
+            this.directory = TestDirectory.testDirectory( clazz, fs );
+            this.chain = RuleChain.outerRule( fs ).around( directory ).around( pageCacheRule );
+        }
+
         return chain.apply( base, description );
     }
 

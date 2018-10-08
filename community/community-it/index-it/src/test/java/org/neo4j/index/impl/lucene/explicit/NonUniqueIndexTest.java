@@ -63,8 +63,7 @@ public class NonUniqueIndexTest
     private static final String VALUE = "value";
 
     @Rule
-    public PageCacheAndDependenciesRule resources =
-            new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, NonUniqueIndexTest.class );
+    public PageCacheAndDependenciesRule resources = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
     @Test
     public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception

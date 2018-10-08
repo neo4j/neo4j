@@ -46,7 +46,7 @@ import static org.neo4j.test.rule.PageCacheRule.config;
 public class LargeDynamicKeysIT
 {
     @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, getClass() );
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
     @Rule
     public final RandomRule random = new RandomRule();

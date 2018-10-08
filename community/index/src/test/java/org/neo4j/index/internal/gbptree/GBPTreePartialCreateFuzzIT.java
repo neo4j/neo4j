@@ -57,7 +57,7 @@ import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 public class GBPTreePartialCreateFuzzIT
 {
     @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, getClass() );
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
     @Test
     public void shouldDetectAndThrowIOExceptionOnPartiallyCreatedFile() throws Exception

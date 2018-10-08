@@ -122,8 +122,7 @@ public class IndexPopulationStressTest
     @Rule
     public final RandomRule random = new RandomRule();
     @Rule
-    public final PageCacheAndDependenciesRule rules =
-            new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, this.getClass() );
+    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
     protected final StoreIndexDescriptor descriptor = forSchema( forLabel( 0, 0 ), PROVIDER ).withId( 0 );
     private final StoreIndexDescriptor descriptor2 = forSchema( forLabel( 1, 0 ), PROVIDER ).withId( 1 );

@@ -274,7 +274,7 @@ public abstract class IndexProviderCompatibilityTestSuite
                             Values.pointValue( CoordinateReferenceSystem.WGS84, 9.21, 9.65 )
                     ) );
 
-            pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, testSuite.getClass() );
+            pageCacheAndDependenciesRule = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() ).with( testSuite.getClass() );
             random = new RandomRule();
             ruleChain = RuleChain.outerRule( pageCacheAndDependenciesRule ).around( random );
         }

@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.nio.file.OpenOption;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -48,7 +47,7 @@ import static org.junit.Assume.assumeTrue;
 public class NeoStoreOpenFailureTest
 {
     @Rule
-    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, null );
+    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
     @Test
     public void mustCloseAllStoresIfNeoStoresFailToOpen()

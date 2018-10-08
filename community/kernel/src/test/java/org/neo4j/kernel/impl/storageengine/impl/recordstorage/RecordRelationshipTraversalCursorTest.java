@@ -28,7 +28,6 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -65,7 +64,7 @@ public class RecordRelationshipTraversalCursorTest
     private static final int TYPE = 0;
 
     @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule( DefaultFileSystemRule::new, getClass() );
+    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
 
     private NeoStores neoStores;
 
