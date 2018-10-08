@@ -60,6 +60,8 @@ public class ProcedureResourcesIT
     private final String indexDefinition = ":Label(prop)";
     private final String explicitIndexName = "explicitIndex";
     private final String relExplicitIndexName = "relExplicitIndex";
+    private final String ftsNodesIndex = "'ftsNodes'";
+    private final String ftsRelsIndex = "'ftsRels'";
     private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     @After
@@ -73,8 +75,9 @@ public class ProcedureResourcesIT
     public void allProcedures() throws Exception
     {
         // when
-        createExplicitIndex();
         createIndex();
+        createExplicitIndex();
+        createFulltextIndexes();
         for ( ProcedureSignature procedure : db.getDependencyResolver().resolveDependency( Procedures.class ).getAllProcedures() )
         {
             // then
@@ -151,6 +154,16 @@ public class ProcedureResourcesIT
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 5, TimeUnit.SECONDS );
+            tx.success();
+        }
+    }
+
+    private void createFulltextIndexes()
+    {
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "call db.index.fulltext.createNodeIndex(" + ftsNodesIndex + ", ['Label'], ['prop'])" ).close();
+            db.execute( "call db.index.fulltext.createRelationshipIndex(" + ftsRelsIndex + ", ['Label'], ['prop'])" ).close();
             tx.success();
         }
     }
@@ -370,6 +383,25 @@ public class ProcedureResourcesIT
             proc.skip = true;
             break;
         case "db.createUniquePropertyConstraint":
+            // Grabs schema lock an so can not execute concurrently with node creation
+            proc.skip = true;
+            break;
+        case "db.index.fulltext.queryNodes":
+            proc.withParam( ftsNodesIndex );
+            proc.withParam( "'value'" );
+            break;
+        case "db.index.fulltext.queryRelationships":
+            proc.withParam( ftsRelsIndex );
+            proc.withParam( "'value'" );
+            break;
+        case "db.index.fulltext.drop":
+            proc.withParam( ftsRelsIndex );
+            break;
+        case "db.index.fulltext.createRelationshipIndex":
+            // Grabs schema lock an so can not execute concurrently with node creation
+            proc.skip = true;
+            break;
+        case "db.index.fulltext.createNodeIndex":
             // Grabs schema lock an so can not execute concurrently with node creation
             proc.skip = true;
             break;

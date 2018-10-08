@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.integrationtest;
 
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,6 +35,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
+import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -44,8 +46,11 @@ import org.neo4j.kernel.internal.Version;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.arrayContaining;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -87,9 +92,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream = procs()
-                .procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(),
-                        new Object[0] );
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "propertyKeys" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyProp"} ) ) );
@@ -103,13 +107,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         int relType = transaction.tokenWrite().relationshipTypeGetOrCreateForName( "MyRelType" );
         long startNodeId = transaction.dataWrite().nodeCreate();
         long endNodeId = transaction.dataWrite().nodeCreate();
-        transaction.dataWrite().relationshipCreate(  startNodeId, relType, endNodeId );
+        transaction.dataWrite().relationshipCreate( startNodeId, relType, endNodeId );
         commit();
 
         // When
-        RawIterator<Object[],ProcedureException> stream = procs()
-                .procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(),
-                        new Object[0] );
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new Object[0] );
 
         // Then
         assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType"} ) ) );
@@ -119,170 +122,130 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     public void listProcedures() throws Throwable
     {
         // When
-        RawIterator<Object[],ProcedureException> stream = procs()
-                .procedureCallRead( procs().procedureGet( procedureName( "dbms", "procedures" ) ).id(), new Object[0] );
+        ProcedureHandle procedures = procs().procedureGet( procedureName( "dbms", "procedures" ) );
+        RawIterator<Object[],ProcedureException> stream = procs().procedureCallRead( procedures.id(), new Object[0] );
 
         // Then
+        //noinspection unchecked
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"dbms.listConfig",
-                        "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
-                        "value :: STRING?)",
-                        "List the currently active config of Neo4j.", "DBMS"} ),
-                equalTo( new Object[]{"db.constraints", "db.constraints() :: (description :: STRING?)",
-                        "List all constraints in the database.", "READ"} ),
-                equalTo( new Object[]{"db.indexes",
-                        "db.indexes() :: (description :: STRING?, indexName :: STRING?, " +
-                        "tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
-                        "type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?)",
-                        "List all indexes in the database.", "READ"} ),
-                equalTo( new Object[]{"db.awaitIndex",
-                        "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ"} ),
-                equalTo( new Object[]{"db.awaitIndexes", "db.awaitIndexes(timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ"} ),
-                equalTo( new Object[]{"db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID",
-                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ"} ),
-                equalTo( new Object[]{"db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
-                        "Schedule resampling of all outdated indexes.", "READ"} ),
-                equalTo( new Object[]{"db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",
-                        "List all property keys in the database.", "READ"} ),
-                equalTo( new Object[]{"db.labels", "db.labels() :: (label :: STRING?)",
-                        "List all labels in the database.", "READ"} ),
-                equalTo( new Object[]{"db.schema", "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " +
-                                                   "OF " +
-                                                   "RELATIONSHIP?)", "Show the schema of the data.", "READ"} ),
-                equalTo( new Object[]{"okapi.schema",
-                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?" +
-                                ", cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
-                        "Show the derived property schema of the data in tabular form.",
-                        "READ"} ),
-                equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
-                                                              "STRING?)",
-                        "List all relationship types in the database.", "READ"} ),
-                equalTo( new Object[]{"dbms.procedures", "dbms.procedures() :: (name :: STRING?, signature :: " +
-                                                         "STRING?, description :: STRING?, mode :: STRING?)",
-                        "List all procedures in the DBMS.", "DBMS"} ),
-                equalTo( new Object[]{"dbms.functions", "dbms.functions() :: (name :: STRING?, signature :: " +
-                                                        "STRING?, description :: STRING?)",
-                        "List all user functions in the DBMS.", "DBMS"} ),
-                equalTo( new Object[]{"dbms.components", "dbms.components() :: (name :: STRING?, versions :: LIST? OF" +
-                                                         " STRING?, edition :: STRING?)",
-                        "List DBMS components and their versions.", "DBMS"} ),
-                equalTo( new Object[]{"dbms.queryJmx", "dbms.queryJmx(query :: STRING?) :: (name :: STRING?, " +
-                                                       "description :: STRING?, attributes :: MAP?)",
-                        "Query JMX management data by domain and name." +
-                        " For instance, \"org.neo4j:*\"", "DBMS"} ),
-                equalTo( new Object[]{"db.createLabel", "db.createLabel(newLabel :: STRING?) :: VOID", "Create a label", "WRITE"
-                } ),
-                equalTo( new Object[]{"db.createProperty", "db.createProperty(newProperty :: STRING?) :: VOID",
-                        "Create a Property", "WRITE"
-                } ),
-                equalTo( new Object[]{"db.createRelationshipType",
-                        "db.createRelationshipType(newRelationshipType :: STRING?) :: VOID",
-                        "Create a RelationshipType", "WRITE"
-                } ),
-                equalTo( new Object[]{"db.index.explicit.searchNodes",
-                        "db.index.explicit.searchNodes(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
-                        "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`", "READ"
-                } ),
-                equalTo( new Object[]{"db.index.explicit.seekNodes",
-                        "db.index.explicit.seekNodes(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: " +
-                        "NODE?)",
-                        "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`", "READ"
-                } ),
-                equalTo( new Object[]{"db.index.explicit.searchRelationships",
-                        "db.index.explicit.searchRelationships(indexName :: STRING?, query :: ANY?) :: (relationship :: " +
-                        "RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship in explicit index. Replaces `START r=relationship:relIndex('key:foo*')`", "READ"
-                } ),
-                equalTo( new Object[]{ "db.index.explicit.auto.searchNodes",
-                        "db.index.explicit.auto.searchNodes(query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
-                        "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`", "READ"} ),
-                equalTo( new Object[]{ "db.index.explicit.auto.seekNodes",
-                        "db.index.explicit.auto.seekNodes(key :: STRING?, value :: ANY?) :: (node :: NODE?)",
-                        "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`", "READ"} ),
-                equalTo( new Object[]{ "db.index.explicit.auto.searchRelationships",
-                        "db.index.explicit.auto.searchRelationships(query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship in explicit automatic index. Replaces `START r=relationship:relationship_auto_index('key:foo*')`", "READ"} ),
-                equalTo( new Object[]{ "db.index.explicit.auto.seekRelationships",
-                        "db.index.explicit.auto.seekRelationships(key :: STRING?, value :: ANY?) :: " +
-                        "(relationship :: RELATIONSHIP?)",
-                        "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index(key = 'A')`", "READ"} ),
-                equalTo( new Object[]{ "db.index.explicit.addNode",
-                        "db.index.explicit.addNode(indexName :: STRING?, node :: NODE?, key :: STRING?, value :: ANY?) :: (success :: BOOLEAN?)",
-                        "Add a node to an explicit index based on a specified key and value", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.addRelationship",
-                        "db.index.explicit.addRelationship(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?, value :: ANY?) :: " +
-                        "(success :: BOOLEAN?)",
-                        "Add a relationship to an explicit index based on a specified key and value", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.removeNode",
-                        "db.index.explicit.removeNode(indexName :: STRING?, node :: NODE?, " +
-                        "key =  <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]>  :: STRING?) :: (success :: BOOLEAN?)",
-                        "Remove a node from an explicit index with an optional key", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.removeRelationship",
-                        "db.index.explicit.removeRelationship(indexName :: STRING?, relationship :: RELATIONSHIP?, " +
-                        "key =  <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]>  :: STRING?) :: (success :: BOOLEAN?)",
-                        "Remove a relationship from an explicit index with an optional key", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.drop",
-                        "db.index.explicit.drop(indexName :: STRING?) :: " +
-                        "(type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "Remove an explicit index - YIELD type,name,config", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.forNodes",
-                        "db.index.explicit.forNodes(indexName :: STRING?, config = {} :: MAP?) :: " +
-                        "(type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "Get or create a node explicit index - YIELD type,name,config", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.forRelationships",
-                        "db.index.explicit.forRelationships(indexName :: STRING?, config = {} :: MAP?) :: " +
-                        "(type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "Get or create a relationship explicit index - YIELD type,name,config", "WRITE"} ),
-                equalTo( new Object[]{ "db.index.explicit.existsForNodes",
-                        "db.index.explicit.existsForNodes(indexName :: STRING?) :: (success :: BOOLEAN?)",
-                        "Check if a node explicit index exists", "READ"} ),
-                equalTo( new Object[]{ "db.index.explicit.existsForRelationships",
-                        "db.index.explicit.existsForRelationships(indexName :: STRING?) :: (success :: BOOLEAN?)",
-                        "Check if a relationship explicit index exists", "READ"} ),
-                equalTo( new Object[]{ "db.index.explicit.list",
-                        "db.index.explicit.list() :: (type :: STRING?, name :: STRING?, config :: MAP?)",
-                        "List all explicit indexes - YIELD type,name,config", "READ"} ),
-
-                equalTo( new Object[]{"db.index.explicit.seekRelationships",
-                        "db.index.explicit.seekRelationships(indexName :: STRING?, key :: STRING?, value :: ANY?) :: " +
-                        "(relationship :: RELATIONSHIP?)",
-                        "Get relationship from explicit index. Replaces `START r=relationship:relIndex(key = 'A')`", "READ"
-                } ),
-                equalTo( new Object[]{"db.index.explicit.searchRelationshipsBetween",
-                        "db.index.explicit.searchRelationshipsBetween(indexName :: STRING?, in :: NODE?, out :: NODE?, query :: ANY?) :: " +
+                proc( "dbms.listConfig", "(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " + "value :: STRING?)",
+                        "List the currently active config of Neo4j.", "DBMS" ),
+                proc( "db.constraints", "() :: (description :: STRING?)", "List all constraints in the database.", "READ" ),
+                proc( "db.indexes", "() :: (description :: STRING?, indexName :: STRING?, tokenNames :: LIST? OF STRING?, properties :: " +
+                        "LIST? OF STRING?, state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?)",
+                        "List all indexes in the database.", "READ" ),
+                proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
+                proc( "db.awaitIndexes", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ" ),
+                proc( "db.resampleIndex", "(index :: STRING?) :: VOID",
+                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
+                proc( "db.resampleOutdatedIndexes", "() :: VOID", "Schedule resampling of all outdated indexes.", "READ" ),
+                proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.", "READ" ),
+                proc( "db.labels", "() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
+                proc( "db.schema", "() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " + "OF " + "RELATIONSHIP?)",
+                        "Show the schema of the data.", "READ" ),
+                proc( "okapi.schema", "() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
+                                "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)", "Show the derived property schema of the data in tabular form.",
+                        "READ" ),
+                proc( "db.relationshipTypes", "() :: (relationshipType :: " + "STRING?)", "List all relationship types in the database.", "READ" ),
+                proc( "dbms.procedures", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, mode :: STRING?)",
+                        "List all procedures in the DBMS.", "DBMS" ),
+                proc( "dbms.functions", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?)",
+                        "List all user functions in the DBMS.", "DBMS" ),
+                proc( "dbms.components", "() :: (name :: STRING?, versions :: LIST? OF" + " STRING?, edition :: STRING?)",
+                        "List DBMS components and their versions.", "DBMS" ),
+                proc( "dbms.queryJmx", "(query :: STRING?) :: (name :: STRING?, " + "description :: STRING?, attributes :: MAP?)",
+                        "Query JMX management data by domain and name." + " For instance, \"org.neo4j:*\"", "DBMS" ),
+                proc( "db.createLabel", "(newLabel :: STRING?) :: VOID", "Create a label", "WRITE" ),
+                proc( "db.createProperty", "(newProperty :: STRING?) :: VOID", "Create a Property", "WRITE" ),
+                proc( "db.createRelationshipType", "(newRelationshipType :: STRING?) :: VOID", "Create a RelationshipType", "WRITE" ),
+                proc( "db.index.explicit.searchNodes", "(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
+                        "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`", "READ" ),
+                proc( "db.index.explicit.seekNodes", "(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (node :: NODE?)",
+                        "Get node from explicit index. Replaces `START n=node:nodes(key = 'A')`", "READ" ),
+                proc( "db.index.explicit.searchRelationships", "(indexName :: STRING?, query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "Search relationship in explicit index. Replaces `START r=relationship:relIndex('key:foo*')`", "READ" ),
+                proc( "db.index.explicit.auto.searchNodes", "(query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
+                        "Search nodes in explicit automatic index. Replaces `START n=node:node_auto_index('key:foo*')`", "READ" ),
+                proc( "db.index.explicit.auto.seekNodes", "(key :: STRING?, value :: ANY?) :: (node :: NODE?)",
+                        "Get node from explicit automatic index. Replaces `START n=node:node_auto_index(key = 'A')`", "READ" ),
+                proc( "db.index.explicit.auto.searchRelationships", "(query :: ANY?) :: (relationship :: RELATIONSHIP?, weight :: FLOAT?)",
+                        "Search relationship in explicit automatic index. Replaces `START r=relationship:relationship_auto_index('key:foo*')`", "READ" ),
+                proc( "db.index.explicit.auto.seekRelationships", "(key :: STRING?, value :: ANY?) :: " + "(relationship :: RELATIONSHIP?)",
+                        "Get relationship from explicit automatic index. Replaces `START r=relationship:relationship_auto_index(key = 'A')`", "READ" ),
+                proc( "db.index.explicit.addNode", "(indexName :: STRING?, node :: NODE?, key :: STRING?, value :: ANY?) :: (success :: BOOLEAN?)",
+                        "Add a node to an explicit index based on a specified key and value", "WRITE" ),
+                proc( "db.index.explicit.addRelationship", "(indexName :: STRING?, relationship :: RELATIONSHIP?, key :: STRING?, value :: ANY?) :: " +
+                                "(success :: BOOLEAN?)", "Add a relationship to an explicit index based on a specified key and value", "WRITE" ),
+                proc( "db.index.explicit.removeNode", "(indexName :: STRING?, node :: NODE?, key =  <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]>  :: STRING?) " +
+                                ":: (success :: BOOLEAN?)",
+                        "Remove a node from an explicit index with an optional key", "WRITE" ),
+                proc( "db.index.explicit.removeRelationship", "(indexName :: STRING?, relationship :: RELATIONSHIP?, " +
+                                "key =  <[9895b15e-8693-4a21-a58b-4b7b87e09b8e]>  :: STRING?) :: (success :: BOOLEAN?)",
+                        "Remove a relationship from an explicit index with an optional key", "WRITE" ),
+                proc( "db.index.explicit.drop", "(indexName :: STRING?) :: (type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "Remove an explicit index - YIELD type,name,config", "WRITE" ),
+                proc( "db.index.explicit.forNodes", "(indexName :: STRING?, config = {} :: MAP?) :: (type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "Get or create a node explicit index - YIELD type,name,config", "WRITE" ),
+                proc( "db.index.explicit.forRelationships", "(indexName :: STRING?, config = {} :: MAP?) :: " +
+                                "(type :: STRING?, name :: STRING?, config :: MAP?)", "Get or create a relationship explicit index - YIELD type,name,config",
+                        "WRITE" ),
+                proc( "db.index.explicit.existsForNodes", "(indexName :: STRING?) :: (success :: BOOLEAN?)", "Check if a node explicit index exists", "READ" ),
+                proc( "db.index.explicit.existsForRelationships", "(indexName :: STRING?) :: (success :: BOOLEAN?)",
+                        "Check if a relationship explicit index exists", "READ" ),
+                proc( "db.index.explicit.list", "() :: (type :: STRING?, name :: STRING?, config :: MAP?)",
+                        "List all explicit indexes - YIELD type,name,config", "READ" ),
+                proc( "db.index.explicit.seekRelationships", "(indexName :: STRING?, key :: STRING?, value :: ANY?) :: (relationship :: RELATIONSHIP?)",
+                        "Get relationship from explicit index. Replaces `START r=relationship:relIndex(key = 'A')`", "READ" ),
+                proc( "db.index.explicit.searchRelationshipsBetween", "(indexName :: STRING?, in :: NODE?, out :: NODE?, query :: ANY?) :: " +
                                 "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship in explicit index, starting at the node 'in' and ending at 'out'.", "READ"
-                } ),
-                equalTo( new Object[]{"db.index.explicit.searchRelationshipsIn",
-                        "db.index.explicit.searchRelationshipsIn(indexName :: STRING?, in :: NODE?, query :: ANY?) :: " +
-                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship in explicit index, starting at the node 'in'.", "READ"
-                } ),
-                equalTo( new Object[]{"db.index.explicit.searchRelationshipsOut",
-                        "db.index.explicit.searchRelationshipsOut(indexName :: STRING?, out :: NODE?, query :: ANY?) :: " +
-                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)",
-                        "Search relationship in explicit index, ending at the node 'out'.", "READ"
-                } ),
-                equalTo( new Object[]{"dbms.clearQueryCaches",
-                        "dbms.clearQueryCaches() :: (value :: STRING?)",
-                        "Clears all query caches.", "DBMS"
-                } ),
-                equalTo( new Object[]{"db.createIndex",
-                        "db.createIndex(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
+                        "Search relationship in explicit index, starting at the node 'in' and ending at 'out'.", "READ" ),
+                proc( "db.index.explicit.searchRelationshipsIn", "(indexName :: STRING?, in :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)", "Search relationship in explicit index, starting at the node 'in'.",
+                        "READ" ),
+                proc( "db.index.explicit.searchRelationshipsOut", "(indexName :: STRING?, out :: NODE?, query :: ANY?) :: " +
+                                "(relationship :: RELATIONSHIP?, weight :: FLOAT?)", "Search relationship in explicit index, ending at the node 'out'.",
+                        "READ" ),
+                proc( "dbms.clearQueryCaches", "() :: (value :: STRING?)", "Clears all query caches.", "DBMS" ),
+                proc( "db.createIndex", "(index :: STRING?, providerName :: STRING?) :: (index :: STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a schema index with specified index provider (for example: CALL db.createIndex(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status",
-                        "SCHEMA"
-                } ),
-                equalTo( new Object[]{"db.createUniquePropertyConstraint",
-                        "db.createUniquePropertyConstraint(index :: STRING?, providerName :: STRING?) :: " +
+                                "YIELD index, providerName, status", "SCHEMA" ),
+                proc( "db.createUniquePropertyConstraint", "(index :: STRING?, providerName :: STRING?) :: " +
                                 "(index :: STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a unique property constraint with index backed by specified index provider " +
                                 "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status", "SCHEMA"} )
+                                "YIELD index, providerName, status", "SCHEMA" ),
+                proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
+                        "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.", "READ" ),
+                proc( "db.index.fulltext.createNodeIndex", "(indexName :: STRING?, labels :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, " +
+                        "config = {} :: MAP?) :: VOID", startsWith( "Create a node fulltext index for the given labels and properties." ), "SCHEMA" ),
+                proc( "db.index.fulltext.createRelationshipIndex",
+                        "(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
+                        startsWith( "Create a relationship fulltext index for the given relationship types and properties." ), "SCHEMA" ),
+                proc( "db.index.fulltext.drop", "(indexName :: STRING?) :: VOID", "Drop the specified index.", "SCHEMA" ),
+                proc( "db.index.fulltext.listAvailableAnalyzers", "() :: (analyzer :: STRING?)",
+                        "List the available analyzers that the fulltext indexes can be configured with.", "READ" ),
+                proc( "db.index.fulltext.queryNodes", "(indexName :: STRING?, queryString :: STRING?) :: (node :: NODE?, score :: FLOAT?)",
+                        "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score.", "READ"),
+                proc( "db.index.fulltext.queryRelationships", "(indexName :: STRING?, queryString :: STRING?) :: (relationship :: RELATIONSHIP?, " +
+                        "score :: FLOAT?)", "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " +
+                        "score.", "READ" )
         ) );
         commit();
+    }
+
+    private Matcher<Object[]> proc( String procName, String procSignature, String description, String mode )
+    {
+        return equalTo( new Object[]{procName, procName + procSignature, description, mode} );
+    }
+
+    @SuppressWarnings( {"unchecked", "TypeParameterExplicitlyExtendsObject"} )
+    private Matcher<Object[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
+    {
+        Matcher<Object> desc = (Matcher<Object>) (Matcher<? extends Object>) description;
+        Matcher<Object>[] matchers = new Matcher[]{equalTo( procName ), equalTo( procName + procSignature ), desc, equalTo( mode )};
+        return arrayContaining( matchers );
     }
 
     @Test
@@ -290,8 +253,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
     {
         try
         {
-            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0],
-                    dependencyResolver, AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker );
+            dbmsOperations().procedureCallDbms( procedureName( "dbms", "iDoNotExist" ), new Object[0], dependencyResolver,
+                    AnonymousContext.none().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), resourceTracker );
             fail( "This should never get here" );
         }
         catch ( Exception e )
@@ -307,13 +270,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         // Given a running database
 
         // When
-        RawIterator<Object[],ProcedureException> stream = procs()
-                .procedureCallRead(procs().procedureGet( procedureName( "dbms", "components" ) ).id(),
-                        new Object[0] );
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( "dbms", "components" ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel",
-                singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new Object[]{"Neo4j Kernel", singletonList( Version.getNeo4jVersion() ), "community"} ) ) );
 
         commit();
     }
@@ -341,8 +302,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
 
         // When
         RawIterator<Object[],ProcedureException> stream =
-                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(),
-                        new Object[0] );
+                procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0] );
 
         Set<Object[]> result = new HashSet<>();
         while ( stream.hasNext() )
@@ -354,16 +314,13 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         IndexProviderMap indexProviderMap = db.getDependencyResolver().resolveDependency( IndexProviderMap.class );
         IndexProvider provider = indexProviderMap.getDefaultProvider();
         Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
-                "key", provider.getProviderDescriptor().getKey(),
-                "version", provider.getProviderDescriptor().getVersion() );
+                "key", provider.getProviderDescriptor().getKey(), "version", provider.getProviderDescriptor().getVersion() );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
-                        "node_unique_property", 100D, pdm, 1L},
-                new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ),
-                        singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm, 6L},
-                new Object[]{"INDEX ON :Person(foo, bar)", "Unnamed index", singletonList( "Person" ),
-                        Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm, 4L}
-        ) );
+                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE", "node_unique_property", 100D, pdm, 1L},
+                new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ), singletonList( "foo" ), "ONLINE", "node_label_property", 100D,
+                        pdm, 6L},
+                new Object[]{"INDEX ON :Person(foo, bar)", "Unnamed index", singletonList( "Person" ), Arrays.asList( "foo", "bar" ), "ONLINE",
+                        "node_label_property", 100D, pdm, 4L} ) );
         commit();
     }
 }

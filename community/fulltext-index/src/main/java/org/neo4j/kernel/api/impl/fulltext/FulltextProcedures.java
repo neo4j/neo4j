@@ -90,7 +90,7 @@ public class FulltextProcedures
         accessor.awaitRefresh();
     }
 
-    @Description( "Create a node fulltext index for the given labels and properties " +
+    @Description( "Create a node fulltext index for the given labels and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Note: index specific settings are currently experimental, and might not replicated correctly in a cluster, or during backup. " +
                   "Supported settings are '" + INDEX_CONFIG_ANALYZER + "', for specifying what analyzer to use " +
@@ -116,7 +116,7 @@ public class FulltextProcedures
         return strings.toArray( ArrayUtils.EMPTY_STRING_ARRAY );
     }
 
-    @Description( "Create a relationship fulltext index for the given relationship types and properties " +
+    @Description( "Create a relationship fulltext index for the given relationship types and properties. " +
                   "The optional 'config' map parameter can be used to supply settings to the index. " +
                   "Note: index specific settings are currently experimental, and might not replicated correctly in a cluster, or during backup. " +
                   "Supported settings are '" + INDEX_CONFIG_ANALYZER + "', for specifying what analyzer to use " +
