@@ -160,8 +160,13 @@ function Get-Neo4jServer
       Set-Neo4jEnv $name $value
     }
 
-    # Set log dir on server object
+    # Set log dir on server object and attempt to create it if it doesn't exist
     $serverObject.LogDir = (Get-Neo4jEnv 'NEO4J_LOGS')
+    if ($serverObject.LogDir -ne $null) {
+      if (-not (Test-Path -PathType Container -Path $serverObject.LogDir)) {
+        New-Item -ItemType Directory -Force -ErrorAction SilentlyContinue -Path $serverObject.LogDir | Out-Null
+      }
+    }
 
     #  NEO4J_CONF and NEO4J_HOME are used by the Neo4j Admin Tool
     if ((Get-Neo4jEnv 'NEO4J_CONF') -eq $null) { Set-Neo4jEnv "NEO4J_CONF" $ConfDir }

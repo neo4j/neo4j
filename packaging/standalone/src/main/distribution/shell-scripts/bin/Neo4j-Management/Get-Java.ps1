@@ -210,7 +210,7 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
       if (($option -ne $null) -and ($option.value.ToLower() -eq 'true')) {
         if ($javaVersion.isJava8) {
           # JAVA 8 GC logs configuration
-          $ShellArgs += "-Xloggc:`"$( $Neo4jServer.Home )/gc.log`""
+          $ShellArgs += "-Xloggc:`"$($Neo4jServer.LogDir)/gc.log`""
 
           $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.options' -Neo4jServer $Neo4jServer)
           if ($option -eq $null) {
@@ -247,7 +247,7 @@ WARNING: dbms.memory.heap.max_size will require a unit suffix in a
             $gcOptions = '-Xlog:gc*,safepoint,age*=trace'
           }
           # GC file name should be escaped on Windows because of ':' usage as part of absolute name
-          $gcFile = "\`"" + "$($Neo4jServer.Home)/gc.log" + "\`""
+          $gcFile = "\`"" + "$($Neo4jServer.LogDir)/gc.log" + "\`""
           $gcOptions += ":file=$( $gcFile )::"
 
           $option = (Get-Neo4jSetting -Name 'dbms.logs.gc.rotation.keep_number' -Neo4jServer $Neo4jServer)

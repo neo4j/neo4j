@@ -219,6 +219,10 @@ InModuleScope Neo4j-Management {
         $resultArgs | Should Match ([regex]::Escape(' -Xloggc:'))
       }
 
+      It "should set GCLogfile under logs" {
+        $resultArgs | Should Match ([regex]::Escape(" -Xloggc:`"$($serverObject.LogDir)"))
+      }
+
       It "should set GCLogFileSize" {
         $resultArgs | Should Match ([regex]::Escape(' -XX:GCLogFileSize='))
       }
@@ -394,7 +398,7 @@ InModuleScope Neo4j-Management {
         $argList -contains "--home-dir=`"TestDrive:\Neo4j Home`"" | Should Be True
       }
       It "should have literal quotes around gclog path" {
-        $argList -contains "-Xloggc:`"TestDrive:\Neo4j Home/gc.log`"" | Should Be True
+        $argList -contains "-Xloggc:`"$($serverObject.LogDir)/gc.log`"" | Should Be True
       }
     }
   }
