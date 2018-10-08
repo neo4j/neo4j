@@ -89,49 +89,6 @@ public class IndexProcedures implements AutoCloseable
         indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
     }
 
-    public void awaitIndexResampling( long timeout ) throws ProcedureException
-    {
-        final Iterator<IndexReference> indexes = ktx.schemaRead().indexesGetAll();
-        final Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
-        final long t0 = System.currentTimeMillis();
-        final long timeoutMillis = 1000 * timeout;
-
-        while ( indexes.hasNext() )
-        {
-            final IndexReference index = indexes.next();
-            try
-            {
-                final long updateCount = readUpdates( index, ktx, register );
-                if ( updateCount > 0 )
-                {
-                    boolean hasTimedOut;
-
-                    do
-                    {
-                        Thread.sleep( 1 );
-                        hasTimedOut = System.currentTimeMillis() - t0 >= timeoutMillis;
-                    }
-                    while ( updateCount <= readUpdates( index, ktx, register ) && !hasTimedOut );
-
-                    if ( hasTimedOut )
-                    {
-                        throw new ProcedureException( Status.Procedure.ProcedureTimedOut, "Indexes were not resampled within %s %s", timeout,
-                                TimeUnit.SECONDS );
-                    }
-                }
-            }
-            catch ( IndexNotFoundKernelException e )
-            {
-                throw new ProcedureException( e.status(), e.getMessage(), e );
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException( e );
-            }
-        }
-    }
-
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException
     {
         return createIndex( indexSpecification, providerName, "index created",
@@ -146,12 +103,6 @@ public class IndexProcedures implements AutoCloseable
     public Stream<BuiltInProcedures.SchemaIndexInfo> createNodeKey( String indexSpecification, String providerName ) throws ProcedureException
     {
         return createIndex( indexSpecification, providerName, "node key constraint online", SchemaWrite::nodeKeyConstraintCreate );
-    }
-
-    private long readUpdates( IndexReference index, Transaction tx, Register.DoubleLongRegister register ) throws IndexNotFoundKernelException
-    {
-        tx.schemaRead().indexUpdatesAndSize( index, register );
-        return register.readFirst();
     }
 
     private Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName, String statusMessage,

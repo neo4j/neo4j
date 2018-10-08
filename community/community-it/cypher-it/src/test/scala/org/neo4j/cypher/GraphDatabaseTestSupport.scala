@@ -22,9 +22,11 @@ package org.neo4j.cypher
 import java.io.File
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
+import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.InwardKernel
 import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.monitoring.Monitors
@@ -32,6 +34,7 @@ import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.internal.kernel.api.{Kernel, Transaction => KernelTransaction}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map
@@ -91,6 +94,17 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
         case Some(error) => fail(error)
         case _           =>
       }
+    }
+  }
+
+  def assertWithKernelTx(f: KernelTransaction => Unit): Unit = {
+    val kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel], SelectionStrategy.ONLY)
+    var ktx: KernelTransaction = null
+    try {
+      ktx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED )
+      f(ktx)
+    } finally {
+      ktx.close()
     }
   }
 

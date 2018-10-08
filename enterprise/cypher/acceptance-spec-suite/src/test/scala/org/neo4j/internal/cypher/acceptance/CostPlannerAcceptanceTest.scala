@@ -25,6 +25,7 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.internal.kernel.api.helpers.Indexes
 
 /**
   * These tests are similar with the tests in LeafPlanningIntegrationTest, but
@@ -204,7 +205,7 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
     }
 
     indexedLabels.foreach(l => graph.execute(s"CALL db.resampleIndex(':$l(prop)')"))
-    execute("CALL db.awaitIndexResampling( 1000 )")
+    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 1000 ))
 
     try {
       f()

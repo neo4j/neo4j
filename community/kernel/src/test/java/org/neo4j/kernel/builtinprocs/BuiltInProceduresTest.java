@@ -283,8 +283,6 @@ public class BuiltInProceduresTest
                         "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
                 record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
                         "Schedule resampling of all outdated indexes.", "READ" ),
-                record( "db.awaitIndexResampling", "db.awaitIndexResampling(timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for all indexes to be resampled (for example: CALL db.awaitIndexResampling(\"500\")).", "READ" ),
                 record( "db.schema",
                         "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Show the schema of the data.", "READ" ),
