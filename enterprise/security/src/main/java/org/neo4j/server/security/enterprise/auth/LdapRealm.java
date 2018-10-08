@@ -232,6 +232,9 @@ public class LdapRealm extends DefaultLdapRealm implements RealmLifecycle, Shiro
             ctx.addToEnvironment( Context.SECURITY_PRINCIPAL, principal );
             ctx.addToEnvironment( Context.SECURITY_CREDENTIALS, credentials );
 
+            // do a lookup of the user to trigger authentication
+            ctx.lookup( principal.toString() );
+
             return ctx;
         }
         catch ( IOException e )
