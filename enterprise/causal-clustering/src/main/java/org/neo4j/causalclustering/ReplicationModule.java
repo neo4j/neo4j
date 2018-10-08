@@ -26,6 +26,7 @@ import java.io.File;
 import java.time.Duration;
 import java.util.UUID;
 
+import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.CausalClusteringSettings;
 import org.neo4j.causalclustering.core.consensus.RaftMachine;
 import org.neo4j.causalclustering.core.consensus.RaftMessages;
@@ -55,8 +56,8 @@ public class ReplicationModule
     private final SessionTracker sessionTracker;
 
     public ReplicationModule( RaftMachine raftMachine, MemberId myself, PlatformModule platformModule, Config config,
-            Outbound<MemberId,RaftMessages.RaftMessage> outbound,
-            File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider, AvailabilityGuard globalAvailabilityGuard )
+            Outbound<MemberId,RaftMessages.RaftMessage> outbound, File clusterStateDirectory, FileSystemAbstraction fileSystem, LogProvider logProvider,
+            AvailabilityGuard globalAvailabilityGuard, LocalDatabase localDatabase )
     {
         LifeSupport life = platformModule.life;
 
@@ -82,7 +83,7 @@ public class ReplicationModule
                 outbound,
                 sessionPool,
                 progressTracker, progressRetryStrategy, availabilityTimeoutMillis,
-                globalAvailabilityGuard, logProvider,
+                globalAvailabilityGuard, logProvider, localDatabase,
                 platformModule.monitors );
     }
 

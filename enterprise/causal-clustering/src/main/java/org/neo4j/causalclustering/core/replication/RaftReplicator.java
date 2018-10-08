@@ -25,6 +25,7 @@ package org.neo4j.causalclustering.core.replication;
 import java.util.concurrent.Future;
 import java.util.function.BiConsumer;
 
+import org.neo4j.causalclustering.catchup.storecopy.LocalDatabase;
 import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.core.consensus.LeaderListener;
 import org.neo4j.causalclustering.core.consensus.LeaderLocator;
@@ -53,13 +54,14 @@ public class RaftReplicator implements Replicator, LeaderListener
     private final TimeoutStrategy progressTimeoutStrategy;
     private final AvailabilityGuard availabilityGuard;
     private final Log log;
+    private final LocalDatabase localDatabase;
     private final ReplicationMonitor replicationMonitor;
     private final long availabilityTimeoutMillis;
     private final LeaderProvider leaderProvider;
 
     public RaftReplicator( LeaderLocator leaderLocator, MemberId me, Outbound<MemberId,RaftMessages.RaftMessage> outbound, LocalSessionPool sessionPool,
             ProgressTracker progressTracker, TimeoutStrategy progressTimeoutStrategy, long availabilityTimeoutMillis, AvailabilityGuard availabilityGuard,
-            LogProvider logProvider, Monitors monitors )
+            LogProvider logProvider, LocalDatabase localDatabase, Monitors monitors )
     {
         this.me = me;
         this.outbound = outbound;
@@ -69,6 +71,7 @@ public class RaftReplicator implements Replicator, LeaderListener
         this.availabilityTimeoutMillis = availabilityTimeoutMillis;
         this.availabilityGuard = availabilityGuard;
         this.log = logProvider.getLog( getClass() );
+        this.localDatabase = localDatabase;
         this.replicationMonitor = monitors.newMonitor( ReplicationMonitor.class );
         this.leaderProvider = new LeaderProvider();
         leaderLocator.registerListener( this );
@@ -165,6 +168,7 @@ public class RaftReplicator implements Replicator, LeaderListener
 
     private void assertDatabaseAvailable() throws ReplicationFailureException
     {
+        localDatabase.assertHealthy( ReplicationFailureException.class );
         try
         {
             availabilityGuard.await( availabilityTimeoutMillis );

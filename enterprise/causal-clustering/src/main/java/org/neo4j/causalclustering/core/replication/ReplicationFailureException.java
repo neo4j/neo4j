@@ -24,7 +24,9 @@ package org.neo4j.causalclustering.core.replication;
 
 public class ReplicationFailureException extends Exception
 {
-    ReplicationFailureException( String message, Throwable cause )
+    // needs to be public due to reflection
+    @SuppressWarnings( "WeakerAccess" )
+    public ReplicationFailureException( String message, Throwable cause )
     {
         super( message, cause );
     }
