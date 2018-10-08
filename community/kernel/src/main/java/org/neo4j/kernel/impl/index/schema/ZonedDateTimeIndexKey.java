@@ -90,9 +90,13 @@ class ZonedDateTimeIndexKey extends NativeIndexSingleValueKey<ZonedDateTimeIndex
                     TimeZones.validZoneOffset( zoneOffsetSeconds ) &&
                     TimeZones.validZoneOffset( other.zoneOffsetSeconds ) )
             {
-                // In the rare case of comparing the same instant in different time zones, we settle for
-                // mapping to values and comparing using the general values comparator.
-                compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
+                if ( zoneOffsetSeconds != other.zoneOffsetSeconds ||
+                     zoneId != other.zoneId )
+                {
+                    // In the rare case of comparing the same instant in different time zones, we settle for
+                    // mapping to values and comparing using the general values comparator.
+                    compare = Values.COMPARATOR.compare( asValue(), other.asValue() );
+                }
             }
         }
         return compare;
