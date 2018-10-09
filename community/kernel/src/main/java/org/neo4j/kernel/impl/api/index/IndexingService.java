@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongObjectProcedure;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
@@ -31,16 +32,21 @@ import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
@@ -204,6 +210,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
+            Map<IndexProviderDescriptor,List<IndexLogRecord>> indexProviders = new HashMap<>();
             for ( StoreIndexDescriptor indexDescriptor : indexDescriptors )
             {
                 IndexProxy indexProxy;
@@ -211,8 +218,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProviderDescriptor providerDescriptor = indexDescriptor.providerDescriptor();
                 IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexDescriptor );
+                IndexLogRecord indexLogRecord = new IndexLogRecord( indexDescriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
-                .add( new IndexLogRecord( indexDescriptor ) );
+                        .add( indexLogRecord );
+                indexProviders.computeIfAbsent( providerDescriptor, indexProviderDescriptor -> new ArrayList<>() )
+                        .add( indexLogRecord );
 
                 log.debug( indexStateInfo( "init", initialState, indexDescriptor ) );
                 switch ( initialState )
@@ -237,6 +247,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 indexMap.putIndexProxy( indexProxy );
             }
             logIndexStateSummary( "init", indexStates );
+            logIndexProviderSummary( "init", indexProviders );
             return indexMap;
         } );
     }
@@ -269,14 +280,19 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
+            Map<IndexProviderDescriptor,List<IndexLogRecord>> indexProviders = new HashMap<>();
 
             // Find all indexes that are not already online, do not require rebuilding, and create them
             indexMap.forEachIndexProxy( ( indexId, proxy ) ->
             {
                 InternalIndexState state = proxy.getState();
                 StoreIndexDescriptor descriptor = proxy.getDescriptor();
+                IndexProviderDescriptor providerDescriptor = descriptor.providerDescriptor();
+                IndexLogRecord indexLogRecord = new IndexLogRecord( descriptor );
                 indexStates.computeIfAbsent( state, internalIndexState -> new ArrayList<>() )
-                .add( new IndexLogRecord( descriptor ) );
+                        .add( indexLogRecord );
+                indexProviders.computeIfAbsent( providerDescriptor, indexProviderDescriptor -> new ArrayList<>() )
+                        .add( indexLogRecord );
                 log.debug( indexStateInfo( "start", state, descriptor ) );
                 switch ( state )
                 {
@@ -295,6 +311,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 }
             } );
             logIndexStateSummary( "start", indexStates );
+            logIndexProviderSummary( "start", indexProviders );
 
             // Drop placeholder proxies for indexes that need to be rebuilt
             dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
@@ -772,6 +789,30 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             }
         }
         log.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState ) );
+    }
+
+    private void logIndexProviderSummary( String method, Map<IndexProviderDescriptor,List<IndexLogRecord>> indexProviders )
+    {
+        Set<String> deprecatedIndexProviders = Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() )
+                .filter( GraphDatabaseSettings.SchemaIndex::deprecated )
+                .map( GraphDatabaseSettings.SchemaIndex::providerName )
+                .collect( Collectors.toSet() );
+        StringJoiner joiner = new StringJoiner( ", ", format( "IndexingService.%s: Deprecated index providers in use: ", method ), "" );
+        MutableBoolean anyDeprecated = new MutableBoolean();
+        indexProviders.forEach( ( indexProviderDescriptor, indexLogRecords ) ->
+        {
+            if ( deprecatedIndexProviders.contains( indexProviderDescriptor.name() ) )
+            {
+                anyDeprecated.setTrue();
+                int numberOfIndexes = indexLogRecords.size();
+                joiner.add( indexProviderDescriptor.name() + " (" + numberOfIndexes + (numberOfIndexes == 1 ? " index" : " indexes") + ")" );
+            }
+        } );
+        if ( anyDeprecated.getValue() )
+        {
+            // todo use userLog here
+            log.info( joiner.toString() );
+        }
     }
 
     private final class IndexPopulationStarter implements Function<IndexMap,IndexMap>

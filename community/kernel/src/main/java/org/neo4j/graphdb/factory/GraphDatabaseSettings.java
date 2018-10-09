@@ -613,19 +613,21 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     public enum SchemaIndex
     {
-        NATIVE_BTREE10( "native-btree", "1.0" ),
-        NATIVE20( "lucene+native", "2.0" ),
-        NATIVE10( "lucene+native", "1.0" ),
-        LUCENE10( "lucene", "1.0" );
+        NATIVE_BTREE10( "native-btree", "1.0", false ),
+        NATIVE20( "lucene+native", "2.0", true ),
+        NATIVE10( "lucene+native", "1.0", true ),
+        LUCENE10( "lucene", "1.0", true );
 
         private final String providerKey;
         private final String providerVersion;
+        private final boolean deprecated;
         private final String providerName;
 
-        SchemaIndex( String providerKey, String providerVersion )
+        SchemaIndex( String providerKey, String providerVersion, boolean deprecated )
         {
             this.providerKey = providerKey;
             this.providerVersion = providerVersion;
+            this.deprecated = deprecated;
             this.providerName = toProviderName( providerKey, providerVersion );
         }
 
@@ -642,6 +644,11 @@ public class GraphDatabaseSettings implements LoadableConfig
         public String providerVersion()
         {
             return providerVersion;
+        }
+
+        public boolean deprecated()
+        {
+            return deprecated;
         }
 
         private static String toProviderName( String providerName, String providerVersion )
