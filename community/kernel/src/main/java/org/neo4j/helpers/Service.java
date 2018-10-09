@@ -39,11 +39,8 @@ import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * A utility for locating services. This implements the same functionality as <a
- * href="http://java.sun.com/javase/6/docs/api/java/util/ServiceLoader.html">
- * the Java 6 ServiceLoader interface</a>, in fact it uses the
- * <code>ServiceLoader</code> if available, but backports the functionality to
- * previous Java versions and adds some error handling to ignore misconfigured
- * service implementations.
+ * href="https://docs.oracle.com/javase/8/docs/api/java/util/ServiceLoader.html">
+ * the Java ServiceLoader interface</a>.
  * <p>
  * Additionally this class can be used as a base class for implementing services
  * that are differentiated by a String key. An example implementation might be:
