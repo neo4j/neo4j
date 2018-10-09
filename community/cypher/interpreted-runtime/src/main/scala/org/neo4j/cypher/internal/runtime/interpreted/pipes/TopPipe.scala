@@ -24,6 +24,7 @@ import java.util.Comparator
 import org.neo4j.cypher.internal.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.util.v3_4.CypherExecutionException
 import org.neo4j.cypher.internal.util.v3_4.attribution.Id
 import org.neo4j.values.storable.NumberValue
 
@@ -44,18 +45,26 @@ case class TopNPipe(source: Pipe, countExpression: Expression, comparator: Compa
     if (input.isEmpty) Iterator.empty
     else {
       val first = input.next()
-      val count = countExpression(first, state).asInstanceOf[NumberValue].longValue().toInt
-      val topTable = new DefaultComparatorTopTable(comparator, count)
-      topTable.add(first)
+      val longCount: Long = countExpression(first, state).asInstanceOf[NumberValue].longValue()
 
-      input.foreach {
-        ctx =>
-          topTable.add(ctx)
+      if (longCount <= 0) {
+        Iterator.empty
+      } else if(longCount > Int.MaxValue) {
+        throw new CypherExecutionException(s"Top operator does not support limit $longCount > ${Int.MaxValue}", null)
+      } else {
+        val count = longCount.toInt
+        val topTable = new DefaultComparatorTopTable(comparator, count)
+        topTable.add(first)
+
+        input.foreach {
+          ctx =>
+            topTable.add(ctx)
+        }
+
+        topTable.sort()
+
+        topTable.iterator.asScala
       }
-
-      topTable.sort()
-
-      topTable.iterator.asScala
     }
   }
 }
