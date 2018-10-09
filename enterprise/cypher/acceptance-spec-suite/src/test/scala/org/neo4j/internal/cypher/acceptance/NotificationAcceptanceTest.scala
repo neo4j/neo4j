@@ -134,6 +134,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     val result = innerExecuteDeprecated("explain cypher runtime=compiled match (a)-->(b), (c)-->(d) return count(*)", Map.empty)
 
     result.notifications.toList should equal(List(
+      DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty),
       CARTESIAN_PRODUCT.notification(new graphdb.InputPosition(32, 1, 33), cartesianProduct(Set("c", "d").asJava)),
       RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
   }
@@ -144,6 +145,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
          RETURN reduce(y=0, x IN [0] | x) AS z""", Map.empty)
 
     result.notifications.toList should equal(List(
+      DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty),
       RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)))
   }
 

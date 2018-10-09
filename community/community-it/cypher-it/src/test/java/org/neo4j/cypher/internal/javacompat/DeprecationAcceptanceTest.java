@@ -46,7 +46,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedRulePlanner()
     {
         // when
-        Result result = db().execute( "CYPHER planner=rule RETURN 1" );
+        Result result = db().execute( "EXPLAIN CYPHER planner=rule RETURN 1" );
 
         // then
         assertThat( result.getNotifications(), containsItem( deprecatedRulePlanner ) );
@@ -57,7 +57,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedCompiledRuntime()
     {
         // when
-        Result result = db().execute( "CYPHER runtime=compiled RETURN 1" );
+        Result result = db().execute( "EXPLAIN CYPHER runtime=compiled RETURN 1" );
 
         // then
         assertThat( result.getNotifications(), containsItem( deprecatedCompiledRuntime ) );

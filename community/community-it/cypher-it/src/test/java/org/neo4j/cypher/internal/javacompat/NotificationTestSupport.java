@@ -96,7 +96,32 @@ public class NotificationTestSupport
         return rule.getGraphDatabaseAPI();
     }
 
-    protected <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
+    Matcher<Iterable<Notification>> containsNotification( NotificationCode.Notification expected )
+    {
+        return new TypeSafeMatcher<Iterable<Notification>>()
+        {
+            @Override
+            protected boolean matchesSafely( Iterable<Notification> items )
+            {
+                for ( Notification item : items )
+                {
+                    if ( item.equals( expected ) )
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( "an iterable containing " + expected );
+            }
+        };
+    }
+
+    <T> Matcher<Iterable<T>> containsItem( Matcher<T> itemMatcher )
     {
         return new TypeSafeMatcher<Iterable<T>>()
         {
@@ -121,7 +146,7 @@ public class NotificationTestSupport
         };
     }
 
-    protected <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
+    <T> Matcher<Iterable<T>> containsNoItem( Matcher<T> itemMatcher )
     {
         return new TypeSafeMatcher<Iterable<T>>()
         {
@@ -146,7 +171,7 @@ public class NotificationTestSupport
         };
     }
 
-    protected void shouldNotifyInStream( String version, String query, InputPosition pos, NotificationCode code )
+    void shouldNotifyInStream( String version, String query, InputPosition pos, NotificationCode code )
     {
         //when
         Result result = db().execute( version + query );
@@ -159,7 +184,8 @@ public class NotificationTestSupport
         result.close();
     }
 
-    protected void shouldNotifyInStreamWithDetail( String version, String query, InputPosition pos, NotificationCode code, NotificationDetail detail )
+    void shouldNotifyInStreamWithDetail( String version, String query, InputPosition pos, NotificationCode code,
+                                         NotificationDetail detail )
     {
         //when
         Result result = db().execute( version + query );
@@ -172,7 +198,7 @@ public class NotificationTestSupport
         result.close();
     }
 
-    protected void shouldNotNotifyInStream( String version, String query )
+    void shouldNotNotifyInStream( String version, String query )
     {
         // when
         Result result = db().execute( version + query );

@@ -85,12 +85,12 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault()
     {
         // when
-        Result result = db().execute( "MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-        InputPosition position = new InputPosition( 25, 1, 26 );
+        Result result = db().execute( "EXPLAIN MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        InputPosition position = new InputPosition( 33, 1, 34 );
 
         // then
         assertThat( result.getNotifications(),
-                contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+                containsNotification( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         result.close();
@@ -100,11 +100,11 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_5()
     {
         // when
-        Result result = db().execute( "CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-        InputPosition position = new InputPosition( 36, 1, 37 );
+        Result result = db().execute( "EXPLAIN CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        InputPosition position = new InputPosition( 44, 1, 45 );
 
         // then
-        assertThat( result.getNotifications(), contains( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
+        assertThat( result.getNotifications(), containsNotification( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
         Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
         assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
         result.close();
