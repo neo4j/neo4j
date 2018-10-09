@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.internal.kernel.api.procs.QualifiedName;
 import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.StubResourceManager;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -36,10 +36,12 @@ import static org.apache.commons.lang3.ArrayUtils.toArray;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
+import static org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED;
 
 public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
 {
@@ -49,13 +51,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     public void listConfig() throws Exception
     {
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        toArray( "" ), dependencyResolver, SecurityContext.AUTH_DISABLED,
-                        resourceTracker );
-
-        // Then
-        List<Object[]> config = asList( stream );
+        List<Object[]> config = callListConfig( "" );
         List<String> names = config.stream()
                 .map( o -> o[0].toString() )
                 .collect( Collectors.toList() );
@@ -75,37 +71,51 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
     public void listConfigWithASpecificConfigName() throws Exception
     {
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        toArray( GraphDatabaseSettings.strict_config_validation.name() ), dependencyResolver,
-                        SecurityContext.AUTH_DISABLED, resourceTracker );
-
-        // Then
-        List<Object[]> config = asList( stream );
+        List<Object[]> config = callListConfig( GraphDatabaseSettings.strict_config_validation.name() );
 
         assertEquals( 1, config.size() );
         assertArrayEquals( new Object[]{ "dbms.config.strict_validation",
                 "A strict configuration validation will prevent the database from starting up if unknown " +
                         "configuration options are specified in the neo4j settings namespace (such as dbms., ha., " +
                         "cypher., etc). This is currently false by default but will be true by default in 4.0.",
-                "false" }, config.get( 0 ) );
+                "false", false }, config.get( 0 ) );
     }
 
     @Test
     public void durationAlwaysListedWithUnit() throws Exception
     {
         // When
-        RawIterator<Object[],ProcedureException> stream =
-                dbmsOperations().procedureCallDbms( procedureName( "dbms", "listConfig" ),
-                        toArray( GraphDatabaseSettings.transaction_timeout.name() ), dependencyResolver,
-                        SecurityContext.AUTH_DISABLED, resourceTracker );
-
-        // Then
-        List<Object[]> config = asList( stream );
+        List<Object[]> config = callListConfig( GraphDatabaseSettings.transaction_timeout.name() );
 
         assertEquals( 1, config.size() );
         assertArrayEquals( new Object[]{ "dbms.transaction.timeout",
                 "The maximum time interval of a transaction within which it should be completed.",
-                "0ms" }, config.get( 0 ) );
+                "0ms", true }, config.get( 0 ) );
+    }
+
+    @Test
+    public void listDynamicSetting() throws ProcedureException
+    {
+        List<Object[]> config = callListConfig( GraphDatabaseSettings.check_point_iops_limit.name() );
+
+        assertEquals( 1, config.size() );
+        assertTrue( (Boolean) config.get(0)[3] );
+    }
+
+    @Test
+    public void listNotDynamicSetting() throws ProcedureException
+    {
+        List<Object[]> config = callListConfig( GraphDatabaseSettings.data_directory.name() );
+
+        assertEquals( 1, config.size() );
+        assertFalse( (Boolean) config.get(0)[3] );
+    }
+
+    private List<Object[]> callListConfig( String seatchString ) throws ProcedureException
+    {
+        QualifiedName procedureName = procedureName( "dbms", "listConfig" );
+        RawIterator<Object[],ProcedureException> callResult =
+                dbmsOperations().procedureCallDbms( procedureName, toArray( seatchString ), dependencyResolver, AUTH_DISABLED, resourceTracker );
+        return asList( callResult );
     }
 }

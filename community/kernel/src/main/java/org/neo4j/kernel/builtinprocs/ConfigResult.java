@@ -21,16 +21,20 @@ package org.neo4j.kernel.builtinprocs;
 
 import org.neo4j.configuration.ConfigValue;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+
 public class ConfigResult
 {
     public final String name;
     public final String description;
     public final String value;
+    public final boolean dynamic;
 
-    public ConfigResult( ConfigValue configValue )
+    ConfigResult( ConfigValue configValue )
     {
         this.name = configValue.name();
-        this.description = configValue.description().orElse( "" );
-        this.value = configValue.valueAsString().orElse( "" );
+        this.description = configValue.description().orElse( EMPTY );
+        this.value = configValue.valueAsString().orElse( EMPTY );
+        this.dynamic = configValue.dynamic();
     }
 }

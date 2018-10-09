@@ -262,9 +262,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "dbms.procedures" ), containsInAnyOrder(
                 record( "dbms.listConfig",
-                        "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, " +
-                        "value" +
-                        " :: STRING?)",
+                        "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", "DBMS" ),
                 record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
