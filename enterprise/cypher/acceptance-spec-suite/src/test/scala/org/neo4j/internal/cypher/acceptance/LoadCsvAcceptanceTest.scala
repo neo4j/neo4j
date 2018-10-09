@@ -29,7 +29,7 @@ import java.util.Collections.emptyMap
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.frontend.v3_4.helpers.StringHelper.RichString
-import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, InternalExecutionResult}
 import org.neo4j.cypher.internal.v3_4.logical.plans.NodeIndexSeek
 import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.config.Configuration
@@ -370,6 +370,27 @@ class LoadCsvAcceptanceTest
           null.asInstanceOf[String] -> null)),
         Map("line" -> Map("DEPARTMENT ID" -> "010-1015", "DEPARTMENT NAME" -> "MFG - Engineering HQ",
           null.asInstanceOf[String] -> null))
+      ))
+    }
+  }
+
+  test("should handle returning null keys") {
+    val urls = csvUrls({
+      writer =>
+        writer.println("DEPARTMENT ID;DEPARTMENT NAME;")
+        writer.println("010-1010;MFG Supplies;")
+        writer.println("010-1011;Corporate Procurement;")
+        writer.println("010-1015;MFG - Engineering HQ;")
+    })
+
+    for (url <- urls) {
+      //Using innerExecuteDeprecated because different versions has different ordering for keys
+      val result =  innerExecuteDeprecated(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN keys(line)").toList
+
+      assert(result === List(
+        Map("keys(line)" -> List("DEPARTMENT NAME", null, "DEPARTMENT ID")),
+        Map("keys(line)" -> List("DEPARTMENT NAME", null, "DEPARTMENT ID")),
+        Map("keys(line)" -> List("DEPARTMENT NAME", null, "DEPARTMENT ID"))
       ))
     }
   }
