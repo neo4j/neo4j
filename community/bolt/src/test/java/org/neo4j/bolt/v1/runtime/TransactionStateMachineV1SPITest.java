@@ -19,6 +19,7 @@
  */
 package org.neo4j.bolt.v1.runtime;
 
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -28,6 +29,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -141,6 +143,8 @@ public class TransactionStateMachineV1SPITest
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
         when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
 
-        return new TransactionStateMachineV1SPI( db, txAwaitDuration, clock );
+        BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
+
+        return new TransactionStateMachineV1SPI( db, boltChannel, txAwaitDuration, clock );
     }
 }

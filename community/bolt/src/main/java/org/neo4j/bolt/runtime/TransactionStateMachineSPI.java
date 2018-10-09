@@ -41,6 +41,6 @@ public interface TransactionStateMachineSPI
 
     boolean isPeriodicCommit( String query );
 
-    BoltResultHandle executeQuery( BoltQuerySource querySource, LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
+    BoltResultHandle executeQuery( LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
             Map<String,Object> txMetaData );
 }

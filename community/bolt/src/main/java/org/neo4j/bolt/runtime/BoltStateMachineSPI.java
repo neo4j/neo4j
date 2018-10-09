@@ -21,14 +21,11 @@ package org.neo4j.bolt.runtime;
 
 import java.util.Map;
 
-import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 
 public interface BoltStateMachineSPI
 {
-    BoltConnectionDescriptor connectionDescriptor();
-
     TransactionStateMachineSPI transactionSpi();
 
     void reportError( Neo4jError err );

@@ -617,7 +617,7 @@ public abstract class ProcedureInteractionTestBase<S>
         NetworkConnectionTracker connectionTracker = neo.getLocalGraph().getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
         return connectionTracker.activeConnections()
                 .stream()
-                .map( TrackedNetworkConnection::user )
+                .map( TrackedNetworkConnection::username )
                 .collect( groupingBy( identity(), counting() ) );
     }
 

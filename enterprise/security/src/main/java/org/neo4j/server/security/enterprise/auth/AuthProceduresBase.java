@@ -90,7 +90,7 @@ public class AuthProceduresBase
         NetworkConnectionTracker connectionTracker = graph.getDependencyResolver().resolveDependency( NetworkConnectionTracker.class );
         connectionTracker.activeConnections()
                 .stream()
-                .filter( connection -> Objects.equals( username, connection.user() ) )
+                .filter( connection -> Objects.equals( username, connection.username() ) )
                 .forEach( TrackedNetworkConnection::close );
     }
 

@@ -110,7 +110,7 @@ public class AuthorizationEnabledFilter extends AuthorizationFilter
         try
         {
             LoginContext securityContext = authenticate( username, password );
-            JettyHttpConnection.updateUserForCurrentConnection( username );
+            JettyHttpConnection.updateUserForCurrentConnection( username, request.getHeader( HttpHeaders.USER_AGENT ) );
 
             switch ( securityContext.subject().getAuthenticationResult() )
             {

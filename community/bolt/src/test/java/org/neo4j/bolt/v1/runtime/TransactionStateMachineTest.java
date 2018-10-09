@@ -25,8 +25,6 @@ import org.mockito.InOrder;
 
 import java.util.Optional;
 
-import org.neo4j.bolt.BoltConnectionDescriptor;
-import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
@@ -440,13 +438,11 @@ class TransactionStateMachineTest
     @Test
     public void shouldNotOpenExplicitTransactionForPeriodicCommitQuery() throws Exception
     {
-        BoltQuerySource source = new BoltQuerySource( "Hello", "World", mock( BoltConnectionDescriptor.class ) );
         KernelTransaction transaction = newTransaction();
         TransactionStateMachineV1SPI stateMachineSPI = newTransactionStateMachineSPI( transaction );
         when( stateMachineSPI.isPeriodicCommit( PERIODIC_COMMIT_QUERY ) ).thenReturn( true );
 
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
-        stateMachine.setQuerySource( source );
 
         stateMachine.run( PERIODIC_COMMIT_QUERY, EMPTY_MAP );
 
@@ -456,7 +452,7 @@ class TransactionStateMachineTest
         InOrder inOrder = inOrder( stateMachineSPI );
         inOrder.verify( stateMachineSPI ).isPeriodicCommit( PERIODIC_COMMIT_QUERY );
         // periodic commit query was executed without starting an explicit transaction
-        inOrder.verify( stateMachineSPI ).executeQuery( eq( source ), any( LoginContext.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ), any(), any() );
+        inOrder.verify( stateMachineSPI ).executeQuery( any( LoginContext.class ), eq( PERIODIC_COMMIT_QUERY ), eq( EMPTY_MAP ), any(), any() );
         // explicit transaction was started only after query execution to stream the result
         inOrder.verify( stateMachineSPI ).beginTransaction( any( LoginContext.class ), any(), any() );
     }
@@ -507,7 +503,7 @@ class TransactionStateMachineTest
         TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
         when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }
@@ -518,7 +514,7 @@ class TransactionStateMachineTest
         TransactionStateMachineV1SPI stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
 
         when( stateMachineSPI.beginTransaction( any(), any(), any() ) ).thenReturn( transaction );
-        when( stateMachineSPI.executeQuery( any(), any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
+        when( stateMachineSPI.executeQuery( any(), anyString(), any(), any(), any() ) ).thenReturn( resultHandle );
 
         return stateMachineSPI;
     }

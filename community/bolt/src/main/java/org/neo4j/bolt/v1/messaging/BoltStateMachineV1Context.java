@@ -47,9 +47,9 @@ public class BoltStateMachineV1Context implements StateMachineContext
     }
 
     @Override
-    public void authenticatedAsUser( String user )
+    public void authenticatedAsUser( String username, String userAgent )
     {
-        boltChannel.updateUser( user );
+        boltChannel.updateUser( username, userAgent );
     }
 
     @Override

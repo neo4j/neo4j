@@ -40,7 +40,8 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
     private final String id;
     private final long connectTime;
 
-    private volatile String user;
+    private volatile String username;
+    private volatile String userAgent;
 
     public JettyHttpConnection( String id, HttpConfiguration config, Connector connector, EndPoint endPoint,
             HttpCompliance compliance, boolean recordComplianceViolations )
@@ -81,23 +82,30 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
     }
 
     @Override
-    public String user()
+    public String username()
     {
-        return user;
+        return username;
     }
 
     @Override
-    public void updateUser( String user )
+    public String userAgent()
     {
-        this.user = user;
+        return userAgent;
     }
 
-    public static void updateUserForCurrentConnection( String user )
+    @Override
+    public void updateUser( String username, String userAgent )
+    {
+        this.username = username;
+        this.userAgent = userAgent;
+    }
+
+    public static void updateUserForCurrentConnection( String username, String userAgent )
     {
         HttpConnection currentConnection = HttpConnection.getCurrentConnection();
         if ( currentConnection instanceof JettyHttpConnection )
         {
-            ((JettyHttpConnection) currentConnection).updateUser( user );
+            ((JettyHttpConnection) currentConnection).updateUser( username, userAgent );
         }
     }
 }

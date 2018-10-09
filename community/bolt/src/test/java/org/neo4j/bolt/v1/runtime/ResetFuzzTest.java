@@ -33,7 +33,6 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
@@ -197,11 +196,6 @@ public class ResetFuzzTest
      */
     private class FuzzStubSPI implements BoltStateMachineSPI
     {
-        @Override
-        public BoltConnectionDescriptor connectionDescriptor()
-        {
-            return boltChannel;
-        }
 
         @Override
         public TransactionStateMachineSPI transactionSpi()

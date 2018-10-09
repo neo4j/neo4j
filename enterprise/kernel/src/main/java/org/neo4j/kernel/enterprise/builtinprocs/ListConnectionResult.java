@@ -41,7 +41,7 @@ public class ListConnectionResult
         connectionId = connection.id();
         connectTime = ProceduresTimeFormatHelper.formatTime( connection.connectTime(), timeZone );
         connector = connection.connector();
-        username = connection.user();
+        username = connection.username();
         serverAddress = SocketAddress.format( connection.serverAddress() );
         clientAddress = SocketAddress.format( connection.clientAddress() );
     }

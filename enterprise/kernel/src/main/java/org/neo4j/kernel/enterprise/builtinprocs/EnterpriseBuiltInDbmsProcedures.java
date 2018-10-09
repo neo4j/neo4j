@@ -137,7 +137,7 @@ public class EnterpriseBuiltInDbmsProcedures
 
         return connectionTracker.activeConnections()
                 .stream()
-                .filter( connection -> isAdminOrSelf( connection.user() ) )
+                .filter( connection -> isAdminOrSelf( connection.username() ) )
                 .map( connection -> new ListConnectionResult( connection, timeZone ) );
     }
 
@@ -169,10 +169,10 @@ public class EnterpriseBuiltInDbmsProcedures
         TrackedNetworkConnection connection = connectionTracker.get( id );
         if ( connection != null )
         {
-            if ( isAdminOrSelf( connection.user() ) )
+            if ( isAdminOrSelf( connection.username() ) )
             {
                 connection.close();
-                return new ConnectionTerminationResult( id, connection.user() );
+                return new ConnectionTerminationResult( id, connection.username() );
             }
             throw new AuthorizationViolationException( PERMISSION_DENIED );
         }

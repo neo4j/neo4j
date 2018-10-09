@@ -28,14 +28,15 @@ import org.neo4j.kernel.api.net.TrackedNetworkConnection;
 /**
  * A channel through which Bolt messaging can occur.
  */
-public class BoltChannel implements AutoCloseable, TrackedNetworkConnection, BoltConnectionDescriptor
+public class BoltChannel implements TrackedNetworkConnection
 {
     private final String id;
     private final long connectTime;
     private final String connector;
     private final Channel rawChannel;
 
-    private volatile String user;
+    private volatile String username;
+    private volatile String userAgent;
 
     public BoltChannel( String id, String connector, Channel rawChannel )
     {
@@ -81,15 +82,22 @@ public class BoltChannel implements AutoCloseable, TrackedNetworkConnection, Bol
     }
 
     @Override
-    public String user()
+    public String username()
     {
-        return user;
+        return username;
     }
 
     @Override
-    public void updateUser( String user )
+    public String userAgent()
     {
-        this.user = user;
+        return userAgent;
+    }
+
+    @Override
+    public void updateUser( String username, String userAgent )
+    {
+        this.username = username;
+        this.userAgent = userAgent;
     }
 
     @Override
@@ -110,7 +118,8 @@ public class BoltChannel implements AutoCloseable, TrackedNetworkConnection, Bol
                ", connectTime=" + connectTime +
                ", connector='" + connector + '\'' +
                ", rawChannel=" + rawChannel +
-               ", user='" + user + '\'' +
+               ", username='" + username + '\'' +
+               ", userAgent='" + userAgent + '\'' +
                '}';
     }
 }

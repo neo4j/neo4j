@@ -54,8 +54,6 @@ public interface StatementProcessor
 
     void validateTransaction() throws KernelException;
 
-    void setQuerySource( BoltQuerySource querySource );
-
     StatementProcessor EMPTY = new StatementProcessor()
     {
         @Override
@@ -125,11 +123,6 @@ public interface StatementProcessor
 
         @Override
         public void validateTransaction() throws KernelException
-        {
-        }
-
-        @Override
-        public void setQuerySource( BoltQuerySource querySource )
         {
         }
     };

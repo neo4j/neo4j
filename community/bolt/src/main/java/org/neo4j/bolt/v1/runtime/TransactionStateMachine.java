@@ -24,7 +24,6 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.Optional;
 
-import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.StatementMetadata;
@@ -246,12 +245,6 @@ public class TransactionStateMachine implements StatementProcessor
         return state == State.EXPLICIT_TRANSACTION;
     }
 
-    @Override
-    public void setQuerySource( BoltQuerySource querySource )
-    {
-        this.ctx.querySource = querySource;
-    }
-
     enum State
     {
         AUTO_COMMIT
@@ -303,7 +296,7 @@ public class TransactionStateMachine implements StatementProcessor
                         boolean failed = true;
                         try
                         {
-                            BoltResultHandle resultHandle = spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params, txTimeout, txMetadata );
+                            BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, txTimeout, txMetadata );
                             startExecution( ctx, resultHandle );
                             failed = false;
                         }
@@ -388,8 +381,7 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else
                         {
-                            BoltResultHandle resultHandle =
-                                    spi.executeQuery( ctx.querySource, ctx.loginContext, statement, params, null, null /*ignored in explict tx run*/ );
+                            BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, null, null /*ignored in explict tx run*/ );
                             startExecution( ctx, resultHandle );
                             return EXPLICIT_TRANSACTION;
                         }
@@ -566,7 +558,6 @@ public class TransactionStateMachine implements StatementProcessor
             }
         };
 
-        BoltQuerySource querySource;
         BoltResultHandle currentResultHandle;
 
         private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )

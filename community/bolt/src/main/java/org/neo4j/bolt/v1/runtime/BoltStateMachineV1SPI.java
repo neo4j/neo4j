@@ -21,7 +21,6 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.util.Map;
 
-import org.neo4j.bolt.BoltConnectionDescriptor;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
@@ -36,28 +35,20 @@ import org.neo4j.udc.UsageDataKeys;
 public class BoltStateMachineV1SPI implements BoltStateMachineSPI
 {
     public static final String BOLT_SERVER_VERSION_PREFIX = "Neo4j/";
-    private final BoltConnectionDescriptor connectionDescriptor;
     private final UsageData usageData;
     private final ErrorReporter errorReporter;
     private final Authentication authentication;
     private final String version;
     private final TransactionStateMachineSPI transactionSpi;
 
-    public BoltStateMachineV1SPI( BoltConnectionDescriptor connectionDescriptor, UsageData usageData, LogService logging,
+    public BoltStateMachineV1SPI( UsageData usageData, LogService logging,
             Authentication authentication, TransactionStateMachineSPI transactionStateMachineSPI )
     {
-        this.connectionDescriptor = connectionDescriptor;
         this.usageData = usageData;
         this.errorReporter = new ErrorReporter( logging );
         this.authentication = authentication;
         this.transactionSpi = transactionStateMachineSPI;
         this.version = BOLT_SERVER_VERSION_PREFIX + Version.getNeo4jVersion();
-    }
-
-    @Override
-    public BoltConnectionDescriptor connectionDescriptor()
-    {
-        return connectionDescriptor;
     }
 
     @Override

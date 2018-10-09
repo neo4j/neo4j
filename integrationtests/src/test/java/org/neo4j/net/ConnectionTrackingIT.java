@@ -389,7 +389,7 @@ public class ConnectionTrackingIT
     private static List<TrackedNetworkConnection> authenticatedConnectionsFromConnectionTracker()
     {
         return acceptedConnectionsFromConnectionTracker().stream()
-                .filter( connection -> connection.user() != null )
+                .filter( connection -> connection.username() != null )
                 .collect( toList() );
     }
 
@@ -495,7 +495,7 @@ public class ConnectionTrackingIT
     private void killConnectionViaBolt( TrackedNetworkConnection trackedConnection ) throws Exception
     {
         String id = trackedConnection.id();
-        String user = trackedConnection.user();
+        String user = trackedConnection.username();
 
         TransportConnection connection = connectSocketTo( neo4j.boltURI() );
         try

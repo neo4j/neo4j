@@ -83,13 +83,14 @@ class BoltChannelTest
     }
 
     @Test
-    void shouldHaveUser()
+    void shouldHaveUsernameAndUserAgent()
     {
         BoltChannel boltChannel = new BoltChannel( "bolt-1", "my-bolt", channel );
 
-        assertNull( boltChannel.user() );
-        boltChannel.updateUser( "hello" );
-        assertEquals( "hello", boltChannel.user() );
+        assertNull( boltChannel.username() );
+        boltChannel.updateUser( "hello", "my-bolt-driver/1.2.3" );
+        assertEquals( "hello", boltChannel.username() );
+        assertEquals( "my-bolt-driver/1.2.3", boltChannel.userAgent() );
     }
 
     private static Channel channelMock( boolean open )

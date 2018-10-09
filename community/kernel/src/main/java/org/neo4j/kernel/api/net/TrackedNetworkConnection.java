@@ -33,9 +33,11 @@ public interface TrackedNetworkConnection
 
     SocketAddress clientAddress();
 
-    String user();
+    String username();
 
-    void updateUser( String user );
+    String userAgent();
+
+    void updateUser( String username, String userAgent );
 
     void close();
 }

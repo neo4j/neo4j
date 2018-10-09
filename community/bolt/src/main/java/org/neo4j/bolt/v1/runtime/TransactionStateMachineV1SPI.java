@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
-import org.neo4j.bolt.runtime.BoltQuerySource;
+import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
@@ -62,6 +62,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
     private final GraphDatabaseAPI db;
+    private final BoltChannel boltChannel;
     private final ThreadToStatementContextBridge txBridge;
     private final QueryExecutionEngine queryExecutionEngine;
     private final TransactionIdTracker transactionIdTracker;
@@ -69,9 +70,10 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final Duration txAwaitDuration;
     private final Clock clock;
 
-    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
     {
         this.db = db;
+        this.boltChannel = boltChannel;
         this.txBridge = resolveDependency( db, ThreadToStatementContextBridge.class );
         this.queryExecutionEngine = resolveDependency( db, QueryExecutionEngine.class );
         this.transactionIdTracker = newTransactionIdTracker( db );
@@ -118,14 +120,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     }
 
     @Override
-    public BoltResultHandle executeQuery( BoltQuerySource querySource, LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
+    public BoltResultHandle executeQuery( LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
             Map<String,Object> txMetadata )
     {
         InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, txTimeout, txMetadata );
-        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( querySource.principalName(),
-                querySource.clientName(),
-                querySource.connectionDescriptor().clientAddress(),
-                querySource.connectionDescriptor().serverAddress() );
+        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( boltChannel.username(),
+                boltChannel.userAgent(), boltChannel.clientAddress(), boltChannel.serverAddress() );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
 

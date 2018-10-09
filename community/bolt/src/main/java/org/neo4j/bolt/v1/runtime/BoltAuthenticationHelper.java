@@ -22,7 +22,6 @@ package org.neo4j.bolt.v1.runtime;
 import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltQuerySource;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -36,9 +35,9 @@ public class BoltAuthenticationHelper
         {
             AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
             String username = authResult.getLoginContext().subject().username();
-            context.authenticatedAsUser( username );
+            context.authenticatedAsUser( username, userAgent );
 
-            StatementProcessor statementProcessor = newStatementProcessor( username, userAgent, authResult, context );
+            StatementProcessor statementProcessor = new TransactionStateMachine( context.boltSpi().transactionSpi(), authResult, context.clock() );
             context.connectionState().setStatementProcessor( statementProcessor );
 
             if ( authResult.credentialsExpired() )
@@ -55,13 +54,5 @@ public class BoltAuthenticationHelper
             context.handleFailure( t, true );
             return false;
         }
-    }
-
-    private static StatementProcessor newStatementProcessor( String username, String userAgent, AuthenticationResult authResult,
-            StateMachineContext context )
-    {
-        TransactionStateMachine statementProcessor = new TransactionStateMachine( context.boltSpi().transactionSpi(), authResult, context.clock() );
-        statementProcessor.setQuerySource( new BoltQuerySource( username, userAgent, context.boltSpi().connectionDescriptor() ) );
-        return statementProcessor;
     }
 }
