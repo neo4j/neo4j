@@ -28,8 +28,8 @@ import org.neo4j.values.storable.Values
 case class Multiply(a: Expression, b: Expression) extends Expression  {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = (a(ctx, state), b(ctx, state)) match {
-    case (x, y) if x == Values.NO_VALUE || y == Values.NO_VALUE => Values.NO_VALUE
-    case _ => CypherMath.multiply(a(ctx, state), b(ctx, state))
+    case (x, y) if (x eq Values.NO_VALUE) || (y eq Values.NO_VALUE) => Values.NO_VALUE
+    case (x,y) => CypherMath.multiply(x, y)
   }
 
   override def rewrite(f: (Expression) => Expression): Expression = f(Multiply(a.rewrite(f), b.rewrite(f)))
