@@ -36,6 +36,8 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -47,6 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1977,7 +1980,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             awaitIndexesOnline();
-            List<Value> values = generateRandomNonStringValues();
+            List<Value> values = generateRandomSimpleValues();
             for ( Value value : values )
             {
                 db.createNode( LABEL ).setProperty( PROP, value.asObject() );
@@ -1989,10 +1992,23 @@ public class FulltextProceduresTest
         params.put( "prop", valueToQueryFor );
         try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
-            assertThat( result.stream().count(), is( 1L ) );
-            String planDescription = result.getExecutionPlanDescription().toString();
-            assertThat( planDescription, containsString( "NodeByLabelScan" ) );
-            assertThat( planDescription, not( containsString( "IndexSeek" ) ) );
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher planner=rule profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher 2.3 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher 3.1 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
         }
     }
 
@@ -2011,7 +2027,7 @@ public class FulltextProceduresTest
         try ( Transaction tx = db.beginTx() )
         {
             awaitIndexesOnline();
-            List<Value> values = generateRandomNonStringValues();
+            List<Value> values = generateRandomSimpleValues();
             for ( Value value : values )
             {
                 db.createNode( LABEL ).setProperty( PROP, value.asObject() );
@@ -2023,11 +2039,32 @@ public class FulltextProceduresTest
         params.put( "prop", valueToQueryFor );
         try ( Result result = db.execute( "profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
-            assertThat( result.stream().count(), is( 1L ) );
-            String planDescription = result.getExecutionPlanDescription().toString();
-            assertThat( planDescription, containsString( "NodeByLabelScan" ) );
-            assertThat( planDescription, not( containsString( "IndexSeek" ) ) );
+            assertNoIndexSeeks( result );
         }
+        try ( Result result = db.execute( "cypher planner=rule profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher 2.3 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher 3.1 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+        try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        {
+            assertNoIndexSeeks( result );
+        }
+    }
+
+    private void assertNoIndexSeeks( Result result )
+    {
+        assertThat( result.stream().count(), is( 1L ) );
+        String planDescription = result.getExecutionPlanDescription().toString();
+        assertThat( planDescription, containsString( "NodeByLabel" ) );
+        assertThat( planDescription, not( containsString( "IndexSeek" ) ) );
     }
 
     private GraphDatabaseAPI createDatabase()
@@ -2139,6 +2176,19 @@ public class FulltextProceduresTest
 
     private List<Value> generateRandomNonStringValues()
     {
+        Predicate<Value> nonString = v -> v.valueGroup() != ValueGroup.TEXT;
+        return generateRandomValues( nonString );
+    }
+
+    private List<Value> generateRandomSimpleValues()
+    {
+        EnumSet<ValueGroup> simpleTypes = EnumSet.of(
+                ValueGroup.BOOLEAN, ValueGroup.BOOLEAN_ARRAY, ValueGroup.NUMBER, ValueGroup.NUMBER_ARRAY );
+        return generateRandomValues( v -> simpleTypes.contains( v.valueGroup() ) );
+    }
+
+    private List<Value> generateRandomValues( Predicate<Value> predicate )
+    {
         int valuesToGenerate = 1000;
         RandomValues generator = RandomValues.create();
         List<Value> values = new ArrayList<>( valuesToGenerate );
@@ -2149,7 +2199,7 @@ public class FulltextProceduresTest
             {
                 value = generator.nextValue();
             }
-            while ( value.valueGroup() == ValueGroup.TEXT );
+            while ( !predicate.test( value ) );
             values.add( value );
         }
         return values;
