@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCursor;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_LOGICAL_POS;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.write;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
@@ -46,9 +46,9 @@ class PointerCheckingTest
     @Test
     void checkChildShouldThrowOnReadFailure()
     {
-        long result = GenerationSafePointerPair.read( cursor, 0, 1, 123 );
+        long result = GenerationSafePointerPair.read( cursor, 0, 1, NO_GENERATION_TARGET );
 
-        assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, false ) );
+        assertThrows( TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, false ) );
     }
 
     @Test
@@ -74,7 +74,7 @@ class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, 0, firstGeneration, 456 );
+        long result = read( cursor, 0, firstGeneration, NO_GENERATION_TARGET );
 
         // THEN
         PointerChecking.checkPointer( result, false );
@@ -98,7 +98,7 @@ class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
+        long result = read( cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET );
 
         // THEN
         PointerChecking.checkPointer( result, true );
@@ -113,7 +113,7 @@ class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
+        long result = read( cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET );
 
         // THEN
         PointerChecking.checkPointer( result, true );
@@ -122,7 +122,7 @@ class PointerCheckingTest
     @Test
     void checkSiblingShouldThrowOnReadFailure()
     {
-        long result = read( cursor, firstGeneration, secondGeneration, NO_LOGICAL_POS );
+        long result = read( cursor, firstGeneration, secondGeneration, NO_GENERATION_TARGET );
 
         assertThrows( TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, true ) );
     }
@@ -141,7 +141,7 @@ class PointerCheckingTest
         cursor.rewind();
 
         // WHEN
-        long result = read( cursor, firstGeneration, pointer, NO_LOGICAL_POS );
+        long result = read( cursor, firstGeneration, pointer, NO_GENERATION_TARGET );
 
         assertThrows(TreeInconsistencyException.class, () -> PointerChecking.checkPointer( result, true ) );
     }

@@ -389,6 +389,11 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
      */
     private boolean forceReadHeader;
 
+    /**
+     * Place where read generations will be kept when reading child/sibling/successor pointers.
+     */
+    private final GenerationKeeper generationKeeper = new GenerationKeeper();
+
     @SuppressWarnings( "unchecked" )
     SeekCursor( PageCursor cursor, TreeNode<KEY,VALUE> bTreeNode, KEY fromInclusive, KEY toExclusive,
             Layout<KEY,VALUE> layout, long stableGeneration, long unstableGeneration, LongSupplier generationSupplier,
@@ -465,8 +470,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
                 if ( isInternal )
                 {
-                    pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration );
-                    pointerGeneration = readPointerGenerationOnSuccess( pointerId );
+                    pointerId = bTreeNode.childAt( cursor, pos, stableGeneration, unstableGeneration, generationKeeper );
+                    pointerGeneration = generationKeeper.generation;
                 }
             }
             while ( cursor.shouldRetry() );
@@ -632,7 +637,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
                 {
                     // We may need to go to previous sibling to find correct place to start seeking from
                     prevSiblingId = readPrevSibling();
-                    prevSiblingGeneration = readPointerGenerationOnSuccess( prevSiblingId );
+                    prevSiblingGeneration = generationKeeper.generation;
                 }
             }
 
@@ -641,7 +646,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
             {
                 // Read right sibling
                 pointerId = readNextSibling();
-                pointerGeneration = readPointerGenerationOnSuccess( pointerId );
+                pointerGeneration = generationKeeper.generation;
             }
             for ( int readPos = pos; cachedLength < mutableKeys.length && 0 <= readPos && readPos < keyCount; readPos += stride )
             {
@@ -809,18 +814,6 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     }
 
     /**
-     * @return generation of {@code pointerId}, if the pointer id was successfully read.
-     */
-    private long readPointerGenerationOnSuccess( long pointerId )
-    {
-        if ( GenerationSafePointerPair.isSuccess( pointerId ) )
-        {
-            return bTreeNode.pointerGeneration( cursor, pointerId );
-        }
-        return -1; // this value doesn't matter
-    }
-
-    /**
      * @return {@code false} if there was a set expectancy on first key in tree node which weren't met,
      * otherwise {@code true}. Caller should
      */
@@ -842,8 +835,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readPrevSibling()
     {
         return seekForward ?
-               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration ) :
-               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration );
+               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration, generationKeeper ) :
+               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration, generationKeeper );
     }
 
     /**
@@ -852,8 +845,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
     private long readNextSibling()
     {
         return seekForward ?
-               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration ) :
-               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration );
+               TreeNode.rightSibling( cursor, stableGeneration, unstableGeneration, generationKeeper ) :
+               TreeNode.leftSibling( cursor, stableGeneration, unstableGeneration, generationKeeper );
     }
 
     /**
@@ -894,11 +887,8 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
         currentNodeGeneration = TreeNode.generation( cursor );
 
-        successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration );
-        if ( GenerationSafePointerPair.isSuccess( successor ) )
-        {
-            successorGeneration = bTreeNode.pointerGeneration( cursor, successor );
-        }
+        successor = TreeNode.successor( cursor, stableGeneration, unstableGeneration, generationKeeper );
+        successorGeneration = generationKeeper.generation;
         isInternal = TreeNode.isInternal( cursor );
         // Find the left-most key within from-range
         keyCount = TreeNode.keyCount( cursor );

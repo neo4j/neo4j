@@ -48,7 +48,7 @@ import static org.neo4j.index.internal.gbptree.PageCursorUtil.put6BLong;
 class GenerationSafePointer
 {
     private static final int EMPTY_POINTER = 0;
-    private static final int EMPTY_GENERATION = 0;
+    static final int EMPTY_GENERATION = 0;
 
     static final long MIN_GENERATION = 1L;
     // unsigned int

@@ -1695,17 +1695,20 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
     {
         long currentPageId = readCursor.getCurrentPageId();
         RightmostInChain rightmost = new RightmostInChain();
+        GenerationKeeper generationTarget = new GenerationKeeper();
         for ( long child : children )
         {
             goTo( readCursor, child );
-            long leftSibling = TreeNode.leftSibling( readCursor, stableGeneration, unstableGeneration );
-            long rightSibling = TreeNode.rightSibling( readCursor, stableGeneration, unstableGeneration );
+            long leftSibling = TreeNode.leftSibling( readCursor, stableGeneration, unstableGeneration, generationTarget );
+            long leftSiblingGeneration = generationTarget.generation;
+            long rightSibling = TreeNode.rightSibling( readCursor, stableGeneration, unstableGeneration, generationTarget );
+            long rightSiblingGeneration = generationTarget.generation;
             rightmost.assertNext( readCursor,
                     TreeNode.generation( readCursor ),
                     pointer( leftSibling ),
-                    node.pointerGeneration( readCursor, leftSibling ),
+                    leftSiblingGeneration,
                     pointer( rightSibling ),
-                    node.pointerGeneration( readCursor, rightSibling ) );
+                    rightSiblingGeneration );
         }
         rightmost.assertLast();
         goTo( readCursor, currentPageId );

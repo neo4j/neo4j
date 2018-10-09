@@ -21,7 +21,6 @@ package org.neo4j.index.internal.gbptree;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_KEY;
 import static org.neo4j.index.internal.gbptree.Layout.FIXED_SIZE_VALUE;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
@@ -177,13 +176,6 @@ class TreeNodeFixedSize<KEY,VALUE> extends TreeNode<KEY,VALUE>
         cursor.setOffset( valueOffset( pos ) );
         layout.writeValue( cursor, value );
         return true;
-    }
-
-    @Override
-    long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
-    {
-        cursor.setOffset( childOffset( pos ) );
-        return read( cursor, stableGeneration, unstableGeneration, pos );
     }
 
     @Override

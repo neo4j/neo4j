@@ -44,7 +44,6 @@ import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putKeyValueSize;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.putTombstone;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyOffset;
 import static org.neo4j.index.internal.gbptree.DynamicSizeUtil.readKeyValueSize;
-import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 import static org.neo4j.index.internal.gbptree.PageCursorUtil.putUnsignedShort;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.INTERNAL;
 import static org.neo4j.index.internal.gbptree.TreeNode.Type.LEAF;
@@ -345,13 +344,6 @@ public class TreeNodeDynamicSize<KEY, VALUE> extends TreeNode<KEY,VALUE>
     private void progressCursor( PageCursor cursor, int delta )
     {
         cursor.setOffset( cursor.getOffset() + delta );
-    }
-
-    @Override
-    long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
-    {
-        cursor.setOffset( childOffset( pos ) );
-        return read( cursor, stableGeneration, unstableGeneration, pos );
     }
 
     @Override

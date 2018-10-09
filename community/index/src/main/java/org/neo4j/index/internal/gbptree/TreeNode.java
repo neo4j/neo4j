@@ -22,9 +22,10 @@ package org.neo4j.index.internal.gbptree;
 import java.io.IOException;
 import java.util.Comparator;
 
+import org.neo4j.index.internal.gbptree.GenerationSafePointerPair.GenerationTarget;
 import org.neo4j.io.pagecache.PageCursor;
 
-import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_LOGICAL_POS;
+import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.NO_GENERATION_TARGET;
 import static org.neo4j.index.internal.gbptree.GenerationSafePointerPair.read;
 
 /**
@@ -133,20 +134,35 @@ abstract class TreeNode<KEY,VALUE>
 
     static long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
+        return rightSibling( cursor, stableGeneration, unstableGeneration, NO_GENERATION_TARGET );
+    }
+
+    static long rightSibling( PageCursor cursor, long stableGeneration, long unstableGeneration, GenerationTarget generationTarget )
+    {
         cursor.setOffset( BYTE_POS_RIGHTSIBLING );
-        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
+        return read( cursor, stableGeneration, unstableGeneration, generationTarget );
     }
 
     static long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
+        return leftSibling( cursor, stableGeneration, unstableGeneration, NO_GENERATION_TARGET );
+    }
+
+    static long leftSibling( PageCursor cursor, long stableGeneration, long unstableGeneration, GenerationTarget generationTarget )
+    {
         cursor.setOffset( BYTE_POS_LEFTSIBLING );
-        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
+        return read( cursor, stableGeneration, unstableGeneration, generationTarget );
     }
 
     static long successor( PageCursor cursor, long stableGeneration, long unstableGeneration )
     {
+        return successor( cursor, stableGeneration, unstableGeneration, NO_GENERATION_TARGET );
+    }
+
+    static long successor( PageCursor cursor, long stableGeneration, long unstableGeneration, GenerationTarget generationTarget )
+    {
         cursor.setOffset( BYTE_POS_SUCCESSOR );
-        return read( cursor, stableGeneration, unstableGeneration, NO_LOGICAL_POS );
+        return read( cursor, stableGeneration, unstableGeneration, generationTarget );
     }
 
     static void setGeneration( PageCursor cursor, long generation )
@@ -184,20 +200,6 @@ abstract class TreeNode<KEY,VALUE>
         cursor.setOffset( BYTE_POS_SUCCESSOR );
         long result = GenerationSafePointerPair.write( cursor, successorId, stableGeneration, unstableGeneration );
         GenerationSafePointerPair.assertSuccess( result );
-    }
-
-    long pointerGeneration( PageCursor cursor, long readResult )
-    {
-        if ( !GenerationSafePointerPair.isRead( readResult ) )
-        {
-            throw new IllegalArgumentException( "Expected read result, but got " + readResult );
-        }
-        int offset = GenerationSafePointerPair.generationOffset( readResult );
-        int gsppOffset = GenerationSafePointerPair.isLogicalPos( readResult ) ? childOffset( offset ) : offset;
-        int gspOffset = GenerationSafePointerPair.resultIsFromSlotA( readResult ) ?
-                        gsppOffset : gsppOffset + GenerationSafePointer.SIZE;
-        cursor.setOffset( gspOffset );
-        return GenerationSafePointer.readGeneration( cursor );
     }
 
     // BODY METHODS
@@ -263,7 +265,16 @@ abstract class TreeNode<KEY,VALUE>
      */
     abstract boolean setValueAt( PageCursor cursor, VALUE value, int pos );
 
-    abstract long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration );
+    long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration )
+    {
+        return childAt( cursor, pos, stableGeneration, unstableGeneration, NO_GENERATION_TARGET );
+    }
+
+    long childAt( PageCursor cursor, int pos, long stableGeneration, long unstableGeneration, GenerationTarget generationTarget )
+    {
+        cursor.setOffset( childOffset( pos ) );
+        return read( cursor, stableGeneration, unstableGeneration, generationTarget );
+    }
 
     abstract void setChildAt( PageCursor cursor, long child, int pos, long stableGeneration, long unstableGeneration );
 
