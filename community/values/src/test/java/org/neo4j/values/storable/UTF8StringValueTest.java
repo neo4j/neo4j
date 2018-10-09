@@ -157,7 +157,7 @@ class UTF8StringValueTest
     }
 
     @Test
-    public void shouldHandleAdditionWithOffset()
+    void shouldHandleAdditionWithOffset()
     {
         // Given
         byte[] bytes = "abcdefg".getBytes( UTF_8 );
@@ -171,6 +171,23 @@ class UTF8StringValueTest
        assertSame( a.plus( b ), stringValue( "bcdef" ) );
        assertSame( b.plus( a ), stringValue( "defbc" ) );
        assertSame( b.plus( b ), stringValue( "defdef" ) );
+    }
+
+    @Test
+    void shouldHandleAdditionWithOffsetAndNonAscii()
+    {
+        // Given, two characters that require three bytes each
+        byte[] bytes = "ⲹ楡".getBytes( UTF_8 );
+
+        // When
+        UTF8StringValue a = (UTF8StringValue) utf8Value( bytes, 0, 3 );
+        UTF8StringValue b = (UTF8StringValue) utf8Value( bytes, 3, 3 );
+
+        // Then
+        assertSame( a.plus( a ), stringValue(  "ⲹⲹ" ) );
+        assertSame( a.plus( b ), stringValue(  "ⲹ楡" ) );
+        assertSame( b.plus( a ), stringValue(  "楡ⲹ") );
+        assertSame( b.plus( b ), stringValue( "楡楡" ) );
     }
 
     private void assertSame( TextValue lhs, TextValue rhs )
