@@ -34,9 +34,9 @@ import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4,
 import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexOrderNone, IndexedProperty, ProcedureAccessMode, QualifiedName, LogicalPlan => LogicalPlanv3_5, UserFunctionSignature}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexOrderNone, IndexedProperty, ProcedureAccessMode, QualifiedName, UserFunctionSignature, LogicalPlan => LogicalPlanv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.opencypher.v9_0.expressions.{PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
+import org.opencypher.v9_0.expressions.{LogicalVariable, PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
 import org.opencypher.v9_0.util.Rewritable.RewritableAny
 import org.opencypher.v9_0.util.attribution.IdGen
 import org.opencypher.v9_0.util.symbols.CypherType
@@ -247,6 +247,16 @@ object LogicalPlanConverter {
 
           epochMillisV3_5
         }
+
+        // This case can be removed when the 3.5 frontend fix for this is in
+        case (item: expressionsv3_4.PatternComprehension, children: Seq[AnyRef]) =>
+          expressionsv3_5.PatternComprehension(
+            children(0).asInstanceOf[Option[LogicalVariable]],
+            children(1).asInstanceOf[expressionsv3_5.RelationshipsPattern],
+            children(2).asInstanceOf[Option[expressionsv3_5.Expression]],
+            children(3).asInstanceOf[expressionsv3_5.Expression],
+            item.outerScope.map(v => expressionsv3_5.Variable(v.name)(helpers.as3_5(v.position)))
+          )(helpers.as3_5(item.position))
 
         case (item: plansV3_4.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])

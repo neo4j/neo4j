@@ -64,7 +64,8 @@ object helpers {
       config.legacyCsvQuoteEscaping,
       config.csvBufferSize,
       config.nonIndexedLabelWarningThreshold,
-      config.planWithMinimumCardinalityEstimates)
+      config.planWithMinimumCardinalityEstimates,
+      config.lenientCreateRelationship)
 
 
   /** This is awful but needed until 3_0 is updated no to send in the tracer here */

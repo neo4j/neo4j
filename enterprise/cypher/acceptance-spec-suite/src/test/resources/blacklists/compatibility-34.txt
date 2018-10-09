@@ -1,5 +1,1 @@
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
-
-//will be fixed when updating 3.4 dependency
-Feature "BooleanExpression": Scenario "Combining IN predicates intersected with OR"
-Feature "BooleanExpression": Scenario "Combining IN predicates intersected with AND"
