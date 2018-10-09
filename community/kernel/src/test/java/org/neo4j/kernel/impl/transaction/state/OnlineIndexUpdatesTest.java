@@ -110,9 +110,9 @@ public class OnlineIndexUpdatesTest
         PageCache pageCache = storage.pageCache();
         DatabaseLayout databaseLayout = storage.directory().databaseLayout();
         Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, EMPTY.getProviderDescriptor().name() );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
+        NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
-                        storage.fileSystem(), logProvider, EmptyVersionContextSupplier.EMPTY );
+                        storage.fileSystem(), nullLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();
@@ -126,8 +126,8 @@ public class OnlineIndexUpdatesTest
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         life.add( providerMap );
         indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, providerMap,
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(), logProvider,
-                IndexingService.NO_MONITOR, new DatabaseSchemaState( logProvider ) );
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores ), SchemaUtil.idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
+                IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ) );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );

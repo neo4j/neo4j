@@ -115,10 +115,10 @@ public class RecordStorageEngineRule extends ExternalResource
                 new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS,
                         new CommunityIdTypeConfigurationProvider() );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
-        NullLogProvider logProvider = NullLogProvider.getInstance();
+        NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         life.add( indexProviderMap );
         return life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
-                logProvider, mockedTokenHolders(),
+                nullLogProvider, nullLogProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
                 IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
@@ -192,7 +192,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 transactionApplierTransformer;
 
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
-                LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
+                LogProvider logProvider, LogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, IndexProviderMap indexProviderMap,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
@@ -202,10 +202,10 @@ public class RecordStorageEngineRule extends ExternalResource
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
-            super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics, scheduler, tokenNameLookup,
-                    lockService, indexProviderMap,
-                    indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering, idGeneratorFactory,
-                    idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
+            super( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics, scheduler,
+                    tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
+                    explicitIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector, operationalMode,
+                    EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

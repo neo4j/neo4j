@@ -502,9 +502,12 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private void repopulateAllIndexes( NativeLabelScanStore labelIndex )
     {
         LogProvider logProvider = logService.getInternalLogProvider();
+        LogProvider userLogProvider = logService.getUserLogProvider();
         IndexStoreView indexStoreView = new DynamicIndexStoreView( storeIndexStoreView, labelIndex, NO_LOCK_SERVICE, neoStores, logProvider );
-        IndexingService indexingService = life.add( IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
-                new NonTransactionalTokenNameLookup( tokenHolders ), emptyList(), logProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ) ) );
+        IndexingService indexingService = IndexingServiceFactory
+                .createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView, new NonTransactionalTokenNameLookup( tokenHolders ),
+                        emptyList(), logProvider, userLogProvider, NO_MONITOR, new DatabaseSchemaState( logProvider ) );
+        life.add( indexingService );
         try
         {
             StoreIndexDescriptor[] descriptors = getIndexesNeedingPopulation();

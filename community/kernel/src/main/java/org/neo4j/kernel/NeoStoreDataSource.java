@@ -176,6 +176,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final LogService logService;
     private final AutoIndexing autoIndexing;
     private final LogProvider logProvider;
+    private final LogProvider userLogProvider;
     private final DependencyResolver dependencyResolver;
     private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
@@ -244,6 +245,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.explicitIndexProvider = context.getExplicitIndexProvider();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
         this.logProvider = context.getLogService().getInternalLogProvider();
+        this.userLogProvider = context.getLogService().getUserLogProvider();
         this.tokenHolders = context.getTokenHolders();
         this.locks = context.getLocks();
         this.statementLocksFactory = context.getStatementLocksFactory();
@@ -500,7 +502,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
             OperationalMode operationalMode, VersionContextSupplier versionContextSupplier )
     {
         RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders,
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders,
                         schemaState, constraintSemantics, scheduler,
                         tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
                         explicitIndexProviderLookup, indexConfigStore,

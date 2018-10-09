@@ -44,7 +44,8 @@ public class IndexingServiceFactory
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
                                           Iterable<StoreIndexDescriptor> indexRules,
-                                          LogProvider logProvider,
+                                          LogProvider internalLogProvider,
+                                          LogProvider userLogProvider,
                                           IndexingService.Monitor monitor,
                                           SchemaState schemaState )
     {
@@ -52,13 +53,13 @@ public class IndexingServiceFactory
         MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
-                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, logProvider );
+                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, internalLogProvider );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
         IndexProxyCreator proxySetup =
-                new IndexProxyCreator( samplingConfig, storeView, providerMap, tokenNameLookup, logProvider );
+                new IndexProxyCreator( samplingConfig, storeView, providerMap, tokenNameLookup, internalLogProvider );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                multiPopulatorFactory, logProvider, monitor );
+                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor );
     }
 }

@@ -313,9 +313,10 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             JobScheduler scheduler = getJobScheduler();
             TokenNameLookup tokenNameLookup = new SilentTokenNameLookup( ktx.tokenRead() );
 
+            NullLogProvider nullLogProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
-                    NullLogProvider.getInstance(), IndexingService.NO_MONITOR, getSchemaState() );
+                    nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState() );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );

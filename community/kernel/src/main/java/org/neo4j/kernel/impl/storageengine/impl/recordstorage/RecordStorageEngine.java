@@ -152,6 +152,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             PageCache pageCache,
             FileSystemAbstraction fs,
             LogProvider logProvider,
+            LogProvider userLogProvider,
             TokenHolders tokenHolders,
             SchemaState schemaState,
             ConstraintSemantics constraintSemantics,
@@ -204,7 +205,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             this.indexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider,
+                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider, userLogProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
