@@ -81,7 +81,6 @@ trait PlannerQuery {
         case None => (plannerQuery.copy(interestingOrder = interestingOrder), interestingOrder.asInteresting)
         case Some(q) =>
           val (newTail, tailOrder) = f(q)
-          newTail.queryGraph.patternNodes
           if (plannerQuery.interestingOrder.isEmpty) {
             val reverseProjected =
               plannerQuery.horizon match {
