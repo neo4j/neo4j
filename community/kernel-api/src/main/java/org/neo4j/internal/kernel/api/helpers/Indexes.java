@@ -51,22 +51,21 @@ public class Indexes
             final IndexReference index = indexes.next();
             try
             {
-                final long updateCount = readUpdates( index, schemaRead, register );
-                if ( updateCount > 0 )
+                long readUpdates = readUpdates( index, schemaRead, register );
+                long updateCount = readUpdates;
+                boolean hasTimedOut = false;
+
+                while ( updateCount > 0 && updateCount <= readUpdates && !hasTimedOut )
                 {
-                    boolean hasTimedOut;
+                    Thread.sleep( 10 );
+                    hasTimedOut = System.currentTimeMillis() - t0 >= timeoutMillis;
+                    updateCount = Math.max( updateCount, readUpdates );
+                    readUpdates = readUpdates( index, schemaRead, register );
+                }
 
-                    do
-                    {
-                        Thread.sleep( 1 );
-                        hasTimedOut = System.currentTimeMillis() - t0 >= timeoutMillis;
-                    }
-                    while ( updateCount <= readUpdates( index, schemaRead, register ) && !hasTimedOut );
-
-                    if ( hasTimedOut )
-                    {
-                        throw new TimeoutException( String.format( "Indexes were not resampled within %s %s", timeout, TimeUnit.SECONDS ) );
-                    }
+                if ( hasTimedOut )
+                {
+                    throw new TimeoutException( String.format( "Indexes were not resampled within %s %s", timeout, TimeUnit.SECONDS ) );
                 }
             }
             catch ( InterruptedException e )

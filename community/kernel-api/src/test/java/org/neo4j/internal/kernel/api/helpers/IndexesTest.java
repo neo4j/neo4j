@@ -79,6 +79,18 @@ public class IndexesTest
     }
 
     @Test
+    public void shouldAwaitIndexResamplingForHeavyLoad() throws Throwable
+    {
+        // Given
+        IndexReference index =  mock( IndexReference.class );
+        final SchemaRead schemaRead = schemaWithIndexes( index );
+        setUpdates( schemaRead, 1, 2, 3, 2 );  // <- updates went down but didn't reach the first seen value
+
+        // Then no exception
+        Indexes.awaitResampling( schemaRead, 60 );
+    }
+
+    @Test
     public void shouldTimeout() throws Throwable
     {
         // Given

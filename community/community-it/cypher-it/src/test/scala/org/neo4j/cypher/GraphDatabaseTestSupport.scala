@@ -104,6 +104,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       ktx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED )
       f(ktx)
     } finally {
+      ktx.success()
       ktx.close()
     }
   }
