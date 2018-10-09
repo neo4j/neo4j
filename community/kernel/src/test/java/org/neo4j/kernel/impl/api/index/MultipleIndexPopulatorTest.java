@@ -289,23 +289,6 @@ public class MultipleIndexPopulatorTest
     }
 
     @Test
-    public void closeMultipleIndexPopulator() throws FlipFailedKernelException
-    {
-        IndexPopulator indexPopulator1 = createIndexPopulator();
-        IndexPopulator indexPopulator2 = createIndexPopulator();
-
-        addPopulator( indexPopulator1, 1 );
-        addPopulator( indexPopulator2, 2 );
-
-        doThrow( getPopulatorException() ).when( indexPopulator2 ).close( true );
-
-        multipleIndexPopulator.close( true );
-
-        verify( indexPopulator1 ).close( true );
-        checkPopulatorFailure( indexPopulator2 );
-    }
-
-    @Test
     public void testFlipAfterPopulation() throws FlipFailedKernelException
     {
         IndexPopulator indexPopulator1 = createIndexPopulator();

@@ -272,7 +272,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     @Override
     public void close( boolean populationCompletedSuccessfully )
     {
-        forEachPopulation( population -> population.populator.close( populationCompletedSuccessfully ) );
+        // closing the populators happens in flip, fail or individually when they are completed
     }
 
     @Override

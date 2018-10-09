@@ -57,6 +57,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -82,6 +83,7 @@ import static org.hamcrest.Matchers.sameInstance;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
@@ -506,6 +508,70 @@ public class IndexPopulationJobTest
         verify( populator ).markAsFailed( contains( failureMessage ) );
     }
 
+    @Test
+    public void shouldCloseMultiPopulatorOnSuccessfulPopulation()
+    {
+        // given
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
+                new DatabaseSchemaState( logProvider ) );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
+
+        // when
+        populationJob.run();
+
+        // then
+        assertTrue( populator.closed );
+    }
+
+    @Test
+    public void shouldCloseMultiPopulatorOnFailedPopulation()
+    {
+        // given
+        NullLogProvider logProvider = NullLogProvider.getInstance();
+        IndexStoreView failingStoreView = new IndexStoreView.Adaptor()
+        {
+            @Override
+            public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds, IntPredicate propertyKeyIdFilter,
+                    Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor, Visitor<NodeLabelUpdate,FAILURE> labelUpdateVisitor, boolean forceStoreScan )
+            {
+                return new StoreScan<FAILURE>()
+                {
+                    @Override
+                    public void run()
+                    {
+                        throw new RuntimeException( "Just failing" );
+                    }
+
+                    @Override
+                    public void stop()
+                    {
+                    }
+
+                    @Override
+                    public void acceptUpdate( MultipleIndexPopulator.MultipleIndexUpdater updater, IndexEntryUpdate<?> update, long currentlyIndexedNodeId )
+                    {
+                    }
+
+                    @Override
+                    public PopulationProgress getProgress()
+                    {
+                        return null;
+                    }
+                };
+            }
+        };
+        TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
+                new DatabaseSchemaState( logProvider ) );
+        IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
+
+        // when
+        populationJob.run();
+
+        // then
+        assertTrue( populator.closed );
+    }
+
     private static class ControlledStoreScan implements StoreScan<RuntimeException>
     {
         private final DoubleLatch latch = new DoubleLatch();
@@ -767,5 +833,22 @@ public class IndexPopulationJobTest
     private IndexStoreView indexStoreView()
     {
         return db.getDependencyResolver().resolveDependency( IndexStoreView.class );
+    }
+
+    private static class TrackingMultipleIndexPopulator extends MultipleIndexPopulator
+    {
+        private volatile boolean closed;
+
+        TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
+        {
+            super( storeView, logProvider, type, schemaState );
+        }
+
+        @Override
+        public void close( boolean populationCompletedSuccessfully )
+        {
+            closed = true;
+            super.close( populationCompletedSuccessfully );
+        }
     }
 }

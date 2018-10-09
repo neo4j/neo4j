@@ -116,6 +116,8 @@ public class IndexPopulationJob implements Runnable
         }
         finally
         {
+            // will only close "additional" resources, not the actual populators, since that's managed by flip
+            multiPopulator.close( true );
             doneSignal.countDown();
             currentThread().setName( oldThreadName );
         }
