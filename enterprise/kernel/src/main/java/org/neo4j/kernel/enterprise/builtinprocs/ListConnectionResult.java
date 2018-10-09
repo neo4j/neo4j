@@ -33,6 +33,7 @@ public class ListConnectionResult
     public final String connectTime;
     public final String connector;
     public final String username;
+    public final String userAgent;
     public final String serverAddress;
     public final String clientAddress;
 
@@ -42,6 +43,7 @@ public class ListConnectionResult
         connectTime = ProceduresTimeFormatHelper.formatTime( connection.connectTime(), timeZone );
         connector = connection.connector();
         username = connection.username();
+        userAgent = connection.userAgent();
         serverAddress = SocketAddress.format( connection.serverAddress() );
         clientAddress = SocketAddress.format( connection.clientAddress() );
     }

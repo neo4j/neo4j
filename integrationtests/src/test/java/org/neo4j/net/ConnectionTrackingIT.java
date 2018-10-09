@@ -32,6 +32,7 @@ import java.net.SocketException;
 import java.net.URI;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -41,6 +42,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
@@ -68,7 +70,6 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.storable.Value;
 
 import static java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.stream.Collectors.toList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -87,6 +88,9 @@ import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Terminated;
 import static org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings.online_backup_enabled;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.BOLT;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTP;
+import static org.neo4j.net.ConnectionTrackingIT.TestConnector.HTTPS;
 import static org.neo4j.server.configuration.ServerSettings.webserver_max_threads;
 import static org.neo4j.test.assertion.Assert.assertEventually;
 import static org.neo4j.test.server.HTTP.RawPayload;
@@ -102,6 +106,9 @@ public class ConnectionTrackingIT
     private static final String NEO4J_USER_PWD = "test";
     private static final String OTHER_USER = "otherUser";
     private static final String OTHER_USER_PWD = "test";
+
+    private static final List<String> LIST_CONNECTIONS_PROCEDURE_COLUMNS = Arrays.asList(
+            "connectionId", "connectTime", "connector", "username", "userAgent", "serverAddress", "clientAddress" );
 
     @ClassRule
     public static final Neo4jRule neo4j = new EnterpriseNeo4jRule()
@@ -155,9 +162,9 @@ public class ConnectionTrackingIT
     @Test
     public void shouldListNoConnectionsWhenIdle() throws Exception
     {
-        verifyConnectionCount( "http", null, 0 );
-        verifyConnectionCount( "https", null, 0 );
-        verifyConnectionCount( "bolt", null, 0 );
+        verifyConnectionCount( HTTP, null, 0 );
+        verifyConnectionCount( HTTPS, null, 0 );
+        verifyConnectionCount( BOLT, null, 0 );
     }
 
     @Test
@@ -199,8 +206,8 @@ public class ConnectionTrackingIT
             }
 
             awaitNumberOfAuthenticatedConnectionsToBe( 7 );
-            verifyConnectionCount( "http", "neo4j", 4 );
-            verifyConnectionCount( "http", OTHER_USER, 3 );
+            verifyAuthenticatedConnectionCount( HTTP, "neo4j", 4 );
+            verifyAuthenticatedConnectionCount( HTTP, OTHER_USER, 3 );
         } );
     }
 
@@ -219,8 +226,8 @@ public class ConnectionTrackingIT
             }
 
             awaitNumberOfAuthenticatedConnectionsToBe( 9 );
-            verifyConnectionCount( "https", "neo4j", 4 );
-            verifyConnectionCount( "https", OTHER_USER, 5 );
+            verifyAuthenticatedConnectionCount( HTTPS, "neo4j", 4 );
+            verifyAuthenticatedConnectionCount( HTTPS, OTHER_USER, 5 );
         } );
     }
 
@@ -239,8 +246,8 @@ public class ConnectionTrackingIT
             }
 
             awaitNumberOfAuthenticatedConnectionsToBe( 7 );
-            verifyConnectionCount( "bolt", "neo4j", 2 );
-            verifyConnectionCount( "bolt", OTHER_USER, 5 );
+            verifyAuthenticatedConnectionCount( BOLT, "neo4j", 2 );
+            verifyAuthenticatedConnectionCount( BOLT, OTHER_USER, 5 );
         } );
     }
 
@@ -263,28 +270,28 @@ public class ConnectionTrackingIT
             }
 
             awaitNumberOfAuthenticatedConnectionsToBe( 10 );
-            verifyConnectionCount( "bolt", OTHER_USER, 4 );
-            verifyConnectionCount( "http", "neo4j", 1 );
-            verifyConnectionCount( "https", "neo4j", 5 );
+            verifyConnectionCount( BOLT, OTHER_USER, 4 );
+            verifyConnectionCount( HTTP, "neo4j", 1 );
+            verifyConnectionCount( HTTPS, "neo4j", 5 );
         } );
     }
 
     @Test
     public void shouldKillHttpConnection() throws Exception
     {
-        testKillingOfConnections( neo4j.httpURI(), "http", 4 );
+        testKillingOfConnections( neo4j.httpURI(), HTTP, 4 );
     }
 
     @Test
     public void shouldKillHttpsConnection() throws Exception
     {
-        testKillingOfConnections( neo4j.httpsURI(), "https", 2 );
+        testKillingOfConnections( neo4j.httpsURI(), HTTPS, 2 );
     }
 
     @Test
     public void shouldKillBoltConnection() throws Exception
     {
-        testKillingOfConnections( neo4j.boltURI(), "bolt", 3 );
+        testKillingOfConnections( neo4j.boltURI(), BOLT, 3 );
     }
 
     private void testListingOfUnauthenticatedConnections( int httpCount, int httpsCount, int boltCount ) throws Exception
@@ -306,12 +313,12 @@ public class ConnectionTrackingIT
 
         awaitNumberOfAcceptedConnectionsToBe( httpCount + httpsCount + boltCount );
 
-        verifyConnectionCount( "http", null, httpCount );
-        verifyConnectionCount( "https", null, httpsCount );
-        verifyConnectionCount( "bolt", null, boltCount );
+        verifyConnectionCount( HTTP, null, httpCount );
+        verifyConnectionCount( HTTPS, null, httpsCount );
+        verifyConnectionCount( BOLT, null, boltCount );
     }
 
-    private void testKillingOfConnections( URI uri, String connector, int count ) throws Exception
+    private void testKillingOfConnections( URI uri, TestConnector connector, int count ) throws Exception
     {
         List<TransportConnection> socketConnections = new ArrayList<>();
         for ( int i = 0; i < count; i++ )
@@ -353,17 +360,28 @@ public class ConnectionTrackingIT
                 1, MINUTES );
     }
 
-    private static void verifyConnectionCount( String connector, String username, int expectedCount ) throws InterruptedException
+    private static void verifyConnectionCount( TestConnector connector, String username, int expectedCount ) throws InterruptedException
+    {
+        verifyConnectionCount( connector, username, expectedCount, false );
+    }
+
+    private static void verifyAuthenticatedConnectionCount( TestConnector connector, String username, int expectedCount ) throws InterruptedException
+    {
+        verifyConnectionCount( connector, username, expectedCount, true );
+    }
+
+    private static void verifyConnectionCount( TestConnector connector, String username, int expectedCount, boolean expectAuthenticated )
+            throws InterruptedException
     {
         assertEventually( connections -> "Unexpected number of listed connections: " + connections,
-                () -> listMatchingConnection( connector, username ), hasSize( expectedCount ),
+                () -> listMatchingConnection( connector, username, expectAuthenticated ), hasSize( expectedCount ),
                 1, MINUTES );
     }
 
-    private static List<Map<String,Object>> listMatchingConnection( String connector, String username )
+    private static List<Map<String,Object>> listMatchingConnection( TestConnector connector, String username, boolean expectAuthenticated )
     {
         Result result = neo4j.getGraphDatabaseService().execute( "CALL dbms.listConnections()" );
-        assertEquals( asList( "connectionId", "connectTime", "connector", "username", "serverAddress", "clientAddress" ), result.columns() );
+        assertEquals( LIST_CONNECTIONS_PROCEDURE_COLUMNS, result.columns() );
         List<Map<String,Object>> records = result.stream().collect( toList() );
 
         List<Map<String,Object>> matchingRecords = new ArrayList<>();
@@ -372,8 +390,13 @@ public class ConnectionTrackingIT
             String actualConnector = record.get( "connector" ).toString();
             assertNotNull( actualConnector );
             Object actualUsername = record.get( "username" );
-            if ( Objects.equals( connector, actualConnector ) && Objects.equals( username, actualUsername ) )
+            if ( Objects.equals( connector.name, actualConnector ) && Objects.equals( username, actualUsername ) )
             {
+                if ( expectAuthenticated )
+                {
+                    assertEquals( connector.userAgent, record.get( "userAgent" ) );
+                }
+
                 matchingRecords.add( record );
             }
 
@@ -463,11 +486,12 @@ public class ConnectionTrackingIT
     private Future<Response> updateNodeViaHttp( long id, boolean encrypted, String username, String password )
     {
         String uri = txCommitUri( encrypted );
+        String userAgent = encrypted ? HTTPS.userAgent : HTTP.userAgent;
+
         return executor.submit( () ->
-                {
-                    return withBasicAuth( username, password )
-                            .POST( uri, query( "MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42" ) );
-                }
+                withBasicAuth( username, password )
+                        .withHeaders( HttpHeaders.USER_AGENT, userAgent )
+                        .POST( uri, query( "MATCH (n) WHERE id(n) = " + id + " SET n.prop = 42" ) )
         );
     }
 
@@ -566,6 +590,22 @@ public class ConnectionTrackingIT
     private static InitMessage initMessage( String username, String password )
     {
         Map<String,Object> authToken = map( "scheme", "basic", "principal", username, "credentials", password );
-        return new InitMessage( "TestClient", authToken );
+        return new InitMessage( BOLT.userAgent, authToken );
+    }
+
+    enum TestConnector
+    {
+        HTTP( "http", "http-user-agent" ),
+        HTTPS( "https", "https-user-agent" ),
+        BOLT( "bolt", "bolt-user-agent" );
+
+        final String name;
+        final String userAgent;
+
+        TestConnector( String name, String userAgent )
+        {
+            this.name = name;
+            this.userAgent = userAgent;
+        }
     }
 }

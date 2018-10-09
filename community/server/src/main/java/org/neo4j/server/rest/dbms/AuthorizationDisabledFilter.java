@@ -26,9 +26,11 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
 
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+import org.neo4j.server.web.JettyHttpConnection;
 
 import static javax.servlet.http.HttpServletRequest.BASIC_AUTH;
 
@@ -46,8 +48,13 @@ public class AuthorizationDisabledFilter extends AuthorizationFilter
 
         try
         {
+            LoginContext loginContext = getAuthDisabledLoginContext();
+            String userAgent = request.getHeader( HttpHeaders.USER_AGENT );
+
+            JettyHttpConnection.updateUserForCurrentConnection( loginContext.subject().username(), userAgent );
+
             filterChain.doFilter(
-                    new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, getAuthDisabledLoginContext() ),
+                    new AuthorizedRequestWrapper( BASIC_AUTH, "neo4j", request, loginContext ),
                     servletResponse );
         }
         catch ( AuthorizationViolationException e )
