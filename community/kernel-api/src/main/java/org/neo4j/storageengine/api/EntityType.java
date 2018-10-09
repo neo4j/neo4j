@@ -20,28 +20,12 @@
 package org.neo4j.storageengine.api;
 
 /**
- * Type of graph entity. The three types, Nodes, Relationships and Graphs, represent objects that can have properties
+ * Type of graph entity. The two types, Nodes and Relationships, represent objects that can have properties
  * associated with them, as well as labeled with additional type information. Nodes have labels, and relationships
- * have relationship types. Graphs can have properties, but are not labeled.
+ * have relationship types.
  */
 public enum EntityType
 {
-    NODE( "label" ),
-    RELATIONSHIP( "relationship type" ),
-    GRAPH( "" );
-
-    private final String labelingType;
-
-    EntityType( String labelingType )
-    {
-        this.labelingType = labelingType;
-    }
-
-    /**
-     * @return the name of the labeling type for this entity type
-     */
-    public String getLabelingType()
-    {
-        return labelingType;
-    }
+    NODE,
+    RELATIONSHIP
 }
