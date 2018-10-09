@@ -719,6 +719,25 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
+    public void shouldFailLoginWrongPasswordWithLdapOnlyUsingStartTls() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
+                settings.put( SecuritySettings.ldap_server, "localhost:10389" );
+                settings.put( SecuritySettings.ldap_use_starttls, "true" );
+            } ) );
+
+            // Then
+            assertAuthFail( "neo", "wrong" );
+        }
+    }
+
+    @Test
     public void shouldBeAbleToLoginAndAuthorizeReaderWithLdapUserContextUsingStartTls() throws Throwable
     {
         getLdapServer().setConfidentialityRequired( true );
@@ -735,6 +754,26 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
 
             // Then
             testAuthWithReaderUser();
+        }
+    }
+
+    @Test
+    public void shouldFailLoginWrongPasswordWithLdapUserContextUsingStartTls() throws Throwable
+    {
+        getLdapServer().setConfidentialityRequired( true );
+
+        try ( EmbeddedTestCertificates ignore = new EmbeddedTestCertificates() )
+        {
+            // When
+            restartNeo4jServerWithOverriddenSettings( ldapOnlyAuthSettings.andThen( settings ->
+            {
+                settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
+                settings.put( SecuritySettings.ldap_server, "localhost:10389" );
+                settings.put( SecuritySettings.ldap_use_starttls, "true" );
+            } ) );
+
+            // Then
+            assertAuthFail( "neo", "wrong" );
         }
     }
 
