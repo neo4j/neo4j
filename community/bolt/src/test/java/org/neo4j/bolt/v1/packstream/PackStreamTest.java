@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -62,7 +63,6 @@ public class PackStreamTest
 
     private static class Machine
     {
-
         private final ByteArrayOutputStream output;
         private final WritableByteChannel writable;
         private final PackStream.Packer packer;
@@ -95,7 +95,61 @@ public class PackStreamTest
         {
             return packer;
         }
+    }
 
+    private static class MachineClient
+    {
+        private final PackStream.Unpacker unpacker;
+        private final ResetableReadableByteChannel readable;
+
+        MachineClient( int capacity )
+        {
+            readable = new ResetableReadableByteChannel();
+            BufferedChannelInput input = new BufferedChannelInput( capacity ).reset( readable );
+            unpacker = new PackStream.Unpacker( input );
+        }
+
+        public void reset( byte[] input )
+        {
+            readable.reset( input );
+        }
+
+        public PackStream.Unpacker unpacker()
+        {
+            return this.unpacker;
+        }
+    }
+
+    private static class ResetableReadableByteChannel implements ReadableByteChannel
+    {
+        private byte[] bytes;
+        private int pos;
+
+        public void reset( byte[] input )
+        {
+            bytes = input;
+            pos = 0;
+        }
+
+        @Override
+        public int read( ByteBuffer dst ) throws IOException
+        {
+            dst.put( bytes );
+            int read = bytes.length;
+            pos += read;
+            return read;
+        }
+
+        @Override
+        public boolean isOpen()
+        {
+            return pos < bytes.length;
+        }
+
+        @Override
+        public void close() throws IOException
+        {
+        }
     }
 
     private PackStream.Unpacker newUnpacker( byte[] bytes )
@@ -763,6 +817,124 @@ public class PackStreamTest
         assertPeekType( PackType.BOOLEAN, true );
         assertPeekType( PackType.LIST, asList( 1, 2, 3 ) );
         assertPeekType( PackType.MAP, asMap( "l", 3 ) );
+    }
+
+    @Test
+    public void shouldPackBytesHeaderWithMinimalBuffer() throws Throwable
+    {
+        Machine machine = new Machine();
+        PackStream.Packer packer = machine.packer();
+
+        MachineClient client = new MachineClient( 8 );
+        PackStream.Unpacker unpacker = client.unpacker();
+
+        for ( int size = 0; size <= Math.pow( 2, 16 ); size++ )
+        {
+            machine.reset();
+            packer.packBytesHeader( size );
+            packer.flush();
+
+            // Then
+            int bufferSize = computeOutputBufferSize( size, false );
+            byte[] output = machine.output();
+            assertThat( output.length, equalTo( bufferSize ) );
+
+            client.reset( output );
+            int value = unpacker.unpackBytesHeader();
+            assertThat( value, equalTo( size ) );
+        }
+    }
+
+    @Test
+    public void shouldPackStringHeaderWithMinimalBuffer() throws Throwable
+    {
+        shouldPackHeaderWithMinimalBuffer( PackType.STRING );
+    }
+
+    @Test
+    public void shouldPackMapHeaderWithMinimalBuffer() throws Throwable
+    {
+        shouldPackHeaderWithMinimalBuffer( PackType.MAP );
+    }
+
+    @Test
+    public void shouldPackListHeaderWithMinimalBuffer() throws Throwable
+    {
+        shouldPackHeaderWithMinimalBuffer( PackType.LIST );
+    }
+
+    private void shouldPackHeaderWithMinimalBuffer( PackType type ) throws Throwable
+    {
+        Machine machine = new Machine();
+        PackStream.Packer packer = machine.packer();
+
+        MachineClient client = new MachineClient( 8 );
+        PackStream.Unpacker unpacker = client.unpacker();
+
+        for ( int size = 0; size <= Math.pow( 2, 16 ); size++ )
+        {
+            machine.reset();
+            switch ( type )
+            {
+            case MAP:
+                packer.packMapHeader( size );
+                break;
+            case LIST:
+                packer.packListHeader( size );
+                break;
+            case STRING:
+                packer.packStringHeader( size );
+                break;
+            default:
+                throw new IllegalArgumentException( "Unsupported type: " + type + "." );
+            }
+            packer.flush();
+
+            int bufferSize = computeOutputBufferSize( size, true );
+            byte[] output = machine.output();
+            assertThat( output.length, equalTo( bufferSize ) );
+
+            client.reset( output );
+            int value = 0;
+            switch ( type )
+            {
+            case MAP:
+                value = (int) unpacker.unpackMapHeader();
+                break;
+            case LIST:
+                value = (int) unpacker.unpackListHeader();
+                break;
+            case STRING:
+                value = unpacker.unpackStringHeader();
+                break;
+            default:
+                throw new IllegalArgumentException( "Unsupported type: " + type + "." );
+            }
+
+            assertThat( value, equalTo( size ) );
+        }
+    }
+
+    private int computeOutputBufferSize( int size, boolean withMarker8 )
+    {
+        int bufferSize;
+        if ( withMarker8 && size < 16 )
+        {
+            bufferSize = 1;
+        }
+        else if ( size < 256 )
+        {
+            bufferSize = 2;
+        }
+        else if ( size < 65536 )
+        {
+            bufferSize = 1 + 2;
+        }
+        else
+        {
+            bufferSize = 1 + 4;
+        }
+        return bufferSize;
     }
 
     private void assertPeekType( PackType type, Object value ) throws IOException

@@ -553,7 +553,7 @@ public class Neo4jPackV1 implements Neo4jPack
             MapValueBuilder map;
             if ( size == UNKNOWN_SIZE )
             {
-                map = new MapValueBuilder(  );
+                map = new MapValueBuilder();
                 boolean more = true;
                 while ( more )
                 {
