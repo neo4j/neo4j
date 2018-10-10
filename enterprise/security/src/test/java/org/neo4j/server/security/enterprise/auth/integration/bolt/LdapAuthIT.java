@@ -49,7 +49,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.function.Consumer;
 import javax.naming.directory.BasicAttribute;
@@ -75,6 +74,7 @@ import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
@@ -1342,7 +1342,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         File workingDirectory = server.getWorkingDirectory();
         File logFile = new File( workingDirectory, "storeDir/logs/security.log" );
 
-        Reader reader = fileSystem.openAsReader( logFile, Charset.forName( "UTF-8" ) );
+        Reader reader = fileSystem.openAsReader( logFile, UTF_8 );
         BufferedReader bufferedReader = new BufferedReader( reader );
         String line;
         boolean foundError = false;
@@ -1366,7 +1366,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         File workingDirectory = server.getWorkingDirectory();
         File logFile = new File( workingDirectory, "storeDir/logs/security.log" );
 
-        Reader reader = fileSystem.openAsReader( logFile, Charset.forName( "UTF-8" ) );
+        Reader reader = fileSystem.openAsReader( logFile, UTF_8 );
         BufferedReader bufferedReader = new BufferedReader( reader );
         String line;
 

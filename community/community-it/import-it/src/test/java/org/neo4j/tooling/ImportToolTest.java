@@ -28,6 +28,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -1077,7 +1078,7 @@ public class ImportToolTest
         // GIVEN
         List<String> nodeIds = nodeIds();
         Configuration config = Configuration.COMMAS;
-        Charset charset = Charset.forName( "UTF-16" );
+        Charset charset = StandardCharsets.UTF_16;
 
         // WHEN
         importTool(

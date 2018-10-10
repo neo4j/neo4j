@@ -22,12 +22,12 @@
  */
 package org.neo4j.server.security.enterprise.auth;
 
-import org.apache.commons.io.Charsets;
 import org.junit.Test;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -769,7 +769,7 @@ public abstract class AuthScenariosInteractionTestBase<S> extends ProcedureInter
             File securityLog = new File( AuthScenariosInteractionTestBase.this.securityLog.getAbsolutePath() );
             try ( FileSystemAbstraction fileSystem = neo.fileSystem();
                   BufferedReader bufferedReader = new BufferedReader(
-                            fileSystem.openAsReader( securityLog, Charsets.UTF_8 ) ) )
+                            fileSystem.openAsReader( securityLog, StandardCharsets.UTF_8 ) ) )
             {
                 lines = bufferedReader.lines().collect( java.util.stream.Collectors.toList() );
             }

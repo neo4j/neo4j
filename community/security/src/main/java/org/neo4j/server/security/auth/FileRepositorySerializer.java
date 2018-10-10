@@ -23,7 +23,6 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.charset.Charset;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -35,6 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.server.security.auth.exception.FormatException;
 import org.neo4j.string.UTF8;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
@@ -54,7 +54,7 @@ public abstract class FileRepositorySerializer<S>
     {
         ArrayList<String> lines = new ArrayList<>();
 
-        try ( BufferedReader r = new BufferedReader( fs.openAsReader( file, Charset.forName( "UTF-8" ) ) ) )
+        try ( BufferedReader r = new BufferedReader( fs.openAsReader( file, UTF_8 ) ) )
         {
             while ( true )
             {
