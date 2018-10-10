@@ -22,6 +22,7 @@ package org.neo4j.bolt.v1.runtime;
 import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
+import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
@@ -33,19 +34,21 @@ public class BoltAuthenticationHelper
     {
         try
         {
-            AuthenticationResult authResult = context.boltSpi().authenticate( authToken );
+            BoltStateMachineSPI boltSpi = context.boltSpi();
+
+            AuthenticationResult authResult = boltSpi.authenticate( authToken );
             String username = authResult.getLoginContext().subject().username();
             context.authenticatedAsUser( username, userAgent );
 
-            StatementProcessor statementProcessor = new TransactionStateMachine( context.boltSpi().transactionSpi(), authResult, context.clock() );
+            StatementProcessor statementProcessor = new TransactionStateMachine( boltSpi.transactionSpi(), authResult, context.clock() );
             context.connectionState().setStatementProcessor( statementProcessor );
 
             if ( authResult.credentialsExpired() )
             {
                 context.connectionState().onMetadata( "credentials_expired", Values.TRUE );
             }
-            context.connectionState().onMetadata( "server", Values.stringValue( context.boltSpi().version() ) );
-            context.boltSpi().udcRegisterClient( userAgent );
+            context.connectionState().onMetadata( "server", Values.stringValue( boltSpi.version() ) );
+            boltSpi.udcRegisterClient( userAgent );
 
             return true;
         }
