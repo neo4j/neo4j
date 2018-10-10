@@ -50,7 +50,6 @@ public class TransactionStatusResult
     public final Map<String,Object> metaData;
     public final String startTime;
     public final String protocol;
-    public final String connectionId;
     public final String clientAddress;
     public final String requestUri;
 
@@ -69,6 +68,8 @@ public class TransactionStatusResult
     public final Long allocatedDirectBytes;
     public final long pageHits;
     public final long pageFaults;
+    /** @since Neo4j 3.5 */
+    public final String connectionId;
 
     public TransactionStatusResult( KernelTransactionHandle transaction,
             TransactionDependenciesResolver transactionDependenciesResolver,
@@ -97,18 +98,18 @@ public class TransactionStatusResult
             this.currentQueryId = ofInternalId( snapshot.internalQueryId() ).toString();
             this.currentQuery = snapshot.queryText();
             this.protocol = clientConnectionInfo.protocol();
-            this.connectionId = clientConnectionInfo.connectionId();
             this.clientAddress = clientConnectionInfo.clientAddress();
             this.requestUri = clientConnectionInfo.requestURI();
+            this.connectionId = clientConnectionInfo.connectionId();
         }
         else
         {
             this.currentQueryId = StringUtils.EMPTY;
             this.currentQuery = StringUtils.EMPTY;
             this.protocol = StringUtils.EMPTY;
-            this.connectionId = StringUtils.EMPTY;
             this.clientAddress = StringUtils.EMPTY;
             this.requestUri = StringUtils.EMPTY;
+            this.connectionId = StringUtils.EMPTY;
         }
         this.resourceInformation = transactionDependenciesResolver.describeBlockingLocks( transaction );
         this.status = getStatus( transaction, terminationReason, transactionDependenciesResolver );
