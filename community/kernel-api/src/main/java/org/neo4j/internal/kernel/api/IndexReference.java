@@ -25,8 +25,6 @@ import java.util.List;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 
-import static java.lang.String.format;
-
 /**
  * Reference to a specific index. This reference is valid until the schema of the database changes (that is a
  * create/drop of an index or constraint occurs).
@@ -46,7 +44,8 @@ public interface IndexReference
     default String userDescription( TokenNameLookup tokenNameLookup )
     {
         String type = isUnique() ? "UNIQUE" : "GENERAL";
-        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
+        String schemaDescription = SchemaUtil.niceLabelAndProperties( tokenNameLookup, label(), properties() );
+        return SchemaUtil.withType( type, schemaDescription );
     }
 
     /**

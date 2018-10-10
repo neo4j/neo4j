@@ -57,6 +57,25 @@ public class SchemaUtil
         return properties.toString();
     }
 
+    public static String niceLabelAndProperties( TokenNameLookup tokenNameLookup, int labelId, int[] propertyIds )
+    {
+        String label = tokenNameLookup.labelGetName( labelId );
+        String properties = SchemaUtil.niceProperties( tokenNameLookup, propertyIds );
+        return String.format( ":%s(%s)", label, properties );
+    }
+
+    public static String niceRelTypeAndProperties( TokenNameLookup tokenNameLookup, int relTypeId, int[] propertyIds )
+    {
+        String relationshipTypeGetName = tokenNameLookup.relationshipTypeGetName( relTypeId );
+        String properties = SchemaUtil.niceProperties( tokenNameLookup, propertyIds );
+        return String.format( "-[:%s(%s)]-", relationshipTypeGetName, properties );
+    }
+
+    public static String withType( String type, String schemaDescription )
+    {
+        return format( "Index( %s, %s )", type, schemaDescription );
+    }
+
     public static final TokenNameLookup idTokenNameLookup = new TokenNameLookup()
     {
 

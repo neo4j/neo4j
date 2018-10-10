@@ -54,8 +54,7 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return String.format( ":%s(%s)", tokenNameLookup.labelGetName( labelId ),
-                SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
+        return SchemaUtil.niceLabelAndProperties( tokenNameLookup, labelId, propertyIds );
     }
 
     @Override

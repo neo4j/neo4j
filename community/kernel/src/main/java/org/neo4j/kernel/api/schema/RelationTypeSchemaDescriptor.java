@@ -55,8 +55,7 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.a
     @Override
     public String userDescription( TokenNameLookup tokenNameLookup )
     {
-        return String.format( "-[:%s(%s)]-", tokenNameLookup.relationshipTypeGetName( relTypeId ),
-                SchemaUtil.niceProperties( tokenNameLookup, propertyIds ) );
+        return SchemaUtil.niceRelTypeAndProperties( tokenNameLookup, relTypeId, propertyIds );
     }
 
     @Override
