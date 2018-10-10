@@ -42,9 +42,10 @@ public class LeaderAvailabilityHandlerTest
     private LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegate = Mockito.mock( LifecycleMessageHandler.class );
     private LeaderAvailabilityTimers leaderAvailabilityTimers = Mockito.mock( LeaderAvailabilityTimers.class );
     private ClusterId clusterId = new ClusterId( UUID.randomUUID() );
+    private RaftMessageTimerResetMonitor raftMessageTimerResetMonitor = new DurationSinceLastMessageMonitor();
     private LongSupplier term = () -> 3;
 
-    private LeaderAvailabilityHandler handler = new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
+    private LeaderAvailabilityHandler handler = new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, raftMessageTimerResetMonitor, term );
 
     private MemberId leader = new MemberId( UUID.randomUUID() );
     private RaftMessages.ReceivedInstantClusterIdAwareMessage<?> heartbeat =

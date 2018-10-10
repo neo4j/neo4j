@@ -33,18 +33,21 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
     private final LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegateHandler;
     private final LeaderAvailabilityTimers leaderAvailabilityTimers;
     private final ShouldRenewElectionTimeout shouldRenewElectionTimeout;
+    private final RaftMessageTimerResetMonitor raftMessageTimerResetMonitor;
 
     public LeaderAvailabilityHandler( LifecycleMessageHandler<RaftMessages.ReceivedInstantClusterIdAwareMessage<?>> delegateHandler,
-            LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
+            LeaderAvailabilityTimers leaderAvailabilityTimers, RaftMessageTimerResetMonitor raftMessageTimerResetMonitor, LongSupplier term )
     {
         this.delegateHandler = delegateHandler;
         this.leaderAvailabilityTimers = leaderAvailabilityTimers;
         this.shouldRenewElectionTimeout = new ShouldRenewElectionTimeout( term );
+        this.raftMessageTimerResetMonitor = raftMessageTimerResetMonitor;
     }
 
-    public static ComposableMessageHandler composable( LeaderAvailabilityTimers leaderAvailabilityTimers, LongSupplier term )
+    public static ComposableMessageHandler composable( LeaderAvailabilityTimers leaderAvailabilityTimers,
+            RaftMessageTimerResetMonitor raftMessageTimerResetMonitor, LongSupplier term )
     {
-        return delegate -> new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, term );
+        return delegate -> new LeaderAvailabilityHandler( delegate, leaderAvailabilityTimers, raftMessageTimerResetMonitor, term );
     }
 
     @Override
@@ -70,6 +73,7 @@ public class LeaderAvailabilityHandler implements LifecycleMessageHandler<RaftMe
     {
         if ( message.dispatch( shouldRenewElectionTimeout ) )
         {
+            raftMessageTimerResetMonitor.timerReset();
             leaderAvailabilityTimers.renewElection();
         }
     }

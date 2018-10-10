@@ -34,6 +34,7 @@ import org.neo4j.causalclustering.core.consensus.ContinuousJob;
 import org.neo4j.causalclustering.core.consensus.LeaderAvailabilityHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageMonitoringHandler;
 import org.neo4j.causalclustering.core.consensus.RaftMessageNettyHandler;
+import org.neo4j.causalclustering.core.consensus.RaftMessageTimerResetMonitor;
 import org.neo4j.causalclustering.core.consensus.RaftMessages.ReceivedInstantClusterIdAwareMessage;
 import org.neo4j.causalclustering.core.consensus.protocol.v1.RaftProtocolServerInstallerV1;
 import org.neo4j.causalclustering.core.consensus.protocol.v2.RaftProtocolServerInstallerV2;
@@ -159,8 +160,8 @@ class RaftServerModule
 
         ComposableMessageHandler monitoringHandler = RaftMessageMonitoringHandler.composable( platformModule.clock, platformModule.monitors );
         ComposableMessageHandler batchingMessageHandler = createBatchingHandler( platformModule.config );
-        ComposableMessageHandler leaderAvailabilityHandler = LeaderAvailabilityHandler.composable(
-                consensusModule.getLeaderAvailabilityTimers(), consensusModule.raftMachine()::term );
+        ComposableMessageHandler leaderAvailabilityHandler = LeaderAvailabilityHandler.composable( consensusModule.getLeaderAvailabilityTimers(),
+                platformModule.monitors.newMonitor( RaftMessageTimerResetMonitor.class ), consensusModule.raftMachine()::term );
         ComposableMessageHandler clusterBindingHandler = ClusterBindingHandler.composable( logProvider );
 
         return clusterBindingHandler

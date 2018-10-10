@@ -106,7 +106,15 @@ class CoreStatus extends BaseStatus
         boolean participatingInRaftGroup = votingMembers.contains( myself ) && Objects.nonNull( leader );
 
         long lastAppliedRaftIndex = commandIndexTracker.getAppliedCommandIndex();
-        Duration millisSinceLastLeaderMessage = raftMessageTimerResetMonitor.durationSinceLastMessage();
+        final Duration millisSinceLastLeaderMessage;
+        if ( myself.equals( leader ) )
+        {
+            millisSinceLastLeaderMessage = Duration.ofMillis( 0 );
+        }
+        else
+        {
+            millisSinceLastLeaderMessage = raftMessageTimerResetMonitor.durationSinceLastMessage();
+        }
 
         return statusResponse( lastAppliedRaftIndex, participatingInRaftGroup, votingMembers, databaseHealth.isHealthy(), myself, leader,
                 millisSinceLastLeaderMessage, true );
