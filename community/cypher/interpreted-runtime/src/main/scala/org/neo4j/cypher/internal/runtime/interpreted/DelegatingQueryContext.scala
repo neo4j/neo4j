@@ -47,6 +47,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   protected def manyDbHits[A](value: LongIterator): LongIterator = value
   protected def manyDbHits[A](value: RelationshipIterator): RelationshipIterator = value
   protected def manyDbHits[A](value: RelationshipSelectionCursor): RelationshipSelectionCursor = value
+  protected def manyDbHits[A](value: NodeValueIndexCursor): NodeValueIndexCursor = value
   protected def manyDbHits(count: Int): Int = count
 
   override def resources: ResourceManager = inner.resources
@@ -122,29 +123,25 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT],
-                                           queries: Seq[IndexQuery]): Iterator[RESULT] =
-    manyDbHits(inner.indexSeek(index, needsValues, indexOrder, resultCreator, queries))
+                                           queries: Seq[IndexQuery]): NodeValueIndexCursor =
+    manyDbHits(inner.indexSeek(index, needsValues, indexOrder, queries))
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
-                                           indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
-    manyDbHits(inner.indexScan(index, needsValues, indexOrder, resultCreator))
+                                           indexOrder: IndexOrder): NodeValueIndexCursor =
+    manyDbHits(inner.indexScan(index, needsValues, indexOrder))
 
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     resultCreator: ResultCreator[RESULT],
-                                                     value: String): Iterator[RESULT] =
-    manyDbHits(inner.indexSeekByContains(index, needsValues, indexOrder, resultCreator, value))
+                                                     value: String): NodeValueIndexCursor =
+    manyDbHits(inner.indexSeekByContains(index, needsValues, indexOrder, value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     resultCreator: ResultCreator[RESULT],
-                                                     value: String): Iterator[RESULT] =
-    manyDbHits(inner.indexSeekByEndsWith(index, needsValues, indexOrder, resultCreator, value))
+                                                     value: String): NodeValueIndexCursor =
+    manyDbHits(inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] = manyDbHits(inner.getNodesByLabel(id))
 
@@ -193,9 +190,8 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
-                                              resultCreator: ResultCreator[RESULT],
-                                              queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT] =
-    singleDbHit(inner.lockingUniqueIndexSeek(index, resultCreator, queries))
+                                              queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
+    singleDbHit(inner.lockingUniqueIndexSeek(index, queries))
 
   override def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 

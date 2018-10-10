@@ -25,11 +25,11 @@ import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
-import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext, ResultCreator}
+import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
-import org.neo4j.internal.kernel.api.IndexQuery
+import org.neo4j.internal.kernel.api.{IndexQuery, NodeCursor, NodeValueIndexCursor}
 import org.neo4j.values.storable.{Value, Values}
-import org.neo4j.values.virtual.{VirtualNodeValue, VirtualValues}
+import org.neo4j.values.virtual.{NodeValue, VirtualNodeValue, VirtualValues}
 import org.opencypher.v9_0.expressions.{PropertyKeyName, PropertyKeyToken}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
@@ -38,63 +38,83 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
   def propertyKeys: Seq[PropertyKeyToken]
 
   protected def indexFor[T](values: (Seq[AnyRef], Iterable[NodeValueHit])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any(), any(), any())).thenReturn(Iterator.empty)
-    when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
+    val query: QueryContext = mockedQueryContext
+    when(query.indexSeek(any(), any(), any(), any())).thenReturn(PredefinedCursor())
+    when(query.lockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
 
     values.foreach {
       case (searchTerm, resultIterable) =>
         val indexQueries = propertyKeys.zip(searchTerm).map(t => IndexQuery.exact(t._1.nameId.id, t._2))
-        when(query.indexSeek(any(), any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedIterator[T](resultIterable, 3))
-        when(query.lockingUniqueIndexSeek(any(), any(), ArgumentMatchers.eq(indexQueries))).thenAnswer(PredefinedOption[T](resultIterable))
+        when(query.indexSeek(any(), any(), any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.lockingUniqueIndexSeek(any(), ArgumentMatchers.eq(indexQueries))).thenReturn(PredefinedCursor(resultIterable))
     }
 
     query
   }
 
   protected def stringIndexFor(values: (String, Iterable[NodeValueHit])*): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexSeek(any(), any(), any(), any(), any())).thenReturn(Iterator.empty)
-    when(query.lockingUniqueIndexSeek(any(), any(), any())).thenReturn(None)
-
+    val query = mockedQueryContext
+    when(query.indexSeek(any(), any(), any(), any())).thenReturn(PredefinedCursor())
+    when(query.lockingUniqueIndexSeek(any(), any())).thenReturn(PredefinedCursor())
     values.foreach {
       case (searchTerm, resultIterable) =>
-        when(query.indexSeekByContains(any(), any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenAnswer(PredefinedIterator(resultIterable, 3))
-        when(query.indexSeekByEndsWith(any(), any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenAnswer(PredefinedIterator(resultIterable, 3))
+        when(query.indexSeekByContains(any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenReturn(PredefinedCursor(resultIterable))
+        when(query.indexSeekByEndsWith(any(), any(), any(), ArgumentMatchers.eq(searchTerm))).thenReturn(PredefinedCursor(resultIterable))
     }
 
     query
   }
 
-  protected def scanFor(nodes: Iterable[TestNodeValueHit]): QueryContext = {
-    val query = mock[QueryContext]
-    when(query.indexScan(any(), any(), any(), any())).thenAnswer(PredefinedIterator(nodes, 3))
+  protected def scanFor(nodes: Iterable[NodeValueHit]): QueryContext = {
+    val query = mockedQueryContext
+    when(query.indexScan(any(), any(), any())).thenReturn(PredefinedCursor(nodes))
     query
   }
 
-  protected def nodeValueHit(nodeValue: VirtualNodeValue, values: Object*): TestNodeValueHit =
-    TestNodeValueHit(nodeValue.id, values.map(Values.of).toArray)
-
-  case class TestNodeValueHit(nodeId: Long, values: Array[Value]) extends NodeValueHit {
-    override def node: VirtualNodeValue = VirtualValues.node(nodeId)
-    override def numberOfProperties: Int = values.size
-    override def propertyValue(i: Int): Value = values(i)
-  }
-
-  case class PredefinedIterator[T](nodeValueHits: Iterable[NodeValueHit], resultCreatorPos: Int) extends Answer[Iterator[T]] {
-    override def answer(invocationOnMock: InvocationOnMock): Iterator[T] = {
-      val resultCreator = invocationOnMock.getArgument[ResultCreator[T]](resultCreatorPos)
-      nodeValueHits.iterator.map(resultCreator.createResult)
-    }
-  }
-
-  case class PredefinedOption[T](nodeValueHits: Iterable[NodeValueHit]) extends Answer[Option[T]] {
-    override def answer(invocationOnMock: InvocationOnMock): Option[T] = {
-      val resultCreator = invocationOnMock.getArgument[ResultCreator[T]](1)
-      nodeValueHits.headOption.map(resultCreator.createResult)
-    }
-  }
+  protected def nodeValueHit(nodeValue: VirtualNodeValue, values: Object*): NodeValueHit =
+    new NodeValueHit(nodeValue.id, values.map(Values.of).toArray)
 
   protected def cachedNodeProperty(node: String, property: PropertyKeyToken): CachedNodeProperty =
     CachedNodeProperty("n", PropertyKeyName(property.name)(pos))(pos)
+
+  private def mockedQueryContext[T] = {
+    val query = mock[QueryContext]
+    when(query.nodeById(any())).thenAnswer(new Answer[NodeValue] {
+      override def answer(invocationOnMock: InvocationOnMock): NodeValue =
+        VirtualValues.nodeValue(invocationOnMock.getArgument(0), Values.EMPTY_TEXT_ARRAY, VirtualValues.EMPTY_MAP)
+    })
+    query
+  }
+
+  case class PredefinedCursor[T](nodeValueHits: Iterable[NodeValueHit] = Nil) extends NodeValueIndexCursor {
+
+    private var iter = nodeValueHits.iterator
+    private var current: NodeValueHit = _
+
+    override def numberOfProperties(): Int = current.numberOfProperties()
+
+    override def propertyKey(offset: Int): Int = current.propertyKey(offset)
+
+    override def hasValue: Boolean = current.hasValue
+
+    override def propertyValue(offset: Int): Value = current.propertyValue(offset)
+
+    override def node(cursor: NodeCursor): Unit = current.node(cursor)
+
+    override def nodeReference(): Long = current.nodeReference()
+
+    override def next(): Boolean = {
+      if (iter.hasNext) {
+        current = iter.next()
+        true
+      } else {
+        current = null
+        false
+      }
+    }
+
+    override def close(): Unit = {}
+
+    override def isClosed: Boolean = current != null
+  }
 }

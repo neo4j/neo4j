@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.{NodeValueHit, ResultCreator}
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
 /**
   * Provides a helper method for index pipes that get nodes together with actual property values.
@@ -35,18 +36,21 @@ trait IndexPipeWithValues extends Pipe {
   // the cached node properties where we will get values
   val indexCachedNodeProperties: Array[CachedNodeProperty]
 
-  case class CtxResultCreator(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
-    override def createResult(nodeValueHit: NodeValueHit): ExecutionContext =
-      executionContextFactory.copyWith(baseContext, ident, nodeValueHit.node)
-  }
+  class IndexIterator(queryContext: QueryContext,
+                      baseContext: ExecutionContext,
+                      cursor: NodeValueIndexCursor
+                     ) extends IndexIteratorBase[ExecutionContext](cursor) {
 
-  case class CtxResultCreatorWithValues(baseContext: ExecutionContext) extends ResultCreator[ExecutionContext] {
-    override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
-      val newContext = executionContextFactory.copyWith(baseContext, ident, nodeValueHit.node)
-      for (i <- indexPropertyIndices.indices) {
-        newContext.setCachedProperty(indexCachedNodeProperties(i), nodeValueHit.propertyValue(indexPropertyIndices(i)))
-      }
-      newContext
+    override protected def fetchNext(): ExecutionContext = {
+      if (cursor.next()) {
+        val newContext = executionContextFactory.copyWith(baseContext, ident, queryContext.nodeById(cursor.nodeReference()))
+        var i = 0
+        while (i < indexPropertyIndices.length) {
+          newContext.setCachedProperty(indexCachedNodeProperties(i), cursor.propertyValue(indexPropertyIndices(i)))
+          i += 1
+        }
+        newContext
+      } else null
     }
   }
 }

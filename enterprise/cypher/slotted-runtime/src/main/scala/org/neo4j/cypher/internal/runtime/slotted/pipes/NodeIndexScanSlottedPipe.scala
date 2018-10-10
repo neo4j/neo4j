@@ -52,6 +52,8 @@ case class NodeIndexScanSlottedPipe(ident: String,
     reference
   }
 
-  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
-    state.query.indexScan(reference(state.query), needsValues, indexOrder, SlottedCtxResultCreator(state, slots))
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
+    val cursor = state.query.indexScan(reference(state.query), needsValues, indexOrder)
+    new SlottedIndexIterator(state, slots, cursor)
+  }
 }

@@ -26,6 +26,8 @@ import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
+import scala.collection.Iterator
+
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              property: IndexedProperty,
@@ -47,9 +49,7 @@ case class NodeIndexScanPipe(ident: String,
   }
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.newExecutionContext(executionContextFactory)
-    val resultCreator =
-      if (needsValues) CtxResultCreatorWithValues(baseContext)
-      else CtxResultCreator(baseContext)
-    state.query.indexScan(reference(state.query), needsValues, indexOrder, resultCreator)
+    val cursor = state.query.indexScan(reference(state.query), needsValues, indexOrder)
+    new IndexIterator(state.query, baseContext, cursor)
   }
 }

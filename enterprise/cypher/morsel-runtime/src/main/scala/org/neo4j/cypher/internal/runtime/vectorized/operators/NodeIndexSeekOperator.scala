@@ -23,10 +23,10 @@
 package org.neo4j.cypher.internal.runtime.vectorized.operators
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{SlotConfiguration, SlottedIndexedProperty}
+import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexSeek, IndexSeekMode, NodeIndexSeeker, QueryState => OldQueryState}
 import org.neo4j.cypher.internal.runtime.vectorized._
-import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext, ResultCreator}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QueryExpression}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.values.storable.Value
@@ -48,8 +48,8 @@ class NodeIndexSeekOperator(offset: Int,
   override def init(context: QueryContext, state: QueryState, currentRow: MorselExecutionContext): ContinuableOperatorTask = {
     val queryState = new OldQueryState(context, resources = null, params = state.params)
     val indexReference = reference(context)
-    val tupleIterator = indexSeek(queryState, indexReference, needsValues, indexOrder, currentRow, NodeWithValuesResultCreator)
-    new OTask(tupleIterator)
+    val nodeCursor = indexSeek(queryState, indexReference, needsValues, indexOrder, currentRow)
+    new OTask(nodeCursor)
   }
 
   override val propertyIds: Array[Int] = properties.map(_.propertyKeyId)
@@ -63,17 +63,34 @@ class NodeIndexSeekOperator(offset: Int,
     reference
   }
 
-  class OTask(tupleIterator: Iterator[NodeWithValues]) extends ContinuableOperatorTask {
+  class OTask(nodeCursors: Iterator[NodeValueIndexCursor]) extends ContinuableOperatorTask {
+
+    private var nodeCursor: NodeValueIndexCursor = _
+    private var _canContinue: Boolean = true
+
+    private def next(): Boolean = {
+      while (true) {
+        if (nodeCursor != null && nodeCursor.next())
+          return true
+        else if (nodeCursors.hasNext)
+          nodeCursor = nodeCursors.next()
+        else {
+          _canContinue = false
+          return false
+        }
+      }
+      false // because scala compiler doesn't realize that this line is unreachable
+    }
+
     override def operate(currentRow: MorselExecutionContext,
                          context: QueryContext,
                          state: QueryState): Unit = {
 
-      while (currentRow.hasMoreRows && tupleIterator.hasNext) {
-        val nodeWithValues = tupleIterator.next()
-        currentRow.setLongAt(offset, nodeWithValues.nodeId)
+      while (currentRow.hasMoreRows && next()) {
+        currentRow.setLongAt(offset, nodeCursor.nodeReference())
         var i = 0
         while (i < indexPropertyIndices.length) {
-          currentRow.setCachedPropertyAt(indexPropertySlotOffsets(i), nodeWithValues.values(indexPropertyIndices(i)))
+          currentRow.setCachedPropertyAt(indexPropertySlotOffsets(i), nodeCursor.propertyValue(indexPropertyIndices(i)))
           i += 1
         }
         currentRow.moveToNextRow()
@@ -82,19 +99,7 @@ class NodeIndexSeekOperator(offset: Int,
       currentRow.finishedWriting()
     }
 
-    override def canContinue: Boolean = tupleIterator.hasNext
-  }
-
-  object NodeWithValuesResultCreator extends ResultCreator[NodeWithValues] {
-    override def createResult(nodeValueHit: NodeValueHit): NodeWithValues = {
-      val values = new Array[Value](nodeValueHit.numberOfProperties)
-      var i = 0
-      while (i < values.length) {
-        values(i) = nodeValueHit.propertyValue(i)
-        i += 1
-      }
-      new NodeWithValues(nodeValueHit.nodeId, values)
-    }
+    override def canContinue: Boolean = _canContinue
   }
 
 }

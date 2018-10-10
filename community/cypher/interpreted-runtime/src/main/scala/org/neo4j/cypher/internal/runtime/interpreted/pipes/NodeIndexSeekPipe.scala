@@ -57,10 +57,9 @@ case class NodeIndexSeekPipe(ident: String,
     val indexReference = reference(state.query)
     val baseContext = state.newExecutionContext(executionContextFactory)
 
-    val resultCreator =
-      if (needsValues) CtxResultCreatorWithValues(baseContext)
-      else CtxResultCreator(baseContext)
-    indexSeek(state, indexReference, needsValues, indexOrder, baseContext, resultCreator)
+    indexSeek(state, indexReference, needsValues, indexOrder, baseContext).flatMap(
+      cursor => new IndexIterator(state.query, baseContext, cursor)
+    )
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekPipe]

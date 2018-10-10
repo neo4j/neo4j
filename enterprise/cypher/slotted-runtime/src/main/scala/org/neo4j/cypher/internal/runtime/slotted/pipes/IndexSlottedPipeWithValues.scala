@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.slotted.pipes
 
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{IndexIteratorBase, Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
-import org.neo4j.cypher.internal.runtime.{NodeValueHit, ResultCreator}
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor
 
 /**
   * Provides helper methods for slotted index pipes that get nodes together with actual property values.
@@ -39,18 +39,24 @@ trait IndexSlottedPipeWithValues extends Pipe {
   // Number of longs and refs
   val argumentSize: SlotConfiguration.Size
 
-  case class SlottedCtxResultCreator(state: QueryState, slots: SlotConfiguration) extends ResultCreator[ExecutionContext] {
-    override def createResult(nodeValueHit: NodeValueHit): ExecutionContext = {
-      val slottedContext: SlottedExecutionContext = SlottedExecutionContext(slots)
-      state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)
-      slottedContext.setLongAt(offset, nodeValueHit.nodeId)
-      var i = 0
-      while (i < indexPropertyIndices.length) {
-        val value = nodeValueHit.propertyValue(indexPropertyIndices(i))
-        slottedContext.setCachedPropertyAt(indexPropertySlotOffsets(i), value)
-        i += 1
-      }
-      slottedContext
+  class SlottedIndexIterator(state: QueryState,
+                             slots: SlotConfiguration,
+                             cursor: NodeValueIndexCursor
+                            ) extends IndexIteratorBase[ExecutionContext](cursor) {
+
+    override protected def fetchNext(): ExecutionContext = {
+      if (cursor.next()) {
+        val slottedContext: SlottedExecutionContext = SlottedExecutionContext(slots)
+        state.copyArgumentStateTo(slottedContext, argumentSize.nLongs, argumentSize.nReferences)
+        slottedContext.setLongAt(offset, cursor.nodeReference())
+        var i = 0
+        while (i < indexPropertyIndices.length) {
+          val value = cursor.propertyValue(indexPropertyIndices(i))
+          slottedContext.setCachedPropertyAt(indexPropertySlotOffsets(i), value)
+          i += 1
+        }
+        slottedContext
+      } else null
     }
   }
 }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndexCursor}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -106,9 +106,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT],
-                                           values: Seq[IndexQuery]): Iterator[RESULT] =
-    translateException(inner.indexSeek(index, needsValues, indexOrder, resultCreator, values))
+                                           values: Seq[IndexQuery]): NodeValueIndexCursor =
+    translateException(inner.indexSeek(index, needsValues, indexOrder, values))
 
   override def getNodesByLabel(id: Int): Iterator[NodeValue] =
     translateException(inner.getNodesByLabel(id))
@@ -219,9 +218,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(inner.getRelTypeName(id))
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
-                                              resultCreator: ResultCreator[RESULT],
-                                              values: Seq[IndexQuery.ExactPredicate]): Option[RESULT] =
-    translateException(inner.lockingUniqueIndexSeek(index, resultCreator, values))
+                                              values: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
+    translateException(inner.lockingUniqueIndexSeek(index, values))
 
   override def getImportURL(url: URL) =
     translateException(inner.getImportURL(url))
@@ -253,22 +251,19 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     resultCreator: ResultCreator[RESULT],
-                                                     value: String): Iterator[RESULT] =
-    translateException(inner.indexSeekByContains(index, needsValues, indexOrder, resultCreator, value))
+                                                     value: String): NodeValueIndexCursor =
+    translateException(inner.indexSeekByContains(index, needsValues, indexOrder, value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     resultCreator: ResultCreator[RESULT],
-                                                     value: String): Iterator[RESULT] =
-    translateException(inner.indexSeekByEndsWith(index, needsValues, indexOrder, resultCreator, value))
+                                                     value: String): NodeValueIndexCursor =
+    translateException(inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
-                                           indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] =
-    translateException(inner.indexScan(index, needsValues, indexOrder, resultCreator))
+                                           indexOrder: IndexOrder): NodeValueIndexCursor =
+    translateException(inner.indexScan(index, needsValues, indexOrder))
 
   override def nodeIsDense(node: Long) =
     translateException(inner.nodeIsDense(node))

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference}
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndexCursor}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -42,14 +42,12 @@ trait QueryContextAdaptation {
   override def indexSeekByContains[RESULT](index: IndexReference,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT],
-                                           value: String): scala.Iterator[RESULT] = ???
+                                           value: String): NodeValueIndexCursor = ???
 
   override def indexSeekByEndsWith[RESULT](index: IndexReference,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT],
-                                           value: String): Iterator[RESULT] = ???
+                                           value: String): NodeValueIndexCursor = ???
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = ???
 
@@ -104,8 +102,7 @@ trait QueryContextAdaptation {
   override def indexSeek[RESULT](index: IndexReference,
                                  needsValues: Boolean,
                                  indexOrder: IndexOrder,
-                                 resultCreator: ResultCreator[RESULT],
-                                 values: Seq[IndexQuery]): scala.Iterator[RESULT] = ???
+                                 values: Seq[IndexQuery]): NodeValueIndexCursor = ???
 
   override def getRelationshipsForIds(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): scala.Iterator[RelationshipValue] = ???
 
@@ -137,8 +134,7 @@ trait QueryContextAdaptation {
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
-                                           indexOrder: IndexOrder,
-                                           resultCreator: ResultCreator[RESULT]): Iterator[RESULT] = ???
+                                           indexOrder: IndexOrder): NodeValueIndexCursor = ???
 
   override def getImportURL(url: URL): Either[String, URL] = ???
 
@@ -161,8 +157,7 @@ trait QueryContextAdaptation {
   override def getNodesByLabelPrimitive(id: Int): LongIterator = ???
 
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
-                                              resultCreator: ResultCreator[RESULT],
-                                              values: Seq[IndexQuery.ExactPredicate]): Option[RESULT] = ???
+                                              values: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = ???
 
   override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]): scala.Iterator[Array[AnyRef]] = ???
 

@@ -40,7 +40,6 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
 import org.neo4j.values.virtual.RelationshipValue
-import org.neo4j.values.virtual.VirtualNodeValue
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.util.EntityNotFoundException
 
@@ -111,27 +110,23 @@ trait QueryContext extends TokenContext with DbAccess {
   def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder,
-                                  resultCreator: ResultCreator[RESULT],
-                                  queries: Seq[IndexQuery]): Iterator[RESULT]
+                                  queries: Seq[IndexQuery]): NodeValueIndexCursor
 
   def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            resultCreator: ResultCreator[RESULT],
-                                            value: String): Iterator[RESULT]
+                                            value: String): NodeValueIndexCursor
 
   def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            resultCreator: ResultCreator[RESULT],
-                                            value: String): Iterator[RESULT]
+                                            value: String): NodeValueIndexCursor
 
   def indexScan[RESULT <: AnyRef](index: IndexReference,
                                   needsValues: Boolean,
-                                  indexOrder: IndexOrder,
-                                  resultCreator: ResultCreator[RESULT]): Iterator[RESULT]
+                                  indexOrder: IndexOrder): NodeValueIndexCursor
 
-  def lockingUniqueIndexSeek[RESULT](index: IndexReference, resultCreator: ResultCreator[RESULT], queries: Seq[IndexQuery.ExactPredicate]): Option[RESULT]
+  def lockingUniqueIndexSeek[RESULT](index: IndexReference, queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor
 
   def getNodesByLabel(id: Int): Iterator[NodeValue]
 
@@ -342,13 +337,33 @@ trait CloseableResource {
   def close(success: Boolean)
 }
 
-trait NodeValueHit {
-  def nodeId: Long
-  def node: VirtualNodeValue
-  def numberOfProperties: Int
-  def propertyValue(i: Int): Value
+object NodeValueHit {
+  val EMPTY = new NodeValueHit(-1L, null)
 }
 
-trait ResultCreator[RESULT] {
-  def createResult(nodeValueHit: NodeValueHit): RESULT
+class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends NodeValueIndexCursor {
+
+  private var _next = nodeId != -1L
+
+  override def numberOfProperties(): Int = values.length
+
+  override def propertyKey(offset: Int): Int = throw new UnsupportedOperationException("not implemented")
+
+  override def hasValue: Boolean = true
+
+  override def propertyValue(offset: Int): Value = values(offset)
+
+  override def node(cursor: NodeCursor): Unit = throw new UnsupportedOperationException("not implemented")
+
+  override def nodeReference(): Long = nodeId
+
+  override def next(): Boolean = {
+    val temp = _next
+    _next = false
+    temp
+  }
+
+  override def close(): Unit = _next = false
+
+  override def isClosed: Boolean = _next
 }

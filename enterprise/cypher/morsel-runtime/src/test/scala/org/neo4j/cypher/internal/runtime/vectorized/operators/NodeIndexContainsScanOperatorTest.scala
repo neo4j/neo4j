@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.IndexMockingHelp
 import org.neo4j.cypher.internal.runtime.vectorized.{Morsel, MorselExecutionContext, QueryState}
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
 import org.neo4j.internal.kernel.api.helpers.StubNodeValueIndexCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
@@ -86,7 +86,7 @@ class NodeIndexContainsScanOperatorTest extends CypherFunSuite with ImplicitDumm
     outputMorsel.validRows should equal(1)
   }
 
-  private def kernelScanFor(results: Iterable[TestNodeValueHit]): QueryContext = {
+  private def kernelScanFor(results: Iterable[NodeValueHit]): QueryContext = {
     import scala.collection.JavaConverters._
 
     val context = mock[QueryContext](RETURNS_DEEP_STUBS)

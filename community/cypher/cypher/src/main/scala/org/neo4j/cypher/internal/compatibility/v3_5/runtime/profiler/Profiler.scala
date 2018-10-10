@@ -24,10 +24,12 @@ import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.PrimitiveLon
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.internal.kernel.api.{NodeCursor, NodeValueIndexCursor}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 import org.neo4j.storageengine.api.RelationshipVisitor
+import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.util.attribution.Id
 
@@ -161,6 +163,30 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def targetNodeReference(): Long = inner.targetNodeReference()
 
     override def propertiesReference(): Long = inner.propertiesReference()
+  }
+
+  override protected def manyDbHits[A](inner: NodeValueIndexCursor): NodeValueIndexCursor = new NodeValueIndexCursor {
+
+    override def numberOfProperties(): Int = inner.numberOfProperties()
+
+    override def propertyKey(offset: Int): Int = inner.propertyKey(offset)
+
+    override def hasValue: Boolean = inner.hasValue
+
+    override def propertyValue(offset: Int): Value = inner.propertyValue(offset)
+
+    override def node(cursor: NodeCursor): Unit = inner.node(cursor)
+
+    override def nodeReference(): Long = inner.nodeReference()
+
+    override def next(): Boolean = {
+      increment()
+      inner.next()
+    }
+
+    override def close(): Unit = inner.close()
+
+    override def isClosed: Boolean = inner.isClosed
   }
 
   class ProfilerOperations[T](inner: Operations[T]) extends DelegatingOperations[T](inner) {

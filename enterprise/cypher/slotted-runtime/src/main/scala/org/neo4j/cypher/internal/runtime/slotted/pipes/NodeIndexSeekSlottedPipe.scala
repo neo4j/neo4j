@@ -61,8 +61,9 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
     val baseContext = state.newExecutionContext(executionContextFactory)
-    val resultCreator = SlottedCtxResultCreator(state, slots)
-    indexSeek(state, indexReference, needsValues, indexOrder, baseContext, resultCreator)
+    indexSeek(state, indexReference, needsValues, indexOrder, baseContext).flatMap(
+      cursor => new SlottedIndexIterator(state, slots, cursor)
+    )
   }
 
   def canEqual(other: Any): Boolean = other.isInstanceOf[NodeIndexSeekSlottedPipe]
