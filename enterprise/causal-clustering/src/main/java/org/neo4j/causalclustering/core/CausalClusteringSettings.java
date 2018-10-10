@@ -23,6 +23,8 @@
 package org.neo4j.causalclustering.core;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.List;
 import java.util.logging.Level;
@@ -205,15 +207,27 @@ public class CausalClusteringSettings implements LoadableConfig
 
     @Description( "File location of token for Kubernetes API" )
     public static final Setting<File> kubernetes_token =
-            setting( "causal_clustering.kubernetes.token", PATH, "/var/run/secrets/kubernetes.io/serviceaccount/token" );
+            pathUnixAbsolute( "causal_clustering.kubernetes.token", "/var/run/secrets/kubernetes.io/serviceaccount/token" );
 
     @Description( "File location of namespace for Kubernetes API" )
     public static final Setting<File> kubernetes_namespace =
-            setting( "causal_clustering.kubernetes.namespace", PATH, "/var/run/secrets/kubernetes.io/serviceaccount/namespace" );
+            pathUnixAbsolute( "causal_clustering.kubernetes.namespace", "/var/run/secrets/kubernetes.io/serviceaccount/namespace" );
 
     @Description( "File location of CA certificate for Kubernetes API" )
     public static final Setting<File> kubernetes_ca_crt =
-            setting( "causal_clustering.kubernetes.ca_crt", PATH, "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" );
+            pathUnixAbsolute( "causal_clustering.kubernetes.ca_crt", "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt" );
+
+    /**
+     * Creates absolute path on the first filesystem root. This will be `/` on Unix but arbitrary on Windows.
+     * If filesystem roots cannot be listed then `//` will be used - this will be resolved to `/` on Unix and `\\` (a UNC network path) on Windows.
+     * An absolute path is always needed for validation, even though we only care about a path on Linux.
+     */
+    private static Setting<File> pathUnixAbsolute( String name, String path )
+    {
+        File[] roots = File.listRoots();
+        Path root = roots.length > 0 ? roots[0].toPath() : Paths.get( "//" );
+        return setting( name, PATH, root.resolve( path ).toString() );
+    }
 
     @Description( "LabelSelector for Kubernetes API" )
     public static final Setting<String> kubernetes_label_selector =
