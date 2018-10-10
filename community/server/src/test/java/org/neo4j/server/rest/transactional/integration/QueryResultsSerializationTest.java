@@ -570,24 +570,24 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
     {
         //Given
         GraphDatabaseFacade db = server().getDatabase().getGraph();
-        ZonedDateTime now = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
                 0, 0, ZoneId.of( "Europe/Stockholm" ) );
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode( label( "N" ) );
-            node.setProperty( "now", new ZonedDateTime[]{now} );
+            node.setProperty( "date", new ZonedDateTime[]{date} );
             tx.success();
         }
 
-        // When
+        //When
         HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
 
-        // Then
+        //Then
         assertEquals( 200, response.status() );
         assertNoErrors( response );
 
-        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get(0).get( "row" ).get(0)
-                .get( "now" ).get(0);
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 )
+                .get( "date" ).get( 0 );
 
         assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
     }
@@ -605,16 +605,68 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
             tx.success();
         }
 
-        // When
+        //When
         HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
 
-        // Then
+        //Then
         assertEquals( 200, response.status() );
         assertNoErrors( response );
 
-        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get(0).get( "row" ).get(0)
-                .get( "duration" ).get(0);
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 )
+                .get( "duration" ).get( 0 );
 
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleTemporalUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "date", date );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "date" );
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "duration", duration );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "duration" );
         assertEquals( "\"PT1M13S\"", row.toString() );
     }
 

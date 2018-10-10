@@ -20,8 +20,14 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
@@ -153,6 +159,24 @@ public class ValueRepresentation extends Representation
                 protected Representation dispatchBooleanProperty( boolean property, Void param )
                 {
                     return bool( property );
+                }
+
+                @Override
+                protected Representation dispatchPointProperty( Point point, Void param )
+                {
+                    return new ValueRepresentation( RepresentationType.POINT, point );
+                }
+
+                @Override
+                protected Representation dispatchTemporalProperty( Temporal temporal, Void param )
+                {
+                    return new ValueRepresentation( RepresentationType.TEMPORAL, temporal );
+                }
+
+                @Override
+                protected Representation dispatchTemporalAmountProperty( TemporalAmount temporalAmount, Void param )
+                {
+                    return new ValueRepresentation( RepresentationType.TEMPORAL_AMOUNT, temporalAmount );
                 }
 
                 @Override

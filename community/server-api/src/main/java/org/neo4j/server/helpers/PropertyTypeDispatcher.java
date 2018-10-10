@@ -19,11 +19,17 @@
  */
 package org.neo4j.server.helpers;
 
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.ArrayIterator;
+
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 /*
  * THIS CLASS SHOULD BE MOVED TO KERNEL ASAP!!!
@@ -74,6 +80,18 @@ public abstract class PropertyTypeDispatcher<K, T>
         else if ( property instanceof Character )
         {
             return dispatchCharacterProperty( (Character) property, param );
+        }
+        else if ( property instanceof Point )
+        {
+          return dispatchPointProperty( (Point) property, param );
+        }
+        else if ( property instanceof Temporal )
+        {
+            return dispatchTemporalProperty( (Temporal) property, param );
+        }
+        else if ( property instanceof TemporalAmount )
+        {
+            return dispatchTemporalAmountProperty( (TemporalAmount) property, param );
         }
         else if ( property instanceof String[] )
         {
@@ -239,6 +257,12 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
+
+    protected abstract T dispatchPointProperty( Point property, K param );
+
+    protected abstract T dispatchTemporalProperty( Temporal property, K param );
+
+    protected abstract T dispatchTemporalAmountProperty( TemporalAmount property, K param );
 
     protected T dispatchOtherProperty( Object property, K param )
     {
