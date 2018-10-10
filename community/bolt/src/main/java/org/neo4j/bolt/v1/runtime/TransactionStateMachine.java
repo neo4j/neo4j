@@ -546,6 +546,8 @@ public class TransactionStateMachine implements StatementProcessor
         /** The current pending result, if present */
         BoltResult currentResult;
 
+        BoltResultHandle currentResultHandle;
+
         final Clock clock;
 
         /** A re-usable statement metadata instance that always represents the currently running statement */
@@ -557,8 +559,6 @@ public class TransactionStateMachine implements StatementProcessor
                 return currentResult.fieldNames();
             }
         };
-
-        BoltResultHandle currentResultHandle;
 
         private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
         {
