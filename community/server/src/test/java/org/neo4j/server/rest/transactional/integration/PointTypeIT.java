@@ -40,6 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.Values.pointValue;
 
 public class PointTypeIT extends AbstractRestFunctionalTestBase
 {
@@ -79,6 +80,34 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldReturnPoint2DWithLatitudeAndLongitude() throws Exception
     {
         testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84, "point" );
+    }
+
+    @Test
+    public void shouldHandlePointArrays() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            //node.setProperty( "coordinates", new double[]{30.655691, 104.081602} );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )} );
+            node.setProperty( "location", "Shanghai" );
+            node.setProperty( "type", "gps" );
+            tx.success();
+        }
+
+        // When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode data = response.get( "results" ).get( 0 ).get( "data" ).get(0);
+        JsonNode row = data.get( "row" ).get(0).get( "coordinates" ).get(0);
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
     }
 
     private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs, String expectedType ) throws Exception

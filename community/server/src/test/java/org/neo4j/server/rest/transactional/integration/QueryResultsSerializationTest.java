@@ -27,8 +27,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
@@ -36,7 +45,9 @@ import org.neo4j.test.server.HTTP.Response;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.graphContainsDeletedNodes;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.graphContainsDeletedRelationships;
@@ -49,6 +60,8 @@ import static org.neo4j.server.rest.transactional.integration.TransactionMatcher
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsDeletedEntitiesInPath;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsNoDeletedEntities;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.Values.pointValue;
 
 public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBase
 {
@@ -550,6 +563,59 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( commit, rowContainsDeletedEntities( 2, 0 ) );
         assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldHandleTemporalArrays() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime now = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "now", new ZonedDateTime[]{now} );
+            tx.success();
+        }
+
+        // When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
+
+        // Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get(0).get( "row" ).get(0)
+                .get( "now" ).get(0);
+
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationArrays() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "duration", new Duration[]{duration} );
+            tx.success();
+        }
+
+        // When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
+
+        // Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get(0).get( "row" ).get(0)
+                .get( "duration" ).get(0);
+
+        assertEquals( "\"PT1M13S\"", row.toString() );
     }
 
     private HTTP.RawPayload queryAsJsonGraph( String query )
