@@ -574,11 +574,13 @@ public class IndexingServiceTest
         indexingService.init();
 
         // then
-        userLogProvider.assertContainsExactlyOneMessageMatchingInAnyOrder(
-                Matchers.containsString( "IndexingService.init: Deprecated index providers in use:" ),
-                Matchers.containsString( lucene10Descriptor.name() + " (1 index)" ),
-                Matchers.containsString( native10Descriptor.name() + " (1 index)" ),
-                Matchers.containsString( native20Descriptor.name() + " (2 indexes)" )
+        userLogProvider.assertContainsExactlyOneMessageMatching(
+                Matchers.allOf(
+                        Matchers.containsString( "IndexingService.init: Deprecated index providers in use:" ),
+                        Matchers.containsString( lucene10Descriptor.name() + " (1 index)" ),
+                        Matchers.containsString( native10Descriptor.name() + " (1 index)" ),
+                        Matchers.containsString( native20Descriptor.name() + " (2 indexes)" )
+                )
         );
         onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
         onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );
@@ -625,11 +627,13 @@ public class IndexingServiceTest
         indexingService.start();
 
         // then
-        userLogProvider.assertContainsExactlyOneMessageMatchingInAnyOrder(
-                Matchers.containsString( "IndexingService.start: Deprecated index providers in use:" ),
-                Matchers.containsString( lucene10Descriptor.name() + " (1 index)" ),
-                Matchers.containsString( native10Descriptor.name() + " (1 index)" ),
-                Matchers.containsString( native20Descriptor.name() + " (2 indexes)" )
+        userLogProvider.assertContainsExactlyOneMessageMatching(
+                Matchers.allOf(
+                        Matchers.containsString( "IndexingService.start: Deprecated index providers in use:" ),
+                        Matchers.containsString( lucene10Descriptor.name() + " (1 index)" ),
+                        Matchers.containsString( native10Descriptor.name() + " (1 index)" ),
+                        Matchers.containsString( native20Descriptor.name() + " (2 indexes)" )
+                )
         );
         onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( nativeBtree10Descriptor.name() ) );
         onBothLogProviders( logProvider -> internalLogProvider.assertNoMessagesContaining( fulltextDescriptor.name() ) );

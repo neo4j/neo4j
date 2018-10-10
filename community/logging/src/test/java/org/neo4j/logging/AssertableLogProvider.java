@@ -764,24 +764,14 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
         }
     }
 
-    @SafeVarargs
-    public final void assertContainsExactlyOneMessageMatchingInAnyOrder( Matcher<? extends String>... messageMatchers )
+    public final void assertContainsExactlyOneMessageMatching( Matcher<String> messageMatcher )
     {
         boolean found = false;
         synchronized ( logCalls )
         {
             for ( LogCall logCall : logCalls )
             {
-                boolean match = true;
-                for ( Matcher<? extends String> messageMatcher : messageMatchers )
-                {
-                    if ( !messageMatcher.matches( logCall.message ) )
-                    {
-                        match = false;
-                        break;
-                    }
-                }
-                if ( match )
+                if ( messageMatcher.matches( logCall.message ) )
                 {
                     if ( !found )
                     {
@@ -790,10 +780,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
                     else
                     {
                         StringDescription description = new StringDescription();
-                        for ( Matcher<? extends String> messageMatcher : messageMatchers )
-                        {
-                            description.appendDescriptionOf( messageMatcher );
-                        }
+                        description.appendDescriptionOf( messageMatcher );
                         fail( format( "Expected exactly one log statement with message as %s, but multiple found. Actual log calls were:%n%s",
                                 description.toString(), serialize( logCalls.iterator() ) ) );
                     }
@@ -802,10 +789,7 @@ public class AssertableLogProvider extends AbstractLogProvider<Log> implements T
             if ( !found )
             {
                 StringDescription description = new StringDescription();
-                for ( Matcher<? extends String> messageMatcher : messageMatchers )
-                {
-                    description.appendDescriptionOf( messageMatcher );
-                }
+                description.appendDescriptionOf( messageMatcher );
                 fail( format(
                         "Expected at least one log statement with message as %s, but none found. Actual log calls were:\n%s",
                         description.toString(), serialize( logCalls.iterator() ) ) );

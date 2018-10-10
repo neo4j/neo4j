@@ -188,7 +188,7 @@ public class RecoveryCleanupIT
             matchers.add( indexRecoveryFinishedLogMatcher( subType ) );
             matchers.add( indexRecoveryLogMatcher( "Schema index cleanup job closed", subType ) );
         }
-        matchers.forEach( logProvider::assertContainsExactlyOneMessageMatchingInAnyOrder );
+        matchers.forEach( logProvider::assertContainsExactlyOneMessageMatching );
     }
 
     private Matcher<String> indexRecoveryLogMatcher( String logMessage, String subIndexProviderKey )
