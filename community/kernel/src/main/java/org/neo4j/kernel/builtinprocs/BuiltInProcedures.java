@@ -215,11 +215,18 @@ public class BuiltInProcedures
         }
     }
 
-    @Procedure( name = "okapi.schema", mode = Mode.READ )
-    @Description( "Show the derived property schema of the data in tabular form." )
-    public Stream<SchemaInfoResult> propertySchema()
+    @Procedure( name = "db.schema.nodeProperties", mode = Mode.READ )
+    @Description( "Show the derived property schema of the nodes in tabular form." )
+    public Stream<NodePropertySchemaInfoResult> nodePropertySchema()
     {
-        return new SchemaCalculator( tx ).calculateTabularResultStream();
+        return new SchemaCalculator( tx ).calculateTabularResultStreamForNodes();
+    }
+
+    @Procedure( name = "db.schema.edgeProperties", mode = Mode.READ )
+    @Description( "Show the derived property schema of the relationships in tabular form." )
+    public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema()
+    {
+        return new SchemaCalculator( tx ).calculateTabularResultStreamForRels();
     }
 
     @Deprecated

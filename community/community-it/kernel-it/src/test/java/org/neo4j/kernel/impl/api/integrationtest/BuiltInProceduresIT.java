@@ -149,10 +149,14 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Show the schema of the data.", "READ" ),
                 proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Visualize the schema of the data. Replaces db.schema.", "READ" ),
-                proc( "okapi.schema", "() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
-                                "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)", "Show the derived property schema of the data in tabular form.",
+                proc( "db.schema.nodeProperties", "() :: (nodeType :: STRING?, propertyName :: STRING?, " +
+                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)", "Show the derived property schema of the nodes in tabular form.",
                         "READ" ),
-                proc( "db.relationshipTypes", "() :: (relationshipType :: " + "STRING?)", "List all relationship types in the database.", "READ" ),
+                proc( "db.schema.edgeProperties", "() :: (relationshipType :: STRING?, propertyName :: STRING?, " +
+                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the relationships in tabular form.", "READ" ),
+                proc( "db.relationshipTypes", "() :: (relationshipType :: " + "STRING?)",
+                        "List all relationship types in the database.", "READ" ),
                 proc( "dbms.procedures", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, mode :: STRING?)",
                         "List all procedures in the DBMS.", "DBMS" ),
                 proc( "dbms.functions", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?)",

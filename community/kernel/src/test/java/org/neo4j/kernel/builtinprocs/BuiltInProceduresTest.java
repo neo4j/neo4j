@@ -289,10 +289,14 @@ public class BuiltInProceduresTest
                 record( "db.schema.visualization",
                         "db.schema.visualization() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Visualize the schema of the data. Replaces db.schema.", "READ" ),
-                record( "okapi.schema",
-                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?," +
-                                " cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
-                        "Show the derived property schema of the data in tabular form.", "READ" ),
+                record( "db.schema.nodeProperties",
+                        "db.schema.nodeProperties() :: (nodeType :: STRING?, propertyName :: STRING?," +
+                                " propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the nodes in tabular form.", "READ" ),
+                record( "db.schema.edgeProperties",
+                        "db.schema.edgeProperties() :: (relationshipType :: STRING?, propertyName :: STRING?, " +
+                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the relationships in tabular form.", "READ" ),
                 record( "db.index.explicit.searchNodes",
                         "db.index.explicit.searchNodes(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",
                         "Search nodes in explicit index. Replaces `START n=node:nodes('key:foo*')`", "READ" ),
