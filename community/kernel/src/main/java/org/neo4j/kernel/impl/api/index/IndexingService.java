@@ -213,7 +213,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
-            Map<IndexProviderDescriptor,List<IndexLogRecord>> indexProviders = new HashMap<>();
             for ( StoreIndexDescriptor indexDescriptor : indexDescriptors )
             {
                 IndexProxy indexProxy;
@@ -221,11 +220,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 IndexProviderDescriptor providerDescriptor = indexDescriptor.providerDescriptor();
                 IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexDescriptor );
-                IndexLogRecord indexLogRecord = new IndexLogRecord( indexDescriptor );
                 indexStates.computeIfAbsent( initialState, internalIndexState -> new ArrayList<>() )
-                        .add( indexLogRecord );
-                indexProviders.computeIfAbsent( providerDescriptor, indexProviderDescriptor -> new ArrayList<>() )
-                        .add( indexLogRecord );
+                        .add( new IndexLogRecord( indexDescriptor ) );
 
                 internalLog.debug( indexStateInfo( "init", initialState, indexDescriptor ) );
                 switch ( initialState )
@@ -250,7 +246,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 indexMap.putIndexProxy( indexProxy );
             }
             logIndexStateSummary( "init", indexStates );
-            logIndexProviderSummary( "init", indexProviders );
             return indexMap;
         } );
     }
@@ -314,7 +309,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 }
             } );
             logIndexStateSummary( "start", indexStates );
-            logIndexProviderSummary( "start", indexProviders );
+            logIndexProviderSummary( indexProviders );
 
             // Drop placeholder proxies for indexes that need to be rebuilt
             dropRecoveringIndexes( indexMap, rebuildingDescriptors.keySet() );
@@ -794,13 +789,14 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         internalLog.info( format( "IndexingService.%s: indexes not specifically mentioned above are %s", method, mostPopularState ) );
     }
 
-    private void logIndexProviderSummary( String method, Map<IndexProviderDescriptor,List<IndexLogRecord>> indexProviders )
+    private void logIndexProviderSummary( Map<IndexProviderDescriptor,List<IndexLogRecord>> indexProviders )
     {
         Set<String> deprecatedIndexProviders = Arrays.stream( GraphDatabaseSettings.SchemaIndex.values() )
                 .filter( GraphDatabaseSettings.SchemaIndex::deprecated )
                 .map( GraphDatabaseSettings.SchemaIndex::providerName )
                 .collect( Collectors.toSet() );
-        StringJoiner joiner = new StringJoiner( ", ", format( "IndexingService.%s: Deprecated index providers in use: ", method ), "" );
+        StringJoiner joiner = new StringJoiner( ", ", "Deprecated index providers in use: ",
+                ". Use procedure 'db.indexes()' to see what indexes use which index provider." );
         MutableBoolean anyDeprecated = new MutableBoolean();
         indexProviders.forEach( ( indexProviderDescriptor, indexLogRecords ) ->
         {
