@@ -143,14 +143,14 @@ public class EnterpriseBuiltInDbmsProcedures
 
     @Description( "Kill network connection with the given connection id." )
     @Procedure( name = "dbms.killConnection", mode = DBMS )
-    public Stream<ConnectionTerminationResult> killConnection( @Name( "id" ) String id ) throws Exception
+    public Stream<ConnectionTerminationResult> killConnection( @Name( "id" ) String id )
     {
         return killConnections( singletonList( id ) );
     }
 
     @Description( "Kill all network connections with the given connection ids." )
     @Procedure( name = "dbms.killConnections", mode = DBMS )
-    public Stream<ConnectionTerminationResult> killConnections( @Name( "ids" ) List<String> ids ) throws Exception
+    public Stream<ConnectionTerminationResult> killConnections( @Name( "ids" ) List<String> ids )
     {
         securityContext.assertCredentialsNotExpired();
 
