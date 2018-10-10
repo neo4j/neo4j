@@ -199,7 +199,7 @@ public class TransactionStatusResultTest
 
     private HttpConnectionInfo getTestConnectionInfo()
     {
-        return new HttpConnectionInfo( "https-42", "https", "agent", new InetSocketAddress( "localhost", 1000 ),
+        return new HttpConnectionInfo( "https-42", "https", new InetSocketAddress( "localhost", 1000 ),
                 new InetSocketAddress( "localhost", 1001 ), "/path" );
     }
 

@@ -38,7 +38,6 @@ public class HttpConnectionInfo extends ClientConnectionInfo
     public HttpConnectionInfo(
             String connectionId,
             String protocol,
-            @SuppressWarnings( "unused" ) String userAgent, // useful for achieving parity with BoltConnectionInfo
             SocketAddress clientAddress,
             SocketAddress serverAddress,
             String requestPath )

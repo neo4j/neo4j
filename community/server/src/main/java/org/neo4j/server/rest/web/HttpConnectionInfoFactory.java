@@ -27,8 +27,6 @@ import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.server.web.JettyHttpConnection;
 
-import static javax.ws.rs.core.HttpHeaders.USER_AGENT;
-
 public class HttpConnectionInfoFactory
 {
     private HttpConnectionInfoFactory()
@@ -39,7 +37,6 @@ public class HttpConnectionInfoFactory
     {
         String connectionId;
         String protocol = request.getScheme();
-        String userAgent;
         SocketAddress clientAddress;
         SocketAddress serverAddress;
         String requestURI = request.getRequestURI();
@@ -48,7 +45,6 @@ public class HttpConnectionInfoFactory
         if ( connection != null )
         {
             connectionId = connection.id();
-            userAgent = connection.userAgent();
             clientAddress = connection.clientAddress();
             serverAddress = connection.serverAddress();
         }
@@ -57,11 +53,10 @@ public class HttpConnectionInfoFactory
             // connection is unknown, connection object can't be extracted or is missing from the Jetty thread-local
             // get all the available information directly from the request
             connectionId = null;
-            userAgent = request.getHeader( USER_AGENT );
             clientAddress = new InetSocketAddress( request.getRemoteAddr(), request.getRemotePort() );
             serverAddress = new InetSocketAddress( request.getServerName(), request.getServerPort() );
         }
 
-        return new HttpConnectionInfo( connectionId, protocol, userAgent, clientAddress, serverAddress, requestURI );
+        return new HttpConnectionInfo( connectionId, protocol, clientAddress, serverAddress, requestURI );
     }
 }
