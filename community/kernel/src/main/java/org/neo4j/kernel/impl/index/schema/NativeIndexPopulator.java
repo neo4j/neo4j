@@ -37,6 +37,7 @@ import org.neo4j.index.internal.gbptree.Writer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheOpenOptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
@@ -80,7 +81,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
             StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, OpenOption... openOptions )
     {
-        super( pageCache, fs, storeFile, layout, monitor, descriptor, openOptions );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, withNoStriping( openOptions ) );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
@@ -95,6 +96,14 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         default:
             throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
         }
+    }
+
+    /**
+     * Because index population is effectively single-threaded. For parallel population each thread has its own part so single-threaded even there.
+     */
+    private static OpenOption[] withNoStriping( OpenOption[] openOptions )
+    {
+        return ArrayUtils.add( openOptions, PageCacheOpenOptions.NO_CHANNEL_STRIPING );
     }
 
     public void clear()
