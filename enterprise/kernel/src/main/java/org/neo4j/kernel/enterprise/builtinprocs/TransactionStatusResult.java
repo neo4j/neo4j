@@ -50,6 +50,7 @@ public class TransactionStatusResult
     public final Map<String,Object> metaData;
     public final String startTime;
     public final String protocol;
+    public final String connectionId;
     public final String clientAddress;
     public final String requestUri;
 
@@ -96,6 +97,7 @@ public class TransactionStatusResult
             this.currentQueryId = ofInternalId( snapshot.internalQueryId() ).toString();
             this.currentQuery = snapshot.queryText();
             this.protocol = clientConnectionInfo.protocol();
+            this.connectionId = clientConnectionInfo.connectionId();
             this.clientAddress = clientConnectionInfo.clientAddress();
             this.requestUri = clientConnectionInfo.requestURI();
         }
@@ -104,6 +106,7 @@ public class TransactionStatusResult
             this.currentQueryId = StringUtils.EMPTY;
             this.currentQuery = StringUtils.EMPTY;
             this.protocol = StringUtils.EMPTY;
+            this.connectionId = StringUtils.EMPTY;
             this.clientAddress = StringUtils.EMPTY;
             this.requestUri = StringUtils.EMPTY;
         }

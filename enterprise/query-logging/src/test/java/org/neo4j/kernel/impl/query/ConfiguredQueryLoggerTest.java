@@ -34,8 +34,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorCounters;
-import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.query.CompilerInfo;
+import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
@@ -58,12 +58,12 @@ import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class ConfiguredQueryLoggerTest
 {
-    private static final SocketAddress DUMMY_SOCKET_ADDRESS = new SocketAddress()
+    private static final SocketAddress DUMMY_ADDRESS = new SocketAddress()
     {
     };
-    private static final ClientConnectionInfo SESSION_1 = new BoltConnectionInfo( "{session one}", "client", DUMMY_SOCKET_ADDRESS, DUMMY_SOCKET_ADDRESS );
-    private static final ClientConnectionInfo SESSION_2 = new BoltConnectionInfo( "{session two}", "client", DUMMY_SOCKET_ADDRESS, DUMMY_SOCKET_ADDRESS );
-    private static final ClientConnectionInfo SESSION_3 = new BoltConnectionInfo( "{session three}", "client", DUMMY_SOCKET_ADDRESS, DUMMY_SOCKET_ADDRESS );
+    private static final ClientConnectionInfo SESSION_1 = new BoltConnectionInfo( "bolt-1", "{session one}", "client", DUMMY_ADDRESS, DUMMY_ADDRESS );
+    private static final ClientConnectionInfo SESSION_2 = new BoltConnectionInfo( "bolt-2", "{session two}", "client", DUMMY_ADDRESS, DUMMY_ADDRESS );
+    private static final ClientConnectionInfo SESSION_3 = new BoltConnectionInfo( "bolt-3", "{session three}", "client", DUMMY_ADDRESS, DUMMY_ADDRESS );
     private static final String QUERY_1 = "MATCH (n) RETURN n";
     private static final String QUERY_2 = "MATCH (a)--(b) RETURN b.name";
     private static final String QUERY_3 = "MATCH (c)-[:FOO]->(d) RETURN d.size";

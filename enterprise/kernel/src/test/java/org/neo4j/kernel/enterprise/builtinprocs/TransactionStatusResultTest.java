@@ -139,6 +139,7 @@ public class TransactionStatusResultTest
         assertEquals( Collections.emptyMap(), statusResult.metaData );
         assertEquals( "1970-01-01T00:00:01.984Z", statusResult.startTime );
         assertEquals( EMPTY, statusResult.protocol );
+        assertEquals( EMPTY, statusResult.connectionId );
         assertEquals( EMPTY, statusResult.clientAddress );
         assertEquals( EMPTY, statusResult.requestUri );
         assertEquals( EMPTY, statusResult.currentQueryId );
@@ -164,6 +165,7 @@ public class TransactionStatusResultTest
         assertEquals( Collections.emptyMap(), statusResult.metaData );
         assertEquals( startTime, statusResult.startTime );
         assertEquals( "https", statusResult.protocol );
+        assertEquals( "https-42", statusResult.connectionId );
         assertEquals( "localhost:1000", statusResult.clientAddress );
         assertEquals( "https://localhost:1001/path", statusResult.requestUri );
         assertEquals( currentQueryId, statusResult.currentQueryId );
@@ -197,7 +199,7 @@ public class TransactionStatusResultTest
 
     private HttpConnectionInfo getTestConnectionInfo()
     {
-        return new HttpConnectionInfo( "https", "agent", new InetSocketAddress( "localhost", 1000 ),
+        return new HttpConnectionInfo( "https-42", "https", "agent", new InetSocketAddress( "localhost", 1000 ),
                 new InetSocketAddress( "localhost", 1001 ), "/path" );
     }
 

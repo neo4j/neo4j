@@ -66,6 +66,8 @@ public class QueryStatusResult
     public final String connectionDetails;
     /** @since Neo4j 3.2 */
     public final String protocol;
+    /** @since Neo4j 3.5 */
+    public final String connectionId;
     /** @since Neo4j 3.2 */
     public final String clientAddress;
     /** @since Neo4j 3.2 */
@@ -108,6 +110,7 @@ public class QueryStatusResult
         ClientConnectionInfo clientConnection = query.clientConnection();
         this.connectionDetails = clientConnection.asConnectionDetails();
         this.protocol = clientConnection.protocol();
+        this.connectionId = clientConnection.connectionId();
         this.clientAddress = clientConnection.clientAddress();
         this.requestUri = clientConnection.requestURI();
         this.metaData = query.transactionAnnotationData();

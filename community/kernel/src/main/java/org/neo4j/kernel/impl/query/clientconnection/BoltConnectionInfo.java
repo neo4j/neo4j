@@ -28,17 +28,20 @@ import static org.neo4j.helpers.SocketAddress.format;
  */
 public class BoltConnectionInfo extends ClientConnectionInfo
 {
+    private final String connectionId;
     private final String principalName;
     private final String clientName;
     private final SocketAddress clientAddress;
     private final SocketAddress serverAddress;
 
     public BoltConnectionInfo(
+            String connectionId,
             String principalName,
             String clientName,
             SocketAddress clientAddress,
             SocketAddress serverAddress )
     {
+        this.connectionId = connectionId;
         this.principalName = principalName;
         this.clientName = clientName;
         this.clientAddress = clientAddress;
@@ -60,6 +63,12 @@ public class BoltConnectionInfo extends ClientConnectionInfo
     public String protocol()
     {
         return "bolt";
+    }
+
+    @Override
+    public String connectionId()
+    {
+        return connectionId;
     }
 
     @Override

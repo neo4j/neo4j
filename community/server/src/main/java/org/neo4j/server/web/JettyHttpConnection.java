@@ -102,10 +102,16 @@ public class JettyHttpConnection extends HttpConnection implements TrackedNetwor
 
     public static void updateUserForCurrentConnection( String username, String userAgent )
     {
-        HttpConnection currentConnection = HttpConnection.getCurrentConnection();
-        if ( currentConnection instanceof JettyHttpConnection )
+        JettyHttpConnection connection = getCurrentJettyHttpConnection();
+        if ( connection != null )
         {
-            ((JettyHttpConnection) currentConnection).updateUser( username, userAgent );
+            connection.updateUser( username, userAgent );
         }
+    }
+
+    public static JettyHttpConnection getCurrentJettyHttpConnection()
+    {
+        HttpConnection connection = HttpConnection.getCurrentConnection();
+        return connection instanceof JettyHttpConnection ? (JettyHttpConnection) connection : null;
     }
 }

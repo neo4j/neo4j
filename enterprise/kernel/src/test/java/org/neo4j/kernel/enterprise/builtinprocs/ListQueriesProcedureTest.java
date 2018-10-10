@@ -172,6 +172,7 @@ public class ListQueriesProcedureTest
 
             // then
             assertThat( data, hasKey( "protocol" ) );
+            assertThat( data, hasKey( "connectionId" ) );
             assertThat( data, hasKey( "clientAddress" ) );
             assertThat( data, hasKey( "requestUri" ) );
 
@@ -318,6 +319,7 @@ public class ListQueriesProcedureTest
 
         // then
         assertThat( data, hasKey( "protocol" ) );
+        assertThat( data, hasKey( "connectionId" ) );
         assertThat( data, hasKey( "clientAddress" ) );
         assertThat( data, hasKey( "requestUri" ) );
     }

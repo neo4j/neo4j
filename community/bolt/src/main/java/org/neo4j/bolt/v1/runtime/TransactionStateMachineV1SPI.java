@@ -124,7 +124,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             Map<String,Object> txMetadata )
     {
         InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, txTimeout, txMetadata );
-        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( boltChannel.username(),
+        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( boltChannel.id(), boltChannel.username(),
                 boltChannel.userAgent(), boltChannel.clientAddress(), boltChannel.serverAddress() );
         TransactionalContext transactionalContext =
                 contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
