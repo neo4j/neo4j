@@ -77,7 +77,6 @@ class BackupStrategyWrapper
     private Fallible<BackupStrategyOutcome> performBackupWithoutLifecycle( OnlineBackupContext onlineBackupContext )
     {
         Path backupLocation = onlineBackupContext.getResolvedLocationFromName();
-        Path userSpecifiedBackupLocation = onlineBackupContext.getResolvedLocationFromName();
         OptionalHostnamePort userSpecifiedAddress = onlineBackupContext.getRequiredArguments().getAddress();
         log.debug( "User specified address is %s:%s", userSpecifiedAddress.getHostname().toString(), userSpecifiedAddress.getPort().toString() );
         Config config = onlineBackupContext.getConfig();
@@ -86,10 +85,13 @@ class BackupStrategyWrapper
         if ( previousBackupExists )
         {
             log.info( "Previous backup found, trying incremental backup." );
-            Fallible<BackupStageOutcome> state =
-                    backupStrategy.performIncrementalBackup( userSpecifiedBackupLocation, config, userSpecifiedAddress );
+            Fallible<BackupStageOutcome> state = backupStrategy.performIncrementalBackup( backupLocation, config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
+            if ( incrementalWasSuccessful )
+            {
+                backupRecoveryService.recoverWithDatabase( backupLocation, pageCache, config );
+            }
 
             if ( fullBackupWontWork || incrementalWasSuccessful )
             {

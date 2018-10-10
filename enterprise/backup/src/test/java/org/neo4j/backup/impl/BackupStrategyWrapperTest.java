@@ -317,7 +317,7 @@ public class BackupStrategyWrapperTest
     }
 
     @Test
-    public void performingIncrementalBackupDoesNotInvokeRecovery()
+    public void performingIncrementalBackupInvokesRecovery()
     {
         // given backup exists
         when( backupCopyService.backupExists( any() ) ).thenReturn( true );
@@ -331,7 +331,7 @@ public class BackupStrategyWrapperTest
         subject.doBackup( onlineBackupContext );
 
         // then
-        verify( backupRecoveryService, never() ).recoverWithDatabase( any(), any(), any() );
+        verify( backupRecoveryService ).recoverWithDatabase( any(), any(), any() );
     }
 
     @Test

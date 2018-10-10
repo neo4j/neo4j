@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.IntFunction;
@@ -58,21 +59,29 @@ import org.neo4j.causalclustering.discovery.DiscoveryServiceFactory;
 import org.neo4j.causalclustering.discovery.IpFamily;
 import org.neo4j.causalclustering.discovery.SharedDiscoveryServiceFactory;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.enterprise.configuration.OnlineBackupSettings;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.store.format.highlimit.HighLimit;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.causalclustering.ClusterRule;
+import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.util.TestHelpers;
 
 import static java.lang.String.format;
@@ -84,12 +93,17 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeFalse;
+import static org.neo4j.backup.impl.OnlineBackupContextBuilder.ARG_NAME_FALLBACK_FULL;
 
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
 {
     @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Rule
+    public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
+    @Rule
+    public final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
@@ -192,7 +206,8 @@ public class OnlineBackupCommandCcIT
         // and an incremental backup is performed
         createSomeData( cluster );
         assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode( "--from=" + customAddress, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir,
-                "--name=defaultport" ) );
+                "--name=defaultport",
+                arg(ARG_NAME_FALLBACK_FULL, false) ) );
 
         // then the data matches
         assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( "defaultport", backupDir ) );
@@ -286,6 +301,64 @@ public class OnlineBackupCommandCcIT
     }
 
     @Test
+    public void fullBackupIsRecoveredAndConsistent() throws Exception
+    {
+        // given database exists with data
+        Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
+        String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
+
+        String name = UUID.randomUUID().toString();
+        File backupLocation = new File( backupDir, name );
+
+        // when
+        assertEquals( 0,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=" + name ) );
+
+        // then
+        assertFalse( "Store should not require recovery",
+                new RecoveryRequiredChecker( fileSystemRule, pageCacheRule.getPageCache( fileSystemRule ), Config.defaults(),
+                        new Monitors() ).isRecoveryRequiredAt( backupLocation ) );
+        ConsistencyFlags consistencyFlags = new ConsistencyFlags( true, true, true, true );
+        assertTrue( "Consistency check failed", new ConsistencyCheckService()
+                .runFullConsistencyCheck( backupLocation, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false,
+                        consistencyFlags )
+                .isSuccessful() );
+    }
+
+    @Test
+    public void incrementalBackupIsRecoveredAndConsistent() throws Exception
+    {
+        // given database exists with data
+        Cluster cluster = startCluster( recordFormat );
+        createSomeData( cluster );
+        String address = TestHelpers.backupAddressCc( clusterLeader( cluster ).database() );
+
+        String name = UUID.randomUUID().toString();
+        File backupLocation = new File( backupDir, name );
+
+        // when
+        assertEquals( 0,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=" + name ) );
+
+        // and
+        createSomeData( cluster );
+        assertEquals( 0,
+                runBackupToolFromOtherJvmToGetExitCode( "--from", address, "--cc-report-dir=" + backupDir, "--backup-dir=" + backupDir, "--name=" + name,
+                        arg( ARG_NAME_FALLBACK_FULL, false ) ) );
+
+        // then
+        assertFalse( "Store should not require recovery",
+                new RecoveryRequiredChecker( fileSystemRule, pageCacheRule.getPageCache( fileSystemRule ), Config.defaults(),
+                        new Monitors() ).isRecoveryRequiredAt( backupLocation ) );
+        ConsistencyFlags consistencyFlags = new ConsistencyFlags( true, true, true, true );
+        assertTrue( "Consistency check failed", new ConsistencyCheckService()
+                .runFullConsistencyCheck( backupLocation, Config.defaults(), ProgressMonitorFactory.NONE, NullLogProvider.getInstance(), false,
+                        consistencyFlags )
+                .isSuccessful() );
+    }
+
+    @Test
     public void onlyTheLatestTransactionIsKeptAfterIncrementalBackup() throws Exception
     {
         // given database exists with data
@@ -320,7 +393,8 @@ public class OnlineBackupCommandCcIT
                 "--cc-report-dir=" + backupDir,
                 "--backup-dir=" + backupDir,
                 "--additional-config=" + configOverrideFile,
-                "--name=" + backupName ) );
+                "--name=" + backupName,
+                arg(ARG_NAME_FALLBACK_FULL, false) ) );
 
         // then there has been a rotation
         BackupTransactionLogFilesHelper backupTransactionLogFilesHelper = new BackupTransactionLogFilesHelper();
@@ -361,8 +435,8 @@ public class OnlineBackupCommandCcIT
                     "--from", customAddress,
                     "--protocol=catchup",
                     "--cc-report-dir=" + backupDir,
-                    "--backup-dir=" + backupDir,
-                    "--name=" + backupName ) );
+                    "--name=" + backupName, "--backup-dir=" + backupDir,
+                    arg(ARG_NAME_FALLBACK_FULL, false) ) );
 
             // then
             assertEquals( DbRepresentation.of( clusterDatabase( cluster ) ), getBackupDbRepresentation( backupName, backupDir ) );
@@ -410,6 +484,11 @@ public class OnlineBackupCommandCcIT
 
         // and the data isn't equal (sanity check)
         assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+    }
+
+    private String arg( String key, Object value )
+    {
+        return "--" + key + "=" + value;
     }
 
     static PrintStream wrapWithNormalOutput( PrintStream normalOutput, PrintStream nullAbleOutput )
