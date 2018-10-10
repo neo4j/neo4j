@@ -32,19 +32,29 @@ import java.util.Objects;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.util.Validators;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.helpers.Strings.joinAsLines;
+import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class DumpCommand implements AdminCommand
 {
@@ -56,12 +66,14 @@ public class DumpCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final Dumper dumper;
+    private final OutsideWorld outsideWorld;
 
-    public DumpCommand( Path homeDir, Path configDir, Dumper dumper )
+    public DumpCommand( Path homeDir, Path configDir, Dumper dumper, OutsideWorld outsideWorld )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.dumper = dumper;
+        this.outsideWorld = outsideWorld;
     }
 
     @Override
@@ -77,7 +89,7 @@ public class DumpCommand implements AdminCommand
 
         try
         {
-            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseDirectory.toFile() );
+            Validators.CONTAINS_EXISTING_DATABASE.validate( databaseLayout.databaseDirectory() );
         }
         catch ( IllegalArgumentException e )
         {
@@ -86,6 +98,7 @@ public class DumpCommand implements AdminCommand
 
         try ( Closeable ignored = StoreLockChecker.check( databaseLayout.getStoreLayout() ) )
         {
+            checkDbState( databaseLayout, config );
             dump( database, databaseLayout, transactionLogsDirectory, archive );
         }
         catch ( StoreLockException e )
@@ -153,7 +166,32 @@ public class DumpCommand implements AdminCommand
         }
     }
 
-    private void wrapIOException( IOException e ) throws CommandFailed
+    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    {
+        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+                JobScheduler jobScheduler = createInitialisedScheduler();
+                PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystem, additionalConfiguration, jobScheduler ) )
+        {
+            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
+            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
+            {
+                throw new CommandFailed( joinAsLines(
+                        "Active logical log detected, this might be a source of inconsistencies.",
+                        "Please recover database before running the dump.",
+                        "To perform recovery please start database and perform clean shutdown." ) );
+            }
+        }
+        catch ( CommandFailed cf )
+        {
+            throw cf;
+        }
+        catch ( Exception e )
+        {
+            outsideWorld.stdErrLine( "Failure when checking for recovery state: '%s', continuing as normal.%n" + e.getMessage() );
+        }
+    }
+
+    private static void wrapIOException( IOException e ) throws CommandFailed
     {
         throw new CommandFailed(
                 format( "unable to dump database: %s: %s", e.getClass().getSimpleName(), e.getMessage() ), e );

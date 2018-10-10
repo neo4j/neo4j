@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.FileAlreadyExistsException;
@@ -40,6 +41,7 @@ import java.util.function.Predicate;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.IncorrectUsage;
+import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.config.Setting;
@@ -49,6 +51,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -61,6 +64,7 @@ import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -84,6 +88,7 @@ class DumpCommandTest
     private Path archive;
     private Dumper dumper;
     private Path databaseDirectory;
+    private OutsideWorld outsideWorld;
 
     @BeforeEach
     void setUp() throws Exception
@@ -92,6 +97,7 @@ class DumpCommandTest
         configDir = testDirectory.directory( "config-dir" ).toPath();
         archive = testDirectory.file( "some-archive.dump" ).toPath();
         dumper = mock( Dumper.class );
+        outsideWorld = mock( OutsideWorld.class );
         putStoreInDirectory( homeDir.resolve( "data/databases/foo.db" ) );
         databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
     }
@@ -156,14 +162,14 @@ class DumpCommandTest
     void shouldCalculateTheArchiveNameIfPassedAnExistingDirectory() throws Exception
     {
         File to = testDirectory.directory( "some-dir" );
-        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
+        new DumpCommand( homeDir, configDir, dumper, outsideWorld ).execute( new String[]{"--database=" + "foo.db", "--to=" + to} );
         verify( dumper ).dump( any( Path.class ), any( Path.class ), eq( to.toPath().resolve( "foo.db.dump" ) ), any() );
     }
 
     @Test
     void shouldConvertToCanonicalPath() throws Exception
     {
-        new DumpCommand( homeDir, configDir, dumper )
+        new DumpCommand( homeDir, configDir, dumper, outsideWorld )
                 .execute( new String[]{"--database=" + "foo.db", "--to=foo.dump"} );
         verify( dumper ).dump( any( Path.class ), any( Path.class ),
                 eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
@@ -191,6 +197,18 @@ class DumpCommandTest
             CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
             assertEquals( "the database is in use -- stop Neo4j and try again", commandFailed.getMessage() );
         }
+    }
+
+    @Test
+    void databaseThatRequireRecoveryIsNotDumpable() throws IOException
+    {
+        File logFile = new File( databaseDirectory.toFile(), TransactionLogFiles.DEFAULT_NAME + ".0" );
+        try ( FileWriter fileWriter = new FileWriter( logFile ) )
+        {
+            fileWriter.write( "brb" );
+        }
+        CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
+        assertThat( commandFailed.getMessage(), startsWith( "Active logical log detected, this might be a source of inconsistencies." ) );
     }
 
     @Test
@@ -265,7 +283,7 @@ class DumpCommandTest
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
-        new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
+        new DumpCommand( homeDir, configDir, dumper, outsideWorld ).execute( new String[]{"--to=" + archive} );
         verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
     }
 
@@ -274,7 +292,7 @@ class DumpCommandTest
     {
 
         IllegalArgumentException exception = assertThrows( IllegalArgumentException.class,
-                () -> new DumpCommand( homeDir, configDir, null ).execute( new String[]{"--database=something"} ) );
+                () -> new DumpCommand( homeDir, configDir, null, outsideWorld ).execute( new String[]{"--database=something"} ) );
         assertEquals( "Missing argument 'to'", exception.getMessage() );
     }
 
@@ -343,7 +361,7 @@ class DumpCommandTest
 
     private void execute( final String database ) throws IncorrectUsage, CommandFailed
     {
-        new DumpCommand( homeDir, configDir, dumper )
+        new DumpCommand( homeDir, configDir, dumper, outsideWorld )
                 .execute( new String[]{"--database=" + database, "--to=" + archive} );
     }
 
