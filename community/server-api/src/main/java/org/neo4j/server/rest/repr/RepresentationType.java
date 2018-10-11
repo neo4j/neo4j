@@ -19,11 +19,6 @@
  */
 package org.neo4j.server.rest.repr;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.HashMap;
@@ -36,7 +31,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.values.storable.DateTimeValue;
 

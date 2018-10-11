@@ -264,6 +264,11 @@
                     </include>
                     <exclude>
                       <item>org\.neo4j\.graphdb\.Path</item>
+                      <!--TODO remove this again once released-->
+                      <item>org\.neo4j\.server\.rest\.repr\.ListRepresentation</item>
+                      <item>org\.neo4j\.server\.rest\.repr\.RepresentationType</item>
+                      <item>org\.neo4j\.server\.rest\.repr\.ValueRepresentation</item>
+                      <item>org\.neo4j\.server\.helpers\.PropertyTypeDispatcher</item>
                     </exclude>
                   </classes>
                   <packages>

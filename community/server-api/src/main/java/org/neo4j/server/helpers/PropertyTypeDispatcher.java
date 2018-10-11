@@ -268,11 +268,23 @@ public abstract class PropertyTypeDispatcher<K, T>
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
 
-    protected abstract T dispatchPointProperty( Point property, K param );
+    //not abstract in order to not break existing code, since this was fixed in point release
+    protected T dispatchPointProperty( Point property, K param )
+    {
+        return dispatchOtherProperty( property, param );
+    }
 
-    protected abstract T dispatchTemporalProperty( Temporal property, K param );
+    //not abstract in order to not break existing code, since this was fixed in point release
+    protected T dispatchTemporalProperty( Temporal property, K param )
+    {
+        return dispatchOtherProperty( property, param );
+    }
 
-    protected abstract T dispatchTemporalAmountProperty( TemporalAmount property, K param );
+    //not abstract in order to not break existing code, since this was fixed in point release
+    protected T dispatchTemporalAmountProperty( TemporalAmount property, K param )
+    {
+        return dispatchOtherProperty( property, param );
+    }
 
     protected T dispatchOtherProperty( Object property, K param )
     {

@@ -293,7 +293,7 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
     public static HTTP.Response runQuery( String query, String...contentTypes  )
     {
         String resultDataContents = "";
-        if (contentTypes.length > 0 )
+        if ( contentTypes.length > 0 )
         {
             resultDataContents = ", 'resultDataContents': [" + Arrays.stream( contentTypes )
                     .map( unquoted -> format( "'%s'", unquoted ) ).collect( joining( "," ) ) + "]";
