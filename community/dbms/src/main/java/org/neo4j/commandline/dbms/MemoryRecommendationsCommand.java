@@ -20,6 +20,7 @@
 package org.neo4j.commandline.dbms;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.nio.file.Path;
 import java.util.Locale;
@@ -35,6 +36,7 @@ import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.api.impl.index.storage.FailureStorage;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.internal.NativeIndexFileFilter;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
@@ -241,16 +243,17 @@ public class MemoryRecommendationsCommand implements AdminCommand
 
     private long dbSpecificPageCacheSize( File storeDir )
     {
-        return sumStoreFiles( storeDir ) + sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( false ) );
+        return sumStoreFiles( storeDir ) + sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( storeDir, false ) );
     }
 
     private long dbSpecificLuceneSize( File storeDir )
     {
-        return sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( true ) );
+        return sumIndexFiles( baseSchemaIndexFolder( storeDir ), getNativeIndexFileFilter( storeDir, true ) );
     }
 
-    private FilenameFilter getNativeIndexFileFilter( boolean inverse )
+    private FilenameFilter getNativeIndexFileFilter( File storeDir, boolean inverse )
     {
+        FileFilter nativeIndexFilter = new NativeIndexFileFilter( storeDir );
         return ( dir, name ) ->
         {
             File file = new File( dir, name );
@@ -265,16 +268,7 @@ public class MemoryRecommendationsCommand implements AdminCommand
                 return false;
             }
 
-            Path path = file.toPath();
-            int nameCount = path.getNameCount();
-            // Lucene index files lives in:
-            // - schema/index/lucene_native-x.y/<indexId>/lucene-x.y/x/.....
-            boolean isLuceneFilePart1 = nameCount >= 3 && path.getName( nameCount - 3 ).toString().startsWith( "lucene-" );
-            // - schema/index/lucene/<indexId>/<partition>/.....
-            boolean isLuceneFilePart2 = nameCount >= 4 && path.getName( nameCount - 4 ).toString().equals( "lucene" );
-
-            boolean isLuceneFile = isLuceneFilePart1 || isLuceneFilePart2;
-            return inverse == isLuceneFile;
+            return inverse != nativeIndexFilter.accept( file );
         };
     }
 

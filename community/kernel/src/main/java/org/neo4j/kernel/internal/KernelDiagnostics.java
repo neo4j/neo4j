@@ -20,6 +20,7 @@
 package org.neo4j.kernel.internal;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -75,7 +76,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         {
             logger.log( getDiskSpace( storeDir ) );
             logger.log( "Storage files: (filename : modification date - size)" );
-            MappedFileCounter mappedCounter = new MappedFileCounter();
+            MappedFileCounter mappedCounter = new MappedFileCounter( storeDir );
             long totalSize = logStoreFiles( logger, "  ", storeDir, mappedCounter );
             logger.log( "Storage summary: " );
             logger.log( "  Total size of store: " + Format.bytes( totalSize ) );
@@ -142,11 +143,17 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
 
         private static class MappedFileCounter
         {
+            private final FileFilter mappedIndexFilter;
             private long size;
 
-            public void addFile( File file )
+            MappedFileCounter( File storeDir )
             {
-                if ( StoreType.canBeManagedByPageCache( file.getName() ) )
+                mappedIndexFilter = new NativeIndexFileFilter( storeDir );
+            }
+
+            void addFile( File file )
+            {
+                if ( StoreType.canBeManagedByPageCache( file.getName() ) || mappedIndexFilter.accept( file ) )
                 {
                     size += file.length();
                 }
@@ -157,7 +164,6 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
                 return size;
             }
         }
-
     }
 
     @Override
