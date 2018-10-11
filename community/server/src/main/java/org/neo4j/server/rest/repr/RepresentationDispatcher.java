@@ -33,6 +33,7 @@ import static org.neo4j.server.rest.repr.ValueRepresentation.number;
 import static org.neo4j.server.rest.repr.ValueRepresentation.point;
 import static org.neo4j.server.rest.repr.ValueRepresentation.string;
 import static org.neo4j.server.rest.repr.ValueRepresentation.temporal;
+import static org.neo4j.server.rest.repr.ValueRepresentation.temporalAmount;
 
 /**
  * Converts common primitive and basic objects and arrays of the same into a
@@ -113,6 +114,17 @@ public abstract class RepresentationDispatcher extends PropertyTypeDispatcher<St
         for ( Temporal t : array )
         {
             values.add( temporal( t ) );
+        }
+        return new ListRepresentation( "", values );
+    }
+
+    @Override
+    protected Representation dispatchTemporalAmountArrayProperty( TemporalAmount[] array, String param )
+    {
+        ArrayList<Representation> values = new ArrayList<>();
+        for ( TemporalAmount t : array )
+        {
+            values.add( temporalAmount( t ) );
         }
         return new ListRepresentation( "", values );
     }

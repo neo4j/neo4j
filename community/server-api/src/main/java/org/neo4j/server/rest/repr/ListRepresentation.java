@@ -21,6 +21,7 @@ package org.neo4j.server.rest.repr;
 
 import java.net.URI;
 import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -139,6 +140,24 @@ public class ListRepresentation extends Representation
             protected Representation underlyingObjectToObject( Temporal value )
             {
                 return ValueRepresentation.temporal( value );
+            }
+        } );
+    }
+
+    public static ListRepresentation temporalAmounts( TemporalAmount... values )
+    {
+        return temporalAmount( Arrays.asList( values ) );
+    }
+
+    public static ListRepresentation temporalAmount( Iterable<TemporalAmount> values )
+    {
+        return new ListRepresentation( RepresentationType.TEMPORAL_AMOUNT, new IterableWrapper<Representation, TemporalAmount>(
+                values )
+        {
+            @Override
+            protected Representation underlyingObjectToObject( TemporalAmount value )
+            {
+                return ValueRepresentation.temporalAmount( value );
             }
         } );
     }

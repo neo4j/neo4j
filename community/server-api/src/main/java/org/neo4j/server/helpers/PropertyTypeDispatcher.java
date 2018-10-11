@@ -103,22 +103,10 @@ public abstract class PropertyTypeDispatcher<K, T>
             return dispatchTemporalArrayProperty( (Temporal[]) property, param );
 
         }
-//        else if ( property instanceof LocalDateTime[] )
-//        {
-//        }
-//        else if ( property instanceof LocalTime[] )
-//        {
-//        }
-//        else if ( property instanceof OffsetTime[] )
-//        {
-//        }
-//        else if ( property instanceof LocalDate[] )
-//        {
-//        }
-//        else if ( property instanceof TemporalAmount[] )
-//        {
-//
-//        }
+        else if ( property instanceof TemporalAmount[] )
+        {
+            return dispatchTemporalAmountArrayProperty( (TemporalAmount[]) property, param );
+        }
         else if ( property instanceof Object[] )
         {
             return dispatchOtherArray( (Object[]) property, param );
@@ -731,6 +719,23 @@ public abstract class PropertyTypeDispatcher<K, T>
         {
             @Override
             public Temporal[] getClonedArray()
+            {
+                return property.clone();
+            }
+        }, param );
+    }
+
+    protected T dispatchTemporalAmountArrayProperty( PropertyArray<TemporalAmount[], TemporalAmount> array, K param )
+    {
+        return dispatchArray( array, param );
+    }
+
+    protected T dispatchTemporalAmountArrayProperty( final TemporalAmount[] property, K param )
+    {
+        return dispatchTemporalAmountArrayProperty( new BoxedArray<TemporalAmount[], TemporalAmount>( property )
+        {
+            @Override
+            public TemporalAmount[] getClonedArray()
             {
                 return property.clone();
             }

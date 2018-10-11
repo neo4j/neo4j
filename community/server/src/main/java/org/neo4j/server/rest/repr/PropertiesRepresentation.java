@@ -193,6 +193,18 @@ public final class PropertiesRepresentation extends MappingRepresentation
         }
 
         @Override
+        protected Void dispatchTemporalAmountArrayProperty( TemporalAmount[] property, String param )
+        {
+            ListWriter list = writer.newList( RepresentationType.TEMPORAL_AMOUNT, param );
+            for ( TemporalAmount p : property )
+            {
+                list.writeString( p.toString() );
+            }
+            list.done();
+            return null;
+        }
+
+        @Override
         @SuppressWarnings( "boxing" )
         protected Void dispatchByteArrayProperty( PropertyArray<byte[], Byte> array, String param )
         {

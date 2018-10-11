@@ -696,6 +696,31 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
     }
 
+    @Test
+    public void shouldHandleDurationArraysUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "durations", new Duration[]{duration} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "durations" ).get( 0 );
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
 
     private HTTP.RawPayload queryAsJsonGraph( String query )
     {

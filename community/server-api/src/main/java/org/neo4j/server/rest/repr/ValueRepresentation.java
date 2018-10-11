@@ -83,6 +83,11 @@ public class ValueRepresentation extends Representation
         return new ValueRepresentation( RepresentationType.TEMPORAL, value.toString() );
     }
 
+    public static ValueRepresentation temporalAmount( TemporalAmount value )
+    {
+        return new ValueRepresentation( RepresentationType.TEMPORAL_AMOUNT, value.toString() );
+    }
+
     @SuppressWarnings( "boxing" )
     public static ValueRepresentation number( int value )
     {
@@ -255,6 +260,12 @@ public class ValueRepresentation extends Representation
                 protected Representation dispatchTemporalArrayProperty( Temporal[] property, Void param )
                 {
                     return ListRepresentation.temporals( property );
+                }
+
+                @Override
+                protected Representation dispatchTemporalAmountArrayProperty( TemporalAmount[] property, Void param )
+                {
+                    return ListRepresentation.temporalAmounts( property );
                 }
 
                 @SuppressWarnings( "unchecked" )
