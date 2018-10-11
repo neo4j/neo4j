@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -113,6 +115,11 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
         {
             throw new UncheckedIOException( e );
         }
+    }
+
+    boolean hasOpenOption( OpenOption option )
+    {
+        return ArrayUtils.contains( openOptions, option );
     }
 
     private class NativeIndexTreeMonitor extends GBPTree.Monitor.Adaptor

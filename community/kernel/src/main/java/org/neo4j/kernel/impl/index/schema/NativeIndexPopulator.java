@@ -27,6 +27,7 @@ import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.function.Consumer;
 
@@ -129,7 +130,12 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
         try
         {
             closeTree();
-            deleteFileIfPresent( fileSystem, storeFile );
+            if ( !hasOpenOption( StandardOpenOption.DELETE_ON_CLOSE ) )
+            {
+                // This deletion is guarded by a seemingly unnecessary check of this specific open option, but is checked before deletion
+                // due to observed problems on some Windows versions where the deletion could otherwise throw j.n.f.AccessDeniedException
+                deleteFileIfPresent( fileSystem, storeFile );
+            }
         }
         finally
         {
