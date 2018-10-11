@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
+import java.time.temporal.Temporal;
 import java.util.Arrays;
 import java.util.Iterator;
 
@@ -120,6 +121,24 @@ public class ListRepresentation extends Representation
             protected Representation underlyingObjectToObject( Point value )
             {
                 return ValueRepresentation.point( value );
+            }
+        } );
+    }
+
+    public static ListRepresentation temporals( Temporal... values )
+    {
+        return temporal( Arrays.asList( values ) );
+    }
+
+    public static ListRepresentation temporal( Iterable<Temporal> values )
+    {
+        return new ListRepresentation( RepresentationType.TEMPORAL, new IterableWrapper<Representation, Temporal>(
+                values )
+        {
+            @Override
+            protected Representation underlyingObjectToObject( Temporal value )
+            {
+                return ValueRepresentation.temporal( value );
             }
         } );
     }

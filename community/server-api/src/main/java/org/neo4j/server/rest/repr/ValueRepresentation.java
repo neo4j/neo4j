@@ -78,6 +78,11 @@ public class ValueRepresentation extends Representation
         return new ValueRepresentation( RepresentationType.POINT, value );
     }
 
+    public static ValueRepresentation temporal( Temporal value )
+    {
+        return new ValueRepresentation( RepresentationType.TEMPORAL, value.toString() );
+    }
+
     @SuppressWarnings( "boxing" )
     public static ValueRepresentation number( int value )
     {
@@ -244,6 +249,12 @@ public class ValueRepresentation extends Representation
                 protected Representation dispatchPointArrayProperty( Point[] property, Void param )
                 {
                     return ListRepresentation.points( property );
+                }
+
+                @Override
+                protected Representation dispatchTemporalArrayProperty( Temporal[] property, Void param )
+                {
+                    return ListRepresentation.temporals( property );
                 }
 
                 @SuppressWarnings( "unchecked" )

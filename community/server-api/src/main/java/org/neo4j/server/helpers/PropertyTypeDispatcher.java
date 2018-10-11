@@ -19,22 +19,14 @@
  */
 package org.neo4j.server.helpers;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
-import java.time.OffsetTime;
-import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.ArrayIterator;
-
-import static org.neo4j.helpers.collection.MapUtil.genericMap;
 
 /*
  * THIS CLASS SHOULD BE MOVED TO KERNEL ASAP!!!
@@ -106,10 +98,11 @@ public abstract class PropertyTypeDispatcher<K, T>
         {
             return dispatchPointArrayProperty( (Point[]) property, param );
         }
-        //TODO
-//        else if ( property instanceof ZonedDateTime[] )
-//        {
-//        }
+        else if ( property instanceof Temporal[] )
+        {
+            return dispatchTemporalArrayProperty( (Temporal[]) property, param );
+
+        }
 //        else if ( property instanceof LocalDateTime[] )
 //        {
 //        }
@@ -725,6 +718,23 @@ public abstract class PropertyTypeDispatcher<K, T>
     protected T dispatchPointArrayProperty( PropertyArray<Point[], Point> array, K param )
     {
         return dispatchArray( array, param );
+    }
+
+    protected T dispatchTemporalArrayProperty( PropertyArray<Temporal[], Temporal> array, K param )
+    {
+        return dispatchArray( array, param );
+    }
+
+    protected T dispatchTemporalArrayProperty( final Temporal[] property, K param )
+    {
+        return dispatchTemporalArrayProperty( new BoxedArray<Temporal[], Temporal>( property )
+        {
+            @Override
+            public Temporal[] getClonedArray()
+            {
+                return property.clone();
+            }
+        }, param );
     }
 
     protected T dispatchByteArrayProperty( PropertyArray<byte[], Byte> array, K param )
