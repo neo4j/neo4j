@@ -68,7 +68,7 @@ class JettyHttpConnectionTest
         assertNull( connection.username() );
         connection.updateUser( "hello", "my-http-driver/1.2.3" );
         assertEquals( "hello", connection.username() );
-        assertEquals( "my-bolt-driver/1.2.3", connection.userAgent() );
+        assertEquals( "my-http-driver/1.2.3", connection.userAgent() );
     }
 
     private static JettyHttpConnection newConnection( Connector connector )
