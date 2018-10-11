@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -221,6 +222,7 @@ public class ConsistencyCheckService
             final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
+        assertRecovered( databaseLayout, config, fileSystem, pageCache );
         Log log = logProvider.getLog( getClass() );
         config.augment( GraphDatabaseSettings.read_only, TRUE );
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
@@ -298,6 +300,25 @@ public class ConsistencyCheckService
         return Result.success( reportFile );
     }
 
+    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, PageCache pageCache )
+            throws ConsistencyCheckIncompleteException
+    {
+        RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, config, new Monitors() );
+        try
+        {
+            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
+            {
+                throw new IllegalStateException( "Active logical log detected, this might be a source of inconsistencies. " +
+                        "Please recover database before running the consistency check. " +
+                        "To perform recovery please start database and perform clean shutdown." );
+            }
+        }
+        catch ( IOException | IllegalStateException e )
+        {
+            throw new ConsistencyCheckIncompleteException( e );
+        }
+    }
+
     private static Suppliers.Lazy<PrintWriter> getReportWriterSupplier( FileSystemAbstraction fileSystem, File reportFile )
     {
         return Suppliers.lazySingleton( () ->
@@ -323,6 +344,7 @@ public class ConsistencyCheckService
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
             tuningConfiguration.augment( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
+            tuningConfiguration.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
         }
 
         return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );

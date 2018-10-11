@@ -46,6 +46,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -92,7 +94,8 @@ public class ConsistencyCheckServiceIntegrationTest
         }
     };
 
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
+    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
     @Rule
     public final RuleChain chain = RuleChain.outerRule( testDirectory ).around( fixture );
 
@@ -114,6 +117,26 @@ public class ConsistencyCheckServiceIntegrationTest
         assertThat( "Expected to see report about not deleted relationship record present as part of a chain",
                 Files.readAllLines( reportFile.toPath() ).toString(),
                 containsString( "The relationship record is not in use, but referenced from relationships chain.") );
+    }
+
+    @Test
+    public void shouldFailOnDatabaseInNeedOfRecovery() throws IOException
+    {
+        nonRecoveredDatabase();
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        try
+        {
+            Map<String,String> settings = settings();
+            Config defaults = Config.defaults( settings );
+            runFullConsistencyCheck( service, defaults );
+            fail();
+        }
+        catch ( ConsistencyCheckIncompleteException e )
+        {
+            assertEquals( e.getCause().getMessage(), "Active logical log detected, this might be a source of inconsistencies. " +
+                    "Please recover database before running the consistency check. " +
+                    "To perform recovery please start database and perform clean shutdown." );
+        }
     }
 
     @Test
@@ -361,6 +384,42 @@ public class ConsistencyCheckServiceIntegrationTest
         finally
         {
             db.shutdown();
+        }
+    }
+
+    private void nonRecoveredDatabase() throws IOException
+    {
+        File tmpLogDir = new File( testDirectory.directory(), "logs" );
+        fs.mkdir( tmpLogDir );
+        File storeDir = testDirectory.databaseDir();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( storeDir )
+                .setConfig( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .setConfig( "dbms.backup.enabled", "false" )
+                .newGraphDatabase();
+
+        RelationshipType relationshipType = RelationshipType.withName( "testRelationshipType" );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node1 = set( db.createNode() );
+            Node node2 = set( db.createNode(), property( "key", "value" ) );
+            node1.createRelationshipTo( node2, relationshipType );
+            tx.success();
+        }
+        File[] txLogs = LogFilesBuilder.logFilesBasedOnlyBuilder( storeDir, fs ).build().logFiles();
+        for ( File file : txLogs )
+        {
+            fs.copyToDirectory( file, tmpLogDir );
+        }
+        db.shutdown();
+        for ( File txLog : txLogs )
+        {
+            fs.deleteFile( txLog );
+        }
+
+        for ( File file : LogFilesBuilder.logFilesBasedOnlyBuilder( tmpLogDir, fs ).build().logFiles() )
+        {
+            fs.moveToDirectory( file, storeDir );
         }
     }
 
