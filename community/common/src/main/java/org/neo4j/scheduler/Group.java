@@ -80,6 +80,7 @@ public enum Group
     MEMBERSHIP_WAITER( "MembershipWaiter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP( "Catchup" ),
+    THROUGHPUT_MONITOR( "ThroughputMonitor" ),
 
     // HA.
     /** Push transactions from master to slaves */
