@@ -98,21 +98,17 @@ import static org.neo4j.backup.impl.OnlineBackupContextBuilder.ARG_NAME_FALLBACK
 @RunWith( Parameterized.class )
 public class OnlineBackupCommandCcIT
 {
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-
-    @Rule
-    public ClusterRule clusterRule = new ClusterRule()
+    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule );
+    private final PageCacheRule pageCacheRule = new PageCacheRule();
+    private ClusterRule clusterRule = new ClusterRule()
             .withNumberOfCoreMembers( 3 )
             .withNumberOfReadReplicas( 3 )
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" );
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( SuppressOutput.suppressAll() ).around( clusterRule );
+    public final RuleChain ruleChain =
+            RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( clusterRule );
 
     private File backupDir;
 
@@ -486,7 +482,7 @@ public class OnlineBackupCommandCcIT
         assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
     }
 
-    private String arg( String key, Object value )
+    static String arg( String key, Object value )
     {
         return "--" + key + "=" + value;
     }
