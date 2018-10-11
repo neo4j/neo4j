@@ -404,6 +404,27 @@ class LoadCsvAcceptanceTest
     }
   }
 
+  test("should handle returning null keys") {
+    val urls = csvUrls({
+      writer =>
+        writer.println("DEPARTMENT ID;DEPARTMENT NAME;")
+        writer.println("010-1010;MFG Supplies;")
+        writer.println("010-1011;Corporate Procurement;")
+        writer.println("010-1015;MFG - Engineering HQ;")
+    })
+
+    for (url <- urls) {
+      //Using innerExecuteDeprecated because different versions has different ordering for keys
+      val result =  innerExecuteDeprecated(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN keys(line)").toList
+
+      assert(result === List(
+        Map("keys(line)" -> List(null, "DEPARTMENT ID", "DEPARTMENT NAME" )),
+        Map("keys(line)" -> List(null, "DEPARTMENT ID", "DEPARTMENT NAME" )),
+        Map("keys(line)" -> List(null, "DEPARTMENT ID", "DEPARTMENT NAME" ))
+      ))
+    }
+  }
+
   test("should fail gracefully when loading missing file") {
     failWithError(expectedToFail, "LOAD CSV FROM 'file:///./these_are_not_the_droids_you_are_looking_for.csv' AS line CREATE (a {name:line[0]})",
       List("Couldn't load the external resource at: file:/./these_are_not_the_droids_you_are_looking_for.csv"))

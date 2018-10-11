@@ -112,7 +112,7 @@ public class StringArray extends TextArray
     @Override
     public AnyValue value( int offset )
     {
-        return Values.stringValue( stringValue( offset ) );
+        return Values.stringOrNoValue( stringValue( offset ) );
     }
 
     @Override
