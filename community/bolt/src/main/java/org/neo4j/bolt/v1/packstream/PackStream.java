@@ -153,8 +153,6 @@ public class PackStream
 
     private static final long PLUS_2_TO_THE_31 = 2147483648L;
     private static final long PLUS_2_TO_THE_15 = 32768L;
-    private static final long PLUS_2_TO_THE_16  = 65536L;
-    private static final long PLUS_2_TO_THE_8  = 256L;
     private static final long PLUS_2_TO_THE_7 = 128L;
     private static final long MINUS_2_TO_THE_4 = -16L;
     private static final long MINUS_2_TO_THE_7 = -128L;
@@ -387,11 +385,11 @@ public class PackStream
             {
                 out.writeShort( (short) ((byte) (TINY_STRUCT | size) << 8 | (signature & 0xFF)) );
             }
-            else if ( size < PLUS_2_TO_THE_8 )
+            else if ( size <= Byte.MAX_VALUE )
             {
                 out.writeByte( STRUCT_8 ).writeByte( (byte) size ).writeByte( signature );
             }
-            else if ( size < PLUS_2_TO_THE_16 )
+            else if ( size <= Short.MAX_VALUE )
             {
                 out.writeByte( STRUCT_16 ).writeShort( (short) size ).writeByte( signature );
             }
@@ -408,11 +406,17 @@ public class PackStream
 
         private void packHeader( int size, byte marker8, byte marker16, byte marker32 ) throws IOException
         {
-            if ( size < PLUS_2_TO_THE_8 )
+            /*
+            * The code here is on purpose to test against the maximum value of a signed byte rather than a unsigned byte.
+            * We pack values that in range 2^7 ~ 2^8-1 with marker16 instead of marker8
+            * to prevent us from breaking any clients that are reading this size as a signed value.
+            * Similar case applies to Short.MAX_VALUE
+            * */
+            if ( size <= Byte.MAX_VALUE )
             {
                 out.writeShort( (short) (marker8 << 8 | size) );
             }
-            else if ( size < PLUS_2_TO_THE_16 )
+            else if ( size <= Short.MAX_VALUE )
             {
                 out.writeByte( marker16 ).writeShort( (short) size );
             }
