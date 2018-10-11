@@ -44,6 +44,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -139,12 +140,15 @@ public class BuiltInProcedures
 
                     String label = tokenRead.nodeLabelName( index.label() );
                     List<String> propertyNames = propertyNames( tokens, index );
-                    result.add( new IndexResult( "INDEX ON " +
-                                                 SchemaDescriptorFactory.forLabel( index.label(), index.properties() )
-                                                         .userDescription( tokens ), label,
-                            propertyNames,
-                            schemaRead.indexGetState( index ).toString(), type,
-                            indexProviderDescriptorMap( schemaRead.index( index.label(), index.properties() ) ) ) );
+                    InternalIndexState internalIndexState = schemaRead.indexGetState( index );
+                    String failureMessage = "";
+                    if ( internalIndexState == InternalIndexState.FAILED )
+                    {
+                        failureMessage = schemaRead.indexGetFailure( index );
+                    }
+                    String description = "INDEX ON " + SchemaDescriptorFactory.forLabel( index.label(), index.properties() ).userDescription( tokens );
+                    Map<String,String> provider = indexProviderDescriptorMap( schemaRead.index( index.label(), index.properties() ) );
+                    result.add( new IndexResult( description, label, propertyNames, internalIndexState.toString(), type, provider, failureMessage ) );
                 }
                 catch ( IndexNotFoundKernelException e )
                 {
@@ -851,9 +855,10 @@ public class BuiltInProcedures
         public final String state;
         public final String type;
         public final Map<String,String> provider;
+        public final String failureMessage;
 
-        private IndexResult( String description, String label, List<String> properties, String state, String type,
-                Map<String,String> provider )
+        public IndexResult( String description, String label, List<String> properties, String state, String type,
+                Map<String,String> provider, String failureMessage )
         {
             this.description = description;
             this.label = label;
@@ -861,6 +866,7 @@ public class BuiltInProcedures
             this.state = state;
             this.type = type;
             this.provider = provider;
+            this.failureMessage = failureMessage;
         }
     }
 
