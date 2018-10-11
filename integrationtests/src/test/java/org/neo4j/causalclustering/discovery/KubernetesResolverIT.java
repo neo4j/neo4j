@@ -41,6 +41,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -168,24 +169,24 @@ public class KubernetesResolverIT
         }
     }
 
-    private String failJson() throws IOException
+    private String failJson() throws IOException, URISyntaxException
     {
         return readJsonFile( "authFail.json" );
     }
 
-    private String shortJson() throws IOException
+    private String shortJson() throws IOException, URISyntaxException
     {
         return readJsonFile( "short.json" );
     }
 
-    private String longJson() throws IOException
+    private String longJson() throws IOException, URISyntaxException
     {
         return readJsonFile( "long.json" );
     }
 
-    private String readJsonFile( final String fileName ) throws IOException
+    private String readJsonFile( final String fileName ) throws IOException, URISyntaxException
     {
-        Path path = Paths.get( getClass().getResource( "/org.neo4j.causalclustering.discovery/" + fileName ).getPath() );
+        Path path = Paths.get( getClass().getResource( "/org.neo4j.causalclustering.discovery/" + fileName ).toURI() );
         String fullFile = Files.lines( path ).collect( Collectors.joining( "\n" ) );
         return String.format( fullFile, testServiceName, testPortName, testPortNumber );
     }
