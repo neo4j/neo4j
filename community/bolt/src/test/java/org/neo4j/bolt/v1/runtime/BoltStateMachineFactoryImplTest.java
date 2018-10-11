@@ -30,6 +30,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
 import org.neo4j.bolt.security.auth.Authentication;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
@@ -55,7 +56,7 @@ class BoltStateMachineFactoryImplTest
 {
     private static final String CUSTOM_DB_NAME = "customDbName";
     private static final Clock CLOCK = Clock.systemUTC();
-    private static final BoltChannel CHANNEL = mock( BoltChannel.class );
+    private static final BoltChannel CHANNEL = BoltTestUtil.newTestBoltChannel();
 
     @ParameterizedTest( name = "V{0}" )
     @ValueSource( longs = {BoltProtocolV1.VERSION, BoltProtocolV2.VERSION} )

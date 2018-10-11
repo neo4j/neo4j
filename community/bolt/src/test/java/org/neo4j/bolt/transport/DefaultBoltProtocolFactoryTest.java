@@ -30,6 +30,7 @@ import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
@@ -50,7 +51,7 @@ class DefaultBoltProtocolFactoryTest
     void shouldCreateNothingForUnknownProtocolVersion()
     {
         int protocolVersion = 42;
-        BoltChannel channel = mock( BoltChannel.class );
+        BoltChannel channel = BoltTestUtil.newTestBoltChannel();
         BoltProtocolFactory factory =
                 new DefaultBoltProtocolFactory( mock( BoltConnectionFactory.class ), mock( BoltStateMachineFactory.class ),
                         NullLogService.getInstance() );

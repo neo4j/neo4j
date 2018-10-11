@@ -36,6 +36,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
@@ -59,7 +60,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
@@ -74,7 +74,8 @@ public class TransactionIT
 {
     private static final String USER_AGENT = "TransactionIT/0.0";
     private static final Pattern BOOKMARK_PATTERN = Pattern.compile( "neo4j:bookmark:v1:tx[0-9]+" );
-    private static final BoltChannel boltChannel = mock( BoltChannel.class );
+    private static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel();
+
     @Rule
     public SessionRule env = new SessionRule();
     @Rule
@@ -85,7 +86,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( boltChannel );
+        BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
@@ -109,7 +110,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( boltChannel );
+        BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
@@ -134,7 +135,7 @@ public class TransactionIT
         // Given
         BoltResponseRecorder runRecorder = new BoltResponseRecorder();
         BoltResponseRecorder pullAllRecorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( boltChannel );
+        BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
@@ -151,7 +152,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( boltChannel );
+        BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
@@ -178,7 +179,7 @@ public class TransactionIT
     {
         // Given
         BoltResponseRecorder recorder = new BoltResponseRecorder();
-        BoltStateMachine machine = env.newMachine( boltChannel );
+        BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
 
         // When
@@ -214,7 +215,7 @@ public class TransactionIT
 
         long dbVersion = env.lastClosedTxId();
         Thread thread = new Thread( () -> {
-            try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
+            try ( BoltStateMachine machine = env.newMachine( BOLT_CHANNEL ) )
             {
                 machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
                 latch.await();
@@ -229,7 +230,7 @@ public class TransactionIT
         thread.start();
 
         long dbVersionAfterWrite = dbVersion + 1;
-        try ( BoltStateMachine machine = env.newMachine( boltChannel ) )
+        try ( BoltStateMachine machine = env.newMachine( BOLT_CHANNEL ) )
         {
             BoltResponseRecorder recorder = new BoltResponseRecorder();
             machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
@@ -273,7 +274,7 @@ public class TransactionIT
         final BoltStateMachine[] machine = {null};
 
         Thread thread = new Thread( () -> {
-            try ( BoltStateMachine stateMachine = env.newMachine( mock( BoltChannel.class ) ) )
+            try ( BoltStateMachine stateMachine = env.newMachine( BOLT_CHANNEL ) )
             {
                 machine[0] = stateMachine;
                 stateMachine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
@@ -326,7 +327,7 @@ public class TransactionIT
     public void shouldInterpretEmptyStatementAsReuseLastStatementInAutocommitTransaction() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( boltChannel );
+        final BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
@@ -345,7 +346,7 @@ public class TransactionIT
     public void shouldInterpretEmptyStatementAsReuseLastStatementInExplicitTransaction() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( boltChannel );
+        final BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
@@ -368,7 +369,7 @@ public class TransactionIT
     public void beginShouldNotOverwriteLastStatement() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( boltChannel );
+        final BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
@@ -391,7 +392,7 @@ public class TransactionIT
     public void shouldCloseAutoCommitTransactionAndRespondToNextStatementWhenRunFails() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( boltChannel );
+        final BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 
@@ -415,7 +416,7 @@ public class TransactionIT
     public void shouldCloseAutoCommitTransactionAndRespondToNextStatementWhenStreamingFails() throws Throwable
     {
         // Given
-        final BoltStateMachine machine = env.newMachine( boltChannel );
+        final BoltStateMachine machine = env.newMachine( BOLT_CHANNEL );
         machine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
         BoltResponseRecorder recorder = new BoltResponseRecorder();
 

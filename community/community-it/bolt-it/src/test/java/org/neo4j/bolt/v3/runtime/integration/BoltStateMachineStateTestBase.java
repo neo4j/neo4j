@@ -19,10 +19,10 @@
  */
 package org.neo4j.bolt.v3.runtime.integration;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import org.neo4j.bolt.BoltChannel;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.HelloMessage;
@@ -30,27 +30,18 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 class BoltStateMachineStateTestBase
 {
     protected static final MapValue EMPTY_PARAMS = VirtualValues.EMPTY_MAP;
     protected static final String USER_AGENT = "BoltConnectionIT/0.0";
-    protected static final BoltChannel boltChannel = mock( BoltChannel.class );
-
-    @BeforeEach
-    void setup()
-    {
-        when( boltChannel.id() ).thenReturn( "conn-v3-test-boltchannel-id" );
-    }
+    protected static final BoltChannel BOLT_CHANNEL = BoltTestUtil.newTestBoltChannel( "conn-v3-test-boltchannel-id" );
 
     @RegisterExtension
     static final SessionExtension env = new SessionExtension();
 
     protected BoltStateMachineV3 newStateMachine()
     {
-        return (BoltStateMachineV3) env.newMachine( BoltProtocolV3.VERSION, boltChannel );
+        return (BoltStateMachineV3) env.newMachine( BoltProtocolV3.VERSION, BOLT_CHANNEL );
     }
 
     protected static HelloMessage newHelloMessage()

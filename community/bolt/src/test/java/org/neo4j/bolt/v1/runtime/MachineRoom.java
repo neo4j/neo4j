@@ -27,6 +27,7 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationException;
+import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
@@ -62,7 +63,7 @@ public class MachineRoom
 
     public static BoltStateMachine newMachine( BoltStateMachineV1SPI spi )
     {
-        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
         return new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
     }
 
@@ -80,7 +81,7 @@ public class MachineRoom
         BoltStateMachineSPI spi = mock( BoltStateMachineSPI.class, RETURNS_MOCKS );
         when( spi.transactionSpi() ).thenReturn( transactionSPI );
 
-        BoltChannel boltChannel = mock( BoltChannel.class );
+        BoltChannel boltChannel = BoltTestUtil.newTestBoltChannel();
         BoltStateMachine machine = new BoltStateMachineV1( spi, boltChannel, Clock.systemUTC() );
         init( machine );
         return machine;
