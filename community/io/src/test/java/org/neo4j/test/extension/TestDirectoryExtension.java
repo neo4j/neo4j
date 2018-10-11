@@ -46,7 +46,7 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
     public void afterEach( ExtensionContext context ) throws Exception
     {
         TestDirectory testDirectory = getStoredValue( context );
-        testDirectory.complete( context.getExecutionException().isPresent() );
+        testDirectory.complete( !context.getExecutionException().isPresent() );
     }
 
     @Override

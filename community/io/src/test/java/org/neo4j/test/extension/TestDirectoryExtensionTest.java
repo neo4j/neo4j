@@ -21,6 +21,10 @@ package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.platform.launcher.Launcher;
+import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
+import org.junit.platform.launcher.core.LauncherFactory;
 
 import java.io.File;
 import java.nio.file.Path;
@@ -30,9 +34,15 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
+import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.INSTANCE;
+import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class TestDirectoryExtensionTest
@@ -70,5 +80,33 @@ class TestDirectoryExtensionTest
         File file = testDirectory.createFile( "a" );
         assertEquals( "a", file.getName() );
         assertTrue( fileSystem.fileExists( file ) );
+    }
+
+    @Test
+    void failedTestShouldKeepDirectory()
+    {
+        assertNull( INSTANCE.getValue( FAILED_TEST_FILE_KEY ) );
+        execute( "failAndKeepDirectory" );
+        File failedFile = INSTANCE.getValue( FAILED_TEST_FILE_KEY );
+        assertNotNull( failedFile );
+        assertTrue( failedFile.exists() );
+    }
+
+    @Test
+    void successfulTestShouldCleanupDirectory()
+    {
+        assertNull( INSTANCE.getValue( SUCCESSFUL_TEST_FILE_KEY ) );
+        execute( "executeAndCleanupDirectory" );
+        File greenTestFail = INSTANCE.getValue( SUCCESSFUL_TEST_FILE_KEY );
+        assertNotNull( greenTestFail );
+        assertFalse( greenTestFail.exists() );
+    }
+
+    private static void execute( String failAndKeepDirectory )
+    {
+        LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request().selectors(
+                selectMethod( DirectoryExtensionLifecycleVerification.class, failAndKeepDirectory ) ).build();
+        Launcher launcher = LauncherFactory.create();
+        launcher.execute( discoveryRequest );
     }
 }

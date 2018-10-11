@@ -50,7 +50,7 @@ public class TestDirectoryClassExtension implements BeforeAllCallback, AfterAllC
     {
         try
         {
-            testDirectory.complete( context.getExecutionException().isPresent() );
+            testDirectory.complete( !context.getExecutionException().isPresent() );
         }
         catch ( IOException e )
         {

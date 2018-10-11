@@ -97,6 +97,7 @@
     <scala.java.additional.args/>
     <jersey.version>1.19.3</jersey.version>
     <junit.version>5.2.0</junit.version>
+    <junit.platform.version>1.2.0</junit.platform.version>
     <currentYear>2018</currentYear>
     <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
