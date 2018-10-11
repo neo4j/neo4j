@@ -105,8 +105,8 @@ public class TxStateTransactionDataViewTest
         int labelId = 15;
         when( tokenRead.nodeLabelName( labelId ) ).thenReturn( "label" );
 
-        ops.withNode( 1, new long[]{labelId}, genericMap( "key", Values.of( "p" ) ) );
-        ops.withNode( 2, NO_LABELS );
+        ops.withNode( 1 ).labels( labelId ).properties( "key", Values.of( "p" ) );
+        ops.withNode( 2 );
 
         // When & Then
         TxStateTransactionDataSnapshot snapshot = snapshot();
@@ -134,7 +134,7 @@ public class TxStateTransactionDataViewTest
         state.relationshipDoDelete( 2L, 1, 1L, 1L );
 
         ops.withRelationship( 1, 1, 1, 2 );
-        ops.withRelationship( 2, 1, 1, 1, genericMap( "key", Values.of( "p") ) );
+        ops.withRelationship( 2, 1, 1, 1 ).properties( "key", Values.of( "p" ) );
 
         // When & Then
         TxStateTransactionDataSnapshot snapshot = snapshot();
@@ -176,7 +176,7 @@ public class TxStateTransactionDataViewTest
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         Value prevValue = Values.of( "prevValue" );
         state.nodeDoChangeProperty( 1L, propertyKeyId, Values.of( "newValue" ) );
-        ops.withNode( 1, NO_LABELS, genericMap( "theKey", prevValue ) );
+        ops.withNode( 1 ).properties( "theKey", prevValue );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().assignedNodeProperties();
@@ -196,7 +196,7 @@ public class TxStateTransactionDataViewTest
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         Value prevValue = Values.of( "prevValue" );
         state.nodeDoRemoveProperty( 1L, propertyKeyId );
-        ops.withNode( 1, NO_LABELS, genericMap( "theKey", prevValue ) );
+        ops.withNode( 1 ).properties( "theKey", prevValue );
 
         // When
         Iterable<PropertyEntry<Node>> propertyEntries = snapshot().removedNodeProperties();
@@ -215,7 +215,7 @@ public class TxStateTransactionDataViewTest
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         Value prevValue = Values.of( "prevValue" );
         state.relationshipDoRemoveProperty( 1L, propertyKeyId );
-        ops.withRelationship( 1, 0, 0, 0, genericMap( "theKey", prevValue ) );
+        ops.withRelationship( 1, 0, 0, 0 ).properties( "theKey", prevValue );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().removedRelationshipProperties();
@@ -234,7 +234,7 @@ public class TxStateTransactionDataViewTest
         Value prevValue = Values.of( "prevValue" );
         int propertyKeyId = ops.propertyKeyTokenHolder().getOrCreateId( "theKey" );
         state.relationshipDoReplaceProperty( 1L, propertyKeyId, prevValue, Values.of( "newValue" ) );
-        ops.withRelationship( 1, 0, 0, 0, genericMap( "theKey", prevValue ) );
+        ops.withRelationship( 1, 0, 0, 0 ).properties( "theKey", prevValue );
 
         // When
         Iterable<PropertyEntry<Relationship>> propertyEntries = snapshot().assignedRelationshipProperties();

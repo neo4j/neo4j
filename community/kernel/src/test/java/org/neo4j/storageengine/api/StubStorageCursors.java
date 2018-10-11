@@ -19,7 +19,6 @@
  */
 package org.neo4j.storageengine.api;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -30,6 +29,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -39,6 +39,8 @@ import org.neo4j.values.storable.ValueGroup;
 import static java.lang.Math.toIntExact;
 import static java.util.Collections.emptyIterator;
 import static org.apache.commons.lang3.ArrayUtils.contains;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
 
 /**
@@ -62,29 +64,18 @@ public class StubStorageCursors implements StorageReader
     private final Map<Long,PropertyData> propertyData = new HashMap<>();
     private final Map<Long,RelationshipData> relationshipData = new HashMap<>();
 
-    public void withNode( long id )
+    public NodeData withNode( long id )
     {
-        withNode( id, new long[0] );
+        NodeData node = new NodeData( id );
+        nodeData.put( id, node );
+        return node;
     }
 
-    public void withNode( long id, long[] labels )
+    public RelationshipData withRelationship( long id, long startNode, int type, long endNode )
     {
-        withNode( id, labels, Collections.emptyMap() );
-    }
-
-    public void withNode( long id, long[] labels, Map<String,Value> properties )
-    {
-        nodeData.put( id, new NodeData( id, labels, NO_ID, propertyIdOf( properties ) ) );
-    }
-
-    public void withRelationship( long id, long startNode, int type, long endNode )
-    {
-        withRelationship( id, startNode, type, endNode, Collections.emptyMap() );
-    }
-
-    public void withRelationship( long id, long startNode, int type, long endNode, Map<String,Value> properties )
-    {
-        relationshipData.put( id, new RelationshipData( id, startNode, type, endNode, propertyIdOf( properties ) ) );
+        RelationshipData data = new RelationshipData( id, startNode, type, endNode );
+        relationshipData.put( id, data );
+        return data;
     }
 
     private long propertyIdOf( Map<String,Value> properties )
@@ -359,37 +350,75 @@ public class StubStorageCursors implements StorageReader
         return new StubStorageRelationshipScanCursor();
     }
 
-    private static class NodeData
+    public class Data<SELF>
     {
-        private final long id;
-        private final long[] labels;
-        private final long firstRelationship;
-        private final long propertyId;
+        boolean inUse = true;
 
-        NodeData( long id, long[] labels, long firstRelationship, long propertyId )
+        public SELF inUse( boolean inUse )
         {
-            this.id = id;
-            this.labels = labels;
-            this.firstRelationship = firstRelationship;
-            this.propertyId = propertyId;
+            this.inUse = inUse;
+            return (SELF) this;
         }
     }
 
-    private static class RelationshipData
+    class EntityData<SELF> extends Data<SELF>
+    {
+        long propertyId = Record.NO_NEXT_PROPERTY.longValue();
+
+        public SELF propertyId( long propertyId )
+        {
+            this.propertyId = propertyId;
+            return (SELF) this;
+        }
+
+        public SELF properties( Map<String,Value> properties )
+        {
+            return propertyId( propertyIdOf( properties ) );
+        }
+
+        public SELF properties( Object... properties )
+        {
+            return properties( genericMap( properties ) );
+        }
+    }
+
+    public class NodeData extends EntityData<NodeData>
+    {
+        private final long id;
+        private long[] labels = EMPTY_LONG_ARRAY;
+        private long firstRelationship = Record.NO_NEXT_RELATIONSHIP.longValue();
+
+        NodeData( long id )
+        {
+            this.id = id;
+        }
+
+        public NodeData labels( long... labels )
+        {
+            this.labels = labels;
+            return this;
+        }
+
+        public NodeData relationship( long firstRelationship )
+        {
+            this.firstRelationship = firstRelationship;
+            return this;
+        }
+    }
+
+    public class RelationshipData extends EntityData<RelationshipData>
     {
         private final long id;
         private final long startNode;
         private final int type;
         private final long endNode;
-        private final long propertyId;
 
-        RelationshipData( long id, long startNode, int type, long endNode, long propertyId )
+        RelationshipData( long id, long startNode, int type, long endNode )
         {
             this.id = id;
             this.startNode = startNode;
             this.type = type;
             this.endNode = endNode;
-            this.propertyId = propertyId;
         }
     }
 
@@ -413,6 +442,7 @@ public class StubStorageCursors implements StorageReader
         public void scan()
         {
             this.iterator = nodeData.keySet().iterator();
+            this.current = null;
         }
 
         @Override
@@ -470,8 +500,16 @@ public class StubStorageCursors implements StorageReader
             if ( iterator != null )
             {
                 // scan
-                current = iterator.hasNext() ? nodeData.get( iterator.next() ) : null;
-                return true;
+                while ( iterator.hasNext() )
+                {
+                    current = nodeData.get( iterator.next() );
+                    if ( current.inUse )
+                    {
+                        return true;
+                    }
+                }
+                current = null;
+                return false;
             }
             else
             {
@@ -479,7 +517,7 @@ public class StubStorageCursors implements StorageReader
                 {
                     current = nodeData.get( next );
                     next = NO_ID;
-                    return true;
+                    return current.inUse;
                 }
             }
             return false;
