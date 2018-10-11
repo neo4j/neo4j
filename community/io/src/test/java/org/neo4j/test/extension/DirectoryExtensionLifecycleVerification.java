@@ -27,8 +27,8 @@ import java.io.File;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
-import static org.neo4j.test.extension.ExecutionSharedContext.INSTANCE;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 /**
@@ -39,21 +39,21 @@ import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FI
 class DirectoryExtensionLifecycleVerification
 {
     @Inject
-    TestDirectory directory;
+    private TestDirectory directory;
 
     @Test
     void executeAndCleanupDirectory()
     {
         File file = directory.createFile( "a" );
         assertTrue( file.exists() );
-        INSTANCE.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
+        CONTEXT.setValue( SUCCESSFUL_TEST_FILE_KEY, file );
     }
 
     @Test
     void failAndKeepDirectory()
     {
         File file = directory.createFile( "b" );
-        INSTANCE.setValue( FAILED_TEST_FILE_KEY, file );
+        CONTEXT.setValue( FAILED_TEST_FILE_KEY, file );
         throw new RuntimeException( "simulate test failure" );
     }
 }

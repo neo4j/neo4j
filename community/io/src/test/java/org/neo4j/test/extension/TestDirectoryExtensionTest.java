@@ -36,12 +36,11 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
+import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
-import static org.neo4j.test.extension.ExecutionSharedContext.INSTANCE;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -85,9 +84,9 @@ class TestDirectoryExtensionTest
     @Test
     void failedTestShouldKeepDirectory()
     {
-        assertNull( INSTANCE.getValue( FAILED_TEST_FILE_KEY ) );
+        CONTEXT.clear();
         execute( "failAndKeepDirectory" );
-        File failedFile = INSTANCE.getValue( FAILED_TEST_FILE_KEY );
+        File failedFile = CONTEXT.getValue( FAILED_TEST_FILE_KEY );
         assertNotNull( failedFile );
         assertTrue( failedFile.exists() );
     }
@@ -95,17 +94,17 @@ class TestDirectoryExtensionTest
     @Test
     void successfulTestShouldCleanupDirectory()
     {
-        assertNull( INSTANCE.getValue( SUCCESSFUL_TEST_FILE_KEY ) );
+        CONTEXT.clear();
         execute( "executeAndCleanupDirectory" );
-        File greenTestFail = INSTANCE.getValue( SUCCESSFUL_TEST_FILE_KEY );
+        File greenTestFail = CONTEXT.getValue( SUCCESSFUL_TEST_FILE_KEY );
         assertNotNull( greenTestFail );
         assertFalse( greenTestFail.exists() );
     }
 
-    private static void execute( String failAndKeepDirectory )
+    private static void execute( String testName )
     {
         LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request().selectors(
-                selectMethod( DirectoryExtensionLifecycleVerification.class, failAndKeepDirectory ) ).build();
+                selectMethod( DirectoryExtensionLifecycleVerification.class, testName ) ).build();
         Launcher launcher = LauncherFactory.create();
         launcher.execute( discoveryRequest );
     }

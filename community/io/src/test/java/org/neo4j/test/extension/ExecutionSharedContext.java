@@ -23,14 +23,19 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class ExecutionSharedContext
 {
-    public static final String FAILED_TEST_FILE_KEY = "failedFileName";
-    public static final String SUCCESSFUL_TEST_FILE_KEY = "successfulFileName";
-    private static final ConcurrentHashMap<String,Object> context = new ConcurrentHashMap();
+    static final String FAILED_TEST_FILE_KEY = "failedFileName";
+    static final String SUCCESSFUL_TEST_FILE_KEY = "successfulFileName";
+    private static final ConcurrentHashMap<String,Object> context = new ConcurrentHashMap<>();
 
-    public static final ExecutionSharedContext INSTANCE = new ExecutionSharedContext();
+    public static final ExecutionSharedContext CONTEXT = new ExecutionSharedContext();
 
     private ExecutionSharedContext()
     {
+    }
+
+    public void clear()
+    {
+        context.clear();
     }
 
     public <T> T getValue( String key )
