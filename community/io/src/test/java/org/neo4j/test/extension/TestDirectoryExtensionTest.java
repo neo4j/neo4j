@@ -103,8 +103,10 @@ class TestDirectoryExtensionTest
 
     private static void execute( String testName )
     {
-        LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request().selectors(
-                selectMethod( DirectoryExtensionLifecycleVerification.class, testName ) ).build();
+        LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
+                .selectors( selectMethod( DirectoryExtensionLifecycleVerificationTest.class, testName ))
+                .configurationParameter( "extensionTest", "true" )
+                .build();
         Launcher launcher = LauncherFactory.create();
         launcher.execute( discoveryRequest );
     }

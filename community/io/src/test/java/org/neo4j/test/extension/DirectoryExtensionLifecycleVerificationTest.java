@@ -20,23 +20,25 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ConditionEvaluationResult;
+import org.junit.jupiter.api.extension.ExecutionCondition;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.io.File;
+import java.util.Optional;
 
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
-/**
- * This test class name should not match default test name pattern since it should not be executed by default test launcher
- * Its executed by custom test junit launcher to test extensions lifecycle
- */
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
-class DirectoryExtensionLifecycleVerification
+@ExtendWith( DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class )
+class DirectoryExtensionLifecycleVerificationTest
 {
     @Inject
     private TestDirectory directory;
@@ -55,5 +57,16 @@ class DirectoryExtensionLifecycleVerification
         File file = directory.createFile( "b" );
         CONTEXT.setValue( FAILED_TEST_FILE_KEY, file );
         throw new RuntimeException( "simulate test failure" );
+    }
+
+    static class ConfigurationParameterCondition implements ExecutionCondition
+    {
+
+        @Override
+        public ConditionEvaluationResult evaluateExecutionCondition( ExtensionContext context )
+        {
+            Optional<String> option = context.getConfigurationParameter( "extensionTest" );
+            return option.map( ConditionEvaluationResult::enabled ).orElseGet( () -> disabled( "configuration parameter not present" ) );
+        }
     }
 }
