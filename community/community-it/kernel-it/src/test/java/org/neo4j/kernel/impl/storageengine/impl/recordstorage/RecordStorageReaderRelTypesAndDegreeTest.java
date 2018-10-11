@@ -637,7 +637,7 @@ public class RecordStorageReaderRelTypesAndDegreeTest extends RecordStorageReade
 
     private static <R extends AbstractBaseRecord> R getRecord( RecordStore<R> store, long id )
     {
-        return RecordStore.getRecord( store, id, RecordLoad.FORCE );
+        return store.getRecord( id, store.newRecord(), RecordLoad.FORCE );
     }
 
     private NodeRecord getNodeRecord( long id )

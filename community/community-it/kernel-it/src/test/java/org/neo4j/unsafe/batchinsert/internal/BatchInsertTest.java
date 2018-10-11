@@ -129,7 +129,6 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
-import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.mockito.matcher.CollectionMatcher.matchesCollection;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
@@ -1129,7 +1128,8 @@ public class BatchInsertTest
         }
 
         NeoStores neoStores = getFlushedNeoStores( inserter );
-        NodeRecord record = getRecord( neoStores.getNodeStore(), node1 );
+        NodeStore nodeStore = neoStores.getNodeStore();
+        NodeRecord record = nodeStore.getRecord( node1, nodeStore.newRecord(), NORMAL );
         assertTrue( "Node " + record + " should have been dense", record.isDense() );
     }
 

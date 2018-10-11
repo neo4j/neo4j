@@ -61,7 +61,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 import static org.neo4j.test.rule.PageCacheConfig.config;
 
@@ -223,10 +222,10 @@ class RelationshipGroupStoreTest
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord nodeRecord = getRecord( nodeStore, node.getId() );
+        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL );
         long group = nodeRecord.getNextRel();
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
+        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL );
         assertEquals( -1, groupRecord.getNext() );
         assertEquals( -1, groupRecord.getPrev() );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(), rel4.getId() );
@@ -260,16 +259,16 @@ class RelationshipGroupStoreTest
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord nodeRecord = getRecord( nodeStore, node.getId() );
+        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL );
         long group = nodeRecord.getNextRel();
 
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
+        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL );
         assertNotEquals( groupRecord.getNext(), -1 );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, groupRecord.getFirstOut(), rel1.getId(),
                 rel2.getId(), rel3.getId() );
 
-        RelationshipGroupRecord otherGroupRecord = RecordStore.getRecord( groupStore, groupRecord.getNext() );
+        RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(), NORMAL );
         assertEquals( -1, otherGroupRecord.getNext() );
         assertRelationshipChain( neoStores.getRelationshipStore(), node, otherGroupRecord.getFirstOut(), rel4.getId(),
                 rel5.getId(), rel6.getId() );
@@ -295,11 +294,11 @@ class RelationshipGroupStoreTest
 
         NeoStores neoStores = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
         NodeStore nodeStore = neoStores.getNodeStore();
-        NodeRecord nodeRecord = getRecord( nodeStore, node.getId() );
+        NodeRecord nodeRecord = nodeStore.getRecord( node.getId(), nodeStore.newRecord(), NORMAL );
         long group = nodeRecord.getNextRel();
 
         RecordStore<RelationshipGroupRecord> groupStore = neoStores.getRelationshipGroupStore();
-        RelationshipGroupRecord groupRecord = getRecord( groupStore, group );
+        RelationshipGroupRecord groupRecord = groupStore.getRecord( group, groupStore.newRecord(), NORMAL );
         assertNotEquals( groupRecord.getNext(), -1 );
         RelationshipGroupRecord otherGroupRecord = groupStore.getRecord( groupRecord.getNext(), groupStore.newRecord(),
                 NORMAL );
