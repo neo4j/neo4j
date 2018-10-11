@@ -467,10 +467,11 @@ class GenerationSafePointerPair
         return (result & SLOT_MASK) == FLAG_SLOT_A;
     }
 
+    @FunctionalInterface
     interface GenerationTarget
     {
         void accept( long generation );
     }
 
-    static final GenerationTarget NO_GENERATION_TARGET = geneation -> {};
+    static final GenerationTarget NO_GENERATION_TARGET = generation -> {};
 }

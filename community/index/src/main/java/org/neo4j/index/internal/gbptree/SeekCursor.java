@@ -384,7 +384,7 @@ class SeekCursor<KEY,VALUE> implements RawCursor<Hit<KEY,VALUE>,IOException>, Hi
 
     /**
      * Normally {@link #readHeader()} is called when {@link #concurrentWriteHappened} is {@code true}. However this flag
-     * guards for cases where the header must be read an {@link #concurrentWriteHappened} is {@code false},
+     * guards for cases where the header must be read and {@link #concurrentWriteHappened} is {@code false},
      * such as when moving over to the next sibling and continuing reading.
      */
     private boolean forceReadHeader;
