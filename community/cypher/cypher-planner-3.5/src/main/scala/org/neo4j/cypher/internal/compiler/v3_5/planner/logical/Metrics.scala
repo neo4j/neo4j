@@ -60,9 +60,13 @@ object Metrics {
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = (PlannerQuery, QueryGraphSolverInput, SemanticTable) => Cardinality
+  trait CardinalityModel {
+    def apply(query: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
+  }
 
-  type QueryGraphCardinalityModel = (QueryGraph, QueryGraphSolverInput, SemanticTable) => Cardinality
+  trait QueryGraphCardinalityModel {
+    def apply(queryGraph: QueryGraph, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality
+  }
 
   type LabelInfo = Map[String, Set[LabelName]]
 }

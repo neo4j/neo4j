@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
-import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGraphSolverInput
+import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{CardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
@@ -47,9 +47,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   )_)_)
 
   val factory = newMockedMetricsFactory
-  when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: PlannerQuery, _: QueryGraphSolverInput, _: SemanticTable) => plan match {
-    case _ => Cardinality(1000)
-  })
+  doReturn(new CardinalityModel {
+    override def apply(query: PlannerQuery, input: QueryGraphSolverInput, semanticTable: SemanticTable): Cardinality = {
+      query match {
+        case _ => Cardinality(1000)
+      }
+    }
+  }, Nil: _*).when(factory).newCardinalityEstimator(any(), any())
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
