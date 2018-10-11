@@ -39,7 +39,7 @@ public class IndexReferenceTest
     private final String expectedUserDescription;
     private final IndexReference indexReference;
 
-    @Parameterized.Parameters( name = "{0}")
+    @Parameterized.Parameters( name = "{0}" )
     public static Iterable<Object[]> data()
     {
         return Arrays.asList(
@@ -69,6 +69,6 @@ public class IndexReferenceTest
     private static DefaultCapableIndexReference defaultCapableIndexReference( boolean unique, int labelId, int... propertyIds )
     {
         return new DefaultCapableIndexReference( unique, IndexCapability.NO_CAPABILITY,
-                new IndexProvider.Descriptor( "no-desc", "1.0"),  labelId, propertyIds );
+                new IndexProvider.Descriptor( "no-desc", "1.0" ), labelId, propertyIds );
     }
 }
