@@ -23,14 +23,14 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 
 import java.util.function.LongConsumer;
 
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.DegreeVisitor;
-import org.neo4j.kernel.impl.api.RelationshipDataExtractor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -40,22 +40,21 @@ import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
 
 public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
 {
-    private final RelationshipDataExtractor edge = new RelationshipDataExtractor();
-    private final StorageReader storageReader;
     private final CountsRecordState counts;
     private final ReadableTransactionState txState;
     private final StorageNodeCursor nodeCursor;
     private final StorageRelationshipGroupCursor groupCursor;
+    private final StorageRelationshipScanCursor relationshipCursor;
 
     public TransactionCountingStateVisitor( TxStateVisitor next, StorageReader storageReader,
             ReadableTransactionState txState, CountsRecordState counts )
     {
         super( next );
-        this.storageReader = storageReader;
         this.txState = txState;
         this.counts = counts;
         this.nodeCursor = storageReader.allocateNodeCursor();
         this.groupCursor = storageReader.allocateRelationshipGroupCursor();
+        this.relationshipCursor = storageReader.allocateRelationshipScanCursor();
     }
 
     @Override
@@ -111,15 +110,12 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
     @Override
     public void visitDeletedRelationship( long id )
     {
-        try
+        relationshipCursor.single( id );
+        if ( !relationshipCursor.next() )
         {
-            storageReader.relationshipVisit( id, edge );
-            updateRelationshipCount( edge.startNode(), edge.type(), edge.endNode(), -1 );
+            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes. Relationship[" + id + "]" );
         }
-        catch ( EntityNotFoundException e )
-        {
-            throw new IllegalStateException( "Relationship being deleted should exist along with its nodes.", e );
-        }
+        updateRelationshipCount( relationshipCursor.sourceNodeReference(), relationshipCursor.type(), relationshipCursor.targetNodeReference(), -1 );
         super.visitDeletedRelationship( id );
     }
 
@@ -204,5 +200,12 @@ public class TransactionCountingStateVisitor extends TxStateVisitor.Delegator
                 }
             }
         }
+    }
+
+    @Override
+    public void close()
+    {
+        super.close();
+        IOUtils.closeAllUnchecked( nodeCursor, groupCursor, relationshipCursor );
     }
 }

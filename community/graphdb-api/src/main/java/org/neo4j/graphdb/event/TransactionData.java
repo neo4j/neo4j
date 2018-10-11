@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
  */
 public interface TransactionData
 {
-
     /**
      * Get the nodes that were created during the transaction.
      *

@@ -44,7 +44,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.NamedToken;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -397,13 +396,14 @@ public class NeoStoresTest
                 transaction.relationshipDoDelete( relId, type, startNode, endNode );
         if ( !transaction.relationshipVisit( id, visitor ) )
         {
-            try
+            try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor() )
             {
-                storageReader.relationshipVisit( id, visitor );
-            }
-            catch ( EntityNotFoundException e )
-            {
-                throw new RuntimeException( e );
+                cursor.single( id );
+                if ( !cursor.next() )
+                {
+                    throw new RuntimeException( "Relationship " + id + " not found" );
+                }
+                visitor.visit( id, cursor.type(), cursor.sourceNodeReference(), cursor.targetNodeReference() );
             }
         }
     }
@@ -1138,18 +1138,13 @@ public class NeoStoresTest
     private void assertRelationshipData( long rel, long firstNode, long secondNode,
             int relType )
     {
-        try
+        try ( StorageRelationshipScanCursor cursor = storageReader.allocateRelationshipScanCursor() )
         {
-            storageReader.relationshipVisit( rel, ( relId, type, startNode, endNode ) ->
-            {
-                assertEquals( firstNode, startNode );
-                assertEquals( secondNode, endNode );
-                assertEquals( relType, type );
-            } );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            throw new RuntimeException( e );
+            cursor.single( rel );
+            assertTrue( cursor.next() );
+            assertEquals( firstNode, cursor.sourceNodeReference() );
+            assertEquals( secondNode, cursor.targetNodeReference() );
+            assertEquals( relType, cursor.type() );
         }
     }
 

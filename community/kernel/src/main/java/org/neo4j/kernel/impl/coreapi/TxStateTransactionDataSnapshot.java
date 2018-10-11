@@ -37,7 +37,6 @@ import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -62,7 +61,7 @@ import static java.lang.Math.toIntExact;
 /**
  * Transform for {@link org.neo4j.storageengine.api.txstate.ReadableTransactionState} to make it accessible as {@link TransactionData}.
  */
-public class TxStateTransactionDataSnapshot implements TransactionData
+public class TxStateTransactionDataSnapshot implements TransactionData, AutoCloseable
 {
     private final ReadableTransactionState state;
     private final EmbeddedProxySPI proxySpi;
@@ -77,6 +76,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
     private final MutableLongObjectMap<RelationshipProxy> relationshipsReadFromStore = new LongObjectHashMap<>( 16 );
+    private final StorageRelationshipScanCursor relationship;
 
     public TxStateTransactionDataSnapshot(
             ReadableTransactionState state, EmbeddedProxySPI proxySpi,
@@ -86,6 +86,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         this.proxySpi = proxySpi;
         this.store = storageReader;
         this.transaction = transaction;
+        this.relationship = storageReader.allocateRelationshipScanCursor();
 
         // Load changes that require store access eagerly, because we won't have access to the after-state
         // after the tx has been committed.
@@ -198,8 +199,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private void takeSnapshot()
     {
         try ( StorageNodeCursor node = store.allocateNodeCursor();
-              StoragePropertyCursor properties = store.allocatePropertyCursor();
-              StorageRelationshipScanCursor relationship = store.allocateRelationshipScanCursor() )
+              StoragePropertyCursor properties = store.allocatePropertyCursor() )
         {
             TokenRead tokenRead = transaction.tokenRead();
             state.addedAndRemovedNodes().getRemoved().each( nodeId ->
@@ -317,6 +317,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
     }
 
+    @Override
+    public void close()
+    {
+        relationship.close();
+    }
+
     private void addLabelEntriesTo( long nodeId, LongSet labelIds, Collection<LabelEntry> target )
     {
         labelIds.each( labelId ->
@@ -344,16 +350,14 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 return cached;
             }
 
-            try
-            {   // Get this relationship data from the store
-                store.relationshipVisit( relId, relationship );
-                relationshipsReadFromStore.put( relId, relationship );
-            }
-            catch ( EntityNotFoundException e )
+            // Get this relationship data from the store
+            this.relationship.single( relId );
+            if ( !this.relationship.next() )
             {
-                throw new IllegalStateException(
-                        "Getting deleted relationship data should have been covered by the tx state", e );
+                throw new IllegalStateException( "Getting deleted relationship data should have been covered by the tx state" );
             }
+            relationship.visit( relId, this.relationship.type(), this.relationship.sourceNodeReference(), this.relationship.targetNodeReference() );
+            relationshipsReadFromStore.put( relId, relationship );
         }
         return relationship;
     }

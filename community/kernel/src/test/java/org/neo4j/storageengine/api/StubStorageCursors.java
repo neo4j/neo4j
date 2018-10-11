@@ -25,8 +25,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import org.neo4j.common.EntityType;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.store.record.Record;
@@ -210,18 +208,6 @@ public class StubStorageCursors implements StorageReader
     public StorageIndexReference indexGetForSchema( SchemaDescriptor descriptor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId, RelationshipVisitor<EXCEPTION> relationshipVisitor )
-            throws EntityNotFoundException, EXCEPTION
-    {
-        RelationshipData data = this.relationshipData.get( relationshipId );
-        if ( data == null )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-        }
-        relationshipVisitor.visit( relationshipId, data.type, data.startNode, data.endNode );
     }
 
     @Override

@@ -144,9 +144,20 @@ public class TransactionEventHandlers
             return;
         }
 
-        for ( HandlerAndState handlerAndState : handlerState.states )
+        try
         {
-            handlerAndState.handler.afterCommit( handlerState.txData, handlerAndState.state );
+            for ( HandlerAndState handlerAndState : handlerState.states )
+            {
+                handlerAndState.handler.afterCommit( handlerState.txData, handlerAndState.state );
+            }
+        }
+        finally
+        {
+            if ( handlerState.txData instanceof TxStateTransactionDataSnapshot )
+            {
+                ((TxStateTransactionDataSnapshot) handlerState.txData).close();
+            }
+            // else if could be EMPTY_DATA as well, and we don't want the user-facing TransactionData interface to have close() on it
         }
     }
 
@@ -222,7 +233,6 @@ public class TransactionEventHandlers
 
     private static final TransactionData EMPTY_DATA = new TransactionData()
     {
-
         @Override
         public Iterable<Node> createdNodes()
         {

@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.common.EntityType;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -36,10 +34,8 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -50,7 +46,6 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.helpers.collection.Iterators.map;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.CHECK;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
 /**
@@ -184,19 +179,6 @@ public class RecordStorageReader implements StorageReader
         {
             return null;
         }
-    }
-
-    @Override
-    public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
-            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
-    {
-        // TODO Please don't create a record for this, it's ridiculous
-        RelationshipRecord record = relationshipStore.getRecord( relationshipId, relationshipStore.newRecord(), CHECK );
-        if ( !record.inUse() )
-        {
-            throw new EntityNotFoundException( EntityType.RELATIONSHIP, relationshipId );
-        }
-        relationshipVisitor.visit( relationshipId, record.getType(), record.getFirstNode(), record.getSecondNode() );
     }
 
     @Override

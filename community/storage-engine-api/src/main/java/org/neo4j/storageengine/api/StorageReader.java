@@ -22,7 +22,6 @@ package org.neo4j.storageengine.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
@@ -138,16 +137,6 @@ public interface StorageReader extends AutoCloseable
      * @return all stored property constraints.
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
-
-    /**
-     * Visits data about a relationship. The given {@code relationshipVisitor} will be notified.
-     *
-     * @param relationshipId the id of the relationship to access.
-     * @param relationshipVisitor {@link RelationshipVisitor} which will see the relationship data.
-     * @throws EntityNotFoundException if no relationship exists by the given {@code relationshipId}.
-     */
-    <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
-            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
 
     /**
      * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
