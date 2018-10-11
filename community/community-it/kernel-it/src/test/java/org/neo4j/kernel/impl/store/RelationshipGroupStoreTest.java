@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,7 +36,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -50,60 +49,63 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.lang.Integer.parseInt;
 import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.neo4j.kernel.impl.store.RecordStore.getRecord;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class RelationshipGroupStoreTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class RelationshipGroupStoreTest
 {
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
-    @Rule
-    public TestDirectory testDir = TestDirectory.testDirectory();
-    private int defaultThreshold;
+    @RegisterExtension
+    static final PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    @Inject
     private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
+    private int defaultThreshold;
     private ImpermanentGraphDatabase db;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        fs = new DefaultFileSystemAbstraction();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }
 
-    @After
-    public void after() throws IOException
+    @AfterEach
+    void after()
     {
         if ( db != null )
         {
             db.shutdown();
         }
-        fs.close();
     }
 
     @Test
-    public void createWithDefaultThreshold()
+    void createWithDefaultThreshold()
     {
         createAndVerify( null );
     }
 
     @Test
-    public void createWithCustomThreshold()
+    void createWithCustomThreshold()
     {
         createAndVerify( defaultThreshold * 2 );
     }
 
     @Test
-    public void createDenseNodeWithLowThreshold()
+    void createDenseNodeWithLowThreshold()
     {
         newDb( 2 );
 
@@ -157,7 +159,7 @@ public class RelationshipGroupStoreTest
 
     private StoreFactory factory( Integer customThreshold )
     {
-        return factory( customThreshold, pageCacheRule.getPageCache( fs ) );
+        return factory( customThreshold, pageCacheExtension.getPageCache( fs ) );
     }
 
     private StoreFactory factory( Integer customThreshold, PageCache pageCache )
@@ -167,12 +169,12 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( testDir.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
+        return new StoreFactory( testDirectory.databaseLayout(), Config.defaults( customConfig ), new DefaultIdGeneratorFactory( fs ), pageCache,
                 fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
     @Test
-    public void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly()
+    void makeSureRelationshipGroupsNextAndPrevGetsAssignedCorrectly()
     {
         newDb( 1 );
 
@@ -196,7 +198,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyRecordsForDenseNodeWithOneRelType()
+    void verifyRecordsForDenseNodeWithOneRelType()
     {
         newDb( 2 );
 
@@ -233,7 +235,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyRecordsForDenseNodeWithTwoRelTypes()
+    void verifyRecordsForDenseNodeWithTwoRelTypes()
     {
         newDb( 2 );
 
@@ -274,7 +276,7 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void verifyGroupIsDeletedWhenNeeded()
+    void verifyGroupIsDeletedWhenNeeded()
     {
         // TODO test on a lower level instead
 
@@ -307,10 +309,10 @@ public class RelationshipGroupStoreTest
     }
 
     @Test
-    public void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
+    void checkingIfRecordIsInUseMustHappenAfterConsistentRead()
     {
         AtomicBoolean nextReadIsInconsistent = new AtomicBoolean( false );
-        PageCache pageCache = pageCacheRule.getPageCache( fs,
+        PageCache pageCache = pageCacheExtension.getPageCache( fs,
                 config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory = factory( null, pageCache );
 
@@ -327,7 +329,7 @@ public class RelationshipGroupStoreTest
         }
     }
 
-    private void assertRelationshipChain( RelationshipStore relationshipStore, Node node, long firstId, long... chainedIds )
+    private static void assertRelationshipChain( RelationshipStore relationshipStore, Node node, long firstId, long... chainedIds )
     {
         long nodeId = node.getId();
         RelationshipRecord record = relationshipStore.getRecord( firstId, relationshipStore.newRecord(), NORMAL );

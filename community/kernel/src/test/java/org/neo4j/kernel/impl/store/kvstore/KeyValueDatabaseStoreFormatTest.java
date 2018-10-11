@@ -38,7 +38,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -533,7 +533,7 @@ public class KeyValueDatabaseStoreFormatTest
                 DataProvider data )
                 throws IOException
         {
-            PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
+            PageCacheConfig pageCacheConfig = PageCacheConfig.config();
             PageCache pageCache = pages.getPageCache( fs.get(), pageCacheConfig, Config.defaults( config ) );
             return createStore( fs.get(),
                     pageCache, getStoreFile(), 16, 16,

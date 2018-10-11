@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertTrue;
@@ -153,7 +153,7 @@ public class CommonAbstractStoreBehaviourTest
     public void writingOfHeaderRecordDuringInitialiseNewStoreFileMustThrowOnPageOverflow() throws Exception
     {
         // 16-byte header will overflow an 8-byte page size
-        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
+        PageCacheConfig pageCacheConfig = PageCacheConfig.config();
         PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config );
         MyStore store = new MyStore( config, pageCache, PAGE_SIZE + 1 );
         assertThrowsUnderlyingStorageException( () -> store.initialise( true ) );
@@ -166,7 +166,7 @@ public class CommonAbstractStoreBehaviourTest
         first.initialise( true );
         first.close();
 
-        PageCacheRule.PageCacheConfig pageCacheConfig = PageCacheRule.config();
+        PageCacheConfig pageCacheConfig = PageCacheConfig.config();
         PageCache pageCache = pageCacheRule.getPageCache( fs.get(), pageCacheConfig, config );
         MyStore second = new MyStore( config, pageCache, PAGE_SIZE + 1 );
         assertThrowsUnderlyingStorageException( () -> second.initialise( false ) );

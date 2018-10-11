@@ -29,7 +29,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.test.rule.fs.FileSystemRule;
 
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
 /**
  * Very often when you want a {@link PageCacheRule} you also want {@link TestDirectory} and some {@link FileSystemRule}.
@@ -42,7 +42,7 @@ public class PageCacheAndDependenciesRule implements TestRule
     private FileSystemRule<? extends FileSystemAbstraction> fs;
     private TestDirectory directory;
     private PageCacheRule pageCacheRule;
-    private PageCacheRule.PageCacheConfig pageCacheConfig = config();
+    private PageCacheConfig pageCacheConfig = config();
     private Class<?> clazz;
 
     public PageCacheAndDependenciesRule with( FileSystemRule<? extends FileSystemAbstraction> fs )
@@ -51,7 +51,7 @@ public class PageCacheAndDependenciesRule implements TestRule
         return this;
     }
 
-    public PageCacheAndDependenciesRule with( PageCacheRule.PageCacheConfig config )
+    public PageCacheAndDependenciesRule with( PageCacheConfig config )
     {
         this.pageCacheConfig = config;
         return this;

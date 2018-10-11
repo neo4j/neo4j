@@ -19,10 +19,10 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,20 +46,23 @@ import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Math.max;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
 /**
  * From a range of keys two disjunct sets are generated, "toAdd" and "toRemove".
@@ -75,15 +78,18 @@ import static org.neo4j.test.rule.PageCacheRule.config;
  * toAdd and toRemove, prepare the GB+Tree with entries and serve readers and writer with information
  * about what they should do next.
  */
+
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
 public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
 {
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final RandomRule random = new RandomRule();
-
-    @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private RandomRule random;
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
 
     private TestLayout<KEY,VALUE> layout;
     private GBPTree<KEY,VALUE> index;
@@ -94,14 +100,14 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     {
         int pageSize = 512;
         layout = getLayout( random );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( pageSize ).withAccessChecks( true ) );
-        return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( pageSize ).withAccessChecks( true ) );
+        return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
     protected abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
 
-    @After
-    public void consistencyCheckAndClose() throws IOException
+    @AfterEach
+    void consistencyCheckAndClose() throws IOException
     {
         threadPool.shutdownNow();
         index.consistencyCheck();
@@ -109,42 +115,42 @@ public abstract class GBPTreeConcurrencyITBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldReadForwardCorrectlyWithConcurrentInsert() throws Throwable
+    void shouldReadForwardCorrectlyWithConcurrentInsert() throws Throwable
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 1 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
     }
 
     @Test
-    public void shouldReadBackwardCorrectlyWithConcurrentInsert() throws Throwable
+    void shouldReadBackwardCorrectlyWithConcurrentInsert() throws Throwable
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 1 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
     }
 
     @Test
-    public void shouldReadForwardCorrectlyWithConcurrentRemove() throws Throwable
+    void shouldReadForwardCorrectlyWithConcurrentRemove() throws Throwable
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 0 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
     }
 
     @Test
-    public void shouldReadBackwardCorrectlyWithConcurrentRemove() throws Throwable
+    void shouldReadBackwardCorrectlyWithConcurrentRemove() throws Throwable
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 0 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
     }
 
     @Test
-    public void shouldReadForwardCorrectlyWithConcurrentUpdates() throws Throwable
+    void shouldReadForwardCorrectlyWithConcurrentUpdates() throws Throwable
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), true, 0.5 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );
     }
 
     @Test
-    public void shouldReadBackwardCorrectlyWithConcurrentUpdates() throws Throwable
+    void shouldReadBackwardCorrectlyWithConcurrentUpdates() throws Throwable
     {
         TestCoordinator testCoordinator = new TestCoordinator( random.random(), false, 0.5 );
         shouldReadCorrectlyWithConcurrentUpdates( testCoordinator );

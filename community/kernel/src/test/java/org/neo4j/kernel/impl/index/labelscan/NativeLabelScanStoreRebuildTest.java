@@ -19,43 +19,43 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.stringContainsInOrder;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.ignore;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.asStream;
 
-public class NativeLabelScanStoreRebuildTest
+@PageCacheExtension
+class NativeLabelScanStoreRebuildTest
 {
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( pageCacheRule ).around( testDirectory );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     private static final FullStoreChangeStream THROWING_STREAM = writer ->
     {
@@ -63,10 +63,9 @@ public class NativeLabelScanStoreRebuildTest
     };
 
     @Test
-    public void mustBeDirtyIfFailedDuringRebuild() throws Exception
+    void mustBeDirtyIfFailedDuringRebuild() throws Exception
     {
         // given
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         createDirtyIndex( pageCache );
 
         // when
@@ -75,7 +74,7 @@ public class NativeLabelScanStoreRebuildTest
         monitors.addMonitorListener( monitor );
 
         NativeLabelScanStore nativeLabelScanStore =
-                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystemRule.get(), EMPTY, false, monitors, immediate() );
+                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, EMPTY, false, monitors, immediate() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
 
@@ -87,16 +86,15 @@ public class NativeLabelScanStoreRebuildTest
     }
 
     @Test
-    public void doNotRebuildIfOpenedInReadOnlyModeAndIndexIsNotClean() throws IOException
+    void doNotRebuildIfOpenedInReadOnlyModeAndIndexIsNotClean() throws IOException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         createDirtyIndex( pageCache );
 
         Monitors monitors = new Monitors();
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystemRule.get(),
+        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem,
                 EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -108,16 +106,15 @@ public class NativeLabelScanStoreRebuildTest
     }
 
     @Test
-    public void labelScanStoreIsDirtyWhenIndexIsNotClean() throws IOException
+    void labelScanStoreIsDirtyWhenIndexIsNotClean() throws IOException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         createDirtyIndex( pageCache );
 
         Monitors monitors = new Monitors();
         RecordingMonitor monitor = new RecordingMonitor();
         monitors.addMonitorListener( monitor );
 
-        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystemRule.get(),
+        NativeLabelScanStore nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem,
                 EMPTY, true, monitors, ignore() );
         nativeLabelScanStore.init();
         nativeLabelScanStore.start();
@@ -127,36 +124,24 @@ public class NativeLabelScanStoreRebuildTest
     }
 
     @Test
-    public void shouldFailOnUnsortedLabelsFromFullStoreChangeStream() throws Exception
+    void shouldFailOnUnsortedLabelsFromFullStoreChangeStream() throws Exception
     {
         // given
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
         List<NodeLabelUpdate> existingData = new ArrayList<>();
         existingData.add( NodeLabelUpdate.labelChanges( 1, new long[0], new long[]{2, 1} ) );
         FullStoreChangeStream changeStream = asStream( existingData );
-        NativeLabelScanStore nativeLabelScanStore = null;
+        NativeLabelScanStore nativeLabelScanStore =
+                new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, changeStream, false, new Monitors(), immediate() );
         try
         {
-            nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystemRule.get(),
-                    changeStream, false, new Monitors(), immediate() );
             nativeLabelScanStore.init();
-
-            // when
-            nativeLabelScanStore.start();
-            fail( "Expected native label scan store to fail on " );
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // then
-            assertThat( e.getMessage(), Matchers.containsString( "unsorted label" ) );
-            assertThat( e.getMessage(), Matchers.stringContainsInOrder( Iterables.asIterable( "2", "1" ) ) );
+            IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, nativeLabelScanStore::start );
+            assertThat( exception.getMessage(), containsString( "unsorted label" ) );
+            assertThat( exception.getMessage(), stringContainsInOrder( Iterables.asIterable( "2", "1" ) ) );
         }
         finally
         {
-            if ( nativeLabelScanStore != null )
-            {
-                nativeLabelScanStore.shutdown();
-            }
+            nativeLabelScanStore.shutdown();
         }
     }
 
@@ -165,7 +150,7 @@ public class NativeLabelScanStoreRebuildTest
         NativeLabelScanStore nativeLabelScanStore = null;
         try
         {
-            nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystemRule.get(), THROWING_STREAM, false,
+            nativeLabelScanStore = new NativeLabelScanStore( pageCache, testDirectory.databaseLayout(), fileSystem, THROWING_STREAM, false,
                     new Monitors(), immediate() );
 
             nativeLabelScanStore.init();

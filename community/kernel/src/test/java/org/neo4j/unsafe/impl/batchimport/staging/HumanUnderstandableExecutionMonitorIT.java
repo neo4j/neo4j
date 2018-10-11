@@ -19,19 +19,24 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.EnumMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.csv.reader.Extractors;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.SuppressOutputExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.SuppressOutput;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.ParallelBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;
 import org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput;
@@ -39,8 +44,8 @@ import org.neo4j.unsafe.impl.batchimport.input.Input;
 import org.neo4j.unsafe.impl.batchimport.input.csv.IdType;
 import org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.ImportStage;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
@@ -51,22 +56,24 @@ import static org.neo4j.unsafe.impl.batchimport.input.DataGeneratorInput.barebon
 import static org.neo4j.unsafe.impl.batchimport.input.csv.IdType.INTEGER;
 import static org.neo4j.unsafe.impl.batchimport.staging.HumanUnderstandableExecutionMonitor.NO_EXTERNAL_MONITOR;
 
-public class HumanUnderstandableExecutionMonitorIT
+@PageCacheExtension
+@ExtendWith( {RandomExtension.class, SuppressOutputExtension.class} )
+class HumanUnderstandableExecutionMonitorIT
 {
     private static final long NODE_COUNT = 1_000;
     private static final long RELATIONSHIP_COUNT = 10_000;
 
-    @Rule
-    public final RandomRule random = new RandomRule();
-
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
-
-    @Rule
-    public final SuppressOutput suppressOutput = SuppressOutput.suppressAll();
+    @Inject
+    private RandomRule random;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     @Test
-    public void shouldReportProgressOfNodeImport() throws Exception
+    void shouldReportProgressOfNodeImport() throws Exception
     {
         // given
         CapturingMonitor progress = new CapturingMonitor();
@@ -79,7 +86,7 @@ public class HumanUnderstandableExecutionMonitorIT
         // when
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
         {
-            new ParallelBatchImporter( storage.directory().databaseLayout(), storage.fileSystem(), storage.pageCache(), DEFAULT, NullLogService.getInstance(),
+            new ParallelBatchImporter( testDirectory.databaseLayout(), fileSystem, pageCache, DEFAULT, NullLogService.getInstance(),
                     monitor, EMPTY, defaults(), LATEST_RECORD_FORMATS, NO_MONITOR, jobScheduler ).doImport( input );
 
             // then

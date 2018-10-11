@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.hamcrest.Matchers;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -41,20 +41,27 @@ import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class PropertyCreatorTest
+@PageCacheExtension
+class PropertyCreatorTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     private final MyPrimitiveProxy primitive = new MyPrimitiveProxy();
     private NeoStores neoStores;
@@ -62,25 +69,25 @@ public class PropertyCreatorTest
     private PropertyCreator creator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> records;
 
-    @Before
-    public void startStore()
+    @BeforeEach
+    void startStore()
     {
-        neoStores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
-                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_STRING, StoreType.PROPERTY_ARRAY );
         propertyStore = neoStores.getPropertyStore();
         records = new DirectRecordAccess<>( propertyStore, Loaders.propertyLoader( propertyStore ) );
         creator = new PropertyCreator( propertyStore, new PropertyTraverser() );
     }
 
-    @After
-    public void closeStore()
+    @AfterEach
+    void closeStore()
     {
         neoStores.close();
     }
 
     @Test
-    public void shouldAddPropertyToEmptyChain()
+    void shouldAddPropertyToEmptyChain()
     {
         // GIVEN
         existingChain();
@@ -93,7 +100,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherFullRecords()
+    void shouldAddPropertyToChainContainingOtherFullRecords()
     {
         // GIVEN
         existingChain(
@@ -111,7 +118,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherNonFullRecords()
+    void shouldAddPropertyToChainContainingOtherNonFullRecords()
     {
         // GIVEN
         existingChain(
@@ -128,7 +135,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle()
+    void shouldAddPropertyToChainContainingOtherNonFullRecordsInMiddle()
     {
         // GIVEN
         existingChain(
@@ -145,7 +152,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangeOnlyProperty()
+    void shouldChangeOnlyProperty()
     {
         // GIVEN
         existingChain( record( property( 0, "one" ) ) );
@@ -158,7 +165,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyInChainWithOthersBeforeIt()
+    void shouldChangePropertyInChainWithOthersBeforeIt()
     {
         // GIVEN
         existingChain(
@@ -175,7 +182,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyInChainWithOthersAfterIt()
+    void shouldChangePropertyInChainWithOthersAfterIt()
     {
         // GIVEN
         existingChain(
@@ -192,7 +199,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyToBiggerInFullChain()
+    void shouldChangePropertyToBiggerInFullChain()
     {
         // GIVEN
         existingChain( record( property( 0, 0 ), property( 1, 1 ), property( 2, 2 ), property( 3, 3 ) ) );
@@ -207,7 +214,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void shouldChangePropertyToBiggerInChainWithHoleAfter()
+    void shouldChangePropertyToBiggerInChainWithHoleAfter()
     {
         // GIVEN
         existingChain(
@@ -225,7 +232,7 @@ public class PropertyCreatorTest
 
     // change property so that it gets bigger and fits in a record earlier in the chain
     @Test
-    public void shouldChangePropertyToBiggerInChainWithHoleBefore()
+    void shouldChangePropertyToBiggerInChainWithHoleBefore()
     {
         // GIVEN
         existingChain(
@@ -242,7 +249,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void canAddMultipleShortStringsToTheSameNode()
+    void canAddMultipleShortStringsToTheSameNode()
     {
         // GIVEN
         existingChain();
@@ -256,7 +263,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void canUpdateShortStringInplace()
+    void canUpdateShortStringInplace()
     {
         // GIVEN
         existingChain( record( property( 0, "value" ) ) );
@@ -272,7 +279,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void canReplaceLongStringWithShortString()
+    void canReplaceLongStringWithShortString()
     {
         // GIVEN
         long recordCount = dynamicStringRecordsInUse();
@@ -291,7 +298,7 @@ public class PropertyCreatorTest
     }
 
     @Test
-    public void canReplaceShortStringWithLongString()
+    void canReplaceShortStringWithLongString()
     {
         // GIVEN
         long recordCount = dynamicStringRecordsInUse();
@@ -424,7 +431,7 @@ public class PropertyCreatorTest
         return new ExpectedProperty( key, value, hasDynamicRecords );
     }
 
-    private ExpectedRecord record( ExpectedProperty... properties )
+    private static ExpectedRecord record( ExpectedProperty... properties )
     {
         return new ExpectedRecord( properties );
     }

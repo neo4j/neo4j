@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PageCacheLongArrayConcurrencyTest extends PageCacheNumberArrayConcurrencyTest
 {
@@ -45,7 +45,7 @@ public class PageCacheLongArrayConcurrencyTest extends PageCacheNumberArrayConcu
         return new PageCacheLongArray( file, COUNT, 0, 0 );
     }
 
-    private class WholeFileRacer implements Runnable
+    private static class WholeFileRacer implements Runnable
     {
         private LongArray array;
 

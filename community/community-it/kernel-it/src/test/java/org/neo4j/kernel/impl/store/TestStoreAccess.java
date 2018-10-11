@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 
@@ -33,53 +34,56 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TestStoreAccess
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class TestStoreAccess
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private final Monitors monitors = new Monitors();
 
     @Test
-    public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable
+    void openingThroughStoreAccessShouldNotTriggerRecovery() throws Throwable
     {
         try ( EphemeralFileSystemAbstraction snapshot = produceUncleanStore() )
         {
-            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            assertTrue( isUnclean( snapshot ), "Store should be unclean" );
 
-            PageCache pageCache = pageCacheRule.getPageCache( snapshot );
+            PageCache pageCache = pageCacheExtension.getPageCache( snapshot );
             new StoreAccess( snapshot, pageCache, testDirectory.databaseLayout(), Config.defaults() ).initialize().close();
-            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+            assertTrue( isUnclean( snapshot ), "Store should be unclean" );
         }
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs )
                 .newImpermanentDatabase( testDirectory.databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
-        EphemeralFileSystemAbstraction snapshot = fs.get().snapshot();
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot();
         db.shutdown();
         return snapshot;
     }
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, Config.defaults(), monitors );
         return requiredChecker.isRecoveryRequiredAt( testDirectory.databaseLayout() );
     }

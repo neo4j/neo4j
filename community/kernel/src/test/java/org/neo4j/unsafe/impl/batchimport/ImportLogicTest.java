@@ -19,25 +19,30 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.Mockito.mock;
@@ -51,23 +56,28 @@ import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.ImportLogic.NO_MONITOR;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.batchingNeoStoresWithExternalPageCache;
 
-public class ImportLogicTest
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
+class ImportLogicTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
-
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void closeImporterWithoutDiagnosticState() throws IOException
+    void closeImporterWithoutDiagnosticState() throws IOException
     {
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( storage.fileSystem(), storage.pageCache(), NULL,
-                storage.directory().directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL,
+                testDirectory.directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
         {
             //noinspection EmptyTryBlock
-            try ( ImportLogic ignored = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
+            try ( ImportLogic ignored = new ImportLogic( testDirectory.directory(), fileSystem, stores, DEFAULT, getInstance(), monitor,
                     defaultFormat(), NO_MONITOR ) )
             {
                 // nothing to run in this import
@@ -78,7 +88,7 @@ public class ImportLogicTest
     }
 
     @Test
-    public void shouldSplitUpRelationshipTypesInBatches()
+    void shouldSplitUpRelationshipTypesInBatches()
     {
         // GIVEN
         int denseNodeThreshold = 5;
@@ -131,12 +141,12 @@ public class ImportLogicTest
     }
 
     @Test
-    public void shouldUseDataStatisticsCountsForPrintingFinalStats() throws IOException
+    void shouldUseDataStatisticsCountsForPrintingFinalStats() throws IOException
     {
         // given
         ExecutionMonitor monitor = mock( ExecutionMonitor.class );
-        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( storage.fileSystem(), storage.pageCache(), NULL,
-                storage.directory().directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
+        try ( BatchingNeoStores stores = batchingNeoStoresWithExternalPageCache( fileSystem, pageCache, NULL,
+                testDirectory.directory(), defaultFormat(), DEFAULT, getInstance(), EMPTY, defaults() ) )
         {
             // when
             RelationshipTypeCount[] relationshipTypeCounts = new RelationshipTypeCount[]
@@ -145,7 +155,7 @@ public class ImportLogicTest
                             new RelationshipTypeCount( 1, 66 )
                     };
             DataStatistics dataStatistics = new DataStatistics( 100123, 100456, relationshipTypeCounts );
-            try ( ImportLogic logic = new ImportLogic( storage.directory().directory(), storage.fileSystem(), stores, DEFAULT, getInstance(), monitor,
+            try ( ImportLogic logic = new ImportLogic( testDirectory.directory(), fileSystem, stores, DEFAULT, getInstance(), monitor,
                     defaultFormat(), NO_MONITOR ) )
             {
                 logic.putState( dataStatistics );

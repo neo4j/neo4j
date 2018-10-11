@@ -30,11 +30,11 @@ import org.neo4j.index.internal.gbptree.GroupingRecoveryCleanupWorkCollector;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
@@ -137,7 +137,7 @@ public class NativeLabelScanStoreStartupIT
 
     private void scrambleFile( File file ) throws IOException
     {
-        LabelScanStoreTest.scrambleFile( random.random(), file );
+        NativeLabelScanStoreTest.scrambleFile( random.random(), file );
     }
 
     private static File storeFile( DatabaseLayout databaseLayout )

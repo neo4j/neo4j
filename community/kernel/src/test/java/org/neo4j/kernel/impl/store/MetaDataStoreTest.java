@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
 import org.neo4j.io.pagecache.DelegatingPagedFile;
@@ -52,42 +51,43 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.NullLogger;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.test.Race.throwing;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class MetaDataStoreTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class MetaDataStoreTest
 {
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fsRule );
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fsRule ).around( testDirectory ).around( pageCacheRule );
-
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    @Inject
     private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
+
     private PageCache pageCache;
     private boolean fakePageCursorOverflow;
     private PageCache pageCacheWithFakeOverflow;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        fs = fsRule.get();
-        pageCache = pageCacheRule.getPageCache( fs );
+        pageCache = pageCacheExtension.getPageCache( fs );
         fakePageCursorOverflow = false;
         pageCacheWithFakeOverflow = new DelegatingPageCache( pageCache )
         {
@@ -114,215 +114,111 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void getCreationTimeShouldFailWhenStoreIsClosed()
+    void getCreationTimeShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getCreationTime();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getCreationTime );
     }
 
     @Test
-    public void getCurrentLogVersionShouldFailWhenStoreIsClosed()
+    void getCurrentLogVersionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getCurrentLogVersion();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getCurrentLogVersion );
     }
 
     @Test
-    public void getGraphNextPropShouldFailWhenStoreIsClosed()
+    void getGraphNextPropShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getGraphNextProp();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getGraphNextProp );
     }
 
     @Test
-    public void getLastClosedTransactionIdShouldFailWhenStoreIsClosed()
+    void getLastClosedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getLastClosedTransactionId();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getLastClosedTransactionId );
     }
 
     @Test
-    public void getLastClosedTransactionShouldFailWhenStoreIsClosed()
+    void getLastClosedTransactionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getLastClosedTransaction();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getLastClosedTransaction );
     }
 
     @Test
-    public void getLastCommittedTransactionShouldFailWhenStoreIsClosed()
+    void getLastCommittedTransactionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getLastCommittedTransaction();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getLastCommittedTransaction );
     }
 
     @Test
-    public void getLastCommittedTransactionIdShouldFailWhenStoreIsClosed()
+    void getLastCommittedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getLastCommittedTransactionId();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getLastCommittedTransactionId );
     }
 
     @Test
-    public void getLatestConstraintIntroducingTxShouldFailWhenStoreIsClosed()
+    void getLatestConstraintIntroducingTxShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getLatestConstraintIntroducingTx();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getLatestConstraintIntroducingTx );
     }
 
     @Test
-    public void getRandomNumberShouldFailWhenStoreIsClosed()
+    void getRandomNumberShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getRandomNumber();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getRandomNumber );
     }
 
     @Test
-    public void getStoreVersionShouldFailWhenStoreIsClosed()
+    void getStoreVersionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getStoreVersion();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getStoreVersion );
     }
 
     @Test
-    public void getUpgradeTimeShouldFailWhenStoreIsClosed()
+    void getUpgradeTimeShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getUpgradeTime();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getUpgradeTime );
     }
 
     @Test
-    public void getUpgradeTransactionShouldFailWhenStoreIsClosed()
+    void getUpgradeTransactionShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.getUpgradeTransaction();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::getUpgradeTransaction );
     }
 
     @Test
-    public void nextCommittingTransactionIdShouldFailWhenStoreIsClosed()
+    void nextCommittingTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.nextCommittingTransactionId();
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, metaDataStore::nextCommittingTransactionId );
     }
 
     @Test
-    public void currentCommittingTransactionId()
+    void currentCommittingTransactionId()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.nextCommittingTransactionId();
@@ -338,39 +234,23 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void setLastCommittedAndClosedTransactionIdShouldFailWhenStoreIsClosed()
+    void setLastCommittedAndClosedTransactionIdShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 );
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 ) );
     }
 
     @Test
-    public void transactionCommittedShouldFailWhenStoreIsClosed()
+    void transactionCommittedShouldFailWhenStoreIsClosed()
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        try
-        {
-            metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP );
-            fail( "Expected exception reading from MetaDataStore after being closed." );
-        }
-        catch ( Exception e )
-        {
-            assertThat( e, instanceOf( IllegalStateException.class ) );
-        }
+        assertThrows( IllegalStateException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP ) );
     }
 
     @Test
-    public void testRecordTransactionClosed()
+    void testRecordTransactionClosed()
     {
         // GIVEN
         MetaDataStore metaDataStore = newMetaDataStore();
@@ -401,7 +281,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void setUpgradeTransactionMustBeAtomic() throws Throwable
+    void setUpgradeTransactionMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -466,7 +346,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void incrementAndGetVersionMustBeAtomic() throws Throwable
+    void incrementAndGetVersionMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -487,7 +367,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void transactionCommittedMustBeAtomic() throws Throwable
+    void transactionCommittedMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -542,7 +422,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void transactionClosedMustBeAtomic() throws Throwable
+    void transactionClosedMustBeAtomic() throws Throwable
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -609,7 +489,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void mustSupportScanningAllRecords() throws Exception
+    void mustSupportScanningAllRecords() throws Exception
     {
         File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
@@ -649,7 +529,7 @@ public class MetaDataStoreTest
     }
 
     @Test
-    public void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
+    void mustSupportScanningAllRecordsWithRecordCursor() throws Exception
     {
         File file = createMetaDataFile();
         MetaDataStore.Position[] positions = MetaDataStore.Position.values();
@@ -705,37 +585,38 @@ public class MetaDataStoreTest
         }
     }
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void staticSetRecordMustThrowOnPageOverflow() throws Exception
+    @Test
+    void staticSetRecordMustThrowOnPageOverflow()
     {
         fakePageCursorOverflow = true;
-        MetaDataStore.setRecord(
-                pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
+        assertThrows( UnderlyingStorageException.class,
+                () -> MetaDataStore.setRecord( pageCacheWithFakeOverflow, createMetaDataFile(), MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 ) );
     }
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void staticGetRecordMustThrowOnPageOverflow() throws Exception
+    @Test
+    void staticGetRecordMustThrowOnPageOverflow() throws Exception
     {
         File metaDataFile = createMetaDataFile();
         MetaDataStore.setRecord(
                 pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY, 4242 );
         fakePageCursorOverflow = true;
-        MetaDataStore.getRecord(
-                pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY );
+        assertThrows( UnderlyingStorageException.class,
+                () -> MetaDataStore.getRecord( pageCacheWithFakeOverflow, metaDataFile, MetaDataStore.Position.FIRST_GRAPH_PROPERTY ) );
+
     }
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void incrementVersionMustThrowOnPageOverflow()
+    @Test
+    void incrementVersionMustThrowOnPageOverflow()
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
             fakePageCursorOverflow = true;
-            store.incrementAndGetVersion();
+            assertThrows( UnderlyingStorageException.class, store::incrementAndGetVersion );
         }
     }
 
     @Test
-    public void lastTxCommitTimestampShouldBeBaseInNewStore()
+    void lastTxCommitTimestampShouldBeBaseInNewStore()
     {
         try ( MetaDataStore metaDataStore = newMetaDataStore() )
         {
@@ -744,8 +625,8 @@ public class MetaDataStoreTest
         }
     }
 
-    @Test( expected = UnderlyingStorageException.class )
-    public void readAllFieldsMustThrowOnPageOverflow()
+    @Test
+    void readAllFieldsMustThrowOnPageOverflow()
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {
@@ -754,22 +635,22 @@ public class MetaDataStoreTest
             // file. We do this because creating a proper MetaDataStore automatically initialises all fields.
             store.setUpgradeTime( MetaDataStore.FIELD_NOT_INITIALIZED );
             fakePageCursorOverflow = true;
-            store.getUpgradeTime();
-        }
-    }
-
-    @Test( expected = UnderlyingStorageException.class )
-    public void setRecordMustThrowOnPageOverflow()
-    {
-        try ( MetaDataStore store = newMetaDataStore() )
-        {
-            fakePageCursorOverflow = true;
-            store.setUpgradeTransaction( 13, 42, 42 );
+            assertThrows( UnderlyingStorageException.class, store::getUpgradeTime );
         }
     }
 
     @Test
-    public void logRecordsMustIgnorePageOverflow()
+    void setRecordMustThrowOnPageOverflow()
+    {
+        try ( MetaDataStore store = newMetaDataStore() )
+        {
+            fakePageCursorOverflow = true;
+            assertThrows( UnderlyingStorageException.class, () -> store.setUpgradeTransaction( 13, 42, 42 ) );
+        }
+    }
+
+    @Test
+    void logRecordsMustIgnorePageOverflow()
     {
         try ( MetaDataStore store = newMetaDataStore() )
         {

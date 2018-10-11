@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.nio.file.OpenOption;
@@ -38,25 +37,29 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.fail;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
-public class NeoStoreOpenFailureTest
+@PageCacheExtension
+class NeoStoreOpenFailureTest
 {
-    @Rule
-    public PageCacheAndDependenciesRule rules = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     @Test
-    public void mustCloseAllStoresIfNeoStoresFailToOpen()
+    void mustCloseAllStoresIfNeoStoresFailToOpen()
     {
-        PageCache pageCache = rules.pageCache();
-        DatabaseLayout databaseLayout = rules.directory().databaseLayout();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults();
-        FileSystemAbstraction fs = rules.fileSystem();
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem );
         LogProvider logProvider = NullLogProvider.getInstance();
         VersionContextSupplier versions = EmptyVersionContextSupplier.EMPTY;
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
@@ -65,7 +68,7 @@ public class NeoStoreOpenFailureTest
         StoreType[] storeTypes = StoreType.values();
         OpenOption[] openOptions = new OpenOption[0];
         NeoStores neoStores = new NeoStores(
-                databaseLayout, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create, storeTypes,
+                databaseLayout, config, idGenFactory, pageCache, logProvider, fileSystem, versions, formats, create, storeTypes,
                 openOptions );
         File schemaStore = neoStores.getSchemaStore().getStorageFile();
         neoStores.close();
@@ -74,17 +77,10 @@ public class NeoStoreOpenFailureTest
         assumeTrue( schemaStore.setReadable( false ) );
         assumeTrue( schemaStore.setWritable( false ) );
 
-        try
-        {
-            // This should fail due to the permissions we changed above.
-            // And when it fails, the already-opened stores should be closed.
-            new NeoStores( databaseLayout, config, idGenFactory, pageCache, logProvider, fs, versions, formats, create,
-                    storeTypes, openOptions );
-            fail( "Opening NeoStores should have thrown." );
-        }
-        catch ( RuntimeException ignore )
-        {
-        }
+        assertThrows( RuntimeException.class, () ->
+                // This should fail due to the permissions we changed above.
+                // And when it fails, the already-opened stores should be closed.
+                new NeoStores( databaseLayout, config, idGenFactory, pageCache, logProvider, fileSystem, versions, formats, create, storeTypes, openOptions ) );
 
         // We verify that the successfully opened stores were closed again by the failed NeoStores open,
         // by closing the page cache, which will throw if not all files have been unmapped.

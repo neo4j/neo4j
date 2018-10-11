@@ -19,9 +19,9 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -32,30 +32,38 @@ import java.util.Random;
 import java.util.TreeMap;
 
 import org.neo4j.cursor.RawCursor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.Integer.max;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static java.lang.String.format;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public abstract class GBPTreeITBase<KEY,VALUE>
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+abstract class GBPTreeITBase<KEY,VALUE>
 {
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory directory = TestDirectory.testDirectory( getClass(), fs.get() );
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    final RandomRule random = new RandomRule();
-
-    @Rule
-    public final RuleChain rules = outerRule( fs ).around( directory ).around( pageCacheRule ).around( random );
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private RandomRule random;
 
     private TestLayout<KEY,VALUE> layout;
     private GBPTree<KEY,VALUE> index;
@@ -65,8 +73,8 @@ public abstract class GBPTreeITBase<KEY,VALUE>
     {
         // some random padding
         layout = getLayout( random );
-        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config().withPageSize( 512 ).withAccessChecks( true ) );
-        return index = new GBPTreeBuilder<>( pageCache, directory.file( "index" ), layout ).build();
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config().withPageSize( 512 ).withAccessChecks( true ) );
+        return index = new GBPTreeBuilder<>( pageCache, testDirectory.file( "index" ), layout ).build();
     }
 
     abstract TestLayout<KEY,VALUE> getLayout( RandomRule random );
@@ -74,7 +82,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
     abstract Class<KEY> getKeyClass();
 
     @Test
-    public void shouldStayCorrectAfterRandomModifications() throws Exception
+    void shouldStayCorrectAfterRandomModifications() throws Exception
     {
         // GIVEN
         try ( GBPTree<KEY,VALUE> index = createIndex() )
@@ -151,7 +159,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
     }
 
     @Test
-    public void shouldHandleRemoveEntireTree() throws Exception
+    void shouldHandleRemoveEntireTree() throws Exception
     {
         // given
         try ( GBPTree<KEY,VALUE> index = createIndex() )
@@ -206,31 +214,34 @@ public abstract class GBPTreeITBase<KEY,VALUE>
     }
 
     // Timeout because test verify no infinite loop
-    @Test( timeout = 10_000L )
-    public void shouldHandleDescendingWithEmptyRange() throws IOException
+    @Test
+    void shouldHandleDescendingWithEmptyRange() throws IOException
     {
-        long[] seeds = new long[]{0, 1, 4};
-        try ( GBPTree<KEY,VALUE> index = createIndex() )
+        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
         {
-            // Write
-            try ( Writer<KEY, VALUE> writer = index.writer() )
+            long[] seeds = new long[]{0, 1, 4};
+            try ( GBPTree<KEY,VALUE> index = createIndex() )
             {
-                for ( long seed : seeds )
+                // Write
+                try ( Writer<KEY,VALUE> writer = index.writer() )
                 {
-                    KEY key = layout.key( seed );
-                    VALUE value = layout.value( 0 );
-                    writer.put( key, value );
+                    for ( long seed : seeds )
+                    {
+                        KEY key = layout.key( seed );
+                        VALUE value = layout.value( 0 );
+                        writer.put( key, value );
+                    }
                 }
-            }
 
-            KEY from = layout.key( 3 );
-            KEY to = layout.key( 1 );
-            try ( RawCursor<Hit<KEY,VALUE>, IOException> seek = index.seek( from, to ) )
-            {
-                assertFalse( seek.next() );
+                KEY from = layout.key( 3 );
+                KEY to = layout.key( 1 );
+                try ( RawCursor<Hit<KEY,VALUE>,IOException> seek = index.seek( from, to ) )
+                {
+                    assertFalse( seek.next() );
+                }
+                index.checkpoint( IOLimiter.UNLIMITED );
             }
-            index.checkpoint( IOLimiter.UNLIMITED );
-        }
+        } );
     }
 
     private void randomlyModifyIndex( GBPTree<KEY,VALUE> index, Map<KEY,VALUE> data, Random random, double removeProbability )
@@ -306,8 +317,7 @@ public abstract class GBPTreeITBase<KEY,VALUE>
 
     private void assertEqualsValue( VALUE expected, VALUE actual )
     {
-        assertEquals( String.format( "expected equal, expected=%s, actual=%s", expected.toString(), actual.toString() ), 0,
-                layout.compareValue( expected, actual ) );
+        assertEquals( 0, layout.compareValue( expected, actual ), format( "expected equal, expected=%s, actual=%s", expected, actual ) );
     }
 
     // KEEP even if unused

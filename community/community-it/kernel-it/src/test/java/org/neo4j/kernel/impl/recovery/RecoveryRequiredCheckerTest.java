@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,53 +36,54 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 
-public class RecoveryRequiredCheckerTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class RecoveryRequiredCheckerTest
 {
-    private final EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fileSystemRule.get() );
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( pageCacheRule ).around( fileSystemRule ).around( testDirectory );
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fileSystem;
 
     private final Monitors monitors = new Monitors();
-    private EphemeralFileSystemAbstraction fileSystem;
     private File storeDir;
     private DatabaseLayout databaseLayout;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
         databaseLayout = testDirectory.databaseLayout();
         storeDir = databaseLayout.databaseDirectory();
-        fileSystem = fileSystemRule.get();
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir ).shutdown();
     }
 
     @Test
-    public void shouldNotWantToRecoverIntactStore() throws Exception
+    void shouldNotWantToRecoverIntactStore() throws Exception
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
+        PageCache pageCache = pageCacheExtension.getPageCache( fileSystem );
         RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystem, pageCache );
 
         assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
     }
 
     @Test
-    public void shouldWantToRecoverBrokenStore() throws Exception
+    void shouldWantToRecoverBrokenStore() throws Exception
     {
         try ( FileSystemAbstraction fileSystemAbstraction = createAndCrashWithDefaultConfig() )
         {
 
-            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+            PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
             assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
@@ -90,11 +91,11 @@ public class RecoveryRequiredCheckerTest
     }
 
     @Test
-    public void shouldBeAbleToRecoverBrokenStore() throws Exception
+    void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
         try ( FileSystemAbstraction fileSystemAbstraction = createAndCrashWithDefaultConfig() )
         {
-            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+            PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
 
             RecoveryRequiredChecker recoverer = getRecoveryCheckerWithDefaultConfig( fileSystemAbstraction, pageCache );
 
@@ -107,7 +108,7 @@ public class RecoveryRequiredCheckerTest
     }
 
     @Test
-    public void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateRelativeLocation() throws Exception
+    void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateRelativeLocation() throws Exception
     {
         File customTransactionLogsLocation = new File( storeDir, "tx-logs" );
         Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getName() );
@@ -115,7 +116,7 @@ public class RecoveryRequiredCheckerTest
     }
 
     @Test
-    public void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
+    void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
         File customTransactionLogsLocation = testDirectory.directory( "tx-logs" );
         Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getAbsolutePath() );
@@ -126,7 +127,7 @@ public class RecoveryRequiredCheckerTest
     {
         try ( FileSystemAbstraction fileSystemAbstraction = createSomeDataAndCrash( storeDir, fileSystem, config ) )
         {
-            PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+            PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
 
             RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
 

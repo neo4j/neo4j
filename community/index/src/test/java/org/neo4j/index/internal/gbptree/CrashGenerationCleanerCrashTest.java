@@ -19,8 +19,7 @@
  */
 package org.neo4j.index.internal.gbptree;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.List;
@@ -32,21 +31,19 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.StubPagedFile;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.index.internal.gbptree.CrashGenerationCleaner.MAX_BATCH_SIZE;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_MONITOR;
 
-public class CrashGenerationCleanerCrashTest
+@PageCacheExtension
+class CrashGenerationCleanerCrashTest
 {
-    @Rule
-    public PageCacheAndDependenciesRule store = new PageCacheAndDependenciesRule();
-
     @Test
-    public void mustNotLeakTasksOnCrash()
+    void mustNotLeakTasksOnCrash()
     {
         // Given
         String exceptionMessage = "When there's no more room in hell, the dead will walk the earth";
@@ -55,25 +52,19 @@ public class CrashGenerationCleanerCrashTest
 
         try
         {
-            // When
-            cleaner.clean( executorService );
-            fail( "Expected to throw" );
-        }
-        catch ( Throwable e )
-        {
-            Throwable rootCause = Exceptions.rootCause( e );
+            Throwable exception = assertThrows( Throwable.class, () -> cleaner.clean( executorService ) );
+            Throwable rootCause = Exceptions.rootCause( exception );
             assertTrue( rootCause instanceof IOException );
             assertEquals( exceptionMessage, rootCause.getMessage() );
         }
         finally
         {
-            // Then
             List<Runnable> tasks = executorService.shutdownNow();
             assertEquals( 0, tasks.size() );
         }
     }
 
-    private CrashGenerationCleaner newCrashingCrashGenerationCleaner( String message )
+    private static CrashGenerationCleaner newCrashingCrashGenerationCleaner( String message )
     {
         int pageSize = 8192;
         PagedFile pagedFile = new StubPagedFile( pageSize )

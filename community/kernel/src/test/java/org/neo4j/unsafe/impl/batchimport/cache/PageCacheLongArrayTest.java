@@ -19,40 +19,39 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PageCacheLongArrayTest
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
+class PageCacheLongArrayTest
 {
     private static final int COUNT = 1_000_000;
-
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory();
-    private final RandomRule random = new RandomRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( dir ).around( random ).around( pageCacheRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private RandomRule random;
 
     @Test
-    public void verifyPageCacheLongArray() throws Exception
+    void verifyPageCacheLongArray() throws Exception
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        PagedFile file = pageCache.map( dir.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
+        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
 
         try ( LongArray array = new PageCacheLongArray( file, COUNT, 0, 0 ) )
         {
@@ -61,10 +60,9 @@ public class PageCacheLongArrayTest
     }
 
     @Test
-    public void verifyChunkingArrayWithPageCacheLongArray()
+    void verifyChunkingArrayWithPageCacheLongArray()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        File directory = dir.directory();
+        File directory = testDirectory.directory();
         NumberArrayFactory numberArrayFactory = NumberArrayFactory.auto( pageCache, directory, false, NumberArrayFactory.NO_MONITOR );
         try ( LongArray array = numberArrayFactory.newDynamicLongArray( COUNT / 1_000, 0 ) )
         {

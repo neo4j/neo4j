@@ -21,11 +21,11 @@ package org.neo4j.index.internal.gbptree;
 
 import org.apache.commons.lang3.mutable.MutableInt;
 import org.apache.commons.lang3.mutable.MutableLong;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -34,19 +34,21 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.index.internal.gbptree.SimpleLongLayout.longLayout;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_LEFTSIBLING;
 import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_RIGHTSIBLING;
@@ -54,17 +56,19 @@ import static org.neo4j.index.internal.gbptree.TreeNode.BYTE_POS_SUCCESSOR;
 import static org.neo4j.index.internal.gbptree.TreeNode.Overflow;
 import static org.neo4j.index.internal.gbptree.TreeNode.keyCount;
 import static org.neo4j.index.internal.gbptree.TreeNode.setKeyCount;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class CrashGenerationCleanerTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class, RandomExtension.class} )
+class CrashGenerationCleanerTest
 {
-    private final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( this.getClass(), fileSystemRule.get() );
-    private final RandomRule randomRule = new RandomRule();
-    @Rule
-    public RuleChain ruleChain = RuleChain
-            .outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( randomRule );
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension();
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private RandomRule randomRule;
 
     private static final String FILE_NAME = "index";
     private static final int PAGE_SIZE = 256;
@@ -91,23 +95,23 @@ public class CrashGenerationCleanerTest
             crashed( successor() )
     );
 
-    @Before
-    public void setupPagedFile() throws IOException
+    @BeforeEach
+    void setupPagedFile() throws IOException
     {
-        PageCache pageCache = pageCacheRule
-                .getPageCache( fileSystemRule.get(), config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
+        PageCache pageCache = pageCacheExtension
+                .getPageCache( fileSystem, config().withPageSize( PAGE_SIZE ).withAccessChecks( true ) );
         pagedFile = pageCache
                 .map( testDirectory.file( FILE_NAME ), PAGE_SIZE, CREATE, DELETE_ON_CLOSE );
     }
 
-    @After
-    public void teardownPagedFile() throws IOException
+    @AfterEach
+    void teardownPagedFile() throws IOException
     {
         pagedFile.close();
     }
 
     @Test
-    public void shouldNotCrashOnEmptyFile() throws Exception
+    void shouldNotCrashOnEmptyFile() throws Exception
     {
         // GIVEN
         Page[] pages = with();
@@ -123,7 +127,7 @@ public class CrashGenerationCleanerTest
     }
 
     @Test
-    public void shouldNotReportErrorsOnCleanPages() throws Exception
+    void shouldNotReportErrorsOnCleanPages() throws Exception
     {
         // GIVEN
         Page[] pages = with(
@@ -142,7 +146,7 @@ public class CrashGenerationCleanerTest
     }
 
     @Test
-    public void shouldCleanOneCrashPerPage() throws Exception
+    void shouldCleanOneCrashPerPage() throws Exception
     {
         // GIVEN
         Page[] pages = with(
@@ -175,7 +179,7 @@ public class CrashGenerationCleanerTest
     }
 
     @Test
-    public void shouldCleanMultipleCrashPerPage() throws Exception
+    void shouldCleanMultipleCrashPerPage() throws Exception
     {
         // GIVEN
         Page[] pages = with(
@@ -203,7 +207,7 @@ public class CrashGenerationCleanerTest
     }
 
     @Test
-    public void shouldCleanLargeFile() throws Exception
+    void shouldCleanLargeFile() throws Exception
     {
         // GIVEN
         int numberOfPages = randomRule.intBetween( 1_000, 10_000 );
@@ -247,19 +251,18 @@ public class CrashGenerationCleanerTest
     }
 
     /* Assertions */
-    private void assertCleanedCrashPointers( SimpleCleanupMonitor monitor,
-            int expectedNumberOfCleanedCrashPointers )
+    private static void assertCleanedCrashPointers( SimpleCleanupMonitor monitor, int expectedNumberOfCleanedCrashPointers )
     {
-        assertEquals( "Expected number of cleaned crash pointers to be " +
-                        expectedNumberOfCleanedCrashPointers + " but was " + monitor.numberOfCleanedCrashPointers,
-                expectedNumberOfCleanedCrashPointers, monitor.numberOfCleanedCrashPointers );
+        assertEquals( expectedNumberOfCleanedCrashPointers, monitor.numberOfCleanedCrashPointers,
+                "Expected number of cleaned crash pointers to be " +
+                        expectedNumberOfCleanedCrashPointers + " but was " + monitor.numberOfCleanedCrashPointers );
     }
 
-    private void assertPagesVisited( SimpleCleanupMonitor monitor, int expectedNumberOfPagesVisited )
+    private static void assertPagesVisited( SimpleCleanupMonitor monitor, int expectedNumberOfPagesVisited )
     {
-        assertEquals( "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
-                        " but was " + monitor.numberOfPagesVisited,
-                expectedNumberOfPagesVisited, monitor.numberOfPagesVisited );
+        assertEquals( expectedNumberOfPagesVisited, monitor.numberOfPagesVisited,
+                "Expected number of visited pages to be " + expectedNumberOfPagesVisited +
+                        " but was " + monitor.numberOfPagesVisited );
     }
 
     /* Random page */

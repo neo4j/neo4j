@@ -19,14 +19,11 @@
  */
 package org.neo4j.kernel.impl.store.counts;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -56,44 +53,42 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_ID;
 
-public class CountsComputerTest
+@PageCacheExtension
+class CountsComputerTest
 {
     private static final NullLogProvider LOG_PROVIDER = NullLogProvider.getInstance();
     private static final Config CONFIG = Config.defaults();
-    private final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    private final PageCacheRule pcRule = new PageCacheRule();
-    private final TestDirectory testDir = TestDirectory.testDirectory( fsRule );
 
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( pcRule ).around( fsRule ).around( testDir );
-
-    private FileSystemAbstraction fs;
-    private GraphDatabaseBuilder dbBuilder;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
     private PageCache pageCache;
 
-    @Before
-    public void setup()
+    private GraphDatabaseBuilder dbBuilder;
+
+    @BeforeEach
+    void setup()
     {
-        fs = fsRule.get();
-        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
-                .newImpermanentDatabaseBuilder( testDir.databaseDir() );
-        pageCache = pcRule.getPageCache( fs );
+        dbBuilder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() );
     }
 
     @Test
-    public void skipPopulationWhenNodeAndRelationshipStoresAreEmpty()
+    void skipPopulationWhenNodeAndRelationshipStoresAreEmpty()
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         long lastCommittedTransactionId = getLastTxId( db );
@@ -108,9 +103,8 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
+    void shouldCreateAnEmptyCountsStoreFromAnEmptyDatabase()
     {
-        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         long lastCommittedTransactionId = getLastTxId( db );
         db.shutdown();
@@ -121,9 +115,8 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreNodesInTheDB()
+    void shouldCreateACountsStoreWhenThereAreNodesInTheDB()
     {
-        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -152,9 +145,8 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB()
+    void shouldCreateACountsStoreWhenThereAreUnusedNodeRecordsInTheDB()
     {
-        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -184,9 +176,8 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB()
+    void shouldCreateACountsStoreWhenThereAreUnusedRelationshipRecordsInTheDB()
     {
-        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -218,9 +209,8 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB()
+    void shouldCreateACountsStoreWhenThereAreNodesAndRelationshipsInTheDB()
     {
-        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
         {
@@ -257,9 +247,8 @@ public class CountsComputerTest
     }
 
     @Test
-    public void shouldCreateACountStoreWhenDBContainsDenseNodes()
+    void shouldCreateACountStoreWhenDBContainsDenseNodes()
     {
-        @SuppressWarnings( "deprecation" )
         final GraphDatabaseAPI db = (GraphDatabaseAPI) dbBuilder.
                 setConfig( GraphDatabaseSettings.dense_node_threshold, "2" ).newGraphDatabase();
         try ( Transaction tx = db.beginTx() )
@@ -302,15 +291,15 @@ public class CountsComputerTest
 
     private File alphaStoreFile()
     {
-        return testDir.databaseLayout().countStoreA();
+        return testDirectory.databaseLayout().countStoreA();
     }
 
     private File betaStoreFile()
     {
-        return testDir.databaseLayout().countStoreB();
+        return testDirectory.databaseLayout().countStoreB();
     }
 
-    private long getLastTxId( @SuppressWarnings( "deprecation" ) GraphDatabaseAPI db )
+    private static long getLastTxId( GraphDatabaseAPI db )
     {
         return db.getDependencyResolver().resolveDependency( TransactionIdStore.class ).getLastCommittedTransactionId();
     }
@@ -327,13 +316,13 @@ public class CountsComputerTest
 
     private void cleanupCountsForRebuilding()
     {
-        fs.deleteFile( alphaStoreFile() );
-        fs.deleteFile( betaStoreFile() );
+        fileSystem.deleteFile( alphaStoreFile() );
+        fileSystem.deleteFile( betaStoreFile() );
     }
 
     private CountsTracker createCountsTracker()
     {
-        return new CountsTracker( LOG_PROVIDER, fs, pageCache, CONFIG, testDir.databaseLayout(), EmptyVersionContextSupplier.EMPTY );
+        return new CountsTracker( LOG_PROVIDER, fileSystem, pageCache, CONFIG, testDirectory.databaseLayout(), EmptyVersionContextSupplier.EMPTY );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId )
@@ -345,9 +334,9 @@ public class CountsComputerTest
     {
         cleanupCountsForRebuilding();
 
-        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fs );
-        StoreFactory storeFactory =
-                new StoreFactory( testDir.databaseLayout(), CONFIG, idGenFactory, pageCache, fs, LOG_PROVIDER, EmptyVersionContextSupplier.EMPTY );
+        IdGeneratorFactory idGenFactory = new DefaultIdGeneratorFactory( fileSystem );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), CONFIG, idGenFactory, pageCache, fileSystem, LOG_PROVIDER,
+                EmptyVersionContextSupplier.EMPTY );
         try ( Lifespan life = new Lifespan();
               NeoStores neoStores = storeFactory.openAllNeoStores() )
         {
@@ -363,7 +352,7 @@ public class CountsComputerTest
         }
     }
 
-    private long get( CountsTracker store, CountsKey key )
+    private static long get( CountsTracker store, CountsKey key )
     {
         Register.DoubleLongRegister value = Registers.newDoubleLongRegister();
         store.get( key, value );

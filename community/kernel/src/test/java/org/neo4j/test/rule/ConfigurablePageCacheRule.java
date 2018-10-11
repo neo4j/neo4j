@@ -29,6 +29,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.logging.FormattedLogProvider;
 
+import static org.neo4j.test.rule.PageCacheConfig.config;
+
 public class ConfigurablePageCacheRule extends PageCacheRule
 {
     public PageCache getPageCache( FileSystemAbstraction fs, Config config )

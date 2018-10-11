@@ -19,9 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 import java.util.function.BiFunction;
@@ -29,44 +28,44 @@ import java.util.function.BiFunction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
 public abstract class PageCacheNumberArrayConcurrencyTest
 {
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    protected RandomRule random;
     protected static final int COUNT = 100;
-    protected static final int LAPS = 2_000;
-    protected static final int CONTESTANTS = 10;
-
-    private final DefaultFileSystemRule fs = new DefaultFileSystemRule();
-    private final TestDirectory dir = TestDirectory.testDirectory();
-    protected final RandomRule random = new RandomRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( dir ).around( random ).around( pageCacheRule );
+    static final int LAPS = 2_000;
+    static final int CONTESTANTS = 10;
 
     @Test
-    public void shouldHandleConcurrentAccessToSameData() throws Throwable
+    void shouldHandleConcurrentAccessToSameData() throws Throwable
     {
         doRace( this::wholeFileRacer );
     }
 
     @Test
-    public void shouldHandleConcurrentAccessToDifferentData() throws Throwable
+    void shouldHandleConcurrentAccessToDifferentData() throws Throwable
     {
         doRace( this::fileRangeRacer );
     }
 
     private void doRace( BiFunction<NumberArray,Integer,Runnable> contestantCreator ) throws Throwable
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        PagedFile file = pageCache.map( dir.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
+        PagedFile file = pageCache.map( testDirectory.file( "file" ), pageCache.pageSize(), CREATE, DELETE_ON_CLOSE );
         Race race = new Race();
         try ( NumberArray array = getNumberArray( file ) )
         {

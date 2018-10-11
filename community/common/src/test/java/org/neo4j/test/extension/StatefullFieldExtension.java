@@ -43,7 +43,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
     protected abstract Namespace getNameSpace();
 
     @Override
-    public void afterAll( ExtensionContext context )
+    public void afterAll( ExtensionContext context ) throws Exception
     {
         removeStoredValue( context );
     }
@@ -57,7 +57,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         for ( Field declaredField : declaredFields )
         {
             if ( declaredField.isAnnotationPresent( Inject.class ) &&
-                    getFieldType().equals( declaredField.getType() ) )
+                    declaredField.getType().isAssignableFrom( getFieldType() ) )
             {
                 declaredField.setAccessible( true );
                 declaredField.set( testInstance, instance );
@@ -65,17 +65,17 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         }
     }
 
-    T getStoredValue( ExtensionContext context )
+    protected T getStoredValue( ExtensionContext context )
     {
         return getLocalStore( context ).get( getFieldKey(), getFieldType() );
     }
 
-    void removeStoredValue( ExtensionContext context )
+    protected void removeStoredValue( ExtensionContext context )
     {
         getLocalStore( context ).remove( getFieldKey(), getFieldType() );
     }
 
-    static Store getStore( ExtensionContext extensionContext, Namespace namespace )
+    protected static Store getStore( ExtensionContext extensionContext, Namespace namespace )
     {
         return extensionContext.getRoot().getStore( namespace );
     }

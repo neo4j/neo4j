@@ -73,8 +73,8 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
     @Override
     protected TestDirectory createField( ExtensionContext extensionContext )
     {
-        ExtensionContext.Store fileSystemStore = getStore( extensionContext, DefaultFileSystemExtension.FILE_SYSTEM_NAMESPACE );
-        FileSystemAbstraction fileSystemAbstraction = fileSystemStore.get( DefaultFileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
+        ExtensionContext.Store fileSystemStore = getStore( extensionContext, FileSystemExtension.FILE_SYSTEM_NAMESPACE );
+        FileSystemAbstraction fileSystemAbstraction = fileSystemStore.get( FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
         return fileSystemAbstraction != null ? testDirectory(fileSystemAbstraction) : testDirectory();
     }
 

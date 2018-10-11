@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.HashMap;
@@ -39,8 +38,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
@@ -48,28 +49,29 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.ImpermanentGraphDatabase;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.EphemeralPageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IdGeneratorRebuildFailureEmulationTest
+@EphemeralPageCacheExtension
+class IdGeneratorRebuildTest
 {
-    private FileSystem fs;
-    private StoreFactory factory;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private PageCache pageCache;
 
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final PageCacheRule pageCacheRule = new PageCacheRule();
+    private StoreFactory factory;
     private DatabaseLayout databaseLayout;
 
-    @Before
-    public void initialize()
+    @BeforeEach
+    void initialize()
     {
-        fs = new FileSystem();
         databaseLayout = testDirectory.databaseLayout();
         GraphDatabaseService graphdb = new Database( databaseLayout.databaseDirectory() );
         createInitialData( graphdb );
@@ -77,12 +79,12 @@ public class IdGeneratorRebuildFailureEmulationTest
         Map<String, String> params = new HashMap<>();
         params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         Config config = Config.defaults( params );
-        factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ),
-                pageCacheRule.getPageCache( fs ), fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        factory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fs ), pageCache, fs, NullLogProvider.getInstance(),
+                EmptyVersionContextSupplier.EMPTY );
     }
 
-    @After
-    public void verifyAndDispose() throws Exception
+    @AfterEach
+    void verifyAndDispose() throws Exception
     {
         GraphDatabaseService graphdb = null;
         try
@@ -98,10 +100,69 @@ public class IdGeneratorRebuildFailureEmulationTest
             }
             if ( fs != null )
             {
-                fs.disposeAndAssertNoOpenFiles();
+                fs.assertNoOpenFiles();
             }
-            fs = null;
         }
+    }
+
+    @Test
+    void neostore()
+    {
+        performTest( databaseLayout.idMetadataStore() );
+    }
+
+    @Test
+    void neostore_nodestore_db()
+    {
+        performTest( databaseLayout.idNodeStore() );
+    }
+
+    @Test
+    void neostore_propertystore_db_arrays()
+    {
+        performTest( databaseLayout.idPropertyArrayStore() );
+    }
+
+    @Test
+    void neostore_propertystore_db()
+    {
+        performTest( databaseLayout.idPropertyStore() );
+    }
+
+    @Test
+    void neostore_propertystore_db_index()
+    {
+        performTest( databaseLayout.idPropertyKeyTokenStore() );
+    }
+
+    @Test
+    void neostore_propertystore_db_index_keys()
+    {
+        performTest( databaseLayout.idPropertyKeyTokenNamesStore() );
+    }
+
+    @Test
+    void neostore_propertystore_db_strings()
+    {
+        performTest( databaseLayout.idPropertyStringStore() );
+    }
+
+    @Test
+    void neostore_relationshipstore_db()
+    {
+        performTest( databaseLayout.idRelationshipStore() );
+    }
+
+    @Test
+    void neostore_relationshiptypestore_db()
+    {
+        performTest( databaseLayout.idRelationshipTypeTokenStore() );
+    }
+
+    @Test
+    void neostore_relationshiptypestore_db_names()
+    {
+        performTest( databaseLayout.idRelationshipTypeTokenNamesStore() );
     }
 
     private void performTest( File idFile )
@@ -110,15 +171,12 @@ public class IdGeneratorRebuildFailureEmulationTest
         fs.deleteFile( idFile );
         try ( NeoStores neoStores = factory.openAllNeoStores() )
         {
-            // emulate a failure during rebuild:
+            // close neoStores in case of failure
         }
-        catch ( UnderlyingStorageException expected )
-        {
-            assertThat( expected.getMessage(), startsWith( "Id capacity exceeded" ) );
-        }
+        assertTrue( fs.fileExists( idFile ) );
     }
 
-    private void verifyData( GraphDatabaseService graphdb )
+    private static void verifyData( GraphDatabaseService graphdb )
     {
         try ( Transaction tx = graphdb.beginTx() )
         {
@@ -129,19 +187,19 @@ public class IdGeneratorRebuildFailureEmulationTest
                 int relcount = 0;
                 for ( Relationship rel : node.getRelationships() )
                 {
-                    assertEquals( "all relationships should have 3 properties.", 3, readProperties( rel ) );
+                    assertEquals( 3, readProperties( rel ), "all relationships should have 3 properties." );
                     relcount++;
                 }
-                assertEquals( "all created nodes should have 3 properties.", 3, propcount );
-                assertEquals( "all created nodes should have 2 relationships.", 2, relcount );
+                assertEquals( 3, propcount, "all created nodes should have 3 properties." );
+                assertEquals( 2, relcount, "all created nodes should have 3 properties." );
 
                 nodecount++;
             }
-            assertEquals( "The database should have 2 nodes.", 2, nodecount );
+            assertEquals( 2, nodecount, "The database should have 2 nodes." );
         }
     }
 
-    private void createInitialData( GraphDatabaseService graphdb )
+    private static void createInitialData( GraphDatabaseService graphdb )
     {
         try ( Transaction tx = graphdb.beginTx() )
         {
@@ -154,7 +212,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         }
     }
 
-    private <E extends PropertyContainer> E properties( E entity )
+    private static <E extends PropertyContainer> E properties( E entity )
     {
         entity.setProperty( "short thing", "short" );
         entity.setProperty( "long thing",
@@ -164,7 +222,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         return entity;
     }
 
-    private int readProperties( PropertyContainer entity )
+    private static int readProperties( PropertyContainer entity )
     {
         int count = 0;
         for ( String key : entity.getPropertyKeys() )
@@ -175,21 +233,6 @@ public class IdGeneratorRebuildFailureEmulationTest
         return count;
     }
 
-    private static class FileSystem extends EphemeralFileSystemAbstraction
-    {
-        void disposeAndAssertNoOpenFiles() throws Exception
-        {
-            assertNoOpenFiles();
-            super.close();
-        }
-
-        @Override
-        public void close()
-        {
-        }
-    }
-
-    @SuppressWarnings( "deprecation" )
     private class Database extends ImpermanentGraphDatabase
     {
         Database( File storeDir )
@@ -214,71 +257,11 @@ public class IdGeneratorRebuildFailureEmulationTest
                         @Override
                         protected FileSystemAbstraction createFileSystemAbstraction()
                         {
-                            return fs;
+                            return new UncloseableDelegatingFileSystemAbstraction( fs );
                         }
                     };
                 }
             }.initFacade( databasesRoot, params, dependencies, this );
         }
-    }
-
-    @Test
-    public void neostore()
-    {
-        performTest( databaseLayout.idMetadataStore() );
-    }
-
-    @Test
-    public void neostore_nodestore_db()
-    {
-        performTest( databaseLayout.idNodeStore() );
-    }
-
-    @Test
-    public void neostore_propertystore_db_arrays()
-    {
-        performTest( databaseLayout.idPropertyArrayStore() );
-    }
-
-    @Test
-    public void neostore_propertystore_db()
-    {
-        performTest( databaseLayout.idPropertyStore() );
-    }
-
-    @Test
-    public void neostore_propertystore_db_index()
-    {
-        performTest( databaseLayout.idPropertyKeyTokenStore() );
-    }
-
-    @Test
-    public void neostore_propertystore_db_index_keys()
-    {
-        performTest( databaseLayout.idPropertyKeyTokenNamesStore() );
-    }
-
-    @Test
-    public void neostore_propertystore_db_strings()
-    {
-        performTest( databaseLayout.idPropertyStringStore() );
-    }
-
-    @Test
-    public void neostore_relationshipstore_db()
-    {
-        performTest( databaseLayout.idRelationshipStore() );
-    }
-
-    @Test
-    public void neostore_relationshiptypestore_db()
-    {
-        performTest( databaseLayout.idRelationshipTypeTokenStore() );
-    }
-
-    @Test
-    public void neostore_relationshiptypestore_db_names()
-    {
-        performTest( databaseLayout.idRelationshipTypeTokenNamesStore() );
     }
 }

@@ -19,14 +19,16 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -35,28 +37,36 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.RandomRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.Read.ANY_RELATIONSHIP_TYPE;
 
-public class RecordRelationshipScanCursorTest
+@PageCacheExtension
+@ExtendWith( RandomExtension.class )
+class RecordRelationshipScanCursorTest
 {
     private static final long RELATIONSHIP_ID = 1L;
 
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
-    @Rule
-    public final RandomRule random = new RandomRule();
+    @Inject
+    private RandomRule random;
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     private NeoStores neoStores;
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         if ( neoStores != null )
         {
@@ -64,15 +74,15 @@ public class RecordRelationshipScanCursorTest
         }
     }
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         StoreFactory storeFactory = getStoreFactory();
         neoStores = storeFactory.openAllNeoStores( true );
     }
 
     @Test
-    public void retrieveUsedRelationship()
+    void retrieveUsedRelationship()
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         createRelationshipRecord( RELATIONSHIP_ID, 1, relationshipStore, true );
@@ -86,7 +96,7 @@ public class RecordRelationshipScanCursorTest
     }
 
     @Test
-    public void retrieveUnusedRelationship()
+    void retrieveUnusedRelationship()
     {
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
         relationshipStore.setHighId( 10 );
@@ -100,7 +110,7 @@ public class RecordRelationshipScanCursorTest
     }
 
     @Test
-    public void shouldScanAllInUseRelationships()
+    void shouldScanAllInUseRelationships()
     {
         // given
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
@@ -122,7 +132,7 @@ public class RecordRelationshipScanCursorTest
     }
 
     @Test
-    public void shouldScanAllInUseRelationshipsOfCertainType()
+    void shouldScanAllInUseRelationshipsOfCertainType()
     {
         // given
         RelationshipStore relationshipStore = neoStores.getRelationshipStore();
@@ -153,13 +163,13 @@ public class RecordRelationshipScanCursorTest
             while ( cursor.next() )
             {
                 // then
-                assertTrue( cursor.toString(), expected.remove( cursor.entityReference() ) );
+                assertTrue( expected.remove( cursor.entityReference() ), cursor.toString() );
             }
         }
         assertTrue( expected.isEmpty() );
     }
 
-    private void createRelationshipRecord( long id, int type, RelationshipStore relationshipStore, boolean used )
+    private static void createRelationshipRecord( long id, int type, RelationshipStore relationshipStore, boolean used )
     {
        relationshipStore.updateRecord( new RelationshipRecord( id ).initialize( used, -1, 1, 2, type, -1, -1, -1, -1, true, true ) );
     }
@@ -167,8 +177,8 @@ public class RecordRelationshipScanCursorTest
     private StoreFactory getStoreFactory()
     {
         return new StoreFactory(
-                storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
-                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+                testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
     }
 
     private RecordRelationshipScanCursor createRelationshipCursor()

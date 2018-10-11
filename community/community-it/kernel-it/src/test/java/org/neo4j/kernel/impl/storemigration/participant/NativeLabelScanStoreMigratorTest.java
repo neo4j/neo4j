@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration.participant;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,42 +54,40 @@ import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
-public class NativeLabelScanStoreMigratorTest
+@PageCacheExtension
+class NativeLabelScanStoreMigratorTest
 {
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule ).around( pageCacheRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     private File storeDir;
     private File nativeLabelIndex;
     private DatabaseLayout migrationLayout;
     private File luceneLabelScanStore;
-
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
-
-    private FileSystemAbstraction fileSystem;
-    private PageCache pageCache;
     private NativeLabelScanStoreMigrator indexMigrator;
     private DatabaseLayout databaseLayout;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         databaseLayout = testDirectory.databaseLayout();
         storeDir = databaseLayout.databaseDirectory();
@@ -99,14 +95,12 @@ public class NativeLabelScanStoreMigratorTest
         migrationLayout = testDirectory.databaseLayout( "migrationDir" );
         luceneLabelScanStore = testDirectory.databaseDir().toPath().resolve( Paths.get( "schema", "label", "lucene" ) ).toFile();
 
-        fileSystem = fileSystemRule.get();
-        pageCache = pageCacheRule.getPageCache( fileSystemRule );
         indexMigrator = new NativeLabelScanStoreMigrator( fileSystem, pageCache, Config.defaults() );
         fileSystem.mkdirs( luceneLabelScanStore );
     }
 
     @Test
-    public void skipMigrationIfNativeIndexExist() throws Exception
+    void skipMigrationIfNativeIndexExist() throws Exception
     {
         ByteBuffer sourceBuffer = writeFile( nativeLabelIndex, new byte[]{1, 2, 3} );
 
@@ -118,18 +112,21 @@ public class NativeLabelScanStoreMigratorTest
         assertTrue( fileSystem.fileExists( luceneLabelScanStore ) );
     }
 
-    @Test( expected = InvalidIdGeneratorException.class )
-    public void failMigrationWhenNodeIdFileIsBroken() throws Exception
+    @Test
+    void failMigrationWhenNodeIdFileIsBroken()
     {
-        prepareEmpty23Database();
-        File nodeIdFile = databaseLayout.idNodeStore();
-        writeFile( nodeIdFile, new byte[]{1, 2, 3} );
+        assertThrows( InvalidIdGeneratorException.class, () ->
+        {
+            prepareEmpty23Database();
+            File nodeIdFile = databaseLayout.idNodeStore();
+            writeFile( nodeIdFile, new byte[]{1, 2, 3} );
 
-        indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+            indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_2.STORE_VERSION, StandardV3_2.STORE_VERSION );
+        } );
     }
 
     @Test
-    public void clearMigrationDirFromAnyLabelScanStoreBeforeMigrating() throws Exception
+    void clearMigrationDirFromAnyLabelScanStoreBeforeMigrating() throws Exception
     {
         // given
         prepareEmpty23Database();
@@ -145,7 +142,7 @@ public class NativeLabelScanStoreMigratorTest
     }
 
     @Test
-    public void luceneLabelIndexRemovedAfterSuccessfulMigration() throws IOException
+    void luceneLabelIndexRemovedAfterSuccessfulMigration() throws IOException
     {
         prepareEmpty23Database();
 
@@ -156,7 +153,7 @@ public class NativeLabelScanStoreMigratorTest
     }
 
     @Test
-    public void moveCreatedNativeLabelIndexBackToStoreDirectory() throws IOException
+    void moveCreatedNativeLabelIndexBackToStoreDirectory() throws IOException
     {
         prepareEmpty23Database();
         indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
@@ -170,7 +167,7 @@ public class NativeLabelScanStoreMigratorTest
     }
 
     @Test
-    public void populateNativeLabelScanIndexDuringMigration() throws IOException
+    void populateNativeLabelScanIndexDuringMigration() throws IOException
     {
         prepare34DatabaseWithNodes();
         indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_4.STORE_VERSION, StandardV3_4.STORE_VERSION );
@@ -185,15 +182,14 @@ public class NativeLabelScanStoreMigratorTest
                 try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
                 {
                     int nodeCount = PrimitiveLongCollections.count( labelScanReader.nodesWithLabel( labelId ) );
-                    assertEquals( format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ),
-                            1, nodeCount );
+                    assertEquals( 1, nodeCount, format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ) );
                 }
             }
         }
     }
 
     @Test
-    public void reportProgressOnNativeIndexPopulation() throws IOException
+    void reportProgressOnNativeIndexPopulation() throws IOException
     {
         prepare34DatabaseWithNodes();
         indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_4.STORE_VERSION, StandardV3_4.STORE_VERSION );

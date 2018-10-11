@@ -20,16 +20,16 @@
 package org.neo4j.kernel.impl.transaction.state;
 
 import org.eclipse.collections.impl.factory.primitive.LongObjectMaps;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.Iterator;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
@@ -63,19 +63,21 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInAnyOrder;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
@@ -86,14 +88,20 @@ import static org.neo4j.storageengine.api.EntityType.NODE;
 import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
 
-public class OnlineIndexUpdatesTest
+@PageCacheExtension
+class OnlineIndexUpdatesTest
 {
     private static final int ENTITY_TOKEN = 1;
     private static final int OTHER_ENTITY_TOKEN = 2;
     private static final int[] ENTITY_TOKENS = {ENTITY_TOKEN};
 
-    @Rule
-    public PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
+
     private NodeStore nodeStore;
     private RelationshipStore relationshipStore;
     private IndexingService indexingService;
@@ -103,16 +111,15 @@ public class OnlineIndexUpdatesTest
     private PropertyCreator propertyCreator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         life = new LifeSupport();
-        PageCache pageCache = storage.pageCache();
-        DatabaseLayout databaseLayout = storage.directory().databaseLayout();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
         Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, EMPTY.getProviderDescriptor().name() );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache,
-                        storage.fileSystem(), nullLogProvider, EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+                        fileSystem, nullLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();
@@ -137,15 +144,15 @@ public class OnlineIndexUpdatesTest
         recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore ) );
     }
 
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         life.shutdown();
         neoStores.close();
     }
 
     @Test
-    public void shouldContainFedNodeUpdate() throws Exception
+    void shouldContainFedNodeUpdate() throws Exception
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
 
@@ -174,7 +181,7 @@ public class OnlineIndexUpdatesTest
     }
 
     @Test
-    public void shouldContainFedRelationshipUpdate() throws Exception
+    void shouldContainFedRelationshipUpdate() throws Exception
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
 
@@ -203,7 +210,7 @@ public class OnlineIndexUpdatesTest
     }
 
     @Test
-    public void shouldDifferentiateNodesAndRelationships() throws Exception
+    void shouldDifferentiateNodesAndRelationships() throws Exception
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
 
@@ -252,7 +259,7 @@ public class OnlineIndexUpdatesTest
     }
 
     @Test
-    public void shouldUpdateCorrectIndexes() throws Exception
+    void shouldUpdateCorrectIndexes() throws Exception
     {
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
 

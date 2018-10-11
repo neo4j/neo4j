@@ -19,41 +19,41 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.After;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.test.rule.PageCacheRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 
-public class KernelDataTest
+@PageCacheExtension
+class KernelDataTest
 {
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
     private final Collection<Kernel> kernels = new HashSet<>();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( pageCacheRule );
-
-    @After
-    public void tearDown()
+    @AfterEach
+    void tearDown()
     {
         Iterator<Kernel> kernelIterator = kernels.iterator();
         while ( kernelIterator.hasNext() )
@@ -65,7 +65,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldGenerateUniqueInstanceIdentifiers()
+    void shouldGenerateUniqueInstanceIdentifiers()
     {
         // given
         Kernel kernel1 = new Kernel( null );
@@ -80,7 +80,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldReuseInstanceIdentifiers()
+    void shouldReuseInstanceIdentifiers()
     {
         // given
         Kernel kernel = new Kernel( null );
@@ -95,7 +95,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldAllowConfigurationOfInstanceId()
+    void shouldAllowConfigurationOfInstanceId()
     {
         // when
         Kernel kernel = new Kernel( "myInstance" );
@@ -105,7 +105,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldGenerateInstanceIdentifierWhenNullConfigured()
+    void shouldGenerateInstanceIdentifierWhenNullConfigured()
     {
         // when
         Kernel kernel = new Kernel( null );
@@ -116,7 +116,7 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldGenerateInstanceIdentifierWhenEmptyStringConfigured()
+    void shouldGenerateInstanceIdentifierWhenEmptyStringConfigured()
     {
         // when
         Kernel kernel = new Kernel( "" );
@@ -127,26 +127,18 @@ public class KernelDataTest
     }
 
     @Test
-    public void shouldNotAllowMultipleInstancesWithTheSameConfiguredInstanceId()
+    void shouldNotAllowMultipleInstancesWithTheSameConfiguredInstanceId()
     {
         // given
         new Kernel( "myInstance" );
 
         // when
-        try
-        {
-            new Kernel( "myInstance" );
-            fail( "should have thrown exception" );
-        }
-        // then
-        catch ( IllegalStateException e )
-        {
-            assertEquals( "There is already a kernel started with unsupported.dbms.kernel_id='myInstance'.", e.getMessage() );
-        }
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () -> new Kernel( "myInstance" ) );
+        assertEquals( "There is already a kernel started with unsupported.dbms.kernel_id='myInstance'.", exception.getMessage() );
     }
 
     @Test
-    public void shouldAllowReuseOfConfiguredInstanceIdAfterShutdown()
+    void shouldAllowReuseOfConfiguredInstanceIdAfterShutdown()
     {
         // given
         new Kernel( "myInstance" ).shutdown();
@@ -162,8 +154,7 @@ public class KernelDataTest
     {
         Kernel( String desiredId )
         {
-            super( fileSystemRule.get(), pageCacheRule.getPageCache( fileSystemRule.get() ),
-                    new File( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), Config.defaults( forced_kernel_id, desiredId), mock( DataSourceManager.class ) );
+            super( fileSystem, pageCache, new File( DEFAULT_DATABASE_NAME ), Config.defaults( forced_kernel_id, desiredId ), mock( DataSourceManager.class ) );
             kernels.add( this );
         }
 

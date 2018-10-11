@@ -28,7 +28,7 @@ import java.io.IOException;
 import java.util.Set;
 
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.api.impl.labelscan.LabelScanStoreTest;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
@@ -83,7 +83,7 @@ public class NativeLabelScanStoreChaosIT
         return ( fs, directory ) -> scrambleFile( storeFile( directory ) );
     }
 
-    private DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
+    private static DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
     {
         return ( fs, directory ) -> fs.deleteFile( storeFile( directory ) );
     }
@@ -108,7 +108,7 @@ public class NativeLabelScanStoreChaosIT
 
     private void scrambleFile( File file ) throws IOException
     {
-        LabelScanStoreTest.scrambleFile( randomRule.random(), file );
+        NativeLabelScanStoreTest.scrambleFile( randomRule.random(), file );
     }
 
     private void deleteNode( Node node )

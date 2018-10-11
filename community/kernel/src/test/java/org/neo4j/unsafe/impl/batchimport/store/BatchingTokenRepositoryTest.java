@@ -19,13 +19,12 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.kernel.api.NamedToken;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
@@ -38,26 +37,33 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
 
 import static java.lang.Integer.parseInt;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class BatchingTokenRepositoryTest
+@PageCacheExtension
+class BatchingTokenRepositoryTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     @Test
-    public void shouldDedupLabelIds()
+    void shouldDedupLabelIds()
     {
         // GIVEN
         BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
@@ -70,7 +76,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldSortLabelIds()
+    void shouldSortLabelIds()
     {
         // GIVEN
         BatchingLabelTokenRepository repo = new BatchingLabelTokenRepository( mock( TokenStore.class ) );
@@ -89,7 +95,7 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldRespectExistingTokens()
+    void shouldRespectExistingTokens()
     {
         // given
         TokenStore<RelationshipTypeTokenRecord> tokenStore = mock( TokenStore.class );
@@ -106,14 +112,12 @@ public class BatchingTokenRepositoryTest
     }
 
     @Test
-    public void shouldFlushNewTokens()
+    void shouldFlushNewTokens()
     {
         // given
 
-        try ( PageCache pageCache = storage.pageCache();
-              NeoStores stores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(),
-                new DefaultIdGeneratorFactory( storage.fileSystem() ), pageCache, storage.fileSystem(),
-                NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
+        try ( NeoStores stores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache,
+                fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY )
                 .openNeoStores( true, StoreType.PROPERTY_KEY_TOKEN, StoreType.PROPERTY_KEY_TOKEN_NAME ) )
         {
             TokenStore<PropertyKeyTokenRecord> tokenStore = stores.getPropertyKeyTokenStore();

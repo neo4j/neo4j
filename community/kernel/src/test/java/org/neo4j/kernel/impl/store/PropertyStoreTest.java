@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 
@@ -37,45 +37,44 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public class PropertyStoreTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class PropertyStoreTest
 {
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
-    @Rule
-    public final EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private EphemeralFileSystemAbstraction fileSystemAbstraction;
     private File storeFile;
     private File idFile;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        fileSystemAbstraction = fsRule.get();
         storeFile = testDirectory.databaseLayout().propertyStore();
         idFile = testDirectory.databaseLayout().idPropertyStore();
-
-        fileSystemAbstraction.mkdir( storeFile.getParentFile() );
     }
 
     @Test
-    public void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
+    void shouldWriteOutTheDynamicChainBeforeUpdatingThePropertyRecord()
     {
         // given
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction );
+        PageCache pageCache = pageCacheExtension.getPageCache( fs );
         Config config = Config.defaults( GraphDatabaseSettings.rebuild_idgenerators_fast, "true" );
 
         DynamicStringStore stringPropertyStore = mock( DynamicStringStore.class );
@@ -117,7 +116,7 @@ public class PropertyStoreTest
         }
     }
 
-    private DynamicRecord dynamicRecord()
+    private static DynamicRecord dynamicRecord()
     {
         DynamicRecord dynamicRecord = new DynamicRecord( 42 );
         dynamicRecord.setType( PropertyType.STRING.intValue() );
@@ -125,7 +124,7 @@ public class PropertyStoreTest
         return dynamicRecord;
     }
 
-    private PropertyBlock propertyBlockWith( DynamicRecord dynamicRecord )
+    private static PropertyBlock propertyBlockWith( DynamicRecord dynamicRecord )
     {
         PropertyBlock propertyBlock = new PropertyBlock();
 

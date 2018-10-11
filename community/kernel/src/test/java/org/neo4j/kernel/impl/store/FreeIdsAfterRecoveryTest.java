@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
@@ -33,30 +33,29 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class FreeIdsAfterRecoveryTest
+@PageCacheExtension
+class FreeIdsAfterRecoveryTest
 {
-    private final TestDirectory directory = TestDirectory.testDirectory();
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( directory ).around( fileSystemRule )
-            .around( pageCacheRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     @Test
-    public void shouldCompletelyRebuildIdGeneratorsAfterCrash()
+    void shouldCompletelyRebuildIdGeneratorsAfterCrash()
     {
         // GIVEN
-        DatabaseLayout databaseLayout = directory.databaseLayout();
-        StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
-                pageCacheRule.getPageCache( fileSystemRule.get() ), fileSystemRule.get(),
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
+        StoreFactory storeFactory = new StoreFactory( databaseLayout, Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem,
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         long highId;
         try ( NeoStores stores = storeFactory.openAllNeoStores( true ) )
@@ -70,7 +69,7 @@ public class FreeIdsAfterRecoveryTest
 
         // populating its .id file with a bunch of ids
         File nodeIdFile = databaseLayout.idNodeStore();
-        try ( IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystemRule.get(), nodeIdFile, 10, 10_000, false, IdType.NODE, () -> highId ) )
+        try ( IdGeneratorImpl idGenerator = new IdGeneratorImpl( fileSystem, nodeIdFile, 10, 10_000, false, IdType.NODE, () -> highId ) )
         {
             for ( long id = 0; id < 15; id++ )
             {

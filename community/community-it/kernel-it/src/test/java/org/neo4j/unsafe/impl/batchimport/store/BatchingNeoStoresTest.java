@@ -19,8 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.util.stream.Stream;
@@ -30,6 +29,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
@@ -50,18 +50,20 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.unsafe.impl.batchimport.input.Input.Estimates;
 import org.neo4j.unsafe.impl.batchimport.input.Inputs;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.store.format.standard.Standard.LATEST_RECORD_FORMATS;
 import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
@@ -69,37 +71,40 @@ import static org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds.EMPTY;
 import static org.neo4j.unsafe.impl.batchimport.Configuration.DEFAULT;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStores.DOUBLE_RELATIONSHIP_RECORD_UNIT_THRESHOLD;
 
-public class BatchingNeoStoresTest
+@PageCacheExtension
+class BatchingNeoStoresTest
 {
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @Test
-    public void shouldNotOpenStoreWithNodesOrRelationshipsInIt() throws Exception
+    void shouldNotOpenStoreWithNodesOrRelationshipsInIt()
     {
         // GIVEN
         someDataInTheDatabase();
 
         // WHEN
-        try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
+        IllegalStateException exception = assertThrows( IllegalStateException.class, () ->
         {
-            RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
-            try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().databaseDir(), recordFormats,
-                    DEFAULT, NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler ) )
+            try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler() )
             {
-                store.createNew();
-                fail( "Should fail on existing data" );
+                RecordFormats recordFormats = RecordFormatSelector.selectForConfig( Config.defaults(), NullLogProvider.getInstance() );
+                try ( BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fileSystem, testDirectory.databaseDir(), recordFormats, DEFAULT,
+                        NullLogService.getInstance(), EMPTY, Config.defaults(), jobScheduler ) )
+                {
+                    store.createNew();
+                }
             }
-        }
-        catch ( IllegalStateException e )
-        {
-            // THEN
-            assertThat( e.getMessage(), containsString( "already contains" ) );
-        }
+        } );
+        assertThat( exception.getMessage(), containsString( "already contains" ) );
     }
 
     @Test
-    public void shouldRespectDbConfig() throws Exception
+    void shouldRespectDbConfig() throws Exception
     {
         // GIVEN
         int size = 10;
@@ -111,7 +116,7 @@ public class BatchingNeoStoresTest
         RecordFormats recordFormats = LATEST_RECORD_FORMATS;
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();
         try ( JobScheduler jobScheduler = new ThreadPoolJobScheduler();
-              BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( storage.fileSystem(), storage.directory().absolutePath(),
+              BatchingNeoStores store = BatchingNeoStores.batchingNeoStores( fileSystem, testDirectory.absolutePath(),
               recordFormats, DEFAULT, NullLogService.getInstance(), EMPTY, config, jobScheduler ) )
         {
             store.createNew();
@@ -123,45 +128,42 @@ public class BatchingNeoStoresTest
     }
 
     @Test
-    public void shouldPruneAndOpenExistingDatabase() throws Exception
+    void shouldPruneAndOpenExistingDatabase() throws Exception
     {
         // given
         for ( StoreType typeToTest : relevantRecordStores() )
         {
             // given all the stores with some records in them
-            try ( PageCache pageCache = storage.pageCache() )
+            testDirectory.cleanup();
+            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
+                    PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
+                    Config.defaults() ) )
             {
-                storage.directory().cleanup();
-                try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
-                        PageCacheTracer.NULL, storage.directory().absolutePath(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
-                        Config.defaults() ) )
+                stores.createNew();
+                for ( StoreType type : relevantRecordStores() )
                 {
-                    stores.createNew();
-                    for ( StoreType type : relevantRecordStores() )
-                    {
-                        createRecordIn( stores.getNeoStores().getRecordStore( type ) );
-                    }
+                    createRecordIn( stores.getNeoStores().getRecordStore( type ) );
                 }
+            }
 
-                // when opening and pruning all except the one we test
-                try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(), pageCache,
-                        PageCacheTracer.NULL, storage.directory().absolutePath(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
-                        Config.defaults() ) )
+            // when opening and pruning all except the one we test
+            try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem, pageCache,
+                    PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT, NullLogService.getInstance(), EMPTY,
+                    Config.defaults() ) )
+            {
+                stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
+
+                // then only the one we kept should have data in it
+                for ( StoreType type : relevantRecordStores() )
                 {
-                    stores.pruneAndOpenExistingStore( type -> type == typeToTest, Predicates.alwaysFalse() );
-
-                    // then only the one we kept should have data in it
-                    for ( StoreType type : relevantRecordStores() )
+                    RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
+                    if ( type == typeToTest )
                     {
-                        RecordStore<AbstractBaseRecord> store = stores.getNeoStores().getRecordStore( type );
-                        if ( type == typeToTest )
-                        {
-                            assertThat( store.toString(), (int) store.getHighId(), greaterThan( store.getNumberOfReservedLowIds() ) );
-                        }
-                        else
-                        {
-                            assertEquals( store.toString(), store.getNumberOfReservedLowIds(), store.getHighId() );
-                        }
+                        assertThat( store.toString(), (int) store.getHighId(), greaterThan( store.getNumberOfReservedLowIds() ) );
+                    }
+                    else
+                    {
+                        assertEquals( store.getNumberOfReservedLowIds(), store.getHighId(), store.toString() );
                     }
                 }
             }
@@ -169,13 +171,12 @@ public class BatchingNeoStoresTest
     }
 
     @Test
-    public void shouldDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnSupportedFormat() throws Exception
+    void shouldDecideToAllocateDoubleRelationshipRecordUnitsOnLargeAmountOfRelationshipsOnSupportedFormat() throws Exception
     {
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
-        try ( PageCache pageCache = storage.pageCache();
-              BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
-                pageCache, PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -190,12 +191,12 @@ public class BatchingNeoStoresTest
     }
 
     @Test
-    public void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLowAmountOfRelationshipsOnSupportedFormat() throws Exception
+    void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLowAmountOfRelationshipsOnSupportedFormat() throws Exception
     {
         // given
         RecordFormats formats = new ForcedSecondaryUnitRecordFormats( LATEST_RECORD_FORMATS );
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
-                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -210,12 +211,12 @@ public class BatchingNeoStoresTest
     }
 
     @Test
-    public void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
+    void shouldNotDecideToAllocateDoubleRelationshipRecordUnitsonLargeAmountOfRelationshipsOnUnsupportedFormat() throws Exception
     {
         // given
         RecordFormats formats = LATEST_RECORD_FORMATS;
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
-                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), formats, DEFAULT,
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), formats, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -230,12 +231,12 @@ public class BatchingNeoStoresTest
     }
 
     @Test
-    public void shouldDeleteIdGeneratorsWhenOpeningExistingStore() throws IOException
+    void shouldDeleteIdGeneratorsWhenOpeningExistingStore() throws IOException
     {
         // given
         long expectedHighId;
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
-                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), LATEST_RECORD_FORMATS, DEFAULT,
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.createNew();
@@ -251,8 +252,8 @@ public class BatchingNeoStoresTest
         }
 
         // when
-        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( storage.fileSystem(),
-                storage.pageCache(), PageCacheTracer.NULL, storage.directory().absolutePath(), LATEST_RECORD_FORMATS, DEFAULT,
+        try ( BatchingNeoStores stores = BatchingNeoStores.batchingNeoStoresWithExternalPageCache( fileSystem,
+                pageCache, PageCacheTracer.NULL, testDirectory.absolutePath(), LATEST_RECORD_FORMATS, DEFAULT,
                 NullLogService.getInstance(), EMPTY, Config.defaults() ) )
         {
             stores.pruneAndOpenExistingStore( Predicates.alwaysTrue(), Predicates.alwaysTrue() );
@@ -268,7 +269,7 @@ public class BatchingNeoStoresTest
                 .filter( type -> type.isRecordStore() && type != StoreType.META_DATA ).toArray( StoreType[]::new );
     }
 
-    private <RECORD extends AbstractBaseRecord> void createRecordIn( RecordStore<RECORD> store )
+    private static <RECORD extends AbstractBaseRecord> void createRecordIn( RecordStore<RECORD> store )
     {
         RECORD record = store.newRecord();
         record.setId( store.nextId() );
@@ -286,8 +287,8 @@ public class BatchingNeoStoresTest
     private void someDataInTheDatabase()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( storage.fileSystem() ) )
-                .newImpermanentDatabase( storage.directory().databaseDir() );
+                .setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fileSystem ) )
+                .newImpermanentDatabase( testDirectory.databaseDir() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );

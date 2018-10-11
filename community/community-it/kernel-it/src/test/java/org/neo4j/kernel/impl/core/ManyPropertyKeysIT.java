@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collection;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
@@ -49,28 +47,28 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Tests for handling many property keys (even after restart of database)
  * as well as concurrent creation of property keys.
  */
-public class ManyPropertyKeysIT
+@PageCacheExtension
+class ManyPropertyKeysIT
 {
-    private final PageCacheRule pageCacheRule = new PageCacheRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( testDirectory )
-            .around( fileSystemRule ).around( pageCacheRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     @Test
-    public void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
+    void creating_many_property_keys_should_have_all_loaded_the_next_restart() throws Exception
     {
         // GIVEN
         // The previous limit to load was 2500, so go some above that
@@ -88,7 +86,7 @@ public class ManyPropertyKeysIT
     }
 
     @Test
-    public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
+    void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id()
             throws Exception
     {
         // GIVEN
@@ -120,9 +118,8 @@ public class ManyPropertyKeysIT
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
     {
 
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystemRule.get() ),
-                pageCache, fileSystemRule.get(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStores = storeFactory.openAllNeoStores( true );
         PropertyKeyTokenStore store = neoStores.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
@@ -139,19 +136,18 @@ public class ManyPropertyKeysIT
         return database();
     }
 
-    private String key( int i )
+    private static String key( int i )
     {
         return "key" + i;
     }
 
-    private static Node createNodeWithProperty( GraphDatabaseService db, String key, Object value )
+    private static void createNodeWithProperty( GraphDatabaseService db, String key, Object value )
     {
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();
             node.setProperty( key, value );
             tx.success();
-            return node;
         }
     }
 

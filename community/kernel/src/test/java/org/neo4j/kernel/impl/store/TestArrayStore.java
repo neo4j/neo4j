@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -31,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -42,42 +39,42 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.string.UTF8;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static java.lang.Double.longBitsToDouble;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestArrayStore
+@PageCacheExtension
+class TestArrayStore
 {
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
     private DynamicArrayStore arrayStore;
     private NeoStores neoStores;
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        FileSystemAbstraction fs = fileSystemRule.get();
-        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fs );
-        PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fs,
+        DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory( fileSystem );
+        StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), idGeneratorFactory, pageCache, fileSystem,
                 NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         neoStores = factory.openAllNeoStores( true );
         arrayStore = neoStores.getPropertyStore().getArrayStore();
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         if ( neoStores != null )
         {
@@ -86,7 +83,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void intArrayPropertiesShouldBeBitPacked()
+    void intArrayPropertiesShouldBeBitPacked()
     {
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new int[] { 1, 2, 3, 4, 5, 6, 7 }, PropertyType.INT, 3 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.INT, 4 );
@@ -94,7 +91,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void longArrayPropertiesShouldBeBitPacked()
+    void longArrayPropertiesShouldBeBitPacked()
     {
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7 }, PropertyType.LONG, 3 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.LONG, 4 );
@@ -103,7 +100,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void doubleArrayPropertiesShouldNotBeBitPacked()
+    void doubleArrayPropertiesShouldNotBeBitPacked()
     {
         //TODO Enabling right-trim would allow doubles that are integers, like 42.0, to pack well
         //While enabling the default left-trim would only allow some extreme doubles to pack, like Double.longBitsToDouble( 0x1L )
@@ -114,12 +111,12 @@ public class TestArrayStore
                 PropertyType.DOUBLE, 64 );
         // Test doubles that pack well with left-trim
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized(
-                new double[]{Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x8L )},
+                new double[]{longBitsToDouble( 0x1L ), longBitsToDouble( 0x8L )},
                 PropertyType.DOUBLE, 64 );
     }
 
     @Test
-    public void byteArrayPropertiesShouldNotBeBitPacked()
+    void byteArrayPropertiesShouldNotBeBitPacked()
     {
         /* Byte arrays are always stored unpacked. For two reasons:
          * - They are very unlikely to gain anything from bit packing
@@ -129,7 +126,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void stringArrayGetsStoredAsUtf8()
+    void stringArrayGetsStoredAsUtf8()
     {
         String[] array = new String[] { "first", "second" };
         Collection<DynamicRecord> records = new ArrayList<>();
@@ -143,12 +140,12 @@ public class TestArrayStore
             assertEquals( expectedData.length, buffer.getInt() );
             byte[] loadedItem = new byte[expectedData.length];
             buffer.get( loadedItem );
-            assertTrue( Arrays.equals( expectedData, loadedItem ) );
+            assertArrayEquals( expectedData, loadedItem );
         }
     }
 
     @Test
-    public void pointArraysOfWgs84()
+    void pointArraysOfWgs84()
     {
         PointValue[] array = new PointValue[]{
                 Values.pointValue( CoordinateReferenceSystem.WGS84, -45.0, -45.0 ),
@@ -159,7 +156,7 @@ public class TestArrayStore
     }
 
     @Test
-    public void pointArraysOfCartesian()
+    void pointArraysOfCartesian()
     {
         PointValue[] array = new PointValue[]{
                 Values.pointValue( CoordinateReferenceSystem.Cartesian, -100.0, -100.0 ),
@@ -169,36 +166,33 @@ public class TestArrayStore
         assertPointArrayHasCorrectFormat( array, numberOfBitsUsedForDoubles );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void pointArraysOfMixedCRS()
+    @Test
+    void pointArraysOfMixedCRS()
     {
-        PointValue[] array =
-                new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                        Double.longBitsToDouble( 0x1L ), Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.WGS84,
-                                Double.longBitsToDouble( 0x1L ),
-                                Double.longBitsToDouble( 0x1L ) )};
+        assertThrows( IllegalArgumentException.class, () ->
+        {
+            PointValue[] array =
+                    new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, longBitsToDouble( 0x1L ), longBitsToDouble( 0x7L ) ),
+                            Values.pointValue( CoordinateReferenceSystem.WGS84, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ) )};
 
-        Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array );
+            Collection<DynamicRecord> records = new ArrayList<>();
+            arrayStore.allocateRecords( records, array );
+        } );
     }
 
-    @Test( expected = IllegalArgumentException.class )
-    public void pointArraysOfMixedDimension()
+    @Test
+    void pointArraysOfMixedDimension()
     {
-        PointValue[] array =
-                new PointValue[]{
-                Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                        Double.longBitsToDouble( 0x1L ),
-                        Double.longBitsToDouble( 0x7L ) ),
-                        Values.pointValue( CoordinateReferenceSystem.Cartesian,
-                                Double.longBitsToDouble( 0x1L ),
-                                Double.longBitsToDouble( 0x1L ),
-                                Double.longBitsToDouble( 0x4L ) )};
+        assertThrows( IllegalArgumentException.class, () ->
+        {
+            PointValue[] array =
+                    new PointValue[]{Values.pointValue( CoordinateReferenceSystem.Cartesian, longBitsToDouble( 0x1L ), longBitsToDouble( 0x7L ) ),
+                            Values.pointValue( CoordinateReferenceSystem.Cartesian, longBitsToDouble( 0x1L ), longBitsToDouble( 0x1L ),
+                                    longBitsToDouble( 0x4L ) )};
 
-        Collection<DynamicRecord> records = new ArrayList<>();
-        arrayStore.allocateRecords( records, array );
+            Collection<DynamicRecord> records = new ArrayList<>();
+            arrayStore.allocateRecords( records, array );
+        } );
     }
 
     private void assertPointArrayHasCorrectFormat( PointValue[] array, int numberOfBitsUsedForDoubles )
@@ -224,13 +218,13 @@ public class TestArrayStore
         assertNumericArrayHeaderAndContent( pointDoubles, PropertyType.DOUBLE, numberOfBitsUsedForDoubles, Pair.of( doubleHeader, doubleBody ) );
     }
 
-    private void assertStringHeader( byte[] header, int itemCount )
+    private static void assertStringHeader( byte[] header, int itemCount )
     {
         assertEquals( PropertyType.STRING.byteValue(), header[0] );
         assertEquals( itemCount, ByteBuffer.wrap( header, 1, 4 ).getInt() );
     }
 
-    private void assertGeometryHeader( byte[] header, int geometryTpe, int dimension, int crsTableId, int crsCode )
+    private static void assertGeometryHeader( byte[] header, int geometryTpe, int dimension, int crsTableId, int crsCode )
     {
         assertEquals( PropertyType.GEOMETRY.byteValue(), header[0] );
         assertEquals( geometryTpe, header[1] );
@@ -247,7 +241,8 @@ public class TestArrayStore
         assertNumericArrayHeaderAndContent( array, type, expectedBitsUsedPerItem, asBytes );
     }
 
-    private void assertNumericArrayHeaderAndContent( Object array, PropertyType type, int expectedBitsUsedPerItem, Pair<byte[],byte[]> loadedBytesFromStore )
+    private static void assertNumericArrayHeaderAndContent( Object array, PropertyType type, int expectedBitsUsedPerItem,
+            Pair<byte[],byte[]> loadedBytesFromStore )
     {
         assertArrayHeader( loadedBytesFromStore.first(), type, expectedBitsUsedPerItem );
         Bits bits = Bits.bitsFromBytes( loadedBytesFromStore.other() );
@@ -265,7 +260,7 @@ public class TestArrayStore
         }
     }
 
-    private void assertArrayHeader( byte[] header, PropertyType type, int bitsPerItem )
+    private static void assertArrayHeader( byte[] header, PropertyType type, int bitsPerItem )
     {
         assertEquals( type.byteValue(), header[0] );
         assertEquals( bitsPerItem, header[2] );

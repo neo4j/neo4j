@@ -19,76 +19,54 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.AssumptionViolatedException;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.string.UTF8;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 
-public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord, S extends RecordStore<R>>
 {
     // Constants for the contents of the existing record
     protected static final int ID = 1;
+    @RegisterExtension
+    static PageCacheSupportExtension pageCacheExtension = new PageCacheSupportExtension( config().withInconsistentReads( false ) );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
-    @ClassRule
-    public static final PageCacheRule pageCacheRule = new PageCacheRule( config().withInconsistentReads( false ) );
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-
-    private FileSystemAbstraction fs;
     private AtomicBoolean nextReadIsInconsistent;
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
-        fs = new EphemeralFileSystemAbstraction();
         nextReadIsInconsistent = new AtomicBoolean();
-    }
-
-    @After
-    public void tearDown() throws Exception
-    {
-        fs.close();
     }
 
     private NeoStores storeFixture()
     {
-        PageCache pageCache = pageCacheRule.getPageCache( fs,
+        PageCache pageCache = pageCacheExtension.getPageCache( fs,
                 config().withInconsistentReads( nextReadIsInconsistent ) );
         StoreFactory factory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
                 pageCache, fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
@@ -124,13 +102,13 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         return record;
     }
 
-    protected R getForce( S store, int id )
+    R getForce( S store, int id )
     {
         return store.getRecord( id, store.newRecord(), RecordLoad.FORCE );
     }
 
     @Test
-    public void mustReadExistingRecord()
+    void mustReadExistingRecord()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -141,7 +119,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     }
 
     @Test
-    public void mustReadExistingLightRecord()
+    void mustReadExistingLightRecord()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -152,7 +130,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     }
 
     @Test
-    public void mustForceReadExistingRecord()
+    void mustForceReadExistingRecord()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -162,18 +140,21 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
         }
     }
 
-    @Test( expected = InvalidRecordException.class )
-    public void readingNonExistingRecordMustThrow()
+    @Test
+    void readingNonExistingRecordMustThrow()
     {
-        try ( NeoStores neoStores = storeFixture() )
+        assertThrows( InvalidRecordException.class, () ->
         {
-            S store = getStore( neoStores );
-            getHeavy( store, ID + 1 );
-        }
+            try ( NeoStores neoStores = storeFixture() )
+            {
+                S store = getStore( neoStores );
+                getHeavy( store, ID + 1 );
+            }
+        } );
     }
 
     @Test
-    public void forceReadingNonExistingRecordMustReturnEmptyRecordWithThatId()
+    void forceReadingNonExistingRecordMustReturnEmptyRecordWithThatId()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -185,7 +166,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     }
 
     @Test
-    public void mustRetryInconsistentReads()
+    void mustRetryInconsistentReads()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -197,7 +178,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     }
 
     @Test
-    public void mustRetryInconsistentLightReads()
+    void mustRetryInconsistentLightReads()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -209,7 +190,7 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
     }
 
     @Test
-    public void mustRetryInconsistentForcedReads()
+    void mustRetryInconsistentForcedReads()
     {
         try ( NeoStores neoStores = storeFixture() )
         {
@@ -217,339 +198,6 @@ public abstract class RecordStoreConsistentReadTest<R extends AbstractBaseRecord
             nextReadIsInconsistent.set( true );
             R record = getForce( store, ID );
             assertRecordsEqual( record, createExistingRecord( true ) );
-        }
-    }
-
-    public static class RelationshipStoreConsistentReadTest extends RecordStoreConsistentReadTest<RelationshipRecord, RelationshipStore>
-    {
-        // Constants for the contents of the existing record
-        private static final int FIRST_NODE = 2;
-        private static final int SECOND_NODE = 3;
-        private static final int TYPE = 4;
-        private static final int FIRST_PREV_REL = 5;
-        private static final int FIRST_NEXT_REL = 6;
-        private static final int SECOND_PREV_REL = 7;
-        private static final int SECOND_NEXT_REL = 8;
-
-        @Override
-        protected RelationshipRecord createNullRecord( long id )
-        {
-            RelationshipRecord record = new RelationshipRecord( id, false, 0, 0, 0, 0, 0, 0, 0, false, false );
-            record.setNextProp( 0 );
-            return record;
-        }
-
-        @Override
-        protected RelationshipRecord createExistingRecord( boolean light )
-        {
-            return new RelationshipRecord(
-                    ID, true, FIRST_NODE, SECOND_NODE, TYPE, FIRST_PREV_REL,
-                    FIRST_NEXT_REL, SECOND_PREV_REL, SECOND_NEXT_REL, true, true );
-        }
-
-        @Override
-        protected RelationshipRecord getLight( long id, RelationshipStore store )
-        {
-            return store.getRecord( id, store.newRecord(), NORMAL );
-        }
-
-        @Override
-        protected void assertRecordsEqual( RelationshipRecord actualRecord, RelationshipRecord expectedRecord )
-        {
-            assertNotNull( "actualRecord", actualRecord );
-            assertNotNull( "expectedRecord", expectedRecord );
-            assertThat( "getFirstNextRel", actualRecord.getFirstNextRel(), is( expectedRecord.getFirstNextRel() ) );
-            assertThat( "getFirstNode", actualRecord.getFirstNode(), is( expectedRecord.getFirstNode() ) );
-            assertThat( "getFirstPrevRel", actualRecord.getFirstPrevRel(), is( expectedRecord.getFirstPrevRel() ) );
-            assertThat( "getSecondNextRel", actualRecord.getSecondNextRel(), is( expectedRecord.getSecondNextRel() ) );
-            assertThat( "getSecondNode", actualRecord.getSecondNode(), is( expectedRecord.getSecondNode() ) );
-            assertThat( "getSecondPrevRel", actualRecord.getSecondPrevRel(), is( expectedRecord.getSecondPrevRel() ) );
-            assertThat( "getType", actualRecord.getType(), is( expectedRecord.getType() ) );
-            assertThat( "isFirstInFirstChain", actualRecord.isFirstInFirstChain(), is( expectedRecord.isFirstInFirstChain() ) );
-            assertThat( "isFirstInSecondChain", actualRecord.isFirstInSecondChain(), is( expectedRecord.isFirstInSecondChain() ) );
-            assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-            assertThat( "inUse", actualRecord.inUse(), is( expectedRecord.inUse() ) );
-        }
-
-        @Override
-        protected RelationshipStore getStore( NeoStores neoStores )
-        {
-            return neoStores.getRelationshipStore();
-        }
-    }
-
-    public static class LabelTokenStoreConsistentReadTest extends RecordStoreConsistentReadTest<LabelTokenRecord, LabelTokenStore>
-    {
-
-        private static final int NAME_RECORD_ID = 2;
-        private static final byte[] NAME_RECORD_DATA = UTF8.encode( "TheLabel" );
-
-        @Override
-        protected LabelTokenStore getStore( NeoStores neoStores )
-        {
-            return neoStores.getLabelTokenStore();
-        }
-
-        @Override
-        protected LabelTokenStore initialiseStore( NeoStores neoStores )
-        {
-            LabelTokenStore store = getStore( neoStores );
-            LabelTokenRecord record = createExistingRecord( false );
-            DynamicRecord nameRecord = new DynamicRecord( NAME_RECORD_ID );
-            record.getNameRecords().clear();
-            nameRecord.setData( NAME_RECORD_DATA );
-            nameRecord.setInUse( true );
-            record.addNameRecord( nameRecord );
-            store.updateRecord( record );
-            return store;
-        }
-
-        @Override
-        protected LabelTokenRecord createNullRecord( long id )
-        {
-            return new LabelTokenRecord( (int) id ).initialize( false, 0 );
-        }
-
-        @Override
-        protected LabelTokenRecord createExistingRecord( boolean light )
-        {
-            LabelTokenRecord record = new LabelTokenRecord( ID );
-            record.setNameId( NAME_RECORD_ID );
-            record.setInUse( true );
-            if ( !light )
-            {
-                DynamicRecord nameRecord = new DynamicRecord( NAME_RECORD_ID );
-                nameRecord.setInUse( true );
-                nameRecord.setData( NAME_RECORD_DATA );
-                record.addNameRecord( nameRecord );
-            }
-            return record;
-        }
-
-        @Override
-        protected LabelTokenRecord getLight( long id, LabelTokenStore store )
-        {
-            throw new AssumptionViolatedException( "No light loading of LabelTokenRecords" );
-        }
-
-        @Override
-        protected void assertRecordsEqual( LabelTokenRecord actualRecord, LabelTokenRecord expectedRecord )
-        {
-            assertNotNull( "actualRecord", actualRecord );
-            assertNotNull( "expectedRecord", expectedRecord );
-            assertThat( "getNameId", actualRecord.getNameId(), is( expectedRecord.getNameId() ) );
-            assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "isLight", actualRecord.isLight(), is( expectedRecord.isLight() ) );
-
-            Collection<DynamicRecord> actualNameRecords = actualRecord.getNameRecords();
-            Collection<DynamicRecord> expectedNameRecords = expectedRecord.getNameRecords();
-            assertThat( "getNameRecords.size", actualNameRecords.size(), is( expectedNameRecords.size() ) );
-            Iterator<DynamicRecord> actualNRs = actualNameRecords.iterator();
-            Iterator<DynamicRecord> expectedNRs = expectedNameRecords.iterator();
-            int i = 0;
-            while ( actualNRs.hasNext() && expectedNRs.hasNext() )
-            {
-                DynamicRecord actualNameRecord = actualNRs.next();
-                DynamicRecord expectedNameRecord = expectedNRs.next();
-
-                assertThat( "[" + i + "]getData", actualNameRecord.getData(), is( expectedNameRecord.getData() ) );
-                assertThat( "[" + i + "]getLength", actualNameRecord.getLength(), is( expectedNameRecord.getLength() ) );
-                assertThat( "[" + i + "]getNextBlock", actualNameRecord.getNextBlock(), is( expectedNameRecord.getNextBlock() ) );
-                assertThat( "[" + i + "]getType", actualNameRecord.getType(), is( expectedNameRecord.getType() ) );
-                assertThat( "[" + i + "]getId", actualNameRecord.getId(), is( expectedNameRecord.getId() ) );
-                assertThat( "[" + i + "]getLongId", actualNameRecord.getId(), is( expectedNameRecord.getId() ) );
-                assertThat( "[" + i + "]isStartRecord", actualNameRecord.isStartRecord(), is( expectedNameRecord.isStartRecord() ) );
-                assertThat( "[" + i + "]inUse", actualNameRecord.inUse(), is( expectedNameRecord.inUse() ) );
-                i++;
-            }
-        }
-    }
-
-    // This one might be good enough to cover all AbstractDynamicStore subclasses,
-    // including DynamicArrayStore and DynamicStringStore.
-    public static class SchemaStoreConsistentReadTest
-            extends RecordStoreConsistentReadTest<DynamicRecord, SchemaStore>
-    {
-        private static final byte[] EXISTING_RECORD_DATA = "Random bytes".getBytes();
-
-        @Override
-        protected SchemaStore getStore( NeoStores neoStores )
-        {
-            return neoStores.getSchemaStore();
-        }
-
-        @Override
-        protected DynamicRecord createNullRecord( long id )
-        {
-            DynamicRecord record = new DynamicRecord( id );
-            record.setNextBlock( 0 );
-            record.setData( new byte[0] );
-            return record;
-        }
-
-        @Override
-        protected DynamicRecord createExistingRecord( boolean light )
-        {
-            DynamicRecord record = new DynamicRecord( ID );
-            record.setInUse( true );
-            record.setStartRecord( true );
-            record.setLength( EXISTING_RECORD_DATA.length );
-            record.setData( EXISTING_RECORD_DATA );
-            return record;
-        }
-
-        @Override
-        protected DynamicRecord getLight( long id, SchemaStore store )
-        {
-            throw new AssumptionViolatedException( "Light loading of DynamicRecords is a little different" );
-        }
-
-        @Override
-        protected void assertRecordsEqual( DynamicRecord actualRecord, DynamicRecord expectedRecord )
-        {
-            assertNotNull( "actualRecord", actualRecord );
-            assertNotNull( "expectedRecord", expectedRecord );
-            assertThat( "getData", actualRecord.getData(), is( expectedRecord.getData() ) );
-            assertThat( "getLength", actualRecord.getLength(), is( expectedRecord.getLength() ) );
-            assertThat( "getNextBlock", actualRecord.getNextBlock(), is( expectedRecord.getNextBlock() ) );
-            assertThat( "getType", actualRecord.getType(), is( expectedRecord.getType() ) );
-            assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "isStartRecord", actualRecord.isStartRecord(), is( expectedRecord.isStartRecord() ) );
-        }
-    }
-
-    public static class PropertyStoreConsistentReadTest
-            extends RecordStoreConsistentReadTest<PropertyRecord, PropertyStore>
-    {
-        @Override
-        protected PropertyStore getStore( NeoStores neoStores )
-        {
-            return neoStores.getPropertyStore();
-        }
-
-        @Override
-        protected PropertyRecord createNullRecord( long id )
-        {
-            PropertyRecord record = new PropertyRecord( id );
-            record.setNextProp( 0 );
-            record.setPrevProp( 0 );
-            return record;
-        }
-
-        @Override
-        protected PropertyRecord createExistingRecord( boolean light )
-        {
-            PropertyRecord record = new PropertyRecord( ID );
-            record.setId( ID );
-            record.setNextProp( 2 );
-            record.setPrevProp( 4 );
-            record.setInUse( true );
-            PropertyBlock block = new PropertyBlock();
-            DynamicRecordAllocator stringAllocator = new ReusableRecordsAllocator( 64, new DynamicRecord( 7 ) );
-            Value value = Values.of( "a string too large to fit in the property block itself" );
-            PropertyStore.encodeValue( block, 6, value, stringAllocator, null, true );
-            if ( light )
-            {
-                block.getValueRecords().clear();
-            }
-            record.setPropertyBlock( block );
-            return record;
-        }
-
-        @Override
-        protected PropertyRecord getLight( long id, PropertyStore store )
-        {
-            throw new AssumptionViolatedException( "Getting a light non-existing property record will throw." );
-        }
-
-        @Override
-        protected PropertyRecord getHeavy( PropertyStore store, int id )
-        {
-            PropertyRecord record = super.getHeavy( store, id );
-            ensureHeavy( store, record );
-            return record;
-        }
-
-        private static void ensureHeavy( PropertyStore store, PropertyRecord record )
-        {
-            for ( PropertyBlock propertyBlock : record )
-            {
-                store.ensureHeavy( propertyBlock );
-            }
-        }
-
-        @Override
-        protected void assertRecordsEqual( PropertyRecord actualRecord, PropertyRecord expectedRecord )
-        {
-            assertNotNull( "actualRecord", actualRecord );
-            assertNotNull( "expectedRecord", expectedRecord );
-            assertThat( "getDeletedRecords", actualRecord.getDeletedRecords(), is( expectedRecord.getDeletedRecords() ) );
-            assertThat( "getNextProp", actualRecord.getNextProp(), is( expectedRecord.getNextProp() ) );
-            assertThat( "getEntityId", actualRecord.getNodeId(), is( expectedRecord.getNodeId() ) );
-            assertThat( "getPrevProp", actualRecord.getPrevProp(), is( expectedRecord.getPrevProp() ) );
-            assertThat( "getRelId", actualRecord.getRelId(), is( expectedRecord.getRelId() ) );
-            assertThat( "getId", actualRecord.getId(), is( expectedRecord.getId() ) );
-            assertThat( "getLongId", actualRecord.getId(), is( expectedRecord.getId() ) );
-
-            List<PropertyBlock> actualBlocks = Iterables.asList( actualRecord );
-            List<PropertyBlock> expectedBlocks = Iterables.asList( expectedRecord );
-            assertThat( "getPropertyBlocks().size", actualBlocks.size(), is( expectedBlocks.size() ) );
-            for ( int i = 0; i < actualBlocks.size(); i++ )
-            {
-                PropertyBlock actualBlock = actualBlocks.get( i );
-                PropertyBlock expectedBlock = expectedBlocks.get( i );
-                assertPropertyBlocksEqual( i, actualBlock, expectedBlock );
-            }
-        }
-
-        private static void assertPropertyBlocksEqual( int index, PropertyBlock actualBlock, PropertyBlock expectedBlock )
-        {
-            assertThat( "[" + index + "]getKeyIndexId", actualBlock.getKeyIndexId(),
-                    is( expectedBlock.getKeyIndexId() ) );
-            assertThat( "[" + index + "]getSingleValueBlock", actualBlock.getSingleValueBlock(),
-                    is( expectedBlock.getSingleValueBlock() ) );
-            assertThat( "[" + index + "]getSingleValueByte", actualBlock.getSingleValueByte(),
-                    is( expectedBlock.getSingleValueByte() ) );
-            assertThat( "[" + index + "]getSingleValueInt", actualBlock.getSingleValueInt(),
-                    is( expectedBlock.getSingleValueInt() ) );
-            assertThat( "[" + index + "]getSingleValueLong", actualBlock.getSingleValueLong(),
-                    is( expectedBlock.getSingleValueLong() ) );
-            assertThat( "[" + index + "]getSingleValueShort", actualBlock.getSingleValueShort(),
-                    is( expectedBlock.getSingleValueShort() ) );
-            assertThat( "[" + index + "]getSize", actualBlock.getSize(), is( expectedBlock.getSize() ) );
-            assertThat( "[" + index + "]getType", actualBlock.getType(), is( expectedBlock.getType() ) );
-            assertThat( "[" + index + "]isLight", actualBlock.isLight(), is( expectedBlock.isLight() ) );
-
-            List<DynamicRecord> actualValueRecords = actualBlock.getValueRecords();
-            List<DynamicRecord> expectedValueRecords = expectedBlock.getValueRecords();
-            assertThat( "[" + index + "]getValueRecords.size",
-                    actualValueRecords.size(), is( expectedValueRecords.size() ) );
-
-            for ( int i = 0; i < actualValueRecords.size(); i++ )
-            {
-                DynamicRecord actualValueRecord = actualValueRecords.get( i );
-                DynamicRecord expectedValueRecord = expectedValueRecords.get( i );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getData", actualValueRecord.getData(),
-                        is( expectedValueRecord.getData() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLength", actualValueRecord.getLength(),
-                        is( expectedValueRecord.getLength() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getNextBlock", actualValueRecord.getNextBlock(),
-                        is( expectedValueRecord.getNextBlock() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getType", actualValueRecord.getType(),
-                        is( expectedValueRecord.getType() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getId", actualValueRecord.getId(),
-                        is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]getLongId", actualValueRecord.getId(),
-                        is( expectedValueRecord.getId() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]isStartRecord", actualValueRecord.isStartRecord(),
-                        is( expectedValueRecord.isStartRecord() ) );
-                assertThat( "[" + index + "]getValueRecords[" + i + "]inUse", actualValueRecord.inUse(),
-                        is( expectedValueRecord.inUse() ) );
-            }
         }
     }
 }

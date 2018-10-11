@@ -19,10 +19,8 @@
  */
 package org.neo4j.commandline.dbms;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayOutputStream;
@@ -37,42 +35,44 @@ import java.util.function.Consumer;
 
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.Usage;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
-import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
 
-public class StoreInfoCommandTest
+@PageCacheExtension
+class StoreInfoCommandTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
-    @Rule
-    public DefaultFileSystemRule fsRule = new DefaultFileSystemRule();
-    @Rule
-    public PageCacheRule pageCacheRule = new PageCacheRule();
-
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
     private Path databaseDirectory;
     private ArgumentCaptor<String> outCaptor;
     private StoreInfoCommand command;
     private Consumer<String> out;
     private DatabaseLayout databaseLayout;
 
-    @Before
-    public void setUp() throws Exception
+    @BeforeEach
+    void setUp() throws Exception
     {
         Path homeDir = testDirectory.directory( "home-dir" ).toPath();
         databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
@@ -85,7 +85,7 @@ public class StoreInfoCommandTest
     }
 
     @Test
-    public void shouldPrintNiceHelp() throws Exception
+    void shouldPrintNiceHelp() throws Exception
     {
         try ( ByteArrayOutputStream baos = new ByteArrayOutputStream() )
         {
@@ -113,34 +113,28 @@ public class StoreInfoCommandTest
     }
 
     @Test
-    public void noArgFails() throws Exception
+    void noArgFails()
     {
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "Missing argument 'store'" );
-
-        command.execute( new String[]{} );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> command.execute( new String[]{} ) );
+        assertEquals( "Missing argument 'store'", exception.getMessage() );
     }
 
     @Test
-    public void emptyArgFails() throws Exception
+    void emptyArgFails()
     {
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "Missing argument 'store'" );
-
-        command.execute( new String[]{"--store="} );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> command.execute( new String[]{"--store="} ) );
+        assertEquals( "Missing argument 'store'", exception.getMessage() );
     }
 
     @Test
-    public void nonExistingDatabaseShouldThrow() throws Exception
+    void nonExistingDatabaseShouldThrow()
     {
-        expected.expect( IllegalArgumentException.class );
-        expected.expectMessage( "does not contain a database" );
-
-        execute( Paths.get( "yaba", "daba", "doo" ).toString() );
+        IllegalArgumentException exception = assertThrows( IllegalArgumentException.class, () -> execute( Paths.get( "yaba", "daba", "doo" ).toString() ) );
+        assertThat( exception.getMessage(), containsString( "does not contain a database" ) );
     }
 
     @Test
-    public void readsLatestStoreVersionCorrectly() throws Exception
+    void readsLatestStoreVersionCorrectly() throws Exception
     {
         RecordFormats currentFormat = RecordFormatSelector.defaultFormat();
         prepareNeoStoreFile( currentFormat.storeVersion() );
@@ -157,7 +151,7 @@ public class StoreInfoCommandTest
     }
 
     @Test
-    public void readsOlderStoreVersionCorrectly() throws Exception
+    void readsOlderStoreVersionCorrectly() throws Exception
     {
         prepareNeoStoreFile( StandardV2_3.RECORD_FORMATS.storeVersion() );
 
@@ -174,14 +168,12 @@ public class StoreInfoCommandTest
     }
 
     @Test
-    public void throwsOnUnknownVersion() throws Exception
+    void throwsOnUnknownVersion() throws Exception
     {
         prepareNeoStoreFile( "v9.9.9" );
-
-        expected.expect( new RootCauseMatcher( IllegalArgumentException.class ) );
-        expected.expectMessage( "Unknown store version 'v9.9.9'" );
-
-        execute( databaseDirectory.toString() );
+        Exception exception = assertThrows( Exception.class, () -> execute( databaseDirectory.toString() ) );
+        assertThat( exception, new RootCauseMatcher( IllegalArgumentException.class ) );
+        assertEquals( "Unknown store version 'v9.9.9'", exception.getMessage() );
     }
 
     private void execute( String storePath ) throws Exception
@@ -193,16 +185,13 @@ public class StoreInfoCommandTest
     {
         File neoStoreFile = createNeoStoreFile();
         long value = MetaDataStore.versionStringToLong( storeVersion );
-        try ( PageCache pageCache = pageCacheRule.getPageCache( fsRule.get() ) )
-        {
-            MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
-        }
+        MetaDataStore.setRecord( pageCache, neoStoreFile, STORE_VERSION, value );
     }
 
     private File createNeoStoreFile() throws IOException
     {
         File neoStoreFile = databaseLayout.metadataStore();
-        fsRule.get().create( neoStoreFile ).close();
+        fileSystem.create( neoStoreFile ).close();
         return neoStoreFile;
     }
 }

@@ -19,70 +19,77 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ShortStringPropertyEncodeTest
+@PageCacheExtension
+class ShortStringPropertyEncodeTest
 {
     private static final int KEY_ID = 0;
 
-    @Rule
-    public final PageCacheAndDependenciesRule storage = new PageCacheAndDependenciesRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     private NeoStores neoStores;
     private PropertyStore propertyStore;
 
-    @Before
-    public void setupStore()
+    @BeforeEach
+    void setupStore()
     {
-        neoStores = new StoreFactory( storage.directory().databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( storage.fileSystem() ),
-                storage.pageCache(), storage.fileSystem(), NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
+        neoStores = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fileSystem ),
+                pageCache, fileSystem, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY ).openNeoStores( true,
                 StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
         propertyStore = neoStores.getPropertyStore();
     }
 
-    @After
-    public void closeStore()
+    @AfterEach
+    void closeStore()
     {
         neoStores.close();
     }
 
     @Test
-    public void canEncodeEmptyString()
+    void canEncodeEmptyString()
     {
         assertCanEncode( "" );
     }
 
     @Test
-    public void canEncodeReallyLongString()
+    void canEncodeReallyLongString()
     {
         assertCanEncode( "                    " ); // 20 spaces
         assertCanEncode( "                " ); // 16 spaces
     }
 
     @Test
-    public void canEncodeFifteenSpaces()
+    void canEncodeFifteenSpaces()
     {
         assertCanEncode( "               " );
     }
 
     @Test
-    public void canEncodeNumericalString()
+    void canEncodeNumericalString()
     {
         assertCanEncode( "0123456789+,'.-" );
         assertCanEncode( " ,'.-0123456789" );
@@ -97,7 +104,7 @@ public class ShortStringPropertyEncodeTest
     }
 
     @Test
-    public void canEncodeTooLongStringsWithCharsInDifferentTables()
+    void canEncodeTooLongStringsWithCharsInDifferentTables()
     {
         assertCanEncode( "____________+" );
         assertCanEncode( "_____+_____" );
@@ -107,7 +114,7 @@ public class ShortStringPropertyEncodeTest
     }
 
     @Test
-    public void canEncodeUpToNineEuropeanChars()
+    void canEncodeUpToNineEuropeanChars()
     {
         // Shorter than 10 chars
         assertCanEncode( "fågel" ); // "bird" in Swedish
@@ -119,14 +126,14 @@ public class ShortStringPropertyEncodeTest
     }
 
     @Test
-    public void canEncodeEuropeanCharsWithPunctuation()
+    void canEncodeEuropeanCharsWithPunctuation()
     {
         assertCanEncode( "qHm7 pp3" );
         assertCanEncode( "UKKY3t.gk" );
     }
 
     @Test
-    public void canEncodeAlphanumerical()
+    void canEncodeAlphanumerical()
     {
         assertCanEncode( "1234567890" ); // Just a sanity check
         assertCanEncodeInBothCasings( "HelloWor1d" ); // There is a number there
@@ -137,27 +144,27 @@ public class ShortStringPropertyEncodeTest
     }
 
     @Test
-    public void canEncodeHighUnicode()
+    void canEncodeHighUnicode()
     {
         assertCanEncode( "\u02FF" );
         assertCanEncode( "hello\u02FF" );
     }
 
     @Test
-    public void canEncodeLatin1SpecialChars()
+    void canEncodeLatin1SpecialChars()
     {
         assertCanEncode( "#$#$#$#" );
         assertCanEncode( "$hello#" );
     }
 
     @Test
-    public void canEncodeTooLongLatin1String()
+    void canEncodeTooLongLatin1String()
     {
         assertCanEncode( "#$#$#$#$" );
     }
 
     @Test
-    public void canEncodeLowercaseAndUppercaseStringsUpTo12Chars()
+    void canEncodeLowercaseAndUppercaseStringsUpTo12Chars()
     {
         assertCanEncodeInBothCasings( "hello world" );
         assertCanEncode( "hello_world" );

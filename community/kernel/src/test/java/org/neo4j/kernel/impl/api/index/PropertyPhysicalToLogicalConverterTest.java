@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyRecordChange;
@@ -38,26 +36,25 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-
-public class PropertyPhysicalToLogicalConverterTest
+@PageCacheExtension
+class PropertyPhysicalToLogicalConverterTest
 {
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory( fs );
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    @Inject
+    private PageCache pageCache;
+    @Inject
+    private FileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private NeoStores neoStores;
     private PropertyStore store;
@@ -66,25 +63,25 @@ public class PropertyPhysicalToLogicalConverterTest
     private PropertyPhysicalToLogicalConverter converter;
     private final long[] none = new long[0];
 
-    @Before
-    public void before()
+    @BeforeEach
+    void before()
     {
-        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs.get() ),
-                pageCacheRule.getPageCache( fs.get() ), fs.get(), NullLogProvider.getInstance(),
+        StoreFactory storeFactory = new StoreFactory( testDirectory.databaseLayout(), Config.defaults(), new DefaultIdGeneratorFactory( fs ),
+                pageCache, fs, NullLogProvider.getInstance(),
                 EmptyVersionContextSupplier.EMPTY );
         neoStores = storeFactory.openAllNeoStores( true );
         store = neoStores.getPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
     }
 
-    @After
-    public void after()
+    @AfterEach
+    void after()
     {
         neoStores.close();
     }
 
     @Test
-    public void shouldConvertInlinedAddedProperty()
+    void shouldConvertInlinedAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -99,7 +96,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedChangedProperty()
+    void shouldConvertInlinedChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -117,7 +114,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldIgnoreInlinedUnchangedProperty()
+    void shouldIgnoreInlinedUnchangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -132,7 +129,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertInlinedRemovedProperty()
+    void shouldConvertInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -149,7 +146,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicAddedProperty()
+    void shouldConvertDynamicAddedProperty()
     {
         // GIVEN
         int key = 10;
@@ -163,7 +160,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicChangedProperty()
+    void shouldConvertDynamicChangedProperty()
     {
         // GIVEN
         int key = 10;
@@ -179,7 +176,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldConvertDynamicInlinedRemovedProperty()
+    void shouldConvertDynamicInlinedRemovedProperty()
     {
         // GIVEN
         int key = 10;
@@ -195,7 +192,7 @@ public class PropertyPhysicalToLogicalConverterTest
     }
 
     @Test
-    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange()
+    void shouldTreatPropertyThatMovedToAnotherRecordAsChange()
     {
         // GIVEN
         int key = 12;

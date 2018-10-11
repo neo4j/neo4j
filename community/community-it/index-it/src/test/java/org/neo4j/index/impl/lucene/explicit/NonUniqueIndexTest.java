@@ -19,8 +19,7 @@
  */
 package org.neo4j.index.impl.lucene.explicit;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.util.concurrent.locks.LockSupport;
@@ -47,26 +46,28 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.test.rule.PageCacheAndDependenciesRule;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 
-public class NonUniqueIndexTest
+@PageCacheExtension
+class NonUniqueIndexTest
 {
     private static final String LABEL = "SomeLabel";
     private static final String KEY = "key";
     private static final String VALUE = "value";
 
-    @Rule
-    public PageCacheAndDependenciesRule resources = new PageCacheAndDependenciesRule().with( new DefaultFileSystemRule() );
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
+    void concurrentIndexPopulationAndInsertsShouldNotProduceDuplicates() throws Exception
     {
         // Given
         Config config = Config.defaults();
@@ -137,7 +138,7 @@ public class NonUniqueIndexTest
                     }
                 };
             }
-        }.newFacade( resources.directory().storeDir(), config,
+        }.newFacade( testDirectory.storeDir(), config,
                 graphDatabaseFactoryState.databaseDependencies() );
     }
 

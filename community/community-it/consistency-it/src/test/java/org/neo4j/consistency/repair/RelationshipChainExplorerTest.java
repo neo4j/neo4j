@@ -20,12 +20,9 @@
 package org.neo4j.consistency.repair;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.ClassRule;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
@@ -34,48 +31,49 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.pagecache.PageCacheExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
+@PageCacheExtension
 public class RelationshipChainExplorerTest
 {
     private static final int degreeTwoNodes = 10;
 
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-
-    @ClassRule
-    public static PageCacheRule pageCacheRule = new PageCacheRule();
-    @Rule
-    public RuleChain ruleChain = RuleChain.outerRule( testDirectory ).around( fileSystemRule );
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
+    @Inject
+    private PageCache pageCache;
 
     private StoreAccess store;
 
-    @Before
-    public void setupStoreAccess()
+    @BeforeEach
+    void setupStoreAccess()
     {
         store = createStoreWithOneHighDegreeNodeAndSeveralDegreeTwoNodes( degreeTwoNodes );
     }
 
-    @After
-    public void tearDownStoreAccess()
+    @AfterEach
+    void tearDownStoreAccess()
     {
         store.close();
     }
 
     @Test
-    public void shouldLoadAllConnectedRelationshipRecordsAndTheirFullChainsOfRelationshipRecords()
+    void shouldLoadAllConnectedRelationshipRecordsAndTheirFullChainsOfRelationshipRecords()
     {
         // given
         RecordStore<RelationshipRecord> relationshipStore = store.getRelationshipStore();
@@ -91,7 +89,7 @@ public class RelationshipChainExplorerTest
     }
 
     @Test
-    public void shouldCopeWithAChainThatReferencesNotInUseZeroValueRecords()
+    void shouldCopeWithAChainThatReferencesNotInUseZeroValueRecords()
     {
         // given
         RecordStore<RelationshipRecord> relationshipStore = store.getRelationshipStore();
@@ -155,9 +153,7 @@ public class RelationshipChainExplorerTest
             transaction.success();
         }
         database.shutdown();
-        PageCache pageCache = pageCacheRule.getPageCache( fileSystemRule.get() );
-        StoreAccess storeAccess = new StoreAccess( fileSystemRule.get(), pageCache, testDirectory.databaseLayout(),
-                Config.defaults() );
+        StoreAccess storeAccess = new StoreAccess( fileSystem, pageCache, testDirectory.databaseLayout(), Config.defaults() );
         return storeAccess.initialize();
     }
 
