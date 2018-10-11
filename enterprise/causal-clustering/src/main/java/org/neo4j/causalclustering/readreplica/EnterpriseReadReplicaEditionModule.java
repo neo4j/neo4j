@@ -256,11 +256,9 @@ public class EnterpriseReadReplicaEditionModule extends DefaultEditionModule
                     clientPipelineBuilderFactory, handshakeTimeout, logProvider, userLogProvider );
         };
 
-        boolean useNativeTransport = config.get( CausalClusteringSettings.use_native_transport );
         long inactivityTimeoutMs = config.get( CausalClusteringSettings.catch_up_client_inactivity_timeout ).toMillis();
 
-        CatchUpClient catchUpClient =
-                life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMs, channelInitializer, useNativeTransport ) );
+        CatchUpClient catchUpClient = life.add( new CatchUpClient( logProvider, Clocks.systemClock(), inactivityTimeoutMs, channelInitializer ) );
 
         final Supplier<DatabaseHealth> databaseHealthSupplier =
                 () -> platformModule.dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( DatabaseHealth.class );
@@ -342,7 +340,6 @@ public class EnterpriseReadReplicaEditionModule extends DefaultEditionModule
                 .debugLogProvider( logProvider )
                 .listenAddress( config.get( transaction_listen_address ) )
                 .serverName( "catchup-server" )
-                .useNativeTransport( useNativeTransport )
                 .build();
 
         TransactionBackupServiceProvider transactionBackupServiceProvider =

@@ -218,7 +218,7 @@ class CatchUpClientIT
             {
                 ch.pipeline().addLast( channelHandlers );
             }
-        }, true );
+        } );
     }
 
     private Server catchupServer( ListenSocketAddress listenSocketAddress, ChannelHandler... channelHandlers )

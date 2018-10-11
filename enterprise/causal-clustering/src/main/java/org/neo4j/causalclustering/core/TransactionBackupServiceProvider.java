@@ -67,7 +67,6 @@ public class TransactionBackupServiceProvider
         if ( config.get( OnlineBackupSettings.online_backup_enabled ) )
         {
             ListenSocketAddress backupAddress = HostnamePortAsListenAddress.resolve( config, OnlineBackupSettings.online_backup_server );
-            boolean nativeTransport = config.get( CausalClusteringSettings.use_native_transport );
             logProvider.getLog( TransactionBackupServiceProvider.class ).info( "Binding backup service on address %s", backupAddress );
             return Optional.of( new CatchupServerBuilder( catchupServerHandler )
                     .serverHandler( parentHandler )
@@ -78,7 +77,6 @@ public class TransactionBackupServiceProvider
                     .debugLogProvider( logProvider )
                     .listenAddress( backupAddress )
                     .serverName( "backup-server" )
-                    .useNativeTransport( nativeTransport )
                     .build());
         }
         else

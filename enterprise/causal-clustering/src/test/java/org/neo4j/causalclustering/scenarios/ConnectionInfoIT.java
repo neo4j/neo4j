@@ -75,9 +75,8 @@ public class ConnectionInfoIT
         {
             //expected.
         }
-        String expectedPartOfMessage = String.format( "server-name: cannot bind to '%s' with transport ", listenSocketAddress );
-        logProvider.assertContainsMessageContaining( expectedPartOfMessage );
-        userLogProvider.assertContainsMessageContaining( expectedPartOfMessage );
+        logProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
+        userLogProvider.assertContainsMessageContaining( "server-name: address is already bound: " );
     }
 
     @SuppressWarnings( "SameParameterValue" )

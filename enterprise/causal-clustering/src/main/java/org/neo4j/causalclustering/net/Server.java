@@ -27,8 +27,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.ServerSocketChannel;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.net.BindException;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.causalclustering.helper.SuspendableLifeCycle;
@@ -39,7 +41,6 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.causalclustering.net.BootstrapConfiguration.serverConfig;
 
 public class Server extends SuspendableLifeCycle
 {
@@ -48,7 +49,6 @@ public class Server extends SuspendableLifeCycle
     private final String serverName;
 
     private final NamedThreadFactory threadFactory;
-    private final BootstrapConfiguration<? extends ServerSocketChannel> bootstrapConfiguration;
     private final ChildInitializer childInitializer;
     private final ChannelInboundHandler parentHandler;
     private final ListenSocketAddress listenAddress;
@@ -59,11 +59,11 @@ public class Server extends SuspendableLifeCycle
     public Server( ChildInitializer childInitializer, LogProvider debugLogProvider, LogProvider userLogProvider, ListenSocketAddress listenAddress,
                    String serverName )
     {
-        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName, false );
+        this( childInitializer, null, debugLogProvider, userLogProvider, listenAddress, serverName );
     }
 
     public Server( ChildInitializer childInitializer, ChannelInboundHandler parentHandler, LogProvider debugLogProvider, LogProvider userLogProvider,
-            ListenSocketAddress listenAddress, String serverName, boolean useNativeTransport )
+                   ListenSocketAddress listenAddress, String serverName )
     {
         super( debugLogProvider.getLog( Server.class ) );
         this.childInitializer = childInitializer;
@@ -73,12 +73,11 @@ public class Server extends SuspendableLifeCycle
         this.userLog = userLogProvider.getLog( getClass() );
         this.serverName = serverName;
         this.threadFactory = new NamedThreadFactory( serverName );
-        this.bootstrapConfiguration = serverConfig( useNativeTransport );
     }
 
     public Server( ChildInitializer childInitializer, ListenSocketAddress listenAddress, String serverName )
     {
-        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName, false );
+        this( childInitializer, null, NullLogProvider.getInstance(), NullLogProvider.getInstance(), listenAddress, serverName );
     }
 
     @Override
@@ -95,11 +94,11 @@ public class Server extends SuspendableLifeCycle
             return;
         }
 
-        workerGroup = bootstrapConfiguration.eventLoopGroup( threadFactory );
+        workerGroup = new NioEventLoopGroup( 0, threadFactory );
 
         ServerBootstrap bootstrap = new ServerBootstrap()
                 .group( workerGroup )
-                .channel( bootstrapConfiguration.channelClass() )
+                .channel( NioServerSocketChannel.class )
                 .option( ChannelOption.SO_REUSEADDR, Boolean.TRUE )
                 .localAddress( listenAddress.socketAddress() )
                 .childHandler( childInitializer.asChannelInitializer() );
@@ -112,14 +111,17 @@ public class Server extends SuspendableLifeCycle
         try
         {
             channel = bootstrap.bind().syncUninterruptibly().channel();
-            debugLog.info( "%s: bound to '%s' with transport '%s'", serverName, listenAddress, bootstrapConfiguration.channelClass().getSimpleName() );
+            debugLog.info( serverName + ": bound to " + listenAddress );
         }
         catch ( Exception e )
         {
-            String message =
-                    format( "%s: cannot bind to '%s' with transport '%s'.", serverName, listenAddress, bootstrapConfiguration.channelClass().getSimpleName() );
-            userLog.error( message + " Message: " + e.getMessage() );
-            debugLog.error( message, e );
+            //noinspection ConstantConditions netty sneaky throw
+            if ( e instanceof BindException )
+            {
+                String message = serverName + ": address is already bound: " + listenAddress;
+                userLog.error( message );
+                debugLog.error( message, e );
+            }
             throw e;
         }
     }

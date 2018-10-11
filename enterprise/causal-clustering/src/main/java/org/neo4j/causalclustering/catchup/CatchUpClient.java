@@ -27,8 +27,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 
 import java.net.ConnectException;
 import java.time.Clock;
@@ -38,7 +39,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import org.neo4j.causalclustering.messaging.CatchUpRequest;
-import org.neo4j.causalclustering.net.BootstrapConfiguration;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -48,7 +48,6 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MICROSECONDS;
 import static org.neo4j.causalclustering.catchup.TimeoutLoop.waitForCompletion;
-import static org.neo4j.causalclustering.net.BootstrapConfiguration.clientConfig;
 
 public class CatchUpClient extends LifecycleAdapter
 {
@@ -58,19 +57,16 @@ public class CatchUpClient extends LifecycleAdapter
     private final Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer;
 
     private final CatchUpChannelPool<CatchUpChannel> pool = new CatchUpChannelPool<>( CatchUpChannel::new );
-    private final BootstrapConfiguration<? extends SocketChannel> bootstrapConfiguration;
 
-    private EventLoopGroup eventLoopGroup;
+    private NioEventLoopGroup eventLoopGroup;
 
     public CatchUpClient( LogProvider logProvider, Clock clock, long inactivityTimeoutMillis,
-            Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer,
-            boolean useNativeTransport )
+            Function<CatchUpResponseHandler,ChannelInitializer<SocketChannel>> channelInitializer )
     {
         this.log = logProvider.getLog( getClass() );
         this.clock = clock;
         this.inactivityTimeoutMillis = inactivityTimeoutMillis;
         this.channelInitializer = channelInitializer;
-        this.bootstrapConfiguration = clientConfig( useNativeTransport );
     }
 
     public <T> T makeBlockingRequest( AdvertisedSocketAddress upstream, CatchUpRequest request, CatchUpResponseCallback<T> responseHandler )
@@ -134,7 +130,7 @@ public class CatchUpClient extends LifecycleAdapter
             handler = new TrackingResponseHandler( new CatchUpResponseAdaptor(), clock );
             bootstrap = new Bootstrap()
                     .group( eventLoopGroup )
-                    .channel( bootstrapConfiguration.channelClass() )
+                    .channel( NioSocketChannel.class )
                     .handler( channelInitializer.apply( handler ) );
         }
 
@@ -191,7 +187,7 @@ public class CatchUpClient extends LifecycleAdapter
     @Override
     public void start()
     {
-        eventLoopGroup = bootstrapConfiguration.eventLoopGroup( new NamedThreadFactory( "catch-up-client" ) );
+        eventLoopGroup = new NioEventLoopGroup( 0, new NamedThreadFactory( "catch-up-client" ) );
     }
 
     @Override

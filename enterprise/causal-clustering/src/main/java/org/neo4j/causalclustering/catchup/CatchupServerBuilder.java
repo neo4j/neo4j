@@ -58,7 +58,6 @@ public class CatchupServerBuilder
     private ChannelInboundHandler parentHandler;
     private ListenSocketAddress listenAddress;
     private String serverName = "catchup-server";
-    private boolean useNativeTransport = true;
 
     public CatchupServerBuilder( CatchupServerHandler catchupServerHandler )
     {
@@ -113,12 +112,6 @@ public class CatchupServerBuilder
         return this;
     }
 
-    public CatchupServerBuilder useNativeTransport( boolean useNativeTransport )
-    {
-        this.useNativeTransport = useNativeTransport;
-        return this;
-    }
-
     public Server build()
     {
         ApplicationProtocolRepository applicationProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), catchupProtocols );
@@ -133,6 +126,6 @@ public class CatchupServerBuilder
         HandshakeServerInitializer handshakeServerInitializer = new HandshakeServerInitializer( applicationProtocolRepository, modifierProtocolRepository,
                 protocolInstallerRepository, pipelineBuilder, debugLogProvider );
 
-        return new Server( handshakeServerInitializer, parentHandler, debugLogProvider, userLogProvider, listenAddress, serverName, useNativeTransport );
+        return new Server( handshakeServerInitializer, parentHandler, debugLogProvider, userLogProvider, listenAddress, serverName );
     }
 }

@@ -63,7 +63,6 @@ public class CatchupClientBuilder
     private Collection<ModifierSupportedProtocols> modifierProtocols = emptyList();
     private Clock clock = systemClock();
     private long inactivityTimeoutMillis = TimeUnit.SECONDS.toMillis( 10 );
-    private boolean useNativeTransport = true;
 
     public CatchupClientBuilder()
     {
@@ -129,12 +128,6 @@ public class CatchupClientBuilder
         return this;
     }
 
-    public CatchupClientBuilder useNativeTransport( boolean useNativeTransport )
-    {
-        this.useNativeTransport = useNativeTransport;
-        return this;
-    }
-
     public CatchUpClient build()
     {
         ApplicationProtocolRepository applicationProtocolRepository = new ApplicationProtocolRepository( ApplicationProtocols.values(), catchupProtocols );
@@ -151,6 +144,6 @@ public class CatchupClientBuilder
                     handshakeTimeout, debugLogProvider, userLogProvider );
         };
 
-        return new CatchUpClient( debugLogProvider, clock, inactivityTimeoutMillis, channelInitializer, useNativeTransport );
+        return new CatchUpClient( debugLogProvider, clock, inactivityTimeoutMillis, channelInitializer );
     }
 }
