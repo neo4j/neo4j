@@ -21,9 +21,14 @@ package org.neo4j.bolt;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.helpers.SocketAddress;
+import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
+
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -91,6 +96,28 @@ class BoltChannelTest
         boltChannel.updateUser( "hello", "my-bolt-driver/1.2.3" );
         assertEquals( "hello", boltChannel.username() );
         assertEquals( "my-bolt-driver/1.2.3", boltChannel.userAgent() );
+    }
+
+    @Test
+    @SuppressWarnings( "deprecation" )
+    void shouldExposeClientConnectionInfo()
+    {
+        EmbeddedChannel channel = new EmbeddedChannel();
+        BoltChannel boltChannel = new BoltChannel( "bolt-42", "my-bolt", channel );
+
+        ClientConnectionInfo info1 = boltChannel.info();
+        assertEquals( "bolt-42", info1.connectionId() );
+        assertEquals( "bolt", info1.protocol() );
+        assertEquals( SocketAddress.format( channel.remoteAddress() ), info1.clientAddress() );
+
+        boltChannel.updateUser( "Tom", "my-driver" );
+
+        ClientConnectionInfo info2 = boltChannel.info();
+        assertEquals( "bolt-42", info2.connectionId() );
+        assertEquals( "bolt", info2.protocol() );
+        assertEquals( SocketAddress.format( channel.remoteAddress() ), info2.clientAddress() );
+        assertThat( info2.asConnectionDetails(), containsString( "Tom" ) );
+        assertThat( info2.asConnectionDetails(), containsString( "my-driver" ) );
     }
 
     private static Channel channelMock( boolean open )

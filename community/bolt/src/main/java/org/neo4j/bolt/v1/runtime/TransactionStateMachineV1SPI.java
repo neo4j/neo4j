@@ -47,8 +47,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
@@ -124,11 +122,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
             Map<String,Object> txMetadata )
     {
         InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, txTimeout, txMetadata );
-        ClientConnectionInfo sourceDetails = new BoltConnectionInfo( boltChannel.id(), boltChannel.username(),
-                boltChannel.userAgent(), boltChannel.clientAddress(), boltChannel.serverAddress() );
-        TransactionalContext transactionalContext =
-                contextFactory.newContext( sourceDetails, internalTransaction, statement, params );
-
+        TransactionalContext transactionalContext = contextFactory.newContext( boltChannel.info(), internalTransaction, statement, params );
         return newBoltResultHandle( statement, params, transactionalContext );
     }
 
