@@ -24,6 +24,7 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.function.IntPredicate;
 import java.util.function.LongFunction;
 
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator;
@@ -46,7 +47,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
     private final IntPredicate propertyKeyIdFilter;
     private final LongFunction<Lock> lockFunction;
 
-    protected PropertyAwareEntityStoreScan( StorageReader storageReader, IntPredicate propertyKeyIdFilter,
+    protected PropertyAwareEntityStoreScan( StorageReader storageReader, long totalEntityCount, IntPredicate propertyKeyIdFilter,
             LongFunction<Lock> lockFunction )
     {
         this.storageReader = storageReader;
@@ -54,6 +55,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         this.propertyCursor = storageReader.allocatePropertyCursor();
         this.propertyKeyIdFilter = propertyKeyIdFilter;
         this.lockFunction = lockFunction;
+        this.totalCount = totalEntityCount;
     }
 
     protected abstract CURSOR allocateCursor( StorageReader storageReader );
@@ -117,9 +119,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
         }
         finally
         {
-            propertyCursor.close();
-            entityCursor.close();
-            storageReader.close();
+            IOUtils.closeAllUnchecked( propertyCursor, entityCursor, storageReader );
         }
     }
 

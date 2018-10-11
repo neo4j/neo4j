@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -125,6 +126,12 @@ public class NeoStoreIndexStoreViewTest
         } );
         storeView = new NeoStoreIndexStoreView( locks, neoStores );
         reader = new RecordStorageReader( neoStores );
+    }
+
+    @After
+    public void after()
+    {
+        reader.close();
     }
 
     @Test
@@ -266,11 +273,13 @@ public class NeoStoreIndexStoreViewTest
                         null, propertyUpdateVisitor, new int[]{labelId},
                         id -> true );
 
-        StorageNodeCursor nodeCursor = reader.allocateNodeCursor();
-        nodeCursor.single( 1 );
-        nodeCursor.next();
+        try ( StorageNodeCursor nodeCursor = reader.allocateNodeCursor() )
+        {
+            nodeCursor.single( 1 );
+            nodeCursor.next();
 
-        storeViewNodeStoreScan.process( nodeCursor );
+            storeViewNodeStoreScan.process( nodeCursor );
+        }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should contain container with updates.", propertyUpdates );
@@ -297,11 +306,13 @@ public class NeoStoreIndexStoreViewTest
                 new RelationshipStoreScan( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, new int[]{relTypeId},
                         id -> true );
 
-        StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor();
-        relationshipScanCursor.single( 1 );
-        relationshipScanCursor.next();
+        try ( StorageRelationshipScanCursor relationshipScanCursor = reader.allocateRelationshipScanCursor() )
+        {
+            relationshipScanCursor.single( 1 );
+            relationshipScanCursor.next();
 
-        relationshipStoreScan.process( relationshipScanCursor );
+            relationshipStoreScan.process( relationshipScanCursor );
+        }
 
         EntityUpdates propertyUpdates = propertyUpdateVisitor.getPropertyUpdates();
         assertNotNull( "Visitor should contain container with updates.", propertyUpdates );

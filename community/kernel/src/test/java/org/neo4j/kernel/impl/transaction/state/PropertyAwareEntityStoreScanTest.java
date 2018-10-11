@@ -75,7 +75,7 @@ public class PropertyAwareEntityStoreScanTest
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
         final PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException> scan =
-                new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( new RecordStorageReader( neoStores ), IntPredicates.alwaysTrue(),
+                new PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException>( new RecordStorageReader( neoStores ), total, IntPredicates.alwaysTrue(),
                         id -> locks.acquireNodeLock( id, LockService.LockType.READ_LOCK ) )
                 {
                     private int read;

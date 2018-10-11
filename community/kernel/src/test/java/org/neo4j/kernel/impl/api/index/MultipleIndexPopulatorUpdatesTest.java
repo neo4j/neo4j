@@ -45,8 +45,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReade
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
@@ -75,17 +73,9 @@ public class MultipleIndexPopulatorUpdatesTest
             throws IndexPopulationFailedKernelException, IOException, IndexEntryConflictException
     {
         NeoStores neoStores = Mockito.mock( NeoStores.class );
-        CountsTracker countsTracker = mock( CountsTracker.class );
         NodeStore nodeStore = mock( NodeStore.class );
-        PropertyStore propertyStore = mock( PropertyStore.class );
 
-        NodeRecord nodeRecord = getNodeRecord();
-
-        when( neoStores.getCounts()).thenReturn( countsTracker );
-        when( neoStores.getNodeStore()).thenReturn( nodeStore );
-        when( neoStores.getPropertyStore() ).thenReturn( propertyStore );
-
-        when( nodeStore.newRecord() ).thenReturn( nodeRecord );
+        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
 
         ProcessListenableNeoStoreIndexView
                 storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores );

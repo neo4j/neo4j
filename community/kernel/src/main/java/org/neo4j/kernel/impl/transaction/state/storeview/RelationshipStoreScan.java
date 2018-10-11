@@ -35,7 +35,8 @@ public class RelationshipStoreScan<FAILURE extends Exception> extends PropertyAw
     public RelationshipStoreScan( StorageReader storageReader, LockService locks,
             Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor, int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter )
     {
-        super( storageReader, propertyKeyIdFilter, id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) );
+        super( storageReader, storageReader.relationshipsGetCount(), propertyKeyIdFilter,
+                id -> locks.acquireRelationshipLock( id, LockService.LockType.READ_LOCK ) );
         this.relationshipTypeIds = relationshipTypeIds;
         this.propertyUpdatesVisitor = propertyUpdatesVisitor;
     }
