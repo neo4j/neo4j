@@ -72,6 +72,7 @@ import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
@@ -98,7 +99,8 @@ public class OnlineBackupCommandHaIT
     private final PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( db );
+    public final RuleChain ruleChain =
+            RuleChain.outerRule( SuppressOutput.suppressAll() ).around( fileSystemRule ).around( testDirectory ).around( pageCacheRule ).around( db );
 
     private File backupDir;
 
