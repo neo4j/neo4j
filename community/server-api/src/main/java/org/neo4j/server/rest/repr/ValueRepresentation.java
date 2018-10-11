@@ -73,8 +73,6 @@ public class ValueRepresentation extends Representation
 
     public static ValueRepresentation point( Point value )
     {
-        //TODO sending in the point here looks like it will use Jackson object mapper
-        // to serialize, maybe send in a Map instead
         return new ValueRepresentation( RepresentationType.POINT, value );
     }
 

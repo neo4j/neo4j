@@ -722,6 +722,109 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertEquals( "\"PT1M13S\"", row.toString() );
     }
 
+    @Test
+    public void shouldHandleTemporalUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "date", date );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "date" );
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "duration", duration );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "duration" );
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleTemporalArraysUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "dates", new ZonedDateTime[]{date} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get( "nodes" ).get( 0 ).get( "properties" ).get( "dates" ).get( 0 );
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationArraysUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "durations", new Duration[]{duration} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "durations" ).get( 0 );
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
     private HTTP.RawPayload queryAsJsonGraph( String query )
     {
         return quotedJson( "{ 'statements': [ { 'statement': '" + query + "', 'resultDataContents': [ 'graph' ] } ] }" );
