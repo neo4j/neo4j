@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
@@ -101,6 +102,24 @@ public class ListRepresentation extends Representation
             protected Representation underlyingObjectToObject( String value )
             {
                 return ValueRepresentation.string( value );
+            }
+        } );
+    }
+
+    public static ListRepresentation points( Point... values )
+    {
+        return point( Arrays.asList( values ) );
+    }
+
+    public static ListRepresentation point( Iterable<Point> values )
+    {
+        return new ListRepresentation( RepresentationType.POINT, new IterableWrapper<Representation, Point>(
+                values )
+        {
+            @Override
+            protected Representation underlyingObjectToObject( Point value )
+            {
+                return ValueRepresentation.point( value );
             }
         } );
     }

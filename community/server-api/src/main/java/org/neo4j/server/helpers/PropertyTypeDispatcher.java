@@ -19,6 +19,11 @@
  */
 package org.neo4j.server.helpers;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetTime;
+import java.time.ZonedDateTime;
 import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
@@ -97,6 +102,30 @@ public abstract class PropertyTypeDispatcher<K, T>
         {
             return dispatchStringArrayProperty( (String[]) property, param );
         }
+        else if ( property instanceof Point[] )
+        {
+            return dispatchPointArrayProperty( (Point[]) property, param );
+        }
+        //TODO
+//        else if ( property instanceof ZonedDateTime[] )
+//        {
+//        }
+//        else if ( property instanceof LocalDateTime[] )
+//        {
+//        }
+//        else if ( property instanceof LocalTime[] )
+//        {
+//        }
+//        else if ( property instanceof OffsetTime[] )
+//        {
+//        }
+//        else if ( property instanceof LocalDate[] )
+//        {
+//        }
+//        else if ( property instanceof TemporalAmount[] )
+//        {
+//
+//        }
         else if ( property instanceof Object[] )
         {
             return dispatchOtherArray( (Object[]) property, param );
@@ -677,6 +706,23 @@ public abstract class PropertyTypeDispatcher<K, T>
     }
 
     protected T dispatchStringArrayProperty( PropertyArray<String[], String> array, K param )
+    {
+        return dispatchArray( array, param );
+    }
+
+    protected T dispatchPointArrayProperty( final Point[] property, K param )
+    {
+        return dispatchPointArrayProperty( new BoxedArray<Point[], Point>( property )
+        {
+            @Override
+            public Point[] getClonedArray()
+            {
+                return property.clone();
+            }
+        }, param );
+    }
+
+    protected T dispatchPointArrayProperty( PropertyArray<Point[], Point> array, K param )
     {
         return dispatchArray( array, param );
     }

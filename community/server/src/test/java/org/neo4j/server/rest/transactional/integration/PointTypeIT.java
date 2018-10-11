@@ -138,6 +138,32 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
         assertCrsEqual( WGS84, row );
     }
 
+    @Test
+    public void shouldHandleArrayOfPointsUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        //Then
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "coordinates" ).get( 0 );
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
+    }
+
     private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs, String expectedType ) throws Exception
     {
         HTTP.Response response = runQuery( query );

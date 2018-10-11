@@ -71,6 +71,13 @@ public class ValueRepresentation extends Representation
         return new ValueRepresentation( RepresentationType.STRING, value );
     }
 
+    public static ValueRepresentation point( Point value )
+    {
+        //TODO sending in the point here looks like it will use Jackson object mapper
+        // to serialize, maybe send in a Map instead
+        return new ValueRepresentation( RepresentationType.POINT, value );
+    }
+
     @SuppressWarnings( "boxing" )
     public static ValueRepresentation number( int value )
     {
@@ -231,6 +238,12 @@ public class ValueRepresentation extends Representation
                 protected Representation dispatchStringArrayProperty( String[] property, Void param )
                 {
                     return ListRepresentation.strings( property );
+                }
+
+                @Override
+                protected Representation dispatchPointArrayProperty( Point[] property, Void param )
+                {
+                    return ListRepresentation.points( property );
                 }
 
                 @SuppressWarnings( "unchecked" )

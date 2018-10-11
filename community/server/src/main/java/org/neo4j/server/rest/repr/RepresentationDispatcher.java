@@ -30,6 +30,7 @@ import org.neo4j.server.helpers.PropertyTypeDispatcher;
 import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.server.rest.repr.ValueRepresentation.bool;
 import static org.neo4j.server.rest.repr.ValueRepresentation.number;
+import static org.neo4j.server.rest.repr.ValueRepresentation.point;
 import static org.neo4j.server.rest.repr.ValueRepresentation.string;
 
 /**
@@ -89,6 +90,17 @@ public abstract class RepresentationDispatcher extends PropertyTypeDispatcher<St
         for ( String z : array )
         {
             values.add( string( z ) );
+        }
+        return new ListRepresentation( "", values );
+    }
+
+    @Override
+    protected Representation dispatchPointArrayProperty( Point[] array, String param )
+    {
+        ArrayList<Representation> values = new ArrayList<>();
+        for ( Point p : array )
+        {
+            values.add( point( p) );
         }
         return new ListRepresentation( "", values );
     }

@@ -79,28 +79,7 @@ public final class PropertiesRepresentation extends MappingRepresentation
         {
             MappingWriter pointWriter = writer.newMapping( RepresentationType.POINT, param );
 
-            pointWriter.writeString( "type", property.getGeometryType() );
-
-            //write coordinates
-            ListWriter coordinatesWriter = pointWriter.newList( RepresentationType.DOUBLE, "coordinates" );
-            for ( Double coordinate : property.getCoordinate().getCoordinate() )
-            {
-                coordinatesWriter.writeFloatingPointNumber( RepresentationType.DOUBLE, coordinate );
-            }
-            coordinatesWriter.done();
-
-            //Write coordinate reference system
-            CRS crs = property.getCRS();
-            MappingWriter crsWriter = pointWriter.newMapping( RepresentationType.MAP, "crs" );
-            crsWriter.writeInteger( RepresentationType.INTEGER, "srid", crs.getCode() );
-            crsWriter.writeString( "name", crs.getType() );
-            crsWriter.writeString( "type", "link" );
-            MappingWriter propertiesWriter = crsWriter.newMapping( Representation.MAP, "properties" );
-            propertiesWriter.writeString( "href", crs.getHref() + "ogcwkt/" );
-            propertiesWriter.writeString( "type","ogcwkt" );
-            propertiesWriter.done();
-            crsWriter.done();
-
+            writePoint( pointWriter, property );
             pointWriter.done();
             return null;
         }
@@ -182,6 +161,20 @@ public final class PropertiesRepresentation extends MappingRepresentation
             for ( String s : property )
             {
                 list.writeString( s );
+            }
+            list.done();
+            return null;
+        }
+
+        @Override
+        protected Void dispatchPointArrayProperty( Point[] property, String param )
+        {
+            ListWriter list = writer.newList( RepresentationType.POINT, param );
+            for ( Point p : property )
+            {
+                MappingWriter pointWriter = list.newMapping( RepresentationType.POINT );
+                writePoint( pointWriter, p);
+                pointWriter.done();
             }
             list.done();
             return null;
@@ -289,6 +282,30 @@ public final class PropertiesRepresentation extends MappingRepresentation
             }
             list.done();
             return null;
+        }
+
+        private void writePoint( MappingWriter pointWriter, Point property )
+        {
+            pointWriter.writeString( "type", property.getGeometryType() );
+            //write coordinates
+            ListWriter coordinatesWriter = pointWriter.newList( RepresentationType.DOUBLE, "coordinates" );
+            for ( Double coordinate : property.getCoordinate().getCoordinate() )
+            {
+                coordinatesWriter.writeFloatingPointNumber( RepresentationType.DOUBLE, coordinate );
+            }
+            coordinatesWriter.done();
+
+            //Write coordinate reference system
+            CRS crs = property.getCRS();
+            MappingWriter crsWriter = pointWriter.newMapping( RepresentationType.MAP, "crs" );
+            crsWriter.writeInteger( RepresentationType.INTEGER, "srid", crs.getCode() );
+            crsWriter.writeString( "name", crs.getType() );
+            crsWriter.writeString( "type", "link" );
+            MappingWriter propertiesWriter = crsWriter.newMapping( Representation.MAP, "properties" );
+            propertiesWriter.writeString( "href", crs.getHref() + "ogcwkt/" );
+            propertiesWriter.writeString( "type","ogcwkt" );
+            propertiesWriter.done();
+            crsWriter.done();
         }
     }
 
