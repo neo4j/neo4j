@@ -460,26 +460,34 @@ public class OnlineBackupCommandCcIT
 
         // and a different database
         Cluster cluster2 = startCluster2( recordFormat );
-        DbRepresentation secondDatabaseRepresentation = DbRepresentation.of( clusterLeader( cluster2 ).database() );
-        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
-        String secondBackupAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster2 ).database() );
+        try
+        {
 
-        // when backup is performed
-        assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
-                "--from", secondBackupAddress,
-                "--cc-report-dir=" + backupDir,
-                "--backup-dir=" + backupDir,
-                "--name=" + backupName ) );
-        cluster2.shutdown();
+            DbRepresentation secondDatabaseRepresentation = DbRepresentation.of( clusterLeader( cluster2 ).database() );
+            assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+            String secondBackupAddress = CausalClusteringTestHelpers.transactionAddress( clusterLeader( cluster2 ).database() );
 
-        // then the new backup has the correct name
-        assertEquals( secondDatabaseRepresentation, getBackupDbRepresentation( backupName, backupDir ) );
+            // when backup is performed
+            assertEquals( 0, runBackupToolFromOtherJvmToGetExitCode(
+                    "--from", secondBackupAddress,
+                    "--cc-report-dir=" + backupDir,
+                    "--backup-dir=" + backupDir,
+                    "--name=" + backupName ) );
+            cluster2.shutdown();
 
-        // and the old backup is in a renamed location
-        assertEquals( firstDatabaseRepresentation, getBackupDbRepresentation( backupName + ".err.0", backupDir ) );
+            // then the new backup has the correct name
+            assertEquals( secondDatabaseRepresentation, getBackupDbRepresentation( backupName, backupDir ) );
 
-        // and the data isn't equal (sanity check)
-        assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+            // and the old backup is in a renamed location
+            assertEquals( firstDatabaseRepresentation, getBackupDbRepresentation( backupName + ".err.0", backupDir ) );
+
+            // and the data isn't equal (sanity check)
+            assertNotEquals( firstDatabaseRepresentation, secondDatabaseRepresentation );
+        }
+        finally
+        {
+            cluster2.shutdown();
+        }
     }
 
     static String arg( String key, Object value )
