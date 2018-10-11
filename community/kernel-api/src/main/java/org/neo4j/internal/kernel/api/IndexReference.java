@@ -24,10 +24,7 @@ import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.values.storable.ValueCategory;
-
-import static java.lang.String.format;
 
 /**
  * Reference to a specific index together with it's capabilities. This reference is valid until the schema of the database changes
@@ -71,11 +68,7 @@ public interface IndexReference extends IndexCapability
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
-    default String userDescription( TokenNameLookup tokenNameLookup )
-    {
-        String type = isUnique() ? "UNIQUE" : "GENERAL";
-        return format( "Index( %s, %s )",  type, SchemaUtil.niceProperties( tokenNameLookup, properties() ) );
-    }
+    String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
      * Sorts indexes by type, returning first GENERAL indexes, followed by UNIQUE. Implementation is not suitable in
@@ -153,6 +146,12 @@ public interface IndexReference extends IndexCapability
         public String name()
         {
             return UNNAMED_INDEX;
+        }
+
+        @Override
+        public String userDescription( TokenNameLookup tokenNameLookup )
+        {
+            return SchemaDescriptor.NO_SCHEMA.userDescription( tokenNameLookup );
         }
     };
 }
