@@ -32,7 +32,6 @@ import java.util.Objects;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -66,14 +65,12 @@ public class DumpCommand implements AdminCommand
     private final Path homeDir;
     private final Path configDir;
     private final Dumper dumper;
-    private final OutsideWorld outsideWorld;
 
-    public DumpCommand( Path homeDir, Path configDir, Dumper dumper, OutsideWorld outsideWorld )
+    public DumpCommand( Path homeDir, Path configDir, Dumper dumper )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
         this.dumper = dumper;
-        this.outsideWorld = outsideWorld;
     }
 
     @Override
@@ -166,7 +163,7 @@ public class DumpCommand implements AdminCommand
         }
     }
 
-    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
                 JobScheduler jobScheduler = createInitialisedScheduler();
@@ -187,7 +184,7 @@ public class DumpCommand implements AdminCommand
         }
         catch ( Exception e )
         {
-            outsideWorld.stdErrLine( "Failure when checking for recovery state: '%s', continuing as normal.%n" + e.getMessage() );
+            throw new CommandFailed( "Failure when checking for recovery state: '%s'." + e.getMessage(), e );
         }
     }
 

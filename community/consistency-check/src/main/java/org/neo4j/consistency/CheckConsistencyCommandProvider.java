@@ -74,6 +74,6 @@ public class CheckConsistencyCommandProvider extends AdminCommand.Provider
     @Nonnull
     public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
     {
-        return new CheckConsistencyCommand( homeDir, configDir, outsideWorld );
+        return new CheckConsistencyCommand( homeDir, configDir );
     }
 }

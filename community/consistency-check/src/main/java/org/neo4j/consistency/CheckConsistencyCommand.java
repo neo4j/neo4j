@@ -30,7 +30,6 @@ import java.util.Optional;
 import org.neo4j.commandline.admin.AdminCommand;
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.IncorrectUsage;
-import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalBooleanArg;
 import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
@@ -83,20 +82,17 @@ public class CheckConsistencyCommand implements AdminCommand
 
     private final Path homeDir;
     private final Path configDir;
-    private final OutsideWorld outsideWorld;
     private final ConsistencyCheckService consistencyCheckService;
 
-    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld )
+    public CheckConsistencyCommand( Path homeDir, Path configDir )
     {
-        this( homeDir, configDir, outsideWorld, new ConsistencyCheckService() );
+        this( homeDir, configDir, new ConsistencyCheckService() );
     }
 
-    public CheckConsistencyCommand( Path homeDir, Path configDir, OutsideWorld outsideWorld,
-            ConsistencyCheckService consistencyCheckService )
+    public CheckConsistencyCommand( Path homeDir, Path configDir, ConsistencyCheckService consistencyCheckService )
     {
         this.homeDir = homeDir;
         this.configDir = configDir;
-        this.outsideWorld = outsideWorld;
         this.consistencyCheckService = consistencyCheckService;
     }
 
@@ -213,7 +209,7 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
         if ( additionalConfigFile.isPresent() )
         {
@@ -231,7 +227,7 @@ public class CheckConsistencyCommand implements AdminCommand
         return new HashMap<>();
     }
 
-    private void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
     {
         try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
               JobScheduler jobScheduler = createInitialisedScheduler();
@@ -254,8 +250,7 @@ public class CheckConsistencyCommand implements AdminCommand
         }
         catch ( Exception e )
         {
-            outsideWorld.stdErrLine(
-                    "Failure when checking for recovery state: '%s', continuing as normal.%n" + e.getMessage() );
+            throw new CommandFailed( "Failure when checking for recovery state: '%s'." + e.getMessage(), e );
         }
     }
 
