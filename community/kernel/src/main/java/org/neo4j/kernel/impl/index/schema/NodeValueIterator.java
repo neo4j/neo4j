@@ -30,10 +30,10 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 /**
- * A {@link IndexProgressor} + {@link IndexProgressor.NodeValueClient} combo presented as a {@link LongIterator}.
+ * A {@link IndexProgressor} + {@link IndexProgressor.EntityValueClient} combo presented as a {@link LongIterator}.
  */
 public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBaseIterator
-        implements IndexProgressor.NodeValueClient, PrimitiveLongResourceIterator
+        implements IndexProgressor.EntityValueClient, PrimitiveLongResourceIterator
 {
     private boolean closed;
     private IndexProgressor progressor;
@@ -62,7 +62,7 @@ public class NodeValueIterator extends PrimitiveLongCollections.PrimitiveLongBas
     }
 
     @Override
-    public boolean acceptNode( long reference, Value... values )
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         return next( reference );
     }

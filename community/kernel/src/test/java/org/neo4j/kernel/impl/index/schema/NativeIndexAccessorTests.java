@@ -728,7 +728,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         NodeValueIterator iter = new NodeValueIterator();
         IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1]) );
         IndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
-        IndexProgressor.NodeValueClient filterClient = filterClient( iter, filter );
+        IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
         reader.query( filterClient, IndexOrder.NONE, false, rangeQuery );
 
         // then
@@ -904,9 +904,9 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         return update.values()[0];
     }
 
-    private IndexProgressor.NodeValueClient filterClient( final NodeValueIterator iter, final IndexQuery filter )
+    private IndexProgressor.EntityValueClient filterClient( final NodeValueIterator iter, final IndexQuery filter )
     {
-        return new IndexProgressor.NodeValueClient()
+        return new IndexProgressor.EntityValueClient()
         {
             @Override
             public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
@@ -915,14 +915,14 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
             }
 
             @Override
-            public boolean acceptNode( long reference, Value... values )
+            public boolean acceptEntity( long reference, float score, Value... values )
             {
                 //noinspection SimplifiableIfStatement
                 if ( values.length > 1 )
                 {
                     return false;
                 }
-                return filter.acceptsValue( values[0] ) && iter.acceptNode( reference, values );
+                return filter.acceptsValue( values[0] ) && iter.acceptEntity( reference, score, values );
             }
 
             @Override

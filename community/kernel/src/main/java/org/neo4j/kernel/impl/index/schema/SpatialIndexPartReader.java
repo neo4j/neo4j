@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.IndexQuery.GeometryRangePredicate;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.IndexProgressor.EntityValueClient;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -69,7 +70,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public void query( EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         // Spatial does not support providing values
         if ( needsValues )
@@ -106,22 +107,21 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         }
     }
 
-    private void startSeekForExists( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, IndexQuery... predicates )
+    private void startSeekForExists( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, EntityValueClient client, IndexQuery... predicates )
     {
         treeKeyFrom.initValueAsLowest( ValueGroup.GEOMETRY );
         treeKeyTo.initValueAsHighest( ValueGroup.GEOMETRY );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, IndexOrder.NONE, false, false );
     }
 
-    private void startSeekForExact( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexProgressor.NodeValueClient client, Value value,
-            IndexQuery... predicates )
+    private void startSeekForExact( SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, EntityValueClient client, Value value, IndexQuery... predicates )
     {
         treeKeyFrom.from( value );
         treeKeyTo.from( value );
         startSeekForInitializedRange( client, treeKeyFrom, treeKeyTo, predicates, IndexOrder.NONE, false, false );
     }
 
-    private void startSeekForRange( IndexProgressor.NodeValueClient client, GeometryRangePredicate rangePredicate, IndexQuery[] query )
+    private void startSeekForRange( EntityValueClient client, GeometryRangePredicate rangePredicate, IndexQuery[] query )
     {
         try
         {
@@ -155,7 +155,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     }
 
     @Override
-    void startSeekForInitializedRange( IndexProgressor.NodeValueClient client, SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexQuery[] query,
+    void startSeekForInitializedRange( EntityValueClient client, SpatialIndexKey treeKeyFrom, SpatialIndexKey treeKeyTo, IndexQuery[] query,
             IndexOrder indexOrder, boolean needFilter, boolean needsValues )
     {
         // Spatial does not support providing values

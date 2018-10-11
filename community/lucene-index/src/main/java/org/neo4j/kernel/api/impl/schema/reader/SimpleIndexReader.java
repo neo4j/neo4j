@@ -92,7 +92,7 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
             throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );

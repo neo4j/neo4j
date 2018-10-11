@@ -57,7 +57,7 @@ public interface IndexReader extends Resource
      * @param needsValues if the index should fetch property values together with node ids for index queries
      * @param query the query so serve.
      */
-    void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException;
 
     /**
@@ -90,7 +90,7 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+        public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
         {
             //do nothing
         }

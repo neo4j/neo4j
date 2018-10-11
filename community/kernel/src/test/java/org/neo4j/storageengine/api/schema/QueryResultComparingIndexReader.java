@@ -99,7 +99,7 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
@@ -108,7 +108,7 @@ public class QueryResultComparingIndexReader implements IndexReader
         // This is a client which gets driven by the client, such that it can know when there are no more values in it.
         // Therefore we can hook in correct comparison on this type of client.
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
-        IndexProgressor.NodeValueClient wrappedClient = new IndexProgressor.NodeValueClient()
+        IndexProgressor.EntityValueClient wrappedClient = new IndexProgressor.EntityValueClient()
         {
             private long mainValue;
 
@@ -154,10 +154,10 @@ public class QueryResultComparingIndexReader implements IndexReader
             }
 
             @Override
-            public boolean acceptNode( long reference, Value... values )
+            public boolean acceptEntity( long reference, float score, Value... values )
             {
                 mainValue = reference;
-                return client.acceptNode( reference, values );
+                return client.acceptEntity( reference, score, values );
             }
 
             @Override

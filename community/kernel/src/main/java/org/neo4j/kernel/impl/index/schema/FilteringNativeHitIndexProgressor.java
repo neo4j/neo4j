@@ -31,7 +31,7 @@ class FilteringNativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE e
 {
     private final IndexQuery[] filter;
 
-    FilteringNativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
+    FilteringNativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose, IndexQuery[] filter )
     {
         super( seeker, client, toRemoveFromOnClose );

@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -37,7 +38,7 @@ import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
+import org.neo4j.storageengine.api.schema.IndexProgressor.EntityValueClient;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 
@@ -49,7 +50,7 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClient
+public class NodeValueClientFilterTest implements IndexProgressor, EntityValueClient
 {
     @Rule
     public final RandomRule random = new RandomRule();
@@ -63,16 +64,17 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     public void shouldAcceptAllNodesOnNoFilters()
     {
         // given
+        float score = 0.42f;
         node.withNode( 17 );
         NodeValueClientFilter filter = initializeFilter();
 
         // when
         filter.next();
-        assertTrue( filter.acceptNode( 17, null ) );
+        assertTrue( filter.acceptEntity( 17, score, null ) );
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, null ), Event.CLOSE );
+        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, score, null ), Event.CLOSE );
     }
 
     @Test
@@ -83,7 +85,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
 
         // when
         filter.next();
-        assertFalse( filter.acceptNode( 17, null ) );
+        assertFalse( filter.acceptEntity( 17, 0.42f, null ) );
         filter.close();
 
         // then
@@ -99,7 +101,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
 
         // when
         filter.next();
-        assertFalse( filter.acceptNode( 17, null ) );
+        assertFalse( filter.acceptEntity( 17, 0.42f, null ) );
         filter.close();
 
         // then
@@ -110,16 +112,17 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     public void shouldAcceptNodeWithMatchingProperty()
     {
         // given
+        float score = 0.42f;
         node.withNode( 17, new long[0], genericMap( 12, stringValue( "hello" ) ) );
         NodeValueClientFilter filter = initializeFilter( IndexQuery.exists( 12 ) );
 
         // when
         filter.next();
-        assertTrue( filter.acceptNode( 17, null ) );
+        assertTrue( filter.acceptEntity( 17, score, null ) );
         filter.close();
 
         // then
-        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, null ), Event.CLOSE );
+        assertEvents( initialize(), Event.NEXT, new Event.Node( 17, score, null ), Event.CLOSE );
     }
 
     @Test
@@ -131,7 +134,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
 
         // when
         filter.next();
-        assertFalse( filter.acceptNode( 17, null ) );
+        assertFalse( filter.acceptEntity( 17, 0.42f, null ) );
         filter.close();
 
         // then
@@ -166,6 +169,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         // given
         long nodeReference = 123;
+        float score = 0.42f;
         int labelId = 10;
         int slots = random.nextInt( 3, 8 );
         IndexQuery[] filters = new IndexQuery[slots];
@@ -194,7 +198,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         // when
         NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read, filters );
         filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, IndexOrder.NONE, true );
-        boolean accepted = filter.acceptNode( nodeReference, filterValues.apply( values ) );
+        boolean accepted = filter.acceptEntity( nodeReference, score, filterValues.apply( values ) );
 
         // then
         assertEquals( filterAcceptsValue, accepted );
@@ -215,13 +219,13 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11), this, null, IndexOrder.NONE, true );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11 ), this, null, IndexOrder.NONE, true );
         return filter;
     }
 
     private void assertEvents( Event... expected )
     {
-        assertEquals( Arrays.asList( expected ), events );
+        assertEquals( new ArrayList<>( Arrays.asList( expected ) ), events );
     }
 
     private Event.Initialize initialize( int... keys )
@@ -236,9 +240,9 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
     }
 
     @Override
-    public boolean acceptNode( long reference, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value[] values )
     {
-        events.add( new Event.Node( reference, values ) );
+        events.add( new Event.Node( reference, score, values ) );
         return true;
     }
 
@@ -302,18 +306,21 @@ public class NodeValueClientFilterTest implements IndexProgressor, NodeValueClie
         static class Node extends Event
         {
             final long reference;
+            final float score;
             final Value[] values;
 
-            Node( long reference, Value[] values )
+            Node( long reference, float score, Value[] values )
             {
                 this.reference = reference;
+                this.score = score;
                 this.values = values;
             }
 
             @Override
             public String toString()
             {
-                return "Node(" + reference + "," + Arrays.toString( values ) + ")";
+                String scoreHex = Integer.toHexString( Float.floatToRawIntBits( score ) );
+                return "Node(" + reference + ", " + score + " (" + scoreHex + ")" + "," + Arrays.toString( values ) + ")";
             }
         }
 

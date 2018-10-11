@@ -81,7 +81,7 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public void query( IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         if ( predicates.length != 1 )
         {

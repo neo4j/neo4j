@@ -31,11 +31,11 @@ import org.neo4j.values.storable.Value;
 public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue> implements IndexProgressor
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
-    private final NodeValueClient client;
+    private final EntityValueClient client;
     private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
-    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
+    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client,
             Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
     {
         this.seeker = seeker;
@@ -52,7 +52,7 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
             {
                 KEY key = seeker.get().key();
                 Value[] values = extractValues( key );
-                if ( acceptValue( values ) && client.acceptNode( key.getEntityId(), values ) )
+                if ( acceptValue( values ) && client.acceptEntity( key.getEntityId(), Float.NaN, values ) )
                 {
                     return true;
                 }

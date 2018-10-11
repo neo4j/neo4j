@@ -27,16 +27,16 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.io.IOUtils;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
+import org.neo4j.storageengine.api.schema.IndexProgressor.EntityValueClient;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
 
 /**
- * This class filters acceptNode() calls from an index progressor, to assert that exact entries returned from the
+ * This class filters acceptEntity() calls from an index progressor, to assert that exact entries returned from the
  * progressor really match the exact property values. See also org.neo4j.kernel.impl.api.LookupFilter.
  * <p>
- * It works by acting as a man-in-the-middle between outer {@link NodeValueClient client} and inner {@link IndexProgressor}.
+ * It works by acting as a man-in-the-middle between outer {@link EntityValueClient client} and inner {@link IndexProgressor}.
  * Interaction goes like:
  * <p>
  * Initialize:
@@ -50,15 +50,15 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  * <p>
  * Progress:
  * <pre><code>
- * client -- next() ->       filter
- *                           filter -- next() ->          progressor
- *                                     <- acceptNode() --
- *                                  -- :false ->
- *                                     <- acceptNode() --
- *                                  -- :false ->
- *                           filter    <- acceptNode() --
- * client <- acceptNode() -- filter
- *        -- :true ->        filter -- :true ->           progressor
+ * client -- next() ->         filter
+ *                             filter -- next() ->          progressor
+ *                                       <- acceptEntity() --
+ *                                    -- :false ->
+ *                                       <- acceptEntity() --
+ *                                    -- :false ->
+ *                             filter    <- acceptEntity() --
+ * client <- acceptEntity() -- filter
+ *        -- :true ->          filter -- :true ->           progressor
  * client <----------------------------------------------
  * </code></pre>
  * <p>
@@ -69,16 +69,16 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  * client <---------------------------------
  * </code></pre>
  */
-class NodeValueClientFilter implements NodeValueClient, IndexProgressor
+class NodeValueClientFilter implements EntityValueClient, IndexProgressor
 {
-    private final NodeValueClient target;
+    private final EntityValueClient target;
     private final NodeCursor node;
     private final PropertyCursor property;
     private final IndexQuery[] filters;
     private final org.neo4j.internal.kernel.api.Read read;
     private IndexProgressor progressor;
 
-    NodeValueClientFilter( NodeValueClient target, NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
+    NodeValueClientFilter( EntityValueClient target, NodeCursor node, PropertyCursor property, Read read, IndexQuery... filters )
     {
         this.target = target;
         this.node = node;
@@ -95,7 +95,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
     }
 
     @Override
-    public boolean acceptNode( long reference, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value[] values )
     {
         // First filter on these values, which come from the index. Some values will be NO_VALUE, because some indexed values cannot be read back.
         // Those values will have to be read from the store using the propertyCursor and is done in one pass after this loop, if needed.
@@ -137,7 +137,7 @@ class NodeValueClientFilter implements NodeValueClient, IndexProgressor
         {
             return false;
         }
-        return target.acceptNode( reference, values );
+        return target.acceptEntity( reference, score, values );
     }
 
     private boolean acceptByStoreFiltering( long reference, int storeLookups, Value[] values )

@@ -83,7 +83,7 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     }
 
     @Override
-    public void query( IndexProgressor.NodeValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public void query( IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         // Spatial does not support providing values
         if ( needsValues )

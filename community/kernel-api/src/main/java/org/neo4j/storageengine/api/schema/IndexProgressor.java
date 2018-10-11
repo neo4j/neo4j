@@ -67,7 +67,7 @@ public interface IndexProgressor extends AutoCloseable
     /**
      * Client which accepts nodes and some of their property values.
      */
-    interface NodeValueClient
+    interface EntityValueClient
     {
         /**
          * Setup the client for progressing using the supplied progressor. The values feed in accept map to the
@@ -85,10 +85,11 @@ public interface IndexProgressor extends AutoCloseable
          * Accept the node id and values of a candidate index entry. Return true if the entry is
          * accepted, false otherwise.
          * @param reference the node id of the candidate index entry
+         * @param score a score figure for the quality of the match, for indexes where this makes sense, otherwise {@link Float#NaN}.
          * @param values the values of the candidate index entry
          * @return true if the entry is accepted, false otherwise
          */
-        boolean acceptNode( long reference, Value... values );
+        boolean acceptEntity( long reference, float score, Value... values );
 
         boolean needsValues();
     }

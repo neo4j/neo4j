@@ -38,7 +38,7 @@ import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexProgressor.NodeValueClient;
+import org.neo4j.storageengine.api.schema.IndexProgressor.EntityValueClient;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
@@ -55,7 +55,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeValueIndexCursor, NodeValueClient, SortedMergeJoin.Sink
+        implements NodeValueIndexCursor, EntityValueClient, SortedMergeJoin.Sink
 {
     private Read read;
     private Resource resource;
@@ -150,7 +150,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
-    public boolean acceptNode( long reference, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value[] values )
     {
         if ( isRemoved( reference ) )
         {

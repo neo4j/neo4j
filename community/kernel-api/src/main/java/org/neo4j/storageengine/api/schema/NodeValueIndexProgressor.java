@@ -25,9 +25,9 @@ import org.neo4j.values.storable.Value;
 class NodeValueIndexProgressor implements IndexProgressor
 {
     private final PrimitiveLongResourceIterator ids;
-    private final NodeValueClient client;
+    private final EntityValueClient client;
 
-    NodeValueIndexProgressor( PrimitiveLongResourceIterator ids, NodeValueClient client )
+    NodeValueIndexProgressor( PrimitiveLongResourceIterator ids, EntityValueClient client )
     {
         this.ids = ids;
         this.client = client;
@@ -38,7 +38,7 @@ class NodeValueIndexProgressor implements IndexProgressor
     {
         while ( ids.hasNext() )
         {
-            if ( client.acceptNode( ids.next(), (Value[]) null ) )
+            if ( client.acceptEntity( ids.next(), Float.NaN, (Value[]) null ) )
             {
                 return true;
             }

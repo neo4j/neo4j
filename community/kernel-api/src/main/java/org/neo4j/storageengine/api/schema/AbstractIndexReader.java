@@ -34,7 +34,7 @@ public abstract class AbstractIndexReader implements IndexReader
 
     @Override
     public void query(
-            IndexProgressor.NodeValueClient client,
+            IndexProgressor.EntityValueClient client,
             IndexOrder indexOrder,
             boolean needsValues,
             IndexQuery... query ) throws IndexNotApplicableKernelException

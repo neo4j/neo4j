@@ -1814,6 +1814,47 @@ public class FulltextProceduresTest
     }
 
     @Test
+    public void queryResultsMustBeOrderedByScore()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            tx.success();
+        }
+        long firstId;
+        long secondId;
+        long thirdId;
+        try ( Transaction tx = db.beginTx() )
+        {
+            awaitIndexesOnline();
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "dude sweet" );
+            firstId = node.getId();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "dude sweet dude sweet" );
+            secondId = node.getId();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( LABEL );
+            node.setProperty( PROP, "dude sweet dude dude dude sweet" );
+            thirdId = node.getId();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertQueryFindsIds( db, true, "nodes", "dude", thirdId, secondId, firstId );
+            tx.success();
+        }
+    }
+
+    @Test
     public void queryingDroppedIndexForNodesInDroppingTransactionMustThrow()
     {
         db = createDatabase();
@@ -1823,7 +1864,7 @@ public class FulltextProceduresTest
             tx.success();
         }
         awaitIndexesOnline();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             db.execute( format( DROP, "nodes" ) ).close();
             expectedException.expect( QueryExecutionException.class );
@@ -1841,7 +1882,7 @@ public class FulltextProceduresTest
             tx.success();
         }
         awaitIndexesOnline();
-        try ( Transaction tx = db.beginTx() )
+        try ( Transaction ignore = db.beginTx() )
         {
             db.execute( format( DROP, "rels" ) ).close();
             expectedException.expect( QueryExecutionException.class );

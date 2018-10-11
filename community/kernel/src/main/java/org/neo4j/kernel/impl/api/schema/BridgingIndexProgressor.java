@@ -31,9 +31,9 @@ import org.neo4j.values.storable.Value;
 /**
  * Combine multiple progressor to act like one single logical progressor seen from client's perspective.
  */
-public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient, IndexProgressor
+public class BridgingIndexProgressor implements IndexProgressor.EntityValueClient, IndexProgressor
 {
-    private final NodeValueClient client;
+    private final EntityValueClient client;
     private final int[] keys;
     // This is a thread-safe queue because it can be used in parallel scenarios.
     // The overhead of a concurrent queue in this case is negligible since typically there will be two or a very few number
@@ -41,7 +41,7 @@ public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient,
     private final Queue<IndexProgressor> progressors = new ConcurrentLinkedQueue<>();
     private IndexProgressor current;
 
-    public BridgingIndexProgressor( NodeValueClient client, int[] keys )
+    public BridgingIndexProgressor( EntityValueClient client, int[] keys )
     {
         this.client = client;
         this.keys = keys;
@@ -104,8 +104,8 @@ public class BridgingIndexProgressor implements IndexProgressor.NodeValueClient,
     }
 
     @Override
-    public boolean acceptNode( long reference, Value[] values )
+    public boolean acceptEntity( long reference, float score, Value[] values )
     {
-        return client.acceptNode( reference, values );
+        return client.acceptEntity( reference, score, values );
     }
 }

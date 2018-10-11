@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.values.storable.Value;
 
-public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
+public class SimpleNodeValueClient implements IndexProgressor.EntityValueClient
 {
     public long reference;
     public Value[] values;
@@ -46,7 +46,7 @@ public class SimpleNodeValueClient implements IndexProgressor.NodeValueClient
     }
 
     @Override
-    public boolean acceptNode( long reference, Value... values )
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         this.reference = reference;
         this.values = values;

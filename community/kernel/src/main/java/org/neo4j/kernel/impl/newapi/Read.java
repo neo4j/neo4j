@@ -95,14 +95,14 @@ abstract class Read implements TxStateHolder,
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         IndexReader reader = indexReader( index, false );
         cursorImpl.setRead( this, null );
-        IndexProgressor.NodeValueClient withFullPrecision = injectFullValuePrecision( cursorImpl, query, reader );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( cursorImpl, query, reader );
         reader.query( withFullPrecision, indexOrder, needsValues, query );
     }
 
-    private IndexProgressor.NodeValueClient injectFullValuePrecision( IndexProgressor.NodeValueClient cursor,
+    private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,
                                                                       IndexQuery[] query, IndexReader reader )
     {
-        IndexProgressor.NodeValueClient target = cursor;
+        IndexProgressor.EntityValueClient target = cursor;
         if ( !reader.hasFullValuePrecision( query ) )
         {
             IndexQuery[] filters = new IndexQuery[query.length];
@@ -169,7 +169,7 @@ abstract class Read implements TxStateHolder,
     {
         IndexReader reader = indexReader( index, true );
         cursor.setRead( this, reader );
-        IndexProgressor.NodeValueClient target = injectFullValuePrecision( cursor, query, reader );
+        IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, reader );
         // we never need values for exact predicates
         reader.query( target, IndexOrder.NONE, false, query );
     }
