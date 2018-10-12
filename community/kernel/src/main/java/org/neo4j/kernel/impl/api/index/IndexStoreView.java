@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.set.primitive.MutableIntSet;
-
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
@@ -35,7 +33,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 /** The indexing services view of the universe. */
-public interface IndexStoreView extends NodePropertyAccessor, PropertyLoader
+public interface IndexStoreView extends NodePropertyAccessor
 {
     /**
      * Retrieve all nodes in the database which has got one or more of the given labels AND
@@ -116,11 +114,6 @@ public interface IndexStoreView extends NodePropertyAccessor, PropertyLoader
 
     class Adaptor implements IndexStoreView
     {
-        @Override
-        public void loadProperties( long nodeId, EntityType type, MutableIntSet propertyIds, PropertyLoadSink sink )
-        {
-        }
-
         @Override
         public Value getNodePropertyValue( long nodeId, int propertyKeyId )
         {
