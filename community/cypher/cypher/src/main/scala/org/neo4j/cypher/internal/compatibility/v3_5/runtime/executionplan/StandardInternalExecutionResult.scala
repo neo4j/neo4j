@@ -109,10 +109,12 @@ class StandardInternalExecutionResult(context: QueryContext,
     }
 
   private def extractJavaColumn(column: String, data: util.Map[String, AnyRef]): AnyRef = {
-    if (!data.containsKey(column)) {
-      throw new NotFoundException(s"No column named '$column' was found. Found: ${fieldNames().mkString("(\"", "\", \"", "\")")}")
+    val value = data.get(column)
+    if (value == null && !data.containsKey(column)) {
+      throw new NotFoundException(
+        s"No column named '$column' was found. Found: ${fieldNames().mkString("(\"", "\", \"", "\")")}")
     }
-    data.get(column)
+    value
   }
 
   /**
