@@ -199,7 +199,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   @throws(classOf[ParameterNotFoundException])
   private def checkParameters(queryParams: Seq[String], givenParams: MapValue, extractedParams: MapValue) {
     exceptionHandler.runSafely {
-      val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key)))
+      val missingKeys = queryParams.filter(key => !(givenParams.containsKey(key) || extractedParams.containsKey(key))).distinct
       if (missingKeys.nonEmpty) {
         throw new ParameterNotFoundException("Expected parameter(s): " + missingKeys.mkString(", "))
       }
