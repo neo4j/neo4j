@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,6 +75,7 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
@@ -1473,22 +1473,15 @@ public class NeoStoresTest
 
     private <RECEIVER extends PropertyReceiver> void loadProperties( long nextProp, RECEIVER receiver )
     {
-        Collection<PropertyRecord> chain = pStore.getPropertyRecordChain( nextProp );
-        receivePropertyChain( receiver, chain );
-    }
-
-    private <RECEIVER extends PropertyReceiver> void receivePropertyChain( RECEIVER receiver,
-            Collection<PropertyRecord> chain )
-    {
-        if ( chain != null )
+        PropertyRecord record = pStore.newRecord();
+        while ( !Record.NULL_REFERENCE.is( nextProp ) )
         {
-            for ( PropertyRecord propRecord : chain )
+            pStore.getRecord( nextProp, record, NORMAL );
+            for ( PropertyBlock propBlock : record )
             {
-                for ( PropertyBlock propBlock : propRecord )
-                {
-                    receiver.receive( propBlock.newPropertyKeyValue( pStore ), propRecord.getId() );
-                }
+                receiver.receive( propBlock.newPropertyKeyValue( pStore ), record.getId() );
             }
+            nextProp = record.getNextProp();
         }
     }
 

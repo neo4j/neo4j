@@ -69,16 +69,13 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -97,17 +94,17 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -115,6 +112,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private Statistics statistics;
     private final boolean keepStatistics;
     private NeoStores neoStore;
+    private StorageReader storeReader;
     private TestDirectory directory;
     private long schemaId;
     private long nodeId;
@@ -206,6 +204,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
             IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, scheduler, logProvider, monitors);
             directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
+            storeReader = new RecordStorageReader( neoStore );
         }
         return directStoreAccess;
     }
@@ -252,33 +251,23 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
 
     public EntityUpdates nodeAsUpdates( long nodeId )
     {
-        NodeStore nodeStore = neoStore.getNodeStore();
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
-        if ( !node.inUse() )
+        try ( StorageNodeCursor nodeCursor = storeReader.allocateNodeCursor();
+              StoragePropertyCursor propertyCursor = storeReader.allocatePropertyCursor() )
         {
-            return null;
-        }
-        long firstPropertyId = node.getNextProp();
-        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            return null; // no properties => no updates (it's not going to be in any index)
-        }
-        long[] labels = parseLabelsField( node ).get( nodeStore );
-        if ( labels.length == 0 )
-        {
-            return null; // no labels => no updates (it's not going to be in any index)
-        }
-        EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId ).withTokens( labels );
-        PropertyStore propertyStore = neoStore.getPropertyStore();
-        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
-        {
-            for ( PropertyBlock property : propertyRecord )
+            nodeCursor.single( nodeId );
+            long[] labels;
+            if ( !nodeCursor.next() || !nodeCursor.hasProperties() || (labels = nodeCursor.labels()).length == 0 )
             {
-                Value value = property.getType().value( property, propertyStore );
-                update.added( property.getKeyIndexId(), value );
+                return null;
             }
+            propertyCursor.init( nodeCursor.propertiesReference() );
+            EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId ).withTokens( labels );
+            while ( propertyCursor.next() )
+            {
+                update.added( propertyCursor.propertyKey(), propertyCursor.propertyValue() );
+            }
+            return update.build();
         }
-        return update.build();
     }
 
     public abstract static class Transaction
@@ -503,6 +492,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         if ( directStoreAccess != null )
         {
+            storeReader.close();
             neoStore.close();
             directStoreAccess.close();
             directStoreAccess = null;

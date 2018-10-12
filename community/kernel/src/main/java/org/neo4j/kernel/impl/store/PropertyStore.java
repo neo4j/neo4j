@@ -25,7 +25,6 @@ import java.nio.ByteOrder;
 import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.function.ToIntFunction;
 
@@ -43,7 +42,6 @@ import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.logging.LogProvider;
@@ -674,20 +672,6 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
     public String toString()
     {
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
-    }
-
-    public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )
-    {
-        long nextProp = firstRecordId;
-        List<PropertyRecord> toReturn = new LinkedList<>();
-        while ( nextProp != Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            PropertyRecord propRecord = new PropertyRecord( nextProp );
-            getRecord( nextProp, propRecord, RecordLoad.NORMAL );
-            toReturn.add( propRecord );
-            nextProp = propRecord.getNextProp();
-        }
-        return toReturn;
     }
 
     @Override
