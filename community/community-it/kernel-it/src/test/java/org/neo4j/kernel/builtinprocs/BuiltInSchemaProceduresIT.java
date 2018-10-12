@@ -43,8 +43,27 @@ import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureNa
 public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 {
 
-    private final String[] nodesProcedureName = {"db", "schema", "nodeProperties"};
-    private final String[] relsProcedureName = {"db", "schema", "edgeProperties"};
+    private final String[] nodesProcedureName = {"db", "schema", "nodeTypeProperties"};
+    private final String[] relsProcedureName = {"db", "schema", "relTypeProperties"};
+
+    @Test
+    public void testWeirdLabelName() throws Throwable
+    {
+        // Given
+
+        // Node1: (:`This:is_a:label` {color: "red"})
+
+        createNode( Arrays.asList( "`This:is_a:label`" ), Arrays.asList( "color" ), Arrays.asList( Values.stringValue( "red" ) ) );
+
+        // When
+        RawIterator<Object[],ProcedureException> stream =
+                procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new Object[0] );
+
+        // Then
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( nodeEntry(":``This:is_a:label``", Arrays.asList( "`This:is_a:label`" ), "color", Arrays.asList( "String" ), true) ) ) );
+//        printStream( stream );
+    }
 
     @Test
     public void testNodePropertiesRegardlessOfCreationOrder1() throws Throwable
@@ -63,9 +82,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("A", "color", Arrays.asList( "String" ), false) ),
-                equalTo( entry("A", "size", Arrays.asList( "String" ), false) ),
-                equalTo( entry("A", "origin", Arrays.asList( "String" ), false) ) ) );
+                equalTo( nodeEntry(":`A`", Arrays.asList( "A" ), "color", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`A`", Arrays.asList( "A" ), "size", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`A`", Arrays.asList( "A" ), "origin", Arrays.asList( "String" ), false) ) ) );
 //        printStream( stream );
     }
 
@@ -86,9 +105,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("B", "color", Arrays.asList( "String" ), false) ),
-                equalTo( entry("B", "size", Arrays.asList( "String" ), false) ),
-                equalTo( entry("B", "origin", Arrays.asList( "String" ), false) ) ) );
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "color", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "size", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "origin", Arrays.asList( "String" ), false) ) ) );
 
 //        printStream( stream );
     }
@@ -110,10 +129,10 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
              assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("C", "color", Arrays.asList( "String" ), false) ),
-                equalTo( entry("C", "size", Arrays.asList( "String" ), false) ),
-                equalTo( entry("C", "origin", Arrays.asList( "String" ), false) ),
-                equalTo( entry("C", "active", Arrays.asList( "Boolean" ), false) ) ) );
+                equalTo( nodeEntry(":`C`", Arrays.asList( "C" ), "color", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`C`", Arrays.asList( "C" ), "size", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`C`", Arrays.asList( "C" ), "origin", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`C`", Arrays.asList( "C" ), "active", Arrays.asList( "Boolean" ), false) ) ) );
 
 //        printStream( stream );
     }
@@ -138,9 +157,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("R", "color", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "size", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "origin", Arrays.asList( "String" ), false) ) ) );
+                equalTo( relEntry(":`R`", "color", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "size", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "origin", Arrays.asList( "String" ), false) ) ) );
 //        printStream( stream );
     }
 
@@ -164,9 +183,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("R", "color", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "size", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "origin", Arrays.asList( "String" ), false) ) ) );
+                equalTo( relEntry(":`R`", "color", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "size", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "origin", Arrays.asList( "String" ), false) ) ) );
 
 //        printStream( stream );
     }
@@ -192,10 +211,10 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("R", "color", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "size", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "origin", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "active", Arrays.asList( "Boolean" ), false))) );
+                equalTo( relEntry(":`R`", "color", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "size", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "origin", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "active", Arrays.asList( "Boolean" ), false))) );
 
 //        printStream( stream );
     }
@@ -216,8 +235,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), containsInAnyOrder( equalTo( new Object[]{"B", "type", Arrays.asList( "String" ), true} ),
-                equalTo( entry("B", "size", Arrays.asList( "Integer" ), false) ) ) );
+        assertThat( asList( stream ), containsInAnyOrder(
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "type", Arrays.asList( "String" ), true) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "size", Arrays.asList( "Integer" ), false) ) ) );
 
 //         printStream( stream );
     }
@@ -239,8 +259,8 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( new Object[]{"B", "type", Arrays.asList( "String" ), true} ),
-                equalTo( entry("B", "size", Arrays.asList( "Integer" ), false) ) ) );
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "type", Arrays.asList( "String" ), true) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "size", Arrays.asList( "Integer" ), false) ) ) );
 
 //         printStream( stream );
     }
@@ -264,8 +284,8 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("B", "type", Arrays.asList( "String" ), true) ),
-                equalTo( entry("B", "size", Arrays.asList( "Integer" ), false) ) ) );
+                equalTo( relEntry(":`B`", "type", Arrays.asList( "String" ), true) ),
+                equalTo( relEntry(":`B`", "size", Arrays.asList( "Integer" ), false) ) ) );
 
 //        printStream( stream );
     }
@@ -289,8 +309,8 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("B", "type", Arrays.asList( "String" ), true) ),
-                equalTo( entry("B", "size", Arrays.asList( "Integer" ), false) ) ) );
+                equalTo( relEntry(":`B`", "type", Arrays.asList( "String" ), true) ),
+                equalTo( relEntry(":`B`", "size", Arrays.asList( "Integer" ), false) ) ) );
 
 //        printStream( stream );
     }
@@ -316,11 +336,11 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("A:B", "prop1", Arrays.asList( "String" ), true) ),
-                equalTo( entry("A:B", "prop2", Arrays.asList( "Integer" ), true) ),
-                equalTo( entry("B", "prop1", Arrays.asList( "Boolean" ), true) ),
-                equalTo( entry("C", "prop1", Arrays.asList( "StringArray" ), true) ),
-                equalTo( entry("", null, null, false) ) ) );
+                equalTo( nodeEntry(":`A`:`B`", Arrays.asList( "A", "B" ), "prop1", Arrays.asList( "String" ), true) ),
+                equalTo( nodeEntry(":`A`:`B`", Arrays.asList( "A", "B" ), "prop2", Arrays.asList( "Integer" ), true) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList( "B" ), "prop1", Arrays.asList( "Boolean" ), true) ),
+                equalTo( nodeEntry(":`C`", Arrays.asList( "C" ), "prop1", Arrays.asList( "StringArray" ), true) ),
+                equalTo( nodeEntry("", Arrays.asList(), null, null, false) ) ) );
 
         // printStream( stream );
     }
@@ -341,7 +361,8 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( nodesProcedureName ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( entry("A", "prop1", Arrays.asList( "String" ), true) ) ) );
+        assertThat( asList( stream ), contains(
+                equalTo( nodeEntry(":`A`", Arrays.asList("A"), "prop1", Arrays.asList( "String" ), true) ) ) );
 
         // printStream( stream );
     }
@@ -367,9 +388,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("", "prop1", Arrays.asList( "String" ), true) ),
-                equalTo( entry("", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( entry("", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
+                equalTo( nodeEntry("", Arrays.asList(), "prop1", Arrays.asList( "String" ), true) ),
+                equalTo( nodeEntry("", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), false) ),
+                equalTo( nodeEntry("", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
 
         // printStream( stream );
     }
@@ -395,9 +416,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("", "prop1", Arrays.asList( "String" ), false) ),
-                equalTo( entry("", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( entry("", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
+                equalTo( nodeEntry("", Arrays.asList(), "prop1", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry("", Arrays.asList(), "prop2", Arrays.asList( "Integer", "Float" ), false) ),
+                equalTo( nodeEntry("", Arrays.asList(), "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
 
         // printStream( stream );
     }
@@ -424,10 +445,10 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ),
                 containsInAnyOrder(
-                        equalTo( entry("R", "prop1", Arrays.asList( "String" ), true) ),
-                        equalTo( entry("R", "prop2", Arrays.asList( "Integer" ), true) ),
-                        equalTo( entry("X", "prop1", Arrays.asList( "Boolean" ), true) ),
-                        equalTo( entry("Z", null, null, false) ) ) );
+                        equalTo( relEntry(":`R`", "prop1", Arrays.asList( "String" ), true) ),
+                        equalTo( relEntry(":`R`", "prop2", Arrays.asList( "Integer" ), true) ),
+                        equalTo( relEntry(":`X`", "prop1", Arrays.asList( "Boolean" ), true) ),
+                        equalTo( relEntry(":`Z`", null, null, false) ) ) );
 
         // printStream( stream );
     }
@@ -452,7 +473,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
         // Then
         assertThat( asList( stream ),
                 containsInAnyOrder(
-                        equalTo( entry("R", "prop1", Arrays.asList( "String" ), true ) ) ) );
+                        equalTo( relEntry(":`R`", "prop1", Arrays.asList( "String" ), true ) ) ) );
 
         //printStream( stream );
     }
@@ -477,9 +498,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("R", "prop1", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "prop2", Arrays.asList( "Integer" ), false) ),
-                equalTo( entry("R", "prop3", Arrays.asList( "Boolean" ), false) ) ) );
+                equalTo( relEntry(":`R`", "prop1", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "prop2", Arrays.asList( "Integer" ), false) ),
+                equalTo( relEntry(":`R`", "prop3", Arrays.asList( "Boolean" ), false) ) ) );
 
         //printStream( stream );
     }
@@ -507,9 +528,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("R", "prop1", Arrays.asList( "String" ), true) ),
-                equalTo( entry("R", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( entry("R", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
+                equalTo( relEntry(":`R`", "prop1", Arrays.asList( "String" ), true) ),
+                equalTo( relEntry(":`R`", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
+                equalTo( relEntry(":`R`", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
 
         //printStream( stream );
     }
@@ -538,9 +559,9 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("R", "prop1", Arrays.asList( "String" ), false) ),
-                equalTo( entry("R", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
-                equalTo( entry("R", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
+                equalTo( relEntry(":`R`", "prop1", Arrays.asList( "String" ), false) ),
+                equalTo( relEntry(":`R`", "prop2", Arrays.asList( "Integer", "Float" ), false) ),
+                equalTo( relEntry(":`R`", "prop3", Arrays.asList( "String", "Boolean" ), false) ) ) );
 
         //printStream( stream );
     }
@@ -569,16 +590,21 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
 
         // Then
         assertThat( asList( stream ), containsInAnyOrder(
-                equalTo( entry("A", "prop1", Arrays.asList( "String" ), true) ),
-                equalTo( entry("A", "prop2", Arrays.asList( "Integer" ), false) ),
-                equalTo( entry("A", "prop3", Arrays.asList( "Boolean" ), false) ),
-                equalTo( entry("B", "prop1", Arrays.asList( "String" ), false) ),
-                equalTo( entry("B", "prop2", Arrays.asList( "Integer" ), false) ) ) );
+                equalTo( nodeEntry(":`A`", Arrays.asList("A"), "prop1", Arrays.asList( "String" ), true) ),
+                equalTo( nodeEntry(":`A`", Arrays.asList("A"), "prop2", Arrays.asList( "Integer" ), false) ),
+                equalTo( nodeEntry(":`A`", Arrays.asList("A"), "prop3", Arrays.asList( "Boolean" ), false) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList("B"), "prop1", Arrays.asList( "String" ), false) ),
+                equalTo( nodeEntry(":`B`", Arrays.asList("B"), "prop2", Arrays.asList( "Integer" ), false) ) ) );
 
         //printStream( stream );
     }
 
-    private Object[] entry( String labelsOrRelType, String propertyName, List<String> propertyValueTypes, Boolean mandatory )
+    private Object[] nodeEntry( String escapedLabels, List<String> labels, String propertyName, List<String> propertyValueTypes, Boolean mandatory )
+    {
+        return new Object[]{escapedLabels, labels, propertyName, propertyValueTypes, mandatory};
+    }
+
+    private Object[] relEntry( String labelsOrRelType, String propertyName, List<String> propertyValueTypes, Boolean mandatory )
     {
         return new Object[]{labelsOrRelType, propertyName, propertyValueTypes, mandatory};
     }

@@ -86,7 +86,7 @@ public class SchemaCalculator
         // go through all labels to get actual names
         addNamesToCollection( tokenRead.labelsGetAllTokens(), nodeMappings.labelIdToLabelName );
 
-        return produceResultsForNodes(nodeMappings).stream();
+        return produceResultsForNodes( nodeMappings ).stream();
     }
 
     public Stream<RelationshipPropertySchemaInfoResult> calculateTabularResultStreamForRels()
@@ -107,6 +107,7 @@ public class SchemaCalculator
         {
             // lookup typ name
             String name = relMappings.relationshipTypIdToRelationshipName.get( typeId );
+            name = ":`" + name + "`";  // escaping
 
             // lookup property value types
             MutableIntSet propertyIds = relMappings.relationshipTypeIdToPropertyKeys.get( typeId );
@@ -116,18 +117,19 @@ public class SchemaCalculator
             }
             else
             {
+                String finalName = name;
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
                     String propName = propertyIdToPropertyNameMapping.get( propId );
                     ValueTypeListHelper valueTypeListHelper = relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( Pair.of( typeId, propId ) );
                     if ( relMappings.nullableRelationshipTypes.contains( typeId ) )
                     {
-                        results.add( new RelationshipPropertySchemaInfoResult( name, propName, valueTypeListHelper.getCypherTypesList(),
+                        results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
                                 false ) );
                     }
                     else
                     {
-                        results.add( new RelationshipPropertySchemaInfoResult( name, propName, valueTypeListHelper.getCypherTypesList(),
+                        results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
                                 valueTypeListHelper.isMandatory() ) );
                     }
                 } );
@@ -152,14 +154,7 @@ public class SchemaCalculator
             StringBuilder labelsConcatenator = new StringBuilder();
             for ( String item : labelNames )
             {
-                if ( labelsConcatenator.toString().equals( "" ) )
-                {
-                    labelsConcatenator.append( item );
-                }
-                else
-                {
-                    labelsConcatenator.append( ":" ).append( item );
-                }
+                labelsConcatenator.append( ":`" ).append( item ).append( "`" );
             }
             String labels = labelsConcatenator.toString();
 
@@ -167,7 +162,7 @@ public class SchemaCalculator
             MutableIntSet propertyIds = nodeMappings.labelSetToPropertyKeys.get( labelSet );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new NodePropertySchemaInfoResult( labels, null, null, false ) );
+                results.add( new NodePropertySchemaInfoResult( labels, labelNames, null, null, false ) );
             }
             else
             {
@@ -177,11 +172,11 @@ public class SchemaCalculator
                     ValueTypeListHelper valueTypeListHelper = nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( Pair.of( labelSet, propId ) );
                     if ( nodeMappings.nullableLabelSets.contains( labelSet ) )
                     {
-                        results.add( new NodePropertySchemaInfoResult( labels, propName, valueTypeListHelper.getCypherTypesList(), false ) );
+                        results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(), false ) );
                     }
                     else
                     {
-                        results.add( new NodePropertySchemaInfoResult( labels, propName, valueTypeListHelper.getCypherTypesList(),
+                        results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(),
                                 valueTypeListHelper.isMandatory() ) );
                     }
                 } );

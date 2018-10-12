@@ -149,11 +149,12 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Show the schema of the data.", "READ" ),
                 proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Visualize the schema of the data. Replaces db.schema.", "READ" ),
-                proc( "db.schema.nodeProperties", "() :: (nodeType :: STRING?, propertyName :: STRING?, " +
-                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)", "Show the derived property schema of the nodes in tabular form.",
-                        "READ" ),
-                proc( "db.schema.edgeProperties", "() :: (relationshipType :: STRING?, propertyName :: STRING?, " +
+                proc( "db.schema.nodeTypeProperties",
+                        "() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
                                 "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the nodes in tabular form.", "READ" ),
+                proc( "db.schema.relTypeProperties", "() :: (relType :: STRING?, " +
+                                "propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
                         "Show the derived property schema of the relationships in tabular form.", "READ" ),
                 proc( "db.relationshipTypes", "() :: (relationshipType :: " + "STRING?)",
                         "List all relationship types in the database.", "READ" ),

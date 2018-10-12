@@ -289,13 +289,13 @@ public class BuiltInProceduresTest
                 record( "db.schema.visualization",
                         "db.schema.visualization() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Visualize the schema of the data. Replaces db.schema.", "READ" ),
-                record( "db.schema.nodeProperties",
-                        "db.schema.nodeProperties() :: (nodeType :: STRING?, propertyName :: STRING?," +
-                                " propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
-                        "Show the derived property schema of the nodes in tabular form.", "READ" ),
-                record( "db.schema.edgeProperties",
-                        "db.schema.edgeProperties() :: (relationshipType :: STRING?, propertyName :: STRING?, " +
+                record( "db.schema.nodeTypeProperties",
+                        "db.schema.nodeTypeProperties() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
                                 "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the nodes in tabular form.", "READ" ),
+                record( "db.schema.relTypeProperties",
+                        "db.schema.relTypeProperties() :: (relType :: STRING?, propertyName :: STRING?, propertyTypes :: LIST? OF STRING?," +
+                                " mandatory :: BOOLEAN?)",
                         "Show the derived property schema of the relationships in tabular form.", "READ" ),
                 record( "db.index.explicit.searchNodes",
                         "db.index.explicit.searchNodes(indexName :: STRING?, query :: ANY?) :: (node :: NODE?, weight :: FLOAT?)",

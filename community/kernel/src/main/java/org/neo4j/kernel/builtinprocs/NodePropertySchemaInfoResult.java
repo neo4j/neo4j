@@ -24,10 +24,14 @@ import java.util.List;
 public class NodePropertySchemaInfoResult
 {
     /**
-     * A combination of labels interleaved by ":"
+     * A combination of escaped label names interleaved by ":"
      */
     public final String nodeType;
 
+    /**
+     * A list of label names
+     */
+    public final List<String> nodeLabels;
     /**
      * A property name that occurs on the given label combination or null
      */
@@ -43,9 +47,10 @@ public class NodePropertySchemaInfoResult
      */
     public final boolean mandatory;
 
-    public NodePropertySchemaInfoResult( String nodeLabels, String propertyName, List<String> cypherTypes, boolean mandatory )
+    public NodePropertySchemaInfoResult( String nodeType, List<String> nodeLabelsList, String propertyName, List<String> cypherTypes, boolean mandatory )
     {
-        this.nodeType = nodeLabels;
+        this.nodeType = nodeType;
+        this.nodeLabels = nodeLabelsList;
         this.propertyName = propertyName;
         this.propertyTypes = cypherTypes;
         this.mandatory  = mandatory;

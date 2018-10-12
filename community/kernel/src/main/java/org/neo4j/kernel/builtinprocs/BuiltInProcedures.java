@@ -215,14 +215,14 @@ public class BuiltInProcedures
         }
     }
 
-    @Procedure( name = "db.schema.nodeProperties", mode = Mode.READ )
+    @Procedure( name = "db.schema.nodeTypeProperties", mode = Mode.READ )
     @Description( "Show the derived property schema of the nodes in tabular form." )
     public Stream<NodePropertySchemaInfoResult> nodePropertySchema()
     {
         return new SchemaCalculator( tx ).calculateTabularResultStreamForNodes();
     }
 
-    @Procedure( name = "db.schema.edgeProperties", mode = Mode.READ )
+    @Procedure( name = "db.schema.relTypeProperties", mode = Mode.READ )
     @Description( "Show the derived property schema of the relationships in tabular form." )
     public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema()
     {

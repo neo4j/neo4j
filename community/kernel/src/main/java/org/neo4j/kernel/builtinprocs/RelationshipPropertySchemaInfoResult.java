@@ -26,7 +26,7 @@ public class RelationshipPropertySchemaInfoResult
     /**
      * A relationship type
      */
-    public final String relationshipType;
+    public final String relType;
 
     /**
      * A property name that occurs on the given relationship type or null
@@ -45,7 +45,7 @@ public class RelationshipPropertySchemaInfoResult
 
     public RelationshipPropertySchemaInfoResult( String relType, String propertyName, List<String> cypherTypes, boolean mandatory )
     {
-        this.relationshipType = relType;
+        this.relType = relType;
         this.propertyName = propertyName;
         this.propertyTypes = cypherTypes;
         this.mandatory  = mandatory;
