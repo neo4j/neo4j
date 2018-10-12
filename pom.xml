@@ -95,8 +95,8 @@
         <scala.target.vm>1.8</scala.target.vm>
         <scala.java.additional.args/>
         <jersey.version>2.27</jersey.version>
-        <junit.version>5.2.0</junit.version>
-        <junit.platform.version>1.2.0</junit.platform.version>
+        <junit.version>5.4.0</junit.version>
+        <junit.platform.version>1.4.0</junit.platform.version>
         <currentYear>2019</currentYear>
         <cypher.compatibility.35>3.5.2</cypher.compatibility.35>
         <opencypher.version>1.0.0-M12</opencypher.version>
@@ -441,6 +441,23 @@
                             <exclude>**/*IntegrationTest.class</exclude>
                         </excludes>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.junit.platform</groupId>
+                            <artifactId>junit-platform-launcher</artifactId>
+                            <version>${junit.platform.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.jupiter</groupId>
+                            <artifactId>junit-jupiter-engine</artifactId>
+                            <version>${junit.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.vintage</groupId>
+                            <artifactId>junit-vintage-engine</artifactId>
+                            <version>${junit.version}</version>
+                        </dependency>
+                    </dependencies>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -465,6 +482,23 @@
                         </systemPropertyVariables>
                         <jvm>${test.runner.jvm}</jvm>
                     </configuration>
+                    <dependencies>
+                        <dependency>
+                            <groupId>org.junit.platform</groupId>
+                            <artifactId>junit-platform-launcher</artifactId>
+                            <version>${junit.platform.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.jupiter</groupId>
+                            <artifactId>junit-jupiter-engine</artifactId>
+                            <version>${junit.version}</version>
+                        </dependency>
+                        <dependency>
+                            <groupId>org.junit.vintage</groupId>
+                            <artifactId>junit-vintage-engine</artifactId>
+                            <version>${junit.version}</version>
+                        </dependency>
+                    </dependencies>
                     <executions>
                         <execution>
                             <id>integration-test</id>
