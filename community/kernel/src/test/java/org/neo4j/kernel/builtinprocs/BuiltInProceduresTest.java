@@ -171,7 +171,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
                 "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_label_property", 100D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L ) ) );
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
     }
 
     @Test
@@ -183,7 +183,7 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.indexes" ), contains( record(
                 "INDEX ON :User(name)", "Unnamed index", singletonList( "User" ), singletonList( "name" ), "ONLINE", "node_unique_property", 100D,
-                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L ) ) );
+                getIndexProviderDescriptorMap( EMPTY.getProviderDescriptor() ), 42L, "" ) ) );
     }
 
     @Test
@@ -271,8 +271,8 @@ public class BuiltInProceduresTest
                 record( "db.constraints", "db.constraints() :: (description :: STRING?)",
                         "List all constraints in the database.", "READ" ),
                 record( "db.indexes", "db.indexes() :: (description :: STRING?, indexName :: STRING?, " +
-                                      "tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, " +
-                                      "state :: STRING?, type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?)",
+                                "tokenNames :: LIST? OF STRING?, properties :: LIST? OF STRING?, state :: STRING?, " +
+                                "type :: STRING?, progress :: FLOAT?, provider :: MAP?, id :: INTEGER?, failureMessage :: STRING?)",
                         "List all indexes in the database.", "READ" ),
                 record( "db.labels", "db.labels() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
                 record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",

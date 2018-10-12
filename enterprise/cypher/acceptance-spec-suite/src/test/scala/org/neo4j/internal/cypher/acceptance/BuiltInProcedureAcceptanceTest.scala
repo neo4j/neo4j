@@ -44,7 +44,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     //When
     val result = executeWith(combinedCallconfiguration, "CALL db.labels() YIELD label WHERE label <> 'A' RETURN *")
 
-    // Then
+    // ThenBuiltInProceduresIT.java:136
     result.toList should equal(
       List(
         Map("label" -> "B"),
@@ -288,7 +288,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "id" -> 1,
         "provider" -> Map(
           "version" -> GenericNativeIndexProvider.DESCRIPTOR.getVersion,
-          "key" -> GenericNativeIndexProvider.DESCRIPTOR.getKey))))
+          "key" -> GenericNativeIndexProvider.DESCRIPTOR.getKey),
+        "failureMessage" -> "")))
   }
 
   test("yield from void procedure should return correct error msg") {
@@ -326,7 +327,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "id" -> 1,
         "provider" -> Map(
           "version" -> "1.0",
-          "key" -> "lucene+native"))))
+          "key" -> "lucene+native"),
+        "failureMessage" -> "" )))
   }
 
   test("should create unique property constraint from built-in-procedure") {
@@ -359,6 +361,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     mapResult("provider") should equal(Map(
                "version" -> "1.0",
                 "key" -> "lucene+native"))
+    mapResult("failureMessage") should equal("")
   }
 
   test("should create node key constraint from built-in-procedure") {
@@ -391,5 +394,6 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     mapResult("provider") should equal(Map(
       "version" -> "1.0",
       "key" -> "lucene+native"))
+    mapResult("failureMessage") should equal("")
   }
 }
