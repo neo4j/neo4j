@@ -78,6 +78,7 @@ public class BuiltInProcedures
 {
     private static final int NOT_EXISTING_INDEX_ID = -1;
     public static final String EXPLICIT_INDEX_DEPRECATION = "This procedure is deprecated by the schema and full-text indexes, and will be removed in 4.0.";
+    public static final String DB_SCHEMA_DEPRECATION = "This procedure is deprecated by the db.schema.visualization procedure, and will be removed in 4.0.";
 
     @Context
     public KernelTransaction tx;
@@ -222,16 +223,16 @@ public class BuiltInProcedures
     }
 
     @Deprecated
-    @Description( "Show the schema of the data. Replaced by db.schema.visualization." )
-    @Procedure( name = "db.schema", mode = READ )
-    public Stream<SchemaProcedure.GraphResult> metaGraph()
+    @Description( "Show the schema of the data." )
+    @Procedure( name = "db.schema", mode = READ, deprecatedBy = DB_SCHEMA_DEPRECATION )
+    public Stream<SchemaProcedure.GraphResult> schema()
     {
-        return metaGraphVisualization();
+        return schemaVisualization();
     }
 
     @Description( "Visualize the schema of the data. Replaces db.schema." )
     @Procedure( name = "db.schema.visualization", mode = READ )
-    public Stream<SchemaProcedure.GraphResult> metaGraphVisualization()
+    public Stream<SchemaProcedure.GraphResult> schemaVisualization()
     {
         return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
     }

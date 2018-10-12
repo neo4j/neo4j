@@ -147,6 +147,8 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "db.labels", "() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
                 proc( "db.schema", "() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " + "OF " + "RELATIONSHIP?)",
                         "Show the schema of the data.", "READ" ),
+                proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
+                        "Visualize the schema of the data. Replaces db.schema.", "READ" ),
                 proc( "okapi.schema", "() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
                                 "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)", "Show the derived property schema of the data in tabular form.",
                         "READ" ),

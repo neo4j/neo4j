@@ -89,6 +89,42 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     relationshipState should equal(Set("WORKS_AT", "PART_OF"))
   }
 
+  test("should be able to use db.schema.visualization") {
+
+    // Given
+    val neo = createLabeledNode("Neo")
+    val d1 = createLabeledNode("Department")
+    val e1 = createLabeledNode("Employee")
+    relate(e1, d1, "WORKS_AT", "Hallo")
+    relate(d1, neo, "PART_OF", "Hallo")
+
+    // When
+    val result = executeWith(config, "CALL db.schema.visualization()", expectedDifferentResults = config).toList
+
+    // Then
+    result.size should equal(1)
+
+    // And then nodes
+    val nodes = result.head("nodes").asInstanceOf[Seq[Node]]
+
+    val nodeState: Set[(List[Label], Map[String,AnyRef])] =
+      nodes.map(n => (n.getLabels.toList, n.getAllProperties.toMap)).toSet
+
+    val empty = new java.util.ArrayList()
+    nodeState should equal(
+      Set(
+        (List(Label.label("Neo")),        Map("indexes" -> empty, "constraints" -> empty, "name" -> "Neo")),
+        (List(Label.label("Department")), Map("indexes" -> empty, "constraints" -> empty, "name" -> "Department")),
+        (List(Label.label("Employee")),   Map("indexes" -> empty, "constraints" -> empty, "name" -> "Employee"))
+      ))
+
+    // And then relationships
+    val relationships = result.head("relationships").asInstanceOf[Seq[Relationship]]
+
+    val relationshipState: Set[String] = relationships.map(_.getType.name()).toSet
+    relationshipState should equal(Set("WORKS_AT", "PART_OF"))
+  }
+
   test("should not be able to filter as part of standalone call") {
     failWithError(
       Configs.AbsolutelyAll - Configs.Version2_3,
