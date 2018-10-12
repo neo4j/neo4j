@@ -24,6 +24,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.SerializationConfig;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -138,9 +139,36 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             super.writeValue( out, value.toString() );
         }
+        else if ( value != null && value.getClass().isArray() && supportedArrayType( value.getClass().getComponentType() ) )
+        {
+            writeReflectiveArray( out, value );
+        }
         else
         {
             super.writeValue( out, value );
+        }
+    }
+
+    private boolean supportedArrayType( Class<?> valueClass )
+    {
+        return Geometry.class.isAssignableFrom( valueClass ) || CRS.class.isAssignableFrom( valueClass ) ||
+               Temporal.class.isAssignableFrom( valueClass ) || TemporalAmount.class.isAssignableFrom( valueClass );
+    }
+
+    private void writeReflectiveArray( JsonGenerator out, Object array ) throws IOException
+    {
+        out.writeStartArray();
+        try
+        {
+            int length = Array.getLength( array );
+            for ( int i = 0; i < length; i++ )
+            {
+                writeValue( out, Array.get( array, i )  );
+            }
+        }
+        finally
+        {
+            out.writeEndArray();
         }
     }
 

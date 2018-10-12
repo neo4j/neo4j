@@ -19,7 +19,12 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
+
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
 public final class PropertiesRepresentation extends MappingRepresentation
@@ -64,6 +69,29 @@ public final class PropertiesRepresentation extends MappingRepresentation
         protected Void dispatchBooleanProperty( boolean property, String param )
         {
             writer.writeBoolean( param, property );
+            return null;
+        }
+
+        @Override
+        protected Void dispatchPointProperty( Point property, String param )
+        {
+            MappingWriter pointWriter = writer.newMapping( RepresentationType.POINT, param );
+            writePoint( pointWriter, property );
+            pointWriter.done();
+            return null;
+        }
+
+        @Override
+        protected Void dispatchTemporalProperty( Temporal property, String param )
+        {
+            writer.writeString( param, property.toString() );
+            return null;
+        }
+
+        @Override
+        protected Void dispatchTemporalAmountProperty( TemporalAmount property, String param )
+        {
+            writer.writeString( param, property.toString() );
             return null;
         }
 
@@ -130,6 +158,44 @@ public final class PropertiesRepresentation extends MappingRepresentation
             for ( String s : property )
             {
                 list.writeString( s );
+            }
+            list.done();
+            return null;
+        }
+
+        @Override
+        protected Void dispatchPointArrayProperty( Point[] property, String param )
+        {
+            ListWriter list = writer.newList( RepresentationType.POINT, param );
+            for ( Point p : property )
+            {
+                MappingWriter pointWriter = list.newMapping( RepresentationType.POINT );
+                writePoint( pointWriter, p);
+                pointWriter.done();
+            }
+            list.done();
+            return null;
+        }
+
+        @Override
+        protected Void dispatchTemporalArrayProperty( Temporal[] property, String param )
+        {
+            ListWriter list = writer.newList( RepresentationType.TEMPORAL, param );
+            for ( Temporal p : property )
+            {
+                list.writeString( p.toString() );
+            }
+            list.done();
+            return null;
+        }
+
+        @Override
+        protected Void dispatchTemporalAmountArrayProperty( TemporalAmount[] property, String param )
+        {
+            ListWriter list = writer.newList( RepresentationType.TEMPORAL_AMOUNT, param );
+            for ( TemporalAmount p : property )
+            {
+                list.writeString( p.toString() );
             }
             list.done();
             return null;
@@ -237,6 +303,30 @@ public final class PropertiesRepresentation extends MappingRepresentation
             }
             list.done();
             return null;
+        }
+
+        private void writePoint( MappingWriter pointWriter, Point property )
+        {
+            pointWriter.writeString( "type", property.getGeometryType() );
+            //write coordinates
+            ListWriter coordinatesWriter = pointWriter.newList( RepresentationType.DOUBLE, "coordinates" );
+            for ( Double coordinate : property.getCoordinate().getCoordinate() )
+            {
+                coordinatesWriter.writeFloatingPointNumber( RepresentationType.DOUBLE, coordinate );
+            }
+            coordinatesWriter.done();
+
+            //Write coordinate reference system
+            CRS crs = property.getCRS();
+            MappingWriter crsWriter = pointWriter.newMapping( RepresentationType.MAP, "crs" );
+            crsWriter.writeInteger( RepresentationType.INTEGER, "srid", crs.getCode() );
+            crsWriter.writeString( "name", crs.getType() );
+            crsWriter.writeString( "type", "link" );
+            MappingWriter propertiesWriter = crsWriter.newMapping( Representation.MAP, "properties" );
+            propertiesWriter.writeString( "href", crs.getHref() + "ogcwkt/" );
+            propertiesWriter.writeString( "type","ogcwkt" );
+            propertiesWriter.done();
+            crsWriter.done();
         }
     }
 

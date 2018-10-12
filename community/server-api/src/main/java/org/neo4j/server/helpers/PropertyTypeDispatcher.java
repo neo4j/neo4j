@@ -19,10 +19,13 @@
  */
 package org.neo4j.server.helpers;
 
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.ArrayIterator;
 
 /*
@@ -75,9 +78,34 @@ public abstract class PropertyTypeDispatcher<K, T>
         {
             return dispatchCharacterProperty( (Character) property, param );
         }
+        else if ( property instanceof Point )
+        {
+          return dispatchPointProperty( (Point) property, param );
+        }
+        else if ( property instanceof Temporal )
+        {
+            return dispatchTemporalProperty( (Temporal) property, param );
+        }
+        else if ( property instanceof TemporalAmount )
+        {
+            return dispatchTemporalAmountProperty( (TemporalAmount) property, param );
+        }
         else if ( property instanceof String[] )
         {
             return dispatchStringArrayProperty( (String[]) property, param );
+        }
+        else if ( property instanceof Point[] )
+        {
+            return dispatchPointArrayProperty( (Point[]) property, param );
+        }
+        else if ( property instanceof Temporal[] )
+        {
+            return dispatchTemporalArrayProperty( (Temporal[]) property, param );
+
+        }
+        else if ( property instanceof TemporalAmount[] )
+        {
+            return dispatchTemporalAmountArrayProperty( (TemporalAmount[]) property, param );
         }
         else if ( property instanceof Object[] )
         {
@@ -239,6 +267,24 @@ public abstract class PropertyTypeDispatcher<K, T>
 
     @SuppressWarnings( "boxing" )
     protected abstract T dispatchBooleanProperty( boolean property, K param );
+
+    //not abstract in order to not break existing code, since this was fixed in point release
+    protected T dispatchPointProperty( Point property, K param )
+    {
+        return dispatchOtherProperty( property, param );
+    }
+
+    //not abstract in order to not break existing code, since this was fixed in point release
+    protected T dispatchTemporalProperty( Temporal property, K param )
+    {
+        return dispatchOtherProperty( property, param );
+    }
+
+    //not abstract in order to not break existing code, since this was fixed in point release
+    protected T dispatchTemporalAmountProperty( TemporalAmount property, K param )
+    {
+        return dispatchOtherProperty( property, param );
+    }
 
     protected T dispatchOtherProperty( Object property, K param )
     {
@@ -655,6 +701,57 @@ public abstract class PropertyTypeDispatcher<K, T>
     protected T dispatchStringArrayProperty( PropertyArray<String[], String> array, K param )
     {
         return dispatchArray( array, param );
+    }
+
+    protected T dispatchPointArrayProperty( final Point[] property, K param )
+    {
+        return dispatchPointArrayProperty( new BoxedArray<Point[], Point>( property )
+        {
+            @Override
+            public Point[] getClonedArray()
+            {
+                return property.clone();
+            }
+        }, param );
+    }
+
+    protected T dispatchPointArrayProperty( PropertyArray<Point[], Point> array, K param )
+    {
+        return dispatchArray( array, param );
+    }
+
+    protected T dispatchTemporalArrayProperty( PropertyArray<Temporal[], Temporal> array, K param )
+    {
+        return dispatchArray( array, param );
+    }
+
+    protected T dispatchTemporalArrayProperty( final Temporal[] property, K param )
+    {
+        return dispatchTemporalArrayProperty( new BoxedArray<Temporal[], Temporal>( property )
+        {
+            @Override
+            public Temporal[] getClonedArray()
+            {
+                return property.clone();
+            }
+        }, param );
+    }
+
+    protected T dispatchTemporalAmountArrayProperty( PropertyArray<TemporalAmount[], TemporalAmount> array, K param )
+    {
+        return dispatchArray( array, param );
+    }
+
+    protected T dispatchTemporalAmountArrayProperty( final TemporalAmount[] property, K param )
+    {
+        return dispatchTemporalAmountArrayProperty( new BoxedArray<TemporalAmount[], TemporalAmount>( property )
+        {
+            @Override
+            public TemporalAmount[] getClonedArray()
+            {
+                return property.clone();
+            }
+        }, param );
     }
 
     protected T dispatchByteArrayProperty( PropertyArray<byte[], Byte> array, K param )

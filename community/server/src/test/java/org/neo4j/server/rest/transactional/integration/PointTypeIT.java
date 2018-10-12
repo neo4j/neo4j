@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
@@ -40,13 +41,22 @@ import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.Values.pointValue;
 
 public class PointTypeIT extends AbstractRestFunctionalTestBase
 {
+    @After
+    public void tearDown()
+    {
+        // empty the database
+        graphdb().execute( "MATCH (n) DETACH DELETE n" );
+    }
+
     @Test
     public void shouldWorkWithPoint2DArrays() throws Exception
     {
-        HTTP.Response response = runQuery( "create (:Node {points: [point({x:1, y:1}), point({x:2, y:2}), point({x: 3.0, y: 3.0})]})" );
+        HTTP.Response response =
+                runQuery( "create (:Node {points: [point({x:1, y:1}), point({x:2, y:2}), point({x: 3.0, y: 3.0})]})" );
 
         assertEquals( 200, response.status() );
         assertNoErrors( response );
@@ -79,6 +89,140 @@ public class PointTypeIT extends AbstractRestFunctionalTestBase
     public void shouldReturnPoint2DWithLatitudeAndLongitude() throws Exception
     {
         testPoint( "RETURN point({longitude: 56.7, latitude: 12.78})", new double[]{56.7, 12.78}, WGS84, "point" );
+    }
+
+    @Test
+    public void shouldHandlePointArrays() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )} );
+            node.setProperty( "location", "Shanghai" );
+            node.setProperty( "type", "gps" );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        //Then
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 )
+                .get( "coordinates" ).get( 0 );
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
+    }
+
+    @Test
+    public void shouldHandlePointsUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
+            node.setProperty( "location", "Shanghai" );
+            node.setProperty( "type", "gps" );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        //Then
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "coordinates" );
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
+    }
+
+    @Test
+    public void shouldHandlePointsUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "coordinates", pointValue( WGS84, 30.655691, 104.081602 ) );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        //Then
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "coordinates" );
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
+    }
+
+    @Test
+    public void shouldHandleArrayOfPointsUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        //Then
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "coordinates" ).get( 0 );
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
+    }
+
+    @Test
+    public void shouldHandleArrayOfPointsUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "coordinates", new Point[]{pointValue( WGS84, 30.655691, 104.081602 )});
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        //Then
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "coordinates" ).get( 0 );
+        assertGeometryTypeEqual( GeometryType.GEOMETRY_POINT, row );
+        assertCoordinatesEqual( new double[]{30.655691, 104.081602}, row );
+        assertCrsEqual( WGS84, row );
     }
 
     private static void testPoint( String query, double[] expectedCoordinate, CoordinateReferenceSystem expectedCrs, String expectedType ) throws Exception

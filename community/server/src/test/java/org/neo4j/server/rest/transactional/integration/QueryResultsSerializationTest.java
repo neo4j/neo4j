@@ -27,8 +27,17 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+
+import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Result;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.test.server.HTTP;
@@ -36,7 +45,9 @@ import org.neo4j.test.server.HTTP.Response;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.graphContainsDeletedNodes;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.graphContainsDeletedRelationships;
@@ -49,6 +60,8 @@ import static org.neo4j.server.rest.transactional.integration.TransactionMatcher
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsDeletedEntitiesInPath;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.rowContainsNoDeletedEntities;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
+import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
+import static org.neo4j.values.storable.Values.pointValue;
 
 public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBase
 {
@@ -550,6 +563,266 @@ public class QueryResultsSerializationTest extends AbstractRestFunctionalTestBas
         assertThat( commit.status(), equalTo( 200 ) );
         assertThat( commit, rowContainsDeletedEntities( 2, 0 ) );
         assertThat( nodesInDatabase(), equalTo( 0L ) );
+    }
+
+    @Test
+    public void shouldHandleTemporalArrays() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "date", new ZonedDateTime[]{date} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 )
+                .get( "date" ).get( 0 );
+
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationArrays() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "duration", new Duration[]{duration} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "row" ).get( 0 )
+                .get( "duration" ).get( 0 );
+
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleTemporalUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "date", date );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "date" );
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "duration", duration );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "duration" );
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleTemporalArraysUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "dates", new ZonedDateTime[]{date} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "dates" ).get(0);
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationArraysUsingRestResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "durations", new Duration[]{duration} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "rest" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "rest" )
+                .get( 0 ).get( "data" ).get( "durations" ).get( 0 );
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleTemporalUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "date", date );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "date" );
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "duration", duration );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "duration" );
+        assertEquals( "\"PT1M13S\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleTemporalArraysUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        ZonedDateTime date = ZonedDateTime.of( 1980, 3, 11, 0, 0,
+                0, 0, ZoneId.of( "Europe/Stockholm" ) );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "dates", new ZonedDateTime[]{date} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get( "nodes" ).get( 0 ).get( "properties" ).get( "dates" ).get( 0 );
+        assertEquals( "\"1980-03-11T00:00+01:00[Europe/Stockholm]\"", row.toString() );
+    }
+
+    @Test
+    public void shouldHandleDurationArraysUsingGraphResultDataContent() throws Exception
+    {
+        //Given
+        GraphDatabaseFacade db = server().getDatabase().getGraph();
+        Duration duration = Duration.ofSeconds( 73 );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            Node node = db.createNode( label( "N" ) );
+            node.setProperty( "durations", new Duration[]{duration} );
+            tx.success();
+        }
+
+        //When
+        HTTP.Response response = runQuery( "MATCH (n:N) RETURN n", "graph" );
+
+        //Then
+        assertEquals( 200, response.status() );
+        assertNoErrors( response );
+
+        JsonNode row = response.get( "results" ).get( 0 ).get( "data" ).get( 0 ).get( "graph" )
+                .get("nodes").get( 0 ).get( "properties" ).get( "durations" ).get( 0 );
+        assertEquals( "\"PT1M13S\"", row.toString() );
     }
 
     private HTTP.RawPayload queryAsJsonGraph( String query )

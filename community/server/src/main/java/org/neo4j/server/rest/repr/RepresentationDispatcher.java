@@ -19,13 +19,21 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
+import static org.neo4j.helpers.collection.MapUtil.genericMap;
 import static org.neo4j.server.rest.repr.ValueRepresentation.bool;
 import static org.neo4j.server.rest.repr.ValueRepresentation.number;
+import static org.neo4j.server.rest.repr.ValueRepresentation.point;
 import static org.neo4j.server.rest.repr.ValueRepresentation.string;
+import static org.neo4j.server.rest.repr.ValueRepresentation.temporal;
+import static org.neo4j.server.rest.repr.ValueRepresentation.temporalAmount;
 
 /**
  * Converts common primitive and basic objects and arrays of the same into a
@@ -84,6 +92,39 @@ public abstract class RepresentationDispatcher extends PropertyTypeDispatcher<St
         for ( String z : array )
         {
             values.add( string( z ) );
+        }
+        return new ListRepresentation( "", values );
+    }
+
+    @Override
+    protected Representation dispatchPointArrayProperty( Point[] array, String param )
+    {
+        ArrayList<Representation> values = new ArrayList<>();
+        for ( Point p : array )
+        {
+            values.add( point( p ) );
+        }
+        return new ListRepresentation( "", values );
+    }
+
+    @Override
+    protected Representation dispatchTemporalArrayProperty( Temporal[] array, String param )
+    {
+        ArrayList<Representation> values = new ArrayList<>();
+        for ( Temporal t : array )
+        {
+            values.add( temporal( t ) );
+        }
+        return new ListRepresentation( "", values );
+    }
+
+    @Override
+    protected Representation dispatchTemporalAmountArrayProperty( TemporalAmount[] array, String param )
+    {
+        ArrayList<Representation> values = new ArrayList<>();
+        for ( TemporalAmount t : array )
+        {
+            values.add( temporalAmount( t ) );
         }
         return new ListRepresentation( "", values );
     }
@@ -165,6 +206,26 @@ public abstract class RepresentationDispatcher extends PropertyTypeDispatcher<St
     protected Representation dispatchByteProperty( byte property, String param )
     {
         throw new UnsupportedOperationException( "Representing bytes not implemented." );
+    }
+
+    @Override
+    protected Representation dispatchPointProperty( Point property, String param )
+    {
+        return new MapRepresentation(
+                genericMap( new LinkedHashMap<>(), "type", property.getGeometryType(), "coordinates",
+                        property.getCoordinate(), "crs", property.getCRS() ) );
+    }
+
+    @Override
+    protected Representation dispatchTemporalProperty( Temporal property, String param )
+    {
+        return string( property.toString() );
+    }
+
+    @Override
+    protected Representation dispatchTemporalAmountProperty( TemporalAmount property, String param )
+    {
+        return string( property.toString() );
     }
 
     @Override

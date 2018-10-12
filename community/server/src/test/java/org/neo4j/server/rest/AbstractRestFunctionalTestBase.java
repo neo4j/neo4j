@@ -24,8 +24,10 @@ import org.junit.Rule;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
+import java.util.stream.Collectors;
 import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -44,6 +46,7 @@ import org.neo4j.test.server.SharedServerTestBase;
 
 import static java.lang.String.format;
 import static java.net.URLEncoder.encode;
+import static java.util.stream.Collectors.joining;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.server.rest.domain.JsonHelper.createJsonFrom;
 import static org.neo4j.server.rest.web.Surface.PATH_NODES;
@@ -287,9 +290,15 @@ public class AbstractRestFunctionalTestBase extends SharedServerTestBase impleme
         return connectorPortRegister.getLocalAddress( "http" ).getPort();
     }
 
-    public static HTTP.Response runQuery( String query )
+    public static HTTP.Response runQuery( String query, String...contentTypes  )
     {
-        return POST( txCommitUri(), quotedJson( "{'statements': [{'statement': '" + query + "'}]}" ) );
+        String resultDataContents = "";
+        if ( contentTypes.length > 0 )
+        {
+            resultDataContents = ", 'resultDataContents': [" + Arrays.stream( contentTypes )
+                    .map( unquoted -> format( "'%s'", unquoted ) ).collect( joining( "," ) ) + "]";
+        }
+        return POST( txCommitUri(), quotedJson( format( "{'statements': [{'statement': '%s'%s}]}", query, resultDataContents) ) );
     }
 
     public static void assertNoErrors( HTTP.Response response ) throws JsonParseException

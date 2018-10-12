@@ -20,8 +20,14 @@
 package org.neo4j.server.rest.repr;
 
 import java.net.URI;
+import java.time.temporal.Temporal;
+import java.time.temporal.TemporalAmount;
 
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.spatial.CRS;
+import org.neo4j.graphdb.spatial.Coordinate;
+import org.neo4j.graphdb.spatial.Geometry;
+import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
@@ -63,6 +69,21 @@ public class ValueRepresentation extends Representation
     public static ValueRepresentation string( String value )
     {
         return new ValueRepresentation( RepresentationType.STRING, value );
+    }
+
+    public static ValueRepresentation point( Point value )
+    {
+        return new ValueRepresentation( RepresentationType.POINT, value );
+    }
+
+    public static ValueRepresentation temporal( Temporal value )
+    {
+        return new ValueRepresentation( RepresentationType.TEMPORAL, value.toString() );
+    }
+
+    public static ValueRepresentation temporalAmount( TemporalAmount value )
+    {
+        return new ValueRepresentation( RepresentationType.TEMPORAL_AMOUNT, value.toString() );
     }
 
     @SuppressWarnings( "boxing" )
@@ -156,6 +177,24 @@ public class ValueRepresentation extends Representation
                 }
 
                 @Override
+                protected Representation dispatchPointProperty( Point point, Void param )
+                {
+                    return new ValueRepresentation( RepresentationType.POINT, point );
+                }
+
+                @Override
+                protected Representation dispatchTemporalProperty( Temporal temporal, Void param )
+                {
+                    return new ValueRepresentation( RepresentationType.TEMPORAL, temporal );
+                }
+
+                @Override
+                protected Representation dispatchTemporalAmountProperty( TemporalAmount temporalAmount, Void param )
+                {
+                    return new ValueRepresentation( RepresentationType.TEMPORAL_AMOUNT, temporalAmount );
+                }
+
+                @Override
                 protected Representation dispatchByteProperty( byte property, Void param )
                 {
                     return new ValueRepresentation( RepresentationType.BYTE, property );
@@ -207,6 +246,24 @@ public class ValueRepresentation extends Representation
                 protected Representation dispatchStringArrayProperty( String[] property, Void param )
                 {
                     return ListRepresentation.strings( property );
+                }
+
+                @Override
+                protected Representation dispatchPointArrayProperty( Point[] property, Void param )
+                {
+                    return ListRepresentation.points( property );
+                }
+
+                @Override
+                protected Representation dispatchTemporalArrayProperty( Temporal[] property, Void param )
+                {
+                    return ListRepresentation.temporals( property );
+                }
+
+                @Override
+                protected Representation dispatchTemporalAmountArrayProperty( TemporalAmount[] property, Void param )
+                {
+                    return ListRepresentation.temporalAmounts( property );
                 }
 
                 @SuppressWarnings( "unchecked" )
