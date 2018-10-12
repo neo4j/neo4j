@@ -349,7 +349,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     val mapResult = executeWith(config, "CALL db.indexes()").toList.loneElement
 
     // then
-    mapResult should have size 9
+    mapResult should have size 10
     mapResult("description") should equal("INDEX ON :Person(name)")
     mapResult("indexName").asInstanceOf[String] should startWith("index_")
     mapResult("id").asInstanceOf[Long].intValue() should be >= 1
@@ -382,7 +382,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     val mapResult = executeWith(config, "CALL db.indexes()").toList.loneElement
 
     // then
-    mapResult should have size 9
+    mapResult should have size 10
     mapResult("description") should equal("INDEX ON :Person(name)")
     mapResult("indexName").asInstanceOf[String] should startWith("index_")
     mapResult("id").asInstanceOf[Long].intValue() should be >= 1
