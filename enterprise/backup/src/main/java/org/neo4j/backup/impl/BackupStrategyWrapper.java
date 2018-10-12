@@ -90,6 +90,10 @@ class BackupStrategyWrapper
                     backupStrategy.performIncrementalBackup( DatabaseLayout.of( backupLocation.toFile() ), config, userSpecifiedAddress );
             boolean fullBackupWontWork = BackupStageOutcome.WRONG_PROTOCOL.equals( state.getState() );
             boolean incrementalWasSuccessful = BackupStageOutcome.SUCCESS.equals( state.getState() );
+            if ( incrementalWasSuccessful )
+            {
+                backupRecoveryService.recoverWithDatabase( backupLocation, pageCache, config );
+            }
 
             if ( fullBackupWontWork || incrementalWasSuccessful )
             {
