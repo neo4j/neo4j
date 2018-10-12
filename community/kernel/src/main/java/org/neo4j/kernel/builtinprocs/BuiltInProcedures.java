@@ -221,9 +221,17 @@ public class BuiltInProcedures
         return new SchemaCalculator( tx ).calculateTabularResultStream();
     }
 
-    @Description( "Show the schema of the data." )
+    @Deprecated
+    @Description( "Show the schema of the data. Replaced by db.schema.visualization." )
     @Procedure( name = "db.schema", mode = READ )
     public Stream<SchemaProcedure.GraphResult> metaGraph()
+    {
+        return metaGraphVisualization();
+    }
+
+    @Description( "Visualize the schema of the data. Replaces db.schema." )
+    @Procedure( name = "db.schema.visualization", mode = READ )
+    public Stream<SchemaProcedure.GraphResult> metaGraphVisualization()
     {
         return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
     }

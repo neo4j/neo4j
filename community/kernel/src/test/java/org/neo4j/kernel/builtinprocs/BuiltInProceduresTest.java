@@ -285,7 +285,10 @@ public class BuiltInProceduresTest
                         "Schedule resampling of all outdated indexes.", "READ" ),
                 record( "db.schema",
                         "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
-                        "Show the schema of the data.", "READ" ),
+                        "Show the schema of the data. Replaced by db.schema.visualization.", "READ" ),
+                record( "db.schema.visualization",
+                        "db.schema.visualization() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
+                        "Visualize the schema of the data. Replaces db.schema.", "READ" ),
                 record( "okapi.schema",
                         "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?," +
                                 " cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
