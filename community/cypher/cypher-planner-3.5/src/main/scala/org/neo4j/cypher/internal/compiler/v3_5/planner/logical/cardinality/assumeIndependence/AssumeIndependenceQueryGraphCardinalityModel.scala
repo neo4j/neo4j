@@ -78,17 +78,10 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
     val numberOfGraphNodes = stats.nodesAllCardinality()
 
     val c = if (qg.argumentIds.nonEmpty) {
-      if ((qg.argumentIds intersect qg.patternNodes).isEmpty) {
-        /*
-       * If have a node pattern and we have arguments the produced cardinality is at least
-       * the one produce of the node pattern solved
-       */
-        Cardinality.max(Cardinality(1.0), input.inboundCardinality)
-      } else
         input.inboundCardinality
-
-    } else
+    } else {
       Cardinality(1.0)
+    }
 
     c * (numberOfGraphNodes ^ numberOfPatternNodes) * selectivity
   }

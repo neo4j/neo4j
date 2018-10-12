@@ -237,12 +237,12 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     shouldHaveQueryGraphCardinality(1000.0 / 500.0 * 13.0)
   }
 
-  test("input cardinality of zero on a different variable should not affect cardinality estimation of the pattern") {
+  test("input cardinality of zero on a different variable should affect cardinality estimation of the pattern") {
     givenPattern("MATCH (a)").
     withQueryGraphArgumentIds("e").
     withInboundCardinality(0.0).
     withGraphNodes(500).
-    shouldHaveQueryGraphCardinality(500)
+    shouldHaveQueryGraphCardinality(0)
   }
 
 
@@ -263,15 +263,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
     forQuery("MATCH (a:A)-[r:T1*1..2]->(b:B)").
     shouldHaveQueryGraphCardinality(maxRelCount * totalSelectivity)
   }
-
-//  test("varlength three steps out") {
-//    forQuery("MATCH (a:A)-[r:T1*1..3]->(b:B)").
-//      shouldHaveQueryGraphCardinality(
-//        A * B * A_T1_A_sel + // The result includes all (:A)-[:T1]->(:B)
-//        A * N * B * A_T1_STAR_sel * STAR_T1_B_sel + // and all (:A)-[:T1]->()-[:T1]->(:B)
-//        A * N * N * B * A_T1_STAR_sel * STAR_T1_STAR_sel * STAR_T1_B_sel  // and all (:A)-[:T1]->()-[:T1]->()-[:T1]-(:B)
-//      )
-//  }
 
   def createQueryGraphCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)
