@@ -82,7 +82,11 @@ class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCar
       val cardinalityBeforeSelection = in * GraphStatistics.DEFAULT_DISTINCT_SELECTIVITY
       horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
 
-      // TODO add a case for when grouping expressions is empty
+    // Aggregates with no grouping
+    case projection: AggregatingQueryProjection if projection.groupingExpressions.isEmpty =>
+      val cardinalityBeforeSelection = Cardinality.min(in, Cardinality.SINGLE)
+      horizonCardinalityWithSelections(cardinalityBeforeSelection, projection.selections, semanticTable)
+
     // Aggregates
     case projection: AggregatingQueryProjection =>
       // if input cardinality is < 1 the sqrt is bigger than the original value which makes no sense for aggregations

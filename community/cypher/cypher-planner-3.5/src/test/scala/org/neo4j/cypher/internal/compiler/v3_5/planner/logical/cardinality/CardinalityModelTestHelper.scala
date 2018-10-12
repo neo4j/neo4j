@@ -58,7 +58,7 @@ trait CardinalityModelTestHelper extends CardinalityTestHelper {
       val graphCardinalityModel = createQueryGraphCardinalityModel(statistics)
       val cardinalityModelUnderTest = f(graphCardinalityModel)
       val (plannerQuery, _) = producePlannerQueryForPattern(testUnit.query)
-      Cardinality(number) should equal(cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable))
+      cardinalityModelUnderTest(plannerQuery, QueryGraphSolverInput.empty, semanticTable) should equal(Cardinality(number))
     }
   }
 

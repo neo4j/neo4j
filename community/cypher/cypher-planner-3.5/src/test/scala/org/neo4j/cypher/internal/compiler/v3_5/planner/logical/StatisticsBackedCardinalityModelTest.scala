@@ -158,9 +158,19 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       )
   }
 
-  test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION") {
+  test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION without grouping") {
     val i = personCount
     givenPattern("MATCH (a:Person) WITH count(a) AS count WHERE count > 20").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        1.0 // the RETURN part is always estimated to at least 1
+      )
+  }
+
+  test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION with grouping") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH count(a) AS count, a.name AS name WHERE count > 20").
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
