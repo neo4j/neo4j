@@ -39,7 +39,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0) *
           allNodes * (relCount / (i * allNodes))
       )
@@ -51,7 +51,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0) *
           allNodes * (relCount / (i * allNodes))
       )
@@ -63,8 +63,8 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount) *
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), DEFAULT_LIMIT_CARDINALITY) *
           allNodes * (relCount / (i * allNodes))
       )
   }
@@ -84,7 +84,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     withLabel('Person -> personCount).
     withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
     withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
-    shouldHavePlannerQueryCardinality(produceCardinalityModel)(aggregation * allNodes * relCount / (personCount * allNodes))
+    shouldHavePlannerQueryCardinality(createCardinalityModel)(aggregation * allNodes * relCount / (personCount * allNodes))
   }
 
   test("aggregations should never increase cardinality") {
@@ -92,7 +92,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> .1).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> .5).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(2.5)
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(2.5)
   }
 
   test("query containing both SKIP and LIMIT") {
@@ -100,7 +100,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     givenPattern( "MATCH (n:Person) WITH n SKIP 5 LIMIT 10").
       withGraphNodes(allNodes).
       withLabel('Person -> i).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 10.0)
       )
   }
@@ -111,14 +111,66 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     givenPattern( s"MATCH (n:Person) WITH n SKIP ${personCount - 5} LIMIT 10").
       withGraphNodes(allNodes).
       withLabel('Person -> i).
-      shouldHavePlannerQueryCardinality(produceCardinalityModel)(
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
         Math.min(allNodes * (i / allNodes), 5.0)
       )
   }
 
-  def produceCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
+  test("should reduce cardinality for a WHERE after a WITH") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH a LIMIT 10 WHERE a.age = 20").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), 10.0) *
+          DEFAULT_EQUALITY_SELECTIVITY
+      )
+  }
+
+  test("should reduce cardinality for a WHERE after a WITH, unknown LIMIT") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH a LIMIT {limit} WHERE a.age = 20").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        Math.min(allNodes * (i / allNodes), DEFAULT_LIMIT_CARDINALITY) *
+          DEFAULT_EQUALITY_SELECTIVITY
+      )
+  }
+
+  test("should reduce cardinality for a WHERE after a WITH, with ORDER BY") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH a ORDER BY a.name WHERE a.age = 20").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        allNodes * (i / allNodes) * DEFAULT_EQUALITY_SELECTIVITY
+      )
+  }
+
+  test("should reduce cardinality for a WHERE after a WITH, with DISTINCT") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH DISTINCT a WHERE a.age = 20").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        allNodes * (i / allNodes) * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+      )
+  }
+
+  test("should reduce cardinality for a WHERE after a WITH, with AGGREGATION") {
+    val i = personCount
+    givenPattern("MATCH (a:Person) WITH count(a) AS count WHERE count > 20").
+      withGraphNodes(allNodes).
+      withLabel('Person -> i).
+      shouldHavePlannerQueryCardinality(createCardinalityModel)(
+        Math.sqrt(allNodes * (i / allNodes)) * DEFAULT_RANGE_SELECTIVITY
+      )
+  }
+
+  def createCardinalityModel(in: QueryGraphCardinalityModel): Metrics.CardinalityModel =
     new StatisticsBackedCardinalityModel(in, newExpressionEvaluator)
 
-  def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
+  override def createQueryGraphCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)
 }

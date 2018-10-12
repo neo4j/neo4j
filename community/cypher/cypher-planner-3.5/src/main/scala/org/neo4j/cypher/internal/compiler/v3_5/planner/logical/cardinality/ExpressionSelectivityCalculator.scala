@@ -31,11 +31,7 @@ import org.opencypher.v9_0.util.Cardinality
 import org.opencypher.v9_0.util.LabelId
 import org.opencypher.v9_0.util.Selectivity
 
-trait Expression2Selectivity {
-  def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity
-}
-
-case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) extends Expression2Selectivity {
+case class ExpressionSelectivityCalculator(stats: GraphStatistics, combiner: SelectivityCombiner) {
 
   def apply(exp: Expression)(implicit semanticTable: SemanticTable, selections: Selections): Selectivity = exp match {
     // WHERE a:Label

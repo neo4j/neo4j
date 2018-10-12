@@ -31,8 +31,8 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
   extends QueryGraphCardinalityModel {
   import AssumeIndependenceQueryGraphCardinalityModel.MAX_OPTIONAL_MATCH
 
-  private val expressionSelectivityEstimator = ExpressionSelectivityCalculator(stats, combiner)
-  private val patternSelectivityEstimator = PatternSelectivityCalculator(stats, combiner)
+  override val expressionSelectivityCalculator = ExpressionSelectivityCalculator(stats, combiner)
+  private val patternSelectivityCalculator = PatternSelectivityCalculator(stats, combiner)
 
   /**
    * When there are optional matches, the cardinality is always the maximum of any matches that exist,
@@ -95,9 +95,9 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
 
   private def calculateSelectivity(qg: QueryGraph, labels: Map[String, Set[LabelName]])
                                   (implicit semanticTable: SemanticTable): (Selectivity, Int) = {
-    implicit val selections = qg.selections
+    implicit val selections: Selections = qg.selections
 
-    val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityEstimator(_))
+    val expressionSelectivities = selections.flatPredicates.map(expressionSelectivityCalculator(_))
 
     val patternSelectivities = qg.patternRelationships.toIndexedSeq.map {
       /* This is here to handle the *0..0 case.
@@ -106,7 +106,7 @@ case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, 
          This workaround should work, but might not give the best numbers.
        */
       case r if r.length == VarPatternLength(0, Some(0)) => None
-      case r => Some(patternSelectivityEstimator(r, labels))
+      case r => Some(patternSelectivityCalculator(r, labels))
     }
 
     val numberOfZeroZeroRels = patternSelectivities.count(_.isEmpty)

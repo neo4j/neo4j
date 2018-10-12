@@ -273,6 +273,6 @@ class AssumeIndependenceQueryGraphCardinalityModelTest extends RandomizedCardina
 //      )
 //  }
 
-  def createCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
+  def createQueryGraphCardinalityModel(stats: GraphStatistics): QueryGraphCardinalityModel =
     AssumeIndependenceQueryGraphCardinalityModel(stats, combiner)
 }

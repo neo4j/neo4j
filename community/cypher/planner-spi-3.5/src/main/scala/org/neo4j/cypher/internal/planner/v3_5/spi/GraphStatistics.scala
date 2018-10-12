@@ -36,6 +36,7 @@ object GraphStatistics {
   val DEFAULT_REL_UNIQUENESS_SELECTIVITY = Selectivity(1.0 - 1 / 100 /*rel-cardinality*/)
   val DEFAULT_RANGE_SEEK_FACTOR          = 0.03
   val DEFAULT_STRING_LENGTH              = 6
+  val DEFAULT_DISTINCT_SELECTIVITY       = Selectivity(0.95)
 }
 
 trait GraphStatistics {
