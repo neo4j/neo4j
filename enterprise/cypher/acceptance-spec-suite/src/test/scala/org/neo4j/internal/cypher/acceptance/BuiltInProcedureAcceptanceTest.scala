@@ -282,7 +282,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "type" -> "node_label_property",
         "provider" -> Map(
           "version" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getVersion,
-          "key" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getKey))))
+          "key" -> NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR.getKey),
+        "failureMessage" -> "")))
   }
 
   test("yield from void procedure should return correct error msg") {
@@ -317,7 +318,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "type" -> "node_label_property",
         "provider" -> Map(
           "version" -> "1.0",
-          "key" -> "lucene+native"))))
+          "key" -> "lucene+native"),
+        "failureMessage" -> "" )))
   }
 
   test("should create unique property constraint from built-in-procedure") {
@@ -345,7 +347,8 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "type" -> "node_unique_property",
         "provider" -> Map(
           "version" -> "1.0",
-          "key" -> "lucene+native"))))
+          "key" -> "lucene+native"),
+        "failureMessage" -> "")))
   }
 
   test("should create node key constraint from built-in-procedure") {
@@ -373,6 +376,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
         "type" -> "node_unique_property",
         "provider" -> Map(
           "version" -> "1.0",
-          "key" -> "lucene+native"))))
+          "key" -> "lucene+native"),
+        "failureMessage" -> "")))
   }
 }
