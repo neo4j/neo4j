@@ -34,9 +34,9 @@ class UniquePathNotUniqueException(message: String) extends CypherException(mess
     mapper.uniquePathNotUniqueException(message, this)
 }
 
-class FailedIndexException(indexName: String) extends CypherException {
+class FailedIndexException(indexName: String, failureMessage: String) extends CypherException {
   override def mapToPublic[T <: Throwable](mapper: MapToPublicExceptions[T]) =
-    mapper.failedIndexException(indexName, this)
+    mapper.failedIndexException(indexName, failureMessage, this)
 }
 
 class EntityNotFoundException(message: String, cause: Throwable = null)

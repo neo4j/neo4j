@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_1
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.exceptionHandler.{RunSafely, mapToCypher}
-import org.neo4j.cypher.internal.compatibility.{ExceptionHandler, _}
+import org.neo4j.cypher.internal.compatibility.ExceptionHandler
 import org.neo4j.cypher.internal.frontend.v3_1.spi.MapToPublicExceptions
 import org.neo4j.cypher.internal.frontend.v3_1.{CypherException => InternalCypherException}
 import org.neo4j.values.utils.ValuesException
@@ -80,7 +80,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
-  def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
+  def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, null, cause)
 
   object runSafely extends RunSafely {
     override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default) = {

@@ -19,7 +19,7 @@ package org.neo4j.cypher.internal.util.v3_4.spi
 import org.neo4j.cypher.internal.util.v3_4.CypherException
 
 trait MapToPublicExceptions[T <: Throwable] {
-  def failedIndexException(indexName: String, cause: Throwable): T
+  def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): T
 
   def periodicCommitInOpenTransactionException(cause: Throwable): T
 

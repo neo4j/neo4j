@@ -56,7 +56,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val graph = createDbWithFailedIndex
     try {
       // WHEN THEN
-      intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
+      val e = intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
+      e.getMessage should include ("LuceneIndexProvider: A")
     } finally {
       graph.shutdown()
       new File("target/test-data/test-impermanent-db").deleteAll()
