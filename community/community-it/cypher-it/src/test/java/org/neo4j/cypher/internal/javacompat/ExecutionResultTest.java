@@ -145,6 +145,12 @@ public class ExecutionResultTest
         assertThat(Math.round( distance ), equalTo(86107L));
     }
 
+    @Test
+    public void shouldHandleColumnAsWithNull()
+    {
+        assertThat( db.execute( "RETURN toLower(null) AS lower" ).<String>columnAs( "lower" ).next(), nullValue() );
+    }
+
     private TopLevelTransaction activeTransaction()
     {
         ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency(
