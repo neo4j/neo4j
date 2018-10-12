@@ -36,6 +36,11 @@ import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
+/**
+ * This test is disabled by default and not executed directly by test runner.
+ * It will be executed by a specific test executor as part of extensions lifecycle testing.
+ * @see TestDirectoryExtensionTest#failedTestShouldKeepDirectory()
+ */
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 @ExtendWith( DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.class )
 class DirectoryExtensionLifecycleVerificationTest
@@ -61,11 +66,12 @@ class DirectoryExtensionLifecycleVerificationTest
 
     static class ConfigurationParameterCondition implements ExecutionCondition
     {
+        static final String TEST_TOGGLE = "testToggle";
 
         @Override
         public ConditionEvaluationResult evaluateExecutionCondition( ExtensionContext context )
         {
-            Optional<String> option = context.getConfigurationParameter( "extensionTest" );
+            Optional<String> option = context.getConfigurationParameter( TEST_TOGGLE );
             return option.map( ConditionEvaluationResult::enabled ).orElseGet( () -> disabled( "configuration parameter not present" ) );
         }
     }

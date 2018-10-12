@@ -39,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
+import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.TEST_TOGGLE;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
@@ -105,7 +106,7 @@ class TestDirectoryExtensionTest
     {
         LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
                 .selectors( selectMethod( DirectoryExtensionLifecycleVerificationTest.class, testName ))
-                .configurationParameter( "extensionTest", "true" )
+                .configurationParameter( TEST_TOGGLE, "true" )
                 .build();
         Launcher launcher = LauncherFactory.create();
         launcher.execute( discoveryRequest );
