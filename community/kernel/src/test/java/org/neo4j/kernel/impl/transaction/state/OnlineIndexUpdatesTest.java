@@ -158,8 +158,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldContainFedNodeUpdate() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates =
-                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         int nodeId = 0;
         NodeRecord inUse = getNode( nodeId, true );
@@ -188,8 +187,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldContainFedRelationshipUpdate() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates =
-                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -218,8 +216,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates =
-                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         int nodeId = 0;
         NodeRecord inUseNode = getNode( nodeId, true );
@@ -268,8 +265,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldUpdateCorrectIndexes() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates =
-                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );

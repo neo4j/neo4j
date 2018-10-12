@@ -67,7 +67,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Arrays.asList;
@@ -909,7 +909,7 @@ public class NeoStoreTransactionApplierTest
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
                 indexUpdatesSync, nodeStore, neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ),
-                mock( StorageReader.class ) );
+                mock( StorageEngine.class ) );
     }
 
     // SCHEMA RULE COMMAND

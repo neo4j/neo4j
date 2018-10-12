@@ -99,6 +99,12 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
             {
                 return true;
             }
+
+            @Override
+            public void close()
+            {
+                // Nothing to close
+            }
         };
     }
 }

@@ -886,6 +886,12 @@ public class IndexingServiceTest
             {
                 return nodeIds.length > 0;
             }
+
+            @Override
+            public void close()
+            {
+                // Nothing to close
+            }
         };
     }
 

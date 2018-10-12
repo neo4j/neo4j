@@ -37,16 +37,15 @@ import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
+import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 
 /**
@@ -62,19 +61,17 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class OnlineIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
-    private final RelationshipStore relationshipStore;
     private final IndexingUpdateService updateService;
     private final PropertyPhysicalToLogicalConverter converter;
     private final StorageReader reader;
     private final Collection<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
-    private NodeRecord nodeRecord;
-    private RelationshipRecord relationshipRecord;
+    private StorageNodeCursor nodeCursor;
+    private StorageRelationshipScanCursor relationshipCursor;
 
-    public OnlineIndexUpdates( NodeStore nodeStore, RelationshipStore relationshipStore, IndexingUpdateService updateService,
+    public OnlineIndexUpdates( NodeStore nodeStore, IndexingUpdateService updateService,
             PropertyPhysicalToLogicalConverter converter, StorageReader reader )
     {
         this.nodeStore = nodeStore;
-        this.relationshipStore = relationshipStore;
         this.updateService = updateService;
         this.converter = converter;
         this.reader = reader;
@@ -156,6 +153,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         long[] nodeLabelsAfter;
         if ( nodeChanges != null )
         {
+            // Special case since the node may not be heavy, i.e. further loading may be required
             nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );
             nodeLabelsAfter = parseLabelsField( nodeChanges.getAfter() ).get( nodeStore );
         }
@@ -176,8 +174,8 @@ public class OnlineIndexUpdates implements IndexUpdates
              * if this happens and we're in recovery mode that the node in question will be deleted
              * in an upcoming transaction, so just skip this update.
              */
-            NodeRecord nodeRecord = loadNode( nodeId );
-            nodeLabelsBefore = nodeLabelsAfter = parseLabelsField( nodeRecord ).get( nodeStore );
+            StorageNodeCursor nodeCursor = loadNode( nodeId );
+            nodeLabelsBefore = nodeLabelsAfter = nodeCursor.labels();
         }
 
         // First get possible Label changes
@@ -203,8 +201,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         }
         else
         {
-            RelationshipRecord relationshipRecord = loadRelationship( relationshipId );
-            reltypeBefore = reltypeAfter = relationshipRecord.getType();
+            reltypeBefore = reltypeAfter = loadRelationship( relationshipId ).type();
         }
         EntityUpdates.Builder relationshipPropertyUpdates =
                 EntityUpdates.forEntity( relationshipId ).withTokens( reltypeBefore ).withTokensAfter( reltypeAfter );
@@ -215,23 +212,37 @@ public class OnlineIndexUpdates implements IndexUpdates
         return relationshipPropertyUpdates;
     }
 
-    private NodeRecord loadNode( long nodeId )
+    private StorageNodeCursor loadNode( long nodeId )
     {
-        if ( nodeRecord == null )
+        if ( nodeCursor == null )
         {
-            nodeRecord = nodeStore.newRecord();
+            nodeCursor = reader.allocateNodeCursor();
         }
-        nodeStore.getRecord( nodeId, nodeRecord, RecordLoad.NORMAL );
-        return nodeRecord;
+        nodeCursor.single( nodeId );
+        if ( !nodeCursor.next() )
+        {
+            throw new IllegalStateException( "Node[" + nodeId + "] doesn't exist" );
+        }
+        return nodeCursor;
     }
 
-    private RelationshipRecord loadRelationship( long relationshipId )
+    private StorageRelationshipScanCursor loadRelationship( long relationshipId )
     {
-        if ( relationshipRecord == null )
+        if ( relationshipCursor == null )
         {
-            relationshipRecord = relationshipStore.newRecord();
+            relationshipCursor = reader.allocateRelationshipScanCursor();
         }
-        relationshipStore.getRecord( relationshipId, relationshipRecord, RecordLoad.NORMAL );
-        return relationshipRecord;
+        relationshipCursor.single( relationshipId );
+        if ( !relationshipCursor.next() )
+        {
+            throw new IllegalStateException( "Relationship[" + relationshipId + "] doesn't exist" );
+        }
+        return relationshipCursor;
+    }
+
+    @Override
+    public void close()
+    {
+        closeAllUnchecked( nodeCursor, relationshipCursor, reader );
     }
 }

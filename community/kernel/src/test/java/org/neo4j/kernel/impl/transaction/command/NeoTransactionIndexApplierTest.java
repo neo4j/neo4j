@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singleton;
@@ -103,7 +103,7 @@ public class NeoTransactionIndexApplierTest
     {
         PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ), mock( StorageReader.class ) );
+                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ), mock( StorageEngine.class ) );
     }
 
     @Test

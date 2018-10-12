@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
-import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -62,20 +62,20 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
-    private final StorageReader reader;
+    private final StorageEngine storageEngine;
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
 
     public IndexBatchTransactionApplier( IndexingService indexingService, WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
             WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, RelationshipStore relationshipStore,
-            PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageReader reader )
+            PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageEngine storageEngine )
     {
         this.indexingService = indexingService;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
-        this.reader = reader;
+        this.storageEngine = storageEngine;
         this.transactionApplier = new SingleTransactionApplier( nodeStore, relationshipStore );
     }
 
@@ -125,6 +125,10 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     public void close() throws Exception
     {
         applyPendingLabelAndIndexUpdates();
+        if ( indexUpdates != null )
+        {
+            indexUpdates.close();
+        }
     }
 
     /**
@@ -169,7 +173,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, indexUpdateConverter, reader );
+                indexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter, storageEngine.newReader() );
             }
             return indexUpdates;
         }

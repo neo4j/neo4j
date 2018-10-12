@@ -60,4 +60,10 @@ public class DirectIndexUpdates implements IndexUpdates
     {
         return true;
     }
+
+    @Override
+    public void close()
+    {
+        // Nothing to close
+    }
 }

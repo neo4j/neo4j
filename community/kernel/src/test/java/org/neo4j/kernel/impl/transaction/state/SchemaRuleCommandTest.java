@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
-import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singletonList;
@@ -71,7 +71,6 @@ import static org.mockito.Mockito.when;
 
 public class SchemaRuleCommandTest
 {
-
     private final int labelId = 2;
     private final int propertyKey = 8;
     private final long id = 0;
@@ -80,7 +79,7 @@ public class SchemaRuleCommandTest
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
-    private final StorageReader storageReader = mock( StorageReader.class );
+    private final StorageEngine storageEngine = mock( StorageEngine.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
@@ -91,7 +90,7 @@ public class SchemaRuleCommandTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier =
             new IndexBatchTransactionApplier( indexes, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), neoStores.getRelationshipStore(),
-                    new PropertyPhysicalToLogicalConverter( propertyStore ), storageReader );
+                    new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 

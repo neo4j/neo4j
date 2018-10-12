@@ -32,7 +32,7 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 /**
  * Set of updates ({@link IndexEntryUpdate}) to apply to indexes.
  */
-public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor>>
+public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor>>, AutoCloseable
 {
     /**
      * Feeds updates raw material in the form of node/property commands, to create updates from.
@@ -45,4 +45,7 @@ public interface IndexUpdates extends Iterable<IndexEntryUpdate<SchemaDescriptor
             LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap );
 
     boolean hasUpdates();
+
+    @Override
+    void close();
 }

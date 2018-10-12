@@ -1271,7 +1271,7 @@ public class TransactionRecordStateTest
 
         StorageReader reader = new RecordStorageReader( neoStores );
         CollectingIndexingUpdateService indexingUpdateService = new CollectingIndexingUpdateService();
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), neoStores.getRelationshipStore(), indexingUpdateService,
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), indexingUpdateService,
                 new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ), reader );
         onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.propertyCommandsByRelationshipIds(), extractor.nodeCommandsById(),
                 extractor.relationshipCommandsById() );
