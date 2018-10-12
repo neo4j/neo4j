@@ -63,6 +63,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
@@ -210,9 +211,9 @@ public class RecordStorageEngineRule extends ExternalResource
         }
 
         @Override
-        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, StorageReader reader )
         {
-            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode );
+            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode, reader );
             return transactionApplierTransformer.apply( recordEngineApplier );
         }
     }

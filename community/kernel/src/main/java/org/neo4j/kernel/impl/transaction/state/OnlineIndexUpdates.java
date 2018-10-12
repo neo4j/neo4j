@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -64,17 +65,19 @@ public class OnlineIndexUpdates implements IndexUpdates
     private final RelationshipStore relationshipStore;
     private final IndexingUpdateService updateService;
     private final PropertyPhysicalToLogicalConverter converter;
+    private final StorageReader reader;
     private final Collection<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
     private NodeRecord nodeRecord;
     private RelationshipRecord relationshipRecord;
 
     public OnlineIndexUpdates( NodeStore nodeStore, RelationshipStore relationshipStore, IndexingUpdateService updateService,
-            PropertyPhysicalToLogicalConverter converter )
+            PropertyPhysicalToLogicalConverter converter, StorageReader reader )
     {
         this.nodeStore = nodeStore;
         this.relationshipStore = relationshipStore;
         this.updateService = updateService;
         this.converter = converter;
+        this.reader = reader;
     }
 
     @Override
@@ -126,7 +129,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         EntityUpdates entityUpdates = nodePropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, EntityType.NODE ) )
+        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, reader, EntityType.NODE ) )
         {
             updates.add( update );
         }
@@ -139,7 +142,7 @@ public class OnlineIndexUpdates implements IndexUpdates
         EntityUpdates entityUpdates = relationshipPropertyUpdate.build();
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, EntityType.RELATIONSHIP ) )
+        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, reader, EntityType.RELATIONSHIP ) )
         {
             updates.add( update );
         }

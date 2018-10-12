@@ -503,7 +503,7 @@ public class StubStorageCursors implements StorageReader
                 {
                     current = nodeData.get( next );
                     next = NO_ID;
-                    return current.inUse;
+                    return current != null && current.inUse;
                 }
             }
             return false;

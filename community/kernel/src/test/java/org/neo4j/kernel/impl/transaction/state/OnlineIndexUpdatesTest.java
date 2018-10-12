@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
@@ -110,6 +111,7 @@ class OnlineIndexUpdatesTest
     private LifeSupport life;
     private PropertyCreator propertyCreator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
+    private RecordStorageReader storageReader;
 
     @BeforeEach
     void setUp() throws Exception
@@ -123,6 +125,7 @@ class OnlineIndexUpdatesTest
 
         neoStores = storeFactory.openAllNeoStores( true );
         neoStores.getCounts().start();
+        storageReader = new RecordStorageReader( neoStores );
         CountsComputer.recomputeCounts( neoStores, pageCache, databaseLayout );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
@@ -148,13 +151,15 @@ class OnlineIndexUpdatesTest
     void tearDown()
     {
         life.shutdown();
+        storageReader.close();
         neoStores.close();
     }
 
     @Test
     void shouldContainFedNodeUpdate() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
+        OnlineIndexUpdates onlineIndexUpdates =
+                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         int nodeId = 0;
         NodeRecord inUse = getNode( nodeId, true );
@@ -183,7 +188,8 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldContainFedRelationshipUpdate() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
+        OnlineIndexUpdates onlineIndexUpdates =
+                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -212,7 +218,8 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
+        OnlineIndexUpdates onlineIndexUpdates =
+                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         int nodeId = 0;
         NodeRecord inUseNode = getNode( nodeId, true );
@@ -261,7 +268,8 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldUpdateCorrectIndexes() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter );
+        OnlineIndexUpdates onlineIndexUpdates =
+                new OnlineIndexUpdates( nodeStore, relationshipStore, indexingService, propertyPhysicalToLogicalConverter, storageReader );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );

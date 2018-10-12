@@ -66,7 +66,6 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
@@ -76,6 +75,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -335,7 +335,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         // This is why we now go and wait for those indexes to be fully populated.
         rebuildingDescriptors.forEachKeyValue( ( indexId, descriptor ) ->
                 {
-                    if ( descriptor.type() != IndexDescriptor.Type.UNIQUE )
+                    if ( !descriptor.isUnique() )
                     {
                         // It's not a uniqueness constraint, so don't wait for it to be rebuilt
                         return;
@@ -540,7 +540,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     }
 
     @Override
-    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, EntityType type )
+    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, StorageReader reader, EntityType type )
     {
         Iterable<SchemaDescriptor> relatedIndexes = indexMapRef.getRelatedIndexes(
                                                 entityUpdates.entityTokensChanged(),
@@ -548,7 +548,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                                                 entityUpdates.propertiesChanged(),
                                                 type );
 
-        return entityUpdates.forIndexKeys( relatedIndexes, storeView, type );
+        return entityUpdates.forIndexKeys( relatedIndexes, reader, type );
     }
 
     /**

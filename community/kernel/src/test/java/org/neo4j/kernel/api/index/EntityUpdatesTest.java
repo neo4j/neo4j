@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.iterator.MutableIntIterator;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
@@ -28,12 +27,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
-import org.neo4j.kernel.impl.api.index.PropertyLoader;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StubStorageCursors;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
@@ -43,7 +44,8 @@ import static java.util.Collections.singleton;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterable;
-import static org.junit.jupiter.api.Assertions.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SuppressWarnings( "unchecked" )
 class EntityUpdatesTest
@@ -525,30 +527,31 @@ class EntityUpdatesTest
         );
     }
 
-    private static PropertyLoader propertyLoader( StorageProperty... properties )
+    private static StorageReader propertyLoader( StorageProperty... properties )
     {
-        Map<Integer, Value> propertyMap = new HashMap<>( );
+        StubStorageCursors stub = new StubStorageCursors();
+        for ( StorageProperty property : properties )
+        {
+            stub.propertyKeyTokenHolder().addToken( new NamedToken( String.valueOf( property.propertyKeyId() ), property.propertyKeyId() ) );
+        }
+        Map<String,Value> propertyMap = new HashMap<>();
         for ( StorageProperty p : properties )
         {
-            propertyMap.put( p.propertyKeyId(), p.value() );
+            propertyMap.put( String.valueOf( p.propertyKeyId() ), p.value() );
         }
-        return ( nodeId1, type, propertyIds, sink ) ->
-        {
-            MutableIntIterator iterator = propertyIds.intIterator();
-            while ( iterator.hasNext() )
-            {
-                int propertyId = iterator.next();
-                if ( propertyMap.containsKey( propertyId ) )
-                {
-                    sink.onProperty( propertyId, propertyMap.get( propertyId ) );
-                    iterator.remove();
-                }
-            }
-        };
+        stub.withNode( nodeId ).properties( propertyMap );
+        return stub;
     }
 
-    private static PropertyLoader assertNoLoading()
+    private static StorageReader assertNoLoading()
     {
-        return ( nodeId1, type, propertyIds, sink ) -> fail( "Should never attempt to load properties!" );
+        StorageReader reader = mock( StorageReader.class );
+        IllegalStateException exception = new IllegalStateException( "Should never attempt to load properties!" );
+        when( reader.allocateNodeCursor() ).thenThrow( exception );
+        when( reader.allocateRelationshipScanCursor() ).thenThrow( exception );
+        when( reader.allocateRelationshipTraversalCursor() ).thenThrow( exception );
+        when( reader.allocateRelationshipGroupCursor() ).thenThrow( exception );
+        when( reader.allocatePropertyCursor() ).thenThrow( exception );
+        return reader;
     }
 }

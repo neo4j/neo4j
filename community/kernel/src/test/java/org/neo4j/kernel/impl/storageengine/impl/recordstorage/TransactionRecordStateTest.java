@@ -88,6 +88,7 @@ import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.values.storable.Value;
@@ -1268,11 +1269,13 @@ public class TransactionRecordStateTest
         PropertyCommandsExtractor extractor = new PropertyCommandsExtractor();
         transaction.accept( extractor );
 
+        StorageReader reader = new RecordStorageReader( neoStores );
         CollectingIndexingUpdateService indexingUpdateService = new CollectingIndexingUpdateService();
         OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( neoStores.getNodeStore(), neoStores.getRelationshipStore(), indexingUpdateService,
-                new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ) );
+                new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() ), reader );
         onlineIndexUpdates.feed( extractor.propertyCommandsByNodeIds(), extractor.propertyCommandsByRelationshipIds(), extractor.nodeCommandsById(),
                 extractor.relationshipCommandsById() );
+        reader.close();
         return indexingUpdateService.entityUpdatesList;
     }
 
@@ -1426,7 +1429,7 @@ public class TransactionRecordStateTest
         }
 
         @Override
-        public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, EntityType type )
+        public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, StorageReader reader, EntityType type )
         {
             entityUpdatesList.add( entityUpdates );
             return Iterables.empty();

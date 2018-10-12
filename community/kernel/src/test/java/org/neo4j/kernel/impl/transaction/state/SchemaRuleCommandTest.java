@@ -57,6 +57,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singletonList;
@@ -79,6 +80,7 @@ public class SchemaRuleCommandTest
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
+    private final StorageReader storageReader = mock( StorageReader.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final NeoStoreBatchTransactionApplier storeApplier = new NeoStoreBatchTransactionApplier( neoStores,
@@ -89,7 +91,7 @@ public class SchemaRuleCommandTest
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier =
             new IndexBatchTransactionApplier( indexes, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), neoStores.getRelationshipStore(),
-                    new PropertyPhysicalToLogicalConverter( propertyStore ) );
+                    new PropertyPhysicalToLogicalConverter( propertyStore ), storageReader );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 

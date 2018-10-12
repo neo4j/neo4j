@@ -35,6 +35,11 @@ import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.storageengine.api.StorageEntityCursor;
+import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
+import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
@@ -49,7 +54,7 @@ import static org.neo4j.storageengine.api.schema.SchemaDescriptor.PropertySchema
  * Subclasses of this represent events related to property changes due to entity addition, deletion or update.
  * This is of use in populating indexes that might be relevant to label/reltype and property combinations.
  */
-public class EntityUpdates implements PropertyLoader.PropertyLoadSink
+public class EntityUpdates
 {
     private final long entityId;
     private static final long[] EMPTY_LONG_ARRAY = new long[0];
@@ -153,12 +158,6 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return knownProperties.keySet().toImmutable();
     }
 
-    @Override
-    public void onProperty( int propertyId, Value value )
-    {
-        knownProperties.put( propertyId, unchanged( value ) );
-    }
-
     /**
      * Matches the provided schema descriptors to the node updates in this object, and generates an IndexEntryUpdate
      * for any index that needs to be updated.
@@ -188,12 +187,12 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
      * make these calls.
      *
      * @param indexKeys The index keys to generate entry updates for
-     * @param propertyLoader The property loader used to fetch needed additional properties
+     * @param reader The property loader used to fetch needed additional properties
      * @param type EntityType of the indexes
      * @return IndexEntryUpdates for all relevant index keys
      */
     public <INDEX_KEY extends SchemaDescriptorSupplier> Iterable<IndexEntryUpdate<INDEX_KEY>> forIndexKeys(
-            Iterable<INDEX_KEY> indexKeys, PropertyLoader propertyLoader, EntityType type )
+            Iterable<INDEX_KEY> indexKeys, StorageReader reader, EntityType type )
     {
         List<INDEX_KEY> potentiallyRelevant = new ArrayList<>();
         final MutableIntSet additionalPropertiesToLoad = new IntHashSet();
@@ -209,7 +208,7 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
 
         if ( !additionalPropertiesToLoad.isEmpty() )
         {
-            loadProperties( propertyLoader, additionalPropertiesToLoad, type );
+            loadProperties( reader, additionalPropertiesToLoad, type );
         }
 
         return gatherUpdatesForPotentials( potentiallyRelevant );
@@ -256,16 +255,50 @@ public class EntityUpdates implements PropertyLoader.PropertyLoadSink
         return schema.isAffected( entityTokensAfter ) && hasPropsAfter( schema.getPropertyIds(), schema.propertySchemaType() );
     }
 
-    private void loadProperties( PropertyLoader propertyLoader, MutableIntSet additionalPropertiesToLoad, EntityType type )
+    private void loadProperties( StorageReader reader, MutableIntSet additionalPropertiesToLoad, EntityType type )
     {
         hasLoadedAdditionalProperties = true;
-        propertyLoader.loadProperties( entityId, type, additionalPropertiesToLoad, this );
+        if ( type == EntityType.NODE )
+        {
+            try ( StorageNodeCursor cursor = reader.allocateNodeCursor() )
+            {
+                cursor.single( entityId );
+                loadProperties( reader, cursor, additionalPropertiesToLoad );
+            }
+        }
+        else if ( type == EntityType.RELATIONSHIP )
+        {
+            try ( StorageRelationshipScanCursor cursor = reader.allocateRelationshipScanCursor() )
+            {
+                cursor.single( entityId );
+                loadProperties( reader, cursor, additionalPropertiesToLoad );
+            }
+        }
 
         // loadProperties removes loaded properties from the input set, so the remaining ones were not on the node
         final IntIterator propertiesWithNoValue = additionalPropertiesToLoad.intIterator();
         while ( propertiesWithNoValue.hasNext() )
         {
             knownProperties.put( propertiesWithNoValue.next(), noValue );
+        }
+    }
+
+    private void loadProperties( StorageReader reader, StorageEntityCursor cursor, MutableIntSet additionalPropertiesToLoad )
+    {
+        if ( cursor.next() && cursor.hasProperties() )
+        {
+            try ( StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor() )
+            {
+                propertyCursor.init( cursor.propertiesReference() );
+                while ( propertyCursor.next() )
+                {
+                    if ( additionalPropertiesToLoad.contains( propertyCursor.propertyKey() ) )
+                    {
+                        additionalPropertiesToLoad.remove( propertyCursor.propertyKey() );
+                        knownProperties.put( propertyCursor.propertyKey(), unchanged( propertyCursor.propertyValue() ) );
+                    }
+                }
+            }
         }
     }
 

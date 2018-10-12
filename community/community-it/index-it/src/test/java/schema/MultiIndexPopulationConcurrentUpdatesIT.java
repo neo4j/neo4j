@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreS
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -111,6 +112,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     @Rule
     public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
     private StoreIndexDescriptor[] rules;
+    private StorageEngine storageEngine;
 
     @Parameterized.Parameters( name = "{0}" )
     public static GraphDatabaseSettings.SchemaIndex[] parameters()
@@ -152,6 +154,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 .stream()
                 .collect( Collectors.toMap( Map.Entry::getValue, Map.Entry::getKey ) );
         propertyId = getPropertyId();
+        storageEngine = embeddedDatabase.getDependencyResolver().resolveDependency( StorageEngine.class );
     }
 
     @Test
@@ -580,7 +583,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private class UpdateGenerator implements Runnable
     {
-
         private Iterable<EntityUpdates> updates;
 
         UpdateGenerator( Iterable<EntityUpdates> updates )
@@ -623,12 +625,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                         transaction.success();
                     }
                 }
-                try
+                try ( StorageReader reader = storageEngine.newReader() )
                 {
                     for ( EntityUpdates update : updates )
                     {
                         Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates =
-                                indexService.convertToIndexUpdates( update, EntityType.NODE );
+                                indexService.convertToIndexUpdates( update, reader, EntityType.NODE );
                         DirectIndexUpdates directIndexUpdates = new DirectIndexUpdates( entryUpdates );
                         indexService.apply( directIndexUpdates );
                     }
