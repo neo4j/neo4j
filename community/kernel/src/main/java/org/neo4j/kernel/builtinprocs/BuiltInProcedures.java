@@ -513,7 +513,7 @@ public class BuiltInProcedures
     {
         IndexManager mgr = graphDatabaseAPI.index();
         Index<Node> index;
-        if ( config.isEmpty() )
+        if ( config == null || config.isEmpty() )
         {
             index = mgr.forNodes( explicitIndexName );
         }
@@ -532,7 +532,7 @@ public class BuiltInProcedures
     {
         IndexManager mgr = graphDatabaseAPI.index();
         Index<Relationship> index;
-        if ( config.isEmpty() )
+        if ( config == null || config.isEmpty() )
         {
             index = mgr.forRelationships( explicitIndexName );
         }

@@ -545,6 +545,20 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     assertNodeIndexExists("usernames", true)
   }
 
+  test("should be able to get or create a node index with null config (fallback to default)") {
+    //Given
+    assertNodeIndexExists("usernames", false)
+
+    //When
+    val resultCreate = execute("CALL db.index.explicit.forNodes('usernames', null) YIELD type, name").toList
+    resultCreate should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
+    val resultGet = execute("CALL db.index.explicit.forNodes('usernames', null) YIELD type, name").toList
+    resultGet should equal(List(Map("name" -> "usernames", "type" -> "NODE")))
+
+    //Then
+    assertNodeIndexExists("usernames", true)
+  }
+
   test("should be able to get an existing node index with specifying a configuration") {
     //Given
     assertNodeIndexExists("usernames", false)
@@ -613,6 +627,20 @@ class ManualIndexProcsIT extends ExecutionEngineFunSuite {
     //When
     val result = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
     result should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
+
+    //Then
+    assertRelationshipIndexExists("relIndex", true)
+  }
+
+  test("should be able to get or create a relationship index with null config (fallback to default)") {
+    //Given
+    assertRelationshipIndexExists("relIndex", false)
+
+    //When
+    val resultCreate = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+    resultCreate should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
+    val resultGet = execute("CALL db.index.explicit.forRelationships('relIndex') YIELD type, name").toList
+    resultGet should equal(List(Map("name" -> "relIndex", "type" -> "RELATIONSHIP")))
 
     //Then
     assertRelationshipIndexExists("relIndex", true)
