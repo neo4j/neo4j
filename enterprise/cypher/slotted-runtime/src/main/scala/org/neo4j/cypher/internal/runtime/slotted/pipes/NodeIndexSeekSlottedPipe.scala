@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.runtime.slotted.SlottedExecutionContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QueryExpression}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
@@ -60,8 +61,8 @@ case class NodeIndexSeekSlottedPipe(ident: String,
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val indexReference = reference(state.query)
-    val baseContext = state.newExecutionContext(executionContextFactory)
-    indexSeek(state, indexReference, needsValues, indexOrder, baseContext).flatMap(
+    val contextForIndexExpression = state.initialContext.getOrElse(SlottedExecutionContext.empty)
+    indexSeek(state, indexReference, needsValues, indexOrder, contextForIndexExpression).flatMap(
       cursor => new SlottedIndexIterator(state, slots, cursor)
     )
   }
@@ -82,7 +83,7 @@ case class NodeIndexSeekSlottedPipe(ident: String,
   }
 
   override def hashCode(): Int = {
-    val state = Seq(ident, label, properties.toSeq, valueExpr, indexMode, slots, argumentSize)
+    val state = Seq(ident, label, properties, valueExpr, indexMode, slots, argumentSize)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 }

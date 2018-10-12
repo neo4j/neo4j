@@ -64,7 +64,10 @@ case class SlottedExecutionContext(slots: SlotConfiguration) extends ExecutionCo
       case other@SlottedExecutionContext(otherPipeline) =>
         if (slots.numberOfLongs > otherPipeline.numberOfLongs ||
           slots.numberOfReferences > otherPipeline.numberOfReferences)
-          throw new InternalException("Tried to copy more data into less.")
+          throw new InternalException(
+            s"""Tried to copy more data into less:
+               |From : ${slots}
+               |To :   ${otherPipeline}""".stripMargin)
         else {
           System.arraycopy(longs, fromLongOffset, other.longs, toLongOffset, slots.numberOfLongs - fromLongOffset)
           System.arraycopy(refs, fromRefOffset, other.refs, toRefOffset, slots.numberOfReferences - fromRefOffset)

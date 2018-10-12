@@ -25,11 +25,35 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
   val expectedToSucceedRestricted = expectedToSucceed - Configs.AllRulePlanners
+
+  test("pattern comprehension involving index seek on RHS") {
+    graph.execute("CREATE CONSTRAINT ON (end:End) ASSERT end.id IS UNIQUE")
+    val start = createLabeledNode("Start")
+    val ends = (0 to 1000).map(id => createLabeledNode(Map("id" -> id), "End"))
+    ends.foreach(end => relate(start, end))
+
+    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 60 ))
+
+    val query =
+      """
+        |MATCH (start:Start)
+        |RETURN [path IN (start)-->(:End {id: 0}) | last(nodes(path))] AS result
+      """.stripMargin
+
+    val result = executeWith(Configs.Interpreted, query, planComparisonStrategy =
+        ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply")
+                                           .withRHS(includeSomewhere.aPlan("NodeUniqueIndexSeek")),
+          expectPlansToFail = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) + Configs.AllRulePlanners)
+    )
+
+    result.toList should equal(List(Map("result" -> List(ends.head))))
+  }
 
   test("pattern comprehension nested in pattern comprehension") {
     graph.getDependencyResolver.resolveDependency(classOf[Procedures]).registerFunction(classOf[TestFunction])
