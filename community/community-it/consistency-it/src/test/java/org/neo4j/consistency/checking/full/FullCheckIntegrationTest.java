@@ -572,7 +572,7 @@ public class FullCheckIntegrationTest
             {
                 for ( long nodeId : indexedNodes )
                 {
-                    EntityUpdates updates = storeView.nodeAsUpdates( nodeId );
+                    EntityUpdates updates = fixture.nodeAsUpdates( nodeId );
                     for ( IndexEntryUpdate<?> update : updates.forIndexKeys( asList( indexDescriptor ) ) )
                     {
                         updater.process( IndexEntryUpdate.remove( nodeId, indexDescriptor, update.values() ) );

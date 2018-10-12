@@ -909,7 +909,6 @@ public class IndexingServiceTest
         long indexId = 1;
         long otherIndexId = 2;
         EntityUpdates update = addNodeUpdate( nodeId, "value" );
-        when( storeView.nodeAsUpdates( eq( nodeId ) ) ).thenReturn( update );
         DoubleLongRegister register = mock( DoubleLongRegister.class );
         when( register.readSecond() ).thenReturn( 42L );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )

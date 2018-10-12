@@ -87,12 +87,6 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public EntityUpdates nodeAsUpdates( long nodeId )
-    {
-        return neoStoreIndexStoreView.nodeAsUpdates( nodeId );
-    }
-
-    @Override
     public Register.DoubleLongRegister indexUpdatesAndSize( long indexId, Register.DoubleLongRegister output )
     {
         return neoStoreIndexStoreView.indexUpdatesAndSize( indexId, output );

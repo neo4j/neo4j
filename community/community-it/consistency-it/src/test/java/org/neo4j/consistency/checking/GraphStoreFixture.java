@@ -51,6 +51,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionToApply;
+import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
@@ -68,13 +69,16 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
+import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -97,10 +101,13 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.System.currentTimeMillis;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
 import static org.neo4j.consistency.internal.SchemaIndexExtensionLoader.instantiateKernelExtensions;
+import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implements TestRule
 {
@@ -241,6 +248,37 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     public Statistics getAccessStatistics()
     {
         return statistics;
+    }
+
+    public EntityUpdates nodeAsUpdates( long nodeId )
+    {
+        NodeStore nodeStore = neoStore.getNodeStore();
+        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
+        if ( !node.inUse() )
+        {
+            return null;
+        }
+        long firstPropertyId = node.getNextProp();
+        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
+        {
+            return null; // no properties => no updates (it's not going to be in any index)
+        }
+        long[] labels = parseLabelsField( node ).get( nodeStore );
+        if ( labels.length == 0 )
+        {
+            return null; // no labels => no updates (it's not going to be in any index)
+        }
+        EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId ).withTokens( labels );
+        PropertyStore propertyStore = neoStore.getPropertyStore();
+        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
+        {
+            for ( PropertyBlock property : propertyRecord )
+            {
+                Value value = property.getType().value( property, propertyStore );
+                update.added( property.getKeyIndexId(), value );
+            }
+        }
+        return update.build();
     }
 
     public abstract static class Transaction

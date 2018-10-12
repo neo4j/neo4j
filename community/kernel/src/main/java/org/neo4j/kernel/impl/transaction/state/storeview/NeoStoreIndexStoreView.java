@@ -36,16 +36,8 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PropertyBlock;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.values.storable.Value;
-
-import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
 
 /**
  * Node store view that will always visit all nodes during store scan.
@@ -118,36 +110,6 @@ public class NeoStoreIndexStoreView implements IndexStoreView
             final Visitor<EntityUpdates,FAILURE> propertyUpdatesVisitor )
     {
         return new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdatesVisitor, relationshipTypeIds, propertyKeyIdFilter );
-    }
-
-    @Override
-    public EntityUpdates nodeAsUpdates( long nodeId )
-    {
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
-        if ( !node.inUse() )
-        {
-            return null;
-        }
-        long firstPropertyId = node.getNextProp();
-        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            return null; // no properties => no updates (it's not going to be in any index)
-        }
-        long[] labels = parseLabelsField( node ).get( nodeStore );
-        if ( labels.length == 0 )
-        {
-            return null; // no labels => no updates (it's not going to be in any index)
-        }
-        EntityUpdates.Builder update = EntityUpdates.forEntity( nodeId ).withTokens( labels );
-        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
-        {
-            for ( PropertyBlock property : propertyRecord )
-            {
-                Value value = property.getType().value( property, propertyStore );
-                update.added( property.getKeyIndexId(), value );
-            }
-        }
-        return update.build();
     }
 
     @Override

@@ -28,7 +28,6 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
-import org.neo4j.util.VisibleForTesting;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView
@@ -63,16 +62,6 @@ public interface IndexStoreView
      */
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor );
-
-    /**
-     * Produces {@link EntityUpdates} objects from reading node {@code entityId}, its labels and properties
-     * and puts those updates into node updates container.
-     *
-     * @param entityId id of entity to load.
-     * @return node updates container
-     */
-    @VisibleForTesting
-    EntityUpdates nodeAsUpdates( long entityId );
 
     DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
 
@@ -135,12 +124,6 @@ public interface IndexStoreView
         public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements,
                 long indexSize )
         {
-        }
-
-        @Override
-        public EntityUpdates nodeAsUpdates( long nodeId )
-        {
-            return null;
         }
 
         @Override
