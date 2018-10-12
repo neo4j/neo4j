@@ -21,19 +21,16 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import java.util.Collection;
-import java.util.List;
-
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 class FulltextIndexDescriptor extends StoreIndexDescriptor
 {
-    private final List<String> propertyNames;
+    private final String[] propertyNames;
     private final Analyzer analyzer;
     private final String analyzerName;
     private final boolean eventuallyConsistent;
 
-    FulltextIndexDescriptor( StoreIndexDescriptor descriptor, List<String> propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
+    FulltextIndexDescriptor( StoreIndexDescriptor descriptor, String[] propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
     {
         super( descriptor );
         this.propertyNames = propertyNames;
@@ -42,7 +39,7 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
         this.eventuallyConsistent = eventuallyConsistent;
     }
 
-    Collection<String> propertyNames()
+    String[] propertyNames()
     {
         return propertyNames;
     }

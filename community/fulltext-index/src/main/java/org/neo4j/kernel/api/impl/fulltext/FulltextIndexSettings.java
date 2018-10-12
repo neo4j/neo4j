@@ -29,7 +29,6 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 import java.util.stream.Collectors;
@@ -76,7 +75,7 @@ class FulltextIndexSettings
                         new PropertyKeyIdNotFoundKernelException( propertyKeyId, e ) );
             }
         }
-        List<String> propertyNames = Collections.unmodifiableList( names );
+        String[] propertyNames = names.toArray( new String[0] );
         return new FulltextIndexDescriptor( descriptor, propertyNames, analyzer, analyzerName, eventuallyConsistent );
     }
 
@@ -116,7 +115,7 @@ class FulltextIndexSettings
         Properties settings = new Properties();
         settings.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
         settings.setProperty( INDEX_CONFIG_ANALYZER, descriptor.analyzerName() );
-        settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, descriptor.propertyNames().stream().collect( Collectors.joining( ", ", "[", "]" )) );
+        settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, Arrays.stream( descriptor.propertyNames() ).collect( Collectors.joining( ", ", "[", "]" )) );
         settings.setProperty( "_propertyIds", Arrays.toString( descriptor.properties() ) );
         settings.setProperty( "_name", descriptor.name() );
         settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );

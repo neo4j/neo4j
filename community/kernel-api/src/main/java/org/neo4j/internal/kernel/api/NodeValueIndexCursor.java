@@ -19,6 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.neo4j.graphdb.Resource;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -49,7 +52,7 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
  *     }
  * </code></pre>
  */
-public interface NodeValueIndexCursor extends NodeIndexCursor
+public interface NodeValueIndexCursor extends NodeIndexCursor, IndexProgressor.EntityValueClient
 {
     /**
      * @return the number of properties accessible within the index, and thus from this cursor.
@@ -68,13 +71,14 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
 
     Value propertyValue( int offset );
 
+    void setRead( Read read, Resource resource );
+
     class Empty implements NodeValueIndexCursor
     {
 
         @Override
         public void node( NodeCursor cursor )
         {
-
         }
 
         @Override
@@ -123,6 +127,28 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
         public Value propertyValue( int offset )
         {
             return NO_VALUE;
+        }
+
+        @Override
+        public void setRead( Read read, Resource resource )
+        {
+        }
+
+        @Override
+        public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+        {
+        }
+
+        @Override
+        public boolean acceptEntity( long reference, float score, Value... values )
+        {
+            return false;
+        }
+
+        @Override
+        public boolean needsValues()
+        {
+            return false;
         }
     }
 

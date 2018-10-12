@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.Analyzer;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.Collection;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
@@ -41,18 +41,18 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     private final Analyzer analyzer;
     private final String identifier;
     private final EntityType type;
-    private final Collection<String> properties;
     private final TokenHolder propertyKeyTokenHolder;
     private final File transactionsFolder;
+    private final FulltextIndexDescriptor descriptor;
 
     LuceneFulltextIndex( PartitionedIndexStorage storage, IndexPartitionFactory partitionFactory, FulltextIndexDescriptor descriptor,
             TokenHolder propertyKeyTokenHolder )
     {
         super( storage, partitionFactory, descriptor );
+        this.descriptor = descriptor;
         this.analyzer = descriptor.analyzer();
         this.identifier = descriptor.getName();
         this.type = descriptor.schema().entityType();
-        this.properties = descriptor.propertyNames();
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         File indexFolder = storage.getIndexFolder();
         transactionsFolder = new File( indexFolder.getParent(), indexFolder.getName() + ".tx" );
@@ -79,19 +79,20 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
                "analyzer=" + analyzer.getClass().getSimpleName() +
                ", identifier='" + identifier + '\'' +
                ", type=" + type +
-               ", properties=" + properties +
+               ", properties=" + Arrays.toString( descriptor.propertyNames() ) +
                ", descriptor=" + descriptor.userDescription( SchemaUtil.idTokenNameLookup ) +
                '}';
-    }
-
-    String[] getPropertiesArray()
-    {
-        return properties.toArray( new String[0] );
     }
 
     Analyzer getAnalyzer()
     {
         return analyzer;
+    }
+
+    @Override
+    public FulltextIndexDescriptor getDescriptor()
+    {
+        return descriptor;
     }
 
     TokenHolder getPropertyKeyTokenHolder()
@@ -104,13 +105,13 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
     {
         AbstractIndexPartition singlePartition = getFirstPartition( partitions );
         SearcherReference searcher = new PartitionSearcherReference( singlePartition.acquireSearcher() );
-        return new SimpleFulltextIndexReader( searcher, getPropertiesArray(), analyzer, propertyKeyTokenHolder );
+        return new SimpleFulltextIndexReader( searcher, propertyKeyTokenHolder, descriptor );
     }
 
     @Override
     protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
         List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedFulltextIndexReader( searchers, getPropertiesArray(), analyzer, propertyKeyTokenHolder );
+        return new PartitionedFulltextIndexReader( searchers, propertyKeyTokenHolder, getDescriptor() );
     }
 }

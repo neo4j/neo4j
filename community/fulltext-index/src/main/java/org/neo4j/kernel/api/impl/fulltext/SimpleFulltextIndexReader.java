@@ -33,6 +33,8 @@ import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.api.impl.schema.reader.IndexReaderCloseException;
 import org.neo4j.kernel.impl.core.TokenHolder;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -43,16 +45,14 @@ import org.neo4j.values.storable.Value;
 class SimpleFulltextIndexReader extends FulltextIndexReader
 {
     private final SearcherReference searcherRef;
-    private final Analyzer analyzer;
     private final TokenHolder propertyKeyTokenHolder;
-    private final String[] properties;
+    private final FulltextIndexDescriptor descriptor;
 
-    SimpleFulltextIndexReader( SearcherReference searcherRef, String[] properties, Analyzer analyzer, TokenHolder propertyKeyTokenHolder )
+    SimpleFulltextIndexReader( SearcherReference searcherRef, TokenHolder propertyKeyTokenHolder, FulltextIndexDescriptor descriptor )
     {
         this.searcherRef = searcherRef;
-        this.properties = properties;
-        this.analyzer = analyzer;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.descriptor = descriptor;
     }
 
     @Override
@@ -69,14 +69,19 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
     }
 
     @Override
-    public ScoreEntityIterator query( String queryString ) throws ParseException
+    protected String getPropertyKeyName( int propertyKey ) throws TokenNotFoundException
     {
-        MultiFieldQueryParser multiFieldQueryParser = new MultiFieldQueryParser( properties, analyzer );
-        Query query = multiFieldQueryParser.parse( queryString );
-        return indexQuery( query );
+        return propertyKeyTokenHolder.getTokenById( propertyKey ).name();
     }
 
-    private ScoreEntityIterator indexQuery( Query query )
+    @Override
+    protected FulltextIndexDescriptor getDescriptor()
+    {
+        return descriptor;
+    }
+
+    @Override
+    protected ScoreEntityIterator indexQuery( Query query )
     {
         try
         {
@@ -105,7 +110,7 @@ class SimpleFulltextIndexReader extends FulltextIndexReader
             String[] propertyKeys = new String[propertyKeyIds.length];
             for ( int i = 0; i < propertyKeyIds.length; i++ )
             {
-                propertyKeys[i] = propertyKeyTokenHolder.getTokenById( propertyKeyIds[i] ).name();
+                propertyKeys[i] = getPropertyKeyName( propertyKeyIds[i] );
             }
             Query query = LuceneFulltextDocumentStructure.newCountNodeEntriesQuery( nodeId, propertyKeys, propertyValues );
             TotalHitCountCollector collector = new TotalHitCountCollector();

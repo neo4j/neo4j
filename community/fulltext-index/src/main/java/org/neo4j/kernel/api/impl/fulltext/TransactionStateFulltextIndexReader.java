@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.queryparser.classic.ParseException;
+import org.apache.lucene.search.Query;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.asList;
@@ -43,12 +44,24 @@ class TransactionStateFulltextIndexReader extends FulltextIndexReader
     }
 
     @Override
-    public ScoreEntityIterator query( String query ) throws ParseException
+    protected ScoreEntityIterator indexQuery( Query query )
     {
-        ScoreEntityIterator iterator = baseReader.query( query );
+        ScoreEntityIterator iterator = baseReader.indexQuery( query );
         iterator = iterator.filter( entry -> !modifiedEntityIdsInThisTransaction.contains( entry.entityId() ) );
-        iterator = mergeIterators( asList( iterator, nearRealTimeReader.query( query ) ) );
+        iterator = mergeIterators( asList( iterator, nearRealTimeReader.indexQuery( query ) ) );
         return iterator;
+    }
+
+    @Override
+    protected String getPropertyKeyName( int propertyKey ) throws TokenNotFoundException
+    {
+        return baseReader.getPropertyKeyName( propertyKey );
+    }
+
+    @Override
+    protected FulltextIndexDescriptor getDescriptor()
+    {
+        return baseReader.getDescriptor();
     }
 
     @Override

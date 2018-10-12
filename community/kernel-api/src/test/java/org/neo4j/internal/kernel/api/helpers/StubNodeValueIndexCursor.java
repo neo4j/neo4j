@@ -22,11 +22,9 @@ package org.neo4j.internal.kernel.api.helpers;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.values.storable.Value;
 
-public class StubNodeValueIndexCursor implements NodeValueIndexCursor
+public class StubNodeValueIndexCursor extends NodeValueIndexCursorAdapter
 {
     private Iterator<Pair<Long,Value[]>> things;
     private Pair<Long,Value[]> current;
@@ -34,12 +32,6 @@ public class StubNodeValueIndexCursor implements NodeValueIndexCursor
     public StubNodeValueIndexCursor( Iterator<Pair<Long,Value[]>> things )
     {
         this.things = things;
-    }
-
-    @Override
-    public void node( NodeCursor cursor )
-    {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -66,12 +58,6 @@ public class StubNodeValueIndexCursor implements NodeValueIndexCursor
     }
 
     @Override
-    public int propertyKey( int offset )
-    {
-        return 0;
-    }
-
-    @Override
     public boolean hasValue()
     {
         return current.other() != null;
@@ -81,17 +67,5 @@ public class StubNodeValueIndexCursor implements NodeValueIndexCursor
     public Value propertyValue( int offset )
     {
         return current.other()[offset];
-    }
-
-    @Override
-    public void close()
-    {
-
-    }
-
-    @Override
-    public boolean isClosed()
-    {
-        return false;
     }
 }

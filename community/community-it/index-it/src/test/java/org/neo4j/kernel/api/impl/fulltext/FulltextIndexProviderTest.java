@@ -25,6 +25,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.Timeout;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -34,14 +37,21 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.internal.kernel.api.helpers.NodeValueIndexCursorAdapter;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
@@ -50,12 +60,15 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.VerboseTimeout;
+import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -347,6 +360,72 @@ public class FulltextIndexProviderTest
         }
     }
 
+    @Test
+    public void queryingWithIndexProgressorMustProvideScore() throws Exception
+    {
+        long nodeId = createTheThirdNode();
+        IndexReference indexReference;
+        indexReference = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
+        await( indexReference );
+        List<String> acceptedEntities = new ArrayList<>();
+        try ( KernelTransactionImplementation ktx = getKernelTransaction() )
+        {
+            NodeValueIndexCursor cursor = new NodeValueIndexCursorAdapter()
+            {
+                private long nodeReference;
+                private IndexProgressor progressor;
+
+                @Override
+                public long nodeReference()
+                {
+                    return nodeReference;
+                }
+
+                @Override
+                public boolean next()
+                {
+                    return progressor.next();
+                }
+
+                @Override
+                public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+                {
+                    this.progressor = progressor;
+                }
+
+                @Override
+                public boolean acceptEntity( long reference, float score, Value... values )
+                {
+                    this.nodeReference = reference;
+                    acceptedEntities.add( "reference = " + reference + ", score = " + score + ", " + Arrays.toString( values ) );
+                    return true;
+                }
+            };
+            int propertyKey = ktx.tokenRead().propertyKey( "hej" );
+            Read read = ktx.dataRead();
+            IndexQuery.ExactPredicate exactPredicate = IndexQuery.exact( propertyKey, "villa" );
+            read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, exactPredicate );
+            int counter = 0;
+            while ( cursor.next() )
+            {
+                assertThat( cursor.nodeReference(), is( nodeId ) );
+                counter++;
+            }
+            assertThat( counter, is( 1 ) );
+            assertThat( acceptedEntities.size(), is( 1 ) );
+            FulltextIndexProvider provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
+            ScoreEntityIterator query = provider.query( ktx, NAME, "hej:\"villa\"" );
+            counter = 0;
+            while ( query.hasNext() )
+            {
+                ScoreEntityIterator.ScoreEntry entry = query.next();
+                assertThat( entry.entityId(), is( nodeId ) );
+                counter++;
+            }
+            assertThat( counter, is( 1 ) );
+        }
+    }
+
     private KernelTransactionImplementation getKernelTransaction()
     {
         try
@@ -388,16 +467,16 @@ public class FulltextIndexProviderTest
 
     private long createTheThirdNode()
     {
-        long secondNodeId;
+        long nodeId;
         try ( Transaction transaction = db.beginTx() )
         {
             Node hej = db.createNode( label( "hej" ) );
-            secondNodeId = hej.getId();
+            nodeId = hej.getId();
             hej.setProperty( "hej", "villa" );
             hej.setProperty( "ho", "value3" );
             transaction.success();
         }
-        return secondNodeId;
+        return nodeId;
     }
 
     private void verifyNodeData( FulltextIndexProvider provider, long thirdNodeid ) throws Exception

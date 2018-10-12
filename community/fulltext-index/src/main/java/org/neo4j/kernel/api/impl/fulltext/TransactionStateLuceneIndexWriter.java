@@ -97,7 +97,7 @@ public class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Clo
         DirectoryReader directoryReader = DirectoryReader.open( writer, true );
         IndexSearcher searcher = new IndexSearcher( directoryReader );
         SearcherReference searcherRef = new DirectSearcherReference( searcher, directoryReader );
-        return new SimpleFulltextIndexReader( searcherRef, index.getPropertiesArray(), index.getAnalyzer(), index.getPropertyKeyTokenHolder() );
+        return new SimpleFulltextIndexReader( searcherRef, index.getPropertyKeyTokenHolder(), index.getDescriptor() );
     }
 
     @Override

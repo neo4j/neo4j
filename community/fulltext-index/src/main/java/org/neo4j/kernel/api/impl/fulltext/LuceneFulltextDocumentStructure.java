@@ -32,7 +32,6 @@ import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 
-import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.values.storable.TextValue;
@@ -59,7 +58,7 @@ public class LuceneFulltextDocumentStructure
         return doc;
     }
 
-    public static Document documentRepresentingProperties( long id, Collection<String> propertyNames, Value[] values )
+    public static Document documentRepresentingProperties( long id, String[] propertyNames, Value[] values )
     {
         DocWithId document = reuseDocument( id );
         document.setValues( propertyNames, values );
@@ -125,7 +124,7 @@ public class LuceneFulltextDocumentStructure
             idValueField.setLongValue( id );
         }
 
-        private void setValues( Collection<String> names, Value[] values )
+        private void setValues( String[] names, Value[] values )
         {
             int i = 0;
             for ( String name : names )

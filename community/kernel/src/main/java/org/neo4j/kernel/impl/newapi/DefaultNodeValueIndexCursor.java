@@ -232,9 +232,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.values = values;
     }
 
-    public void setRead( Read read, Resource resource )
+    @Override
+    public void setRead( org.neo4j.internal.kernel.api.Read read, Resource resource )
     {
-        this.read = read;
+        this.read = (Read) read;
         this.resource = resource;
     }
 
