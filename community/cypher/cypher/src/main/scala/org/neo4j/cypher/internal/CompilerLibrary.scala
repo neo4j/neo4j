@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
+import org.neo4j.cypher.internal.compatibility.CypherCurrentCompiler
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap
 
@@ -49,6 +50,8 @@ class CompilerLibrary(factory: CompilerFactory) {
     val numClearedEntries =
       compilers.values().collect {
         case c: CachingPlanner[_] => c.clearCaches()
+        case c: CypherCurrentCompiler[_] if c.planner.isInstanceOf[CachingPlanner[_]] =>
+          c.planner.asInstanceOf[CachingPlanner[_]].clearCaches()
       }
 
     if (numClearedEntries.nonEmpty)
