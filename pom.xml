@@ -252,7 +252,7 @@
         <plugin>
           <groupId>org.revapi</groupId>
           <artifactId>revapi-maven-plugin</artifactId>
-          <version>0.10.4</version>
+          <version>0.10.5</version>
           <configuration>
             <versionFormat>^\d+\.\d+\.\d+$</versionFormat>
             <analysisConfiguration>
@@ -378,12 +378,12 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.18.0</version>
+              <version>0.18.1</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-basic-features</artifactId>
-              <version>0.7.3</version>
+              <version>0.7.4</version>
             </dependency>
           </dependencies>
           <executions>
