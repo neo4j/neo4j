@@ -25,7 +25,7 @@ import java.util.function.IntPredicate;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -38,7 +38,6 @@ import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.util.FeatureToggles;
-import org.neo4j.values.storable.Value;
 
 /**
  * Store view that will try to use label scan store {@link LabelScanStore} to produce the view unless label scan
@@ -136,8 +135,8 @@ public class DynamicIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public NodePropertyAccessor newPropertyAccessor()
     {
-        return neoStoreIndexStoreView.getNodePropertyValue( nodeId, propertyKeyId );
+        return neoStoreIndexStoreView.newPropertyAccessor();
     }
 }

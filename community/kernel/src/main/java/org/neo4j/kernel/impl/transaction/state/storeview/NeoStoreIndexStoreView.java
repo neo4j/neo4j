@@ -20,10 +20,10 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
@@ -41,8 +41,8 @@ import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
 import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.FORCE;
@@ -57,9 +57,10 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     protected final RelationshipStore relationshipStore;
     protected final LockService locks;
     private final CountsTracker counts;
+    private final Supplier<StorageReader> storageEngine;
     private final NeoStores neoStores;
 
-    public NeoStoreIndexStoreView( LockService locks, NeoStores neoStores )
+    public NeoStoreIndexStoreView( LockService locks, NeoStores neoStores, Supplier<StorageReader> storageEngine )
     {
         this.locks = locks;
         this.neoStores = neoStores;
@@ -67,6 +68,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.counts = neoStores.getCounts();
+        this.storageEngine = storageEngine;
     }
 
     @Override
@@ -149,26 +151,8 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     }
 
     @Override
-    public Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException
+    public NodePropertyAccessor newPropertyAccessor()
     {
-        NodeRecord node = nodeStore.getRecord( nodeId, nodeStore.newRecord(), FORCE );
-        if ( !node.inUse() )
-        {
-            throw new EntityNotFoundException( EntityType.NODE, nodeId );
-        }
-        long firstPropertyId = node.getNextProp();
-        if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
-        {
-            return Values.NO_VALUE;
-        }
-        for ( PropertyRecord propertyRecord : propertyStore.getPropertyRecordChain( firstPropertyId ) )
-        {
-            PropertyBlock propertyBlock = propertyRecord.getPropertyBlock( propertyKeyId );
-            if ( propertyBlock != null )
-            {
-                return propertyBlock.newPropertyValue( propertyStore );
-            }
-        }
-        return Values.NO_VALUE;
+        return new DefaultNodePropertyAccessor( storageEngine.get() );
     }
 }

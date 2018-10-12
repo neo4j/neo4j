@@ -43,6 +43,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -101,6 +102,7 @@ public class NeoStoreIndexStoreViewTest
     private Relationship aKnowsS;
     private Relationship sKnowsA;
     private StorageReader reader;
+    private NodePropertyAccessor propertyAccessor;
 
     @Before
     public void before() throws KernelException
@@ -110,7 +112,8 @@ public class NeoStoreIndexStoreViewTest
         createAlistairAndStefanNodes();
         getOrCreateIds();
 
-        neoStores = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+        RecordStorageEngine storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
+        neoStores = storageEngine.testAccessNeoStores();
 
         locks = mock( LockService.class );
         when( locks.acquireNodeLock( anyLong(), any() ) ).thenAnswer(
@@ -124,13 +127,15 @@ public class NeoStoreIndexStoreViewTest
             Long nodeId = invocation.getArgument( 0 );
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
-        storeView = new NeoStoreIndexStoreView( locks, neoStores );
-        reader = new RecordStorageReader( neoStores );
+        storeView = new NeoStoreIndexStoreView( locks, neoStores, storageEngine::newReader );
+        propertyAccessor = storeView.newPropertyAccessor();
+        reader = storageEngine.newReader();
     }
 
     @After
     public void after()
     {
+        propertyAccessor.close();
         reader.close();
     }
 
@@ -260,7 +265,7 @@ public class NeoStoreIndexStoreViewTest
     @Test
     public void shouldReadProperties() throws EntityNotFoundException
     {
-        Value value = storeView.getNodePropertyValue( alistair.getId(), propertyKeyId );
+        Value value = propertyAccessor.getNodePropertyValue( alistair.getId(), propertyKeyId );
         assertTrue( value.equals( Values.of( "Alistair" ) ) );
     }
 

@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface StorageRelationshipGroupCursor extends AutoCloseable
+public interface StorageRelationshipGroupCursor extends StorageCursor
 {
     int type();
 

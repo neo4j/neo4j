@@ -83,6 +83,7 @@ class LuceneSchemaIndexPopulatorTest
     private IndexSearcher searcher;
     private static final int propertyKeyId = 666;
     private StoreIndexDescriptor index;
+    private NodePropertyAccessor propertyAccessor;
 
     @BeforeEach
     void before() throws Exception
@@ -93,6 +94,7 @@ class LuceneSchemaIndexPopulatorTest
         provider = new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
         indexStoreView = mock( IndexStoreView.class );
+        propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         index = IndexDescriptorFactory.forSchema( forLabel( 42, propertyKeyId ), provider.getProviderDescriptor() ).withId( 0 );
         indexPopulator = provider.getPopulator( index, samplingConfig );
@@ -154,7 +156,7 @@ class LuceneSchemaIndexPopulatorTest
         addUpdate( indexPopulator, 1, "value" );
         addUpdate( indexPopulator, 2, "value" );
         addUpdate( indexPopulator, 3, "value" );
-        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "value" ) ), propertyAccessor );
 
         // THEN
         assertIndexedValues(
@@ -167,7 +169,7 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( change( 1, "1", "1a" ) ), propertyAccessor );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -184,7 +186,7 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( remove( 1, "1" ), add( 1, "1a" ) ), indexStoreView );
+        updatePopulator( indexPopulator, asList( remove( 1, "1" ), add( 1, "1a" ) ), propertyAccessor );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -201,7 +203,7 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ), indexStoreView );
+        updatePopulator( indexPopulator, singletonList( remove( 2, "2" ) ), propertyAccessor );
         addUpdate( indexPopulator, 3, "3" );
 
         // THEN
@@ -217,10 +219,10 @@ class LuceneSchemaIndexPopulatorTest
         // WHEN
         addUpdate( indexPopulator, 1, "1" );
         addUpdate( indexPopulator, 2, "2" );
-        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), indexStoreView );
+        updatePopulator( indexPopulator, asList( change( 1, "1", "1a" ), change( 2, "2", "2a" ) ), propertyAccessor );
         addUpdate( indexPopulator, 3, "3" );
         addUpdate( indexPopulator, 4, "4" );
-        updatePopulator( indexPopulator, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), indexStoreView );
+        updatePopulator( indexPopulator, asList( change( 1, "1a", "1b" ), change( 4, "4", "4a" ) ), propertyAccessor );
 
         // THEN
         assertIndexedValues(

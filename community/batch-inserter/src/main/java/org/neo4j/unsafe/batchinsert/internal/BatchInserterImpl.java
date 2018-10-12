@@ -297,7 +297,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         monitors = new Monitors();
 
-        storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
+        storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores, () -> new RecordStorageReader( neoStores ) );
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
         deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );

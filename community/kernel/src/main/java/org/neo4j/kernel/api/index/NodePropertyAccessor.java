@@ -22,10 +22,18 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.values.storable.Value;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
+
 /**
  * Used by the {@link IndexPopulator} for verifying constraints, if need be.
  */
-public interface NodePropertyAccessor
+public interface NodePropertyAccessor extends AutoCloseable
 {
+    NodePropertyAccessor EMPTY = ( nodeId, propertyKeyId ) -> NO_VALUE;
+
     Value getNodePropertyValue( long nodeId, int propertyKeyId ) throws EntityNotFoundException;
+
+    default void close()
+    {
+    }
 }

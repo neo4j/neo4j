@@ -65,7 +65,7 @@ public abstract class NativeIndexPopulatorTests<KEY extends NativeIndexKey<KEY>,
         extends NativeIndexTestUtil<KEY,VALUE>
 {
     private static final int LARGE_AMOUNT_OF_UPDATES = 1_000;
-    static final NodePropertyAccessor null_property_accessor = ( nodeId, propKeyId ) ->
+    static final NodePropertyAccessor null_property_accessor = ( nodeId, propertyKeyId ) ->
     {
         throw new RuntimeException( "Did not expect an attempt to go to store" );
     };

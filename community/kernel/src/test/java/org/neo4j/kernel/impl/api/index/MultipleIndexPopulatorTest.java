@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Answers;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
@@ -31,12 +29,14 @@ import java.io.UncheckedIOException;
 import java.util.concurrent.Callable;
 import java.util.function.IntPredicate;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.FlipFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 
 import static org.junit.Assert.assertFalse;
@@ -71,16 +71,19 @@ import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 public class MultipleIndexPopulatorTest
 {
     private final LabelSchemaDescriptor index1 = SchemaDescriptorFactory.forLabel( 1, 1 );
-    @Mock
     private IndexStoreView indexStoreView;
-    @Mock
-    private StoreScan storeScan;
-    @Mock( answer = Answers.RETURNS_MOCKS )
     private LogProvider logProvider;
-    @Mock
     private SchemaState schemaState;
-    @InjectMocks
     private MultipleIndexPopulator multipleIndexPopulator;
+
+    @Before
+    public void before()
+    {
+        indexStoreView = mock( IndexStoreView.class );
+        when( indexStoreView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
+        schemaState = mock( SchemaState.class );
+        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState );
+    }
 
     @Test
     public void canceledPopulationNotAbleToCreateNewIndex() throws FlipFailedKernelException

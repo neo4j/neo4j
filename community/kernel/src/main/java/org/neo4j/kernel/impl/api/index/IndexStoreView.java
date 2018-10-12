@@ -29,11 +29,9 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.util.VisibleForTesting;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 /** The indexing services view of the universe. */
-public interface IndexStoreView extends NodePropertyAccessor
+public interface IndexStoreView
 {
     /**
      * Retrieve all nodes in the database which has got one or more of the given labels AND
@@ -84,6 +82,8 @@ public interface IndexStoreView extends NodePropertyAccessor
 
     void incrementIndexUpdates( long indexId, long updatesDelta );
 
+    NodePropertyAccessor newPropertyAccessor();
+
     @SuppressWarnings( "rawtypes" )
     StoreScan EMPTY_SCAN = new StoreScan()
     {
@@ -114,12 +114,6 @@ public interface IndexStoreView extends NodePropertyAccessor
 
     class Adaptor implements IndexStoreView
     {
-        @Override
-        public Value getNodePropertyValue( long nodeId, int propertyKeyId )
-        {
-            return Values.NO_VALUE;
-        }
-
         @SuppressWarnings( "unchecked" )
         @Override
         public <FAILURE extends Exception> StoreScan<FAILURE> visitNodes( int[] labelIds,
@@ -164,6 +158,12 @@ public interface IndexStoreView extends NodePropertyAccessor
         @Override
         public void incrementIndexUpdates( long indexId, long updatesDelta )
         {
+        }
+
+        @Override
+        public NodePropertyAccessor newPropertyAccessor()
+        {
+            return NodePropertyAccessor.EMPTY;
         }
     }
 }

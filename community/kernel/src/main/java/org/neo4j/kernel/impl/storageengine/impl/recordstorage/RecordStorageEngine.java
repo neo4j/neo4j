@@ -190,7 +190,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
             schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
 
-            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores );
+            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores, this::newReader );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
             labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),

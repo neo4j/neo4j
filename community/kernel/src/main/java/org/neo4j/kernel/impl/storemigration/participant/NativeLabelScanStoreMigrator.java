@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
@@ -128,7 +129,7 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     private NativeLabelScanStore getNativeLabelScanStore( DatabaseLayout migrationDirectoryStructure,
             ProgressReporter progressReporter, NeoStores neoStores )
     {
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores );
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores, () -> new RecordStorageReader( neoStores ) );
         return new NativeLabelScanStore( pageCache, migrationDirectoryStructure, fileSystem,
                 new MonitoredFullLabelStream( neoStoreIndexStoreView, progressReporter ), false, new Monitors(),
                 RecoveryCleanupWorkCollector.immediate() );

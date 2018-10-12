@@ -28,6 +28,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
@@ -78,7 +79,7 @@ public class MultipleIndexPopulatorUpdatesTest
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
 
         ProcessListenableNeoStoreIndexView
-                storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores );
+                storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores, () -> mock( StorageReader.class ) );
         MultipleIndexPopulator indexPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ) );
 
@@ -149,9 +150,9 @@ public class MultipleIndexPopulatorUpdatesTest
         private Listener<StorageNodeCursor> processListener;
         private NeoStores neoStores;
 
-        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores )
+        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores, Supplier<StorageReader> storageReaderSupplier )
         {
-            super( locks, neoStores );
+            super( locks, neoStores, storageReaderSupplier );
             this.neoStores = neoStores;
         }
 

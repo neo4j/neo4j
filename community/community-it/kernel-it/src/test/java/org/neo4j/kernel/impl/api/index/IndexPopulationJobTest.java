@@ -364,6 +364,7 @@ public class IndexPopulationJobTest
                 ArgumentMatchers.any(),
                 ArgumentMatchers.<Visitor<NodeLabelUpdate,RuntimeException>>any(), anyBoolean() ) )
                 .thenReturn(storeScan );
+        when( storeView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
 
         final IndexPopulationJob job =
                 newIndexPopulationJob( populator, index, storeView, NullLogProvider.getInstance(), EntityType.NODE, indexDescriptor( FIRST, name, false ) );

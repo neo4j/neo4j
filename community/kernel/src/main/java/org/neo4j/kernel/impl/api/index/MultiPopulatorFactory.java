@@ -37,8 +37,8 @@ public abstract class MultiPopulatorFactory
     {
     }
 
-    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider,
-                                                   EntityType type, SchemaState schemaState );
+    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type,
+            SchemaState schemaState );
 
     public static MultiPopulatorFactory forConfig( Config config )
     {
@@ -49,8 +49,8 @@ public abstract class MultiPopulatorFactory
     private static class SingleThreadedPopulatorFactory extends MultiPopulatorFactory
     {
         @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider,
-                                              EntityType type, SchemaState schemaState )
+        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type,
+                SchemaState schemaState )
         {
             return new MultipleIndexPopulator( storeView, logProvider, type, schemaState );
         }
@@ -59,8 +59,8 @@ public abstract class MultiPopulatorFactory
     private static class MultiThreadedPopulatorFactory extends MultiPopulatorFactory
     {
         @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider,
-                                              EntityType type, SchemaState schemaState )
+        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type,
+                SchemaState schemaState )
         {
             return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState );
         }

@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -143,7 +144,7 @@ public class DynamicIndexStoreViewTest
     private DynamicIndexStoreView dynamicIndexStoreView()
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
-        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, neoStores ), labelScanStore,
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, neoStores, () -> mock( StorageReader.class ) ), labelScanStore,
                 locks, neoStores, NullLogProvider.getInstance() );
     }
 

@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
@@ -560,7 +561,8 @@ public class FullCheckIntegrationTest
         Iterator<StoreIndexDescriptor> indexDescriptorIterator =
                 new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
-                fixture.directStoreAccess().nativeStores().getRawNeoStores() );
+                fixture.directStoreAccess().nativeStores().getRawNeoStores(),
+                () -> new RecordStorageReader( fixture.directStoreAccess().nativeStores().getRawNeoStores() ) );
         while ( indexDescriptorIterator.hasNext() )
         {
             StoreIndexDescriptor indexDescriptor = indexDescriptorIterator.next();

@@ -68,6 +68,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -178,6 +179,7 @@ public class IndexingServiceTest
     private final IndexProvider indexProvider = mock( IndexProvider.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class, RETURNS_MOCKS );
     private final IndexStoreView storeView  = mock( IndexStoreView.class );
+    private final NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
     private final TokenNameLookup nameLookup = mock( TokenNameLookup.class );
     private final AssertableLogProvider internalLogProvider = new AssertableLogProvider();
     private final AssertableLogProvider userLogProvider = new AssertableLogProvider();
@@ -188,6 +190,7 @@ public class IndexingServiceTest
         when( populator.sampleResult() ).thenReturn( new IndexSample() );
         when( storeView.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArgument( 1 ) );
+        when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
     }
 
     @Test
@@ -255,7 +258,7 @@ public class IndexingServiceTest
     public void shouldDeliverUpdatesThatOccurDuringPopulationToPopulator() throws Exception
     {
         // given
-        when( populator.newPopulatingUpdater( storeView ) ).thenReturn( updater );
+        when( populator.newPopulatingUpdater( propertyAccessor ) ).thenReturn( updater );
 
         CountDownLatch populationLatch = new CountDownLatch( 1 );
 
@@ -312,7 +315,7 @@ public class IndexingServiceTest
         order.verify( populator ).create();
         order.verify( populator ).includeSample( add( 1, "value1" ) );
         order.verify( populator, times( 3 ) ).add( any( Collection.class ) );
-        order.verify( populator ).newPopulatingUpdater( storeView );
+        order.verify( populator ).newPopulatingUpdater( propertyAccessor );
         order.verify( updater ).close();
         order.verify( populator ).sampleResult();
         order.verify( populator ).close( true );

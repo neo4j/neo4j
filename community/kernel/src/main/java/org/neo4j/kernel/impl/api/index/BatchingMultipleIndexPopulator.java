@@ -75,13 +75,13 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
 
     /**
      * Creates a new multi-threaded populator for the given store view.
-     *  @param storeView the view of the store as a visitable of nodes
+     *
+     * @param storeView the view of the store as a visitable of nodes
      * @param logProvider the log provider
      * @param type entity type to populate
      * @param schemaState the schema state
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type,
-                                    SchemaState schemaState )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
     {
         super( storeView, logProvider, type, schemaState );
         this.executor = createThreadPool();
@@ -97,8 +97,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param logProvider the log provider
      * @param schemaState the schema state
      */
-    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider,
-                                    SchemaState schemaState )
+    BatchingMultipleIndexPopulator( IndexStoreView storeView, ExecutorService executor, LogProvider logProvider, SchemaState schemaState )
     {
         super( storeView, logProvider, EntityType.NODE, schemaState );
         this.executor = executor;

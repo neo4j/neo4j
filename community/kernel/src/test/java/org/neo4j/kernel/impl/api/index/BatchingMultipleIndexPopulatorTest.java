@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelExceptio
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Values;
 
@@ -115,7 +117,7 @@ public class BatchingMultipleIndexPopulatorTest
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
 
         NeoStoreIndexStoreView storeView =
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores );
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores, () -> mock( StorageReader.class ) );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
                 storeView, immediateExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ) );
 
@@ -171,6 +173,7 @@ public class BatchingMultipleIndexPopulatorTest
     public void executorForcefullyShutdownIfStoreScanFails() throws Exception
     {
         IndexStoreView storeView = mock( IndexStoreView.class );
+        when( storeView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
         StoreScan<Exception> failingStoreScan = mock( StoreScan.class );
         RuntimeException scanError = new RuntimeException();
         doThrow( scanError ).when( failingStoreScan ).run();
@@ -373,6 +376,7 @@ public class BatchingMultipleIndexPopulatorTest
             Visitor<EntityUpdates,IndexPopulationFailedKernelException> visitorArg = invocation.getArgument( 2 );
             return new IndexEntryUpdateScan( updates, visitorArg );
         } );
+        when( storeView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
         return storeView;
     }
 

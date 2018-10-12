@@ -102,6 +102,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     final List<IndexPopulation> populations = new CopyOnWriteArrayList<>();
 
     private final IndexStoreView storeView;
+    private final NodePropertyAccessor propertyAccessor;
     private final LogProvider logProvider;
     protected final Log log;
     private final EntityType type;
@@ -111,6 +112,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
     {
         this.storeView = storeView;
+        this.propertyAccessor = storeView.newPropertyAccessor();
         this.logProvider = logProvider;
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
@@ -273,6 +275,7 @@ public class MultipleIndexPopulator implements IndexPopulator
     public void close( boolean populationCompletedSuccessfully )
     {
         // closing the populators happens in flip, fail or individually when they are completed
+        propertyAccessor.close();
     }
 
     @Override
@@ -384,7 +387,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             // This is because 'currentlyIndexedNodeId' is based on how far the scan has come.
             flushAll();
 
-            try ( MultipleIndexUpdater updater = newPopulatingUpdater( storeView ) )
+            try ( MultipleIndexUpdater updater = newPopulatingUpdater( propertyAccessor ) )
             {
                 do
                 {
@@ -570,7 +573,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                         {
                             if ( verifyBeforeFlipping )
                             {
-                                populator.verifyDeferredConstraints( storeView );
+                                populator.verifyDeferredConstraints( propertyAccessor );
                             }
                             IndexSample sample = populator.sampleResult();
                             storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
