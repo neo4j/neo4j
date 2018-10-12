@@ -141,7 +141,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     }
 
     @Override
-    public void close()
+    public void reset()
     {
         if ( open )
         {
@@ -351,7 +351,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     }
 
     @Override
-    public void release()
+    public void close()
     {
         if ( stringPage != null )
         {

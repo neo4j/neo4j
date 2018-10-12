@@ -47,7 +47,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( getId() != NO_ID )
         {
-            reset();
+            resetState();
         }
         if ( pageCursor == null )
         {
@@ -64,7 +64,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( getId() != NO_ID )
         {
-            reset();
+            resetState();
         }
         if ( pageCursor == null )
         {
@@ -134,7 +134,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     {
         if ( next == NO_ID )
         {
-            reset();
+            resetState();
             return false;
         }
 
@@ -185,16 +185,16 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void close()
+    public void reset()
     {
         if ( open )
         {
             open = false;
-            reset();
+            resetState();
         }
     }
 
-    private void reset()
+    private void resetState()
     {
         next = NO_ID;
         setId( NO_ID );
@@ -223,7 +223,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void release()
+    public void close()
     {
         if ( pageCursor != null )
         {

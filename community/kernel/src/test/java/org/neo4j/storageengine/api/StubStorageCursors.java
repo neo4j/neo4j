@@ -547,7 +547,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void close()
+        public void reset()
         {
             iterator = null;
             current = null;
@@ -560,8 +560,9 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void release()
+        public void close()
         {
+            reset();
         }
     }
 
@@ -655,15 +656,16 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void close()
+        public void reset()
         {
             current = null;
             next = NO_ID;
         }
 
         @Override
-        public void release()
+        public void close()
         {
+            reset();
         }
     }
 
@@ -703,7 +705,7 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void release()
+        public void reset()
         {
         }
 
