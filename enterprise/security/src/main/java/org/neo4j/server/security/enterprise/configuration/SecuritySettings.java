@@ -59,10 +59,8 @@ import static org.neo4j.kernel.impl.proc.ProcedureConfig.PROC_ALLOWED_SETTING_RO
 @Description( "Security configuration settings" )
 public class SecuritySettings implements LoadableConfig
 {
-    public static final String SYSTEM_GRAPH_REALM_NAME = "system-graph";
-    @Deprecated
-    @ReplacedBy( SYSTEM_GRAPH_REALM_NAME )
     public static final String NATIVE_REALM_NAME = "native";
+    public static final String SYSTEM_GRAPH_REALM_NAME = "system-graph";
     public static final String LDAP_REALM_NAME = "ldap";
     public static final String PLUGIN_REALM_NAME_PREFIX = "plugin-";
 
@@ -71,11 +69,9 @@ public class SecuritySettings implements LoadableConfig
     //=========================================================================
 
     @Description( "The authentication and authorization provider that contains both the users and roles. " +
-                  "This can be one of the built-in `" + NATIVE_REALM_NAME + "`, `" + SYSTEM_GRAPH_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` providers, " +
+                  "This can be one of the built-in `" + NATIVE_REALM_NAME + "` or `" + LDAP_REALM_NAME + "` providers, " +
                   "or it can be an externally provided plugin, with a custom name prefixed by `" +
-                  PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<AUTH_PROVIDER_NAME>`. " +
-                  "The " + NATIVE_REALM_NAME + "option is deprecated and will be replaced by " + SYSTEM_GRAPH_REALM_NAME +
-                  " (available for Commercial Edition only) in the next major release." )
+                  PLUGIN_REALM_NAME_PREFIX + "`, i.e. `" + PLUGIN_REALM_NAME_PREFIX + "<AUTH_PROVIDER_NAME>`. " )
     public static final Setting<String> auth_provider =
             setting( "dbms.security.auth_provider", STRING, NATIVE_REALM_NAME );
 
