@@ -48,9 +48,6 @@ public class SchemaCalculator
 {
     private Map<Integer,String> propertyIdToPropertyNameMapping;
 
-    private NodeMappings nodeMappings;
-    private RelationshipMappings relMappings;
-
     private final MutableIntSet emptyPropertyIdSet = IntSets.mutable.empty();
 
     private final Read dataRead;
@@ -68,42 +65,42 @@ public class SchemaCalculator
         addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertyNameMapping );
     }
 
-    private void initializeMappingsForNodes()
+    private NodeMappings initializeMappingsForNodes()
     {
         int labelCount = tokenRead.labelCount();
-        nodeMappings = new NodeMappings( labelCount );
+        return new NodeMappings( labelCount );
     }
 
-    private void initializeMappingsForRels()
+    private RelationshipMappings initializeMappingsForRels()
     {
         int relationshipTypeCount = tokenRead.relationshipTypeCount();
-        relMappings = new RelationshipMappings( relationshipTypeCount );
+        return new RelationshipMappings( relationshipTypeCount );
     }
 
     // If we would have this schema information in the count store (or somewhere), this could be super fast
     public Stream<NodePropertySchemaInfoResult> calculateTabularResultStreamForNodes()
     {
-        initializeMappingsForNodes();
-        scanEverythingBelongingToNodes();
+        NodeMappings nodeMappings = initializeMappingsForNodes();
+        scanEverythingBelongingToNodes(nodeMappings);
 
         // go through all labels to get actual names
         addNamesToCollection( tokenRead.labelsGetAllTokens(), nodeMappings.labelIdToLabelName );
 
-        return produceResultsForNodes().stream();
+        return produceResultsForNodes(nodeMappings).stream();
     }
 
     public Stream<RelationshipPropertySchemaInfoResult> calculateTabularResultStreamForRels()
     {
-        initializeMappingsForRels();
-        scanEverythingBelongingToRelationships( );
+        RelationshipMappings relMappings = initializeMappingsForRels();
+        scanEverythingBelongingToRelationships( relMappings );
 
         // go through all relationshipTypes to get actual names
         addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relMappings.relationshipTypIdToRelationshipName );
 
-        return produceResultsForRelationships().stream();
+        return produceResultsForRelationships( relMappings ).stream();
     }
 
-    private List<RelationshipPropertySchemaInfoResult> produceResultsForRelationships()
+    private List<RelationshipPropertySchemaInfoResult> produceResultsForRelationships( RelationshipMappings relMappings )
     {
         List<RelationshipPropertySchemaInfoResult> results = new ArrayList<>();
         for ( Integer typeId : relMappings.relationshipTypeIdToPropertyKeys.keySet() )
@@ -139,7 +136,7 @@ public class SchemaCalculator
         return results;
     }
 
-    private List<NodePropertySchemaInfoResult> produceResultsForNodes()
+    private List<NodePropertySchemaInfoResult> produceResultsForNodes( NodeMappings nodeMappings )
     {
         List<NodePropertySchemaInfoResult> results = new ArrayList<>();
         for ( SortedLabels labelSet : nodeMappings.labelSetToPropertyKeys.keySet() )
@@ -193,7 +190,7 @@ public class SchemaCalculator
         return results;
     }
 
-    private void scanEverythingBelongingToRelationships( )
+    private void scanEverythingBelongingToRelationships( RelationshipMappings relMappings )
     {
         try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor();
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
@@ -252,7 +249,7 @@ public class SchemaCalculator
         }
     }
 
-    private void scanEverythingBelongingToNodes( )
+    private void scanEverythingBelongingToNodes( NodeMappings nodeMappings )
     {
         try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )

@@ -296,7 +296,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithNodes() throws Throwable
+    public void testWithAllDifferentNodes() throws Throwable
     {
         // Given
 
@@ -403,7 +403,7 @@ public class BuiltInSchemaProceduresIT extends KernelIntegrationTest
     }
 
     @Test
-    public void testWithRelationships() throws Throwable
+    public void testWithAllDifferentRelationships() throws Throwable
     {
         // Given
 
