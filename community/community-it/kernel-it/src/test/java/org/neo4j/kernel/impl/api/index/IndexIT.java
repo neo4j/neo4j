@@ -43,7 +43,6 @@ import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
@@ -63,7 +62,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
@@ -197,9 +195,8 @@ public class IndexIT extends KernelIntegrationTest
     public void shouldBeAbleToRemoveAConstraintIndexWithoutOwner() throws Exception
     {
         // given
-        NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, propertyAccessor, logProvider );
+        ConstraintIndexCreator creator = new ConstraintIndexCreator( () -> kernel, indexingService, logProvider );
 
         String defaultProvider = Config.defaults().get( default_schema_provider );
         IndexReference constraintIndex = creator.createConstraintIndex( descriptor, defaultProvider );

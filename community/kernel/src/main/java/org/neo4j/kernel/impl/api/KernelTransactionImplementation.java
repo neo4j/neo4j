@@ -1084,6 +1084,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return clientInfo;
     }
 
+    public StorageReader newStorageReader()
+    {
+        return storageEngine.newReader();
+    }
+
     public static class Statistics
     {
         private volatile long cpuTimeNanosWhenQueryStarted;

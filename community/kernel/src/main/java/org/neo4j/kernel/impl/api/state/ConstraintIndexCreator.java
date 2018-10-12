@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.locking.Locks.Client;
+import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -61,15 +62,12 @@ public class ConstraintIndexCreator
 {
     private final IndexingService indexingService;
     private final Supplier<Kernel> kernelSupplier;
-    private final NodePropertyAccessor nodePropertyAccessor;
     private final Log log;
 
-    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService,
-            NodePropertyAccessor nodePropertyAccessor, LogProvider logProvider )
+    public ConstraintIndexCreator( Supplier<Kernel> kernelSupplier, IndexingService indexingService, LogProvider logProvider )
     {
         this.kernelSupplier = kernelSupplier;
         this.indexingService = indexingService;
-        this.nodePropertyAccessor = nodePropertyAccessor;
         this.log = logProvider.getLog( ConstraintIndexCreator.class );
     }
 
@@ -138,7 +136,10 @@ public class ConstraintIndexCreator
             locks.acquireExclusive( transaction.lockTracer(), descriptor.keyType(), descriptor.keyId() );
             reacquiredLabelLock = true;
 
-            indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( nodePropertyAccessor );
+            try ( NodePropertyAccessor propertyAccessor = new DefaultNodePropertyAccessor( transaction.newStorageReader() ) )
+            {
+                indexingService.getIndexProxy( indexId ).verifyDeferredConstraints( propertyAccessor );
+            }
             log.info( "Constraint %s verified.", constraint.ownedIndexDescriptor() );
             success = true;
             return indexId;
