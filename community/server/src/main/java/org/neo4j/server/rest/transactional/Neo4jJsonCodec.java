@@ -139,7 +139,7 @@ public class Neo4jJsonCodec extends ObjectMapper
         {
             super.writeValue( out, value.toString() );
         }
-        else if ( value.getClass().isArray() && supportedArrayType( value.getClass().getComponentType() ) )
+        else if ( value != null && value.getClass().isArray() && supportedArrayType( value.getClass().getComponentType() ) )
         {
             writeReflectiveArray( out, value );
         }

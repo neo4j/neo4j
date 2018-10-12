@@ -20,6 +20,7 @@
 package org.neo4j.server.rest.transactional.integration;
 
 import org.codehaus.jackson.JsonNode;
+import org.junit.After;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
@@ -44,10 +45,18 @@ import static org.neo4j.values.storable.Values.pointValue;
 
 public class PointTypeIT extends AbstractRestFunctionalTestBase
 {
+    @After
+    public void tearDown()
+    {
+        // empty the database
+        graphdb().execute( "MATCH (n) DETACH DELETE n" );
+    }
+
     @Test
     public void shouldWorkWithPoint2DArrays() throws Exception
     {
-        HTTP.Response response = runQuery( "create (:Node {points: [point({x:1, y:1}), point({x:2, y:2}), point({x: 3.0, y: 3.0})]})" );
+        HTTP.Response response =
+                runQuery( "create (:Node {points: [point({x:1, y:1}), point({x:2, y:2}), point({x: 3.0, y: 3.0})]})" );
 
         assertEquals( 200, response.status() );
         assertNoErrors( response );

@@ -24,8 +24,6 @@ import java.time.temporal.TemporalAmount;
 
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.spatial.CRS;
-import org.neo4j.graphdb.spatial.Coordinate;
-import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;
 
@@ -78,7 +76,6 @@ public final class PropertiesRepresentation extends MappingRepresentation
         protected Void dispatchPointProperty( Point property, String param )
         {
             MappingWriter pointWriter = writer.newMapping( RepresentationType.POINT, param );
-
             writePoint( pointWriter, property );
             pointWriter.done();
             return null;

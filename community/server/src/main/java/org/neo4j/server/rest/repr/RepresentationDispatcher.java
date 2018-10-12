@@ -180,7 +180,7 @@ public abstract class RepresentationDispatcher extends PropertyTypeDispatcher<St
 
     @Override
     @SuppressWarnings( "boxing" )
-    protected Representation dispatchDoubleArrayProperty( PropertyArray<double[], Double> array, String parfam )
+    protected Representation dispatchDoubleArrayProperty( PropertyArray<double[], Double> array, String param )
     {
         ArrayList<Representation> values = new ArrayList<>();
         for ( Double z : array )
