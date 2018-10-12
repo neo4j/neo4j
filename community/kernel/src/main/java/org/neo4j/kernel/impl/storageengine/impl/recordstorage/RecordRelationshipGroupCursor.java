@@ -170,7 +170,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     }
 
     @Override
-    public void close()
+    public void reset()
     {
         if ( open )
         {
@@ -320,7 +320,7 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     }
 
     @Override
-    public void release()
+    public void close()
     {
         if ( edgePage != null )
         {

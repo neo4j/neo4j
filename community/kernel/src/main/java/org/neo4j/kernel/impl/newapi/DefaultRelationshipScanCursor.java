@@ -144,6 +144,6 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
 
     public void release()
     {
-        storeCursor.release();
+        storeCursor.close();
     }
 }

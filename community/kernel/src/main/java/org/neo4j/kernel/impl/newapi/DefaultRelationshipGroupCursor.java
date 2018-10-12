@@ -152,7 +152,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         if ( !isClosed() )
         {
             read = null;
-            storeCursor.close();
+            storeCursor.reset();
 
             if ( pool != null )
             {
@@ -255,6 +255,6 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
 
     public void release()
     {
-        storeCursor.release();
+        storeCursor.close();
     }
 }

@@ -51,7 +51,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     {
         if ( getId() != NO_ID )
         {
-            reset();
+            resetState();
         }
         if ( pageCursor == null )
         {
@@ -69,7 +69,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     {
         if ( getId() != NO_ID )
         {
-            reset();
+            resetState();
         }
         if ( pageCursor == null )
         {
@@ -87,7 +87,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     {
         if ( next == NO_ID )
         {
-            reset();
+            resetState();
             return false;
         }
 
@@ -136,16 +136,16 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     }
 
     @Override
-    public void close()
+    public void reset()
     {
         if ( open )
         {
             open = false;
-            reset();
+            resetState();
         }
     }
 
-    private void reset()
+    private void resetState()
     {
         setId( next = NO_ID );
     }
@@ -170,7 +170,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     }
 
     @Override
-    public void release()
+    public void close()
     {
         if ( pageCursor != null )
         {

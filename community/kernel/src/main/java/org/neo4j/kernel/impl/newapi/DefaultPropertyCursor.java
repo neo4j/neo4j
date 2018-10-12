@@ -168,7 +168,7 @@ public class DefaultPropertyCursor implements PropertyCursor
             txStateChangedProperties = null;
             txStateValue = null;
             read = null;
-            storeCursor.close();
+            storeCursor.reset();
 
             pool.accept( this );
         }
@@ -230,6 +230,6 @@ public class DefaultPropertyCursor implements PropertyCursor
 
     public void release()
     {
-        storeCursor.release();
+        storeCursor.close();
     }
 }

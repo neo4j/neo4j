@@ -380,7 +380,7 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
 
     public void release()
     {
-        storeCursor.release();
+        storeCursor.close();
     }
 
     @Override

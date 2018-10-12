@@ -21,11 +21,6 @@ package org.neo4j.storageengine.api;
 
 public interface StorageRelationshipGroupCursor extends AutoCloseable
 {
-    boolean next();
-
-    @Override
-    void close();
-
     int type();
 
     int outgoingCount();
@@ -48,8 +43,6 @@ public interface StorageRelationshipGroupCursor extends AutoCloseable
      * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
      */
     long loopsReference();
-
-    void release();
 
     long getOwningNode();
 
