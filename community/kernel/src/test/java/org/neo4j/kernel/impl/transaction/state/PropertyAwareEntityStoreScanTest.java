@@ -32,16 +32,12 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReade
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.transaction.state.storeview.PropertyAwareEntityStoreScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -66,12 +62,6 @@ public class PropertyAwareEntityStoreScanTest
         // given
         long total = 10;
         when( nodeStore.getHighId() ).thenReturn( total );
-        NodeRecord emptyRecord = new NodeRecord( 0 );
-        NodeRecord inUseRecord = new NodeRecord( 42 );
-        inUseRecord.setInUse( true );
-        when( nodeStore.newRecord() ).thenReturn( emptyRecord );
-        when( nodeStore.getRecord( anyLong(), any( NodeRecord.class ), any( RecordLoad.class ) ) ).thenReturn( inUseRecord, inUseRecord, inUseRecord,
-                inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord, inUseRecord );
 
         final PercentageSupplier percentageSupplier = new PercentageSupplier();
         final PropertyAwareEntityStoreScan<StorageNodeCursor,RuntimeException> scan =
