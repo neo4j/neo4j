@@ -29,9 +29,9 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPlanningTestSupport with CardinalityModelTestHelper {
 
   val allNodes = 733.0
-  val personCount = 324
-  val relCount = 50
-  val rel2Count = 78
+  val personCount = 324.0
+  val relCount = 50.0
+  val rel2Count = 78.0
 
   test("query containing a WITH and LIMIT on low/fractional cardinality") {
     val i = .1
@@ -40,8 +40,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), 10.0) *
-          allNodes * (relCount / (i * allNodes))
+        Math.min(i, 10.0) * relCount / i
       )
   }
 
@@ -52,8 +51,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), 10.0) *
-          allNodes * (relCount / (i * allNodes))
+        Math.min(i, 10.0) * relCount / i
       )
   }
 
@@ -64,8 +62,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withLabel('Person -> i).
       withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), DEFAULT_LIMIT_CARDINALITY) *
-          allNodes * (relCount / (i * allNodes))
+        Math.min(i, DEFAULT_LIMIT_CARDINALITY) * relCount / i
       )
   }
 
@@ -84,7 +81,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
     withLabel('Person -> personCount).
     withRelationshipCardinality('Person -> 'REL -> 'Person -> relCount).
     withRelationshipCardinality('Person -> 'REL2 -> 'Person -> rel2Count).
-    shouldHavePlannerQueryCardinality(createCardinalityModel)(aggregation * allNodes * relCount / (personCount * allNodes))
+    shouldHavePlannerQueryCardinality(createCardinalityModel)(aggregation * relCount / personCount)
   }
 
   test("aggregations should never increase cardinality") {
@@ -101,7 +98,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), 10.0)
+        Math.min(i, 10.0)
       )
   }
 
@@ -112,7 +109,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), 5.0)
+        Math.min(i, 5.0)
       )
   }
 
@@ -122,8 +119,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), 10.0) *
-          DEFAULT_EQUALITY_SELECTIVITY
+        Math.min(i, 10.0) * DEFAULT_EQUALITY_SELECTIVITY
       )
   }
 
@@ -133,8 +129,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.min(allNodes * (i / allNodes), DEFAULT_LIMIT_CARDINALITY) *
-          DEFAULT_EQUALITY_SELECTIVITY
+        Math.min(i, DEFAULT_LIMIT_CARDINALITY) * DEFAULT_EQUALITY_SELECTIVITY
       )
   }
 
@@ -144,7 +139,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        allNodes * (i / allNodes) * DEFAULT_EQUALITY_SELECTIVITY
+        i * DEFAULT_EQUALITY_SELECTIVITY
       )
   }
 
@@ -154,7 +149,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        allNodes * (i / allNodes) * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
+        i * DEFAULT_DISTINCT_SELECTIVITY * DEFAULT_EQUALITY_SELECTIVITY
       )
   }
 
@@ -174,7 +169,7 @@ class StatisticsBackedCardinalityModelTest extends CypherFunSuite with LogicalPl
       withGraphNodes(allNodes).
       withLabel('Person -> i).
       shouldHavePlannerQueryCardinality(createCardinalityModel)(
-        Math.sqrt(allNodes * (i / allNodes)) * DEFAULT_RANGE_SELECTIVITY
+        Math.sqrt(i) * DEFAULT_RANGE_SELECTIVITY
       )
   }
 
