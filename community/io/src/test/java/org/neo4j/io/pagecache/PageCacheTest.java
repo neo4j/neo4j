@@ -43,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -55,6 +56,7 @@ import org.neo4j.graphdb.config.Configuration;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
+import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
@@ -3590,10 +3592,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             final AtomicInteger writeCounter = new AtomicInteger();
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
+                private List<StoreChannel> channels = new CopyOnWriteArrayList<>();
+
                 @Override
                 public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
                 {
-                    return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                    StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, openMode ) )
                     {
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3605,6 +3609,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                             super.writeAll( src, position );
                         }
                     };
+                    channels.add(channel);
+                    return channel;
+                }
+
+                @Override
+                public void close() throws IOException
+                {
+                    IOUtils.closeAll(channels);
+                    super.close();
                 }
             };
 
@@ -3626,6 +3639,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             finally
             {
+                fs.close();
                 // Unmapping and closing the PageCache will want to flush,
                 // but we can't do that with a full drive.
                 pageCache = null;
@@ -3643,10 +3657,12 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 final AtomicInteger writeCounter = new AtomicInteger();
                 FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
                 {
+                    private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
+
                     @Override
                     public StoreChannel open( File fileName, OpenMode openMode ) throws IOException
                     {
-                        return new DelegatingStoreChannel( super.open( fileName, openMode ) )
+                        StoreChannel channel = new DelegatingStoreChannel( super.open( fileName, openMode ) )
                         {
                             @Override
                             public void writeAll( ByteBuffer src, long position ) throws IOException
@@ -3658,6 +3674,15 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                                 super.writeAll( src, position );
                             }
                         };
+                        channels.add(channel);
+                        return channel;
+                    }
+
+                    @Override
+                    public void close() throws IOException
+                    {
+                        IOUtils.closeAll( channels );
+                        super.close();
                     }
                 };
 
@@ -3689,6 +3714,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 finally
                 {
+                    fs.close();
                     // Unmapping and closing the PageCache will want to flush,
                     // but we can't do that with a full drive.
                     pageCache = null;

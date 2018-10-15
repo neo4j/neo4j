@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index.backup;
 
 import org.apache.lucene.index.IndexWriter;
+import org.junit.jupiter.api.AfterEach;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,6 +34,7 @@ public class WritableIndexSnapshotFileIteratorTest extends ReadOnlyIndexSnapshot
     private IndexWriter indexWriter;
 
     @Override
+    @AfterEach
     public void tearDown() throws IOException
     {
         if ( indexWriter != null )

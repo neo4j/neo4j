@@ -73,8 +73,8 @@ class IdContextFactoryBuilderTest
         assertThat( idGeneratorFactory, instanceOf( BufferingIdGeneratorFactory.class ) );
 
         ((BufferingIdGeneratorFactory)idGeneratorFactory).initialize( () -> mock( KernelTransactionsSnapshot.class ) );
-        idGeneratorFactory.open( testDirectory.file( "a"), IdType.NODE, () -> 0, 100 );
-        idGeneratorFactory.open( testDirectory.file( "b"), IdType.PROPERTY, () -> 0, 100 );
+        idGeneratorFactory.open( testDirectory.file( "a"), IdType.NODE, () -> 0, 100 ).close();
+        idGeneratorFactory.open( testDirectory.file( "b"), IdType.PROPERTY, () -> 0, 100 ).close();
 
         BufferingIdGeneratorFactory bufferedFactory = (BufferingIdGeneratorFactory) idGeneratorFactory;
         assertThat( bufferedFactory.get( IdType.NODE ), instanceOf( IdGeneratorImpl.class ) );
@@ -126,11 +126,13 @@ class IdContextFactoryBuilderTest
         when( snapshot.allClosed() ).thenReturn( true );
 
         bufferedFactory.initialize( () -> snapshot );
-        IdGenerator idGenerator = bufferedFactory.open( testDirectory.file( "a" ), IdType.PROPERTY, () -> 0, 100 );
-        idGenerator.freeId( 15 );
+        try ( IdGenerator idGenerator = bufferedFactory.open( testDirectory.file( "a" ), IdType.PROPERTY, () -> 100, 100 ) )
+        {
+            idGenerator.freeId( 15 );
 
-        bufferedFactory.maintenance();
-        verify( reuseEligibility ).isEligible( snapshot );
+            bufferedFactory.maintenance();
+            verify( reuseEligibility ).isEligible( snapshot );
+        }
     }
 
     @Test
