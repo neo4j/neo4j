@@ -35,7 +35,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.PlannerNameFor
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
 import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.rewriting.{Deprecations, RewriterStepSequencer}
 import org.opencypher.v9_0.util.InputPosition
 
 case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
@@ -69,7 +69,7 @@ case class CypherPlanner[Context <: PlannerContext](monitors: Monitors,
     //TODO: these nulls are a short cut
     val context = contextCreation.create(tracer, notificationLogger, planContext = null, rawQueryText, debugOptions,
       offset, monitors, metricsFactory, null, config, updateStrategy, clock, logicalPlanIdGen = null, evaluator = null)
-    CompilationPhases.parsing(sequencer).transform(startState, context)
+    CompilationPhases.parsing(sequencer, deprecations = Deprecations.V2).transform(startState, context)
   }
 
   val prepareForCaching: Transformer[PlannerContext, BaseState, BaseState] =

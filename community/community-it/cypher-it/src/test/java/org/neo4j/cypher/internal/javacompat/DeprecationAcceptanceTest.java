@@ -99,6 +99,20 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
+    public void deprecatedFilter()
+    {
+        assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN filter(x IN list WHERE x % 2 = 1) AS odds",
+                                                          containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
+    public void deprecatedExtract()
+    {
+        assertNotifications( "EXPLAIN WITH [1,2,3] AS list RETURN extract(x IN list | x * 10) AS tens",
+                             containsItem( deprecatedFeatureWarning ) );
+    }
+
+    @Test
     public void deprecatedProcedureCalls() throws Exception
     {
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
