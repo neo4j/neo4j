@@ -471,12 +471,15 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
 
     private def checkInnerPredicate(e: FilteringExpression): SemanticCheck =
       e.innerPredicate match {
-      case Some(predicate) => withScopedState {
-        declareVariable(e.variable, possibleInnerTypes(e)) chain
-        SemanticExpressionCheck.check(SemanticContext.Simple, predicate)
+        case Some(predicate) => withScopedState {
+          declareVariable(e.variable, possibleInnerTypes(e)) chain
+            SemanticExpressionCheck.check(SemanticContext.Simple, predicate)
+        }
+        case None => withScopedState {
+          // Even if there is no usage of that variable, we need to declare it, to not confuse the Namespacer
+          declareVariable(e.variable, possibleInnerTypes(e))
+        }
       }
-      case None    => SemanticCheckResult.success
-    }
 
     def possibleInnerTypes(e: FilteringExpression): TypeGenerator = s =>
       (types(e.expression)(s) constrain CTList(CTAny)).unwrapLists

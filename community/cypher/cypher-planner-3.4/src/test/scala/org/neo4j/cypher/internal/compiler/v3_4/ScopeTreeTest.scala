@@ -134,6 +134,7 @@ class ScopeTreeTest extends CypherFunSuite {
 
     scopeTree should equal(scope()(
       scope()(
+        scope(intSymbol("a", 9))(),
         scope(intSymbol("a", 9, 26))()
       ),
       scope(intCollectionSymbol("r", 33))()
@@ -150,6 +151,7 @@ class ScopeTreeTest extends CypherFunSuite {
       scope()(),
       scope(
         intSymbol("c", 10))(
+        scope(intSymbol("a", 21))(),
         scope(
           intSymbol("a", 21, 38),
           intSymbol("c", 10, 42)
@@ -167,7 +169,9 @@ class ScopeTreeTest extends CypherFunSuite {
 
     scopeTree should equal(scope()(
       scope()(
+        scope(intSymbol("a", 9))(),
         scope(intSymbol("a", 9))(
+          scope(intSymbol("b", 28))(),
           scope(
             intSymbol("a", 9, 45),
             intSymbol("b", 28, 49)
