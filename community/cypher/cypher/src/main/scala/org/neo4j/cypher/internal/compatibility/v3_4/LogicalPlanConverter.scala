@@ -248,15 +248,13 @@ object LogicalPlanConverter {
           epochMillisV3_5
         }
 
-        // This case can be removed when the 3.5 frontend fix for this is in
         case (item: expressionsv3_4.PatternComprehension, children: Seq[AnyRef]) =>
           expressionsv3_5.PatternComprehension(
             children(0).asInstanceOf[Option[LogicalVariable]],
             children(1).asInstanceOf[expressionsv3_5.RelationshipsPattern],
             children(2).asInstanceOf[Option[expressionsv3_5.Expression]],
-            children(3).asInstanceOf[expressionsv3_5.Expression],
-            item.outerScope.map(v => expressionsv3_5.Variable(v.name)(helpers.as3_5(v.position)))
-          )(helpers.as3_5(item.position))
+            children(3).asInstanceOf[expressionsv3_5.Expression]
+          )(helpers.as3_5(item.position), item.outerScope.map(v => expressionsv3_5.Variable(v.name)(helpers.as3_5(v.position))))
 
         case (item: plansV3_4.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])

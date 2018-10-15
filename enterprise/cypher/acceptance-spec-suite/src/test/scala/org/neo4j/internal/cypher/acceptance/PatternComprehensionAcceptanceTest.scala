@@ -558,8 +558,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     res.toList should equal(List(Map("arraySize" -> 1)))
   }
 
-  // Waiting for new front-end release
-  ignore("should not explode because we RETURN an expand star with a pattern comprehension") {
+  test("should not explode because we RETURN an expand star with a pattern comprehension") {
     val query =
       """
         |EXPLAIN MATCH (a)

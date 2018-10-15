@@ -47,7 +47,7 @@ import org.opencypher.v9_0.ast.semantics.SemanticTable
 import org.opencypher.v9_0.expressions.PatternExpression
 import org.opencypher.v9_0.frontend.phases._
 import org.opencypher.v9_0.parser.CypherParser
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.rewriting.{Deprecations, RewriterStepSequencer}
 import org.opencypher.v9_0.rewriting.RewriterStepSequencer.newPlain
 import org.opencypher.v9_0.rewriting.rewriters._
 import org.opencypher.v9_0.util.attribution.Attribute
@@ -160,7 +160,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def pipeLine(): Transformer[PlannerContext, BaseState, LogicalPlanState] =
       Parsing andThen
-      PreparatoryRewriting andThen
+      PreparatoryRewriting(Deprecations.V1) andThen
       SemanticAnalysis(warn = true) andThen
       AstRewriting(newPlain, literalExtraction = Never) andThen
       RewriteProcedureCalls andThen

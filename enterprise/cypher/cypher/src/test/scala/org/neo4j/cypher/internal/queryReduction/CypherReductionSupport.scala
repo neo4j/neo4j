@@ -51,7 +51,7 @@ import org.opencypher.v9_0.ast.prettifier.{ExpressionStringifier, Prettifier}
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
 import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer
+import org.opencypher.v9_0.rewriting.{Deprecations, RewriterStepSequencer}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
@@ -109,7 +109,7 @@ trait CypherReductionSupport extends CypherTestSupport with GraphIcing {
     }
   }
 
-  private val rewriting = PreparatoryRewriting andThen
+  private val rewriting = PreparatoryRewriting(Deprecations.V1) andThen
     SemanticAnalysis(warn = true).adds(BaseContains[SemanticState])
 
   def evaluate(query: String, executeBefore: Option[String] = None, enterprise: Boolean = false): RewindableExecutionResult = {

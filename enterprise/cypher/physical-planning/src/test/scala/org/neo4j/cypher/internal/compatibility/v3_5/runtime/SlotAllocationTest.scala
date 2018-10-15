@@ -987,7 +987,7 @@ class SlotAllocationTest extends CypherFunSuite with LogicalPlanningTestSupport2
       NodePattern(None, Seq(), None)(pos)
     )(pos))(pos)
     val projectionExpression = Property(Variable("x")(pos), PropertyKeyName("prop")(pos))(pos)
-    val patternComprehension = PatternComprehension(None, relPattern, None, projectionExpression)(pos)
+    val patternComprehension = PatternComprehension(None, relPattern, None, projectionExpression)(pos, Set.empty)
 
     val filter = Selection(Seq(patternComprehension), nbls)
     // then

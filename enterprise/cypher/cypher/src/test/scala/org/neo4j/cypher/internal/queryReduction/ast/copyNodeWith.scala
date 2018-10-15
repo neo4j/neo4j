@@ -160,14 +160,13 @@ object copyNodeWith {
       case SetPropertyItem(property, expression) =>
         SetPropertyItem(nc.ofSingle(property), nc.ofSingle(expression))(node.position)
 
-      case pc@PatternComprehension(namedPath, pattern, predicate, projection, _) =>
+      case pc@PatternComprehension(namedPath, pattern, predicate, projection) =>
         PatternComprehension(
           nc.ofOption(namedPath),
           nc.ofSingle(pattern),
           nc.ofOption(predicate),
-          nc.ofSingle(projection),
-          nc.ofSeq(pc.outerScope.toSeq).toSet
-        )(node.position)
+          nc.ofSingle(projection)
+        )(node.position, pc.outerScope)
 
       case RelationshipsPattern(element) =>
         RelationshipsPattern(nc.ofSingle(element))(node.position)

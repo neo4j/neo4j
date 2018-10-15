@@ -107,8 +107,7 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
     result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
   }
 
-  // Waiting for new front-end release
-  ignore("should not explode on complex filter() projection in write query") {
+  test("should not explode on complex filter() projection in write query") {
 
     val query = """UNWIND [{children : [
                   |            {_type : "browseNodeId", _text : "20" },

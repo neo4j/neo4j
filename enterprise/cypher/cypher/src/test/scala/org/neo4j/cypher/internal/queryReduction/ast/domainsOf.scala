@@ -206,12 +206,11 @@ object domainsOf {
         ofSingle(property, classOf[Property]) ++
           ofSingle(expression, classOf[Expression])
 
-      case PatternComprehension(namedPath, pattern, predicate, projection, outerScope) =>
+      case PatternComprehension(namedPath, pattern, predicate, projection) =>
         ofOption(namedPath, classOf[LogicalVariable]) ++
           ofSingle(pattern, classOf[RelationshipsPattern]) ++
           ofOption(predicate, classOf[Expression]) ++
-          ofSingle(projection, classOf[Expression]) ++
-          ofSeq(outerScope.toSeq, classOf[LogicalVariable])
+          ofSingle(projection, classOf[Expression])
 
       case RelationshipsPattern(element) =>
         ofSingle(element, classOf[RelationshipChain])
