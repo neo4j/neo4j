@@ -24,16 +24,21 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.nio.charset.StandardCharsets;
+
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.NumberValue;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
+import org.neo4j.values.storable.UTF8StringValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.neo4j.values.storable.Values.NO_VALUE;
+import static org.neo4j.values.storable.Values.utf8Value;
 
 public abstract class IndexQuery
 {
@@ -505,6 +510,18 @@ public abstract class IndexQuery
         {
             return ValueGroup.TEXT;
         }
+
+        protected TextValue asUTF8StringValue( TextValue in )
+        {
+            if ( in instanceof UTF8StringValue )
+            {
+                return in;
+            }
+            else
+            {
+                return utf8Value( in.stringValue().getBytes( UTF_8 ) );
+            }
+        }
     }
 
     public static final class StringPrefixPredicate extends StringPredicate
@@ -514,7 +531,8 @@ public abstract class IndexQuery
         StringPrefixPredicate( int propertyKeyId, TextValue prefix )
         {
             super( propertyKeyId );
-            this.prefix = prefix;
+            //we know utf8 values are coming from the index so optimize for that
+            this.prefix = asUTF8StringValue( prefix );
         }
 
         @Override
@@ -542,7 +560,8 @@ public abstract class IndexQuery
         StringContainsPredicate( int propertyKeyId, TextValue contains )
         {
             super( propertyKeyId );
-            this.contains = contains;
+            //we know utf8 values are coming from the index so optimize for that
+            this.contains = asUTF8StringValue( contains );
         }
 
         @Override
@@ -570,7 +589,8 @@ public abstract class IndexQuery
         StringSuffixPredicate( int propertyKeyId, TextValue suffix )
         {
             super( propertyKeyId );
-            this.suffix = suffix;
+            //we know utf8 values are coming from the index so optimize for that
+            this.suffix = asUTF8StringValue( suffix );
         }
 
         @Override
