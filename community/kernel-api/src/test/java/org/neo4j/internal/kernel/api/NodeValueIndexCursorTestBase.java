@@ -337,7 +337,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, "t" ) );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "t" ) ) );
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
@@ -360,7 +360,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringSuffix( prop, "e" ) );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringSuffix( prop, stringValue( "e" ) ) );
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
@@ -382,7 +382,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringContains( prop, "o" ) );
+            read.nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringContains( prop, stringValue( "o" ) ) );
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
@@ -1221,7 +1221,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, "on" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertFalse( node.next() );
@@ -1241,7 +1241,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, "on" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertFalse( node.next() );
@@ -1261,7 +1261,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, "on" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertFalse( node.next() );
@@ -1281,7 +1281,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             // when
             tx.dataWrite().nodeSetProperty( strOne, prop, stringValue( "ett" ) );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, "et" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "et" ) ) );
 
             // then
             assertTrue( node.next() );
@@ -1303,7 +1303,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // when
             tx.dataWrite().nodeRemoveLabel( strOne, label );
             tx.dataWrite().nodeAddLabel( strOneNoLabel, label );
-            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, "on" ) );
+            tx.dataRead().nodeIndexSeek( index, node, IndexOrder.NONE, needsValues, IndexQuery.stringPrefix( prop, stringValue( "on" )) );
 
             // then
             assertTrue( node.next() );

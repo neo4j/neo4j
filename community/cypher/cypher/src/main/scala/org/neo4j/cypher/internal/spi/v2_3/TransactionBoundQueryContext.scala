@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v2_3
 
 import java.net.URL
+import java.nio.charset.StandardCharsets
 import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
@@ -290,7 +291,7 @@ final class TransactionBoundQueryContext(tc: TransactionalContextWrapper, val re
   }
 
   private def indexSeekByPrefixRange(index: SchemaTypes.IndexDescriptor, prefix: String): scala.Iterator[Node] =
-    seek(tc.schemaRead.indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringPrefix(index.propertyId, prefix))
+    seek(tc.schemaRead.indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringPrefix(index.propertyId, Values.utf8Value( prefix.getBytes(StandardCharsets.UTF_8 ))))
 
   private def indexSeekByNumericalRange(index: SchemaTypes.IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] = (range match {
     case rangeLessThan: RangeLessThan[Number] =>

@@ -77,6 +77,7 @@ import static org.neo4j.values.storable.DurationValue.duration;
 import static org.neo4j.values.storable.LocalDateTimeValue.localDateTime;
 import static org.neo4j.values.storable.LocalTimeValue.localTime;
 import static org.neo4j.values.storable.TimeValue.time;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -102,10 +103,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 4L, descriptor.schema(), "apA" ),
                 add( 5L, descriptor.schema(), "b" ) ) );
 
-        assertThat( query( IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, "A" ) ), equalTo( singletonList( 2L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, "ba" ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "A" ) ) ), equalTo( singletonList( 2L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "ba" ) ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "" ) ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
     }
 
     @Test
@@ -115,7 +116,7 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                 add( 1L, descriptor.schema(), "2a" ),
                 add( 2L, descriptor.schema(), 2L ),
                 add( 2L, descriptor.schema(), 20L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 1, "2" ) ), equalTo( singletonList( 1L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 1, stringValue( "2" ) ) ), equalTo( singletonList( 1L ) ) );
     }
 
     @Test
@@ -996,8 +997,8 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), "apa" ),
                     add( 5L, descriptor.schema(), "apa" ) ) );
 
-            assertThat( query( stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-            assertThat( query( stringPrefix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+            assertThat( query( stringPrefix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+            assertThat( query( stringPrefix( 1, stringValue( "apa" ) ) ), equalTo( asList( 3L, 4L, 5L ) ) );
         }
 
         @Test
@@ -1010,9 +1011,9 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 4L, descriptor.schema(), "apa" ),
                     add( 5L, descriptor.schema(), "apalong" ) ) );
 
-            assertThat( query( stringContains( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-            assertThat( query( stringContains( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( stringContains( 1, "apa*" ) ), equalTo( Collections.emptyList() ) );
+            assertThat( query( stringContains( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+            assertThat( query( stringContains( 1, stringValue( "apa" ) ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+            assertThat( query( stringContains( 1, stringValue( "apa*" ) ) ), equalTo( Collections.emptyList() ) );
         }
 
         @Test
@@ -1026,10 +1027,10 @@ public abstract class SimpleIndexAccessorCompatibility extends IndexAccessorComp
                     add( 5L, descriptor.schema(), "longapa" ),
                     add( 6L, descriptor.schema(), "apalong" ) ) );
 
-            assertThat( query( stringSuffix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
-            assertThat( query( stringSuffix( 1, "apa" ) ), equalTo( asList( 3L, 4L, 5L ) ) );
-            assertThat( query( stringSuffix( 1, "apa*" ) ), equalTo( Collections.emptyList() ) );
-            assertThat( query( stringSuffix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
+            assertThat( query( stringSuffix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L, 5L ) ) );
+            assertThat( query( stringSuffix( 1, stringValue( "apa" ) ) ), equalTo( asList( 3L, 4L, 5L ) ) );
+            assertThat( query( stringSuffix( 1, stringValue( "apa*" ) ) ), equalTo( Collections.emptyList() ) );
+            assertThat( query( stringSuffix( 1, stringValue( "" ) ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L ) ) );
         }
 
         @Test

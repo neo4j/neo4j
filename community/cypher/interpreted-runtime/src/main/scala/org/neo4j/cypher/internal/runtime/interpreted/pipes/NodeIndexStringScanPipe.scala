@@ -55,7 +55,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
     val resultNodes = value match {
       case value: TextValue =>
-        new IndexIterator(state.query, baseContext, queryContextCall(state, reference(state.query), value.stringValue()))
+        new IndexIterator(state.query, baseContext, queryContextCall(state, reference(state.query), value))
       case Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
@@ -66,7 +66,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
   protected def queryContextCall(state: QueryState,
                                  indexReference: IndexReference,
-                                 value: String): NodeValueIndexCursor
+                                 value: TextValue): NodeValueIndexCursor
 }
 
 case class NodeIndexContainsScanPipe(ident: String,
@@ -79,7 +79,7 @@ case class NodeIndexContainsScanPipe(ident: String,
 
   override protected def queryContextCall(state: QueryState,
                                           indexReference: IndexReference,
-                                          value: String): NodeValueIndexCursor =
+                                          value: TextValue): NodeValueIndexCursor =
     state.query.indexSeekByContains(indexReference, needsValues, indexOrder, value)
 }
 
@@ -93,6 +93,6 @@ case class NodeIndexEndsWithScanPipe(ident: String,
 
   override protected def queryContextCall(state: QueryState,
                                           indexReference: IndexReference,
-                                          value: String): NodeValueIndexCursor =
+                                          value: TextValue): NodeValueIndexCursor =
     state.query.indexSeekByEndsWith(indexReference, needsValues, indexOrder, value)
 }

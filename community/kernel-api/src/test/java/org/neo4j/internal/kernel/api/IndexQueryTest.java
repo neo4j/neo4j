@@ -40,6 +40,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.values.storable.Values.stringValue;
 
 public class IndexQueryTest
 {
@@ -438,7 +439,7 @@ public class IndexQueryTest
         assertTrue( test( p, DateValue.date( -4000, 1, 31 ) ) );
         assertTrue( test( p, DateValue.date( 2018, 3, 7 ) ) );
         assertFalse( test( p, DateTimeValue.datetime( 2018, 3, 7, 0, 0, 0, 0, ZoneOffset.UTC ) ) );
-        assertFalse( test( p, Values.stringValue( "hej" ) ) );
+        assertFalse( test( p, stringValue( "hej" ) ) );
         assertFalse( test( p, gps2_3d ) );
     }
 
@@ -449,7 +450,7 @@ public class IndexQueryTest
 
         assertTrue( test( p, gps2 ) );
         assertFalse( test( p, DateValue.date( -4000, 1, 31 ) ) );
-        assertFalse( test( p, Values.stringValue( "hej" ) ) );
+        assertFalse( test( p, stringValue( "hej" ) ) );
         assertFalse( test( p, car1 ) );
         assertFalse( test( p, car4 ) );
         assertFalse( test( p, gps1_3d ) );
@@ -460,7 +461,7 @@ public class IndexQueryTest
     @Test
     public void testStringPrefix_FalseForIrrelevant()
     {
-        StringPrefixPredicate p = IndexQuery.stringPrefix( propId, "dog" );
+        StringPrefixPredicate p = IndexQuery.stringPrefix( propId, stringValue( "dog" ) );
 
         assertFalseForOtherThings( p );
     }
@@ -468,7 +469,7 @@ public class IndexQueryTest
     @Test
     public void testStringPrefix_SomeValues()
     {
-        StringPrefixPredicate p = IndexQuery.stringPrefix( propId, "dog" );
+        StringPrefixPredicate p = IndexQuery.stringPrefix( propId, stringValue( "dog" ) );
 
         assertFalse( test( p, "doffington" ) );
         assertFalse( test( p, "doh, not this again!" ) );
@@ -482,7 +483,7 @@ public class IndexQueryTest
     @Test
     public void testStringContains_FalseForIrrelevant()
     {
-        StringContainsPredicate p = IndexQuery.stringContains( propId, "cat" );
+        StringContainsPredicate p = IndexQuery.stringContains( propId, stringValue( "cat" ));
 
         assertFalseForOtherThings( p );
     }
@@ -490,7 +491,7 @@ public class IndexQueryTest
     @Test
     public void testStringContains_SomeValues()
     {
-        StringContainsPredicate p = IndexQuery.stringContains( propId, "cat" );
+        StringContainsPredicate p = IndexQuery.stringContains( propId, stringValue( "cat" ));
 
         assertFalse( test( p, "dog" ) );
         assertFalse( test( p, "cameraman" ) );
@@ -505,7 +506,7 @@ public class IndexQueryTest
     @Test
     public void testStringSuffix_FalseForIrrelevant()
     {
-        StringSuffixPredicate p = IndexQuery.stringSuffix( propId, "less" );
+        StringSuffixPredicate p = IndexQuery.stringSuffix( propId, stringValue( "less" ) );
 
         assertFalseForOtherThings( p );
     }
@@ -513,7 +514,7 @@ public class IndexQueryTest
     @Test
     public void testStringSuffix_SomeValues()
     {
-        StringSuffixPredicate p = IndexQuery.stringSuffix( propId, "less" );
+        StringSuffixPredicate p = IndexQuery.stringSuffix( propId, stringValue( "less" ) );
 
         assertFalse( test( p, "lesser being" ) );
         assertFalse( test( p, "make less noise please..." ) );

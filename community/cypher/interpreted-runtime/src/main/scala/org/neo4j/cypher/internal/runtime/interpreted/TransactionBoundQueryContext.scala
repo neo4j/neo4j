@@ -38,13 +38,12 @@ import org.neo4j.graphdb.security.URLAccessValidationError
 import org.neo4j.graphdb.traversal.{Evaluators, TraversalDescription, Uniqueness}
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
-import org.neo4j.internal.kernel.api.{IndexOrder => KernelIndexOrder, _}
-import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
+import org.neo4j.internal.kernel.api.{IndexOrder => KernelIndexOrder, _}
 import org.neo4j.io.IOUtils
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.api.{ResourceManager => NotTheTypeWeWant, _}
+import org.neo4j.kernel.api._
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory
@@ -333,13 +332,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     value: String): NodeValueIndexCursor =
+                                                     value: TextValue): NodeValueIndexCursor =
     seek(index, needsValues, indexOrder, IndexQuery.stringContains(index.properties()(0), value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     value: String): NodeValueIndexCursor =
+                                                     value: TextValue): NodeValueIndexCursor =
     seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.properties()(0), value))
 
   override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,

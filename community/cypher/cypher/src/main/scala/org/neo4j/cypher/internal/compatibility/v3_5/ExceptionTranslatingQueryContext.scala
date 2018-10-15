@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndex
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
@@ -248,13 +248,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     value: String): NodeValueIndexCursor =
+                                                     value: TextValue): NodeValueIndexCursor =
     translateException(inner.indexSeekByContains(index, needsValues, indexOrder, value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     value: String): NodeValueIndexCursor =
+                                                     value: TextValue): NodeValueIndexCursor =
     translateException(inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
 
   override def indexScan[RESULT <: AnyRef](index: IndexReference,

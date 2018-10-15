@@ -22,14 +22,9 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
-import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider
-import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
-import org.neo4j.graphdb.Path
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor, KernelStatisticProvider, TokenContext}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
+import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.api.dbms.DbmsOperations
@@ -37,9 +32,8 @@ import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.NodeValue
-import org.neo4j.values.virtual.RelationshipValue
+import org.neo4j.values.storable.{TextValue, Value}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.util.EntityNotFoundException
 
@@ -115,12 +109,12 @@ trait QueryContext extends TokenContext with DbAccess {
   def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            value: String): NodeValueIndexCursor
+                                            value: TextValue): NodeValueIndexCursor
 
   def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            value: String): NodeValueIndexCursor
+                                            value: TextValue): NodeValueIndexCursor
 
   def indexScan[RESULT <: AnyRef](index: IndexReference,
                                   needsValues: Boolean,

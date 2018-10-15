@@ -149,7 +149,7 @@ public abstract class IndexQuery
      * @param prefix the string prefix to search for.
      * @return an {@link IndexQuery} instance to be used for querying an index.
      */
-    public static StringPrefixPredicate stringPrefix( int propertyKeyId, String prefix )
+    public static StringPrefixPredicate stringPrefix( int propertyKeyId, TextValue prefix )
     {
         return new StringPrefixPredicate( propertyKeyId, prefix );
     }
@@ -161,7 +161,7 @@ public abstract class IndexQuery
      * @param contains the string to search for.
      * @return an {@link IndexQuery} instance to be used for querying an index.
      */
-    public static StringContainsPredicate stringContains( int propertyKeyId, String contains )
+    public static StringContainsPredicate stringContains( int propertyKeyId, TextValue contains )
     {
         return new StringContainsPredicate( propertyKeyId, contains );
     }
@@ -173,7 +173,7 @@ public abstract class IndexQuery
      * @param suffix the string suffix to search for.
      * @return an {@link IndexQuery} instance to be used for querying an index.
      */
-    public static StringSuffixPredicate stringSuffix( int propertyKeyId, String suffix )
+    public static StringSuffixPredicate stringSuffix( int propertyKeyId, TextValue suffix )
     {
         return new StringSuffixPredicate( propertyKeyId, suffix );
     }
@@ -358,10 +358,7 @@ public abstract class IndexQuery
                 if ( to != null )
                 {
                     int compare = Values.COMPARATOR.compare( value, to );
-                    if ( compare > 0 || !toInclusive && compare == 0 )
-                    {
-                        return false;
-                    }
+                    return compare <= 0 && (toInclusive || compare != 0);
                 }
                 return true;
             }
@@ -512,9 +509,9 @@ public abstract class IndexQuery
 
     public static final class StringPrefixPredicate extends StringPredicate
     {
-        private final String prefix;
+        private final TextValue prefix;
 
-        StringPrefixPredicate( int propertyKeyId, String prefix )
+        StringPrefixPredicate( int propertyKeyId, TextValue prefix )
         {
             super( propertyKeyId );
             this.prefix = prefix;
@@ -529,10 +526,10 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return Values.isTextValue( value ) && ((TextValue) value).stringValue().startsWith( prefix );
+            return Values.isTextValue( value ) && ((TextValue) value).startsWith( prefix );
         }
 
-        public String prefix()
+        public TextValue prefix()
         {
             return prefix;
         }
@@ -540,9 +537,9 @@ public abstract class IndexQuery
 
     public static final class StringContainsPredicate extends StringPredicate
     {
-        private final String contains;
+        private final TextValue contains;
 
-        StringContainsPredicate( int propertyKeyId, String contains )
+        StringContainsPredicate( int propertyKeyId, TextValue contains )
         {
             super( propertyKeyId );
             this.contains = contains;
@@ -557,10 +554,10 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return Values.isTextValue( value ) && ((String) value.asObject()).contains( contains );
+            return Values.isTextValue( value ) && ((TextValue) value).contains( contains );
         }
 
-        public String contains()
+        public TextValue contains()
         {
             return contains;
         }
@@ -568,9 +565,9 @@ public abstract class IndexQuery
 
     public static final class StringSuffixPredicate extends StringPredicate
     {
-        private final String suffix;
+        private final TextValue suffix;
 
-        StringSuffixPredicate( int propertyKeyId, String suffix )
+        StringSuffixPredicate( int propertyKeyId, TextValue suffix )
         {
             super( propertyKeyId );
             this.suffix = suffix;
@@ -585,10 +582,10 @@ public abstract class IndexQuery
         @Override
         public boolean acceptsValue( Value value )
         {
-            return Values.isTextValue( value ) && ((String) value.asObject()).endsWith( suffix );
+            return Values.isTextValue( value ) && ((TextValue) value).endsWith( suffix );
         }
 
-        public String suffix()
+        public TextValue suffix()
         {
             return suffix;
         }
