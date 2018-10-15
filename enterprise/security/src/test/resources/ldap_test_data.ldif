@@ -136,3 +136,23 @@ sn: trinity
 uid: trinity
 uidnumber: 1002
 userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
+
+# Entry 15: cn=procs,ou=groups,dc=example,dc=com
+dn: cn=procs,ou=groups,dc=example,dc=com
+cn: procs
+gidnumber: 505
+objectclass: posixGroup
+objectclass: top
+
+# Entry 16: cn=jane,ou=users,dc=example,dc=com
+dn: cn=jane,ou=users,dc=example,dc=com
+cn:  jane
+gidnumber: 505
+homedirectory: /home/users/jane
+objectclass: inetOrgPerson
+objectclass: posixAccount
+objectclass: top
+sn: jane
+uid: jane
+uidnumber: 1005
+userpassword: {MD5}6ZoYxCjLONXyYIU2eJIuAw==
