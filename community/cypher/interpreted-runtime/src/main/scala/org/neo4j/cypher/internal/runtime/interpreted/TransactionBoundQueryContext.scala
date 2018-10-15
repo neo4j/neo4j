@@ -53,7 +53,8 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
-import org.neo4j.storageengine.api.RelationshipVisitor
+import org.neo4j.storageengine.api.schema.IndexProgressor
+import org.neo4j.storageengine.api.{RelationshipVisitor, schema}
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
@@ -1097,6 +1098,16 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def close(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
+
+    override def setRead(read: Read, resource: Resource): Unit = inner.setRead(read, resource)
+
+    override def initialize(descriptor: schema.IndexDescriptor, progressor: IndexProgressor, query: Array[IndexQuery], indexOrder: KernelIndexOrder, needsValues: Boolean): Unit =
+      inner.initialize(descriptor, progressor, query, indexOrder, needsValues)
+
+    override def acceptEntity(reference: Long, score: Float, values: Value*): Boolean =
+      inner.acceptEntity(reference, score, values: _*)
+
+    override def needsValues(): Boolean = inner.needsValues()
   }
 }
 

@@ -27,14 +27,16 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
-import org.neo4j.graphdb.Path
-import org.neo4j.graphdb.PropertyContainer
+import org.neo4j.graphdb.{Path, PropertyContainer, Resource}
+import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
+import org.neo4j.storageengine.api.schema
+import org.neo4j.storageengine.api.schema.IndexProgressor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.NodeValue
@@ -371,4 +373,23 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends NodeValue
   override def close(): Unit = _next = false
 
   override def isClosed: Boolean = _next
+
+  override def setRead(read: Read, resource: Resource): Unit = throw new UnsupportedOperationException("not implemented")
+
+  override def initialize(descriptor: schema.IndexDescriptor, progressor: IndexProgressor, query: Array[IndexQuery], indexOrder: api.IndexOrder, needsValues: Boolean): Unit =
+    throw new UnsupportedOperationException("not implemented")
+
+  /**
+    * Accept the node id and values of a candidate index entry. Return true if the entry is
+    * accepted, false otherwise.
+    *
+    * @param reference the node id of the candidate index entry
+    * @param score     a score figure for the quality of the match, for indexes where this makes sense, otherwise { @link Float#NaN}.
+    * @param values the values of the candidate index entry
+    * @return true if the entry is accepted, false otherwise
+    */
+  override def acceptEntity(reference: Long, score: Float, values: Value*): Boolean =
+    throw new UnsupportedOperationException("not implemented")
+
+  override def needsValues(): Boolean = throw new UnsupportedOperationException("not implemented")
 }

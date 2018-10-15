@@ -24,11 +24,13 @@ import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.PrimitiveLon
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
 import org.neo4j.cypher.internal.runtime.{NodeOperations, Operations, QueryContext, RelationshipOperations}
-import org.neo4j.internal.kernel.api.{NodeCursor, NodeValueIndexCursor}
+import org.neo4j.graphdb.Resource
+import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 import org.neo4j.storageengine.api.RelationshipVisitor
+import org.neo4j.storageengine.api.schema.{IndexDescriptor, IndexProgressor}
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.util.attribution.Id
@@ -187,6 +189,15 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def close(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
+
+    override def setRead(read: Read, resource: Resource): Unit = inner.setRead(read, resource)
+
+    override def initialize(descriptor: IndexDescriptor, progressor: IndexProgressor, query: Array[IndexQuery], indexOrder: IndexOrder, needsValues: Boolean): Unit =
+      inner.initialize(descriptor, progressor, query, indexOrder, needsValues)
+
+    override def acceptEntity(reference: Long, score: Float, values: Value*): Boolean = inner.acceptEntity(reference, score, values: _*)
+
+    override def needsValues(): Boolean = inner.needsValues()
   }
 
   class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {
