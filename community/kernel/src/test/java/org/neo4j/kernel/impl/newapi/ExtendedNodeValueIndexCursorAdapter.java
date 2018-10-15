@@ -17,62 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.helpers;
+package org.neo4j.kernel.impl.newapi;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.graphdb.Resource;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.helpers.NodeValueIndexCursorAdapter;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
-public class NodeValueIndexCursorAdapter implements NodeValueIndexCursor
+public class ExtendedNodeValueIndexCursorAdapter extends NodeValueIndexCursorAdapter implements EntityIndexSeekClient
 {
     @Override
-    public int numberOfProperties()
+    public void setRead( Read read, Resource resource )
     {
-        return 0;
     }
 
     @Override
-    public int propertyKey( int offset )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
     {
-        return 0;
     }
 
     @Override
-    public boolean hasValue()
+    public boolean acceptEntity( long reference, float score, Value... values )
     {
         return false;
     }
 
     @Override
-    public Value propertyValue( int offset )
-    {
-        return null;
-    }
-
-    @Override
-    public void node( NodeCursor cursor )
-    {
-    }
-
-    @Override
-    public long nodeReference()
-    {
-        return 0;
-    }
-
-    @Override
-    public boolean next()
-    {
-        return false;
-    }
-
-    @Override
-    public void close()
-    {
-    }
-
-    @Override
-    public boolean isClosed()
+    public boolean needsValues()
     {
         return false;
     }

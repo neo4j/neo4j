@@ -1098,16 +1098,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def close(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
-
-    override def setRead(read: Read, resource: Resource): Unit = inner.setRead(read, resource)
-
-    override def initialize(descriptor: schema.IndexDescriptor, progressor: IndexProgressor, query: Array[IndexQuery], indexOrder: KernelIndexOrder, needsValues: Boolean): Unit =
-      inner.initialize(descriptor, progressor, query, indexOrder, needsValues)
-
-    override def acceptEntity(reference: Long, score: Float, values: Value*): Boolean =
-      inner.acceptEntity(reference, score, values: _*)
-
-    override def needsValues(): Boolean = inner.needsValues()
   }
 }
 

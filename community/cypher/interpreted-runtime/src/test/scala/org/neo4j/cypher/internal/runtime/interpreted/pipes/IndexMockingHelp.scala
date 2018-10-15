@@ -27,9 +27,7 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.interpreted.ImplicitDummyPos
 import org.neo4j.cypher.internal.runtime.{NodeValueHit, QueryContext}
 import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
-import org.neo4j.graphdb.Resource
 import org.neo4j.internal.kernel.api._
-import org.neo4j.storageengine.api.schema.{IndexDescriptor, IndexProgressor}
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeValue, VirtualNodeValue, VirtualValues}
 import org.opencypher.v9_0.expressions.{PropertyKeyName, PropertyKeyToken}
@@ -118,15 +116,5 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     override def close(): Unit = {}
 
     override def isClosed: Boolean = current != null
-
-    override def setRead(read: Read, resource: Resource): Unit = throw new UnsupportedOperationException("not implemented")
-
-    override def initialize(descriptor: IndexDescriptor, progressor: IndexProgressor, query: Array[IndexQuery], indexOrder: IndexOrder, needsValues: Boolean): Unit =
-      throw new UnsupportedOperationException("not implemented")
-
-    override def acceptEntity(reference: Long, score: Float, values: Value*): Boolean =
-      throw new UnsupportedOperationException("not implemented")
-
-    override def needsValues(): Boolean = throw new UnsupportedOperationException("not implemented")
   }
 }

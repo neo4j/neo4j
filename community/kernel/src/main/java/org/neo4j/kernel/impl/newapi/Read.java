@@ -92,9 +92,10 @@ abstract class Read implements TxStateHolder,
             return;
         }
 
+        EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         IndexReader reader = indexReader( index, false );
-        cursor.setRead( this, null );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( cursor, query, reader );
+        client.setRead( this, null );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
         reader.query( withFullPrecision, indexOrder, needsValues, query );
     }
 

@@ -58,6 +58,7 @@ import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -370,7 +371,7 @@ public class FulltextIndexProviderTest
         List<String> acceptedEntities = new ArrayList<>();
         try ( KernelTransactionImplementation ktx = getKernelTransaction() )
         {
-            NodeValueIndexCursor cursor = new NodeValueIndexCursorAdapter()
+            NodeValueIndexCursor cursor = new ExtendedNodeValueIndexCursorAdapter()
             {
                 private long nodeReference;
                 private IndexProgressor progressor;

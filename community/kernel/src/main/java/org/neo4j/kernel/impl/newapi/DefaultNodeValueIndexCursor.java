@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedAndRemoved;
 import org.neo4j.kernel.impl.newapi.TxStateIndexChanges.AddedWithValuesAndRemoved;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
-import org.neo4j.storageengine.api.schema.IndexProgressor.EntityValueClient;
 import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
@@ -55,7 +54,7 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
-        implements NodeValueIndexCursor, EntityValueClient, SortedMergeJoin.Sink
+        implements NodeValueIndexCursor, EntityIndexSeekClient, SortedMergeJoin.Sink
 {
     private Read read;
     private Resource resource;
@@ -232,10 +231,9 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.values = values;
     }
 
-    @Override
-    public void setRead( org.neo4j.internal.kernel.api.Read read, Resource resource )
+    public void setRead( Read read, Resource resource )
     {
-        this.read = (Read) read;
+        this.read = read;
         this.resource = resource;
     }
 
