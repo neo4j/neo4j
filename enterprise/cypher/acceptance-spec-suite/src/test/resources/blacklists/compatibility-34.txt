@@ -1,1 +1,4 @@
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+
+// This can be removed once we depend on 3.4.10
+Feature "ListComprehensionAcceptance": Scenario "Should find all the variables in list comprehension"
