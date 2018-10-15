@@ -236,16 +236,6 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should fail if old iterable separator") {
     executeAndEnsureError(
-      "match (a) where id(a) = 0 return filter(x in a.list : x.prop = 1)",
-      "filter(...) requires a WHERE predicate (line 1, column 34 (offset: 33))"
-    )
-
-    executeAndEnsureError(
-      "match (a) where id(a) = 0 return extract(x in a.list : x.prop)",
-      "extract(...) requires '| expression' (an extract expression) (line 1, column 34 (offset: 33))"
-    )
-
-    executeAndEnsureError(
       "match (a) where id(a) = 0 return reduce(i = 0, x in a.List : i + x.prop)",
       "reduce(...) requires '| expression' (an accumulation expression) (line 1, column 34 (offset: 33))"
     )
@@ -505,6 +495,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
       fail(s"Did not get the expected error, expected: $expectedErrorString")
     } catch {
       case x: QueryExecutionException =>
+        x.printStackTrace()
         val actual = x.getMessage.lines.next().trim
         if (!correctError(actual, expected)) {
           fail(s"Did not get the expected error, expected: $expectedErrorString actual: '$actual'")
