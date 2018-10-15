@@ -161,8 +161,8 @@ public class CypherAdapterStreamTest
         when( result.queryStatistics() ).thenReturn( queryStatistics );
         when( result.getNotifications() ).thenReturn( Collections.emptyList() );
         when( result.executionPlanDescription() ).thenReturn(
-                plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, singletonList( "id1" ),
-                        plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, singletonList( "id2" ) ) ) );
+                plan( "Join", map( "arg1", 1 ), 2, 4, 3, 1, 2, singletonList( "id1" ),
+                        plan( "Scan", map( "arg2", 1 ), 2, 4, 7, 1, 1, singletonList( "id2" ) ) ) );
 
         TransactionalContext tc = mock( TransactionalContext.class );
         CypherAdapterStream stream = new CypherAdapterStream( result, Clock.systemUTC() );
@@ -180,7 +180,8 @@ public class CypherAdapterStreamTest
                 "dbHits", longValue( 2L ),
                 "pageCacheHits", longValue( 4L ),
                 "pageCacheMisses", longValue( 7L ),
-                "pageCacheHitRatio", doubleValue( 4.0 / 11 )
+                "pageCacheHitRatio", doubleValue( 4.0 / 11 ),
+                "time", longValue( 1 )
         );
 
         MapValue expectedProfile = mapValues(
@@ -192,7 +193,8 @@ public class CypherAdapterStreamTest
                 "dbHits", longValue( 2L ),
                 "pageCacheHits", longValue( 4L ),
                 "pageCacheMisses", longValue( 3L ),
-                "pageCacheHitRatio", doubleValue( 4.0 / 7 )
+                "pageCacheHitRatio", doubleValue( 4.0 / 7 ),
+                "time", longValue( 2 )
         );
 
         assertMapEqualsWithDelta( (MapValue) meta.get( "profile" ),  expectedProfile, 0.0001 );
@@ -297,8 +299,15 @@ public class CypherAdapterStreamTest
         } );
     }
 
-    private static ExecutionPlanDescription plan( final String name, final Map<String,Object> args, final long dbHits,
-            final long pageCacheHits, final long pageCacheMisses, final long rows, final List<String> identifiers,
+    private static ExecutionPlanDescription plan(
+            final String name,
+            final Map<String,Object> args,
+            final long dbHits,
+            final long pageCacheHits,
+            final long pageCacheMisses,
+            final long rows,
+            final long time,
+            final List<String> identifiers,
             final ExecutionPlanDescription... children )
     {
         return plan( name, args, identifiers, new ExecutionPlanDescription.ProfilerStatistics()
@@ -325,6 +334,12 @@ public class CypherAdapterStreamTest
             public long getPageCacheMisses()
             {
                 return pageCacheMisses;
+            }
+
+            @Override
+            public long getTime()
+            {
+                return time;
             }
         }, children );
     }

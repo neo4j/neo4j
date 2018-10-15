@@ -112,13 +112,15 @@ sealed trait InternalPlanDescription extends org.neo4j.graphdb.ExecutionPlanDesc
   override def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
   override def getProfilerStatistics: ExecutionPlanDescription.ProfilerStatistics = new ProfilerStatistics {
-    def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    override def getDbHits: Long = extract { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
 
-    def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    override def getRows: Long = extract { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
 
-    def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(0)
+    override def getPageCacheHits: Long = extract { case PageCacheHits(count) => count }.getOrElse(0)
 
-    def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(0)
+    override def getPageCacheMisses: Long = extract { case PageCacheMisses(count) => count }.getOrElse(0)
+
+    override def getTime: Long = extract { case Time(value) => value }.getOrElse(0)
 
     private def extract(f: PartialFunction[Argument, Long]): Option[Long] = arguments.collectFirst(f)
   }

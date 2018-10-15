@@ -44,7 +44,7 @@ class ExecutionPlanConverter
     public static MapValue convert( ExecutionPlanDescription plan )
     {
         boolean hasProfilerStatistics = plan.hasProfilerStatistics();
-        int size = hasProfilerStatistics ? 9 : 4;
+        int size = hasProfilerStatistics ? 10 : 4;
         MapValueBuilder out = new MapValueBuilder( size );
         out.add( "operatorType", stringValue( plan.getName() ) );
         out.add( "args", ValueUtils.asMapValue( plan.getArguments() ) );
@@ -58,6 +58,7 @@ class ExecutionPlanConverter
             out.add( "pageCacheMisses", longValue( profile.getPageCacheMisses() ) );
             out.add( "pageCacheHitRatio", doubleValue( profile.getPageCacheHitRatio() ) );
             out.add( "rows", longValue( profile.getRows() ) );
+            out.add( "time", longValue( profile.getTime() ) );
         }
         return out.build();
     }

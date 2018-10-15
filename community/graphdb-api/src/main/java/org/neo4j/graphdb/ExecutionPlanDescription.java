@@ -120,5 +120,14 @@ public interface ExecutionPlanDescription
         {
             return MathUtil.portion( getPageCacheHits(), getPageCacheMisses() );
         }
+
+        /**
+         * @return amount of time spent in the associated execution step
+         */
+        default long getTime()
+        {
+            return 0;
+        }
+
     }
 }
