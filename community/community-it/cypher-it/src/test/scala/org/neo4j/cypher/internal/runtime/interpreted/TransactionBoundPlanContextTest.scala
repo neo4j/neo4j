@@ -109,6 +109,38 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
     })
   }
 
+  test("indexPropertyExistsSelectivity of empty label index should be 0") {
+    inTx((_, _) => {
+      database.schema().indexFor(Label.label("L1")).on("prop").create()
+    })
+
+    inTx((_, planContext) => {
+      database.schema().awaitIndexesOnline(10, SECONDS)
+      val l1id = planContext.getLabelId("L1")
+      val prop1id = planContext.getPropertyKeyId("prop")
+      val index = IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
+      planContext.statistics.indexPropertyExistsSelectivity(index) should be(Some(Selectivity.ZERO))
+    })
+  }
+
+  test("uniqueValueSelectivity of empty index should be 0") {
+    inTx((_, _) => {
+      database.createNode(Label.label("L1"))
+    })
+
+    inTx((_, _) => {
+      database.schema().indexFor(Label.label("L1")).on("prop").create()
+    })
+
+    inTx((_, planContext) => {
+      database.schema().awaitIndexesOnline(10, SECONDS)
+      val l1id = planContext.getLabelId("L1")
+      val prop1id = planContext.getPropertyKeyId("prop")
+      val index = IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)))
+      planContext.statistics.uniqueValueSelectivity(index) should be(Some(Selectivity.ZERO))
+    })
+  }
+
   test("indexesGetForLabel should return both regular and unique indexes") {
     inTx((_, _) => {
       database.schema().indexFor(Label.label("L1")).on("prop").create()

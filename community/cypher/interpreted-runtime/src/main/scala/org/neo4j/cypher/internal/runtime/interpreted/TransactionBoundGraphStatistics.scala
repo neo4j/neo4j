@@ -43,16 +43,19 @@ object TransactionBoundGraphStatistics {
     override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
+        if (indexSize == 0)
+          Some(Selectivity.ZERO)
+        else {
+          // Probability of any node in the index, to have a property with a given value
+          val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
+            schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
+          val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
 
-        // Probability of any node in the index, to have a property with a given value
-        val indexEntrySelectivity = schemaRead.indexUniqueValuesSelectivity(
-          schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
-        val frequencyOfNodesWithSameValue = 1.0 / indexEntrySelectivity
+          // This is = 1 / number of unique values
+          val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
 
-        // This is = 1 / number of unique values
-        val indexSelectivity = frequencyOfNodesWithSameValue / indexSize
-
-        Selectivity.of(indexSelectivity)
+          Selectivity.of(indexSelectivity)
+        }
       }
       catch {
         case _: IndexNotFoundKernelException => None
@@ -61,12 +64,15 @@ object TransactionBoundGraphStatistics {
     override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
+        if (labeledNodes == 0)
+          Some(Selectivity.ZERO)
+        else {
+          // Probability of any node with the given label, to have a given property
+          val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
+          val indexSelectivity = indexSize / labeledNodes
 
-        // Probability of any node with the given label, to have a given property
-        val indexSize = schemaRead.indexSize(schemaRead.indexReferenceUnchecked(index.label, index.properties.map(_.id):_*))
-        val indexSelectivity = indexSize / labeledNodes
-
-        Selectivity.of(indexSelectivity)
+          Selectivity.of(indexSelectivity)
+        }
       }
       catch {
         case e: IndexNotFoundKernelException => None
