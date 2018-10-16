@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit.SECONDS
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, IndexLimitation, SlowContains}
-import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType}
+import org.neo4j.graphdb.{GraphDatabaseService, Label, RelationshipType, Transaction}
 import org.neo4j.internal.kernel.api.Transaction.Type._
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
@@ -33,11 +33,12 @@ import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.frontend.phases.devNullLogger
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId, RelTypeId}
+import org.opencypher.v9_0.util._
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 
-  var database:GraphDatabaseService = _
+  private var database: GraphDatabaseService = _
+  private var graph: GraphDatabaseCypherService = _
 
   private def createTransactionContext(graphDatabaseCypherService: GraphDatabaseCypherService, transaction: InternalTransaction) = {
     val contextFactory = Neo4jTransactionalContextFactory.create(graphDatabaseCypherService, new PropertyContainerLocker)
@@ -46,6 +47,7 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
 
   override protected def initTest(): Unit = {
     database = new TestGraphDatabaseFactory().newImpermanentDatabase()
+    graph = new GraphDatabaseCypherService(database)
   }
 
   override protected def afterEach(): Unit = {
@@ -53,171 +55,154 @@ class TransactionBoundPlanContextTest extends CypherFunSuite {
   }
 
   test("statistics should default to single cardinality on empty db") {
-    val graph = new GraphDatabaseCypherService(database)
-    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    val transactionalContext = createTransactionContext(graph, transaction)
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-    val statistics = planContext.statistics
 
-    // label stats
-    statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality.SINGLE)
-    statistics.nodesAllCardinality() should equal(Cardinality.SINGLE)
+    inTx((_, planContext) => {
+      val statistics = planContext.statistics
 
-    // pattern stats
-    Set(Some(LabelId(0)), None).foreach { label1 =>
-      Set(Some(LabelId(1)), None).foreach { label2 =>
-        statistics.cardinalityByLabelsAndRelationshipType(label1, Some(RelTypeId(0)), label2) should equal(Cardinality.SINGLE)
-        statistics.cardinalityByLabelsAndRelationshipType(label1, None, label2) should equal(Cardinality.SINGLE)
+      // label stats
+      statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality.SINGLE)
+      statistics.nodesAllCardinality() should equal(Cardinality.SINGLE)
+
+      // pattern stats
+      Set(Some(LabelId(0)), None).foreach { label1 =>
+        Set(Some(LabelId(1)), None).foreach { label2 =>
+          statistics.cardinalityByLabelsAndRelationshipType(label1, Some(RelTypeId(0)), label2) should equal(Cardinality.SINGLE)
+          statistics.cardinalityByLabelsAndRelationshipType(label1, None, label2) should equal(Cardinality.SINGLE)
+        }
       }
-    }
-
-    transactionalContext.close(true)
-    transaction.close()
+    })
   }
 
   test("statistics should default to single cardinality for unknown counts on nonempty db") {
-    val graph = new GraphDatabaseCypherService(database)
 
-    val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
-    for ( i <- 0 until 100 ) {
-      val n1 = database.createNode(Label.label("L1"))
-      val n2 = database.createNode()
-      n1.createRelationshipTo(n2, RelationshipType.withName("T"))
-    }
-    tx.success()
-    tx.close()
+    // given
+    inTx((_, _) => {
+      for ( i <- 0 until 100 ) {
+        val n1 = database.createNode(Label.label("L1"))
+        val n2 = database.createNode()
+        n1.createRelationshipTo(n2, RelationshipType.withName("T"))
+      }
+    })
 
-    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    val transactionalContext = createTransactionContext(graph, transaction)
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-    val statistics = planContext.statistics
+    // then
+    inTx((_, planContext) => {
+      val statistics = planContext.statistics
 
-    // label stats
-    statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality(100))
-    statistics.nodesWithLabelCardinality(Some(LabelId(1))) should equal(Cardinality.SINGLE)
-    statistics.nodesAllCardinality() should equal(Cardinality(200))
+      // label stats
+      statistics.nodesWithLabelCardinality(Some(LabelId(0))) should equal(Cardinality(100))
+      statistics.nodesWithLabelCardinality(Some(LabelId(1))) should equal(Cardinality.SINGLE)
+      statistics.nodesAllCardinality() should equal(Cardinality(200))
 
-    // pattern stats
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), Some(RelTypeId(0)), Some(LabelId(1))) should equal(Cardinality.SINGLE)
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), Some(RelTypeId(0)), None) should equal(Cardinality(100))
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), None, Some(LabelId(1))) should equal(Cardinality.SINGLE)
-    statistics.cardinalityByLabelsAndRelationshipType(
-      Some(LabelId(0)), None, None) should equal(Cardinality(100))
-    statistics.cardinalityByLabelsAndRelationshipType(
-      None, None, None) should equal(Cardinality(100))
-    statistics.cardinalityByLabelsAndRelationshipType(
-      None, Some(RelTypeId(0)), None) should equal(Cardinality(100))
-
-    transactionalContext.close(true)
-    transaction.close()
+      // pattern stats
+      statistics.cardinalityByLabelsAndRelationshipType(
+        Some(LabelId(0)), Some(RelTypeId(0)), Some(LabelId(1))) should equal(Cardinality.SINGLE)
+      statistics.cardinalityByLabelsAndRelationshipType(
+        Some(LabelId(0)), Some(RelTypeId(0)), None) should equal(Cardinality(100))
+      statistics.cardinalityByLabelsAndRelationshipType(
+        Some(LabelId(0)), None, Some(LabelId(1))) should equal(Cardinality.SINGLE)
+      statistics.cardinalityByLabelsAndRelationshipType(
+        Some(LabelId(0)), None, None) should equal(Cardinality(100))
+      statistics.cardinalityByLabelsAndRelationshipType(
+        None, None, None) should equal(Cardinality(100))
+      statistics.cardinalityByLabelsAndRelationshipType(
+        None, Some(RelTypeId(0)), None) should equal(Cardinality(100))
+    })
   }
 
   test("indexesGetForLabel should return both regular and unique indexes") {
-    val graph = new GraphDatabaseCypherService(database)
+    inTx((_, _) => {
+      database.schema().indexFor(Label.label("L1")).on("prop").create()
+      database.schema().indexFor(Label.label("L2")).on("prop").create()
+      database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
+      database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    })
 
-    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    database.schema().indexFor(Label.label("L1")).on("prop").create()
-    database.schema().indexFor(Label.label("L2")).on("prop").create()
-    database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
-    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
-    setupTransaction.success()
-    setupTransaction.close()
-
-    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    val transactionalContext = createTransactionContext(graph, transaction)
-
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-
-    database.schema().awaitIndexesOnline(10, SECONDS)
-    val l1id = planContext.getLabelId("L1")
-    val prop1id = planContext.getPropertyKeyId("prop")
-    val prop2id = planContext.getPropertyKeyId("prop2")
-    planContext.indexesGetForLabel(l1id).toSet should equal(Set(
-      IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)), Set[IndexLimitation](SlowContains)),
-      IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
-    ))
+    inTx((_, planContext) => {
+      database.schema().awaitIndexesOnline(10, SECONDS)
+      val l1id = planContext.getLabelId("L1")
+      val prop1id = planContext.getPropertyKeyId("prop")
+      val prop2id = planContext.getPropertyKeyId("prop2")
+      planContext.indexesGetForLabel(l1id).toSet should equal(Set(
+        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop1id)), Set[IndexLimitation](SlowContains)),
+        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
+      ))
+    })
   }
 
   test("uniqueIndexesGetForLabel should return only unique indexes") {
-    val graph = new GraphDatabaseCypherService(database)
+    inTx((_, _) => {
+      database.schema().indexFor(Label.label("L1")).on("prop").create()
+      database.schema().indexFor(Label.label("L2")).on("prop").create()
+      database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
+      database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    })
 
-    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    database.schema().indexFor(Label.label("L1")).on("prop").create()
-    database.schema().indexFor(Label.label("L2")).on("prop").create()
-    database.schema().constraintFor(Label.label("L1")).assertPropertyIsUnique("prop2").create()
-    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
-    setupTransaction.success()
-    setupTransaction.close()
-
-    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    val transactionalContext = createTransactionContext(graph, transaction)
-
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-
-    database.schema().awaitIndexesOnline(10, SECONDS)
-    val l1id = planContext.getLabelId("L1")
-    val prop2id = planContext.getPropertyKeyId("prop2")
-    planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
-      IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
-    ))
+    inTx((_, planContext) => {
+      database.schema().awaitIndexesOnline(10, SECONDS)
+      val l1id = planContext.getLabelId("L1")
+      val prop2id = planContext.getPropertyKeyId("prop2")
+      planContext.uniqueIndexesGetForLabel(l1id).toSet should equal(Set(
+        IndexDescriptor(LabelId(l1id), Seq(PropertyKeyId(prop2id)), Set[IndexLimitation](SlowContains))
+      ))
+    })
   }
 
   test("indexExistsForLabel should return true for both regular and unique indexes") {
-    val graph = new GraphDatabaseCypherService(database)
+    inTx((_, _) => {
+      database.schema().indexFor(Label.label("L1")).on("prop").create()
+      database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    })
 
-    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    database.schema().indexFor(Label.label("L1")).on("prop").create()
-    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
-    setupTransaction.success()
-    setupTransaction.close()
+    inTx((_, _) => {
+      database.createNode(Label.label("L3"))
+    })
 
-    val setupTransaction2 = graph.beginTransaction(explicit, AUTH_DISABLED)
-    database.createNode(Label.label("L3"))
-    setupTransaction2.success()
-    setupTransaction2.close()
-
-    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    val transactionalContext = createTransactionContext(graph, transaction)
-
-    val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
-
-    database.schema().awaitIndexesOnline(10, SECONDS)
-    val l1id = planContext.getLabelId("L1")
-    val l2id = planContext.getLabelId("L2")
-    val l3id = planContext.getLabelId("L3")
-    planContext.indexExistsForLabel(l1id) should be(true)
-    planContext.indexExistsForLabel(l2id) should be(true)
-    planContext.indexExistsForLabel(l3id) should be(false)
+    inTx((_, planContext) => {
+      database.schema().awaitIndexesOnline(10, SECONDS)
+      val l1id = planContext.getLabelId("L1")
+      val l2id = planContext.getLabelId("L2")
+      val l3id = planContext.getLabelId("L3")
+      planContext.indexExistsForLabel(l1id) should be(true)
+      planContext.indexExistsForLabel(l2id) should be(true)
+      planContext.indexExistsForLabel(l3id) should be(false)
+    })
   }
 
   test("indexExistsForLabelAndProperties should return true for both regular and unique indexes") {
-    val graph = new GraphDatabaseCypherService(database)
+    inTx((_, _) => {
+      database.schema().indexFor(Label.label("L1")).on("prop").create()
+      database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
+    })
 
-    val setupTransaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    database.schema().indexFor(Label.label("L1")).on("prop").create()
-    database.schema().constraintFor(Label.label("L2")).assertPropertyIsUnique("prop2").create()
-    setupTransaction.success()
-    setupTransaction.close()
+    inTx((_, _) => {
+      database.createNode(Label.label("L3"))
+    })
 
-    val setupTransaction2 = graph.beginTransaction(explicit, AUTH_DISABLED)
-    database.createNode(Label.label("L3"))
-    setupTransaction2.success()
-    setupTransaction2.close()
+    inTx((_, planContext) => {
+      database.schema().awaitIndexesOnline(10, SECONDS)
+      planContext.indexExistsForLabelAndProperties("L1", Seq("prop")) should be(true)
+      planContext.indexExistsForLabelAndProperties("L1", Seq("prop2")) should be(false)
+      planContext.indexExistsForLabelAndProperties("L2", Seq("prop")) should be(false)
+      planContext.indexExistsForLabelAndProperties("L2", Seq("prop2")) should be(true)
+      planContext.indexExistsForLabelAndProperties("L3", Seq("prop")) should be(false)
+      planContext.indexExistsForLabelAndProperties("L3", Seq("prop2")) should be(false)
+    })
+  }
 
-    val transaction = graph.beginTransaction(explicit, AUTH_DISABLED)
-    val transactionalContext = createTransactionContext(graph, transaction)
-
+  def inTx(f: (Transaction, TransactionBoundPlanContext) => Unit) = {
+    val tx = graph.beginTransaction(explicit, AUTH_DISABLED)
+    val transactionalContext = createTransactionContext(graph, tx)
     val planContext = TransactionBoundPlanContext(TransactionalContextWrapper(transactionalContext), devNullLogger)
 
-    database.schema().awaitIndexesOnline(10, SECONDS)
-    planContext.indexExistsForLabelAndProperties("L1", Seq("prop")) should be(true)
-    planContext.indexExistsForLabelAndProperties("L1", Seq("prop2")) should be(false)
-    planContext.indexExistsForLabelAndProperties("L2", Seq("prop")) should be(false)
-    planContext.indexExistsForLabelAndProperties("L2", Seq("prop2")) should be(true)
-    planContext.indexExistsForLabelAndProperties("L3", Seq("prop")) should be(false)
-    planContext.indexExistsForLabelAndProperties("L3", Seq("prop2")) should be(false)
+    try {
+      f(tx, planContext)
+      transactionalContext.close(true)
+      tx.success()
+    } catch {
+      case _: Throwable =>
+        transactionalContext.close(false)
+    } finally {
+      tx.close()
+    }
   }
 }
