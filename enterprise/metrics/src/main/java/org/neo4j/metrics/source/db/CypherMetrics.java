@@ -32,7 +32,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Cypher Metrics" )
+@Documented( ".Cypher metrics" )
 public class CypherMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.cypher";

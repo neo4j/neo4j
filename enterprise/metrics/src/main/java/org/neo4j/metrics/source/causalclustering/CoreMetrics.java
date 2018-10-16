@@ -35,7 +35,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Core Metrics" )
+@Documented( ".Core metrics" )
 public class CoreMetrics extends LifecycleAdapter
 {
     private static final String CAUSAL_CLUSTERING_PREFIX = "neo4j.causal_clustering.core";

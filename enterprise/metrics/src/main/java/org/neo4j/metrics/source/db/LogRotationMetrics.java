@@ -39,7 +39,7 @@ import org.neo4j.metrics.output.EventReporter;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.Collections.emptySortedMap;
 
-@Documented( ".Database LogRotation Metrics" )
+@Documented( ".Database log rotation metrics" )
 public class LogRotationMetrics extends LifecycleAdapter
 {
     private static final String LOG_ROTATION_PREFIX = "neo4j.log_rotation";

@@ -33,7 +33,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Database Data Metrics" )
+@Documented( ".Database data metrics" )
 public class EntityCountMetrics extends LifecycleAdapter
 {
     private static final String COUNTS_PREFIX = "neo4j.ids_in_use";

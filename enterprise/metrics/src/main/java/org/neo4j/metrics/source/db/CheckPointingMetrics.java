@@ -38,7 +38,7 @@ import org.neo4j.metrics.output.EventReporter;
 import static com.codahale.metrics.MetricRegistry.name;
 import static java.util.Collections.emptySortedMap;
 
-@Documented( ".Database Checkpointing Metrics" )
+@Documented( ".Database checkpointing metrics" )
 public class CheckPointingMetrics extends LifecycleAdapter
 {
     private static final String CHECK_POINT_PREFIX = "neo4j.check_point";

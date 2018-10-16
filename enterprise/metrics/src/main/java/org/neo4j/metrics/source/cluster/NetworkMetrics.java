@@ -35,7 +35,7 @@ import org.neo4j.metrics.source.ByteCountsMetric;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Network Metrics" )
+@Documented( ".Network metrics" )
 public class NetworkMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.network";
