@@ -31,7 +31,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Database PageCache Metrics" )
+@Documented( ".Database page cache metrics" )
 public class PageCacheMetrics extends LifecycleAdapter
 {
     private static final String PAGE_CACHE_PREFIX = "neo4j.page_cache";

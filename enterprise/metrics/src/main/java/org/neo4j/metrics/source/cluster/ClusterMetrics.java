@@ -39,7 +39,7 @@ import static com.codahale.metrics.MetricRegistry.name;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.MASTER;
 import static org.neo4j.kernel.ha.cluster.modeswitch.HighAvailabilityModeSwitcher.UNKNOWN;
 
-@Documented( ".Cluster Metrics" )
+@Documented( ".Cluster metrics" )
 public class ClusterMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.cluster";

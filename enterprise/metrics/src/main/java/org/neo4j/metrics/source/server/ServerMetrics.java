@@ -33,7 +33,7 @@ import org.neo4j.logging.Log;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Server Metrics" )
+@Documented( ".Server metrics" )
 public class ServerMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.server";

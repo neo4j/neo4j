@@ -34,7 +34,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Bolt Metrics" )
+@Documented( ".Bolt metrics" )
 public class BoltMetrics extends LifecycleAdapter
 {
     private static final String NAME_PREFIX = "neo4j.bolt";

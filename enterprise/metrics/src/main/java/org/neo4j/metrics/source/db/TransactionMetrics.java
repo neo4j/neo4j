@@ -34,7 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static com.codahale.metrics.MetricRegistry.name;
 
-@Documented( ".Database Transaction Metrics" )
+@Documented( ".Database transaction metrics" )
 public class TransactionMetrics extends LifecycleAdapter
 {
     private static final String TRANSACTION_PREFIX = "neo4j.transaction";
