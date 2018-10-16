@@ -97,6 +97,7 @@ import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
+import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -158,6 +159,8 @@ public class IndexingServiceTest
     public final LifeRule life = new LifeRule();
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
+    @Rule
+    public SuppressOutput suppressOutput = SuppressOutput.suppressAll();
 
     private static final LogMatcherBuilder logMatch = inLog( IndexingService.class );
     private static final IndexProviderDescriptor lucene10Descriptor = new IndexProviderDescriptor( LUCENE10.providerKey(), LUCENE10.providerVersion() );

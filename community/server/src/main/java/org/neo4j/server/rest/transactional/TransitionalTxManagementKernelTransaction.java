@@ -35,7 +35,7 @@ class TransitionalTxManagementKernelTransaction
     private final GraphDatabaseFacade db;
     private final KernelTransaction.Type type;
     private final LoginContext loginContext;
-    private long customTransactionTimeout;
+    private final long customTransactionTimeout;
     private final ThreadToStatementContextBridge bridge;
 
     private InternalTransaction tx;
