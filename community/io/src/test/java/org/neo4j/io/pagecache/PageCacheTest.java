@@ -3609,14 +3609,14 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                             super.writeAll( src, position );
                         }
                     };
-                    channels.add(channel);
+                    channels.add( channel );
                     return channel;
                 }
 
                 @Override
                 public void close() throws IOException
                 {
-                    IOUtils.closeAll(channels);
+                    IOUtils.closeAll( channels );
                     super.close();
                 }
             };
@@ -3674,7 +3674,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                                 super.writeAll( src, position );
                             }
                         };
-                        channels.add(channel);
+                        channels.add( channel );
                         return channel;
                     }
 
