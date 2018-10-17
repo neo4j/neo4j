@@ -24,6 +24,7 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.kernel.api.helpers.Indexes
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -423,14 +424,18 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     val node2 = createLabeledNode(Map("prop1" -> 23, "prop3" -> 1), "L1")
     createLabeledNode(Map("prop1" -> 24, "prop3" -> 2), "L1")
     createLabeledNode(Map("prop1" -> 1337, "prop3" -> 1), "L1")
+    (3 until 100).foreach(i => createLabeledNode(Map("prop1" -> (1337+i), "prop3" -> i), "L1"))
     createLabeledNode(Map("prop2" -> 13, "prop4" -> 1), "L2")
     createLabeledNode(Map("prop2" -> 42, "prop4" -> 1), "L2")
     createLabeledNode(Map("prop2" -> 1337, "prop4" -> 1), "L2")
 
     val query = "MATCH(n:L1), (m:L2) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 = m.prop4 RETURN n"
 
+    graph.execute("CALL db.resampleOutdatedIndexes")
+    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
+
     // When
-    val plansToFail = Configs.All - Configs.Default - Configs.SlottedInterpreted - Configs.DefaultInterpreted
+    val plansToFail = Configs.AllRulePlanners + Configs.Cost2_3
     val result = executeWith(Configs.Interpreted, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"),
         expectPlansToFail = plansToFail))
@@ -448,11 +453,15 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     val node2 = createLabeledNode(Map("prop1" -> 23, "prop3" -> 1), "L1")
     createLabeledNode(Map("prop1" -> 24, "prop3" -> 2), "L1")
     createLabeledNode(Map("prop1" -> 1337, "prop3" -> 1), "L1")
+    (3 until 100).foreach(i => createLabeledNode(Map("prop1" -> (1337+i), "prop3" -> i), "L1"))
     createLabeledNode(Map("prop2" -> 13, "prop4" -> 2), "L2")
     createLabeledNode(Map("prop2" -> 42, "prop4" -> 4), "L2")
     createLabeledNode(Map("prop2" -> 1337, "prop4" -> 5), "L2")
 
     val query = "MATCH(n:L1), (m:L2) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 < m.prop4 RETURN n"
+
+    graph.execute("CALL db.resampleOutdatedIndexes")
+    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
 
     // When
     val plansToFail = Configs.All - Configs.Default - Configs.SlottedInterpreted - Configs.DefaultInterpreted
