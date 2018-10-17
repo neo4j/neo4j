@@ -65,33 +65,35 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     // There are various access points considered to be the "first" after population is completed,
     // be it verifyDeferredConstraints, sampleResult or some other call. Regardless all of those methods
     // have to be able to merge the parts into the real index. This is what this flag is all about.
-    private volatile boolean merged;
-    // First thing in close(boolean) call is to set this flag with the sole purpose of preventing new parts
-    // from being created beyond that point.
-    private volatile boolean closed;
+    private boolean merged;
+    // First thing in close(boolean)/drop call is to set this flag with the sole purpose of preventing new parts
+    // from being created beyond that point. Accessing methods are synchronized.
+    private boolean closed;
 
     ParallelNativeIndexPopulator( File baseIndexFile, IndexLayout<KEY,VALUE> layout, NativeIndexPopulatorPartSupplier<KEY,VALUE> partSupplier )
     {
         this.layout = layout;
-        this.threadLocalPopulators = ThreadLocal.withInitial( () ->
-        {
-            if ( closed )
-            {
-                throw new IllegalStateException( "Already closed" );
-            }
-            if ( merged )
-            {
-                throw new IllegalStateException( "Already merged" );
-            }
-
-            File file = new File( baseIndexFile + "-part-" + nextPartId.getAndIncrement() );
-            NativeIndexPopulator<KEY,VALUE> populator = partSupplier.part( file );
-            ThreadLocalPopulator tlPopulator = new ThreadLocalPopulator( populator );
-            partPopulators.add( tlPopulator );
-            populator.create();
-            return tlPopulator;
-        } );
+        this.threadLocalPopulators = ThreadLocal.withInitial( () -> newPartPopulator( baseIndexFile, partSupplier ) );
         this.completePopulator = partSupplier.part( baseIndexFile );
+    }
+
+    private synchronized ThreadLocalPopulator newPartPopulator( File baseIndexFile, NativeIndexPopulatorPartSupplier<KEY,VALUE> partSupplier )
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "Already closed" );
+        }
+        if ( merged )
+        {
+            throw new IllegalStateException( "Already merged" );
+        }
+
+        File file = new File( baseIndexFile + "-part-" + nextPartId.getAndIncrement() );
+        NativeIndexPopulator<KEY,VALUE> populator = partSupplier.part( file );
+        ThreadLocalPopulator tlPopulator = new ThreadLocalPopulator( populator );
+        partPopulators.add( tlPopulator );
+        populator.create();
+        return tlPopulator;
     }
 
     @Override
@@ -102,8 +104,9 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     }
 
     @Override
-    public void drop()
+    public synchronized void drop()
     {
+        closed = true;
         try
         {
             closeAndDropAllParts();
@@ -157,7 +160,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
     }
 
     @Override
-    public void close( boolean populationCompletedSuccessfully )
+    public synchronized void close( boolean populationCompletedSuccessfully )
     {
         closed = true;
         try
@@ -216,7 +219,7 @@ class ParallelNativeIndexPopulator<KEY extends NativeIndexKey<KEY>,VALUE extends
      * parameters and scenarios different methods of this populator will be considered the first method after population to operate
      * on the complete index.
      */
-    private void ensureMerged()
+    private synchronized void ensureMerged()
     {
         if ( !merged )
         {
