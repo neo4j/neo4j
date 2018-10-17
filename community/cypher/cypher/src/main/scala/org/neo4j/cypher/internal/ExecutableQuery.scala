@@ -27,7 +27,7 @@ import org.neo4j.values.virtual.MapValue
 /**
   * A fully compiled query in executable form.
   */
-trait ExecutableQuery {
+trait ExecutableQuery extends CacheabilityInfo {
 
   /**
     * Execute this executable query.

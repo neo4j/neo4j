@@ -57,5 +57,6 @@ case class LogicalPlanResult(logicalPlanState: LogicalPlanState,
                              extractedParams: MapValue,
                              reusability: ReusabilityState,
                              plannerContext: PlannerContext,
-                             notifications: Set[InternalNotification])
+                             notifications: Set[InternalNotification],
+                             shouldBeCached: Boolean)
 

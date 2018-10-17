@@ -55,4 +55,5 @@ object AstLogicalPlanCache {
 }
 
 case class CacheableLogicalPlan(logicalPlanState: LogicalPlanState,
-                                reusability: ReusabilityState, notifications: Set[InternalNotification])
+                                reusability: ReusabilityState, notifications: Set[InternalNotification],
+                                override val shouldBeCached: Boolean) extends CacheabilityInfo

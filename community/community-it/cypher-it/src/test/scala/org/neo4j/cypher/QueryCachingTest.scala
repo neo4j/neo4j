@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.graphdb.Label
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -152,6 +153,78 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
       s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))",
       s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.StringWrappingStringValue))")
+
+    actual should equal(expected)
+  }
+
+  test("Query with missing parameters should not be cached") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n, $m"
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    try {
+      graph.execute(query, params1).resultAsString()
+    } catch {
+      case qee: QueryExecutionException => qee.getMessage should equal("Expected parameter(s): m")
+      case _ => // something went wrong
+    }
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))")
+
+    actual should equal(expected)
+  }
+
+  test("EXPLAIN Query with missing parameters should not be cached") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val actualQuery = "RETURN $n, $m"
+    val executedQuery = "EXPLAIN " + actualQuery
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    val notifications = graph.execute(executedQuery, params1).getNotifications
+
+    var acc = 0
+    notifications.foreach(n => {
+      n.getDescription should equal(
+        "Did not supply query with enough parameters. The produced query plan will not be cached and is not executable without EXPLAIN. (Missing parameters: m)"
+      )
+      acc = acc + 1
+    })
+    acc should be (1)
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $actualQuery, Map(n -> class org.neo4j.values.storable.LongValue))")
+
+    actual should equal(expected)
+  }
+
+  test("EXPLAIN Query with enough parameters should be cached") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val actualQuery = "RETURN $n, $m"
+    val executedQuery = "EXPLAIN " + actualQuery
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42), "m" -> Long.box(21))
+
+    graph.execute(executedQuery, params1).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))"
+    )
 
     actual should equal(expected)
   }

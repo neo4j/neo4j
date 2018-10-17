@@ -63,7 +63,7 @@ trait CacheTracer[QUERY_KEY] {
   * @param stalenessCaller Decided whether CachedExecutionPlans are stale
   * @param tracer Traces cache activity
   */
-class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: AnyRef](
+class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterTypeMap], EXECUTABLE_QUERY <: CacheabilityInfo](
     val maximumSize: Int, val stalenessCaller: PlanStalenessCaller[EXECUTABLE_QUERY], val tracer: CacheTracer[Pair[QUERY_REP, ParameterTypeMap]]) {
 
   private val inner: Cache[QUERY_KEY, CachedValue] = Caffeine.newBuilder().maximumSize(maximumSize).build[QUERY_KEY, CachedValue]()
@@ -165,8 +165,13 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
                         metaData: String
                        ): CacheLookup[EXECUTABLE_QUERY] = {
     val newExecutableQuery = compile()
-    inner.put(queryKey,  new CachedValue(newExecutableQuery, recompiled = false))
-    miss(queryKey, newExecutableQuery, metaData)
+    if (newExecutableQuery.shouldBeCached) {
+      inner.put(queryKey, new CachedValue(newExecutableQuery, recompiled = false))
+      miss(queryKey, newExecutableQuery, metaData)
+    } else {
+      tracer.queryCacheMiss(queryKey, metaData)
+      CacheDisabled(newExecutableQuery)
+    }
   }
 
   private def hit(queryKey: QUERY_KEY,

@@ -208,11 +208,11 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         // Log notifications/warnings from planning
         notificationLoggerV3_4.notifications.map(helpers.as3_5).foreach(notificationLoggerv3_5.log)
 
-        CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState, notificationLoggerv3_5.notifications)
+        CacheableLogicalPlan(logicalPlanStatev3_5, reusabilityState, notificationLoggerv3_5.notifications, shouldBeCached = true)
       }
 
       // 3.4 does not produce different plans for different parameter types.
-      // Therefore, we always use an empty map as ParameterTypeMap
+      // Therefore, we always use an empty map as ParameterTypeMap and all plans get cached
 
       val cacheableLogicalPlan =
         if (preParsedQuery.debugOptions.isEmpty)
@@ -230,7 +230,8 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         ValueConversion.asValues(preparedQuery.extractedParams()),
         cacheableLogicalPlan.reusability,
         contextv3_5,
-        cacheableLogicalPlan.notifications)
+        cacheableLogicalPlan.notifications,
+        cacheableLogicalPlan.shouldBeCached)
     }
   }
 
