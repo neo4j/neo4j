@@ -43,6 +43,7 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
 import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredException;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
@@ -52,7 +53,6 @@ import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
-import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class DumpCommand implements AdminCommand
@@ -170,18 +170,11 @@ public class DumpCommand implements AdminCommand
                 JobScheduler jobScheduler = createInitialisedScheduler();
                 PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystem, additionalConfiguration, jobScheduler ) )
         {
-            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
-            {
-                throw new CommandFailed( joinAsLines(
-                        "Active logical log detected, this might be a source of inconsistencies.",
-                        "Please recover database before running the dump.",
-                        "To perform recovery please start database and perform clean shutdown." ) );
-            }
+            RecoveryRequiredChecker.assertRecoveryIsNotRequired( fileSystem, pageCache, additionalConfiguration, databaseLayout, new Monitors() );
         }
-        catch ( CommandFailed cf )
+        catch ( RecoveryRequiredException rre )
         {
-            throw cf;
+            throw new CommandFailed( rre.getMessage() );
         }
         catch ( Exception e )
         {

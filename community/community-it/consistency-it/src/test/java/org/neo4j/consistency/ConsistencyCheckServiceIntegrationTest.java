@@ -44,6 +44,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -133,9 +134,9 @@ public class ConsistencyCheckServiceIntegrationTest
         }
         catch ( ConsistencyCheckIncompleteException e )
         {
-            assertEquals( e.getCause().getMessage(), "Active logical log detected, this might be a source of inconsistencies. " +
-                    "Please recover database before running the consistency check. " +
-                    "To perform recovery please start database and perform clean shutdown." );
+            assertEquals( e.getCause().getMessage(),
+                    Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
+                            "To perform recovery please start database in single mode and perform clean shutdown." ) );
         }
     }
 

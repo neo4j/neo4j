@@ -70,4 +70,13 @@ public class RecoveryRequiredChecker
         LogTailScanner tailScanner = new LogTailScanner( logFiles, reader, monitors );
         return new RecoveryStartInformationProvider( tailScanner, NO_MONITOR ).get().isRecoveryRequired();
     }
+
+    public static void assertRecoveryIsNotRequired( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout,
+            Monitors monitors ) throws RecoveryRequiredException, IOException
+    {
+        if ( new RecoveryRequiredChecker( fs, pageCache, config, monitors ).isRecoveryRequiredAt( databaseLayout ) )
+        {
+            throw new RecoveryRequiredException();
+        }
+    }
 }
