@@ -206,7 +206,7 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
       """.stripMargin
   }
 
-  private def  executeOnDbWithInitialNumberOfNodes(f: () => Unit,
+  private def executeOnDbWithInitialNumberOfNodes(f: () => Unit,
                                                   config: InitialNumberOfNodes,
                                                   indexedLabels: List[String] = List.empty): Unit = {
     graph.inTx {
