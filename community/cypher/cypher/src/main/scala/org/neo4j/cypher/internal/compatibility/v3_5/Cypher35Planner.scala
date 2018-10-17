@@ -143,7 +143,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
-      val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
+      val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name).distinct
 
       checkForSchemaChanges(transactionalContextWrapper)
 

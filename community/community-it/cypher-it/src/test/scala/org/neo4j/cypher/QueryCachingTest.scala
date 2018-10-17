@@ -169,7 +169,6 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       graph.execute(query, params1).resultAsString()
     } catch {
       case qee: QueryExecutionException => qee.getMessage should equal("Expected parameter(s): m")
-      case _ => // something went wrong
     }
 
     val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
@@ -224,6 +223,26 @@ class QueryCachingTest extends CypherFunSuite with GraphDatabaseTestSupport with
       s"cacheFlushDetected",
       s"cacheMiss: (CYPHER 3.5 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))",
       s"cacheHit: (CYPHER 3.5 $actualQuery, Map(m -> class org.neo4j.values.storable.LongValue, n -> class org.neo4j.values.storable.LongValue))"
+    )
+
+    actual should equal(expected)
+  }
+
+  test("should cache plans when same parameter appears multiple times") {
+
+    val cacheListener = new LoggingStringCacheListener
+    kernelMonitors.addMonitorListener(cacheListener)
+
+    val query = "RETURN $n + $n"
+    val params1: Map[String, AnyRef] = Map("n" -> Long.box(42))
+
+    graph.execute(query, params1).resultAsString()
+
+    val actual = cacheListener.trace.map(str => str.replaceAll("\\s+", " "))
+    val expected = List(
+      s"cacheFlushDetected",
+      s"cacheMiss: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))",
+      s"cacheHit: (CYPHER 3.5 $query, Map(n -> class org.neo4j.values.storable.LongValue))"
     )
 
     actual should equal(expected)
