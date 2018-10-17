@@ -17,30 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.exceptions;
+package org.neo4j.kernel.impl.api;
 
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 
-public class TransactionFailureException extends KernelException
+public class MaximumTransactionLimitExceededException extends TransactionFailureException implements Status.HasStatus
 {
-    public TransactionFailureException( Status statusCode, Throwable cause, String message, Object... parameters )
+    private static final String MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE =
+            "Unable to start new transaction since limit of concurrently executed transactions is reached.";
+
+    MaximumTransactionLimitExceededException()
     {
-        super( statusCode, cause, message, parameters );
+        super( MAXIMUM_TRANSACTIONS_LIMIT_MESSAGE );
     }
 
-    public TransactionFailureException( Status statusCode, Throwable cause )
+    @Override
+    public Status status()
     {
-        super( statusCode, cause );
-    }
-
-    public TransactionFailureException( Status statusCode, String message, Object... parameters )
-    {
-        super( statusCode, message, parameters );
-    }
-
-    // To satisfy DatabaseHealth
-    public TransactionFailureException( String message, Throwable cause )
-    {
-        super( Status.Transaction.TransactionStartFailed, cause, message );
+        return Status.Transaction.MaximumTransactionLimitReached;
     }
 }

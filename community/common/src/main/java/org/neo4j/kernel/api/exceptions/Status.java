@@ -185,6 +185,9 @@ public interface Status
                 "terminated the transaction, or because the database is shutting down." ),
         LockAcquisitionTimeout( TransientError,
                 "Unable to acquire lock within configured timeout (dbms.lock.acquisition.timeout)." ),
+        MaximumTransactionLimitReached( TransientError,
+                "Unable to start new transaction since the maximum number of concurrently executing transactions is reached. " +
+                        "You can retry at a later time or consider increasing allowed maximum of concurrent transactions." ),
         Terminated( TransientError,
                 "Explicitly terminated by the user." ),
         Interrupted( TransientError,

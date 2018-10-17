@@ -22,15 +22,18 @@ package org.neo4j.kernel.impl.api;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import org.neo4j.collection.pool.LinkedQueuePool;
 import org.neo4j.collection.pool.MarshlandPool;
+import org.neo4j.collection.pool.Pool;
 import org.neo4j.function.Factory;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
@@ -122,13 +125,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
 
     // This is the factory that actually builds brand-new instances.
-    private final Factory<KernelTransactionImplementation> factory = new KernelTransactionImplementationFactory( allTransactions );
+    private final Factory<KernelTransactionImplementation> factory;
     // Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
-    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool =
-            new GlobalKernelTransactionPool( allTransactions, factory );
+    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool;
     // Pool of unused transactions.
-    private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
+    private final MarshlandPool<KernelTransactionImplementation> localTxPool;
     private final ConstraintSemantics constraintSemantics;
+    private final AtomicInteger activeTransactionCounter = new AtomicInteger();
 
     /**
      * Kernel transactions component status. True when stopped, false when started.
@@ -173,10 +176,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.dataSourceDependencies = dataSourceDependencies;
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
-        doBlockNewTransactions();
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
+        this.factory = new KernelTransactionImplementationFactory( allTransactions );
+        this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
+        this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
+        doBlockNewTransactions();
     }
 
     public KernelTransaction newInstance( KernelTransaction.Type type, LoginContext loginContext, long timeout )
@@ -315,6 +321,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         newTransactionsLock.writeLock().unlock();
     }
 
+    public int getNumberOfActiveTransactions()
+    {
+        return activeTransactionCounter.get();
+    }
+
     /**
      * Create new handle for the given transaction.
      * <p>
@@ -392,6 +403,50 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             transactions.remove( tx );
             tx.dispose();
             super.dispose( tx );
+        }
+    }
+
+    private static class LocalKernelTransactionPool extends MarshlandPool<KernelTransactionImplementation>
+    {
+        private final AtomicInteger activeTransactionCounter;
+        private volatile int maxNumberOfTransaction;
+
+        LocalKernelTransactionPool( Pool<KernelTransactionImplementation> delegatePool, AtomicInteger activeTransactionCounter, Config config )
+        {
+            super( delegatePool );
+            this.activeTransactionCounter = activeTransactionCounter;
+            this.maxNumberOfTransaction = config.get( GraphDatabaseSettings.max_concurrent_transactions );
+            config.registerDynamicUpdateListener( GraphDatabaseSettings.max_concurrent_transactions,
+                    ( oldValue, newValue ) -> maxNumberOfTransaction = newValue );
+        }
+
+        @Override
+        public KernelTransactionImplementation acquire()
+        {
+            verifyTransactionsLimit();
+            return super.acquire();
+        }
+
+        @Override
+        public void release( KernelTransactionImplementation obj )
+        {
+            activeTransactionCounter.decrementAndGet();
+            super.release( obj );
+        }
+
+        private void verifyTransactionsLimit()
+        {
+            int activeTransactions;
+            do
+            {
+                activeTransactions = activeTransactionCounter.get();
+                int localTransactionMaximum = maxNumberOfTransaction;
+                if ( localTransactionMaximum != 0 && activeTransactions >= localTransactionMaximum )
+                {
+                    throw new MaximumTransactionLimitExceededException();
+                }
+            }
+            while ( !activeTransactionCounter.compareAndSet( activeTransactions, activeTransactions + 1 ) );
         }
     }
 }

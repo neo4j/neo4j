@@ -24,8 +24,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
@@ -34,6 +38,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -113,10 +118,12 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_N
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
+import static org.neo4j.kernel.api.security.AnonymousContext.none;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 import static org.neo4j.test.assertion.Assert.assertException;
+import static org.neo4j.util.concurrent.Futures.combine;
 
 public class KernelTransactionsTest
 {
@@ -438,7 +445,7 @@ public class KernelTransactionsTest
         LoginContext loginContext = mock( LoginContext.class );
         when( loginContext.authorize( any(), any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
-        assertException(() -> kernelTransactions.newInstance(KernelTransaction.Type.explicit, loginContext, 0L),
+        assertException(() -> kernelTransactions.newInstance( explicit, loginContext, 0L),
                 AuthorizationExpiredException.class, "Freeze failed.");
 
         assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
@@ -452,7 +459,7 @@ public class KernelTransactionsTest
         databaseAvailabilityGuard.shutdown();
 
         expectedException.expect( DatabaseShutdownException.class );
-        kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, 0L );
+        kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L );
     }
 
     @Test
@@ -467,7 +474,7 @@ public class KernelTransactionsTest
         } ).get();
 
         expectedException.expect( IllegalStateException.class );
-        kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, 0L );
+        kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L );
     }
 
     @Test
@@ -478,29 +485,134 @@ public class KernelTransactionsTest
         kernelTransactions.stop();
         kernelTransactions.start();
         assertNotNull( "New transaction created by restarted kernel transactions component.",
-                kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, 0L ) );
+                kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L ) );
     }
 
     @Test
     public void incrementalUserTransactionId() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
-        try ( KernelTransaction kernelTransaction = kernelTransactions
-                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), 0L ) )
+        try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
         {
             assertEquals( 1, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
 
-        try ( KernelTransaction kernelTransaction = kernelTransactions
-                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), 0L ) )
+        try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
         {
             assertEquals( 2, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
 
-        try ( KernelTransaction kernelTransaction = kernelTransactions
-                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), 0L ) )
+        try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
         {
             assertEquals( 3, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
+        }
+    }
+
+    @Test
+    public void doNotAllowToCreateMoreThenMaxActiveTransactions() throws Throwable
+    {
+        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
+        KernelTransactions kernelTransactions = newKernelTransactions( config );
+        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), 0L );
+        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), 0L );
+
+        expectedException.expect( MaximumTransactionLimitExceededException.class );
+        kernelTransactions.newInstance( explicit, none(), 0L );
+    }
+
+    @Test
+    public void allowToBeginTransactionsWhenSlotsAvailableAgain() throws Throwable
+    {
+        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
+        KernelTransactions kernelTransactions = newKernelTransactions( config );
+        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), 0L );
+        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), 0L );
+
+        try
+        {
+            kernelTransactions.newInstance( explicit, none(), 0L );
+            fail( "should not be able to start" );
+        }
+        catch ( MaximumTransactionLimitExceededException e )
+        {
+            // expected
+        }
+
+        ignore.close();
+        // fine to start again
+        kernelTransactions.newInstance( explicit, none(), 0L );
+    }
+
+    @Test
+    public void allowToBeginTransactionsWhenConfigChanges() throws Throwable
+    {
+        Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
+        KernelTransactions kernelTransactions = newKernelTransactions( config );
+        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), 0L );
+        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), 0L );
+
+        try
+        {
+            kernelTransactions.newInstance( explicit, none(), 0L );
+            fail( "should not be able to start" );
+        }
+        catch ( MaximumTransactionLimitExceededException e )
+        {
+            // expected
+        }
+
+        config.updateDynamicSetting( GraphDatabaseSettings.max_concurrent_transactions.name(), "3", "test" );
+
+        // fine to start again
+        kernelTransactions.newInstance( explicit, none(), 0L );
+    }
+
+    @Test
+    public void reuseSameTransactionInOneThread() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        for ( int i  = 0; i < 100; i++ )
+        {
+            try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+            {
+                assertEquals( 1, kernelTransactions.getNumberOfActiveTransactions() );
+            }
+        }
+        assertEquals( 0, kernelTransactions.getNumberOfActiveTransactions() );
+    }
+
+    @Test
+    public void trackNumberOfActiveTransactionFromMultipleThreads() throws Throwable
+    {
+        KernelTransactions kernelTransactions = newKernelTransactions();
+        int expectedTransactions = 100;
+        CountDownLatch latch = new CountDownLatch( expectedTransactions );
+        ExecutorService executors = Executors.newCachedThreadPool();
+        List<Future<Void>> transactionFutures = new ArrayList<>();
+        try
+        {
+            for ( int i = 0; i < expectedTransactions; i++ )
+            {
+                Future transactionFuture = executors.submit( () ->
+                {
+                    try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+                    {
+                        latch.countDown();
+                        latch.await();
+                    }
+                    catch ( TransactionFailureException | InterruptedException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                } );
+                transactionFutures.add( transactionFuture );
+            }
+            combine( transactionFutures ).get();
+            assertEquals( 0, kernelTransactions.getNumberOfActiveTransactions() );
+        }
+        finally
+        {
+            executors.shutdown();
         }
     }
 
@@ -520,7 +632,7 @@ public class KernelTransactionsTest
     {
         try
         {
-            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, 0L ).close();
+            kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L ).close();
         }
         catch ( TransactionFailureException e )
         {
@@ -533,25 +645,34 @@ public class KernelTransactionsTest
         return newKernelTransactions( mock( TransactionCommitProcess.class ) );
     }
 
+    private static KernelTransactions newKernelTransactions( Config config ) throws Throwable
+    {
+        return newKernelTransactions( mock( TransactionCommitProcess.class ), config );
+    }
+
     private static KernelTransactions newTestKernelTransactions() throws Throwable
     {
-        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageReader.class ) );
+        return newKernelTransactions( true, mock( TransactionCommitProcess.class ), mock( StorageReader.class ), Config.defaults() );
+    }
+
+    private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess, Config config ) throws Throwable
+    {
+        return newKernelTransactions( false, commitProcess, mock( StorageReader.class ), config );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess ) throws Throwable
     {
-        return newKernelTransactions( false, commitProcess, mock( StorageReader.class ) );
+        return newKernelTransactions( false, commitProcess, mock( StorageReader.class ), Config.defaults() );
     }
 
     private static KernelTransactions newKernelTransactions( TransactionCommitProcess commitProcess,
             StorageReader firstReader, StorageReader... otherReaders ) throws Throwable
     {
-        return newKernelTransactions( false, commitProcess, firstReader, otherReaders );
+        return newKernelTransactions( false, commitProcess, firstReader, Config.defaults(), otherReaders );
     }
 
-    private static KernelTransactions newKernelTransactions( boolean testKernelTransactions,
-            TransactionCommitProcess commitProcess, StorageReader firstReader,
-            StorageReader... otherReaders ) throws Throwable
+    private static KernelTransactions newKernelTransactions( boolean testKernelTransactions, TransactionCommitProcess commitProcess, StorageReader firstReader,
+            Config config, StorageReader... otherReaders ) throws Throwable
     {
         Locks locks = mock( Locks.class );
         Locks.Client client = mock( Locks.Client.class );
@@ -572,11 +693,11 @@ public class KernelTransactionsTest
                 anyLong(),
                 any( TxStateVisitor.Decorator.class ) );
 
-        return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions );
+        return newKernelTransactions( locks, storageEngine, commitProcess, testKernelTransactions, config );
     }
 
-    private static KernelTransactions newKernelTransactions( Locks locks, StorageEngine storageEngine,
-            TransactionCommitProcess commitProcess, boolean testKernelTransactions )
+    private static KernelTransactions newKernelTransactions( Locks locks, StorageEngine storageEngine, TransactionCommitProcess commitProcess,
+            boolean testKernelTransactions, Config config )
     {
         LifeSupport life = new LifeSupport();
         life.start();
@@ -598,18 +719,17 @@ public class KernelTransactionsTest
         else
         {
             transactions = createTransactions( storageEngine, commitProcess, transactionIdStore, tracers,
-                    statementLocksFactory, statementOperations, clock, databaseAvailabilityGuard );
+                    statementLocksFactory, statementOperations, clock, databaseAvailabilityGuard, config );
         }
         transactions.start();
         return transactions;
     }
 
-    private static KernelTransactions createTransactions( StorageEngine storageEngine,
-            TransactionCommitProcess commitProcess, TransactionIdStore transactionIdStore, Tracers tracers,
-            StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
-            SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
+    private static KernelTransactions createTransactions( StorageEngine storageEngine, TransactionCommitProcess commitProcess,
+            TransactionIdStore transactionIdStore, Tracers tracers, StatementLocksFactory statementLocksFactory, StatementOperationParts statementOperations,
+            SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
     {
-        return new KernelTransactions( Config.defaults(), statementLocksFactory, null, statementOperations,
+        return new KernelTransactions( config, statementLocksFactory, null, statementOperations,
                 null, DEFAULT, commitProcess, mock( AuxiliaryTransactionStateManager.class ), new TransactionHooks(),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
@@ -665,7 +785,7 @@ public class KernelTransactionsTest
 
     private static KernelTransaction getKernelTransaction( KernelTransactions transactions )
     {
-        return transactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.none(), 0L );
+        return transactions.newInstance( KernelTransaction.Type.implicit, none(), 0L );
     }
 
     private static class TestKernelTransactions extends KernelTransactions

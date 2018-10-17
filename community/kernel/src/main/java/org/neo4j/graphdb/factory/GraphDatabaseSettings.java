@@ -409,6 +409,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Duration> transaction_start_timeout =
             setting( "unsupported.dbms.transaction_start_timeout", DURATION, "1s" );
 
+    @Dynamic
+    @Description( "The maximum number of concurrently running transactions. If set to 0, limit is disabled." )
+    public static final Setting<Integer> max_concurrent_transactions = setting( "dbms.transaction.concurrent.maximum", INTEGER, "1000" );
+
     @Internal
     @Description( "Please use dbms.transaction.timeout instead." )
     @Deprecated
