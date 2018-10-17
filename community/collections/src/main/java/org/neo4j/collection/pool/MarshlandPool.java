@@ -24,8 +24,6 @@ import java.lang.ref.WeakReference;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static java.util.Collections.newSetFromMap;
-
 /**
  * A concurrent pool that attempts to use thread-local pooling (puddles!) rather than a single big pool of objects to
  * lower contention. Falls back to a delegate pool if no local object can be claimed. This means this can be used as
@@ -51,7 +49,7 @@ public class MarshlandPool<T> implements Pool<T>
     private final Pool<T> delegate;
 
     // Used to reclaim objects from dead threads
-    private final Set<LocalSlotReference<T>> slotReferences = newSetFromMap( new ConcurrentHashMap<>() );
+    private final Set<LocalSlotReference<T>> slotReferences = ConcurrentHashMap.newKeySet();
     private final ReferenceQueue<LocalSlot<T>> objectsFromDeadThreads = new ReferenceQueue<>();
 
     private final ThreadLocal<LocalSlot<T>> puddle = ThreadLocal.withInitial( () ->

@@ -47,7 +47,6 @@ import java.nio.file.NoSuchFileException;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -92,7 +91,7 @@ public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
         void pos( long position );
     }
 
-    private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private final Set<File> directories = ConcurrentHashMap.newKeySet();
     private final Map<File,EphemeralFileData> files;
 
     public EphemeralFileSystemAbstraction()

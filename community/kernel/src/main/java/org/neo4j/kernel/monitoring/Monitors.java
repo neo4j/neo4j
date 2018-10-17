@@ -27,7 +27,6 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -92,7 +91,7 @@ public class Monitors
         methodsStream( listenerInterfaces ).forEach( method ->
         {
             Set<MonitorListenerInvocationHandler> methodHandlers =
-                    methodMonitorListeners.computeIfAbsent( method, f -> Collections.newSetFromMap( new ConcurrentHashMap<>() ) );
+                    methodMonitorListeners.computeIfAbsent( method, f -> ConcurrentHashMap.newKeySet() );
             methodHandlers.add( monitorListenerInvocationHandler );
         } );
         monitoredInterfaces.addAll( listenerInterfaces );

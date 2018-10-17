@@ -22,7 +22,6 @@ package org.neo4j.kernel.internal.locker;
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.FileLock;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -48,7 +47,7 @@ import org.neo4j.kernel.StoreLockException;
  */
 public class GlobalStoreLocker extends StoreLocker
 {
-    private static final Set<File> lockedFiles = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private static final Set<File> lockedFiles = ConcurrentHashMap.newKeySet();
 
     public GlobalStoreLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout )
     {

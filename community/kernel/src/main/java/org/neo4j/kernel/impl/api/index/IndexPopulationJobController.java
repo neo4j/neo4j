@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
@@ -29,7 +28,7 @@ import org.neo4j.scheduler.JobScheduler;
 
 class IndexPopulationJobController
 {
-    private final Set<IndexPopulationJob> populationJobs = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private final Set<IndexPopulationJob> populationJobs = ConcurrentHashMap.newKeySet();
     private final JobScheduler scheduler;
 
     IndexPopulationJobController( JobScheduler scheduler )

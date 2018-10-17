@@ -67,7 +67,6 @@ import org.neo4j.resources.HeapAllocation;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.util.Collections.newSetFromMap;
 import static java.util.stream.Collectors.toSet;
 
 /**
@@ -122,7 +121,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
      * As such, it provides a good mechanism for listing all transactions without requiring synchronization when
      * starting and committing transactions.
      */
-    private final Set<KernelTransactionImplementation> allTransactions = newSetFromMap( new ConcurrentHashMap<>() );
+    private final Set<KernelTransactionImplementation> allTransactions = ConcurrentHashMap.newKeySet();
 
     // This is the factory that actually builds brand-new instances.
     private final Factory<KernelTransactionImplementation> factory;

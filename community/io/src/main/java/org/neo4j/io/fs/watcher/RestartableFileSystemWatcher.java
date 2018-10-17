@@ -22,7 +22,6 @@ package org.neo4j.io.fs.watcher;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,9 +37,9 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
  */
 public class RestartableFileSystemWatcher implements FileWatcher
 {
-    private FileWatcher delegate;
-    private Set<File> filesToWatch = Collections.newSetFromMap( new ConcurrentHashMap<>() );
-    private Set<WatchedResource> watchedResources = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private final FileWatcher delegate;
+    private final Set<File> filesToWatch = ConcurrentHashMap.newKeySet();
+    private final Set<WatchedResource> watchedResources = ConcurrentHashMap.newKeySet();
 
     public RestartableFileSystemWatcher( FileWatcher delegate )
     {
