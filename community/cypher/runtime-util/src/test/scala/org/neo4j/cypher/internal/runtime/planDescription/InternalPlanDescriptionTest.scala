@@ -19,12 +19,30 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class InternalPlanDescriptionTest extends CypherFunSuite {
 
   private val ID = Id.INVALID_ID
+
+
+  test("arguments are read as expected") {
+    val arguments = Seq(
+      DbHits(1),
+      PageCacheHits(2),
+      PageCacheMisses(3),
+      Time(4),
+      Rows(5))
+    val plan = PlanDescriptionImpl(ID, "plan", NoChildren, arguments, Set())
+    plan.hasProfilerStatistics should equal(true)
+    plan.getProfilerStatistics.getDbHits should equal(1)
+    plan.getProfilerStatistics.getPageCacheHits should equal(2)
+    plan.getProfilerStatistics.getPageCacheMisses should equal(3)
+    plan.getProfilerStatistics.getTime should equal(4)
+    plan.getProfilerStatistics.getRows should equal(5)
+  }
 
   test("flatten behaves like expected for plan with two children") {
     val child1 = PlanDescriptionImpl(ID, "child1", NoChildren, Seq.empty, Set())

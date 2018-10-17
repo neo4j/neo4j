@@ -51,6 +51,8 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def withRowsBetween(min: Long, max: Long): PlanMatcher
 
+  def withTime(): PlanMatcher
+
   def withDBHits(hits: Long): PlanMatcher
 
   def withDBHits(): PlanMatcher
@@ -115,6 +117,8 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withEstimatedRowsBetween(min, max))
 
+  override def withTime(): PlanMatcher = copy(inner = inner.withTime())
+
   override def withDBHits(hits: Long): PlanMatcher = copy(inner = inner.withDBHits(hits))
 
   override def withDBHits(): PlanMatcher = copy(inner = inner.withDBHits())
@@ -174,6 +178,8 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 
   override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(inner = inner.withEstimatedRowsBetween(min, max))
 
+  override def withTime(): PlanMatcher = copy(inner = inner.withTime())
+
   override def withDBHits(hits: Long): PlanMatcher = copy(inner = inner.withDBHits(hits))
 
   override def withDBHits(): PlanMatcher = copy(inner = inner.withDBHits())
@@ -201,6 +207,7 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
 case class ExactPlan(name: Option[PlanNameMatcher] = None,
                      estimatedRows: Option[EstimatedRowsMatcher] = None,
                      rows: Option[ActualRowsMatcher] = None,
+                     time: Option[TimeMatcher] = None,
                      dbHits: Option[DBHitsMatcher] = None,
                      order: Option[OrderArgumentMatcher] = None,
                      variables: Option[VariablesMatcher] = None,
@@ -213,6 +220,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
     val estimatedRowsResult = estimatedRows.map(_ (plan))
     val rowsResult = rows.map(_ (plan))
     val dbHitsResult = dbHits.map(_ (plan))
+    val timeResult = time.map(_ (plan))
     val orderResult = order.map(_ (plan))
     val variablesResult = variables.map(_ (plan))
     val otherResult = other.map(_ (plan))
@@ -242,7 +250,7 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
       }
     }
 
-    val allResults = Seq(nameResult, estimatedRowsResult, rowsResult, dbHitsResult, orderResult, variablesResult, otherResult, lhsResult, rhsResult).flatten
+    val allResults = Seq(nameResult, estimatedRowsResult, rowsResult, dbHitsResult, timeResult, orderResult, variablesResult, otherResult, lhsResult, rhsResult).flatten
     val firstMatch = allResults.collectFirst {
       case mr if mr.matches => mr
     }
@@ -291,6 +299,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
   override def withEstimatedRows(estimatedRows: Long): PlanMatcher = copy(estimatedRows = Some(new ExactArgumentMatcher(estimatedRows) with EstimatedRowsMatcher))
 
   override def withEstimatedRowsBetween(min: Long, max: Long): PlanMatcher = copy(estimatedRows = Some(new RangeArgumentMatcher(min, max) with EstimatedRowsMatcher))
+
+  override def withTime(): PlanMatcher = copy(time = Some(new RangeArgumentMatcher(1, Long.MaxValue) with TimeMatcher))
 
   override def withDBHits(hits: Long): PlanMatcher = copy(dbHits = Some(new ExactArgumentMatcher(hits) with DBHitsMatcher))
 
