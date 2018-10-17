@@ -23,9 +23,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
+import org.neo4j.cypher.internal.StringCacheMonitor
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.helpers.Indexes
+import org.neo4j.kernel.monitoring.Monitors
 
 /**
   * These tests are similar with the tests in LeafPlanningIntegrationTest, but
@@ -36,9 +40,18 @@ import org.neo4j.internal.kernel.api.helpers.Indexes
   */
 class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
 
+  private var missCounter: MissCounter = _
+
   override def databaseConfig(): Map[Setting[_], String] =
     Map(GraphDatabaseSettings.query_non_indexed_label_warning_threshold -> "10",
       GraphDatabaseSettings.cypher_plan_with_minimum_cardinality_estimates -> "true")
+
+  override protected def initTest() {
+    super.initTest()
+    val monitors = graph.getDependencyResolver.resolveDependency(classOf[Monitors])
+    missCounter = new MissCounter
+    monitors.addMonitorListener(missCounter)
+  }
 
   test("should do two index seeks instead of scans with explicit index hint (import scenario)") {
     val query =
@@ -193,7 +206,7 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
       """.stripMargin
   }
 
-  private def executeOnDbWithInitialNumberOfNodes(f: () => Unit,
+  private def  executeOnDbWithInitialNumberOfNodes(f: () => Unit,
                                                   config: InitialNumberOfNodes,
                                                   indexedLabels: List[String] = List.empty): Unit = {
     graph.inTx {
@@ -206,7 +219,9 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
 
     indexedLabels.foreach(l => graph.execute(s"CALL db.resampleIndex(':$l(prop)')"))
     assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 1000 ))
+    eengine.clearQueryCaches()
 
+    val missesBefore = missCounter.count
     try {
       f()
     } catch {
@@ -214,7 +229,16 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
         System.err.println(s"Failed with $config")
         throw t
     }
+    val missesAfter = missCounter.count
+    missesAfter should be > missesBefore
 
     deleteAllEntities()
+  }
+
+  class MissCounter() extends StringCacheMonitor {
+    var count = 0
+    override def cacheMiss(key: Pair[String, ParameterTypeMap]) {
+      count += 1
+    }
   }
 }
