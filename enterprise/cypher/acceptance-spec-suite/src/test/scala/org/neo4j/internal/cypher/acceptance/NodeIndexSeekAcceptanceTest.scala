@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
 
 /**
@@ -366,9 +366,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.CommunityInterpreted, "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 2),
-        expectPlansToFail = Configs.Cost2_3 + Configs.Cost3_1 + Configs.AllRulePlanners),
-      //TODO: Remove when 3.2.13 is released
-      expectedDifferentResults = Configs.Version3_2)
+        expectPlansToFail = Configs.Cost2_3 + Configs.Cost3_1 + Configs.AllRulePlanners))
 
     // Then
     result.toList should be (empty)
@@ -405,9 +403,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.CommunityInterpreted, "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should useOperatorTimes("NodeIndexSeek", 4),
-        expectPlansToFail = Configs.Cost2_3 + Configs.Cost3_1 + Configs.AllRulePlanners),
-      //TODO: Remove when 3.2.13 is released
-      expectedDifferentResults = Configs.Version3_2)
+        expectPlansToFail = Configs.Cost2_3 + Configs.Cost3_1 + Configs.AllRulePlanners))
 
     // Then
     result.toList should be (empty)

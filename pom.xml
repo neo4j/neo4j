@@ -45,7 +45,7 @@
     <checkstyle.strict>true</checkstyle.strict>
     <cypher.compatibility.23>2.3.12</cypher.compatibility.23>
     <cypher.compatibility.31>3.1.9</cypher.compatibility.31>
-    <cypher.compatibility.32>3.2.12</cypher.compatibility.32>
+    <cypher.compatibility.32>3.2.13</cypher.compatibility.32>
     <caffeine.version>2.3.3</caffeine.version>
   </properties>
 
