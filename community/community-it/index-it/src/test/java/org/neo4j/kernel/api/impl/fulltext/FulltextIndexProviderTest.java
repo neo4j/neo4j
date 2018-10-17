@@ -389,7 +389,8 @@ public class FulltextIndexProviderTest
                 }
 
                 @Override
-                public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+                public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+                        boolean indexIncludesTransactionState )
                 {
                     this.progressor = progressor;
                 }

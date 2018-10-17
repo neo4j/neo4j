@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.txstate.auxiliary;
+package org.neo4j.kernel.api.impl.index;
 
-public class AuxiliaryTransactionStateCloseException extends RuntimeException
+import org.apache.lucene.search.IndexSearcher;
+
+import java.io.Closeable;
+
+public interface SearcherReference extends Closeable
 {
-    public AuxiliaryTransactionStateCloseException( String message, Throwable cause )
-    {
-        super( message, cause );
-    }
+    IndexSearcher getIndexSearcher();
 }

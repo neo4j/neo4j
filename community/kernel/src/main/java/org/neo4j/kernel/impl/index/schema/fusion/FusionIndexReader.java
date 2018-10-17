@@ -32,6 +32,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -75,13 +76,19 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public boolean indexIncludesTransactionState()
+    {
+        return false;
+    }
+
+    @Override
+    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
             throws IndexNotApplicableKernelException
     {
         IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
         if ( slot != null )
         {
-            instanceSelector.select( slot ).query( cursor, indexOrder, needsValues, predicates );
+            instanceSelector.select( slot ).query( context, cursor, indexOrder, needsValues, predicates );
         }
         else
         {
@@ -93,14 +100,14 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
             }
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
                     descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, needsValues );
+            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, needsValues, false );
             try
             {
                 instanceSelector.forAll( reader ->
                 {
                     try
                     {
-                        reader.query( multiProgressor, indexOrder, needsValues, predicates );
+                        reader.query( context, multiProgressor, indexOrder, needsValues, predicates );
                     }
                     catch ( IndexNotApplicableKernelException e )
                     {

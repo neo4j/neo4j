@@ -187,6 +187,8 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def close(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
+
+    override def score(): Float = inner.score()
   }
 
   class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {

@@ -41,7 +41,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.backup.WritableIndexSnapshotFileIterator;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
@@ -258,7 +257,7 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
     public LuceneAllDocumentsReader allDocumentsReader()
     {
         ensureOpen();
-        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
+        List<SearcherReference> searchers = new ArrayList<>( partitions.size() );
         try
         {
             for ( AbstractIndexPartition partition : partitions )
@@ -395,9 +394,9 @@ public abstract class AbstractLuceneIndex<READER extends IndexReader>
         }
     }
 
-    protected static List<PartitionSearcher> acquireSearchers( List<AbstractIndexPartition> partitions ) throws IOException
+    protected static List<SearcherReference> acquireSearchers( List<AbstractIndexPartition> partitions ) throws IOException
     {
-        List<PartitionSearcher> searchers = new ArrayList<>( partitions.size() );
+        List<SearcherReference> searchers = new ArrayList<>( partitions.size() );
         try
         {
             for ( AbstractIndexPartition partition : partitions )

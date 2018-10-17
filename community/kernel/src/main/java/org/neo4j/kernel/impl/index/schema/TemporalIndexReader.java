@@ -33,10 +33,12 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>> implements IndexReader
 {
@@ -76,12 +78,18 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
+        query( NULL_CONTEXT, nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public boolean indexIncludesTransactionState()
+    {
+        return false;
+    }
+
+    @Override
+    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         if ( predicates.length != 1 )
         {
@@ -92,10 +100,10 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
         {
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, needsValues );
+            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, needsValues, false );
             for ( NativeIndexReader<?,NativeIndexValue> reader : this )
             {
-                reader.query( multiProgressor, indexOrder, needsValues, predicates );
+                reader.query( context, multiProgressor, indexOrder, needsValues, predicates );
             }
         }
         else
@@ -105,16 +113,16 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
                 NativeIndexReader<?,NativeIndexValue> part = uncheckedSelect( predicate.valueGroup() );
                 if ( part != null )
                 {
-                    part.query( cursor, indexOrder, needsValues, predicates );
+                    part.query( context, cursor, indexOrder, needsValues, predicates );
                 }
                 else
                 {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, needsValues );
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, needsValues, false );
                 }
             }
             else
             {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, needsValues );
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, needsValues, false );
             }
         }
     }

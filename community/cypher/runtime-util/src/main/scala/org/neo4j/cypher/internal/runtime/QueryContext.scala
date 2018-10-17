@@ -369,4 +369,6 @@ class NodeValueHit(val nodeId: Long, val values: Array[Value]) extends NodeValue
   override def close(): Unit = _next = false
 
   override def isClosed: Boolean = _next
+
+  override def score(): Float = Float.NaN
 }

@@ -23,13 +23,17 @@ import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.classic.ParseException;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,7 +41,10 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
@@ -147,8 +154,7 @@ public class FulltextProcedures
 
     @Description( "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryNodes", mode = READ )
-    public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query )
-            throws ParseException, IndexNotFoundKernelException, IOException
+    public Stream<NodeOutput> queryFulltextForNodes( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
         IndexReference indexReference = getValidIndexReference( name );
         awaitOnline( indexReference );
@@ -158,10 +164,29 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for nodes." );
         }
-        ScoreEntityIterator resultIterator = accessor.query( tx, name, query );
-        return resultIterator.stream()
-                .map( result -> NodeOutput.forExistingEntityOrNull( db, result ) )
-                .filter( Objects::nonNull );
+        NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor();
+        tx.dataRead().nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+
+        Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<NodeOutput>()
+        {
+            @Override
+            public boolean tryAdvance( Consumer<? super NodeOutput> action )
+            {
+                while ( cursor.next() )
+                {
+                    long nodeReference = cursor.nodeReference();
+                    float score = cursor.score();
+                    NodeOutput nodeOutput = NodeOutput.forExistingEntityOrNull( db, nodeReference, score );
+                    if ( nodeOutput != null )
+                    {
+                        action.accept( nodeOutput );
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+        return StreamSupport.stream( spliterator, false );
     }
 
     @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
@@ -209,22 +234,50 @@ public class FulltextProcedures
         // We will get an exception later, when we try to get an IndexReader, so this is fine.
     }
 
-    public static final class NodeOutput
+    private abstract static class SpliteratorAdaptor<T> implements Spliterator<T>
+    {
+        @Override
+        public Spliterator<T> trySplit()
+        {
+            return null;
+        }
+
+        @Override
+        public long estimateSize()
+        {
+            return Long.MAX_VALUE;
+        }
+
+        @Override
+        public int characteristics()
+        {
+            return Spliterator.ORDERED | Spliterator.SORTED | Spliterator.DISTINCT | Spliterator.NONNULL | Spliterator.IMMUTABLE;
+        }
+
+        @Override
+        public Comparator<? super T> getComparator()
+        {
+            // Returning 'null' here means the items are sorted by their "natural" sort order.
+            return null;
+        }
+    }
+
+    public static final class NodeOutput implements Comparable<NodeOutput>
     {
         public final Node node;
         public final double score;
 
-        protected NodeOutput( Node node, double score )
+        protected NodeOutput( Node node, float score )
         {
             this.node = node;
             this.score = score;
         }
 
-        public static NodeOutput forExistingEntityOrNull( GraphDatabaseService db, ScoreEntityIterator.ScoreEntry result )
+        public static NodeOutput forExistingEntityOrNull( GraphDatabaseService db, long nodeId, float score )
         {
             try
             {
-                return new NodeOutput( db.getNodeById( result.entityId() ), result.score() );
+                return new NodeOutput( db.getNodeById( nodeId ), score );
             }
             catch ( NotFoundException ignore )
             {
@@ -232,14 +285,20 @@ public class FulltextProcedures
                 return null;
             }
         }
+
+        @Override
+        public int compareTo( NodeOutput that )
+        {
+            return Double.compare( this.score, that.score );
+        }
     }
 
-    public static final class RelationshipOutput
+    public static final class RelationshipOutput implements Comparable<RelationshipOutput>
     {
         public final Relationship relationship;
         public final double score;
 
-        public RelationshipOutput( Relationship relationship, double score )
+        public RelationshipOutput( Relationship relationship, float score )
         {
             this.relationship = relationship;
             this.score = score;
@@ -256,6 +315,12 @@ public class FulltextProcedures
                 // This relationship was most likely deleted by a concurrent transaction, so we just ignore it.
                 return null;
             }
+        }
+
+        @Override
+        public int compareTo( RelationshipOutput that )
+        {
+            return Double.compare( this.score, that.score );
         }
     }
 

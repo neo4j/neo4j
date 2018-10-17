@@ -34,6 +34,7 @@ import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -197,7 +198,7 @@ public class PartitionedIndexReaderTest
         return new PartitionedIndexReader( getPartitionSearchers(), schemaIndexDescriptor, samplingConfig, taskCoordinator );
     }
 
-    private List<PartitionSearcher> getPartitionSearchers()
+    private List<SearcherReference> getPartitionSearchers()
     {
         return Arrays.asList( partitionSearcher1, partitionSearcher2, partitionSearcher3 );
     }

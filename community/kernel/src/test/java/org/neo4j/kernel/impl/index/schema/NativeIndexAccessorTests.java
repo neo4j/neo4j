@@ -58,6 +58,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
@@ -82,6 +83,7 @@ import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.of;
 
 /**
@@ -729,7 +731,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1]) );
         IndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
         IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
-        reader.query( filterClient, IndexOrder.NONE, false, rangeQuery );
+        reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, rangeQuery );
 
         // then
         assertTrue( iter.hasNext() );
@@ -782,7 +784,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
                 }
 
                 SimpleNodeValueClient client = new SimpleNodeValueClient();
-                reader.query( client, supportedOrder, true, supportedQuery );
+                reader.query( NULL_CONTEXT, client, supportedOrder, true, supportedQuery );
                 int i = 0;
                 while ( client.next() )
                 {
@@ -811,7 +813,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
                     CoreMatchers.containsString( unsupportedQuery.toString() ) ) );
 
             // when
-            reader.query( new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery );
+            reader.query( NULL_CONTEXT, new SimpleNodeValueClient(), unsupportedOrder, false, unsupportedQuery );
         }
     }
 
@@ -865,7 +867,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         try ( IndexReader reader = accessor.newReader() )
         {
                 SimpleNodeValueClient client = new SimpleNodeValueClient();
-                reader.query( client, IndexOrder.NONE, true, supportedQuery );
+                reader.query( NULL_CONTEXT, client, IndexOrder.NONE, true, supportedQuery );
 
                 // then
                 while ( client.next() )
@@ -909,9 +911,10 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         return new IndexProgressor.EntityValueClient()
         {
             @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+                    boolean indexIncludesTransactionState )
             {
-                iter.initialize( descriptor, progressor, query, indexOrder, needsValues );
+                iter.initialize( descriptor, progressor, query, indexOrder, needsValues, indexIncludesTransactionState );
             }
 
             @Override
@@ -936,7 +939,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     private LongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
-        reader.query( client, IndexOrder.NONE, false, query );
+        reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, query );
         return client;
     }
 

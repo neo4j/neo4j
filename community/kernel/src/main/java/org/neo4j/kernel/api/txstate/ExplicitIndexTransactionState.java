@@ -19,12 +19,14 @@
  */
 package org.neo4j.kernel.api.txstate;
 
+import java.util.Collection;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.kernel.api.ExplicitIndex;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
 import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.storageengine.api.StorageCommand;
 
 /**
  * Defines transactional state for explicit indexes. Since the implementation of this enlists another transaction
@@ -32,7 +34,7 @@ import org.neo4j.kernel.impl.index.IndexEntityType;
  * {@link TransactionState the transaction state} in order to be able to keep the implementation of
  * {@link org.neo4j.kernel.impl.api.state.TxState transaction state} simple with no dependencies.
  */
-public interface ExplicitIndexTransactionState extends AuxiliaryTransactionState
+public interface ExplicitIndexTransactionState
 {
     ExplicitIndex nodeChanges( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
@@ -42,23 +44,11 @@ public interface ExplicitIndexTransactionState extends AuxiliaryTransactionState
 
     void deleteIndex( IndexEntityType entityType, String indexName );
 
-    /**
-     * Checks whether or not index with specific {@code name} exists.
-     * Optionally the specific {@code config} is verified to be matching.
-     *
-     * This method can either return {@code boolean} or {@code throw} exception on:
-     * <ul>
-     * <li>index exists, config is provided and matching => {@code true}</li>
-     * <li>index exists, config is provided and NOT matching => {@code throw exception}</li>
-     * <li>index exists, config is NOT provided => {@code true}</li>
-     * <li>index does NOT exist => {@code false}</li>
-     * </ul>
-     *
-     * @param entityType {@link IndexEntityType} for the index.
-     * @param indexName name of the index.
-     * @param config configuration which must match the existing index, if it exists. {@code null} means
-     * that the configuration doesn't need to be checked.
-     * @return {@code true} if the index with the specific {@code name} and {@code entityType} exists, otherwise {@code false}.
-     */
-    boolean checkIndexExistence( IndexEntityType entityType, String indexName, Map<String, String> config );
+    boolean hasChanges();
+
+    void extractCommands( Collection<StorageCommand> target ) throws TransactionFailureException;
+
+    boolean checkIndexExistence( IndexEntityType entityType, String indexName, Map<String,String> config );
+
+    void close() throws Exception;
 }

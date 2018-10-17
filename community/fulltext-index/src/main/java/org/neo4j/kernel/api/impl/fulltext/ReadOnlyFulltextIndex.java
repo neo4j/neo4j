@@ -19,18 +19,13 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.ReadOnlyAbstractDatabaseIndex;
 
-class ReadOnlyFulltextIndex extends ReadOnlyAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader> implements DatabaseFulltextIndex
+class ReadOnlyFulltextIndex extends ReadOnlyAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader> implements DatabaseIndex<FulltextIndexReader>
 {
     ReadOnlyFulltextIndex( LuceneFulltextIndex luceneFulltextIndex )
     {
         super( luceneFulltextIndex );
-    }
-
-    @Override
-    public TransactionStateLuceneIndexWriter getTransactionalIndexWriter()
-    {
-        throw new UnsupportedOperationException( "Can't get transaction state index writer for read only lucene index." );
     }
 }

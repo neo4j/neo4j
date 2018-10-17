@@ -43,9 +43,7 @@ import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracer;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -399,15 +397,6 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.millis();
-        ExplicitIndexTransactionState explicitIndexState = mock( ExplicitIndexTransactionState.class );
-        auxTxStateManager.registerProvider( new ExplicitIndexTransactionStateProvider( null, null )
-        {
-            @Override
-            public AuxiliaryTransactionState createNewAuxiliaryTransactionState()
-            {
-                return explicitIndexState;
-            }
-        });
         when( explicitIndexState.hasChanges() ).thenReturn( true );
         doAnswer( invocation ->
         {

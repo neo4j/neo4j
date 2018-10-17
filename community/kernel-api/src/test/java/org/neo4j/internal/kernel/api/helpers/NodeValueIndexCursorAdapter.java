@@ -44,6 +44,12 @@ public class NodeValueIndexCursorAdapter implements NodeValueIndexCursor
     }
 
     @Override
+    public float score()
+    {
+        return Float.NaN;
+    }
+
+    @Override
     public Value propertyValue( int offset )
     {
         return null;

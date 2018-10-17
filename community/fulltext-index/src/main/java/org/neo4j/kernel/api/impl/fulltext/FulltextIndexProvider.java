@@ -50,9 +50,6 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -69,7 +66,7 @@ import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
 
-class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, AuxiliaryTransactionStateProvider
+class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 {
     private static final String TX_STATE_PROVIDER_KEY = "FULLTEXT SCHEMA INDEX TRANSACTION STATE";
 
@@ -79,7 +76,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
     private final OperationalMode operationalMode;
     private final String defaultAnalyzerName;
     private final String defaultEventuallyConsistentSetting;
-    private final AuxiliaryTransactionStateManager auxiliaryTransactionStateManager;
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
     private final ConcurrentMap<StoreIndexDescriptor,FulltextIndexAccessor> openOnlineAccessors;
@@ -87,14 +83,13 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
 
     FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
             FileSystemAbstraction fileSystem, Config config, TokenHolders tokenHolders, DirectoryFactory directoryFactory, OperationalMode operationalMode,
-            JobScheduler scheduler, AuxiliaryTransactionStateManager auxiliaryTransactionStateManager, Log log )
+            JobScheduler scheduler, Log log )
     {
         super( descriptor, directoryStructureFactory );
         this.fileSystem = fileSystem;
         this.config = config;
         this.tokenHolders = tokenHolders;
         this.operationalMode = operationalMode;
-        this.auxiliaryTransactionStateManager = auxiliaryTransactionStateManager;
         this.log = log;
 
         defaultAnalyzerName = config.get( FulltextConfig.fulltext_default_analyzer );
@@ -128,16 +123,8 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
     }
 
     @Override
-    public void start() throws Throwable
-    {
-        super.start();
-        auxiliaryTransactionStateManager.registerProvider( this );
-    }
-
-    @Override
     public void stop() throws Throwable
     {
-        auxiliaryTransactionStateManager.unregisterProvider( this );
         indexStorageFactory.close();
     }
 
@@ -245,7 +232,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         {
             fulltextIndexBuilder = fulltextIndexBuilder.withIndexUpdateSink( indexUpdateSink );
         }
-        DatabaseFulltextIndex fulltextIndex = fulltextIndexBuilder.build();
+        DatabaseIndex<FulltextIndexReader> fulltextIndex = fulltextIndexBuilder.build();
         fulltextIndex.open();
 
         Runnable onClose = () -> openOnlineAccessors.remove( descriptor );
@@ -255,7 +242,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         return accessor;
     }
 
-    FulltextIndexAccessor getOpenOnlineAccessor( StoreIndexDescriptor descriptor )
+    private FulltextIndexAccessor getOpenOnlineAccessor( StoreIndexDescriptor descriptor )
     {
         return openOnlineAccessors.get( descriptor );
     }
@@ -307,16 +294,8 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         AllStoreHolder allStoreHolder = (AllStoreHolder) kti.dataRead();
         IndexReference indexReference = kti.schemaRead().indexGetForName( indexName );
         FulltextIndexReader fulltextIndexReader;
-        if ( kti.hasTxStateWithChanges() && !((FulltextSchemaDescriptor) indexReference.schema()).isEventuallyConsistent() )
-        {
-            FulltextAuxiliaryTransactionState auxiliaryTxState = (FulltextAuxiliaryTransactionState) allStoreHolder.auxiliaryTxState( TX_STATE_PROVIDER_KEY );
-            fulltextIndexReader = auxiliaryTxState.indexReader( indexReference, kti );
-        }
-        else
-        {
-            IndexReader indexReader = allStoreHolder.indexReader( indexReference, false );
-            fulltextIndexReader = (FulltextIndexReader) indexReader;
-        }
+        IndexReader indexReader = allStoreHolder.indexReader( indexReference, false );
+        fulltextIndexReader = (FulltextIndexReader) indexReader;
         return fulltextIndexReader.query( queryString );
     }
 
@@ -332,17 +311,5 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter, Au
         Iterable<AnalyzerProvider> providers = AnalyzerProvider.load( AnalyzerProvider.class );
         Stream<AnalyzerProvider> stream = StreamSupport.stream( providers.spliterator(), false );
         return stream.flatMap( provider -> StreamSupport.stream( provider.getKeys().spliterator(), false ) );
-    }
-
-    @Override
-    public Object getIdentityKey()
-    {
-        return TX_STATE_PROVIDER_KEY;
-    }
-
-    @Override
-    public AuxiliaryTransactionState createNewAuxiliaryTransactionState()
-    {
-        return new FulltextAuxiliaryTransactionState( this, log );
     }
 }

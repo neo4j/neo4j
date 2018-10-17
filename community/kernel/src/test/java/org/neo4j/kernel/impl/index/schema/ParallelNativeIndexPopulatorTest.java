@@ -59,6 +59,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -81,6 +82,7 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.longValue;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -250,7 +252,7 @@ class ParallelNativeIndexPopulatorTest
                     NodeValueIterator results = new NodeValueIterator();
                     try ( NativeIndexReader<GenericKey,NativeIndexValue> reader = populator.newReader() )
                     {
-                        reader.query( results, IndexOrder.NONE, true, IndexQuery.exists( 1 ) );
+                        reader.query( NULL_CONTEXT, results, IndexOrder.NONE, true, IndexQuery.exists( 1 ) );
                         long nextExpectedId = 0;
                         while ( results.hasNext() )
                         {

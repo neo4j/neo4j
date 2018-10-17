@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -54,6 +54,8 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.LabelScanReader;
+import org.neo4j.storageengine.api.schema.QueryContext;
+import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -70,7 +72,8 @@ abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Procedures,
         org.neo4j.internal.kernel.api.Locks,
         AssertOpen,
-        LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>
+        LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>,
+        QueryContext
 {
     private final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
@@ -96,7 +99,7 @@ abstract class Read implements TxStateHolder,
         IndexReader reader = indexReader( index, false );
         client.setRead( this, null );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
-        reader.query( withFullPrecision, indexOrder, needsValues, query );
+        reader.query( this, withFullPrecision, indexOrder, needsValues, query );
     }
 
     private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,
@@ -147,6 +150,24 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
+    public org.neo4j.internal.kernel.api.Read getRead()
+    {
+        return this;
+    }
+
+    @Override
+    public CursorFactory cursors()
+    {
+        return cursors;
+    }
+
+    @Override
+    public ReadableTransactionState getTransactionStateOrNull()
+    {
+        return hasTxStateWithChanges() ? txState() : null;
+    }
+
+    @Override
     public long lockingNodeUniqueIndexSeek( IndexReference index,
                                             NodeValueIndexCursor cursor,
                                             IndexQuery.ExactPredicate... predicates )
@@ -171,7 +192,7 @@ abstract class Read implements TxStateHolder,
         cursor.setRead( this, reader );
         IndexProgressor.EntityValueClient target = injectFullValuePrecision( cursor, query, reader );
         // we never need values for exact predicates
-        reader.query( target, IndexOrder.NONE, false, query );
+        reader.query( this, target, IndexOrder.NONE, false, query );
     }
 
     @Override
@@ -192,7 +213,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this, null );
-        indexReader( index, false ).query( cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
+        indexReader( index, false ).query( this, cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )
@@ -463,12 +484,6 @@ abstract class Read implements TxStateHolder,
     public TransactionState txState()
     {
         return ktx.txState();
-    }
-
-    @Override
-    public AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey )
-    {
-        return ktx.auxiliaryTxState( providerIdentityKey );
     }
 
     @Override

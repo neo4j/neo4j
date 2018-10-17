@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexWriter;
@@ -33,17 +34,18 @@ import java.io.IOException;
 
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 
-public class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
+class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Closeable
 {
-    private final LuceneFulltextIndex index;
+    private final Analyzer analyzer;
     private IndexWriter writer;
     private final Directory directory;
 
-    TransactionStateLuceneIndexWriter( LuceneFulltextIndex index )
+    TransactionStateLuceneIndexWriter( Analyzer analyzer )
     {
-        this.index = index;
+        this.analyzer = analyzer;
         directory = new RAMDirectory();
     }
 
@@ -89,15 +91,14 @@ public class TransactionStateLuceneIndexWriter implements LuceneIndexWriter, Clo
 
     private void openWriter() throws IOException
     {
-        writer = new IndexWriter( directory, IndexWriterConfigs.transactionState( index.getAnalyzer() ) );
+        writer = new IndexWriter( directory, IndexWriterConfigs.transactionState( analyzer ) );
     }
 
-    FulltextIndexReader getNearRealTimeReader() throws IOException
+    SearcherReference getNearRealTimeSearcher() throws IOException
     {
         DirectoryReader directoryReader = DirectoryReader.open( writer, true );
         IndexSearcher searcher = new IndexSearcher( directoryReader );
-        SearcherReference searcherRef = new DirectSearcherReference( searcher, directoryReader );
-        return new SimpleFulltextIndexReader( searcherRef, index.getPropertyKeyTokenHolder(), index.getDescriptor() );
+        return new DirectSearcherReference( searcher, directoryReader );
     }
 
     @Override

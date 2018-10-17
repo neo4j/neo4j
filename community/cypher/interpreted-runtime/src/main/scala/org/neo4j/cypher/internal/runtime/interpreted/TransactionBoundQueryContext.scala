@@ -1098,6 +1098,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     override def close(): Unit = inner.close()
 
     override def isClosed: Boolean = inner.isClosed
+
+    override def score(): Float = inner.score()
   }
 }
 

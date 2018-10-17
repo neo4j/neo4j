@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.schema.IndexProgressor;
 
 /**
  * Similar to an {@link IndexProgressor.EntityValueClient}, but will be given a {@link Read} instance, and possibly a {@link Resource}, prior to its
- * {@link #initialize(IndexDescriptor, IndexProgressor, IndexQuery[], IndexOrder, boolean) initialization}.
+ * {@link #initialize(IndexDescriptor, IndexProgressor, IndexQuery[], IndexOrder, boolean, boolean) initialization}.
  * <p>
  * This is useful if the entity references needs to be processed further.
  */

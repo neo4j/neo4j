@@ -36,8 +36,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.DocValuesCollector;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
@@ -46,6 +46,7 @@ import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -60,18 +61,18 @@ import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.UNIQUE;
  */
 public class SimpleIndexReader extends AbstractIndexReader
 {
-    private final PartitionSearcher partitionSearcher;
+    private final SearcherReference searcherReference;
     private final IndexDescriptor descriptor;
     private final IndexSamplingConfig samplingConfig;
     private final TaskCoordinator taskCoordinator;
 
-    public SimpleIndexReader( PartitionSearcher partitionSearcher,
+    public SimpleIndexReader( SearcherReference searcherReference,
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
     {
         super( descriptor );
-        this.partitionSearcher = partitionSearcher;
+        this.searcherReference = searcherReference;
         this.descriptor = descriptor;
         this.samplingConfig = samplingConfig;
         this.taskCoordinator = taskCoordinator;
@@ -92,11 +93,11 @@ public class SimpleIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
-            throws IndexNotApplicableKernelException
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues,
+            IndexQuery... predicates ) throws IndexNotApplicableKernelException
     {
         Query query = toLuceneQuery( predicates );
-        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, indexOrder, needsValues );
+        client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, indexOrder, needsValues, false );
     }
 
     @Override
@@ -218,7 +219,7 @@ public class SimpleIndexReader extends AbstractIndexReader
     {
         try
         {
-            partitionSearcher.close();
+            searcherReference.close();
         }
         catch ( IOException e )
         {
@@ -228,6 +229,6 @@ public class SimpleIndexReader extends AbstractIndexReader
 
     private IndexSearcher getIndexSearcher()
     {
-        return partitionSearcher.getIndexSearcher();
+        return searcherReference.getIndexSearcher();
     }
 }

@@ -178,6 +178,11 @@ public abstract class IndexQuery
         return new StringSuffixPredicate( propertyKeyId, suffix );
     }
 
+    public static IndexQuery fulltextSearch( String query )
+    {
+        return new FulltextSearchPredicate( query );
+    }
+
     public static ValueTuple asValueTuple( IndexQuery.ExactPredicate... query )
     {
         Value[] values = new Value[query.length];
@@ -243,7 +248,8 @@ public abstract class IndexQuery
         range,
         stringPrefix,
         stringSuffix,
-        stringContains
+        stringContains,
+        fulltextSearch
     }
 
     public static final class ExistsPredicate extends IndexQuery
@@ -591,6 +597,34 @@ public abstract class IndexQuery
         public String suffix()
         {
             return suffix;
+        }
+    }
+
+    public static final class FulltextSearchPredicate extends StringPredicate
+    {
+        private final String query;
+
+        FulltextSearchPredicate( String query )
+        {
+            super( TokenRead.NO_TOKEN );
+            this.query = query;
+        }
+
+        @Override
+        public IndexQueryType type()
+        {
+            return IndexQueryType.fulltextSearch;
+        }
+
+        @Override
+        public boolean acceptsValue( Value value )
+        {
+            throw new UnsupportedOperationException( "Fulltext search predicates do not know how to evaluate themselves." );
+        }
+
+        public String query()
+        {
+            return query;
         }
     }
 }

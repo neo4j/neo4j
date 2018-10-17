@@ -28,6 +28,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 
 /**
  * Represents a single partition of a partitioned lucene index. Each partition is a separate Lucene index.
@@ -68,7 +69,7 @@ public abstract class AbstractIndexPartition implements Closeable
      * @return partition searcher
      * @throws IOException if exception happened during searcher acquisition
      */
-    public abstract PartitionSearcher acquireSearcher() throws IOException;
+    public abstract SearcherReference acquireSearcher() throws IOException;
 
     /**
      * Refresh partition to make newly inserted data visible for readers.

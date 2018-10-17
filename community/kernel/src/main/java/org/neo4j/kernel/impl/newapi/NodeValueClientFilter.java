@@ -88,10 +88,11 @@ class NodeValueClientFilter implements EntityValueClient, IndexProgressor
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+            boolean indexIncludesTransactionState )
     {
         this.progressor = progressor;
-        target.initialize( descriptor, this, query, indexOrder, needsValues );
+        target.initialize( descriptor, this, query, indexOrder, needsValues, indexIncludesTransactionState );
     }
 
     @Override

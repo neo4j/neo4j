@@ -24,6 +24,7 @@ import org.eclipse.collections.api.IntIterable;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.UnmodifiableMap;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,6 +53,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationExcep
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
+import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
@@ -74,9 +76,11 @@ import org.neo4j.values.storable.Values;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singleton;
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -91,7 +95,6 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@SuppressWarnings( "unchecked" )
 @RunWith( Parameterized.class )
 public class TxStateTest
 {
@@ -165,8 +168,6 @@ public class TxStateTest
         collectionsFactory.release();
         assertEquals( "Seems like native memory is leaking", 0L, collectionsFactory.getMemoryTracker().usedDirectMemory() );
     }
-
-    //region node label update tests
 
     @Test
     public void shouldGetAddedLabels()
@@ -245,10 +246,6 @@ public class TxStateTest
         assertEquals( newSetWith( 0L, 2L ), nodes );
     }
 
-    //endregion
-
-    //region index updates
-
     @Test
     public void shouldComputeIndexUpdatesOnUninitializedTxState()
     {
@@ -307,6 +304,7 @@ public class TxStateTest
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getIndexUpdates( indexOn_1_1.schema() );
 
         // THEN
+        assertNotNull( diffSets );
         assertEqualDiffSets( addedNodes( 42L ), diffSets.get( ValueTuple.of( stringValue( "value42" ) ) ) );
         assertEqualDiffSets( addedNodes( 43L ), diffSets.get( ValueTuple.of( stringValue( "value43" ) ) ) );
         assertEqualDiffSets( addedNodes( 41L ), diffSets.get( ValueTuple.of( stringValue( "value41" ) ) ) );
@@ -325,16 +323,13 @@ public class TxStateTest
 
         TreeMap<ValueTuple,LongDiffSets> expected = sortedAddedNodesDiffSets( 42, 41, 43 );
         // THEN
+        assertNotNull( diffSets );
         assertEquals( expected.keySet(), diffSets.keySet() );
         for ( final ValueTuple key : expected.keySet() )
         {
             assertEqualDiffSets( expected.get( key ), diffSets.get( key ) );
         }
     }
-
-    // endregion
-
-    //region index rule tests
 
     @Test
     public void shouldAddAndGetByLabel()
@@ -356,10 +351,6 @@ public class TxStateTest
         // THEN
         assertEquals( asSet( indexOn_1_1 ), state.indexChanges().getAdded() );
     }
-
-    // endregion
-
-    //region miscellaneous
 
     @Test
     public void shouldListNodeAsDeletedIfItIsDeleted()
@@ -851,7 +842,106 @@ public class TxStateTest
         } );
     }
 
-//    getOrCreateLabelStateNodeDiffSets
+    @Test
+    public void dataRevisionMustChangeOnDataChange()
+    {
+        assertThat( state.getDataRevision(), is( 0L ) );
+        LongHashSet observedRevisions = new LongHashSet();
+        observedRevisions.add( 0L );
+
+        state.nodeDoCreate( 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.nodeDoAddLabel( 0, 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.nodeDoRemoveLabel( 0, 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.nodeDoAddProperty( 0, 0, Values.booleanValue( true ) );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.nodeDoChangeProperty( 0, 0, Values.booleanValue( false ) );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.nodeDoRemoveProperty( 0, 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.nodeDoDelete( 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.relationshipDoCreate( 0, 0, 0, 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.relationshipDoReplaceProperty( 0, 0, Values.NO_VALUE, Values.booleanValue( true ) );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.relationshipDoReplaceProperty( 0, 0, Values.booleanValue( true ), Values.booleanValue( false ) );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.relationshipDoRemoveProperty( 0, 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.relationshipDoDeleteAddedInThisTx( 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.relationshipDoDelete( 1, 0, 0, 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.graphDoReplaceProperty( 0, Values.NO_VALUE, Values.booleanValue( true ) );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.graphDoReplaceProperty( 0, Values.booleanValue( true ), Values.booleanValue( false ) );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+
+        state.graphDoRemoveProperty( 0 );
+        assertTrue( observedRevisions.add( state.getDataRevision() ) );
+    }
+
+    @Test
+    public void dataRevisionMustNotChangeOnSchemaChanges()
+    {
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.indexDoAdd( indexOn_1_1 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.indexDoDrop( indexOn_1_1 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.indexDoUnRemove( indexOn_1_1 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
+        state.constraintDoAdd( constraint1 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.constraintDoDrop( constraint1 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.constraintDoUnRemove( constraint1 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        IndexBackedConstraintDescriptor constraint2 = ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 );
+        state.constraintDoAdd( constraint2, 0 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.labelDoCreateForName( "Label", 0 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.relationshipTypeDoCreateForName( "REL", 0 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        state.propertyKeyDoCreateForName( "prop", 0 );
+        assertThat( state.getDataRevision(), is( 0L ) );
+
+        // This is not strictly a schema-change, but it is a "non-data" change in that these will not transform into store updates.
+        // Or schema updates for that matter. We only do these to speed up the transaction state filtering of schema index query results.
+        state.indexDoUpdateEntry( indexOn_1_1.schema(), 0, ValueTuple.of( Values.booleanValue( true ) ), ValueTuple.of( Values.booleanValue( false ) ) );
+        assertThat( state.getDataRevision(), is( 0L ) );
+    }
+
+    //    getOrCreateLabelStateNodeDiffSets
 
     @Test
     public void getOrCreateNodeState_props_useCollectionsFactory()

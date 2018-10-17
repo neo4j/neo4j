@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -719,7 +718,7 @@ public class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
     {
         return new KernelTransactions( config, statementLocksFactory, null, statementOperations,
-                null, DEFAULT, commitProcess, mock( AuxiliaryTransactionStateManager.class ), new TransactionHooks(),
+                null, DEFAULT, commitProcess, mock( ExplicitIndexTransactionStateProvider.class ), new TransactionHooks(),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(),
@@ -735,7 +734,7 @@ public class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess,
-                mock( AuxiliaryTransactionStateManager.class ), new TransactionHooks(),
+                mock( ExplicitIndexTransactionStateProvider.class ), new TransactionHooks(),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new CanWrite(), AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies() );
     }
@@ -782,16 +781,16 @@ public class KernelTransactionsTest
         TestKernelTransactions( StatementLocksFactory statementLocksFactory,
                 ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
-                TransactionCommitProcess transactionCommitProcess, AuxiliaryTransactionStateManager auxTxStateManager, TransactionHooks hooks,
-                TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
+                TransactionCommitProcess transactionCommitProcess, ExplicitIndexTransactionStateProvider explicitIndexTransactionStateProvider,
+                TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
                 AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
-                    transactionCommitProcess, auxTxStateManager, hooks, transactionMonitor, databaseAvailabilityGuard, tracers, storageEngine, procedures,
-                    transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                    accessCapability, autoIndexing, mock( ExplicitIndexStore.class ),
+                    transactionCommitProcess, explicitIndexTransactionStateProvider, hooks, transactionMonitor, databaseAvailabilityGuard, tracers,
+                    storageEngine, procedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                    new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability, autoIndexing, mock( ExplicitIndexStore.class ),
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), mock( IndexingProvidersService.class ),
                     tokenHolders, DEFAULT_DATABASE_NAME, dataSourceDependencies );
         }

@@ -19,12 +19,9 @@
  */
 package org.neo4j.kernel.api.txstate;
 
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
-
 public interface TxStateHolder
 {
     TransactionState txState();
-    AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey );
     ExplicitIndexTransactionState explicitIndexTxState();
     boolean hasTxStateWithChanges();
 }

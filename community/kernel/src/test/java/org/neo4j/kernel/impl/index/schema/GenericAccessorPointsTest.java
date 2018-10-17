@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
@@ -227,7 +228,7 @@ public class GenericAccessorPointsTest
             for ( Value value : values )
             {
                 IndexQuery.ExactPredicate exact = IndexQuery.exact( descriptor.schema().getPropertyId(), value );
-                indexReader.query( client, IndexOrder.NONE, true, exact );
+                indexReader.query( QueryContext.NULL_CONTEXT, client, IndexOrder.NONE, true, exact );
 
                 // then
                 assertTrue( client.next() );

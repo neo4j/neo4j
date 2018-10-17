@@ -19,15 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateProvider;
+import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.ExplicitIndexTransactionStateImpl;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 
-public class ExplicitIndexTransactionStateProvider implements AuxiliaryTransactionStateProvider
+public class ExplicitIndexTransactionStateProvider
 {
-    public static final String PROVIDER_KEY = "EXPLICIT INDEX TX STATE PROVIDER";
-
     private final IndexConfigStore indexConfigStore;
     private final ExplicitIndexProvider explicitIndexProviderLookup;
 
@@ -37,14 +34,7 @@ public class ExplicitIndexTransactionStateProvider implements AuxiliaryTransacti
         this.explicitIndexProviderLookup = explicitIndexProviderLookup;
     }
 
-    @Override
-    public Object getIdentityKey()
-    {
-        return PROVIDER_KEY;
-    }
-
-    @Override
-    public AuxiliaryTransactionState createNewAuxiliaryTransactionState()
+    public ExplicitIndexTransactionState createNewExplicitIndexTransactionState()
     {
         return new CachingExplicitIndexTransactionState( new ExplicitIndexTransactionStateImpl( indexConfigStore, explicitIndexProviderLookup ) );
     }

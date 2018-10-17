@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.index.WritableAbstractDatabaseIndex;
 
-class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader> implements DatabaseFulltextIndex
+class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltextIndex,FulltextIndexReader>
 {
     private final IndexUpdateSink indexUpdateSink;
 
@@ -51,11 +51,5 @@ class WritableFulltextIndex extends WritableAbstractDatabaseIndex<LuceneFulltext
     {
         indexUpdateSink.awaitUpdateApplication();
         super.commitLockedClose();
-    }
-
-    @Override
-    public TransactionStateLuceneIndexWriter getTransactionalIndexWriter() throws IOException
-    {
-        return new TransactionStateLuceneIndexWriter( luceneIndex );
     }
 }

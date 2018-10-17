@@ -26,6 +26,7 @@ import java.io.UncheckedIOException;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndexAccessor;
+import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
@@ -36,7 +37,7 @@ import org.neo4j.values.storable.Value;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.kernel.api.impl.fulltext.LuceneFulltextDocumentStructure.newTermForChangeOrRemove;
 
-public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseFulltextIndex>
+public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextIndexReader,DatabaseIndex<FulltextIndexReader>>
 {
     static Log TRACE_LOG = NullLog.getInstance();
 
@@ -44,7 +45,7 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     private final FulltextIndexDescriptor descriptor;
     private final Runnable onClose;
 
-    public FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseFulltextIndex luceneIndex, FulltextIndexDescriptor descriptor,
+    public FulltextIndexAccessor( IndexUpdateSink indexUpdateSink, DatabaseIndex<FulltextIndexReader> luceneIndex, FulltextIndexDescriptor descriptor,
             Runnable onClose )
     {
         super( luceneIndex, descriptor );
@@ -96,18 +97,6 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     public void verifyDeferredConstraints( NodePropertyAccessor propertyAccessor )
     {
         //The fulltext index does not care about constraints.
-    }
-
-    public TransactionStateLuceneIndexWriter getTransactionStateIndexWriter()
-    {
-        try
-        {
-            return luceneIndex.getTransactionalIndexWriter();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
     }
 
     public class FulltextIndexUpdater extends AbstractLuceneIndexUpdater

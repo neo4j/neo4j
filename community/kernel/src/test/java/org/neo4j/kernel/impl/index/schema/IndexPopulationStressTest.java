@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.test.Race;
@@ -81,6 +82,7 @@ import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.storageengine.api.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
 @RunWith( Parameterized.class )
@@ -199,8 +201,8 @@ public class IndexPopulationStressTest
         {
             SimpleNodeValueClient entries = new SimpleNodeValueClient();
             SimpleNodeValueClient referenceEntries = new SimpleNodeValueClient();
-            reader.query( entries, IndexOrder.NONE, hasValues, IndexQuery.exists( 0 ) );
-            referenceReader.query( referenceEntries, IndexOrder.NONE, hasValues, IndexQuery.exists( 0 ) );
+            reader.query( NULL_CONTEXT, entries, IndexOrder.NONE, hasValues, IndexQuery.exists( 0 ) );
+            referenceReader.query( NULL_CONTEXT, referenceEntries, IndexOrder.NONE, hasValues, IndexQuery.exists( 0 ) );
             while ( referenceEntries.next() )
             {
                 assertTrue( entries.next() );

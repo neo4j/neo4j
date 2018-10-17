@@ -116,5 +116,7 @@ trait IndexMockingHelp extends CypherFunSuite with ImplicitDummyPos {
     override def close(): Unit = {}
 
     override def isClosed: Boolean = current != null
+
+    override def score(): Float = Float.NaN
   }
 }

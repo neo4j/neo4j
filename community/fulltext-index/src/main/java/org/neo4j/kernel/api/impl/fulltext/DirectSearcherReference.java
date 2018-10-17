@@ -24,6 +24,8 @@ import org.apache.lucene.search.IndexSearcher;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.kernel.api.impl.index.SearcherReference;
+
 class DirectSearcherReference implements SearcherReference
 {
     private final IndexSearcher searcher;

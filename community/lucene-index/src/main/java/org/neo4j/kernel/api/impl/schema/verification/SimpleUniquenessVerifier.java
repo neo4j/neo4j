@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
@@ -49,11 +50,11 @@ import org.neo4j.values.storable.Value;
  */
 public class SimpleUniquenessVerifier implements UniquenessVerifier
 {
-    private final PartitionSearcher partitionSearcher;
+    private final SearcherReference searcherReference;
 
-    public SimpleUniquenessVerifier( PartitionSearcher partitionSearcher )
+    public SimpleUniquenessVerifier( SearcherReference searcherReference )
     {
-        this.partitionSearcher = partitionSearcher;
+        this.searcherReference = searcherReference;
     }
 
     @Override
@@ -123,11 +124,11 @@ public class SimpleUniquenessVerifier implements UniquenessVerifier
     @Override
     public void close() throws IOException
     {
-        partitionSearcher.close();
+        searcherReference.close();
     }
 
     private IndexSearcher indexSearcher()
     {
-        return partitionSearcher.getIndexSearcher();
+        return searcherReference.getIndexSearcher();
     }
 }

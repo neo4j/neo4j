@@ -44,7 +44,7 @@ public class BridgingIndexProgressorTest
         // Given
         for ( IndexProgressor part : parts )
         {
-            progressor.initialize( index, part, null, IndexOrder.NONE, false );
+            progressor.initialize( index, part, null, IndexOrder.NONE, false, false );
         }
 
         // When

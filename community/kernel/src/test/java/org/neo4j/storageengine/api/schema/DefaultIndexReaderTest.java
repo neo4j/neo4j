@@ -28,6 +28,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 class DefaultIndexReaderTest
 {
@@ -41,7 +42,7 @@ class DefaultIndexReaderTest
         String expectedMessage = String.format( "This reader only have support for index order %s. Provided index order was %s.",
                 IndexOrder.NONE, IndexOrder.ASCENDING );
         UnsupportedOperationException operationException = assertThrows( UnsupportedOperationException.class,
-                () -> indexReader.query( new SimpleNodeValueClient(), IndexOrder.ASCENDING, false, IndexQuery.exists( 1 ) ) );
+                () -> indexReader.query( NULL_CONTEXT, new SimpleNodeValueClient(), IndexOrder.ASCENDING, false, IndexQuery.exists( 1 ) ) );
         assertEquals( expectedMessage, operationException.getMessage() );
     }
 

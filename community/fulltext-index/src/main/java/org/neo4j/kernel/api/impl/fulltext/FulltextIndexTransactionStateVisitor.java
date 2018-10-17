@@ -32,9 +32,9 @@ import java.util.Iterator;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -56,7 +56,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
     private final IntIntHashMap propKeyToIndex;
     private final MutableLongSet modifiedEntityIdsInThisTransaction;
     private final TransactionStateLuceneIndexWriter writer;
-    private AllStoreHolder read;
+    private Read read;
     private NodeCursor nodeCursor;
     private PropertyCursor propertyCursor;
     private RelationshipScanCursor relationshipCursor;
@@ -79,7 +79,7 @@ class FulltextIndexTransactionStateVisitor extends TxStateVisitor.Adapter
         }
     }
 
-    FulltextIndexTransactionStateVisitor init( AllStoreHolder read, NodeCursor nodeCursor, RelationshipScanCursor relationshipCursor,
+    FulltextIndexTransactionStateVisitor init( Read read, NodeCursor nodeCursor, RelationshipScanCursor relationshipCursor,
             PropertyCursor propertyCursor )
     {
         this.read = read;

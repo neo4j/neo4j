@@ -29,9 +29,9 @@ import java.util.List;
 
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.storageengine.api.EntityType;
@@ -95,23 +95,16 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
         return descriptor;
     }
 
-    TokenHolder getPropertyKeyTokenHolder()
-    {
-        return propertyKeyTokenHolder;
-    }
-
     @Override
     protected FulltextIndexReader createSimpleReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
-        AbstractIndexPartition singlePartition = getFirstPartition( partitions );
-        SearcherReference searcher = new PartitionSearcherReference( singlePartition.acquireSearcher() );
-        return new SimpleFulltextIndexReader( searcher, propertyKeyTokenHolder, descriptor );
+        return createPartitionedReader( partitions );
     }
 
     @Override
     protected FulltextIndexReader createPartitionedReader( List<AbstractIndexPartition> partitions ) throws IOException
     {
-        List<PartitionSearcher> searchers = acquireSearchers( partitions );
-        return new PartitionedFulltextIndexReader( searchers, propertyKeyTokenHolder, getDescriptor() );
+        List<SearcherReference> searchers = acquireSearchers( partitions );
+        return new FulltextIndexReader( searchers, propertyKeyTokenHolder, getDescriptor() );
     }
 }

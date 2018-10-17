@@ -59,6 +59,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private Read read;
     private Resource resource;
     private long node;
+    private float score;
     private IndexQuery[] query;
     private Value[] values;
     private LongIterator added = ImmutableEmptyLongIterator.INSTANCE;
@@ -73,6 +74,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     {
         this.pool = pool;
         node = NO_ID;
+        score = Float.NaN;
         indexOrder = IndexOrder.NONE;
     }
 
@@ -81,7 +83,8 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                             IndexProgressor progressor,
                             IndexQuery[] query,
                             IndexOrder indexOrder,
-                            boolean needsValues )
+                            boolean needsValues,
+                            boolean indexIncludesTransactionState )
     {
         assert query != null && query.length > 0;
         super.initialize( progressor );
@@ -91,7 +94,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.needsValues = needsValues;
         this.query = query;
 
-        if ( read.hasTxStateWithChanges() )
+        if ( !indexIncludesTransactionState && read.hasTxStateWithChanges() )
         {
             IndexQuery firstPredicate = query[0];
             switch ( firstPredicate.type() )
@@ -158,6 +161,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         else
         {
             this.node = reference;
+            this.score = score;
             this.values = values;
             return true;
         }
@@ -268,6 +272,12 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     }
 
     @Override
+    public float score()
+    {
+        return score;
+    }
+
+    @Override
     public Value propertyValue( int offset )
     {
         return values[offset];
@@ -280,6 +290,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         {
             super.close();
             this.node = NO_ID;
+            this.score = Float.NaN;
             this.query = null;
             this.values = null;
             this.read = null;

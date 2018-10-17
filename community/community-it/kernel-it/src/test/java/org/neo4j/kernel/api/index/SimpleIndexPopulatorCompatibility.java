@@ -56,6 +56,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -201,7 +202,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 for ( NodeAndValue entry : Iterables.concat( valueSet1, valueSet2 ) )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( nodes, IndexOrder.NONE, false , IndexQuery.exact( propertyKeyId, entry.value ) );
+                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false , IndexQuery.exact( propertyKeyId, entry.value ) );
                     assertEquals( entry.nodeId, nodes.next() );
                     assertFalse( nodes.hasNext() );
                 }
@@ -231,7 +232,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                 for ( NodeAndValue entry : values )
                 {
                     NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
                     assertEquals( entry.nodeId, nodes.next() );
                     assertFalse( nodes.hasNext() );
                 }
@@ -267,7 +268,7 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
                     for ( NodeAndValue entry : valueSet1 )
                     {
                         NodeValueIterator nodes = new NodeValueIterator();
-                        reader.query( nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
                         assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
                     }
                 }

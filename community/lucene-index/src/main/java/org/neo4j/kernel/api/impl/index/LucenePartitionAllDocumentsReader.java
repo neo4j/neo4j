@@ -32,21 +32,20 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 
 /**
  * Provides a view of all {@link Document}s in a single partition.
  */
 public class LucenePartitionAllDocumentsReader implements BoundedIterable<Document>
 {
-    private final PartitionSearcher partitionSearcher;
+    private final SearcherReference searcherReference;
     private final IndexSearcher searcher;
     private final IndexReader reader;
 
-    public LucenePartitionAllDocumentsReader( PartitionSearcher partitionSearcher )
+    public LucenePartitionAllDocumentsReader( SearcherReference searcherReference )
     {
-        this.partitionSearcher = partitionSearcher;
-        this.searcher = partitionSearcher.getIndexSearcher();
+        this.searcherReference = searcherReference;
+        this.searcher = searcherReference.getIndexSearcher();
         this.reader = searcher.getIndexReader();
     }
 
@@ -86,7 +85,7 @@ public class LucenePartitionAllDocumentsReader implements BoundedIterable<Docume
     @Override
     public void close() throws IOException
     {
-        partitionSearcher.close();
+        searcherReference.close();
     }
 
     private Document getDocument( int docId )

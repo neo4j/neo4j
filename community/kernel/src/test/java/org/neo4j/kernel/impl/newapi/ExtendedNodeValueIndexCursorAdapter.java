@@ -35,7 +35,8 @@ public class ExtendedNodeValueIndexCursorAdapter extends NodeValueIndexCursorAda
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+            boolean indexIncludesTransactionState )
     {
     }
 

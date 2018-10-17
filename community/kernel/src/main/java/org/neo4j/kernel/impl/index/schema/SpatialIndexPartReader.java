@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexProgressor.EntityValueClient;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -70,7 +71,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
     }
 
     @Override
-    public void query( EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public void query( QueryContext context, EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         // Spatial does not support providing values
         if ( needsValues )
@@ -126,7 +127,7 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
         try
         {
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-            client.initialize( descriptor, multiProgressor, query, IndexOrder.NONE, false );
+            client.initialize( descriptor, multiProgressor, query, IndexOrder.NONE, false, false );
             SpaceFillingCurve curve = spatial.getSpaceFillingCurve();
             double[] from = rangePredicate.from() == null ? null : rangePredicate.from().coordinate();
             double[] to = rangePredicate.to() == null ? null : rangePredicate.to().coordinate();
@@ -140,13 +141,13 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
                 treeKeyTo.fromDerivedValue( Long.MAX_VALUE, range.max + 1 );
                 RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, IndexOrder.NONE );
                 IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
-                multiProgressor.initialize( descriptor, hitProgressor, query, IndexOrder.NONE, false );
+                multiProgressor.initialize( descriptor, hitProgressor, query, IndexOrder.NONE, false, false );
             }
         }
         catch ( IllegalArgumentException e )
         {
             // Invalid query ranges will cause this state (eg. min>max)
-            client.initialize( descriptor, IndexProgressor.EMPTY, query, IndexOrder.NONE, false );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, IndexOrder.NONE, false, false );
         }
         catch ( IOException e )
         {
@@ -163,14 +164,14 @@ public class SpatialIndexPartReader<VALUE extends NativeIndexValue> extends Nati
 
         if ( layout.compare( treeKeyFrom, treeKeyTo ) > 0 )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query, IndexOrder.NONE, false );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, IndexOrder.NONE, false, false );
             return;
         }
         try
         {
             RawCursor<Hit<SpatialIndexKey,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
             IndexProgressor hitProgressor = new NativeHitIndexProgressor<>( seeker, client, openSeekers );
-            client.initialize( descriptor, hitProgressor, query, IndexOrder.NONE, false );
+            client.initialize( descriptor, hitProgressor, query, IndexOrder.NONE, false, false );
         }
         catch ( IOException e )
         {

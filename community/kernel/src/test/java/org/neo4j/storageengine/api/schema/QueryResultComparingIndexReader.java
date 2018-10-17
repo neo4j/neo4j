@@ -29,6 +29,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 /**
  * {@link IndexReader} that executes and compares results from both query methods, as long as they should exist, when using the either of the two query methods.
@@ -61,7 +62,7 @@ public class QueryResultComparingIndexReader implements IndexReader
 
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
         NodeValueIterator otherResult = new NodeValueIterator();
-        actual.query( otherResult, IndexOrder.NONE, false, predicates );
+        actual.query( NULL_CONTEXT, otherResult, IndexOrder.NONE, false, predicates );
         return new PrimitiveLongResourceCollections.PrimitiveLongBaseResourceIterator( mainResult )
         {
             @Override
@@ -99,7 +100,13 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public boolean indexIncludesTransactionState()
+    {
+        return actual.indexIncludesTransactionState();
+    }
+
+    @Override
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
         // Also call the other query method and bake comparison from it into a wrapped version of this iterator
@@ -113,7 +120,8 @@ public class QueryResultComparingIndexReader implements IndexReader
             private long mainValue;
 
             @Override
-            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues )
+            public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] query, IndexOrder indexOrder, boolean needsValues,
+                    boolean indexIncludesTransactionState )
             {
                 IndexProgressor wrappedProgressor = new IndexProgressor()
                 {
@@ -150,7 +158,7 @@ public class QueryResultComparingIndexReader implements IndexReader
                     }
                 };
 
-                client.initialize( descriptor, wrappedProgressor, query, indexOrder, needsValues );
+                client.initialize( descriptor, wrappedProgressor, query, indexOrder, needsValues, indexIncludesTransactionState );
             }
 
             @Override
@@ -167,7 +175,7 @@ public class QueryResultComparingIndexReader implements IndexReader
             }
         };
 
-        actual.query( wrappedClient, indexOrder, needsValues, query );
+        actual.query( context, wrappedClient, indexOrder, needsValues, query );
     }
 
     @Override

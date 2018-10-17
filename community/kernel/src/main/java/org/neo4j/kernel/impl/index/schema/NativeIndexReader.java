@@ -35,9 +35,11 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
         implements IndexReader
@@ -110,12 +112,18 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     {
         // This method isn't called from main product code anymore so it can might as well delegate to the "real" method
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
+        query( NULL_CONTEXT, nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public boolean indexIncludesTransactionState()
+    {
+        return false;
+    }
+
+    @Override
+    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         validateQuery( indexOrder, predicates );
 
@@ -148,14 +156,14 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
     {
         if ( isEmptyRange( treeKeyFrom, treeKeyTo ) )
         {
-            client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues );
+            client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues, false );
             return;
         }
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = makeIndexSeeker( treeKeyFrom, treeKeyTo, indexOrder );
             IndexProgressor hitProgressor = getIndexProgressor( seeker, client, needFilter, query );
-            client.initialize( descriptor, hitProgressor, query, indexOrder, needsValues );
+            client.initialize( descriptor, hitProgressor, query, indexOrder, needsValues, false );
         }
         catch ( IOException e )
         {

@@ -104,6 +104,10 @@ public class ScoreEntityIterator implements Iterator<ScoreEntityIterator.ScoreEn
      */
     static ScoreEntityIterator mergeIterators( List<ScoreEntityIterator> iterators )
     {
+        if ( iterators.size() == 1 )
+        {
+            return iterators.get( 0 );
+        }
         return new ConcatenatingScoreEntityIterator( iterators );
     }
 

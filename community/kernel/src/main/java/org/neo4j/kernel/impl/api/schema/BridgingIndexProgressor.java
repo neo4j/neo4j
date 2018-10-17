@@ -86,7 +86,8 @@ public class BridgingIndexProgressor implements IndexProgressor.EntityValueClien
                             IndexProgressor progressor,
                             IndexQuery[] queries,
                             IndexOrder indexOrder,
-                            boolean needsValues )
+                            boolean needsValues,
+                            boolean indexIncludesTransactionState )
     {
         assertKeysAlign( descriptor.schema().getPropertyIds() );
         progressors.add( progressor );

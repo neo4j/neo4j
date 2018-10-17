@@ -31,7 +31,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.io.IOUtils;
-import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
@@ -40,6 +40,7 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -53,7 +54,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
 
     private final List<SimpleIndexReader> indexReaders;
 
-    public PartitionedIndexReader( List<PartitionSearcher> partitionSearchers,
+    public PartitionedIndexReader( List<SearcherReference> partitionSearchers,
             IndexDescriptor descriptor,
             IndexSamplingConfig samplingConfig,
             TaskCoordinator taskCoordinator )
@@ -84,7 +85,7 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
         try
@@ -94,14 +95,14 @@ public class PartitionedIndexReader extends AbstractIndexReader
             {
                 try
                 {
-                    reader.query( bridgingIndexProgressor, indexOrder, needsValues, query );
+                    reader.query( context, bridgingIndexProgressor, indexOrder, needsValues, query );
                 }
                 catch ( IndexNotApplicableKernelException e )
                 {
                     throw new InnerException( e );
                 }
             } );
-            client.initialize( descriptor, bridgingIndexProgressor, query, indexOrder, needsValues );
+            client.initialize( descriptor, bridgingIndexProgressor, query, indexOrder, needsValues, false );
         }
         catch ( InnerException e )
         {

@@ -764,7 +764,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( propertiesBefore != null )
         {
             MutableLongDiffSets before = getOrCreateIndexUpdatesForSeek( updates, propertiesBefore );
-            //noinspection ConstantConditions
             before.remove( nodeId );
             if ( before.getRemoved().contains( nodeId ) )
             {
@@ -778,7 +777,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         if ( propertiesAfter != null )
         {
             MutableLongDiffSets after = getOrCreateIndexUpdatesForSeek( updates, propertiesAfter );
-            //noinspection ConstantConditions
             after.add( nodeId );
             if ( after.getAdded().contains( nodeId ) )
             {
@@ -827,11 +825,6 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public boolean hasDataChanges()
-    {
-        return dataRevision != 0;
-    }
-
     public long getDataRevision()
     {
         return dataRevision;

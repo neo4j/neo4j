@@ -35,6 +35,7 @@ import org.neo4j.internal.kernel.api.ExplicitIndexRead;
 import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -484,11 +485,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private void assertIndexOnline( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        switch ( allStoreHolder.indexGetState( descriptor ) )
+        if ( allStoreHolder.indexGetState( descriptor ) != InternalIndexState.ONLINE )
         {
-        case ONLINE:
-            return;
-        default:
             throw new IndexBrokenKernelException( allStoreHolder.indexGetFailure( descriptor ) );
         }
     }

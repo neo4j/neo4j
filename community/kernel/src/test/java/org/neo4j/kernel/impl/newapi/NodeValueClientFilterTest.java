@@ -197,7 +197,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
 
         // when
         NodeValueClientFilter filter = new NodeValueClientFilter( this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, IndexOrder.NONE, true );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( labelId, propertyKeyIds ), this, null, IndexOrder.NONE, true, false );
         boolean accepted = filter.acceptEntity( nodeReference, score, filterValues.apply( values ) );
 
         // then
@@ -219,7 +219,7 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     {
         NodeValueClientFilter filter = new NodeValueClientFilter(
                 this, node, property, read, filters );
-        filter.initialize( TestIndexDescriptorFactory.forLabel( 11 ), this, null, IndexOrder.NONE, true );
+        filter.initialize( TestIndexDescriptorFactory.forLabel( 11 ), this, null, IndexOrder.NONE, true, false );
         return filter;
     }
 
@@ -234,7 +234,8 @@ public class NodeValueClientFilterTest implements IndexProgressor, EntityValueCl
     }
 
     @Override
-    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, IndexOrder indexOrder, boolean needsValues )
+    public void initialize( IndexDescriptor descriptor, IndexProgressor progressor, IndexQuery[] queries, IndexOrder indexOrder, boolean needsValues,
+            boolean indexIncludesTransactionState )
     {
         events.add( new Event.Initialize( progressor, descriptor.schema().getPropertyIds() ) );
     }

@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
@@ -82,7 +83,7 @@ public class PartitionedUniquenessVerifierTest
         return new PartitionedUniquenessVerifier( getSearchers() );
     }
 
-    private List<PartitionSearcher> getSearchers()
+    private List<SearcherReference> getSearchers()
     {
         return Arrays.asList( searcher1, searcher2, searcher3 );
     }

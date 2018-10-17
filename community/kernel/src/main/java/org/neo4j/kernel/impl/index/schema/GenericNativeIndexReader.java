@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -77,7 +78,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
     {
         IndexQuery.GeometryRangePredicate geometryRangePredicate = getGeometryRangePredicateIfAny( query );
         if ( geometryRangePredicate != null )
@@ -88,7 +89,7 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
                 // If there's a GeometryRangeQuery among the predicates then this query changes from a straight-forward: build from/to and seek...
                 // into a query that is split into multiple sub-queries. Predicates both before and after will have to be accompanied each sub-query.
                 BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-                client.initialize( descriptor, multiProgressor, query, indexOrder, needsValues );
+                client.initialize( descriptor, multiProgressor, query, indexOrder, needsValues, false );
                 double[] from = geometryRangePredicate.from() == null ? null : geometryRangePredicate.from().coordinate();
                 double[] to = geometryRangePredicate.to() == null ? null : geometryRangePredicate.to().coordinate();
                 CoordinateReferenceSystem crs = geometryRangePredicate.crs();
@@ -108,12 +109,12 @@ class GenericNativeIndexReader extends NativeIndexReader<GenericKey,NativeIndexV
             catch ( IllegalArgumentException e )
             {
                 // Invalid query ranges will cause this state (eg. min>max)
-                client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues );
+                client.initialize( descriptor, IndexProgressor.EMPTY, query, indexOrder, needsValues, false );
             }
         }
         else
         {
-            super.query( client, indexOrder, needsValues, query );
+            super.query( context, client, indexOrder, needsValues, query );
         }
     }
 

@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.ExplicitIndexTransactionStateProvider;
-import org.neo4j.kernel.impl.api.KernelAuxTransactionStateManager;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
@@ -221,7 +220,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
-    private final KernelAuxTransactionStateManager auxTxStateManager;
 
     public NeoStoreDataSource( DatabaseCreationContext context )
     {
@@ -274,7 +272,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.pageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
-        this.auxTxStateManager = new KernelAuxTransactionStateManager();
     }
 
     // We do our own internal life management:
@@ -298,7 +295,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies.satisfyDependency( databaseAvailability );
         dataSourceDependencies.satisfyDependency( idGeneratorFactory );
         dataSourceDependencies.satisfyDependency( idController );
-        dataSourceDependencies.satisfyDependency( auxTxStateManager );
         dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
 
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
@@ -565,11 +561,12 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 buildStatementOperations( cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
-        auxTxStateManager.registerProvider( new ExplicitIndexTransactionStateProvider( indexConfigStore, explicitIndexProvider ) );
+        ExplicitIndexTransactionStateProvider explicitIndexTransactionStateProvider =
+                new ExplicitIndexTransactionStateProvider( indexConfigStore, explicitIndexProvider );
 
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
-                        transactionHeaderInformationFactory, transactionCommitProcess, auxTxStateManager, hooks,
+                        transactionHeaderInformationFactory, transactionCommitProcess, explicitIndexTransactionStateProvider, hooks,
                         transactionMonitor, databaseAvailabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, autoIndexing, explicitIndexStore, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, indexingService, tokenHolders, getDatabaseName(), dataSourceDependencies ) );

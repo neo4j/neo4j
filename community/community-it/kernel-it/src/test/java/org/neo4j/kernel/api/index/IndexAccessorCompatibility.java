@@ -50,6 +50,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {
@@ -113,7 +114,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
         try ( IndexReader reader = accessor.newReader(); )
         {
             SimpleNodeValueClient nodeValueClient = new SimpleNodeValueClient();
-            reader.query( nodeValueClient, IndexOrder.NONE, false, predicates );
+            reader.query( NULL_CONTEXT, nodeValueClient, IndexOrder.NONE, false, predicates );
             List<Long> list = new LinkedList<>();
             while ( nodeValueClient.next() )
             {
@@ -131,7 +132,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
     protected AutoCloseable query( SimpleNodeValueClient client, IndexOrder order, IndexQuery... predicates ) throws Exception
     {
         IndexReader reader = accessor.newReader();
-        reader.query( client, order, false, predicates );
+        reader.query( NULL_CONTEXT, client, order, false, predicates );
         return reader;
     }
 
@@ -174,7 +175,7 @@ public abstract class IndexAccessorCompatibility extends IndexProviderCompatibil
             }
             else
             {
-                Assert.fail( "Unexpected order " + order );
+                Assert.fail( "Unexpected order " + order + " (count = " + count + ")" );
             }
             prevValues = values;
         }

@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
@@ -68,10 +69,6 @@ import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateCloseException;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateHolder;
-import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionStateManager;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -145,7 +142,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
-    private final AuxiliaryTransactionStateManager auxTxStateManager;
+    private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
@@ -161,7 +158,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
-    private AuxiliaryTransactionStateHolder auxTxStateHolder;
+    private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
@@ -203,7 +200,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
-            AuxiliaryTransactionStateManager auxTxStateManager, Pool<KernelTransactionImplementation> pool, Clock clock,
+            Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier, Pool<KernelTransactionImplementation> pool, Clock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
             AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
@@ -216,9 +213,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
+        this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.storageReader = storageEngine.newReader();
         this.storageEngine = storageEngine;
-        this.auxTxStateManager = auxTxStateManager;
         this.pool = pool;
         this.clocks = new ClockContext( clock );
         this.transactionTracer = transactionTracer;
@@ -480,25 +477,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return txState;
     }
 
-    private AuxiliaryTransactionStateHolder getAuxTxStateHolder()
-    {
-        if ( auxTxStateHolder == null )
-        {
-            auxTxStateHolder = auxTxStateManager.openStateHolder();
-        }
-        return auxTxStateHolder;
-    }
-
-    @Override
-    public AuxiliaryTransactionState auxiliaryTxState( Object providerIdentityKey )
-    {
-        return getAuxTxStateHolder().getState( providerIdentityKey );
-    }
-
     @Override
     public ExplicitIndexTransactionState explicitIndexTxState()
     {
-        return (ExplicitIndexTransactionState) getAuxTxStateHolder().getState( ExplicitIndexTransactionStateProvider.PROVIDER_KEY );
+
+        return explicitIndexTransactionState != null ? explicitIndexTransactionState :
+               (explicitIndexTransactionState = explicitIndexTxStateSupplier.get());
     }
 
     @Override
@@ -560,17 +544,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasChanges()
     {
-        return hasTxStateWithChanges() || hasAuxTxStateChanges();
+        return hasTxStateWithChanges() || hasExplicitIndexChanges();
     }
 
-    private boolean hasAuxTxStateChanges()
+    private boolean hasExplicitIndexChanges()
     {
-        return auxTxStateHolder != null && getAuxTxStateHolder().hasChanges();
+        return explicitIndexTransactionState != null && explicitIndexTransactionState.hasChanges();
     }
 
     private boolean hasDataChanges()
     {
-        return hasTxStateWithChanges() && txState.hasDataChanges();
+        return hasTxStateWithChanges() && txState.getDataRevision() != 0;
     }
 
     @Override
@@ -688,9 +672,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         commitLocks,
                         lastTransactionIdWhenStarted,
                         this::enforceConstraints );
-                if ( hasAuxTxStateChanges() )
+                if ( hasExplicitIndexChanges() )
                 {
-                    auxTxStateHolder.extractCommands( extractedCommands );
+                    explicitIndexTransactionState.extractCommands( extractedCommands );
                 }
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
@@ -948,7 +932,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      */
     private void release()
     {
-        AuxiliaryTransactionStateCloseException auxStateCloseException = null;
         terminationReleaseLock.lock();
         try
         {
@@ -958,10 +941,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             type = null;
             securityContext = null;
             transactionEvent = null;
-            if ( auxTxStateHolder != null )
-            {
-                auxStateCloseException = closeAuxTxState();
-            }
             txState = null;
             collectionsFactory.release();
             hooksState = null;
@@ -979,25 +958,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             terminationReleaseLock.unlock();
         }
-        if ( auxStateCloseException != null )
-        {
-            throw auxStateCloseException;
-        }
-    }
-
-    private AuxiliaryTransactionStateCloseException closeAuxTxState()
-    {
-        AuxiliaryTransactionStateHolder holder = auxTxStateHolder;
-        auxTxStateHolder = null;
-        try
-        {
-            holder.close();
-        }
-        catch ( AuxiliaryTransactionStateCloseException e )
-        {
-            return e;
-        }
-        return null;
     }
 
     /**
@@ -1111,18 +1071,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxStateVisitor enforceConstraints( TxStateVisitor txStateVisitor )
     {
         return constraintSemantics.decorateTxStateVisitor( storageReader, operations.dataRead(), operations.cursors(), txState, txStateVisitor );
-    }
-
-    /**
-     * The revision of the data changes in this transaction. This number is opaque, except that it is zero if there have been no data changes in this
-     * transaction. And making and then undoing a change does not count as "no data changes." This number will always change when there is a data change in a
-     * transaction, however, such that one can reliably tell whether or not there has been any data changes in a transaction since last time the transaction
-     * data revision was obtained for the given transaction.
-     * @return The opaque data revision for this transaction, or zero if there has been no data changes in this transaction.
-     */
-    public long getTransactionDataRevision()
-    {
-        return hasDataChanges() ? txState.getDataRevision() : 0;
     }
 
     /**

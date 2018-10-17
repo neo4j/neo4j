@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.api.impl.index.IndexWriterConfigs;
+import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -76,7 +77,7 @@ class IndexPartitionFactoryTest
                 indexWriter.addDocument( new Document() );
                 indexWriter.commit();
                 indexPartition.maybeRefreshBlocking();
-                try ( PartitionSearcher searcher = indexPartition.acquireSearcher() )
+                try ( SearcherReference searcher = indexPartition.acquireSearcher() )
                 {
                     assertEquals( 1, searcher.getIndexSearcher().getIndexReader().numDocs(), "We should be able to see newly added document " );
                 }

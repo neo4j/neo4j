@@ -66,6 +66,13 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
      */
     boolean hasValue();
 
+    /**
+     * @return the score, if any, that signifies how well the current node matches the query. If there is no score associated with the match,
+     * then {@link Float#NaN} is returned. Also, if the cursor has been exhausted, or the cursor is otherwise not placed at a node,
+     * then {@link Float#NaN} is also returned.
+     */
+    float score();
+
     Value propertyValue( int offset );
 
     class Empty implements NodeValueIndexCursor
@@ -116,6 +123,12 @@ public interface NodeValueIndexCursor extends NodeIndexCursor
         public boolean hasValue()
         {
             return false;
+        }
+
+        @Override
+        public float score()
+        {
+            return Float.NaN;
         }
 
         @Override

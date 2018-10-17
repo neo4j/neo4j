@@ -33,11 +33,13 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
+import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<NativeIndexValue>> implements IndexReader
 {
@@ -78,12 +80,18 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     public PrimitiveLongResourceIterator query( IndexQuery... predicates )
     {
         NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
+        query( NULL_CONTEXT, nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
         return nodeValueIterator;
     }
 
     @Override
-    public void query( IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
+    public boolean indexIncludesTransactionState()
+    {
+        return false;
+    }
+
+    @Override
+    public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         // Spatial does not support providing values
         if ( needsValues )
@@ -100,10 +108,10 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
         {
             loadAll();
             BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
-            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, false );
+            cursor.initialize( descriptor, multiProgressor, predicates, indexOrder, false, false );
             for ( NativeIndexReader<SpatialIndexKey,NativeIndexValue> reader : this )
             {
-                reader.query( multiProgressor, indexOrder, false, predicates );
+                reader.query( context, multiProgressor, indexOrder, false, predicates );
             }
         }
         else
@@ -126,16 +134,16 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
                 SpatialIndexPartReader<NativeIndexValue> part = uncheckedSelect( crs );
                 if ( part != null )
                 {
-                    part.query( cursor, indexOrder, false, predicates );
+                    part.query( context, cursor, indexOrder, false, predicates );
                 }
                 else
                 {
-                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, false );
+                    cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, false, false );
                 }
             }
             else
             {
-                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, false );
+                cursor.initialize( descriptor, IndexProgressor.EMPTY, predicates, indexOrder, false, false );
             }
         }
     }

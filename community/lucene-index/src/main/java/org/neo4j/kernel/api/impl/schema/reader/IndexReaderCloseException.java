@@ -31,8 +31,18 @@ import java.io.UncheckedIOException;
  */
 public class IndexReaderCloseException extends UncheckedIOException
 {
+    private IndexReaderCloseException( String message, IOException cause )
+    {
+        super( message, cause );
+    }
+
     public IndexReaderCloseException( IOException cause )
     {
         super( cause );
+    }
+
+    public IndexReaderCloseException( String message, Throwable throwable )
+    {
+        this( message, throwable instanceof IOException ? ((IOException) throwable) : new IOException( throwable ) );
     }
 }

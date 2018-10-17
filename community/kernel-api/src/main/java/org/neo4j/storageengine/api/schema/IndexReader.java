@@ -52,12 +52,20 @@ public interface IndexReader extends Resource
     PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
 
     /**
+     * @return {@code true} if the index takes transaction state into account when querying, such that there is no need for the
+     * {@link IndexProgressor.EntityValueClient} to merge transaction state into the query result. Otherwise, {@code false}.
+     */
+    boolean indexIncludesTransactionState();
+
+    /**
      * Queries the index for the given {@link IndexQuery} predicates.
-     *  @param client the client which will control the progression though query results.
+     *
+     * @param context the transactional context of the index query.
+     * @param client the client which will control the progression though query results.
      * @param needsValues if the index should fetch property values together with node ids for index queries
      * @param query the query so serve.
      */
-    void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException;
 
     /**
@@ -90,7 +98,13 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void query( IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+        public boolean indexIncludesTransactionState()
+        {
+            return false;
+        }
+
+        @Override
+        public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
         {
             //do nothing
         }
