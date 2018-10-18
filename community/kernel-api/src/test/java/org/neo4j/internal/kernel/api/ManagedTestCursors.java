@@ -105,6 +105,14 @@ public class ManagedTestCursors implements CursorFactory
     }
 
     @Override
+    public RelationshipIndexCursor allocateRelationshipIndexCursor()
+    {
+        RelationshipIndexCursor n = cursors.allocateRelationshipIndexCursor();
+        allCursors.add( n );
+        return n;
+    }
+
+    @Override
     public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
     {
         NodeExplicitIndexCursor n = cursors.allocateNodeExplicitIndexCursor();

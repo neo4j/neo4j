@@ -33,7 +33,7 @@ public interface Read
 
     /**
      * Seek all nodes matching the provided index query in an index.
-     *  @param index {@link IndexReference} referencing index to query.
+     * @param index {@link IndexReference} referencing index to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
      * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
@@ -42,6 +42,20 @@ public interface Read
      */
     void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws KernelException;
+
+    /**
+     * Seek all relationships matching the provided index query in an index.
+     *
+     * This is almost but not quite a relationship counterpart to
+     * {@link #nodeIndexSeek(IndexReference, NodeValueIndexCursor, IndexOrder, boolean, IndexQuery...)}, in that this method <em>currently</em> cannot return
+     * values from the index. This may be added in the future. When this happens, this method may be extended with parameters for {@code indexOrder} and
+     * {@code needsValues}, and the cursor parameter will likely require a "value" cursor instead of just an "index" cursor.
+     *
+     * @param index {@link IndexReference} referencing the index to query. This must be an index of relationships.
+     * @param cursor the cursor to use for consuming the results.
+     * @param query Combination of {@link IndexQuery index queries} to run against referenced index.
+     */
+    void relationshipIndexSeek( IndexReference index, RelationshipIndexCursor cursor, IndexQuery... query ) throws KernelException;
 
     /**
      * Returns node id of node found in unique index or -1 if no node was found.

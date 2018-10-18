@@ -34,6 +34,7 @@ public interface FulltextAdapter
 {
     SchemaDescriptor schemaFor( EntityType type, String[] entityTokens, Properties indexConfiguration, String... properties );
 
+    @Deprecated
     ScoreEntityIterator query( KernelTransaction tx, String indexName, String queryString ) throws IOException, IndexNotFoundKernelException, ParseException;
 
     void awaitRefresh();

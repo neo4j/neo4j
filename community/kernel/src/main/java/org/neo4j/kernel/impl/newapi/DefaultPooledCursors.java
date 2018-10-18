@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.newapi;
 import java.util.ArrayList;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.storageengine.api.StorageReader;
 
 /**
@@ -37,6 +38,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultRelationshipGroupCursor relationshipGroupCursor;
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
+    private DefaultRelationshipIndexCursor relationshipIndexCursor;
     private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
     private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
@@ -233,6 +235,33 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
             nodeLabelIndexCursor.release();
         }
         nodeLabelIndexCursor = cursor;
+    }
+
+    @Override
+    public RelationshipIndexCursor allocateRelationshipIndexCursor()
+    {
+        if ( relationshipIndexCursor == null )
+        {
+            return trace( new DefaultRelationshipIndexCursor( this ) );
+        }
+
+        try
+        {
+            return relationshipIndexCursor;
+        }
+        finally
+        {
+            relationshipIndexCursor = null;
+        }
+    }
+
+    public void accept( DefaultRelationshipIndexCursor cursor )
+    {
+        if ( relationshipIndexCursor != null )
+        {
+            relationshipIndexCursor.release();
+        }
+        relationshipIndexCursor = cursor;
     }
 
     @Override

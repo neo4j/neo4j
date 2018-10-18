@@ -31,21 +31,23 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
 public class StubCursorFactory implements CursorFactory
 {
     private final boolean continueWithLastItem;
-    private Queue<NodeCursor> nodeCursors = new LinkedList<>(  );
-    private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>(  );
-    private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>(  );
-    private Queue<PropertyCursor> propertyCursors = new LinkedList<>(  );
-    private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>(  );
-    private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>(  );
-    private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>(  );
-    private Queue<NodeExplicitIndexCursor> nodeExplicitIndexCursors = new LinkedList<>(  );
-    private Queue<RelationshipExplicitIndexCursor> relationshipExplicitIndexCursors = new LinkedList<>(  );
+    private Queue<NodeCursor> nodeCursors = new LinkedList<>();
+    private Queue<RelationshipScanCursor> relationshipScanCursors = new LinkedList<>();
+    private Queue<RelationshipTraversalCursor> relationshiTraversalCursors = new LinkedList<>();
+    private Queue<PropertyCursor> propertyCursors = new LinkedList<>();
+    private Queue<RelationshipGroupCursor> groupCursors = new LinkedList<>();
+    private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>();
+    private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>();
+    private Queue<RelationshipIndexCursor> relationshipIndexCursors = new LinkedList<>();
+    private Queue<NodeExplicitIndexCursor> nodeExplicitIndexCursors = new LinkedList<>();
+    private Queue<RelationshipExplicitIndexCursor> relationshipExplicitIndexCursors = new LinkedList<>();
 
     public StubCursorFactory()
     {
@@ -97,6 +99,12 @@ public class StubCursorFactory implements CursorFactory
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
         return poll( nodeLabelIndexCursors );
+    }
+
+    @Override
+    public RelationshipIndexCursor allocateRelationshipIndexCursor()
+    {
+        return poll( relationshipIndexCursors );
     }
 
     @Override

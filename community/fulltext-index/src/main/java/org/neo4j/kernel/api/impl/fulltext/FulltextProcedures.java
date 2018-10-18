@@ -20,13 +20,10 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.commons.lang3.ArrayUtils;
-import org.apache.lucene.queryparser.classic.ParseException;
 
-import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Spliterator;
@@ -45,8 +42,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -191,8 +188,7 @@ public class FulltextProcedures
 
     @Description( "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by score." )
     @Procedure( name = "db.index.fulltext.queryRelationships", mode = READ )
-    public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query )
-            throws ParseException, IndexNotFoundKernelException, IOException
+    public Stream<RelationshipOutput> queryFulltextForRelationships( @Name( "indexName" ) String name, @Name( "queryString" ) String query ) throws Exception
     {
         IndexReference indexReference = getValidIndexReference( name );
         awaitOnline( indexReference );
@@ -202,10 +198,29 @@ public class FulltextProcedures
             throw new IllegalArgumentException( "The '" + name + "' index (" + indexReference + ") is an index on " + entityType +
                     ", so it cannot be queried for relationships." );
         }
-        ScoreEntityIterator resultIterator = accessor.query( tx, name, query );
-        return resultIterator.stream()
-                .map( result -> RelationshipOutput.forExistingEntityOrNull( db, result ) )
-                .filter( Objects::nonNull );
+        RelationshipIndexCursor cursor = tx.cursors().allocateRelationshipIndexCursor();
+        tx.dataRead().relationshipIndexSeek( indexReference, cursor, IndexQuery.fulltextSearch( query ) );
+
+        Spliterator<RelationshipOutput> spliterator = new SpliteratorAdaptor<RelationshipOutput>()
+        {
+            @Override
+            public boolean tryAdvance( Consumer<? super RelationshipOutput> action )
+            {
+                while ( cursor.next() )
+                {
+                    long relationshipReference = cursor.relationshipReference();
+                    float score = cursor.score();
+                    RelationshipOutput relationshipOutput = RelationshipOutput.forExistingEntityOrNull( db, relationshipReference, score );
+                    if ( relationshipOutput != null )
+                    {
+                        action.accept( relationshipOutput );
+                        return true;
+                    }
+                }
+                return false;
+            }
+        };
+        return StreamSupport.stream( spliterator, false );
     }
 
     private IndexReference getValidIndexReference( @Name( "indexName" ) String name )
@@ -218,7 +233,7 @@ public class FulltextProcedures
         return indexReference;
     }
 
-    private void awaitOnline( IndexReference indexReference ) throws IndexNotFoundKernelException
+    private void awaitOnline( IndexReference indexReference )
     {
         // We do the isAdded check on the transaction state first, because indexGetState will grab a schema read-lock, which can deadlock on the write-lock
         // held by the index populator. Also, if we index was created in this transaction, then we will never see it come online in this transaction anyway.
@@ -304,11 +319,11 @@ public class FulltextProcedures
             this.score = score;
         }
 
-        public static RelationshipOutput forExistingEntityOrNull( GraphDatabaseService db, ScoreEntityIterator.ScoreEntry result )
+        public static RelationshipOutput forExistingEntityOrNull( GraphDatabaseService db, long relationshipId, float score )
         {
             try
             {
-                return new RelationshipOutput( db.getRelationshipById( result.entityId() ), result.score() );
+                return new RelationshipOutput( db.getRelationshipById( relationshipId ), score );
             }
             catch ( NotFoundException ignore )
             {

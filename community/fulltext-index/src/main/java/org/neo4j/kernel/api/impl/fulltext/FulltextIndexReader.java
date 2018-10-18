@@ -73,6 +73,7 @@ public class FulltextIndexReader implements IndexReader
      * @param query the lucene query
      * @return A {@link ScoreEntityIterator} over the results
      */
+    @Deprecated
     public ScoreEntityIterator query( String query ) throws ParseException
     {
         Query queryObject = parseFulltextQuery( query );
@@ -195,7 +196,7 @@ public class FulltextIndexReader implements IndexReader
         BooleanQuery query = queryBuilder.build();
         ScoreEntityIterator itr = indexQuery( query );
         ReadableTransactionState state = context.getTransactionStateOrNull();
-        if ( state != null )
+        if ( state != null && !descriptor.isEventuallyConsistent() )
         {
             transactionState.maybeUpdate( context );
             itr = transactionState.filter( itr, query );

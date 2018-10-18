@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
@@ -100,6 +101,24 @@ abstract class Read implements TxStateHolder,
         client.setRead( this, null );
         IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
         reader.query( this, withFullPrecision, indexOrder, needsValues, query );
+    }
+
+    @Override
+    public final void relationshipIndexSeek( IndexReference index, RelationshipIndexCursor cursor, IndexQuery... query )
+            throws IndexNotApplicableKernelException, IndexNotFoundKernelException
+    {
+        ktx.assertOpen();
+        if ( hasForbiddenProperties( index ) )
+        {
+            cursor.close();
+            return;
+        }
+
+        EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
+        IndexReader reader = indexReader( index, false );
+        client.setRead( this, null );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
+        reader.query( this, withFullPrecision, IndexOrder.NONE, false, query );
     }
 
     private IndexProgressor.EntityValueClient injectFullValuePrecision( IndexProgressor.EntityValueClient cursor,

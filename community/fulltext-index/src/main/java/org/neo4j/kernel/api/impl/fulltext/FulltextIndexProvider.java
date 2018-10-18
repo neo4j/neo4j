@@ -68,8 +68,6 @@ import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrIni
 
 class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
 {
-    private static final String TX_STATE_PROVIDER_KEY = "FULLTEXT SCHEMA INDEX TRANSACTION STATE";
-
     private final FileSystemAbstraction fileSystem;
     private final Config config;
     private final TokenHolders tokenHolders;
@@ -287,6 +285,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return new FulltextSchemaDescriptor( schema, indexConfiguration );
     }
 
+    @Deprecated
     @Override
     public ScoreEntityIterator query( KernelTransaction ktx, String indexName, String queryString ) throws IndexNotFoundKernelException, ParseException
     {

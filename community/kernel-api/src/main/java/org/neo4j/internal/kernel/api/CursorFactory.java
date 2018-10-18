@@ -47,6 +47,8 @@ public interface CursorFactory
 
     NodeLabelIndexCursor allocateNodeLabelIndexCursor();
 
+    RelationshipIndexCursor allocateRelationshipIndexCursor();
+
     // explicit indexes
 
     NodeExplicitIndexCursor allocateNodeExplicitIndexCursor();

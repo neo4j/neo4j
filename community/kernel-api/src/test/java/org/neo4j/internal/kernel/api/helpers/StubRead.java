@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
@@ -38,6 +39,12 @@ public class StubRead implements Read
 {
     @Override
     public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void relationshipIndexSeek( IndexReference index, RelationshipIndexCursor cursor, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }

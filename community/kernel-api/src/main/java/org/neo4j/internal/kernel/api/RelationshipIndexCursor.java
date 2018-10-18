@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api;
 /**
  * Cursor for scanning relationships of a schema index.
  */
-public interface RelationshipIndexCursor extends Cursor
+public interface RelationshipIndexCursor extends Cursor, IndexResultScore
 {
     void relationship( RelationshipScanCursor cursor );
 
