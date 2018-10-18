@@ -146,6 +146,7 @@ public class NettyServer extends LifecycleAdapter
                 .group( bossGroup, selectorGroup )
                 .channel( configurationProvider.getChannelClass() )
                 .option( ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT )
+                .option( ChannelOption.SO_REUSEADDR, true )
                 .childOption( ChannelOption.SO_KEEPALIVE, true )
                 .childHandler( protocolInitializer.channelInitializer() );
     }
