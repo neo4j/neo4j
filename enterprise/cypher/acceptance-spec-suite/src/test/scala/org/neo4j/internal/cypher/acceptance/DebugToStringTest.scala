@@ -23,7 +23,6 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.opencypher.v9_0.util.test_helpers.WindowsStringSafe
 
 class DebugToStringTest extends ExecutionEngineFunSuite {
 
@@ -35,47 +34,43 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   test("ast-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("ast")).resultAsString()
 
-    //todo this comparison fails on windows
-    //    textResult should equal("""+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                              || col                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-    //                              |+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                              || "Query(None,SingleQuery(List(Match(false,Pattern(List(EveryPath(RelationshipChain(NodePattern(Some(Variable(a)),List(),None),RelationshipPattern(Some(Variable(  UNNAMED10)),List(RelTypeName(T)),None,None,OUTGOING,false),NodePattern(Some(Variable(b)),List(),None))))),List(),None), Return(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)), AliasedReturnItem(Variable(b),Variable(b)))),None,None,None,None,Set()))))" |
-    //                              |+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                              |1 row
-    //                              |""".stripMargin)
-    textResult should not be empty
+    textResult should equal(
+      """+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        || col                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+        |+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        || "Query(None,SingleQuery(List(Match(false,Pattern(List(EveryPath(RelationshipChain(NodePattern(Some(Variable(a)),List(),None,None),RelationshipPattern(Some(Variable(  UNNAMED10)),List(RelTypeName(T)),None,None,OUTGOING,false,None),NodePattern(Some(Variable(b)),List(),None,None))))),List(),None), Return(false,ReturnItems(false,Vector(AliasedReturnItem(Variable(a),Variable(a)), AliasedReturnItem(Variable(b),Variable(b)))),None,None,None,Set()))))" |
+        |+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        |1 row
+        |""".stripMargin)
   }
 
   test("logicalplan-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("logicalPlan")).resultAsString()
 
-    //todo this comparison fails on windows
-    //    textResult should equal( """+-----------------------------------------------------------------------------------+
-    //                               || col                                                                               |
-    //                               |+-----------------------------------------------------------------------------------+
-    //                               || "ProduceResult(Vector(a, b)) {"                                                   |
-    //                               || "  LHS -> Expand(a, OUTGOING, List(RelTypeName(T)), b,   UNNAMED10, ExpandAll) {" |
-    //                               || "    LHS -> AllNodesScan(a, Set()) {}"                                            |
-    //                               || "  }"                                                                             |
-    //                               || "}"                                                                               |
-    //                               |+-----------------------------------------------------------------------------------+
-    //                               |5 rows
-    //                               |""".stripMargin)
-    //
-    textResult should not be empty
+    textResult should equal(
+      """+-----------------------------------------------------------------------------------+
+        || col                                                                               |
+        |+-----------------------------------------------------------------------------------+
+        || "ProduceResult(Vector(a, b)) {"                                                   |
+        || "  LHS -> Expand(a, OUTGOING, List(RelTypeName(T)), b,   UNNAMED10, ExpandAll) {" |
+        || "    LHS -> AllNodesScan(a, Set()) {}"                                            |
+        || "  }"                                                                             |
+        || "}"                                                                               |
+        |+-----------------------------------------------------------------------------------+
+        |5 rows
+        |""".stripMargin)
   }
 
   test("queryGraph-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("queryGraph")).resultAsString()
-    //todo this comparison fails on windows
-    //    textResult should equal("""+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                              || col                                                                                                                                                                                                                                       |
-    //                              |+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                              || "UnionQuery(List(RegularPlannerQuery(QueryGraph {Nodes: ['a', 'b'], Rels: ['(a)--[  UNNAMED10:T]->-(b)']},RegularQueryProjection(Map(a -> Variable(a), b -> Variable(b)),QueryShuffle(List(),None,None)),None)),false,Vector(a, b),None)" |
-    //                              |+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                              |1 row
-    //                              |""".stripMargin)
-    textResult should not be empty
+
+        textResult should equal("""+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                                  || col                                                                                                                                                                                                                                                                       |
+                                  |+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                                  || "UnionQuery(List(RegularPlannerQuery(QueryGraph {Nodes: ['a', 'b'], Rels: ['(a)--[  UNNAMED10:T]->-(b)']},InterestingOrder(List(),List()),RegularQueryProjection(Map(a -> Variable(a), b -> Variable(b)),QueryShuffle(List(),None,None)),None)),false,Vector(a, b),None)" |
+                                  |+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                                  |1 row
+                                  |""".stripMargin)
   }
 
   test("semanticState-tostring works") {
@@ -87,31 +82,29 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
 
   test("cost reporting") {
     val stringResult = graph.execute("CYPHER debug=dumpCosts MATCH (a:A) RETURN *").resultAsString()
-    //todo this comparison fails on windows
-    //    stringResult should equal("""+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                                || # | planId | planText                                                             | planCost                                                          | cost   | est cardinality | winner |
-    //                                |+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                                || 1 | 0      | ""                                                                   | ""                                                                | 10.0   | 1.0             | "WON"  |
-    //                                || 1 | <null> | "NodeByLabelScan(a, LabelName(A), Set()) {}"                         | "NodeByLabelScan costs Cost(10.0) cardinality Cardinality(1.0)"   | <null> | <null>          | <null> |
-    //                                || 1 | 2      | ""                                                                   | ""                                                                | 13.0   | 1.0             | "LOST" |
-    //                                || 1 | <null> | "Selection(ListBuffer(HasLabels(Variable(a),List(LabelName(A))))) {" | "Selection costs Cost(13.0) cardinality Cardinality(1.0)"         | <null> | <null>          | <null> |
-    //                                || 1 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                 | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
-    //                                || 1 | 0      | ""                                                                   | ""                                                                | 0.0    | 1.0             | "LOST" |
-    //                                || 1 | <null> | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                       | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                    | <null> | <null>          | <null> |
-    //                                || 0 | 2      | ""                                                                   | ""                                                                | 13.0   | 1.0             | "WON"  |
-    //                                || 0 | <null> | "Selection(ListBuffer(HasLabels(Variable(a),List(LabelName(A))))) {" | "Selection costs Cost(13.0) cardinality Cardinality(1.0)"         | <null> | <null>          | <null> |
-    //                                || 0 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                 | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
-    //                                || 0 | 4      | ""                                                                   | ""                                                                | 27.5   | 1.0             | "LOST" |
-    //                                || 0 | <null> | "NodeHashJoin(Set(a)) {"                                             | "NodeHashJoin costs Cost(27.5) cardinality Cardinality(1.0)"      | <null> | <null>          | <null> |
-    //                                || 0 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                 | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
-    //                                || 0 | <null> | "  RHS -> NodeByLabelScan(a, LabelName(A), Set()) {}"                | "  NodeByLabelScan costs Cost(10.0) cardinality Cardinality(1.0)" | <null> | <null>          | <null> |
-    //                                || 0 | 0      | ""                                                                   | ""                                                                | 0.0    | 1.0             | "LOST" |
-    //                                || 0 | <null> | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                       | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                    | <null> | <null>          | <null> |
-    //                                |+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-    //                                |16 rows
-    //                                |""".stripMargin)
-    stringResult should not be empty
-    graph.execute("CYPHER debug=dumpCosts MATCH (a:A:B:C)-[:T]->(b:A:B:C) RETURN *").stream().count()
+
+        stringResult should equal("""+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                                    || # | planId | planText                                                            | planCost                                                          | cost   | est cardinality | winner |
+                                    |+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                                    || 1 | 0      | ""                                                                  | ""                                                                | 10.0   | 1.0             | "WON"  |
+                                    || 1 | <null> | "NodeByLabelScan(a, LabelName(A), Set()) {}"                        | "NodeByLabelScan costs Cost(10.0) cardinality Cardinality(1.0)"   | <null> | <null>          | <null> |
+                                    || 1 | 2      | ""                                                                  | ""                                                                | 13.0   | 1.0             | "LOST" |
+                                    || 1 | <null> | "Selection(Ands(Set(HasLabels(Variable(a),List(LabelName(A)))))) {" | "Selection costs Cost(13.0) cardinality Cardinality(1.0)"         | <null> | <null>          | <null> |
+                                    || 1 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
+                                    || 1 | 0      | ""                                                                  | ""                                                                | 0.0    | 1.0             | "LOST" |
+                                    || 1 | <null> | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                      | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                    | <null> | <null>          | <null> |
+                                    || 0 | 2      | ""                                                                  | ""                                                                | 13.0   | 1.0             | "WON"  |
+                                    || 0 | <null> | "Selection(Ands(Set(HasLabels(Variable(a),List(LabelName(A)))))) {" | "Selection costs Cost(13.0) cardinality Cardinality(1.0)"         | <null> | <null>          | <null> |
+                                    || 0 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
+                                    || 0 | 4      | ""                                                                  | ""                                                                | 27.5   | 1.0             | "LOST" |
+                                    || 0 | <null> | "NodeHashJoin(Set(a)) {"                                            | "NodeHashJoin costs Cost(27.5) cardinality Cardinality(1.0)"      | <null> | <null>          | <null> |
+                                    || 0 | <null> | "  LHS -> AllNodesScan(a, Set()) {}"                                | "  AllNodesScan costs Cost(12.0) cardinality Cardinality(1.0)"    | <null> | <null>          | <null> |
+                                    || 0 | <null> | "  RHS -> NodeByLabelScan(a, LabelName(A), Set()) {}"               | "  NodeByLabelScan costs Cost(10.0) cardinality Cardinality(1.0)" | <null> | <null>          | <null> |
+                                    || 0 | 0      | ""                                                                  | ""                                                                | 0.0    | 1.0             | "LOST" |
+                                    || 0 | <null> | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                      | "*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-*-"                    | <null> | <null>          | <null> |
+                                    |+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+                                    |16 rows
+                                    |""".stripMargin)
   }
 
   private def queryWithOutputOf(s: String) = s"CYPHER debug=tostring debug=$s MATCH (a)-[:T]->(b) RETURN *"
