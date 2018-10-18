@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundGraphStatistics, TransactionalContextWrapper}
+import org.neo4j.cypher.internal.spi.v3_5.TransactionBoundGraphStatistics
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 /**
