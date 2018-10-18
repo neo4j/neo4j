@@ -21,6 +21,7 @@ package org.neo4j.bolt.v3.runtime;
 
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.v4.ResultConsumer;
 
 public class TransactionStreamingState extends AbstractStreamingState
 {
@@ -33,8 +34,13 @@ public class TransactionStreamingState extends AbstractStreamingState
     @Override
     protected BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable
     {
-        context.connectionState().getStatementProcessor().streamResult(
-                recordStream -> context.connectionState().getResponseHandler().onRecords( recordStream, pull ) );
+        long size = pull ? Long.MAX_VALUE : -1;
+        ResultConsumer resultConsumer = new ResultConsumer( context, size );
+        context.connectionState().getStatementProcessor().streamResult( resultConsumer );
+        if ( resultConsumer.hasMore() )
+        {
+            throw new IllegalArgumentException( "Shall not pull records in multiple times in bolt v3" );
+        }
         return readyState;
     }
 }

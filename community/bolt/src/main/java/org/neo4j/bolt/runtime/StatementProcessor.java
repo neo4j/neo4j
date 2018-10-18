@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingConsumer;
+import org.neo4j.bolt.v4.ResultConsumer;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.values.virtual.MapValue;
 
@@ -38,7 +38,7 @@ public interface StatementProcessor
 
     StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException;
 
-    Bookmark streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception;
+    Bookmark streamResult( ResultConsumer resultConsumer ) throws Exception;
 
     Bookmark commitTransaction() throws KernelException;
 
@@ -82,7 +82,7 @@ public interface StatementProcessor
         }
 
         @Override
-        public Bookmark streamResult( ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
+        public Bookmark streamResult( ResultConsumer resultConsumer ) throws Exception
         {
             throw new UnsupportedOperationException( "Unable to stream results" );
         }

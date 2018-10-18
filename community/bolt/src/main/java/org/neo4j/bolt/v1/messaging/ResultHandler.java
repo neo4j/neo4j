@@ -19,13 +19,14 @@
  */
 package org.neo4j.bolt.v1.messaging;
 
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
 import org.neo4j.bolt.runtime.BoltResult;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.response.RecordMessage;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.logging.Log;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 
 public class ResultHandler extends MessageProcessingHandler
 {
@@ -35,24 +36,30 @@ public class ResultHandler extends MessageProcessingHandler
     }
 
     @Override
-    public void onRecords( final BoltResult result, final boolean pull ) throws Exception
+    public boolean onRecords( final BoltResult result, final long size ) throws Exception
     {
-        result.accept( new BoltResult.Visitor()
+        boolean hasMore = result.hasMore( new BoltResult.Visitor()
         {
             @Override
             public void visit( QueryResult.Record record ) throws Exception
             {
-                if ( pull )
-                {
-                    messageWriter.write( new RecordMessage( record ) );
-                }
+                messageWriter.write( new RecordMessage( record ) );
             }
 
-            @Override
             public void addMetadata( String key, AnyValue value )
             {
                 onMetadata( key, value );
             }
-        } );
+        }, size );
+
+        if ( hasMore )
+        {
+            onMetadata( "has_more", BooleanValue.TRUE );
+            return true;
+        }
+        else
+        {
+            return false;
+        }
     }
 }

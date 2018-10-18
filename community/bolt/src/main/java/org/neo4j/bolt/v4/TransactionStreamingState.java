@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,35 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime;
+package org.neo4j.bolt.v4;
 
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v4.ResultConsumer;
 
-/**
- * When STREAMING, additionally attach bookmark to PULL_ALL, DISCARD_ALL result
- */
-public class StreamingState extends AbstractStreamingState
+public class TransactionStreamingState extends AbstractStreamingState
 {
     @Override
     public String name()
     {
-        return "STREAMING";
+        return "TX_STREAMING";
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable
+    protected BoltStateMachineState processStreamResultMessage( long size, StateMachineContext context ) throws Throwable
     {
-        long size = pull ? Long.MAX_VALUE : -1;
         ResultConsumer resultConsumer = new ResultConsumer( context, size );
-        Bookmark bookmark = context.connectionState().getStatementProcessor().streamResult( resultConsumer );
-        if ( resultConsumer.hasMore() )
+        context.connectionState().getStatementProcessor().streamResult( resultConsumer );
+        if ( resultConsumer.hasMore )
         {
-            throw new IllegalArgumentException( "Shall not pull records in multiple times in bolt v3" );
+            return this;
         }
-        bookmark.attachTo( context.connectionState() );
         return readyState;
     }
 }

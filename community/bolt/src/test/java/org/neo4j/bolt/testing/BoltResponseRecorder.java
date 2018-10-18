@@ -55,7 +55,7 @@ public class BoltResponseRecorder implements BoltResponseHandler
     @Override
     public void onRecords( BoltResult result, boolean pull ) throws Exception
     {
-        result.accept( new BoltResult.Visitor()
+        result.hasMore( new BoltResult.Visitor()
         {
             @Override
             public void visit( QueryResult.Record record )

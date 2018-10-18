@@ -37,6 +37,13 @@ public class Bookmark
     private static final String BOOKMARKS_KEY = "bookmarks";
     static final String BOOKMARK_TX_PREFIX = "neo4j:bookmark:v1:tx";
 
+    public static final Bookmark EMPTY_BOOKMARK = new Bookmark( -1 )
+    {
+        public void attachTo( BoltResponseHandler state )
+        {
+        }
+    };
+
     private final long txId;
 
     public Bookmark( long txId )

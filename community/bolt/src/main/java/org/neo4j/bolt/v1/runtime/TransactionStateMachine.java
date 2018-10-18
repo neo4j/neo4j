@@ -32,9 +32,9 @@ import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
+import org.neo4j.bolt.v4.ResultConsumer;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.values.virtual.MapValue;
 
+import static org.neo4j.bolt.v1.runtime.bookmarking.Bookmark.EMPTY_BOOKMARK;
 import static org.neo4j.util.Preconditions.checkState;
 
 public class TransactionStateMachine implements StatementProcessor
@@ -118,7 +119,7 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public Bookmark streamResult( ThrowingConsumer<BoltResult, Exception> resultConsumer ) throws Exception
+    public Bookmark streamResult( ResultConsumer resultConsumer ) throws Exception
     {
         before();
         try
@@ -318,21 +319,32 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ThrowingConsumer<BoltResult,Exception> resultConsumer )
+                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ResultConsumer resultConsumer )
                             throws Exception
                     {
                         assert ctx.currentResult != null;
 
+                        boolean success = false;
                         try
                         {
                             consumeResult( ctx, resultConsumer );
-                            closeTransaction( ctx, true );
-                            return newestBookmark( spi );
+                            if( !resultConsumer.hasMore() )
+                            {
+                                closeTransaction( ctx, true );
+                                success = true;
+                                return newestBookmark( spi );
+                            }
+                            success = true;
                         }
                         finally
                         {
-                            closeTransaction( ctx, false );
+                            // throw error
+                            if ( !success )
+                            {
+                                closeTransaction( ctx, false );
+                            }
                         }
+                        return EMPTY_BOOKMARK;
                     }
 
                     @Override
@@ -388,12 +400,12 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ThrowingConsumer<BoltResult,Exception> resultConsumer )
+                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ResultConsumer resultConsumer )
                             throws Exception
                     {
                         assert ctx.currentResult != null;
                         consumeResult( ctx, resultConsumer );
-                        return null; // Explict tx shall not get a bookmark in PULL_ALL or DISCARD_ALL
+                        return EMPTY_BOOKMARK; // Explict tx shall not get a bookmark in PULL_ALL or DISCARD_ALL
                     }
 
                     @Override
@@ -421,7 +433,7 @@ public class TransactionStateMachine implements StatementProcessor
                 Duration txTimeout, Map<String,Object> txMetadata )
                 throws KernelException;
 
-        abstract Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ThrowingConsumer<BoltResult,Exception> resultConsumer )
+        abstract Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ResultConsumer resultConsumer )
                 throws Exception;
 
         abstract State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
@@ -476,7 +488,7 @@ public class TransactionStateMachine implements StatementProcessor
             }
         }
 
-        boolean consumeResult( MutableTransactionState ctx, ThrowingConsumer<BoltResult,Exception> resultConsumer ) throws Exception
+        void consumeResult( MutableTransactionState ctx, ResultConsumer resultConsumer ) throws Exception
         {
             boolean success = false;
             try
@@ -486,16 +498,19 @@ public class TransactionStateMachine implements StatementProcessor
             }
             finally
             {
-                ctx.currentResult.close();
-                ctx.currentResult = null;
-
-                if ( ctx.currentResultHandle != null )
+                // if throws errors or if we finished consuming result
+                if( !success || !resultConsumer.hasMore() )
                 {
-                    ctx.currentResultHandle.close( success );
-                    ctx.currentResultHandle = null;
+                    ctx.currentResult.close();
+                    ctx.currentResult = null;
+
+                    if ( ctx.currentResultHandle != null )
+                    {
+                        ctx.currentResultHandle.close( success );
+                        ctx.currentResultHandle = null;
+                    }
                 }
             }
-            return success;
         }
 
         void startExecution( MutableTransactionState ctx, BoltResultHandle resultHandle ) throws KernelException

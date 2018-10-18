@@ -22,7 +22,11 @@ package org.neo4j.bolt.v1.runtime;
 import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
@@ -46,12 +50,16 @@ public class CypherAdapterStream implements BoltResult
     private final QueryResult delegate;
     private final String[] fieldNames;
     private final Clock clock;
+    private final Queue<QueryResult.Record> allRecords;
+    private final Map<String, AnyValue> metadata = new HashMap<>();
 
     public CypherAdapterStream( QueryResult delegate, Clock clock )
     {
         this.delegate = delegate;
         this.fieldNames = delegate.fieldNames();
         this.clock = clock;
+        this.allRecords = new LinkedList<>();
+        pullInAllRecords();
     }
 
     @Override
@@ -67,40 +75,64 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public void accept( final Visitor visitor ) throws Exception
+    public boolean hasMore( final Visitor visitor, long size ) throws Exception
+    {
+        while ( size-- > 0 )
+        {
+            QueryResult.Record r = allRecords.poll();
+            if( r != null )
+            {
+                visitor.visit( r );
+            }
+            else
+            {
+                metadata.forEach( visitor::addMetadata );
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private void pullInAllRecords( )
     {
         long start = clock.millis();
         delegate.accept( row ->
         {
-            visitor.visit( row );
+            allRecords.add( row );
             return true;
         } );
-        addRecordStreamingTime( visitor, clock.millis() - start );
+        addRecordStreamingTime(clock.millis() - start );
+        addMetadata();
+    }
+
+    private void addMetadata()
+    {
         QueryExecutionType qt = delegate.executionType();
-        visitor.addMetadata( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
+        metadata.put( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
 
         if ( delegate.queryStatistics().containsUpdates() )
         {
             MapValue stats = queryStats( delegate.queryStatistics() );
-            visitor.addMetadata( "stats", stats );
+            metadata.put( "stats", stats );
         }
         if ( qt.requestedExecutionPlanDescription() )
         {
             ExecutionPlanDescription rootPlanTreeNode = delegate.executionPlanDescription();
             String metadataFieldName = rootPlanTreeNode.hasProfilerStatistics() ? "profile" : "plan";
-            visitor.addMetadata( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
+            metadata.put( metadataFieldName, ExecutionPlanConverter.convert( rootPlanTreeNode ) );
         }
 
         Iterable<Notification> notifications = delegate.getNotifications();
         if ( notifications.iterator().hasNext() )
         {
-            visitor.addMetadata( "notifications", NotificationConverter.convert( notifications ) );
+            metadata.put( "notifications", NotificationConverter.convert( notifications ) );
         }
     }
 
-    protected void addRecordStreamingTime( Visitor visitor, long time )
+    protected void addRecordStreamingTime( long time )
     {
-        visitor.addMetadata( "result_consumed_after", longValue( time ) );
+        metadata.put( "result_consumed_after", longValue( time ) );
     }
 
     @Override

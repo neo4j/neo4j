@@ -33,7 +33,7 @@ public interface BoltResult extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
-    void accept( Visitor visitor ) throws Exception;
+    boolean hasMore( Visitor visitor, long size ) throws Exception;
 
     @Override
     void close();
@@ -47,6 +47,8 @@ public interface BoltResult extends AutoCloseable
          * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc) */
         void addMetadata( String key, AnyValue value );
     }
+
+
 
     BoltResult EMPTY = new BoltResult()
     {
@@ -64,8 +66,9 @@ public interface BoltResult extends AutoCloseable
         }
 
         @Override
-        public void accept( Visitor visitor )
+        public boolean hasMore( Visitor visitor, long size )
         {
+            return false;
         }
 
         @Override

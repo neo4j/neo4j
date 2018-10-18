@@ -258,7 +258,7 @@ public class CypherAdapterStreamTest
     private MapValue metadataOf( CypherAdapterStream stream ) throws Exception
     {
         final MapValueBuilder meta = new MapValueBuilder(  );
-        stream.accept( new BoltResult.Visitor()
+        stream.hasMore( new BoltResult.Visitor()
         {
             @Override
             public void visit( QueryResult.Record record )

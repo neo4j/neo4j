@@ -62,7 +62,7 @@ public class MessageProcessingHandler implements BoltResponseHandler
     }
 
     @Override
-    public void onRecords( BoltResult result, boolean pull ) throws Exception
+    public boolean onRecords( BoltResult result, long size ) throws Exception
     {
     }
 

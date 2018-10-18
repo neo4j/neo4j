@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime;
+package org.neo4j.bolt.v4;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
 
 import static org.neo4j.util.Preconditions.checkState;
 
@@ -35,17 +35,19 @@ import static org.neo4j.util.Preconditions.checkState;
 public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
 {
     protected BoltStateMachineState readyState;
+    public static long DISCARD_ALL = -1;
 
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
-        if ( message instanceof PullAllMessage )
-        {
-            return processStreamResultMessage( true, context );
-        }
         if ( message instanceof DiscardAllMessage )
         {
-            return processStreamResultMessage( false, context );
+            return processStreamResultMessage( DISCARD_ALL, context );
+        }
+        if ( message instanceof PullNMessage )
+        {
+            long size = ((PullNMessage) message).n();
+            return processStreamResultMessage( size, context );
         }
         return null;
     }
@@ -55,7 +57,7 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    abstract protected BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable;
+    abstract protected BoltStateMachineState processStreamResultMessage( long size, StateMachineContext context ) throws Throwable;
 
     @Override
     protected void assertInitialized()
