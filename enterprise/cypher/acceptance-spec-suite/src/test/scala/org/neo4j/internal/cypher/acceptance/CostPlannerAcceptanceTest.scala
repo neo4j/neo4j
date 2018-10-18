@@ -217,8 +217,8 @@ class CostPlannerAcceptanceTest extends ExecutionEngineFunSuite {
       (1 to config.bNodesWithProp).foreach { i => createLabeledNode(Map("prop" -> (i + 10000)), "B") }
     }
 
-    indexedLabels.foreach(l => graph.execute(s"CALL db.resampleIndex(':$l(prop)')"))
-    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 1000 ))
+    resampleIndexes()
+
     eengine.clearQueryCaches()
 
     val missesBefore = missCounter.count

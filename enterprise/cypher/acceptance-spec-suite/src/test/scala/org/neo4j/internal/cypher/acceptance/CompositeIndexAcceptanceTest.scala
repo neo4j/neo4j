@@ -27,7 +27,6 @@ import java.time.{LocalDate, LocalTime, OffsetTime, ZoneOffset}
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.values.storable.{CoordinateReferenceSystem, DurationValue, Values}
 import org.scalatest.matchers.{MatchResult, Matcher}
@@ -111,8 +110,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
       createLabeledNode("User")
     }
 
-    graph.execute("CALL db.resampleOutdatedIndexes")
-    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
+    resampleIndexes()
 
     // When
     val result = executeWith(Configs.Interpreted, "MATCH (n:User) WHERE n.lastname = 'Soap' AND n.firstname = 'Joe' RETURN n",

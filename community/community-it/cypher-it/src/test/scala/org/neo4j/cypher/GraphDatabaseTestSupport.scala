@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
+import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.internal.kernel.api.procs.{ProcedureSignature, UserFunctionSignature}
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.api.InwardKernel
@@ -95,6 +96,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
         case _           =>
       }
     }
+  }
+
+  def resampleIndexes(): Unit = {
+    graph.execute("CALL db.resampleOutdatedIndexes")
+    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
   }
 
   def assertWithKernelTx(f: KernelTransaction => Unit): Unit = {

@@ -25,7 +25,6 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
-import org.neo4j.internal.kernel.api.helpers.Indexes
 import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -38,7 +37,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val ends = (0 to 1000).map(id => createLabeledNode(Map("id" -> id), "End"))
     ends.foreach(end => relate(start, end))
 
-    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 60 ))
+    resampleIndexes()
 
     val query =
       """

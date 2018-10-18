@@ -24,7 +24,6 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
-import org.neo4j.internal.kernel.api.helpers.Indexes
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -69,6 +68,8 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     graph.createIndex("User", "prop1")
     graph.createIndex("User", "prop2")
     val nodes = Range(0, 100).map(i => createLabeledNode(Map("prop1" -> i, "prop2" -> i), "User"))
+
+    resampleIndexes()
 
     val query =
       """MATCH (c:User)
@@ -431,8 +432,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     val query = "MATCH(n:L1), (m:L2) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 = m.prop4 RETURN n"
 
-    graph.execute("CALL db.resampleOutdatedIndexes")
-    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
+    resampleIndexes()
 
     // When
     val plansToFail = Configs.AllRulePlanners + Configs.Cost2_3
@@ -460,8 +460,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     val query = "MATCH(n:L1), (m:L2) WHERE n.prop1 < 42 AND m.prop2 < 42 AND n.prop3 < m.prop4 RETURN n"
 
-    graph.execute("CALL db.resampleOutdatedIndexes")
-    assertWithKernelTx(ktx => Indexes.awaitResampling(ktx.schemaRead(), 300))
+    resampleIndexes()
 
     // When
     val plansToFail = Configs.All - Configs.Default - Configs.SlottedInterpreted - Configs.DefaultInterpreted
