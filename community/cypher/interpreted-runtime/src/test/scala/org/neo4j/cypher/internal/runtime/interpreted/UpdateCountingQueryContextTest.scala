@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.IndexReference
@@ -59,15 +59,15 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
     }
   } )
 
-  when(inner.createUniqueConstraint(any())).thenReturn(true)
+  when(inner.createUniqueConstraint(anyInt(), any())).thenReturn(true)
 
-  when(inner.createNodeKeyConstraint(any())).thenReturn(true)
+  when(inner.createNodeKeyConstraint(anyInt(), any())).thenReturn(true)
 
   when( inner.createNodePropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
   when( inner.createRelationshipPropertyExistenceConstraint(anyInt(), anyInt()) ).thenReturn(true)
 
-  when(inner.addIndexRule(any()))
+  when(inner.addIndexRule(anyInt(), any()))
     .thenReturn(IdempotentResult(mock[IndexReference]))
 
   var context: UpdateCountingQueryContext = null
@@ -138,25 +138,25 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("add_index") {
-    context.addIndexRule(IndexDescriptor(0, 1))
+    context.addIndexRule(0, Array(1))
 
     context.getStatistics should equal(QueryStatistics(indexesAdded = 1))
   }
 
   test("remove_index") {
-    context.dropIndexRule(IndexDescriptor(0, 1))
+    context.dropIndexRule(0, Array(1))
 
     context.getStatistics should equal(QueryStatistics(indexesRemoved = 1))
   }
 
   test("create_unique_constraint") {
-    context.createUniqueConstraint(IndexDescriptor(0, 1))
+    context.createUniqueConstraint(0, Array(1))
 
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsAdded = 1))
   }
 
   test("constraint_dropped") {
-    context.dropUniqueConstraint(IndexDescriptor(0, 42))
+    context.dropUniqueConstraint(0, Array(1))
 
     context.getStatistics should equal(QueryStatistics(uniqueConstraintsRemoved = 1))
   }
@@ -186,13 +186,13 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   }
 
   test("create node key constraint") {
-    context.createNodeKeyConstraint(IndexDescriptor(0, 1))
+    context.createNodeKeyConstraint(0, Array(1))
 
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsAdded = 1))
   }
 
   test("drop node key constraint") {
-    context.dropNodeKeyConstraint(IndexDescriptor(0, 42))
+    context.dropNodeKeyConstraint(0, Array(1))
 
     context.getStatistics should equal(QueryStatistics(nodekeyConstraintsRemoved = 1))
   }

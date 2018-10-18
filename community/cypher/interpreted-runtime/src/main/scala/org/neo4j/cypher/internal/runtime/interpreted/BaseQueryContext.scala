@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndexCursor}
@@ -87,9 +86,9 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = notSupported()
 
-  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = notSupported()
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = notSupported()
 
-  override def dropIndexRule(descriptor: IndexDescriptor): Unit = notSupported()
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notSupported()
 
   override def indexReference(label: Int, properties: Int*): IndexReference = notSupported()
 
@@ -98,13 +97,13 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getNodesByLabelPrimitive(id: Int): LongIterator = notSupported()
 
-  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = notSupported()
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = notSupported()
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = notSupported()
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notSupported()
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = notSupported()
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = notSupported()
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit = notSupported()
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = notSupported()
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean = notSupported()
 

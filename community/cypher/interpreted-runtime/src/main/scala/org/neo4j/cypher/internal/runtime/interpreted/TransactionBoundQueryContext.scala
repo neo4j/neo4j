@@ -68,8 +68,7 @@ import scala.collection.mutable.ArrayBuffer
 sealed class TransactionBoundQueryContext(val transactionalContext: TransactionalContextWrapper,
                                           val resources: ResourceManager = new ResourceManager)
                                         (implicit indexSearchMonitor: IndexSearchMonitor)
-  extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext with
-    IndexDescriptorCompatibility {
+  extends TransactionBoundTokenContext(transactionalContext.kernelTransaction) with QueryContext {
   override val nodeOps: NodeOperations = new NodeOperations
   override val relationshipOps: RelationshipOperations = new RelationshipOperations
   override lazy val entityAccessor: EmbeddedProxySPI =
@@ -819,47 +818,47 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = {
-    val kernelDescriptor = cypherToKernelSchema(descriptor)
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = {
+    val ktx = transactionalContext.kernelTransaction
     try {
-      IdempotentResult(transactionalContext.kernelTransaction.schemaWrite().indexCreate(kernelDescriptor))
+      IdempotentResult(ktx.schemaWrite().indexCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*)))
     } catch {
       case _: AlreadyIndexedException =>
-        val indexReference = transactionalContext.kernelTransaction.schemaRead().index(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*)
-        if (transactionalContext.kernelTransaction.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
-          val message = transactionalContext.kernelTransaction.schemaRead().indexGetFailure(indexReference)
+        val indexReference = ktx.schemaRead().index(labelId, propertyKeyIds:_*)
+        if (ktx.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
+          val message = ktx.schemaRead().indexGetFailure(indexReference)
           throw new FailedIndexException(indexReference.userDescription(tokenNameLookup), message)
         }
         IdempotentResult(indexReference, wasCreated = false)
     }
   }
 
-  override def dropIndexRule(descriptor: IndexDescriptor): Unit =
-    transactionalContext.kernelTransaction.schemaWrite().indexDrop(
-      transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(descriptor.label, descriptor.properties.map(_.id): _*)
-    )
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
+    val ktx = transactionalContext.kernelTransaction
+    ktx.schemaWrite().indexDrop(ktx.schemaRead().indexReferenceUnchecked(labelId, propertyKeyIds:_*))
+  }
 
-  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(cypherToKernelSchema(descriptor))
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
+    transactionalContext.kernelTransaction.schemaWrite().nodeKeyConstraintCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*))
     true
   } catch {
     case _: AlreadyConstrainedException => false
   }
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit =
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(cypherToKernelSchema(descriptor)))
+      .constraintDrop(ConstraintDescriptorFactory.nodeKeyForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*)))
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = try {
-    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(cypherToKernelSchema(descriptor))
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = try {
+    transactionalContext.kernelTransaction.schemaWrite().uniquePropertyConstraintCreate(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*))
     true
   } catch {
     case _: AlreadyConstrainedException => false
   }
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit =
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     transactionalContext.kernelTransaction.schemaWrite()
-      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(cypherToKernelSchema(descriptor)))
+      .constraintDrop(ConstraintDescriptorFactory.uniqueForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyIds:_*)))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     try {

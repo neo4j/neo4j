@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryTransactionalContext}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
@@ -97,11 +97,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] =
     translateException(inner.getOrCreatePropertyKeyIds(propertyKeys))
 
-  override def addIndexRule(descriptor: IndexDescriptor) =
-    translateException(inner.addIndexRule(descriptor))
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] =
+    translateException(inner.addIndexRule(labelId, propertyKeyIds))
 
-  override def dropIndexRule(descriptor: IndexDescriptor) =
-    translateException(inner.dropIndexRule(descriptor))
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    translateException(inner.dropIndexRule(labelId, propertyKeyIds))
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,
@@ -137,17 +137,17 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeGetTotalDegree(node: Long, relationship: Int): Int =
     translateException(inner.nodeGetTotalDegree(node, relationship))
 
-  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean =
-    translateException(inner.createNodeKeyConstraint(descriptor))
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
+    translateException(inner.createNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
-    translateException(inner.dropNodeKeyConstraint(descriptor))
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    translateException(inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean =
-    translateException(inner.createUniqueConstraint(descriptor))
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
+    translateException(inner.createUniqueConstraint(labelId, propertyKeyIds))
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor) =
-    translateException(inner.dropUniqueConstraint(descriptor))
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    translateException(inner.dropUniqueConstraint(labelId, propertyKeyIds))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     translateException(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))

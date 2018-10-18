@@ -23,7 +23,6 @@ import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
 import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrder
@@ -101,9 +100,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int]
 
-  def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference]
+  def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference]
 
-  def dropIndexRule(descriptor: IndexDescriptor)
+  def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
@@ -133,14 +132,14 @@ trait QueryContext extends TokenContext with DbAccess {
   def getNodesByLabelPrimitive(id: Int): LongIterator
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean
+  def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean
 
-  def dropNodeKeyConstraint(descriptor: IndexDescriptor)
+  def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
-  def createUniqueConstraint(descriptor: IndexDescriptor): Boolean
+  def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean
 
-  def dropUniqueConstraint(descriptor: IndexDescriptor)
+  def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit
 
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean

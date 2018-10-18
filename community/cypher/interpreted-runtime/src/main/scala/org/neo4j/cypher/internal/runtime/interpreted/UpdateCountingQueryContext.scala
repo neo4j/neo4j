@@ -21,8 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
+import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
+import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
@@ -101,36 +102,36 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     removed
   }
 
-  override def addIndexRule(descriptor: IndexDescriptor) = {
-    val result = inner.addIndexRule(descriptor)
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = {
+    val result = inner.addIndexRule(labelId, propertyKeyIds)
     result.ifCreated { indexesAdded.increase() }
     result
   }
 
-  override def dropIndexRule(descriptor: IndexDescriptor) {
-    inner.dropIndexRule(descriptor)
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
+    inner.dropIndexRule(labelId, propertyKeyIds)
     indexesRemoved.increase()
   }
 
-  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = {
-    val result = inner.createNodeKeyConstraint(descriptor)
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = {
+    val result = inner.createNodeKeyConstraint(labelId, propertyKeyIds)
     if ( result ) nodekeyConstraintsAdded.increase()
     result
   }
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = {
-    inner.dropNodeKeyConstraint(descriptor)
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
+    inner.dropNodeKeyConstraint(labelId, propertyKeyIds)
     nodekeyConstraintsRemoved.increase()
   }
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = {
-    val result = inner.createUniqueConstraint(descriptor)
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = {
+    val result = inner.createUniqueConstraint(labelId, propertyKeyIds)
     if ( result ) uniqueConstraintsAdded.increase()
     result
   }
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor) {
-    inner.dropUniqueConstraint(descriptor)
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = {
+    inner.dropUniqueConstraint(labelId, propertyKeyIds)
     uniqueConstraintsRemoved.increase()
   }
 
@@ -140,7 +141,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     result
   }
 
-  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int) {
+  override def dropNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Unit = {
     inner.dropNodePropertyExistenceConstraint(labelId, propertyKeyId)
     propertyExistenceConstraintsRemoved.increase()
   }

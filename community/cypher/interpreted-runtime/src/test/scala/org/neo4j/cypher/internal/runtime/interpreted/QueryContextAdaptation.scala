@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
@@ -57,9 +57,9 @@ trait QueryContextAdaptation {
 
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Unit = ???
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean = ???
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = ???
 
-  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = ???
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean = ???
 
   override def getOrCreateRelTypeId(relTypeName: String): Int = ???
 
@@ -118,9 +118,9 @@ trait QueryContextAdaptation {
 
   override def getLabelsForNode(node: Long): ListValue = ???
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor): Unit = ???
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = ???
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = ???
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit = ???
 
   override def transactionalContext: QueryTransactionalContext = ???
 
@@ -146,7 +146,7 @@ trait QueryContextAdaptation {
 
   override def createRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int): Boolean = ???
 
-  override def dropIndexRule(descriptor: IndexDescriptor): Unit = ???
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = ???
 
   override def lockNodes(nodeIds: Long*): Unit = ???
 
@@ -190,7 +190,7 @@ trait QueryContextAdaptation {
 
   override def nodeCountByCountStore(labelId: Int): Long = ???
 
-  override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = ???
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = ???
 
   override def getOptRelTypeId(relType: String): Option[Int] = ???
 

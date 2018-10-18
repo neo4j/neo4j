@@ -61,31 +61,35 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case CreateNodeKeyConstraint(_, label, props) => runtimeContext =>
       SchemaWriteExecutionPlan("CreateNodeKeyConstraint", ctx => {
-              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-              ctx.createNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+              val labelId = ctx.getOrCreateLabelId(label.name)
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+              ctx.createNodeKeyConstraint(labelId, propertyKeyIds)
             })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS NODE KEY
     case DropNodeKeyConstraint(label, props) => runtimeContext =>
       SchemaWriteExecutionPlan("DropNodeKeyConstraint", ctx => {
-              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-              ctx.dropNodeKeyConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+              val labelId = ctx.getOrCreateLabelId(label.name)
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+              ctx.dropNodeKeyConstraint(labelId, propertyKeyIds)
             })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // CREATE CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
     case CreateUniquePropertyConstraint(_, label, props) => runtimeContext =>
       SchemaWriteExecutionPlan("CreateUniqueConstraint", ctx => {
-              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-              ctx.createUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+              val labelId = ctx.getOrCreateLabelId(label.name)
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+              ctx.createUniqueConstraint(labelId, propertyKeyIds)
             })
 
     // DROP CONSTRAINT ON (node:Label) ASSERT node.prop IS UNIQUE
     // DROP CONSTRAINT ON (node:Label) ASSERT (node.prop1,node.prop2) IS UNIQUE
     case DropUniquePropertyConstraint(label, props) => runtimeContext =>
       SchemaWriteExecutionPlan("DropUniqueConstraint", ctx => {
-              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey))
-              ctx.dropUniqueConstraint(IndexDescriptor(labelToId(ctx)(label), propertyKeyIds))
+              val labelId = ctx.getOrCreateLabelId(label.name)
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p.propertyKey).id)
+              ctx.dropUniqueConstraint(labelId, propertyKeyIds)
             })
 
     // CREATE CONSTRAINT ON (node:Label) ASSERT node.prop EXISTS
@@ -115,13 +119,17 @@ object ProcedureCallOrSchemaCommandRuntime extends CypherRuntime[RuntimeContext]
     // CREATE INDEX ON :LABEL(prop)
     case CreateIndex(label, props) => runtimeContext =>
       SchemaWriteExecutionPlan("CreateIndex", ctx => {
-              ctx.addIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
+              val labelId = ctx.getOrCreateLabelId(label.name)
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+              ctx.addIndexRule(labelId, propertyKeyIds)
             })
 
     // DROP INDEX ON :LABEL(prop)
     case DropIndex(label, props) => runtimeContext =>
       SchemaWriteExecutionPlan("DropIndex", ctx => {
-              ctx.dropIndexRule(IndexDescriptor(labelToId(ctx)(label), propertiesToIds(ctx)(props)))
+              val labelId = labelToId(ctx)(label)
+              val propertyKeyIds = props.map(p => propertyToId(ctx)(p).id)
+              ctx.dropIndexRule(labelId, propertyKeyIds)
             })
   }
 

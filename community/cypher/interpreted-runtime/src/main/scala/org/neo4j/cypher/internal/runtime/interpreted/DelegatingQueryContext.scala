@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexDescriptor, KernelStatisticProvider}
+import org.neo4j.cypher.internal.planner.v3_5.spi.{IdempotentResult, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
@@ -113,10 +113,9 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     inner.getOrCreatePropertyKeyIds(propertyKeys)
   }
 
-  override def addIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.addIndexRule(descriptor))
+  override def addIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): IdempotentResult[IndexReference] = singleDbHit(inner.addIndexRule(labelId, propertyKeyIds))
 
-  override def dropIndexRule(descriptor: IndexDescriptor) = singleDbHit(inner.dropIndexRule(descriptor))
-
+  override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit = singleDbHit(inner.dropIndexRule(labelId, propertyKeyIds))
 
   override def indexReference(label: Int, properties: Int*): IndexReference = singleDbHit(inner.indexReference(label, properties:_*))
 
@@ -160,17 +159,17 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     map
   }
 
-  override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean =
-    singleDbHit(inner.createNodeKeyConstraint(descriptor))
+  override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
+    singleDbHit(inner.createNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def dropNodeKeyConstraint(descriptor: IndexDescriptor) =
-    singleDbHit(inner.dropNodeKeyConstraint(descriptor))
+  override def dropNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    singleDbHit(inner.dropNodeKeyConstraint(labelId, propertyKeyIds))
 
-  override def createUniqueConstraint(descriptor: IndexDescriptor): Boolean =
-    singleDbHit(inner.createUniqueConstraint(descriptor))
+  override def createUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
+    singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyIds))
 
-  override def dropUniqueConstraint(descriptor: IndexDescriptor) =
-    singleDbHit(inner.dropUniqueConstraint(descriptor))
+  override def dropUniqueConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
+    singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyIds))
 
   override def createNodePropertyExistenceConstraint(labelId: Int, propertyKeyId: Int): Boolean =
     singleDbHit(inner.createNodePropertyExistenceConstraint(labelId, propertyKeyId))
