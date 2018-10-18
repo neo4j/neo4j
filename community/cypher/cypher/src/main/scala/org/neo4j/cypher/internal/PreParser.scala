@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.compatibility.LFUCache
 
+import scala.util.matching.Regex
+
 /**
   * Preparses Cypher queries.
   *
@@ -125,7 +127,7 @@ class PreParser(configuredVersion: CypherVersion,
     if (runtime.isSelected && expressionEngine.isSelected && ILLEGAL_EXPRESSION_ENGINE_RUNTIME_COMBINATIONS((expressionEngine.pick, runtime.pick)))
       throw new InvalidPreparserOption(s"Cannot combine EXPRESSION ENGINE '${expressionEngine.pick.name}' with RUNTIME '${runtime.pick.name}'")
 
-    val isPeriodicCommit = preParsedStatement.statement.trim.startsWith("USING PERIODIC COMMIT")
+    val isPeriodicCommit = PeriodicCommitHint.r.findFirstIn(preParsedStatement.statement.toUpperCase).nonEmpty
 
     PreParsedQuery(preParsedStatement.statement,
                    preParsedStatement.offset,
@@ -153,4 +155,8 @@ class PreParser(configuredVersion: CypherVersion,
   }
 
   class InvalidPreparserOption(msg: String) extends InvalidArgumentException(msg)
+}
+
+object PeriodicCommitHint {
+  val r: Regex = "\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
 }

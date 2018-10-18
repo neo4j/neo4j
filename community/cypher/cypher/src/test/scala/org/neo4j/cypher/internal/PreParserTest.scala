@@ -43,4 +43,25 @@ class PreParserTest extends CypherFunSuite {
     intercept[InvalidArgumentException](preParser.preParseQuery("EXPLAIN PROFILE RETURN 42"))
     intercept[InvalidArgumentException](preParser.preParseQuery("PROFILE EXPLAIN RETURN 42"))
   }
+
+  test("should parse all variants of periodic commit") {
+    val variants =
+      List(
+        "USING PERIODIC COMMIT",
+        " USING PERIODIC COMMIT",
+        "USING  PERIODIC COMMIT",
+        "USING PERIODIC  COMMIT",
+        """USING
+           PERIODIC
+           COMMIT""",
+        "CYPHER 3.1 planner=cost debug=ofCourse  USING PERIODIC COMMIT",
+        "using periodic commit",
+        "UsING pERIOdIC COMmIT"
+      )
+
+    for (x <- variants) {
+      val query = " LOAD CSV file://input.csv AS row CREATE (n)"
+      preParser.preParseQuery(x+query).isPeriodicCommit should be(true)
+    }
+  }
 }
