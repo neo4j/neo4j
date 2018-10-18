@@ -758,4 +758,23 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Map(propertyProj("n", "foo")))
     )
   }
+
+  test("should use cached access after projection of non returned property") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+      indexOn("Awesome", "foo").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop < 2 RETURN n.prop ORDER BY n.foo"
+
+    plan._2 should equal(
+      Projection(
+        Sort(
+          Projection(
+            IndexSeek("n:Awesome(prop < 2)", GetValue),
+            Map("  FRESHID60" -> Property(varFor("n"), PropertyKeyName("foo")(pos))(pos))),
+          Seq(Ascending("  FRESHID60"))
+        ),
+        Map("n.prop" -> cachedNodeProperty("n", "prop"))
+      )
+    )
+  }
 }

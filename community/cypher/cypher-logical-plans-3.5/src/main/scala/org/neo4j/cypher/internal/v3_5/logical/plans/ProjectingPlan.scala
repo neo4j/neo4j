@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.expressions.Property
-import org.opencypher.v9_0.expressions.PropertyKeyName
-import org.opencypher.v9_0.expressions.Variable
+import org.opencypher.v9_0.expressions.{Expression, Property, PropertyKeyName, Variable}
 import org.opencypher.v9_0.util.InputPosition
 
 trait ProjectingPlan extends LogicalPlan {
   val source: LogicalPlan
   // The projected expressions
   val projectExpressions: Map[String, Expression]
+  private lazy val projectsValue = projectExpressions.values.toSet
+
   override val lhs: Option[LogicalPlan] = Some(source)
   override val rhs: Option[LogicalPlan] = None
-
   /**
     * Given
     * - projection var("n") -> "m"
@@ -40,13 +38,17 @@ trait ProjectingPlan extends LogicalPlan {
     */
   override final def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
     source.availableCachedNodeProperties.flatMap {
-      case (Property(Variable(varName), PropertyKeyName(propName)), columnName) =>
+      case (Property(variable@Variable(varName), PropertyKeyName(propName)), columnName) if projectsValue(variable) =>
         projectExpressions.collect {
           case (newName, Variable(`varName`)) =>
-            (Property(Variable(newName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(InputPosition.NONE), columnName)
+            (Property(Variable(newName)(InputPosition.NONE), PropertyKeyName(propName)(InputPosition.NONE))(
+              InputPosition.NONE), columnName)
         }
 
-      case _ => Map.empty[Property, CachedNodeProperty]
+      case (property, columnName) if projectsValue(property) || projectsValue(columnName) => Map.empty[Property, CachedNodeProperty]
+
+      //we should pass along cached node properties that we are not projecting
+      case (key, value) => Map(key -> value)
     }
   }
 }
