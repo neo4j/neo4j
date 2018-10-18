@@ -45,6 +45,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
 import java.util.Collection;
 import java.util.stream.Collectors;
 import javax.servlet.http.HttpServletRequest;
@@ -56,15 +57,22 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.ports.allocation.PortAuthority;
+import org.neo4j.ssl.SslPolicy;
+import org.neo4j.ssl.SslResource;
+import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
 import static org.neo4j.causalclustering.discovery.MultiRetryStrategyTest.testRetryStrategy;
+import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 
 public class KubernetesResolverIT
 {
     @Rule
     public ExpectedException expected = ExpectedException.none();
+
+    @Rule
+    public TestDirectory testDir = TestDirectory.testDirectory();
 
     private final int port = PortAuthority.allocatePort();
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -199,10 +207,16 @@ public class KubernetesResolverIT
         HttpConfiguration https = new HttpConfiguration();
         https.addCustomizer( new SecureRequestCustomizer() );
 
+        String keyStorePass = "key store pass";
+        String privateKeyPass = "private key pass";
+        SslResource server1 = selfSignedKeyId( 0 ).trustKeyId( 1 ).install( testDir.directory( "k8s" ) );
+        SslPolicy sslPolicy = org.neo4j.ssl.SslContextFactory.makeSslPolicy( server1 );
+        KeyStore keyStore = sslPolicy.getKeyStore( keyStorePass.toCharArray(), privateKeyPass.toCharArray() );
+
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath( getClass().getResource( "/org.neo4j.causalclustering.discovery/keystore.jks" ).toExternalForm() );
-        sslContextFactory.setKeyStorePassword( "changeme" );
-        sslContextFactory.setKeyManagerPassword( "changeme" );
+        sslContextFactory.setKeyStore( keyStore );
+        sslContextFactory.setKeyStorePassword( keyStorePass );
+        sslContextFactory.setKeyManagerPassword( privateKeyPass );
 
         ServerConnector sslConnector = new ServerConnector(
                 server,
