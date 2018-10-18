@@ -55,7 +55,11 @@ case object replacePropertyLookupsWithVariables extends Transformer[PlannerConte
         case property: Property if availableProperties.contains(property) =>
           val newVar = availableProperties(property)
           // Register the new variables in the semantic table
-          currentTypes = currentTypes.updated(newVar, currentTypes(property))
+          currentTypes.get(property) match {
+            case None => // I don't like this. We have to make sure we retain the type from semantic analysis
+            case Some(currentType) =>
+              currentTypes = currentTypes.updated(newVar, currentType)
+          }
           newVar
       },
         // Don't rewrite deeper than the next logical plan. It will have different availablePropertyVariables
