@@ -20,12 +20,14 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * A result from a search in an explicit index.
+ * An index result, typically in the form of a cursor, that can have a score for how well the current or given result matches the query.
  */
-interface ExplicitIndexSearchResult extends IndexResultScore
+public interface IndexResultScore
 {
     /**
-     * @return The expected total number of results
+     * @return the score, if any, that signifies how well the current node matches the query. If there is no score associated with the match,
+     * then {@link Float#NaN} is returned. Also, if the cursor has been exhausted, or the cursor is otherwise not placed at a node,
+     * then {@link Float#NaN} is also returned.
      */
-    int expectedTotalNumberOfResults();
+    float score();
 }
