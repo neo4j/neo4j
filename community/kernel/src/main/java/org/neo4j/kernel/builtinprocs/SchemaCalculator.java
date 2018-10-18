@@ -42,19 +42,9 @@ import org.neo4j.values.storable.Value;
 
 public class SchemaCalculator
 {
-    private Map<SortedLabels,Set<Integer>> labelSetToPropertyKeysMapping;
-    private Map<Pair<SortedLabels,Integer>,ValueTypeListHelper> labelSetANDNodePropertyKeyIdToValueTypeMapping;
-    private Set<SortedLabels> nullableLabelSets; // used for label combinations without properties -> all properties are viewed as nullable
-    private Map<Integer,String> labelIdToLabelNameMapping;
-    private Map<Integer,String> propertyIdToPropertylNameMapping;
-    private Map<Integer,String> relationshipTypIdToRelationshipNameMapping;
-    private Map<Integer,Set<Integer>> relationshipTypeIdToPropertyKeysMapping;
-    private Map<Pair<Integer,Integer>,ValueTypeListHelper> relationshipTypeIdANDPropertyTypeIdToValueTypeMapping;
-    private Set<Integer> nullableRelationshipTypes; // used for types without properties -> all properties are viewed as nullable
+    private Map<Integer,String> propertyIdToPropertyNameMapping;
 
     private final Set<Integer> emptyPropertyIdSet = Collections.unmodifiableSet( Collections.emptySet() );
-    private static final String NODE = "Node";
-    private static final String RELATIONSHIP = "Relationship";
 
     private final Read dataRead;
     private final TokenRead tokenRead;
@@ -62,64 +52,81 @@ public class SchemaCalculator
 
     SchemaCalculator( Transaction ktx )
     {
-        dataRead = ktx.dataRead();
-        tokenRead = ktx.tokenRead();
-        cursors = ktx.cursors();
+        this.dataRead = ktx.dataRead();
+        this.tokenRead = ktx.tokenRead();
+        this.cursors = ktx.cursors();
 
-        // setup mappings
+        // the only one that is common for both nodes and rels so thats why we can do it here
+        propertyIdToPropertyNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
+        addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertyNameMapping );
+    }
+
+    private NodeMappings initializeMappingsForNodes()
+    {
         int labelCount = tokenRead.labelCount();
+        return new NodeMappings( labelCount );
+    }
+
+    private RelationshipMappings initializeMappingsForRels()
+    {
         int relationshipTypeCount = tokenRead.relationshipTypeCount();
-        labelSetToPropertyKeysMapping = new HashMap<>( labelCount );
-        labelIdToLabelNameMapping = new HashMap<>( labelCount );
-        propertyIdToPropertylNameMapping = new HashMap<>( tokenRead.propertyKeyCount() );
-        relationshipTypIdToRelationshipNameMapping = new HashMap<>( relationshipTypeCount );
-        relationshipTypeIdToPropertyKeysMapping = new HashMap<>( relationshipTypeCount );
-        labelSetANDNodePropertyKeyIdToValueTypeMapping = new HashMap<>();
-        relationshipTypeIdANDPropertyTypeIdToValueTypeMapping = new HashMap<>();
-        nullableLabelSets = new HashSet<>(  );
-        nullableRelationshipTypes = new HashSet<>(  );
+        return new RelationshipMappings( relationshipTypeCount );
     }
 
-    public Stream<SchemaInfoResult> calculateTabularResultStream()
+    // If we would have this schema information in the count store (or somewhere), this could be super fast
+    public Stream<NodePropertySchemaInfoResult> calculateTabularResultStreamForNodes()
     {
-        calculateSchema();
+        NodeMappings nodeMappings = initializeMappingsForNodes();
+        scanEverythingBelongingToNodes(nodeMappings);
 
-        List<SchemaInfoResult> results = new ArrayList<>();
-        results.addAll( produceResultsForNodes() );
-        results.addAll( produceResultsForRelationships() );
+        // go through all labels to get actual names
+        addNamesToCollection( tokenRead.labelsGetAllTokens(), nodeMappings.labelIdToLabelName );
 
-        return results.stream();
+        return produceResultsForNodes( nodeMappings ).stream();
     }
 
-    private List<SchemaInfoResult> produceResultsForRelationships()
+    public Stream<RelationshipPropertySchemaInfoResult> calculateTabularResultStreamForRels()
     {
-        List<SchemaInfoResult> results = new ArrayList<>();
-        for ( Integer typeId : relationshipTypeIdToPropertyKeysMapping.keySet() )
+        RelationshipMappings relMappings = initializeMappingsForRels();
+        scanEverythingBelongingToRelationships( relMappings );
+
+        // go through all relationshipTypes to get actual names
+        addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relMappings.relationshipTypIdToRelationshipName );
+
+        return produceResultsForRelationships( relMappings ).stream();
+    }
+
+    private List<RelationshipPropertySchemaInfoResult> produceResultsForRelationships( RelationshipMappings relMappings )
+    {
+        List<RelationshipPropertySchemaInfoResult> results = new ArrayList<>();
+        for ( Integer typeId : relMappings.relationshipTypeIdToPropertyKeys.keySet() )
         {
             // lookup typ name
-            String name = relationshipTypIdToRelationshipNameMapping.get( typeId );
+            String name = relMappings.relationshipTypIdToRelationshipName.get( typeId );
+            name = ":`" + name + "`";  // escaping
 
             // lookup property value types
-            Set<Integer> propertyIds = relationshipTypeIdToPropertyKeysMapping.get( typeId );
+            Set<Integer> propertyIds = relMappings.relationshipTypeIdToPropertyKeys.get( typeId );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), null, null, true ) );
+                results.add( new RelationshipPropertySchemaInfoResult( name, null, null, false ) );
             }
             else
             {
+                String finalName = name;
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
-                    String propName = propertyIdToPropertylNameMapping.get( propId );
-                    ValueTypeListHelper valueTypeListHelper = relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( Pair.of( typeId, propId ) );
-                    if ( nullableRelationshipTypes.contains( typeId ) )
+                    String propName = propertyIdToPropertyNameMapping.get( propId );
+                    ValueTypeListHelper valueTypeListHelper = relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( Pair.of( typeId, propId ) );
+                    if ( relMappings.nullableRelationshipTypes.contains( typeId ) )
                     {
-                        results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeListHelper.getCypherTypesList(),
-                                true ) );
+                        results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
+                                false ) );
                     }
                     else
                     {
-                        results.add( new SchemaInfoResult( RELATIONSHIP, Collections.singletonList( name ), propName, valueTypeListHelper.getCypherTypesList(),
-                                valueTypeListHelper.isNullable() ) );
+                        results.add( new RelationshipPropertySchemaInfoResult( finalName, propName, valueTypeListHelper.getCypherTypesList(),
+                                valueTypeListHelper.isMandatory() ) );
                     }
                 } );
             }
@@ -127,39 +134,46 @@ public class SchemaCalculator
         return results;
     }
 
-    private List<SchemaInfoResult> produceResultsForNodes()
+    private List<NodePropertySchemaInfoResult> produceResultsForNodes( NodeMappings nodeMappings )
     {
-        List<SchemaInfoResult> results = new ArrayList<>();
-        for ( SortedLabels labelSet : labelSetToPropertyKeysMapping.keySet() )
+        List<NodePropertySchemaInfoResult> results = new ArrayList<>();
+        for ( SortedLabels labelSet : nodeMappings.labelSetToPropertyKeys.keySet() )
         {
-            // lookup label names and produce list of names
+            // lookup label names and produce list of names and produce String out of them
             List<String> labelNames = new ArrayList<>();
             for ( int i = 0; i < labelSet.numberOfLabels(); i++ )
             {
-                String name = labelIdToLabelNameMapping.get( labelSet.label( i ) );
+                String name = nodeMappings.labelIdToLabelName.get( labelSet.label( i ) );
                 labelNames.add( name );
             }
+            Collections.sort( labelNames );  // this is optional but waaaaay nicer
+            StringBuilder labelsConcatenator = new StringBuilder();
+            for ( String item : labelNames )
+            {
+                labelsConcatenator.append( ":`" ).append( item ).append( "`" );
+            }
+            String labels = labelsConcatenator.toString();
 
             // lookup property value types
-            Set<Integer> propertyIds = labelSetToPropertyKeysMapping.get( labelSet );
+            Set<Integer> propertyIds = nodeMappings.labelSetToPropertyKeys.get( labelSet );
             if ( propertyIds.size() == 0 )
             {
-                results.add( new SchemaInfoResult( NODE, labelNames, null, null, true ) );
+                results.add( new NodePropertySchemaInfoResult( labels, labelNames, null, null, false ) );
             }
             else
             {
                 propertyIds.forEach( propId -> {
                     // lookup propId name and valueGroup
-                    String propName = propertyIdToPropertylNameMapping.get( propId );
-                    ValueTypeListHelper valueTypeListHelper = labelSetANDNodePropertyKeyIdToValueTypeMapping.get( Pair.of( labelSet, propId ) );
-                    if ( nullableLabelSets.contains( labelSet ) )
+                    String propName = propertyIdToPropertyNameMapping.get( propId );
+                    ValueTypeListHelper valueTypeListHelper = nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( Pair.of( labelSet, propId ) );
+                    if ( nodeMappings.nullableLabelSets.contains( labelSet ) )
                     {
-                        results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeListHelper.getCypherTypesList(), true ) );
+                        results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(), false ) );
                     }
                     else
                     {
-                        results.add( new SchemaInfoResult( NODE, labelNames, propName, valueTypeListHelper.getCypherTypesList(),
-                                valueTypeListHelper.isNullable() ) );
+                        results.add( new NodePropertySchemaInfoResult( labels, labelNames, propName, valueTypeListHelper.getCypherTypesList(),
+                                valueTypeListHelper.isMandatory() ) );
                     }
                 } );
             }
@@ -167,22 +181,7 @@ public class SchemaCalculator
         return results;
     }
 
-    //TODO: If we would have this schema information in the count store (or somewhere), this could be super fast
-    private void calculateSchema()
-    {
-        scanEverythingBelongingToNodes();
-        scanEverythingBelongingToRelationships();
-
-        // OTHER:
-        // go through all labels
-        addNamesToCollection( tokenRead.labelsGetAllTokens(), labelIdToLabelNameMapping );
-        // go through all propertyKeys
-        addNamesToCollection( tokenRead.propertyKeyGetAllTokens(), propertyIdToPropertylNameMapping );
-        // go through all relationshipTypes
-        addNamesToCollection( tokenRead.relationshipTypesGetAllTokens(), relationshipTypIdToRelationshipNameMapping );
-    }
-
-    private void scanEverythingBelongingToRelationships()
+    private void scanEverythingBelongingToRelationships( RelationshipMappings relMappings )
     {
         try ( RelationshipScanCursor relationshipScanCursor = cursors.allocateRelationshipScanCursor();
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
@@ -200,13 +199,13 @@ public class SchemaCalculator
 
                     Value currentValue = propertyCursor.propertyValue();
                     Pair<Integer,Integer> key = Pair.of( typeId, propertyKey );
-                    updateValueTypeInMapping( currentValue, key, relationshipTypeIdANDPropertyTypeIdToValueTypeMapping );
+                    updateValueTypeInMapping( currentValue, key, relMappings.relationshipTypeIdANDPropertyTypeIdToValueType );
 
                     propertyIds.add( propertyKey );
                 }
                 propertyCursor.close();
 
-                Set<Integer> oldPropertyKeySet = relationshipTypeIdToPropertyKeysMapping.getOrDefault( typeId, emptyPropertyIdSet );
+                Set<Integer> oldPropertyKeySet = relMappings.relationshipTypeIdToPropertyKeys.getOrDefault( typeId, emptyPropertyIdSet );
 
                 // find out which old properties we did not visited and mark them as nullable
                 if ( oldPropertyKeySet == emptyPropertyIdSet )
@@ -214,7 +213,7 @@ public class SchemaCalculator
                     if ( propertyIds.size() == 0 )
                     {
                         // Even if we find property key on other rels with this type, set all of them nullable
-                        nullableRelationshipTypes.add( typeId );
+                        relMappings.nullableRelationshipTypes.add( typeId );
                     }
 
                     propertyIds.addAll( oldPropertyKeySet );
@@ -222,25 +221,26 @@ public class SchemaCalculator
                 else
                 {
                     Set<Integer> currentPropertyIdsHelperSet = new HashSet( propertyIds );
+                    currentPropertyIdsHelperSet.addAll( propertyIds );
                     propertyIds.removeAll( oldPropertyKeySet );  // only the brand new ones in propIds now
                     oldPropertyKeySet.removeAll( currentPropertyIdsHelperSet );  // only the old ones that are not on the new rel
 
                     propertyIds.addAll( oldPropertyKeySet );
                     propertyIds.forEach( id -> {
                         Pair<Integer,Integer> key = Pair.of( typeId, id );
-                        relationshipTypeIdANDPropertyTypeIdToValueTypeMapping.get( key ).setNullable();
+                        relMappings.relationshipTypeIdANDPropertyTypeIdToValueType.get( key ).setNullable();
                     } );
 
                     propertyIds.addAll( currentPropertyIdsHelperSet );
                 }
 
-                relationshipTypeIdToPropertyKeysMapping.put( typeId, propertyIds );
+                relMappings.relationshipTypeIdToPropertyKeys.put( typeId, propertyIds );
             }
             relationshipScanCursor.close();
         }
     }
 
-    private void scanEverythingBelongingToNodes()
+    private void scanEverythingBelongingToNodes( NodeMappings nodeMappings )
     {
         try ( NodeCursor nodeCursor = cursors.allocateNodeCursor();
                 PropertyCursor propertyCursor = cursors.allocatePropertyCursor() )
@@ -258,13 +258,13 @@ public class SchemaCalculator
                     Value currentValue = propertyCursor.propertyValue();
                     int propertyKeyId = propertyCursor.propertyKey();
                     Pair<SortedLabels,Integer> key = Pair.of( labels, propertyKeyId );
-                    updateValueTypeInMapping( currentValue, key, labelSetANDNodePropertyKeyIdToValueTypeMapping );
+                    updateValueTypeInMapping( currentValue, key, nodeMappings.labelSetANDNodePropertyKeyIdToValueType );
 
                     propertyIds.add( propertyKeyId );
                 }
                 propertyCursor.close();
 
-                Set<Integer> oldPropertyKeySet = labelSetToPropertyKeysMapping.getOrDefault( labels, emptyPropertyIdSet );
+                Set<Integer> oldPropertyKeySet = nodeMappings.labelSetToPropertyKeys.getOrDefault( labels, emptyPropertyIdSet );
 
                 // find out which old properties we did not visited and mark them as nullable
                 if ( oldPropertyKeySet == emptyPropertyIdSet )
@@ -272,7 +272,7 @@ public class SchemaCalculator
                     if ( propertyIds.size() == 0 )
                     {
                         // Even if we find property key on other nodes with those labels, set all of them nullable
-                        nullableLabelSets.add( labels );
+                        nodeMappings.nullableLabelSets.add( labels );
                     }
 
                     propertyIds.addAll( oldPropertyKeySet );
@@ -280,19 +280,20 @@ public class SchemaCalculator
                 else
                 {
                     Set<Integer> currentPropertyIdsHelperSet = new HashSet( propertyIds );
+                    currentPropertyIdsHelperSet.addAll( propertyIds );
                     propertyIds.removeAll( oldPropertyKeySet );  // only the brand new ones in propIds now
                     oldPropertyKeySet.removeAll( currentPropertyIdsHelperSet );  // only the old ones that are not on the new node
 
                     propertyIds.addAll( oldPropertyKeySet );
                     propertyIds.forEach( id -> {
                         Pair<SortedLabels,Integer> key = Pair.of( labels, id );
-                        labelSetANDNodePropertyKeyIdToValueTypeMapping.get( key ).setNullable();
+                        nodeMappings.labelSetANDNodePropertyKeyIdToValueType.get( key ).setNullable();
                     } );
 
                     propertyIds.addAll( currentPropertyIdsHelperSet );
                 }
 
-                labelSetToPropertyKeysMapping.put( labels, propertyIds );
+                nodeMappings.labelSetToPropertyKeys.put( labels, propertyIds );
             }
             nodeCursor.close();
         }
@@ -324,7 +325,7 @@ public class SchemaCalculator
     private class ValueTypeListHelper
     {
         private Set<String> seenValueTypes;
-        private boolean isNullable;
+        private boolean isMandatory = true;
 
         ValueTypeListHelper( Value v )
         {
@@ -332,14 +333,14 @@ public class SchemaCalculator
             updateValueTypesWith( v );
         }
 
-        private void setNullable( )
+        private void setNullable()
         {
-            isNullable = true;
+            isMandatory = false;
         }
 
-        public boolean isNullable()
+        public boolean isMandatory()
         {
-            return isNullable;
+            return isMandatory;
         }
 
         List<String> getCypherTypesList()
@@ -354,6 +355,44 @@ public class SchemaCalculator
                 throw new IllegalArgumentException();
             }
             seenValueTypes.add( newValue.getTypeName() );
+        }
+    }
+
+    /*
+      All mappings needed to describe Nodes except for property infos
+     */
+    private class NodeMappings
+    {
+        final Map<SortedLabels,Set<Integer>> labelSetToPropertyKeys;
+        final Map<Pair<SortedLabels,Integer>,ValueTypeListHelper> labelSetANDNodePropertyKeyIdToValueType;
+        final Set<SortedLabels> nullableLabelSets; // used for label combinations without properties -> all properties are viewed as nullable
+        final Map<Integer,String> labelIdToLabelName;
+
+        NodeMappings( int labelCount )
+        {
+            labelSetToPropertyKeys = new HashMap<>( labelCount );
+            labelIdToLabelName = new HashMap<>( labelCount );
+            labelSetANDNodePropertyKeyIdToValueType = new HashMap<>();
+            nullableLabelSets = new HashSet<>();
+        }
+    }
+
+    /*
+      All mappings needed to describe Rels except for property infos
+     */
+    private class RelationshipMappings
+    {
+        final Map<Integer,String> relationshipTypIdToRelationshipName;
+        final Map<Integer,Set<Integer>> relationshipTypeIdToPropertyKeys;
+        final Map<Pair<Integer,Integer>,ValueTypeListHelper> relationshipTypeIdANDPropertyTypeIdToValueType;
+        final Set<Integer> nullableRelationshipTypes; // used for types without properties -> all properties are viewed as nullable
+
+        RelationshipMappings( int relationshipTypeCount )
+        {
+            relationshipTypIdToRelationshipName = new HashMap<>( relationshipTypeCount );
+            relationshipTypeIdToPropertyKeys = new HashMap<>( relationshipTypeCount );
+            relationshipTypeIdANDPropertyTypeIdToValueType = new HashMap<>();
+            nullableRelationshipTypes = new HashSet<>();
         }
     }
 }

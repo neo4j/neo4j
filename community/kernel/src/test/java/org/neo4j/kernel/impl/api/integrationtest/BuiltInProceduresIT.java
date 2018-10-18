@@ -174,11 +174,13 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 equalTo( new Object[]{"db.schema", "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " +
                                                    "OF " +
                                                    "RELATIONSHIP?)", "Show the schema of the data.", "READ"} ),
-                equalTo( new Object[]{"okapi.schema",
-                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
-                                "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
-                        "Show the derived property schema of the data in tabular form.",
-                        "READ"} ),
+                equalTo( new Object[]{ "db.schema.nodeTypeProperties",
+                        "db.schema.nodeTypeProperties() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
+                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the nodes in tabular form.", "READ"} ),
+                equalTo( new Object[]{ "db.schema.relTypeProperties", "db.schema.relTypeProperties() :: (relType :: STRING?, " +
+                                "propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the relationships in tabular form.", "READ"} ),
                 equalTo( new Object[]{"db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: " +
                                                               "STRING?)",
                         "List all relationship types in the database.", "READ"} ),

@@ -229,10 +229,14 @@ public class BuiltInProceduresTest
                         "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
                 record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
                         "Schedule resampling of all outdated indexes.", "READ" ),
-                record( "okapi.schema",
-                        "okapi.schema() :: (type :: STRING?, nodeLabelsOrRelType :: LIST? OF STRING?, property :: STRING?, " +
-                                "cypherTypes :: LIST? OF STRING?, nullable :: BOOLEAN?)",
-                        "Show the derived property schema of the data in tabular form.", "READ" ),
+                record( "db.schema.nodeTypeProperties",
+                        "db.schema.nodeTypeProperties() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?, propertyName :: STRING?, " +
+                                "propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the nodes in tabular form.", "READ" ),
+                record( "db.schema.relTypeProperties",
+                        "db.schema.relTypeProperties() :: (relType :: STRING?, propertyName :: STRING?, propertyTypes :: LIST? OF STRING?," +
+                                " mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the relationships in tabular form.", "READ" ),
                 record( "db.schema",
                         "db.schema() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",
                         "Show the schema of the data.", "READ" ),
