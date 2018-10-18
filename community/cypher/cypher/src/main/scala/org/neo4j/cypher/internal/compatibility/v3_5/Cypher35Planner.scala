@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFactory, SimpleMetricsFactory}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.spi.v3_5.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v3_5.{ExceptionTranslatingPlanContext, TransactionBoundPlanContext}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext

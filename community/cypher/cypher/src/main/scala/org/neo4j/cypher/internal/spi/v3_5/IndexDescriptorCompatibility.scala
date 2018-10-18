@@ -17,9 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted
+package org.neo4j.cypher.internal.spi.v3_5
 
 import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory

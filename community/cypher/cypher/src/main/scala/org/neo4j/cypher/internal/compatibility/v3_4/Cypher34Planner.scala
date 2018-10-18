@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compatibility.v3_4.helpers.{as3_4, as3_5}
 import org.neo4j.cypher.internal.compatibility.v3_5.notification.LogicalPlanNotifications
 import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.simpleExpressionEvaluator
-import org.neo4j.cypher.internal.compatibility.v3_5.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextv3_5}
 import org.neo4j.cypher.internal.compiler.v3_4
 import org.neo4j.cypher.internal.compiler.v3_4.CypherCompilerFactory
 import org.neo4j.cypher.internal.compiler.v3_4.planner.logical.{idp => idpV3_4}
@@ -43,7 +42,7 @@ import org.neo4j.cypher.internal.planner.v3_4.{spi => spiV3_4}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, PlannerNameWithVersion, InstrumentedGraphStatistics => InstrumentedGraphStatisticsv3_5, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotv3_5}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_4.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_4, TransactionBoundPlanContext => TransactionBoundPlanContextV3_4}
-import org.neo4j.cypher.internal.spi.v3_5.{TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_5, TransactionBoundPlanContext => TransactionBoundPlanContextV3_5}
+import org.neo4j.cypher.internal.spi.v3_5.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_5, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_5, TransactionBoundPlanContext => TransactionBoundPlanContextV3_5}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Parameter}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy, CypherVersion}
@@ -149,7 +148,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         TransactionBoundGraphStatisticsV3_5(tcv3_5.dataRead, tcv3_5.schemaRead),
         graphStatisticsSnapshotv3_5)
 
-      val planContextv3_5 = new ExceptionTranslatingPlanContextv3_5(
+      val planContextv3_5 = new ExceptionTranslatingPlanContextV3_5(
         new TransactionBoundPlanContextV3_5(tcv3_5, notificationLoggerv3_5, graphStatisticsv3_5))
 
       // Only used during planning
