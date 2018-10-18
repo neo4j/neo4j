@@ -92,7 +92,6 @@ import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -265,29 +264,13 @@ public class KernelTransactionsTest
                 ThreadLocalRandom random = ThreadLocalRandom.current();
                 while ( !end.get() )
                 {
-                    try ( KernelTransaction transaction = getKernelTransaction( transactions ) )
+                    try ( KernelTransaction ignored = getKernelTransaction( transactions ) )
                     {
-                        KernelTransactionsSnapshot snapshot = null;
-                        try
+                        parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
+                        if ( snapshots.get( threadIndex ) == null )
                         {
+                            snapshots.set( threadIndex, transactions.get() );
                             parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
-                            if ( snapshots.get( threadIndex ) == null )
-                            {
-                                requireNonNull( transactions, "transactions is null" );
-                                snapshot = requireNonNull( transactions.get(), "transactions.get() returned null" );
-                                snapshots.set( threadIndex, snapshot );
-                                parkNanos( MILLISECONDS.toNanos( random.nextInt( 3 ) ) );
-                            }
-                        }
-                        catch ( RuntimeException e )
-                        {
-                            StringBuilder sb = new StringBuilder( "Gotcha!\n" )
-                                    .append( "threadIndex=" ).append( threadIndex ).append( '\n' )
-                                    .append( "transaction=" ).append( transaction ).append( '\n' )
-                                    .append( "snapshots=" ).append( snapshots ).append( '\n' )
-                                    .append( "snapshot=" ).append( snapshot ).append( '\n' )
-                                    .append( "end=" ).append( end );
-                            throw new RuntimeException( sb.toString(), e );
                         }
                     }
                     catch ( TransactionFailureException e )
