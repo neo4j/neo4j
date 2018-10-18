@@ -27,4 +27,11 @@ public interface NodeIndexCursor extends Cursor
     void node( NodeCursor cursor );
 
     long nodeReference();
+
+    /**
+     * @return the score, if any, that signifies how well the current node matches the query. If there is no score associated with the match,
+     * then {@link Float#NaN} is returned. Also, if the cursor has been exhausted, or the cursor is otherwise not placed at a node,
+     * then {@link Float#NaN} is also returned.
+     */
+    float score();
 }

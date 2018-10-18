@@ -61,6 +61,12 @@ public class StubNodeLabelIndexCursor implements NodeLabelIndexCursor
     }
 
     @Override
+    public float score()
+    {
+        return Float.NaN;
+    }
+
+    @Override
     public LabelSet labels()
     {
         return null;
