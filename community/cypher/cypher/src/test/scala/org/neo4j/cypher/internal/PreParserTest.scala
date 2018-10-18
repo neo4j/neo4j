@@ -64,4 +64,21 @@ class PreParserTest extends CypherFunSuite {
       preParser.preParseQuery(x+query).isPeriodicCommit should be(true)
     }
   }
+
+  test("should not call periodic commit on innocent (but evil) queries") {
+    val queries =
+      List(
+        "MATCH (n) RETURN n",
+        "CREATE ({name: 'USING PERIODIC COMMIT'})",
+        "CREATE ({`USING PERIODIC COMMIT`: true})",
+        "CREATE (:`USING PERIODIC COMMIT`)",
+        "CYPHER 3.4 debug=usingPeriodicCommit PROFILE CREATE ({name: 'USING PERIODIC COMMIT'})",
+        """CREATE ({name: '
+          |USING PERIODIC COMMIT')""".stripMargin
+      )
+
+    for (query <- queries) {
+      preParser.preParseQuery(query).isPeriodicCommit should be(false)
+    }
+  }
 }

@@ -158,5 +158,5 @@ class PreParser(configuredVersion: CypherVersion,
 }
 
 object PeriodicCommitHint {
-  val r: Regex = "\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
+  val r: Regex = "^\\s*USING\\s+PERIODIC\\s+COMMIT.*".r
 }
