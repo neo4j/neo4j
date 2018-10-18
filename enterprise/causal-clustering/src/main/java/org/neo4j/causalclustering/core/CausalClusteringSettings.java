@@ -266,9 +266,14 @@ public class CausalClusteringSettings implements LoadableConfig
             setting( "hazelcast.license_key", STRING, NO_DEFAULT );
 
     @Internal
-    @Description( "Parallelism level used by Akka based cluster topology discovery" )
-    public static final Setting<Integer> middleware_akka_parallelism_level =
-            setting( "causal_clustering.middleware.akka.parallelism", INTEGER, Integer.toString( 2 ) );
+    @Description( "Parallelism level of default dispatcher used by Akka based cluster topology discovery, including cluster, replicator, and discovery actors" )
+    public static final Setting<Integer> middleware_akka_default_parallelism_level =
+            setting( "causal_clustering.middleware.akka.default-parallelism", INTEGER, Integer.toString( 2 ) );
+
+    @Internal
+    @Description( "Parallelism level of dispatcher used for communication from Akka based cluster topology discovery " )
+    public static final Setting<Integer> middleware_akka_sink_parallelism_level =
+            setting( "causal_clustering.middleware.akka.sink-parallelism", INTEGER, Integer.toString( 2 ) );
 
     @Internal
     @Description( "Akka cluster phi accrual failure detector. " +
