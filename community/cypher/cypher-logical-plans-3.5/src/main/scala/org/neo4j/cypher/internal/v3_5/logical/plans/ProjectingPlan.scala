@@ -26,7 +26,6 @@ trait ProjectingPlan extends LogicalPlan {
   val source: LogicalPlan
   // The projected expressions
   val projectExpressions: Map[String, Expression]
-  private lazy val projectsValue = projectExpressions.values.toSet
 
   override val lhs: Option[LogicalPlan] = Some(source)
   override val rhs: Option[LogicalPlan] = None
@@ -51,4 +50,8 @@ trait ProjectingPlan extends LogicalPlan {
       case (key, value) => Map(key -> value)
     }
   }
+
+  private def projectsValue(expression: Expression) = projectExpressions.values.collectFirst {
+    case e if e == expression => e
+  }.nonEmpty
 }
