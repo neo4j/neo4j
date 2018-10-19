@@ -2688,8 +2688,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         finally
         {
-            //noinspection ThrowFromFinallyBlock
-            pagedFile.close();
+            IOUtils.closeAllSilently( pagedFile );
         }
     }
 
@@ -2708,8 +2707,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         finally
         {
-            //noinspection ThrowFromFinallyBlock
-            pagedFile.close();
+            IOUtils.closeAllSilently( pagedFile );
         }
     }
 
@@ -2731,8 +2729,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         }
         finally
         {
-            //noinspection ThrowFromFinallyBlock
-            pagedFile.close();
+            IOUtils.closeAllSilently( pagedFile );
         }
     }
 
@@ -2826,6 +2823,93 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         cursor.setOffset( 0 );
         cursor.getBytes( actualBytes );
         assertThat( actualBytes, byteArray( expectedBytes ) );
+    }
+
+    @Test
+    void getBytesMustRespectOffsets() throws IOException
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.putByte( (byte) 1 );
+            cursor.putByte( (byte) 2 );
+            cursor.putByte( (byte) 3 );
+            cursor.putByte( (byte) 4 );
+            cursor.putByte( (byte) 5 );
+            cursor.putByte( (byte) 6 );
+            cursor.putByte( (byte) 7 );
+            cursor.putByte( (byte) 8 );
+            byte[] data = {42, 42, 42, 42, 42};
+            cursor.setOffset( 1 );
+            cursor.getBytes( data, 1, 3 );
+            byte[] expected = {42, 2, 3, 4, 42};
+            assertArrayEquals( expected, data );
+        }
+    }
+
+    @Test
+    void putBytesMustRespectOffsets() throws IOException
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.putByte( (byte) 1 );
+            cursor.putByte( (byte) 2 );
+            cursor.putByte( (byte) 3 );
+            cursor.putByte( (byte) 4 );
+            cursor.putByte( (byte) 5 );
+            cursor.putByte( (byte) 6 );
+            cursor.putByte( (byte) 7 );
+            cursor.putByte( (byte) 8 );
+            byte[] data = {42, 41, 40, 39, 38};
+            cursor.setOffset( 1 );
+            cursor.putBytes( data, 1, 3 );
+            cursor.setOffset( 0 );
+            assertThat( cursor.getByte(), is( (byte) 1 ) );
+            assertThat( cursor.getByte(), is( (byte) 41 ) );
+            assertThat( cursor.getByte(), is( (byte) 40 ) );
+            assertThat( cursor.getByte(), is( (byte) 39 ) );
+            assertThat( cursor.getByte(), is( (byte) 5 ) );
+            assertThat( cursor.getByte(), is( (byte) 6 ) );
+            assertThat( cursor.getByte(), is( (byte) 7 ) );
+            assertThat( cursor.getByte(), is( (byte) 8 ) );
+        }
+    }
+
+    @Test
+    void getBytesMustThrowArrayIndexOutOfBounds() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            byte[] bytes = new byte[3];
+            assertThrows( ArrayIndexOutOfBoundsException.class, () ->
+            {
+                cursor.getBytes( bytes, 1, 3 );
+            } );
+        }
+    }
+
+    @Test
+    void putBytesMustThrowArrayIndexOutOfBounds() throws Exception
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            byte[] bytes = new byte[3];
+            assertThrows( ArrayIndexOutOfBoundsException.class, () ->
+            {
+                cursor.putBytes( bytes, 1, 3 );
+            } );
+        }
     }
 
     @Test

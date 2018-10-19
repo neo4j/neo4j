@@ -89,6 +89,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     public void setUp() throws IOException
     {
         fixture = createFixture();
+        //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
         fs = createFileSystemAbstraction();
         jobScheduler = new ThreadPoolJobScheduler();
@@ -98,6 +99,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
     @AfterEach
     public void tearDown() throws Exception
     {
+        //noinspection ResultOfMethodCallIgnored
         Thread.interrupted(); // Clear stray interrupts
 
         if ( pageCache != null )

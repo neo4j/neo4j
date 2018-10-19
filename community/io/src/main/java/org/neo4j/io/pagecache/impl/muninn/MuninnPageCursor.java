@@ -49,6 +49,9 @@ abstract class MuninnPageCursor extends PageCursor
 
     private static final boolean boundsCheck = flag( MuninnPageCursor.class, "boundsCheck", true );
 
+    private static final int BYTE_ARRAY_BASE_OFFSET = UnsafeUtil.arrayBaseOffset( byte[].class );
+    private static final int BYTE_ARRAY_INDEX_SCALE = UnsafeUtil.arrayIndexScale( byte[].class );
+
     // Size of the respective primitive types in bytes.
     private static final int SIZE_OF_BYTE = Byte.BYTES;
     private static final int SIZE_OF_SHORT = Short.BYTES;
@@ -681,13 +684,15 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void getBytes( byte[] data, int arrayOffset, int length )
     {
-        long p = getBoundedPointer( offset, length );
+        if ( arrayOffset + length > data.length )
+        {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        long p = nextBoundedPointer( length );
         if ( !outOfBounds )
         {
-            for ( int i = 0; i < length; i++ )
-            {
-                data[arrayOffset + i] = UnsafeUtil.getByte( p + i );
-            }
+            int inset = UnsafeUtil.arrayOffset( arrayOffset, BYTE_ARRAY_BASE_OFFSET, BYTE_ARRAY_INDEX_SCALE );
+            UnsafeUtil.copyMemory( null, p, data, inset, length );
         }
         offset += length;
     }
@@ -701,14 +706,15 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void putBytes( byte[] data, int arrayOffset, int length )
     {
-        long p = getBoundedPointer( offset, length );
+        if ( arrayOffset + length > data.length )
+        {
+            throw new ArrayIndexOutOfBoundsException();
+        }
+        long p = nextBoundedPointer( length );
         if ( !outOfBounds )
         {
-            for ( int i = 0; i < length; i++ )
-            {
-                byte b = data[arrayOffset + i];
-                UnsafeUtil.putByte( p + i, b );
-            }
+            int inset = UnsafeUtil.arrayOffset( arrayOffset, BYTE_ARRAY_BASE_OFFSET, BYTE_ARRAY_INDEX_SCALE );
+            UnsafeUtil.copyMemory( data, inset, null, p, length );
         }
         offset += length;
     }
@@ -716,7 +722,7 @@ abstract class MuninnPageCursor extends PageCursor
     @Override
     public void putBytes( int bytes, byte value )
     {
-        long p = getBoundedPointer( offset, bytes );
+        long p = nextBoundedPointer( bytes );
         if ( !outOfBounds )
         {
             UnsafeUtil.setMemory( p, bytes, value );

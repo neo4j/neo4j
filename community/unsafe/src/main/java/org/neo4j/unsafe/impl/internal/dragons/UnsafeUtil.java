@@ -955,6 +955,15 @@ public final class UnsafeUtil
     }
 
     /**
+     * Same as {@link #copyMemory(long, long, long)}, but with an object-relative addressing mode,
+     * where {@code null} object bases imply that the offset is an absolute address.
+     */
+    public static void copyMemory( Object srcBase, long srcOffset, Object destBase, long destOffset, long bytes )
+    {
+        unsafe.copyMemory( srcBase, srcOffset, destBase, destOffset, bytes );
+    }
+
+    /**
      * Create a new DirectByteBuffer that wraps the given address and has the given capacity.
      * <p>
      * The ByteBuffer does NOT create a Cleaner, or otherwise register the pointer for freeing.
