@@ -38,12 +38,12 @@ class ProjectingPlanTest extends CypherFunSuite {
     def name: String
   }
 
-  private val project = new Projector {
+  private val project: Projector = new Projector {
     override def apply(input: LogicalPlan,
                        projections: Map[String, Expression]): ProjectingPlan = Projection(input, projections)
     override val name: String = "Projection"
   }
-  private val distinct = new Projector {
+  private val distinct: Projector = new Projector {
     override def apply(input: LogicalPlan,
                        projections: Map[String, Expression]): ProjectingPlan = Distinct(input, projections)
     override val name: String = "Distinct"
@@ -105,6 +105,29 @@ class ProjectingPlanTest extends CypherFunSuite {
       val output = projector(input, projections)
 
       output.availableCachedNodeProperties should equal(Map(yDotFoo -> cached("x.foo"), zDotFoo -> cached("x.foo")))
+    }
+
+    test(s"should not hide availableCachedNodeProperties in ${projector.name} if projecting different property than what has been cached") {
+      val xDotFoo = Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos)
+      val xDotBar = Property(Variable("x")(pos), PropertyKeyName("bar")(pos))(pos)
+      val projections = Map("xbar" -> xDotBar)
+
+      val input = FakePlan(Map(xDotFoo -> cached("x.foo")))
+      val output = projector(input, projections)
+
+      output.availableCachedNodeProperties should equal(Map(xDotFoo -> cached("x.foo")))
+    }
+
+    test(s"should only pass along availableCachedNodeProperties in ${projector.name} that are not projected") {
+      val xDotFoo = Property(Variable("x")(pos), PropertyKeyName("foo")(pos))(pos)
+      val xDotBar = Property(Variable("x")(pos), PropertyKeyName("bar")(pos))(pos)
+      val xDotBaz = Property(Variable("x")(pos), PropertyKeyName("baz")(pos))(pos)
+      val projections = Map("xbar" -> xDotBar)
+
+      val input = FakePlan(Map(xDotFoo -> cached("x.foo"), xDotBar -> cached("x.bar"), xDotBaz -> cached("x.baz")))
+      val output = projector(input, projections)
+
+      output.availableCachedNodeProperties should equal(Map(xDotFoo -> cached("x.foo"), xDotBaz -> cached("x.baz")))
     }
   }
 

@@ -389,13 +389,25 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
     result.toList should equal(List(Map("n.prop1" -> null)))
   }
 
-  private def assertIndexSeek(result: RewindableExecutionResult) = {
+  test("should use cached properties after projection") {
+    val result = executeWith(Configs.Interpreted, "MATCH (n:Awesome) WHERE n.prop1 < 42 RETURN n.prop1 ORDER BY n.prop2", executeBefore = createSomeNodes)
+
+    result.executionPlanDescription() should
+      includeSomewhere.aPlan("Projection").containingArgument("{n.prop1 : cached[n.prop1]}")
+        .onTopOf(aPlan("Sort")
+                   .onTopOf(aPlan("Projection")
+                              .onTopOf(aPlan("NodeIndexSeekByRange").withExactVariables("cached[n.prop1]", "n"))))
+    result.toList should equal(
+      List(Map("n.prop1" -> 41), Map("n.prop1" -> 41), Map("n.prop1" -> 40), Map("n.prop1" -> 40)))
+  }
+
+  private def assertIndexSeek(result: RewindableExecutionResult): Unit = {
     result.executionPlanDescription() should
       includeSomewhere.aPlan("NodeIndexSeek")
         .containingVariables("n")
   }
 
-  private def assertIndexSeekWithValues(result: RewindableExecutionResult, propName: String = "n.prop1") = {
+  private def assertIndexSeekWithValues(result: RewindableExecutionResult, propName: String = "n.prop1"): Unit = {
     result.executionPlanDescription() should
       includeSomewhere.aPlan("NodeIndexSeek")
         .containingVariables("n", s"cached[$propName]")
