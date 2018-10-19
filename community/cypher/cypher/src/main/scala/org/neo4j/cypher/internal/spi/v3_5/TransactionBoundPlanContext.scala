@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.spi.v3_5
 import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
+import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.v3_5.spi._
 import org.neo4j.cypher.internal.runtime.interpreted._

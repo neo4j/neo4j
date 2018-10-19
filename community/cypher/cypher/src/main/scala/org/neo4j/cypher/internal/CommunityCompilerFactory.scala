@@ -25,7 +25,6 @@ import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
 import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
 import org.neo4j.cypher.internal.compatibility._
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
-import org.neo4j.cypher.internal.runtime.interpreted.LastCommittedTxIdProvider
 import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService

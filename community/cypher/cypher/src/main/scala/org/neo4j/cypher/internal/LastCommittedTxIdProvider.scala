@@ -17,15 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted
+package org.neo4j.cypher.internal
 
+import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore
 
 case class LastCommittedTxIdProvider(db: GraphDatabaseQueryService) extends (() => Long) {
 
   override def apply(): Long = {
-    val txIdStore = db.getDependencyResolver.resolveDependency(classOf[TransactionIdStore])
+    val txIdStore = db.getDependencyResolver.resolveDependency(classOf[TransactionIdStore], SelectionStrategy.ONLY)
     txIdStore.getLastCommittedTransactionId
   }
 }
