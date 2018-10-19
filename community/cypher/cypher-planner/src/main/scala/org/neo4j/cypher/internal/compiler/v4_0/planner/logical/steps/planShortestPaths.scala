@@ -52,9 +52,6 @@ case object planShortestPaths {
     }
 
     val (safePredicates, needFallbackPredicates) = predicates.partition {
-      // TODO: Once we support node predicates we should enable all NONE and ALL predicates as safe predicates
-      case NoneIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
-      case AllIterablePredicate(_, f@FunctionInvocation(_, _, _, _)) if f.function == Nodes => false
       case NoneIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case AllIterablePredicate(FilterScope(_, Some(innerPredicate)), _) if doesNotDependOnFullPath(innerPredicate) => true
       case _ => false
