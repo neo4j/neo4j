@@ -108,7 +108,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     public static final String KEY = NATIVE_BTREE10.providerKey();
     public static final IndexProviderDescriptor DESCRIPTOR = new IndexProviderDescriptor( KEY, NATIVE_BTREE10.providerVersion() );
     public static final IndexCapability CAPABILITY = new GenericIndexCapability();
-    private static final boolean parallelPopulation = FeatureToggles.flag( GenericNativeIndexProvider.class, "parallelPopulation", false );
+    static final boolean parallelPopulation = FeatureToggles.flag( GenericNativeIndexProvider.class, "parallelPopulation", false );
 
     /**
      * Cache of all setting for various specific CRS's found in the config at instantiation of this provider.
