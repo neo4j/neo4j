@@ -64,8 +64,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def transactionalContext: QueryTransactionalContext
 
-  def withActiveRead: QueryContext
-
   def resources: ResourceManager
 
   def nodeOps: Operations[NodeValue]

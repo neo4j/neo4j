@@ -28,31 +28,6 @@ import org.neo4j.values.virtual.VirtualValues
 
 class CastSupportTest extends CypherFunSuite {
 
-  test("siftTest") {
-    val given = Seq[Any](1, 2, "a", 3, "b", 42, "z")
-    val then  = CastSupport.sift[String](given)
-    then should equal(Seq("a", "b", "z"))
-  }
-
-  test("siftComplexTest") {
-    val given = Seq[Any](1, 2, List("a"), 3, "b", 42, List("z"))
-    val then  = CastSupport.sift[List[String]](given)
-    then should equal(Seq(List("a"), List("z")))
-  }
-
-  test("downcastPfMatchTest") {
-    val given: Any                          = Seq(1)
-    val fun: PartialFunction[Any, Seq[Int]] = CastSupport.erasureCast[Seq[Int]]
-    val then                                = fun(given)
-    then should equal(Seq(1))
-  }
-
-  test("downcastPfMismatchTest") {
-    val given: Any                           = "Hallo"
-    val fun: PartialFunction[Any, Seq[Long]] = CastSupport.erasureCast[Seq[Long]]
-    fun.isDefinedAt(given) should equal(false)
-  }
-
   test("downcastAppMatchTest") {
     val given: Any = 1
     CastSupport.castOrFail[java.lang.Integer](given) should equal(1)

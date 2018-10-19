@@ -87,8 +87,6 @@ trait QueryContextAdaptation {
 
   override def entityAccessor: EmbeddedProxySPI = ???
 
-  override def withActiveRead: QueryContext = ???
-
   override def resources: ResourceManager = ???
 
   override def getOrCreatePropertyKeyId(propertyKey: String): Int = ???

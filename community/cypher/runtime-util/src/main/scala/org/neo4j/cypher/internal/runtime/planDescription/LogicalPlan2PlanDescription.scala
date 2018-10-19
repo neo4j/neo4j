@@ -260,9 +260,6 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
       case _: MergeCreateRelationship =>
         PlanDescriptionImpl(id, "MergeCreateRelationship", children, Seq.empty, variables)
 
-      case _: ActiveRead =>
-        PlanDescriptionImpl(id, "ActiveRead", children, Seq.empty, variables)
-
       case _: Optional =>
         PlanDescriptionImpl(id, "Optional", children, Seq.empty, variables)
 

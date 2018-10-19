@@ -521,15 +521,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         AntiConditionalApply(
           Optional(
-            ActiveRead(
-              NodeUniqueIndexSeek(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-                SingleQueryExpression(StringLiteral("foo")(pos)),
-                Set.empty,
-                IndexOrderNone)
-            )
+            NodeUniqueIndexSeek(
+              "n",
+              LabelToken("Awesome", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+              SingleQueryExpression(StringLiteral("foo")(pos)),
+              Set.empty,
+              IndexOrderNone)
           ),
           MergeCreateNode(
             Argument(Set()),
@@ -549,15 +547,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         AntiConditionalApply(
           Optional(
-            ActiveRead(
-              NodeUniqueIndexSeek(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
-                SingleQueryExpression(StringLiteral("foo")(pos)),
-                Set.empty,
-                IndexOrderNone)
-            )
+            NodeUniqueIndexSeek(
+              "n",
+              LabelToken("Awesome", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue)),
+              SingleQueryExpression(StringLiteral("foo")(pos)),
+              Set.empty,
+              IndexOrderNone)
           ),
           MergeCreateNode(
             Argument(Set()),
@@ -578,15 +574,13 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         AntiConditionalApply(
           Optional(
-            ActiveRead(
-              NodeUniqueIndexSeek(
-                "n",
-                LabelToken("Awesome", LabelId(0)),
-                Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
-                SingleQueryExpression(StringLiteral("foo")(pos)),
-                Set.empty,
-                IndexOrderNone)
-            )
+            NodeUniqueIndexSeek(
+              "n",
+              LabelToken("Awesome", LabelId(0)),
+              Seq(IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue)),
+              SingleQueryExpression(StringLiteral("foo")(pos)),
+              Set.empty,
+              IndexOrderNone)
           ),
           MergeCreateNode(
             Argument(Set()),

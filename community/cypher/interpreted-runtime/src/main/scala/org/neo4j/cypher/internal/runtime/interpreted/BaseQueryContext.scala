@@ -44,8 +44,6 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def transactionalContext: QueryTransactionalContext = notSupported()
 
-  override def withActiveRead: QueryContext = notSupported()
-
   override def resources: ResourceManager = notSupported()
 
   override def nodeOps: Operations[NodeValue] = notSupported()

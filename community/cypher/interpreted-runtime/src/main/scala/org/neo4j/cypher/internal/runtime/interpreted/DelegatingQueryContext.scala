@@ -56,8 +56,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def entityAccessor: EmbeddedProxySPI = inner.entityAccessor
 
-  override def withActiveRead: QueryContext = inner.withActiveRead
-
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
     singleDbHit(inner.setLabelsOnNode(node, labelIds))
 

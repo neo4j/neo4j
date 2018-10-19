@@ -28,25 +28,9 @@ import org.neo4j.values.storable.{ArrayValue, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, AnyValueWriter}
 
-import org.neo4j.kernel.internal.Version
-
 import scala.reflect.ClassTag
 
 object CastSupport {
-
-  // TODO Switch to using ClassTag once we decide to depend on the reflection api
-
-  /**
-    * Filter sequence by type
-    */
-  def sift[A: ClassTag](seq: Seq[Any]): Seq[A] = seq.collect(erasureCast)
-
-  /**
-    * Casts input to A if possible according to type erasure, discards input otherwise
-    */
-  def erasureCast[A: ClassTag]: PartialFunction[Any, A] = {
-    case value: A => value
-  }
 
   def castOrFail[A](value: Any)(implicit ev: ClassTag[A]): A = value match {
     case v: A => v
