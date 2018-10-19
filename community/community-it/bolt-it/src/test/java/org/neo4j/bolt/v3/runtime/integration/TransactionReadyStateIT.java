@@ -115,7 +115,7 @@ class TransactionReadyStateIT extends BoltStateMachineStateTestBase
 
         // When
         BoltResponseHandler handler = mock( BoltResponseHandler.class );
-        doThrow( new RuntimeException( "Error!" ) ).when( handler ).onRecords( any(), anyBoolean() );
+        doThrow( new RuntimeException( "Error!" ) ).when( handler ).onPullRecords( any(), anyBoolean() );
         machine.process( new RunMessage( "A cypher query" ), handler );
 
         // Then

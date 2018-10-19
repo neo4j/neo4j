@@ -23,11 +23,10 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
-import org.neo4j.bolt.messaging.BoltResponseMessageWriter;
 import org.neo4j.bolt.v1.messaging.response.FailureMessage;
 import org.neo4j.bolt.v1.messaging.response.FatalFailureMessage;
 import org.neo4j.bolt.v1.messaging.response.SuccessMessage;
@@ -40,7 +39,7 @@ import org.neo4j.values.virtual.MapValueBuilder;
 
 import static org.neo4j.bolt.v1.messaging.response.IgnoredMessage.IGNORED_MESSAGE;
 
-public class MessageProcessingHandler implements BoltResponseHandler
+public class MessageProcessingHandler extends BoltResponseHandlerV1Adaptor
 {
     // Errors that are expected when the client disconnects mid-operation
     private static final Set<Status> CLIENT_MID_OP_DISCONNECT_ERRORS =
@@ -62,7 +61,13 @@ public class MessageProcessingHandler implements BoltResponseHandler
     }
 
     @Override
-    public boolean onRecords( BoltResult result, long size ) throws Exception
+    public boolean onPullRecords( BoltResult result, long size ) throws Exception
+    {
+        return false;
+    }
+
+    @Override
+    public void onDiscardRecords( BoltResult result ) throws Exception
     {
     }
 

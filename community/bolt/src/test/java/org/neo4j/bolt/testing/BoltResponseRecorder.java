@@ -22,9 +22,9 @@ package org.neo4j.bolt.testing;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
@@ -36,7 +36,7 @@ import static org.neo4j.bolt.v1.messaging.BoltResponseMessage.SUCCESS;
 import static org.neo4j.values.storable.Values.stringOrNoValue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class BoltResponseRecorder implements BoltResponseHandler
+public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
 {
     private BlockingQueue<RecordedBoltResponse> responses;
     private RecordedBoltResponse currentResponse;
@@ -53,22 +53,15 @@ public class BoltResponseRecorder implements BoltResponseHandler
     }
 
     @Override
-    public void onRecords( BoltResult result, boolean pull ) throws Exception
+    public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        result.hasMore( new BoltResult.Visitor()
-        {
-            @Override
-            public void visit( QueryResult.Record record )
-            {
-                currentResponse.addRecord( record );
-            }
+        return result.handlePullRecords( new RecordingBoltResultVisitor(), size );
+    }
 
-            @Override
-            public void addMetadata( String key, AnyValue value )
-            {
-                currentResponse.addMetadata( key, value );
-            }
-        } );
+    @Override
+    public void onDiscardRecords( BoltResult result ) throws Exception
+    {
+        result.handleDiscardRecords( new RecordingBoltResultVisitor() );
     }
 
     @Override
@@ -114,4 +107,18 @@ public class BoltResponseRecorder implements BoltResponseHandler
         return response;
     }
 
+    private class RecordingBoltResultVisitor implements BoltResult.Visitor
+    {
+        @Override
+        public void visit( QueryResult.Record record )
+        {
+            currentResponse.addRecord( record );
+        }
+
+        @Override
+        public void addMetadata( String key, AnyValue value )
+        {
+            currentResponse.addMetadata( key, value );
+        }
+    }
 }

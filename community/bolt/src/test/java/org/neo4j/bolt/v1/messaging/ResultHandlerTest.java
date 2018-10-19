@@ -95,12 +95,18 @@ class ResultHandlerTest
         }
 
         @Override
-        public void accept( Visitor visitor ) throws Exception
+        public boolean handlePullRecords( Visitor visitor, long size ) throws Exception
         {
             for ( Record record: records )
             {
                 visitor.visit( record );
             }
+            return false;
+        }
+
+        @Override
+        public void handleDiscardRecords( Visitor visitor ) throws Exception
+        {
         }
 
         @Override

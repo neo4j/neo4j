@@ -51,7 +51,7 @@ public class CypherAdapterStream implements BoltResult
     private final String[] fieldNames;
     private final Clock clock;
     private final Queue<QueryResult.Record> allRecords;
-    private final Map<String, AnyValue> metadata = new HashMap<>();
+    protected final Map<String, AnyValue> metadata = new HashMap<>();
 
     public CypherAdapterStream( QueryResult delegate, Clock clock )
     {
@@ -75,16 +75,19 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public boolean hasMore( final Visitor visitor, long size ) throws Exception
+    public boolean handlePullRecords( final Visitor visitor, long size ) throws Exception
     {
         while ( size-- > 0 )
         {
-            QueryResult.Record r = allRecords.poll();
-            if( r != null )
+            QueryResult.Record current = allRecords.poll();
+
+            if( current != null )
             {
-                visitor.visit( r );
+                visitor.visit( current );
             }
-            else
+
+            // if we are at the end of the queue
+            if( current == null || allRecords.peek() == null )
             {
                 metadata.forEach( visitor::addMetadata );
                 return false;
@@ -92,6 +95,13 @@ public class CypherAdapterStream implements BoltResult
         }
 
         return true;
+    }
+
+    @Override
+    public void handleDiscardRecords( Visitor visitor ) throws Exception
+    {
+        // We shall also still go though all records but not sending them back to client.
+        metadata.forEach( visitor::addMetadata );
     }
 
     private void pullInAllRecords( )

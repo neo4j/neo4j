@@ -17,16 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.bolt.v1.runtime;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.bolt.runtime.BoltResult;
+import org.neo4j.bolt.runtime.BoltStateMachine;
+import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.bolt.runtime.StatementProcessor;
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.values.AnyValue;
 
 /**
  * Keeps state of the connection and bolt state machine.
  */
-public class MutableConnectionState implements BoltResponseHandler
+public class MutableConnectionState extends BoltResponseHandlerV1Adaptor
 {
     private Neo4jError pendingError;
     private boolean pendingIgnore;
@@ -36,7 +41,7 @@ public class MutableConnectionState implements BoltResponseHandler
     /**
      * Callback poised to receive the next response.
      */
-    private BoltResponseHandler responseHandler;
+    private BoltResponseHandlerV1Adaptor responseHandler;
     /**
      * Component responsible for transaction handling and statement execution.
      */
@@ -51,11 +56,21 @@ public class MutableConnectionState implements BoltResponseHandler
     private final AtomicInteger interruptCounter = new AtomicInteger();
 
     @Override
-    public void onRecords( BoltResult result, boolean pull ) throws Exception
+    public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
         if ( responseHandler != null )
         {
-            responseHandler.onRecords( result, pull );
+            return responseHandler.onPullRecords( result, size );
+        }
+        else return false;
+    }
+
+    @Override
+    public void onDiscardRecords( BoltResult result ) throws Exception
+    {
+        if ( responseHandler != null )
+        {
+            responseHandler.onDiscardRecords( result );
         }
     }
 
@@ -124,12 +139,12 @@ public class MutableConnectionState implements BoltResponseHandler
         return !closed && pendingError == null && !pendingIgnore;
     }
 
-    public BoltResponseHandler getResponseHandler()
+    public BoltResponseHandlerV1Adaptor getResponseHandler()
     {
         return responseHandler;
     }
 
-    public void setResponseHandler( BoltResponseHandler responseHandler )
+    public void setResponseHandler( BoltResponseHandlerV1Adaptor responseHandler )
     {
         this.responseHandler = responseHandler;
     }

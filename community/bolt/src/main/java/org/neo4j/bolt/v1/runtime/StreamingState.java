@@ -23,10 +23,12 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.v1.ResultConsumerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
+import org.neo4j.bolt.v4.ResultConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static org.neo4j.util.Preconditions.checkState;
@@ -88,12 +90,12 @@ public class StreamingState implements BoltStateMachineState
 
     private BoltStateMachineState processPullAllMessage( StateMachineContext context ) throws BoltConnectionFatality
     {
-        return processStreamResultMessage( true, context );
+        return processStreamResultMessage( context, true );
     }
 
     private BoltStateMachineState processDiscardAllMessage( StateMachineContext context ) throws BoltConnectionFatality
     {
-        return processStreamResultMessage( false, context );
+        return processStreamResultMessage( context, false );
     }
 
     private BoltStateMachineState processResetMessage( StateMachineContext context ) throws BoltConnectionFatality
@@ -102,12 +104,12 @@ public class StreamingState implements BoltStateMachineState
         return success ? readyState : failedState;
     }
 
-    private BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws BoltConnectionFatality
+    private BoltStateMachineState processStreamResultMessage( StateMachineContext context, boolean pull ) throws BoltConnectionFatality
     {
         try
         {
-            context.connectionState().getStatementProcessor().streamResult( recordStream ->
-                    context.connectionState().getResponseHandler().onRecords( recordStream, pull ) );
+            ResultConsumer resultConsumer = new ResultConsumerV1Adaptor( context, pull );
+            context.connectionState().getStatementProcessor().streamResult( resultConsumer );
 
             return readyState;
         }

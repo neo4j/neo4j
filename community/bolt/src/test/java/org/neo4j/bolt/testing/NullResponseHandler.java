@@ -19,15 +19,15 @@
  */
 package org.neo4j.bolt.testing;
 
-import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.values.AnyValue;
 
 /**
  * Used by tests when the response for a request is not relevant.
  */
-public class NullResponseHandler implements BoltResponseHandler
+public class NullResponseHandler extends BoltResponseHandlerV1Adaptor
 {
     private static final NullResponseHandler INSTANCE = new NullResponseHandler();
 
@@ -41,7 +41,13 @@ public class NullResponseHandler implements BoltResponseHandler
     }
 
     @Override
-    public void onRecords( BoltResult result, boolean pull )
+    public boolean onPullRecords( BoltResult result, long size ) throws Exception
+    {
+        return false;
+    }
+
+    @Override
+    public void onDiscardRecords( BoltResult result ) throws Exception
     {
         // this page intentionally left blank
     }

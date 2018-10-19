@@ -121,7 +121,7 @@ class StreamingStateIT extends BoltStateMachineStateTestBase
 
         // When
         BoltResponseHandler handler = mock( BoltResponseHandler.class );
-        doThrow( new RuntimeException( "Fail" ) ).when( handler ).onRecords( any(), anyBoolean() );
+        doThrow( new RuntimeException( "Fail" ) ).when( handler ).onPullRecords( any(), anyBoolean() );
         machine.process( message, handler );
 
         // Then

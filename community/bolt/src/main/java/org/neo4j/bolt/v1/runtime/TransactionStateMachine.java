@@ -493,7 +493,7 @@ public class TransactionStateMachine implements StatementProcessor
             boolean success = false;
             try
             {
-                resultConsumer.accept( ctx.currentResult );
+                resultConsumer.consume( ctx.currentResult );
                 success = true;
             }
             finally

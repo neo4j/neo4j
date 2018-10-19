@@ -32,15 +32,9 @@ public class TransactionStreamingState extends AbstractStreamingState
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( boolean pull, StateMachineContext context ) throws Throwable
+    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        long size = pull ? Long.MAX_VALUE : -1;
-        ResultConsumer resultConsumer = new ResultConsumer( context, size );
         context.connectionState().getStatementProcessor().streamResult( resultConsumer );
-        if ( resultConsumer.hasMore() )
-        {
-            throw new IllegalArgumentException( "Shall not pull records in multiple times in bolt v3" );
-        }
         return readyState;
     }
 }

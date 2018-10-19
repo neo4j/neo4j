@@ -21,6 +21,10 @@ package org.neo4j.bolt.runtime;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
+import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
+import org.neo4j.bolt.v1.runtime.MutableConnectionState;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -34,7 +38,7 @@ class MutableConnectionStateTest
     private final MutableConnectionState state = new MutableConnectionState();
 
     private final BoltResult result = mock( BoltResult.class );
-    private final BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+    private final BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 
     @Test
     void shouldHandleOnRecordsWithoutResponseHandler() throws Exception
@@ -48,13 +52,23 @@ class MutableConnectionStateTest
     }
 
     @Test
-    void shouldHandleOnRecordsWitResponseHandler() throws Exception
+    void shouldHandleOnPullRecordsWitResponseHandler() throws Exception
     {
         state.setResponseHandler( responseHandler );
 
         state.onRecords( result, true );
 
-        verify( responseHandler ).onRecords( result, true );
+        verify( responseHandler ).onPullRecords( result, PullAllMessage.PULL_N_SIZE );
+    }
+
+    @Test
+    void shouldHandleOnDiscardRecordsWitResponseHandler() throws Exception
+    {
+        state.setResponseHandler( responseHandler );
+
+        state.onRecords( result, false );
+
+        verify( responseHandler ).onDiscardRecords( result );
     }
 
     @Test

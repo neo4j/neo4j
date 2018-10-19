@@ -21,6 +21,8 @@ package org.neo4j.bolt.runtime;
 
 import java.time.Clock;
 
+import org.neo4j.bolt.v1.runtime.MutableConnectionState;
+
 public interface StateMachineContext
 {
     void authenticatedAsUser( String username, String userAgent );

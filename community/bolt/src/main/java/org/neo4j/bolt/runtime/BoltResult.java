@@ -33,7 +33,9 @@ public interface BoltResult extends AutoCloseable
     /** Positional names for all fields in every record of this stream. */
     String[] fieldNames();
 
-    boolean hasMore( Visitor visitor, long size ) throws Exception;
+    boolean handlePullRecords( Visitor visitor, long size ) throws Exception;
+
+    void handleDiscardRecords( Visitor visitor ) throws Exception;
 
     @Override
     void close();
@@ -66,9 +68,14 @@ public interface BoltResult extends AutoCloseable
         }
 
         @Override
-        public boolean hasMore( Visitor visitor, long size )
+        public boolean handlePullRecords( Visitor visitor, long size )
         {
             return false;
+        }
+
+        @Override
+        public void handleDiscardRecords( Visitor visitor )
+        {
         }
 
         @Override

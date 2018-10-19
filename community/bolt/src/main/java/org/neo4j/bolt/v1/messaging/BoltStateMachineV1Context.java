@@ -25,7 +25,7 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.BoltStateMachineSPI;
-import org.neo4j.bolt.runtime.MutableConnectionState;
+import org.neo4j.bolt.v1.runtime.MutableConnectionState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 
 public class BoltStateMachineV1Context implements StateMachineContext

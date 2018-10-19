@@ -35,6 +35,7 @@ import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
@@ -448,7 +449,7 @@ public class BoltStateMachineV1Test
     public void shouldTerminateOnAuthExpiryDuringSTREAMINGPullAll() throws Throwable
     {
         // Given
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
                 .onRecords( any(), anyBoolean() );
         BoltStateMachine machine = init( newMachine() );
@@ -473,7 +474,7 @@ public class BoltStateMachineV1Test
     public void shouldTerminateOnAuthExpiryDuringSTREAMINGDiscardAll() throws Throwable
     {
         // Given
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
         doThrow( new AuthorizationExpiredException( "Auth expired!" ) ).when( responseHandler )
                 .onRecords( any(), anyBoolean() );
         BoltStateMachine machine = init( newMachine() );
@@ -647,7 +648,7 @@ public class BoltStateMachineV1Test
         BoltStateMachine machine = init( newMachine() );
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
 
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
         ((BoltStateMachineV1) machine).connectionState().setResponseHandler( responseHandler );
         machine.markFailed( error );
 
@@ -665,7 +666,7 @@ public class BoltStateMachineV1Test
         machine.process( new RunMessage( "RETURN 42", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
 
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 
         machine.markForTermination();
         machine.process( PullAllMessage.INSTANCE, responseHandler );
@@ -726,7 +727,7 @@ public class BoltStateMachineV1Test
     {
         // Given
         BoltStateMachine machine = init( newMachine() );
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
         machine.markFailed( error );
@@ -768,7 +769,7 @@ public class BoltStateMachineV1Test
         // Given
         BoltStateMachine machine = init( newMachine() );
         machine.markFailed( Neo4jError.from( new RuntimeException() ) );
-        BoltResponseHandler responseHandler = mock( BoltResponseHandler.class );
+        BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 
         Neo4jError error = Neo4jError.from( Status.Request.NoThreadsAvailable, "no threads" );
         machine.markFailed( error );

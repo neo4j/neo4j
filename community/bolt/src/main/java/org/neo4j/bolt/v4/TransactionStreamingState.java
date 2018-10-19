@@ -31,11 +31,10 @@ public class TransactionStreamingState extends AbstractStreamingState
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( long size, StateMachineContext context ) throws Throwable
+    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
-        ResultConsumer resultConsumer = new ResultConsumer( context, size );
         context.connectionState().getStatementProcessor().streamResult( resultConsumer );
-        if ( resultConsumer.hasMore )
+        if ( resultConsumer.hasMore() )
         {
             return this;
         }

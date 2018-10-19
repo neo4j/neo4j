@@ -35,19 +35,18 @@ import static org.neo4j.util.Preconditions.checkState;
 public abstract class AbstractStreamingState extends FailSafeBoltStateMachineState
 {
     protected BoltStateMachineState readyState;
-    public static long DISCARD_ALL = -1;
 
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Throwable
     {
         if ( message instanceof DiscardAllMessage )
         {
-            return processStreamResultMessage( DISCARD_ALL, context );
+            return processStreamResultMessage( new DiscardAllResultConsumer( context ), context );
         }
         if ( message instanceof PullNMessage )
         {
             long size = ((PullNMessage) message).n();
-            return processStreamResultMessage( size, context );
+            return processStreamResultMessage( new PullResultConsumer( context, size ), context );
         }
         return null;
     }
@@ -57,7 +56,7 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    abstract protected BoltStateMachineState processStreamResultMessage( long size, StateMachineContext context ) throws Throwable;
+    abstract protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable;
 
     @Override
     protected void assertInitialized()

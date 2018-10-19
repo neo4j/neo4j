@@ -28,7 +28,11 @@ import java.util.Optional;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+<<<<<<< HEAD
 import org.neo4j.exceptions.KernelException;
+=======
+import org.neo4j.bolt.v4.ResultConsumer;
+>>>>>>> Fixed compilation errors
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -69,6 +73,15 @@ class TransactionStateMachineTest
     private TransactionStateMachineV1SPI stateMachineSPI;
     private TransactionStateMachine.MutableTransactionState mutableState;
     private TransactionStateMachine stateMachine;
+    private static EmptyResultConsumer EMPTY = new EmptyResultConsumer();
+    private static EmptyResultConsumer ERROR = new EmptyResultConsumer()
+    {
+        @Override
+        public void consume( BoltResult boltResult ) throws Exception
+        {
+            throw new RuntimeException( "some error" );
+        }
+    };
 
     @BeforeEach
     void createMocks()
@@ -296,10 +309,7 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
-        stateMachine.streamResult( boltResult ->
-        {
-
-        } );
+        stateMachine.streamResult( EMPTY );
 
         verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread();
     }
@@ -331,9 +341,7 @@ class TransactionStateMachineTest
 
         TransactionTerminatedException e = assertThrows( TransactionTerminatedException.class, () ->
         {
-            stateMachine.streamResult( boltResult ->
-            {
-            } );
+            stateMachine.streamResult( EMPTY );
         } );
         assertEquals( Status.Transaction.TransactionTimedOut, e.status() );
     }
@@ -368,10 +376,7 @@ class TransactionStateMachineTest
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.streamResult( boltResult ->
-            {
-                throw new RuntimeException( "some error" );
-            } );
+            stateMachine.streamResult( ERROR );
         } );
         assertEquals( "some error", e.getMessage() );
 
@@ -391,10 +396,7 @@ class TransactionStateMachineTest
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
             stateMachine.beginTransaction( null );
-            stateMachine.streamResult( boltResult ->
-            {
-
-            } );
+            stateMachine.streamResult( EMPTY );
             stateMachine.run( "SOME STATEMENT", null );
         } );
         assertEquals( "some error", e.getMessage() );
@@ -412,10 +414,7 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.beginTransaction( null );
-        stateMachine.streamResult( boltResult ->
-        {
-
-        });
+        stateMachine.streamResult( EMPTY );
         stateMachine.run( "SOME STATEMENT", null );
 
         assertNotNull( stateMachine.ctx.currentResultHandle );
@@ -423,10 +422,7 @@ class TransactionStateMachineTest
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.streamResult( boltResult ->
-            {
-                throw new RuntimeException( "some error" );
-            } );
+            stateMachine.streamResult( ERROR );
         } );
         assertEquals( "some error", e.getMessage() );
 
@@ -535,5 +531,19 @@ class TransactionStateMachineTest
         when( resultHandle.start() ).thenThrow( t );
 
         return resultHandle;
+    }
+
+    private static class EmptyResultConsumer implements ResultConsumer
+    {
+        @Override
+        public boolean hasMore()
+        {
+            return false;
+        }
+
+        @Override
+        public void consume( BoltResult boltResult ) throws Exception
+        {
+        }
     }
 }

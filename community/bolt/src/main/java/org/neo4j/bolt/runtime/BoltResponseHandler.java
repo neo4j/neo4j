@@ -28,7 +28,9 @@ import org.neo4j.values.AnyValue;
  */
 public interface BoltResponseHandler
 {
-    boolean onRecords( BoltResult result, long size ) throws Exception;
+    boolean onPullRecords( BoltResult result, long size ) throws Exception;
+
+    void onDiscardRecords( BoltResult result ) throws Exception;
 
     void onMetadata( String key, AnyValue value );
 
