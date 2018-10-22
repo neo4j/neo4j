@@ -161,6 +161,8 @@ Feature "ListOperations": Scenario "Use list lookup based on parameters when the
 Feature "ListOperations": Scenario "Use list lookup based on parameters when there is rhs type information"
 Feature "ListOperations": Scenario "Fail at runtime when attempting to index with a String into a List"
 Feature "ListOperations": Scenario "Fail at runtime when trying to index into a list with a list"
+Feature "ListOperations": Scenario "List slice with parameterised range"
+Feature "ListOperations": Scenario "List slice with parameterised invalid range"
 Feature "DeleteAcceptance": Scenario "Delete node from a list"
 Feature "DeleteAcceptance": Scenario "Delete relationship from a list"
 Feature "FunctionsAcceptance": Scenario "`properties()` on a node"
@@ -245,3 +247,4 @@ Feature "TemporalParseAcceptance": Scenario "Should parse local date time from s
 Feature "TemporalParseAcceptance": Scenario "Should parse date time from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse date time with named time zone from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse duration from string"
+Feature "NullOperator": Scenario "Property not null check on null node"

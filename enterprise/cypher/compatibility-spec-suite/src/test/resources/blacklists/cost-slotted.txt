@@ -13,3 +13,6 @@ Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of
 
 // To classify
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+
+// Formalized and fixed in Neo4j 3.5
+Feature "NullOperator": Scenario "Property not null check on null node"

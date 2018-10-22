@@ -1,6 +1,7 @@
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging relationship with null property"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing on merging node with null property"
 Feature "MiscellaneousErrorAcceptance": Scenario "Failing when setting a list of maps as a property"
+Feature "NullOperator": Scenario "Property not null check on null node"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure that takes no arguments and yields no results"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with explicit arguments that drops all result fields"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with argument of type INTEGER accepts value of type FLOAT"
