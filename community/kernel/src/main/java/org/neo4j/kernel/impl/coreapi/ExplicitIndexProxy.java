@@ -601,7 +601,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                 {
                     return reference;
                 }
-                else
+                else if ( ktx.securityContext().mode().allowsWrites() )
                 {
                     //remove it from index so it doesn't happen again
                     try
@@ -660,7 +660,7 @@ public class ExplicitIndexProxy<T extends PropertyContainer> implements Index<T>
                 {
                     return reference;
                 }
-                else
+                else if ( ktx.securityContext().mode().allowsWrites() )
                 {
                     //remove it from index so it doesn't happen again
                     try

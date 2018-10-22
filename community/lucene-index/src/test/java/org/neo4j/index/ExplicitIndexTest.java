@@ -33,12 +33,18 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.security.AccessMode.Static.READ;
+import static org.neo4j.internal.kernel.api.security.AuthSubject.ANONYMOUS;
 
 public class ExplicitIndexTest
 {
@@ -356,6 +362,72 @@ public class ExplicitIndexTest
             }
             tx.success();
         }
+    }
+
+    @Test
+    public void shouldAllowReadTransactionToSkipDeletedNodes()
+    {
+        // given an indexed node
+        String indexName = "index";
+        Index<Node> nodeIndex;
+        Node node;
+        String key = "key";
+        String value = "value";
+        try ( Transaction tx = db.beginTx() )
+        {
+            nodeIndex = db.index().forNodes( indexName );
+            node = db.createNode();
+            nodeIndex.add( node, key, value );
+            tx.success();
+        }
+        // delete the node, but keep it in the index
+        try ( Transaction tx = db.beginTx() )
+        {
+            node.delete();
+            tx.success();
+        }
+
+        // when
+        try ( Transaction tx = db.beginTransaction( explicit, new SecurityContext( ANONYMOUS, READ ) ) )
+        {
+            IndexHits<Node> hits = nodeIndex.get( key, value );
+            // then
+            assertNull( hits.getSingle() );
+        }
+        // also the fact that a read-only tx can do this w/o running into permission violation is good
+    }
+
+    @Test
+    public void shouldAllowReadTransactionToSkipDeletedRelationships()
+    {
+        // given an indexed relationship
+        String indexName = "index";
+        Index<Relationship> relationshipIndex;
+        Relationship relationship;
+        String key = "key";
+        String value = "value";
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationshipIndex = db.index().forRelationships( indexName );
+            relationship = db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
+            relationshipIndex.add( relationship, key, value );
+            tx.success();
+        }
+        // delete the relationship, but keep it in the index
+        try ( Transaction tx = db.beginTx() )
+        {
+            relationship.delete();
+            tx.success();
+        }
+
+        // when
+        try ( Transaction tx = db.beginTransaction( explicit, new SecurityContext( ANONYMOUS, READ ) ) )
+        {
+            IndexHits<Relationship> hits = relationshipIndex.get( key, value );
+            // then
+            assertNull( hits.getSingle() );
+        }
+        // also the fact that a read-only tx can do this w/o running into permission violation is good
     }
 
     private boolean relationshipExistsByQuery( RelationshipIndex index, Node startNode, Node endNode, boolean specifyStartNode )
