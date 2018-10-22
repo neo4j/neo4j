@@ -275,6 +275,10 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<Integer> middleware_akka_sink_parallelism_level =
             setting( "causal_clustering.middleware.akka.sink-parallelism", INTEGER, Integer.toString( 2 ) );
 
+    /*
+        Begin akka failure detector
+        setting descriptions copied from reference.conf in akka-cluster
+     */
     @Internal
     @Description( "Akka cluster phi accrual failure detector. " +
             "How often keep-alive heartbeat messages should be sent to each connection." )
@@ -288,7 +292,7 @@ public class CausalClusteringSettings implements LoadableConfig
             "a quick detection in the event of a real crash. Conversely, a high " +
             "threshold generates fewer mistakes but needs more time to detect actual crashes." )
     public static final Setting<Double> akka_failure_detector_threshold =
-            setting( "causal_clustering.middleware.akka.failure_detector.threshold", DOUBLE, "8.0" );
+            setting( "causal_clustering.middleware.akka.failure_detector.threshold", DOUBLE, "10.0" );
 
     @Internal
     @Description( "Akka cluster phi accrual failure detector. " +
@@ -308,10 +312,11 @@ public class CausalClusteringSettings implements LoadableConfig
     @Internal
     @Description( "Akka cluster phi accrual failure detector. " +
             "Number of potentially lost/delayed heartbeats that will be " +
-            "accepted before considering it to be an anomaly. " + "This margin is important to be able to survive sudden, occasional, " +
+            "accepted before considering it to be an anomaly. " +
+            "This margin is important to be able to survive sudden, occasional, " +
             "pauses in heartbeat arrivals, due to for example garbage collect or network drop." )
     public static final Setting<Duration> akka_failure_detector_acceptable_heartbeat_pause =
-            setting( "causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause", DURATION, "3s" );
+            setting( "causal_clustering.middleware.akka.failure_detector.acceptable_heartbeat_pause", DURATION, "4s" );
 
     @Internal
     @Description( "Akka cluster phi accrual failure detector. " +
@@ -326,6 +331,9 @@ public class CausalClusteringSettings implements LoadableConfig
             "will start after this period, even though no heartbeat message has been received." )
     public static final Setting<Duration> akka_failure_detector_expected_response_after =
             setting( "causal_clustering.middleware.akka.failure_detector.expected_response_after", DURATION, "1s" );
+    /*
+        End akka failure detector
+     */
 
     @Description( "The maximum file size before the storage file is rotated (in unit of entries)" )
     public static final Setting<Integer> last_flushed_state_size =
