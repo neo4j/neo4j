@@ -25,7 +25,9 @@ import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.Before;
 import org.mockito.Mockito;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.collection.pool.Pool;
@@ -104,7 +106,8 @@ public class KernelTransactionTestBase
     protected final StatementOperationParts statementOperations = mock( StatementOperationParts.class );
     protected CollectionsFactory collectionsFactory;
 
-    private final long defaultTransactionTimeoutMillis = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
+    protected final Config config = Config.defaults();
+    private final long defaultTransactionTimeoutMillis = config.get( GraphDatabaseSettings.transaction_timeout ).toMillis();
 
     @Before
     public void before() throws Exception
@@ -163,7 +166,7 @@ public class KernelTransactionTestBase
 
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
-        return new KernelTransactionImplementation( Config.defaults(), statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory,
+        return new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory,
                 commitProcess, transactionMonitor, auxTxStateManager, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                 new CanWrite(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
@@ -173,15 +176,13 @@ public class KernelTransactionTestBase
     public class CapturingCommitProcess implements TransactionCommitProcess
     {
         private long txId = TransactionIdStore.BASE_TX_ID;
-        public TransactionRepresentation transaction;
+        public List<TransactionRepresentation> transactions = new ArrayList<>();
 
         @Override
         public long commit( TransactionToApply batch, CommitEvent commitEvent,
                             TransactionApplicationMode mode )
         {
-            assert transaction == null : "Designed to only allow one transaction";
-            assert batch.next() == null : "Designed to only allow one transaction";
-            transaction = batch.transactionRepresentation();
+            transactions.add( batch.transactionRepresentation() );
             return ++txId;
         }
     }

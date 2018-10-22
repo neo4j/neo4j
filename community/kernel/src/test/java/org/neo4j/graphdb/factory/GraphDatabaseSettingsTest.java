@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
@@ -35,6 +36,7 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.HttpConnector;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -46,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_tracing_level;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.HttpConnector.Encryption.TLS;
 
@@ -431,5 +435,31 @@ class GraphDatabaseSettingsTest
                     "Value \"" + invalid + "\" should be considered invalid" );
 
         }
+    }
+
+    @Test
+    void transactionSamplingCanBePercentageValues()
+    {
+        IntStream range = IntStream.range( 1, 101 );
+        range.forEach( percentage ->
+        {
+            Config config = Config.defaults( transaction_sampling_percentage, String.valueOf( percentage ) );
+            int configuredSampling = config.get( transaction_sampling_percentage );
+            assertEquals( percentage, configuredSampling );
+        } );
+        assertThrows( InvalidSettingException.class, () -> Config.defaults( transaction_sampling_percentage, "0" ) );
+        assertThrows( InvalidSettingException.class, () -> Config.defaults( transaction_sampling_percentage, "101" ) );
+        assertThrows( InvalidSettingException.class, () -> Config.defaults( transaction_sampling_percentage, "10101" ) );
+    }
+
+    @Test
+    void validateTransactionTracingLevelValues()
+    {
+        TransactionTracingLevel[] values = TransactionTracingLevel.values();
+        for ( TransactionTracingLevel level : values )
+        {
+            assertEquals( level, Config.defaults( transaction_tracing_level, level.name() ).get( transaction_tracing_level ) );
+        }
+        assertThrows( InvalidSettingException.class, () -> Config.defaults( transaction_tracing_level, "TRACE" ) );
     }
 }

@@ -30,6 +30,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.TransactionExecutionStatistic;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
@@ -140,4 +141,10 @@ public interface KernelTransactionHandle
      * @return transaction statistics projection
      */
     TransactionExecutionStatistic transactionStatistic();
+
+    /**
+     * Provide stack trace of particular transaction initialisation call if that is available, empty record otherwise
+     * @return transaction initialization trace
+     */
+    TransactionInitializationTrace transactionInitialisationTrace();
 }

@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.time.SystemNanoClock;
 
@@ -53,6 +54,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final ExecutingQueryList executingQueries;
     private final Map<String,Object> metaData;
     private final long userTransactionId;
+    private final TransactionInitializationTrace initializationTrace;
 
     KernelTransactionImplementationHandle( KernelTransactionImplementation tx, SystemNanoClock clock )
     {
@@ -66,6 +68,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.executingQueries = tx.executingQueries();
         this.metaData = tx.getMetaData();
         this.userTransactionId = tx.userTransactionId();
+        this.initializationTrace = tx.getInitializationTrace();
         this.tx = tx;
         this.clock = clock;
     }
@@ -165,6 +168,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         {
             return TransactionExecutionStatistic.NOT_AVAILABLE;
         }
+    }
+
+    @Override
+    public TransactionInitializationTrace transactionInitialisationTrace()
+    {
+        return initializationTrace;
     }
 
     @Override

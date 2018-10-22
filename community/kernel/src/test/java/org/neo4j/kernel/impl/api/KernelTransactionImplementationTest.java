@@ -46,10 +46,13 @@ import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.auxiliary.AuxiliaryTransactionState;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -65,6 +68,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
@@ -115,6 +119,27 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                 new Object[]{readTxInitializer, false, "readOperationsInNewTransaction"},
                 new Object[]{writeTxInitializer, true, "write"}
         );
+    }
+
+    @Test
+    public void changeTransactionTracingWithoutRestart() throws TransactionFailureException
+    {
+        try ( KernelTransaction transaction = newTransaction( loginContext() ) )
+        {
+            // WHEN
+            transactionInitializer.accept( transaction );
+            assertSame( TransactionInitializationTrace.NONE, ((KernelTransactionImplementation) transaction).getInitializationTrace() );
+            transaction.success();
+        }
+        config.updateDynamicSetting( GraphDatabaseSettings.transaction_tracing_level.name(), TransactionTracingLevel.ALL.name(), "test" );
+        try ( KernelTransaction transaction = newTransaction( loginContext() ) )
+        {
+            // WHEN
+            transactionInitializer.accept( transaction );
+            assertNotSame( TransactionInitializationTrace.NONE, ((KernelTransactionImplementation) transaction).getInitializationTrace() );
+            transaction.success();
+        }
+
     }
 
     @Test
@@ -415,9 +440,9 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
         }
 
         // THEN start time and last tx when started should have been taken from when the transaction started
-        assertEquals( 5L, commitProcess.transaction.getLatestCommittedTxWhenStarted() );
-        assertEquals( startingTime, commitProcess.transaction.getTimeStarted() );
-        assertEquals( startingTime + 5, commitProcess.transaction.getTimeCommitted() );
+        assertEquals( 5L, getObservedFirstTransaction().getLatestCommittedTxWhenStarted() );
+        assertEquals( startingTime, getObservedFirstTransaction().getTimeStarted() );
+        assertEquals( startingTime + 5, getObservedFirstTransaction().getTimeCommitted() );
     }
 
     @Test
@@ -776,6 +801,11 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                     loginContext().authorize( s -> -1, GraphDatabaseSettings.DEFAULT_DATABASE_NAME ), 0L, 0L );
             tx.close();
         }
+    }
+
+    private TransactionRepresentation getObservedFirstTransaction()
+    {
+        return commitProcess.transactions.get( 0 );
     }
 
     private static class ThreadBasedCpuClock extends CpuClock

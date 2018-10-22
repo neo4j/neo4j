@@ -75,6 +75,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -107,8 +109,12 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 import static java.lang.String.format;
+import static java.lang.Thread.currentThread;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_sampling_percentage;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_tracing_level;
+import static org.neo4j.kernel.impl.api.transaction.trace.TraceProviderFactory.getTraceProvider;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.INTERNAL;
 
 /**
@@ -180,6 +186,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
     private final Operations operations;
+    private volatile TraceProvider traceProvider;
+    private volatile TransactionInitializationTrace initializationTrace;
 
     /**
      * Lock prevents transaction {@link #markForTermination(Status)}  transaction termination} from interfering with
@@ -237,6 +245,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         constraintSemantics,
                         indexProviders,
                         config );
+        traceProvider = getTraceProvider( config );
+        registerConfigChangeListeners( config );
         this.collectionsFactory = collectionsFactorySupplier.create();
     }
 
@@ -266,9 +276,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
         PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
-        this.statistics.init( Thread.currentThread().getId(), pageCursorTracer );
+        this.statistics.init( currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer );
         this.operations.initialize();
+        this.initializationTrace = traceProvider.getTraceInfo();
         return this;
     }
 
@@ -437,7 +448,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         writeState = writeState.upgradeToDataWrites();
     }
 
-    void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
+    private void upgradeToSchemaWrites() throws InvalidTransactionTypeKernelException
     {
         schemaWriteGuard.assertSchemaWritesAllowed();
         writeState = writeState.upgradeToSchemaWrites();
@@ -957,6 +968,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             userTransactionId = 0;
             statistics.reset();
             operations.release();
+            initializationTrace = null;
             pool.release( this );
         }
         finally
@@ -1080,6 +1092,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     long userTransactionId()
     {
         return userTransactionId;
+    }
+
+    TransactionInitializationTrace getInitializationTrace()
+    {
+        return initializationTrace;
     }
 
     public Statistics getStatistics()
@@ -1243,6 +1260,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public PropertyCursor ambientPropertyCursor()
     {
         return operations.propertyCursor();
+    }
+
+    private void registerConfigChangeListeners( Config config )
+    {
+        config.registerDynamicUpdateListener( transaction_tracing_level, ( before, after ) -> traceProvider = getTraceProvider( config ) );
+        config.registerDynamicUpdateListener( transaction_sampling_percentage, ( before, after ) -> traceProvider = getTraceProvider( config ) );
     }
 
     /**

@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrace;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 
 /**
@@ -134,6 +135,12 @@ public class TestKernelTransactionHandle implements KernelTransactionHandle
     public TransactionExecutionStatistic transactionStatistic()
     {
         return TransactionExecutionStatistic.NOT_AVAILABLE;
+    }
+
+    @Override
+    public TransactionInitializationTrace transactionInitialisationTrace()
+    {
+        return TransactionInitializationTrace.NONE;
     }
 
     @Override

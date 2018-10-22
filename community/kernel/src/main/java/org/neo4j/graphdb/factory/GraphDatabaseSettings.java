@@ -45,6 +45,7 @@ import org.neo4j.kernel.configuration.Migrator;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.Title;
 import org.neo4j.kernel.configuration.ssl.SslPolicyConfigValidator;
+import org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.logging.Level;
 import org.neo4j.logging.LogTimeZone;
@@ -81,6 +82,7 @@ import static org.neo4j.kernel.configuration.Settings.pathSetting;
 import static org.neo4j.kernel.configuration.Settings.range;
 import static org.neo4j.kernel.configuration.Settings.setting;
 import static org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig.LEGACY_POLICY_NAME;
+import static org.neo4j.kernel.impl.api.transaction.trace.TransactionTracingLevel.DISABLED;
 import static org.neo4j.util.Preconditions.checkArgument;
 
 /**
@@ -419,6 +421,16 @@ public class GraphDatabaseSettings implements LoadableConfig
     @ReplacedBy( "dbms.transaction.timeout" )
     public static final Setting<Boolean> execution_guard_enabled =
             setting( "unsupported.dbms.executiontime_limit.enabled", BOOLEAN, FALSE );
+
+    @Description( "Transaction creation tracing level." )
+    @Dynamic
+    public static final Setting<TransactionTracingLevel> transaction_tracing_level =
+            setting( "dbms.transaction.tracing.level", optionsIgnoreCase( TransactionTracingLevel.class ), DISABLED.name() );
+
+    @Description( "Transaction sampling percentage." )
+    @Dynamic
+    public static final Setting<Integer> transaction_sampling_percentage =
+            buildSetting( "dbms.transaction.sampling.percentage", INTEGER, "5" ).constraint( range( 1, 100 ) ).build();
 
      // @see Status.Transaction#TransactionTimedOut
     @Description( "The maximum time interval of a transaction within which it should be completed." )
