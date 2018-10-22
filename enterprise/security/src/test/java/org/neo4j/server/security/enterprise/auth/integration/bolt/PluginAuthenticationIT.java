@@ -26,15 +26,17 @@ import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthenticationPlugin;
 import org.neo4j.server.security.enterprise.auth.plugin.TestCustomCacheableAuthenticationPlugin;
@@ -42,8 +44,7 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.helpers.collection.MapUtil.map;
 
 public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
@@ -65,203 +66,183 @@ public class PluginAuthenticationIT extends EnterpriseAuthenticationTestBase
     );
 
     @Override
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Map<Setting<?>,String> getSettings()
     {
-        return super.getSettingsFunction()
-                .andThen( settings -> settings.put( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS ) );
+        return Collections.singletonMap( SecuritySettings.auth_providers, DEFAULT_TEST_PLUGIN_REALMS );
     }
 
     @Test
-    public void shouldAuthenticateWithTestAuthenticationPlugin() throws Throwable
+    public void shouldAuthenticateWithTestAuthenticationPlugin()
     {
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestAuthenticationPlugin" ) );
+        assertAuth( "neo4j", "neo4j", "plugin-TestAuthenticationPlugin" );
     }
 
     @Test
     public void shouldAuthenticateWithTestCacheableAuthenticationPlugin() throws Throwable
     {
-        Map<String,Object> authToken = authToken( "neo4j", "neo4j",
-                "plugin-TestCacheableAuthenticationPlugin" );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_cache_ttl.name(), "60m" );
 
         TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.set( 0 );
 
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_cache_ttl, "60m" ) );
-
         // When we log in the first time our plugin should get a call
-        assertConnectionSucceeds( authToken );
+        assertAuth( "neo4j", "neo4j", "plugin-TestCacheableAuthenticationPlugin" );
         assertThat( TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
 
         // When we log in the second time our plugin should _not_ get a call since authentication info should be cached
-        reconnect();
-        assertConnectionSucceeds( authToken );
+        assertAuth( "neo4j", "neo4j", "plugin-TestCacheableAuthenticationPlugin" );
         assertThat( TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
 
         // When we log in the with the wrong credentials it should fail and
         // our plugin should _not_ get a call since authentication info should be cached
-        reconnect();
-        authToken.put( "credentials", "wrong_password" );
-        assertConnectionFails( authToken );
+        assertAuthFail( "neo4j", "wrong_password", "plugin-TestCacheableAuthenticationPlugin" );
         assertThat( TestCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
     }
 
     @Test
     public void shouldAuthenticateWithTestCustomCacheableAuthenticationPlugin() throws Throwable
     {
-        Map<String,Object> authToken = authToken( "neo4j", "neo4j",
-                "plugin-TestCustomCacheableAuthenticationPlugin" );
-
         TestCustomCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.set( 0 );
 
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_cache_ttl, "60m" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_cache_ttl.name(), "60m" );
 
         // When we log in the first time our plugin should get a call
-        assertConnectionSucceeds( authToken );
+        assertAuth( "neo4j", "neo4j", "plugin-TestCustomCacheableAuthenticationPlugin" );
         assertThat( TestCustomCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
 
         // When we log in the second time our plugin should _not_ get a call since authentication info should be cached
-        reconnect();
-        assertConnectionSucceeds( authToken );
+        assertAuth( "neo4j", "neo4j", "plugin-TestCustomCacheableAuthenticationPlugin" );
         assertThat( TestCustomCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
 
         // When we log in the with the wrong credentials it should fail and
         // our plugin should _not_ get a call since authentication info should be cached
-        reconnect();
-        authToken.put( "credentials", "wrong_password" );
-        assertConnectionFails( authToken );
+        assertAuthFail( "neo4j", "wrong_password", "plugin-TestCustomCacheableAuthenticationPlugin" );
         assertThat( TestCustomCacheableAuthenticationPlugin.getAuthenticationInfoCallCount.get(), equalTo( 1 ) );
     }
 
     @Test
-    public void shouldAuthenticateAndAuthorizeWithTestAuthPlugin() throws Throwable
+    public void shouldAuthenticateAndAuthorizeWithTestAuthPlugin()
     {
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestAuthPlugin" ) );
-        assertReadSucceeds();
-        assertWriteFails( "neo4j", "reader" );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestAuthPlugin" ) )
+        {
+            assertReadSucceeds( driver );
+            assertWriteFails( driver );
+        }
     }
 
     @Test
-    public void shouldAuthenticateAndAuthorizeWithCacheableTestAuthPlugin() throws Throwable
+    public void shouldAuthenticateAndAuthorizeWithCacheableTestAuthPlugin()
     {
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAuthPlugin" ) );
-        assertReadSucceeds();
-        assertWriteFails( "neo4j", "reader" );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestCacheableAuthPlugin" ) )
+        {
+            assertReadSucceeds( driver );
+            assertWriteFails( driver );
+        }
     }
 
     @Test
     public void shouldAuthenticateWithTestCacheableAuthPlugin() throws Throwable
     {
-        Map<String,Object> authToken = authToken( "neo4j", "neo4j",
-                "plugin-TestCacheableAuthPlugin" );
-
         TestCacheableAuthPlugin.getAuthInfoCallCount.set( 0 );
 
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_cache_ttl, "60m" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_cache_ttl.name(), "60m" );
 
         // When we log in the first time our plugin should get a call
-        assertConnectionSucceeds( authToken );
-        assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
-        assertReadSucceeds();
-        assertWriteFails( "neo4j", "reader" );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestCacheableAuthPlugin" ) )
+        {
+            assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
+            assertReadSucceeds( driver );
+            assertWriteFails( driver );
+        }
 
         // When we log in the second time our plugin should _not_ get a call since auth info should be cached
-        reconnect();
-        assertConnectionSucceeds( authToken );
-        assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
-        assertReadSucceeds();
-        assertWriteFails( "neo4j", "reader" );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestCacheableAuthPlugin" ) )
+        {
+            assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
+            assertReadSucceeds( driver );
+            assertWriteFails( driver );
+        }
 
         // When we log in the with the wrong credentials it should fail and
         // our plugin should _not_ get a call since auth info should be cached
-        reconnect();
-        authToken.put( "credentials", "wrong_password" );
-        assertConnectionFails( authToken );
+        assertAuthFail( "neo4j", "wrong_password", "plugin-TestCacheableAuthPlugin" );
         assertThat( TestCacheableAuthPlugin.getAuthInfoCallCount.get(), equalTo( 1 ) );
     }
 
     @Test
     public void shouldAuthenticateAndAuthorizeWithTestCombinedAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings(
-                settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCombinedAuthPlugin" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_providers.name(), "plugin-TestCombinedAuthPlugin" );
 
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) );
-        assertReadSucceeds();
-        assertWriteFails( "neo4j", "reader" );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestCombinedAuthPlugin" ) )
+        {
+            assertReadSucceeds( driver );
+            assertWriteFails( driver );
+        }
     }
 
     @Test
     public void shouldAuthenticateAndAuthorizeWithTwoSeparateTestPlugins() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers,
-                "plugin-TestAuthenticationPlugin,plugin-TestAuthorizationPlugin" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_providers.name(), "plugin-TestAuthenticationPlugin,plugin-TestAuthorizationPlugin" );
 
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", null ) );
-        assertReadSucceeds();
-        assertWriteFails( "neo4j", "reader" );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j" ) )
+        {
+            assertReadSucceeds( driver );
+            assertWriteFails( driver );
+        }
     }
 
     @Test
     public void shouldFailIfAuthorizationExpiredWithAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings(
-                settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_providers.name(), "plugin-TestCacheableAdminAuthPlugin" );
 
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
-        assertReadSucceeds();
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) )
+        {
+            assertReadSucceeds( driver );
 
-        // When
-        client.send( util.chunk(
-                new RunMessage( "CALL dbms.security.clearAuthCache()" ), PullAllMessage.INSTANCE ) );
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
+            // When
+            clearAuthCacheFromDifferentConnection( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" );
 
-        // Then
-        client.send( util.chunk(
-                new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
-        assertThat( client, util.eventuallyReceives(
-                msgFailure( Status.Security.AuthorizationExpired,
-                        "Plugin 'plugin-TestCacheableAdminAuthPlugin' authorization info expired." ) ) );
+            // Then
+            assertAuthorizationExpired( driver );
+        }
     }
 
     @Test
     public void shouldSucceedIfAuthorizationExpiredWithinTransactionWithAuthPlugin() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings(
-                settings -> settings.put( SecuritySettings.auth_providers, "plugin-TestCacheableAdminAuthPlugin" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_providers.name(), "plugin-TestCacheableAdminAuthPlugin" );
 
         // Then
-        assertConnectionSucceeds( authToken( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" ) );
-
-        client.send( util.chunk(
-                new RunMessage( "CALL dbms.security.clearAuthCache() MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
+        try ( Driver driver = connectDriver( "neo4j", "neo4j", "plugin-TestCacheableAdminAuthPlugin" );
+                Session session = driver.session() )
+        {
+            try ( Transaction tx = session.beginTransaction() )
+            {
+                tx.run( "CALL dbms.security.clearAuthCache()" );
+                assertThat( tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asInt(), greaterThanOrEqualTo( 0 ) );
+                tx.success();
+            }
+        }
     }
 
     @Test
     public void shouldAuthenticateWithTestCustomParametersAuthenticationPlugin() throws Throwable
     {
-        assertConnectionSucceeds( map(
-                "scheme", "custom",
-                "principal", "neo4j",
-                "realm", "plugin-TestCustomParametersAuthenticationPlugin",
-                "parameters", map( "my_credentials", Arrays.asList( 1L, 2L, 3L, 4L ) ) ) );
+        AuthToken token = AuthTokens.custom( "neo4j", "", "plugin-TestCustomParametersAuthenticationPlugin", "custom",
+                map( "my_credentials", Arrays.asList( 1L, 2L, 3L, 4L ) ) );
+        assertAuth( token );
     }
 
     @Test
     public void shouldPassOnAuthorizationExpiredException() throws Throwable
     {
-        restartNeo4jServerWithOverriddenSettings( settings -> settings.put( SecuritySettings.auth_providers,
-                "plugin-TestCombinedAuthPlugin" ) );
+        restartServerWithOverriddenSettings( SecuritySettings.auth_providers.name(), "plugin-TestCombinedAuthPlugin" );
 
-        assertConnectionSucceeds( authToken( "authorization_expired_user", "neo4j", null ) );
-
-        // Then
-        client.send( util.chunk(
-                new RunMessage( "MATCH (n) RETURN n" ), PullAllMessage.INSTANCE ) );
-        assertThat( client, util.eventuallyReceives(
-                msgFailure( Status.Security.AuthorizationExpired,
-                        "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +
-                        "authorization_expired_user needs to re-authenticate." ) ) );
+        try ( Driver driver = connectDriver( "authorization_expired_user", "neo4j" ) )
+        {
+            assertAuthorizationExpired( driver );
+        }
     }
 }

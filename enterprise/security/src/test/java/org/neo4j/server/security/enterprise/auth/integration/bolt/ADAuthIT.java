@@ -36,9 +36,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Consumer;
 
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
@@ -86,73 +87,71 @@ public class ADAuthIT extends EnterpriseAuthenticationTestBase
 {
     @Before
     @Override
-    public void setup()
+    public void setup() throws Exception
     {
         super.setup();
         getLdapServer().setConfidentialityRequired( false );
     }
 
+    @SuppressWarnings( "deprecation" )
     @Override
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Map<Setting<?>, String> getSettings()
     {
-        return super.getSettingsFunction().andThen( settings ->
-        {
-            settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
-            settings.put( SecuritySettings.native_authentication_enabled, "false" );
-            settings.put( SecuritySettings.native_authorization_enabled, "false" );
-            settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
-            settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
-            settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},ou=local,ou=users,dc=example,dc=com" );
-            settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
-            settings.put( SecuritySettings.ldap_authorization_system_username, "uid=admin,ou=system" );
-            settings.put( SecuritySettings.ldap_authorization_system_password, "secret" );
-            settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
-            settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
-            settings.put( SecuritySettings.ldap_authorization_user_search_filter,
-                    "(&(objectClass=*)(samaccountname={0}))" );
-            settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "memberOf" );
-            settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
-                        "cn=reader,ou=groups,dc=example,dc=com=reader;" +
-                        "cn=publisher,ou=groups,dc=example,dc=com=publisher;" +
-                        "cn=architect,ou=groups,dc=example,dc=com=architect;" +
-                        "cn=admin,ou=groups,dc=example,dc=com=admin" );
-            settings.put( SecuritySettings.procedure_roles, "test.allowedReadProcedure:role1" );
-            settings.put( SecuritySettings.ldap_read_timeout, "1s" );
-            settings.put( SecuritySettings.ldap_authentication_use_samaccountname, "true" );
-        } );
+        Map<Setting<?>,String> settings = new HashMap<>();
+        settings.put( SecuritySettings.auth_provider, SecuritySettings.LDAP_REALM_NAME );
+        settings.put( SecuritySettings.native_authentication_enabled, "false" );
+        settings.put( SecuritySettings.native_authorization_enabled, "false" );
+        settings.put( SecuritySettings.ldap_authentication_enabled, "true" );
+        settings.put( SecuritySettings.ldap_authorization_enabled, "true" );
+        settings.put( SecuritySettings.ldap_server, "0.0.0.0:10389" );
+        settings.put( SecuritySettings.ldap_authentication_user_dn_template, "cn={0},ou=local,ou=users,dc=example,dc=com" );
+        settings.put( SecuritySettings.ldap_authentication_cache_enabled, "true" );
+        settings.put( SecuritySettings.ldap_authorization_system_username, "uid=admin,ou=system" );
+        settings.put( SecuritySettings.ldap_authorization_system_password, "secret" );
+        settings.put( SecuritySettings.ldap_authorization_use_system_account, "true" );
+        settings.put( SecuritySettings.ldap_authorization_user_search_base, "dc=example,dc=com" );
+        settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(samaccountname={0}))" );
+        settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "memberOf" );
+        settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping,
+                "cn=reader,ou=groups,dc=example,dc=com=reader;" +
+                "cn=publisher,ou=groups,dc=example,dc=com=publisher;" +
+                "cn=architect,ou=groups,dc=example,dc=com=architect;" +
+                "cn=admin,ou=groups,dc=example,dc=com=admin" );
+        settings.put( SecuritySettings.procedure_roles, "test.allowedReadProcedure:role1" );
+        settings.put( SecuritySettings.ldap_read_timeout, "1s" );
+        settings.put( SecuritySettings.ldap_authentication_use_samaccountname, "true" );
+        return settings;
     }
 
     @Test
-    public void shouldLoginWithSamAccountName() throws Throwable
+    public void shouldLoginWithSamAccountName()
     {
         // dn: cn=n.neo4j,ou=local,ou=users,dc=example,dc=com
         assertAuth( "neo4j", "abc123" );
-        reconnect();
         assertAuth( "neo4j", "abc123" );
-        reconnect();
         // dn: cn=n.neo,ou=remote,ou=users,dc=example,dc=com
         assertAuth( "neo", "abc123" );
-        reconnect();
         assertAuth( "neo", "abc123" );
     }
 
     @Test
-    public void shouldFailLoginSamAccountNameWrongPassword() throws Throwable
+    public void shouldFailLoginSamAccountNameWrongPassword()
     {
         assertAuthFail( "neo4j", "wrong" );
     }
 
     @Test
-    public void shouldFailLoginSamAccountNameWithDN() throws Throwable
+    public void shouldFailLoginSamAccountNameWithDN()
     {
         assertAuthFail( "n.neo4j", "abc123" );
     }
 
     @Test
-    public void shouldReadWithSamAccountName() throws Throwable
+    public void shouldReadWithSamAccountName()
     {
-        assertAuth( "neo4j", "abc123" );
-        assertReadSucceeds();
+        try ( Driver driver = connectDriver( "neo4j", "abc123" ) )
+        {
+            assertReadSucceeds( driver );
+        }
     }
 }

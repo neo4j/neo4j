@@ -23,348 +23,358 @@
 package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
 import org.apache.directory.server.core.integ.AbstractLdapTestUnit;
-import org.junit.After;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Rule;
-import org.parboiled.common.StringUtils;
+import org.junit.rules.RuleChain;
 
-import java.net.SocketException;
-import java.util.LinkedHashMap;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
+import java.net.URL;
 import java.util.Map;
-import java.util.function.Consumer;
 
-import org.neo4j.bolt.v1.messaging.Neo4jPackV1;
-import org.neo4j.bolt.v1.messaging.request.InitMessage;
-import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.messaging.request.RunMessage;
-import org.neo4j.bolt.v1.transport.integration.Neo4jWithSocket;
-import org.neo4j.bolt.v1.transport.integration.TransportTestUtil;
-import org.neo4j.bolt.v1.transport.socket.client.SecureSocketConnection;
-import org.neo4j.bolt.v1.transport.socket.client.TransportConnection;
-import org.neo4j.function.Factory;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.AuthTokens;
+import org.neo4j.driver.v1.Config;
+import org.neo4j.driver.v1.Driver;
+import org.neo4j.driver.v1.GraphDatabase;
+import org.neo4j.driver.v1.Record;
+import org.neo4j.driver.v1.Session;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
+import org.neo4j.driver.v1.exceptions.AuthenticationException;
+import org.neo4j.driver.v1.exceptions.ClientException;
+import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.test.TestEnterpriseGraphDatabaseFactory;
-import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.values.storable.Values;
+import org.neo4j.internal.kernel.api.security.AuthSubject;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.configuration.BoltConnector;
+import org.neo4j.kernel.configuration.ConnectorPortRegister;
+import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.server.security.enterprise.auth.EnterpriseAuthAndUserManager;
+import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
+import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.EnterpriseDatabaseRule;
+import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.String.format;
-import static java.util.Arrays.stream;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.anything;
 import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgFailure;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgRecord;
-import static org.neo4j.bolt.v1.messaging.util.MessageMatchers.msgSuccess;
-import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.eqRecord;
-import static org.neo4j.bolt.v1.runtime.spi.StreamMatchers.greaterThanOrEqualTo;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyDisconnects;
-import static org.neo4j.bolt.v1.transport.integration.TransportTestUtil.eventuallyReceives;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.values.storable.Values.longValue;
-import static org.neo4j.values.storable.Values.stringValue;
+import static org.junit.Assert.fail;
+import static org.neo4j.driver.internal.logging.DevNullLogging.DEV_NULL_LOGGING;
+import static org.neo4j.kernel.configuration.BoltConnector.EncryptionLevel.OPTIONAL;
+import static org.neo4j.server.security.auth.BasicAuthManagerTest.password;
 
 public abstract class EnterpriseAuthenticationTestBase extends AbstractLdapTestUnit
 {
+    private static final Config config = Config.build().withLogging( DEV_NULL_LOGGING ).toConfig();
+
+    private TestDirectory testDirectory = TestDirectory.testDirectory( getClass() );
+
+    protected DatabaseRule dbRule = getDatabaseTestRule( testDirectory );
+
     @Rule
-    public Neo4jWithSocket server = new Neo4jWithSocket( getClass(), getTestGraphDatabaseFactory(),
-            asSettings( getSettingsFunction() ) );
-
-    protected static String createdUserPassword = "nativePassword";
-
-    protected void restartNeo4jServerWithOverriddenSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
-    {
-        server.shutdownDatabase();
-        server.ensureDatabase( asSettings( overrideSettingsFunction ) );
-        lookupConnectorAddress();
-    }
-
-    protected Consumer<Map<String,String>> asSettings( Consumer<Map<Setting<?>,String>> overrideSettingsFunction )
-    {
-        return settings ->
-        {
-            Map<Setting<?>,String> o = new LinkedHashMap<>();
-            overrideSettingsFunction.accept( o );
-            for ( Setting key : o.keySet() )
-            {
-                settings.put( key.name(), o.get( key ) );
-            }
-        };
-    }
-
-    protected TestGraphDatabaseFactory getTestGraphDatabaseFactory()
-    {
-        return new TestEnterpriseGraphDatabaseFactory();
-    }
-
-    protected Consumer<Map<Setting<?>,String>> getSettingsFunction()
-    {
-        return settings -> settings.put( GraphDatabaseSettings.auth_enabled, "true" );
-    }
-
-    public Factory<TransportConnection> cf = (Factory<TransportConnection>) SecureSocketConnection::new;
-
-    protected HostnamePort address;
-    protected TransportConnection client;
-    protected TransportTestUtil util;
+    public RuleChain chain = RuleChain.outerRule( testDirectory ).around( dbRule );
 
     @Before
-    public void setup()
+    public void setup() throws Exception
     {
-        this.client = cf.newInstance();
-        lookupConnectorAddress();
-        this.util = new TransportTestUtil( new Neo4jPackV1() );
+        dbRule.withSetting( GraphDatabaseSettings.auth_enabled, "true" )
+              .withSetting( new BoltConnector( "bolt" ).type, "BOLT" )
+              .withSetting( new BoltConnector( "bolt" ).enabled, "true" )
+              .withSetting( new BoltConnector( "bolt" ).encryption_level, OPTIONAL.name() )
+              .withSetting( new BoltConnector( "bolt" ).listen_address, "localhost:0" );
+        dbRule.withSettings( getSettings() );
+        dbRule.ensureStarted();
+        dbRule.resolveDependency( Procedures.class ).registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
     }
 
-    protected void lookupConnectorAddress()
+    protected abstract Map<Setting<?>,String> getSettings();
+
+    protected DatabaseRule getDatabaseTestRule( TestDirectory testDirectory )
     {
-        this.address = server.lookupDefaultConnector();
+        return new EnterpriseDatabaseRule( testDirectory ).startLazily();
     }
 
-    @After
-    public void teardown() throws Exception
+    void restartServerWithOverriddenSettings( String... configChanges ) throws IOException
     {
-        if ( client != null )
+        dbRule.restartDatabase( configChanges );
+    }
+
+    void assertAuth( String username, String password )
+    {
+        assertAuth( username, password, null );
+    }
+
+    void assertAuth( String username, String password, String realm )
+    {
+        try ( Driver driver = connectDriver( username, password, realm );
+                Session session = driver.session() )
         {
-            client.disconnect();
+            Value single = session.run( "RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), CoreMatchers.equalTo( 1L ) );
         }
     }
 
-    protected void reconnect() throws Exception
+    void assertAuth( AuthToken authToken )
     {
-        if ( client != null )
+        try ( Driver driver = connectDriver( authToken );
+                Session session = driver.session() )
         {
-            client.disconnect();
-        }
-        this.client = cf.newInstance();
-    }
-
-    protected void testCreateReaderUser() throws Exception
-    {
-        testCreateReaderUser( "neo" );
-    }
-
-    protected void testAuthWithReaderUser() throws Exception
-    {
-        testAuthWithReaderUser( "neo", "abc123", null );
-    }
-
-    protected void testAuthWithPublisherUser() throws Exception
-    {
-        testAuthWithPublisherUser( "tank", "abc123", null );
-    }
-
-    protected void testCreateReaderUser( String username ) throws Exception
-    {
-        // NOTE: The default user 'neo4j' has password change required, so we have to first change it
-        assertAuthAndChangePassword( "neo4j", "abc123", "123" );
-
-        client.send( util.chunk(
-                new RunMessage( "CALL dbms.security.createUser( '" + username + "', '" + createdUserPassword + "', false ) " +
-                         "CALL dbms.security.addRoleToUser( 'reader', '" + username + "' ) RETURN 0" ),
-                PullAllMessage.INSTANCE ) );
-
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgRecord( eqRecord( equalTo( longValue( 0L ) ) ) ) ) );
-    }
-
-    protected void testAuthWithReaderUser( String username, String password, String realm ) throws Exception
-    {
-        assertAuth( username, password, realm );
-        assertReadSucceeds();
-        assertWriteFails( username, "reader" );
-    }
-
-    protected void testAuthWithPublisherUser( String username, String password, String realm ) throws Exception
-    {
-        assertAuth( username, password, realm );
-        assertWriteSucceeds();
-    }
-
-    protected void testAuthWithNoPermissionUser( String username, String password ) throws Exception
-    {
-        assertAuth( username, password );
-        assertReadFails( username, "" );
-    }
-
-    protected void assertAuth( String username, String password ) throws Exception
-    {
-        assertConnectionSucceeds( authToken( username, password, null ) );
-    }
-
-    protected void assertAuthAndChangePassword( String username, String password, String newPassword ) throws Exception
-    {
-        assertAuth( username, password );
-        String query = format( "CALL dbms.security.changePassword('%s')", newPassword );
-        client.send( util.chunk( new RunMessage( query ), PullAllMessage.INSTANCE ) );
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertAuth( String username, String password, String realm ) throws Exception
-    {
-        assertConnectionSucceeds( authToken( username, password, realm ) );
-    }
-
-    protected void assertAuthFail( String username, String password ) throws Exception
-    {
-        assertConnectionFails( map( "principal", username, "credentials", password, "scheme", "basic" ) );
-    }
-
-    protected void assertRoles( String... roles ) throws Exception
-    {
-        client.send( util.chunk( new RunMessage( "CALL dbms.showCurrentUser" ), PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives(
-                msgSuccess(),
-                msgRecord( eqRecord( equalTo( stringValue( "tank" ) ),
-                        containsInAnyOrder( stream( roles ).map( Values::stringValue ).toArray() ), anything() ) ),
-                msgSuccess() ) );
-    }
-
-    protected void assertConnectionSucceeds( Map<String,Object> authToken ) throws Exception
-    {
-        // When
-        client.connect( address )
-                .send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                .send( util.chunk(
-                        new InitMessage( "TestClient/1.1", authToken ) ) );
-
-        // Then
-        assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-        assertThat( client, util.eventuallyReceives( msgSuccess() ) );
-    }
-
-    protected void assertConnectionFails( Map<String,Object> authToken ) throws Exception
-    {
-        final int RETRIES = 10;
-        int tries = 0;
-        while ( tries < RETRIES )
-        {
-            try
-            {
-                client.connect( address )
-                        .send( util.acceptedVersions( 1, 0, 0, 0 ) )
-                        .send( util.chunk(
-                                new InitMessage( "TestClient/1.1", authToken ) ) );
-
-                assertThat( client, eventuallyReceives( new byte[]{0, 0, 0, 1} ) );
-                assertThat( client, util.eventuallyReceives( msgFailure( Status.Security.Unauthorized,
-                        "The client is unauthorized due to authentication failure." ) ) );
-                assertThat( client, eventuallyDisconnects() );
-                return;
-            }
-            catch ( SocketException se )
-            {
-                if ( se.getMessage().startsWith( "Broken pipe" ) && tries != RETRIES - 1 )
-                {
-                    tries++;
-                }
-                else
-                {
-                    throw se;
-                }
-            }
+            Value single = session.run( "RETURN 1" ).single().get( 0 );
+            assertThat( single.asLong(), CoreMatchers.equalTo( 1L ) );
         }
     }
 
-    protected void assertReadSucceeds() throws Exception
+    void assertAuthFail( String username, String password )
     {
-        // When
-        client.send( util.chunk( new RunMessage( "MATCH (n) RETURN count(n)" ),
-                PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives(
-                msgSuccess(),
-                msgRecord( eqRecord( greaterThanOrEqualTo( 0L ) ) ),
-                msgSuccess() ) );
+        assertAuthFail( username, password, null );
     }
 
-    protected void assertReadFails( String username, String roles ) throws Exception
+    void assertAuthFail( String username, String password, String realm )
     {
-        // When
-        client.send( util.chunk(
-                new RunMessage( "MATCH (n) RETURN n" ),
-                PullAllMessage.INSTANCE ) );
-
-        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
-
-        // Then
-        assertThat( client, util.eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        format( "Read operations are not allowed for user '%s' with %s.", username, roleString ) ) ) );
-    }
-
-    protected void assertWriteSucceeds() throws Exception
-    {
-        // When
-        client.send( util.chunk(
-                new RunMessage( "CREATE ()" ),
-                PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertWriteFails( String username, String roles ) throws Exception
-    {
-        // When
-        client.send( util.chunk(
-                new RunMessage( "CREATE ()" ),
-                PullAllMessage.INSTANCE ) );
-
-        String roleString = StringUtils.isEmpty( roles ) ? "no roles" : "roles [" + roles + "]";
-
-        // Then
-        assertThat( client, util.eventuallyReceives(
-                msgFailure( Status.Security.Forbidden,
-                        format( "Write operations are not allowed for user '%s' with %s.", username, roleString ) ) ) );
-    }
-
-    protected void assertBeginTransactionSucceeds() throws Exception
-    {
-        // When
-        client.send( util.chunk( new RunMessage( "BEGIN" ),
-                PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertCommitTransaction() throws Exception
-    {
-        // When
-        client.send( util.chunk(
-                new RunMessage( "COMMIT" ),
-                PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected void assertQuerySucceeds( String query ) throws Exception
-    {
-        // When
-        client.send( util.chunk(
-                new RunMessage( query ),
-                PullAllMessage.INSTANCE ) );
-
-        // Then
-        assertThat( client, util.eventuallyReceives( msgSuccess(), msgSuccess() ) );
-    }
-
-    protected Map<String,Object> authToken( String username, String password, String realm )
-    {
-        if ( realm != null && realm.length() > 0 )
+        try ( Driver ignored = connectDriver( username, password, realm ) )
         {
-            return map( "principal", username, "credentials", password, "scheme", "basic", "realm", realm );
+            fail( "Should not have authenticated" );
+        }
+        catch ( AuthenticationException e )
+        {
+            assertThat( e.code(), CoreMatchers.equalTo( "Neo.ClientError.Security.Unauthorized" ) );
+        }
+    }
+
+    void assertReadSucceeds( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            Value single = session.run( "MATCH (n) RETURN count(n)" ).single().get( 0 );
+            assertThat( single.asLong(), Matchers.greaterThanOrEqualTo( 0L ) );
+        }
+    }
+
+    void assertReadFails( String username, String password )
+    {
+        try ( Driver driver = connectDriver( username, password ) )
+        {
+            assertReadFails( driver );
+        }
+    }
+
+    void assertReadFails( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            session.run( "MATCH (n) RETURN count(n)" ).single().get( 0 );
+            fail( "Should not be allowed read operation" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "Read operations are not allowed for user " ) );
+        }
+    }
+
+    void assertWriteSucceeds( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            StatementResult result = session.run( "CREATE ()" );
+            assertThat( result.summary().counters().nodesCreated(), CoreMatchers.equalTo( 1 ) );
+        }
+    }
+
+    void assertWriteFails( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            session.run( "CREATE ()" ).consume();
+            fail( "Should not be allowed write operation" );
+        }
+        catch ( ClientException e )
+        {
+            assertThat( e.getMessage(), containsString( "Write operations are not allowed for user " ) );
+        }
+    }
+
+    void assertProcSucceeds( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            Value single = session.run( "CALL test.staticReadProcedure()" ).single().get( 0 );
+            assertThat( single.asString(), CoreMatchers.equalTo( "static" ) );
+        }
+    }
+
+    void assertAuthorizationExpired( Driver driver )
+    {
+        try ( Session session = driver.session() )
+        {
+            session.run( "MATCH (n) RETURN n" ).single();
+            fail( "should have gotten authorization expired exception" );
+        }
+        catch ( ServiceUnavailableException e )
+        {
+            // TODO Bolt should handle the AuthorizationExpiredException better
+            //assertThat( e.getMessage(), equalTo( "Plugin 'plugin-TestCombinedAuthPlugin' authorization info expired: " +
+            //        "authorization_expired_user needs to re-authenticate." ) );
+        }
+    }
+
+    void clearAuthCacheFromDifferentConnection()
+    {
+        clearAuthCacheFromDifferentConnection( "neo4j", "abc123", null );
+    }
+
+    void clearAuthCacheFromDifferentConnection( String username, String password, String realm )
+    {
+        try ( Driver driver = connectDriver( username, password, realm );
+                Session session = driver.session() )
+        {
+            session.run( "CALL dbms.security.clearAuthCache()" );
+        }
+    }
+
+    Driver connectDriver( String username, String password )
+    {
+        return connectDriver( username, password, null );
+    }
+
+    Driver connectDriver( String username, String password, String realm )
+    {
+        AuthToken token;
+        if ( realm == null || realm.isEmpty() )
+        {
+            token = AuthTokens.basic( username, password );
         }
         else
         {
-            return map( "principal", username, "credentials", password, "scheme", "basic" );
+            token = AuthTokens.basic( username, password, realm );
+        }
+        return connectDriver( token );
+    }
+
+    private Driver connectDriver( AuthToken token )
+    {
+        return GraphDatabase.driver( "bolt://" + dbRule.resolveDependency( ConnectorPortRegister.class ).getLocalAddress( "bolt" ).toString(), token, config );
+    }
+
+    void assertRoles( Driver driver, String... roles )
+    {
+        try ( Session session = driver.session() )
+        {
+            Record record = session.run( "CALL dbms.showCurrentUser() YIELD roles" ).single();
+            assertThat( record.get( "roles" ).asList(), containsInAnyOrder( roles ) );
+        }
+    }
+
+    void assertSecurityLogContains( String message ) throws IOException
+    {
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        File workingDirectory = testDirectory.directory();
+        File logFile = new File( workingDirectory, "logs/security.log" );
+
+        Reader reader = fileSystem.openAsReader( logFile, UTF_8 );
+        BufferedReader bufferedReader = new BufferedReader( reader );
+        String line;
+        boolean foundError = false;
+
+        while ( (line = bufferedReader.readLine()) != null )
+        {
+            if ( line.contains( message ) )
+            {
+                foundError = true;
+            }
+        }
+        bufferedReader.close();
+        reader.close();
+
+        assertThat( "Security log should contain message '" + message + "'", foundError );
+    }
+
+    void assertSecurityLogDoesNotContain( String message ) throws IOException
+    {
+        FileSystemAbstraction fileSystem = testDirectory.getFileSystem();
+        File workingDirectory = testDirectory.directory();
+        File logFile = new File( workingDirectory, "logs/security.log" );
+
+        Reader reader = fileSystem.openAsReader( logFile, UTF_8 );
+        BufferedReader bufferedReader = new BufferedReader( reader );
+        String line;
+
+        while ( (line = bufferedReader.readLine()) != null )
+        {
+            assertThat( "Security log should not contain message '" + message + "'",
+                    !line.contains( message ) );
+        }
+        bufferedReader.close();
+        reader.close();
+    }
+
+    void createNativeUser( String username, String password, String... roles ) throws IOException, InvalidArgumentsException
+    {
+        EnterpriseAuthAndUserManager authManager =
+                dbRule.resolveDependency( EnterpriseAuthAndUserManager.class );
+
+        authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
+                .newUser( username, password( password ), false );
+
+        for ( String role : roles )
+        {
+            authManager.getUserManager( AuthSubject.AUTH_DISABLED, true )
+                    .addRoleToUser( role, username );
+        }
+    }
+
+    //-------------------------------------------------------------------------
+    // TLS helper
+    static class EmbeddedTestCertificates implements AutoCloseable
+    {
+        private static final String KEY_STORE = "javax.net.ssl.keyStore";
+        private static final String KEY_STORE_PASSWORD = "javax.net.ssl.keyStorePassword";
+        private static final String TRUST_STORE = "javax.net.ssl.trustStore";
+        private static final String TRUST_STORE_PASSWORD = "javax.net.ssl.trustStorePassword";
+
+        private final String keyStore = System.getProperty( KEY_STORE );
+        private final String keyStorePassword = System.getProperty( KEY_STORE_PASSWORD );
+        private final String trustStore = System.getProperty( TRUST_STORE );
+        private final String trustStorePassword = System.getProperty( TRUST_STORE_PASSWORD );
+
+        EmbeddedTestCertificates()
+        {
+            URL url = getClass().getResource( "/neo4j_ldap_test_keystore.jks" );
+            File keyStoreFile = new File( url.getFile() );
+            String keyStorePath = keyStoreFile.getAbsolutePath();
+
+            System.setProperty( KEY_STORE, keyStorePath );
+            System.setProperty( KEY_STORE_PASSWORD, "secret" );
+            System.setProperty( TRUST_STORE, keyStorePath );
+            System.setProperty( TRUST_STORE_PASSWORD, "secret" );
+        }
+
+        @Override
+        public void close()
+        {
+            resetProperty( KEY_STORE, keyStore );
+            resetProperty( KEY_STORE_PASSWORD, keyStorePassword );
+            resetProperty( TRUST_STORE, trustStore );
+            resetProperty( TRUST_STORE_PASSWORD, trustStorePassword );
+        }
+
+        private void resetProperty( String property, String value )
+        {
+            if ( value == null )
+            {
+                System.clearProperty( property );
+            }
+            else
+            {
+                System.setProperty( property, value );
+            }
         }
     }
 }

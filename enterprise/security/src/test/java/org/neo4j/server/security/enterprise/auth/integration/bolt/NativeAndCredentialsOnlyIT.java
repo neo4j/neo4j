@@ -24,8 +24,8 @@ package org.neo4j.server.security.enterprise.auth.integration.bolt;
 
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
-import java.util.function.Consumer;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
@@ -33,14 +33,13 @@ import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 public class NativeAndCredentialsOnlyIT extends EnterpriseAuthenticationTestBase
 {
     @Override
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Map<Setting<?>, String> getSettings()
     {
-        return super.getSettingsFunction()
-                .andThen( settings -> settings.put( SecuritySettings.auth_providers, "native,plugin-TestCredentialsOnlyPlugin" ) );
+        return Collections.singletonMap( SecuritySettings.auth_providers, "native,plugin-TestCredentialsOnlyPlugin" );
     }
 
     @Test
-    public void shouldAuthenticateWithCredentialsOnlyPlugin() throws Throwable
+    public void shouldAuthenticateWithCredentialsOnlyPlugin()
     {
         assertAuth( "", "BASE64-ENC-PASSWORD", "plugin-TestCredentialsOnlyPlugin" );
     }

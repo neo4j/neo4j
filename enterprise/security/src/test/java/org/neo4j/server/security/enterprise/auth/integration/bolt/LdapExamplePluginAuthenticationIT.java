@@ -36,11 +36,15 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import org.neo4j.driver.v1.Driver;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.server.security.enterprise.auth.plugin.LdapGroupHasUsersAuthPlugin;
+import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 
 @RunWith( FrameworkRunner.class )
@@ -80,26 +84,34 @@ public class LdapExamplePluginAuthenticationIT extends EnterpriseAuthenticationT
 {
     @Before
     @Override
-    public void setup()
+    public void setup() throws Exception
     {
         super.setup();
         getLdapServer().setConfidentialityRequired( false );
     }
 
     @Override
-    protected Consumer<Map<Setting<?>, String>> getSettingsFunction()
+    protected Map<Setting<?>, String> getSettings()
     {
-        return super.getSettingsFunction().andThen( settings -> settings.put( SecuritySettings.auth_provider,
-                SecuritySettings.PLUGIN_REALM_NAME_PREFIX + new LdapGroupHasUsersAuthPlugin().name() ) );
+        return Collections.singletonMap( SecuritySettings.auth_provider, SecuritySettings.PLUGIN_REALM_NAME_PREFIX + new LdapGroupHasUsersAuthPlugin().name() );
     }
 
     @Test
-    public void shouldBeAbleToLoginAndAuthorizeWithLdapGroupHasUsersAuthPlugin() throws Throwable
+    public void shouldBeAbleToLoginAndAuthorizeWithLdapGroupHasUsersAuthPlugin()
     {
-        testAuthWithReaderUser();
-        reconnect();
-        testAuthWithPublisherUser();
-        reconnect();
-        testAuthWithNoPermissionUser( "smith", "abc123" );
+        try ( Driver driver = connectDriver( "neo", "abc123" ) )
+        {
+            assertRoles( driver, PredefinedRoles.READER );
+        }
+
+        try ( Driver driver = connectDriver( "tank", "abc123" ) )
+        {
+            assertRoles( driver, PredefinedRoles.PUBLISHER );
+        }
+
+        try ( Driver driver = connectDriver( "smith", "abc123" ) )
+        {
+            assertRoles( driver );
+        }
     }
 }
