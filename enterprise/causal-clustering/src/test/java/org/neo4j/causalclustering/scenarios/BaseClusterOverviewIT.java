@@ -26,6 +26,7 @@ import org.hamcrest.Description;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,6 +82,7 @@ import static org.neo4j.test.assertion.Assert.assertEventually;
 @RunWith( Parameterized.class )
 public abstract class BaseClusterOverviewIT
 {
+
     @Rule
     public ClusterRule clusterRule = new ClusterRule()
             .withSharedCoreParam( CausalClusteringSettings.cluster_topology_refresh, "5s" )
@@ -315,7 +317,7 @@ public abstract class BaseClusterOverviewIT
 
         String message = String.format( "should have overview from %s %s, but view was ", role, member.serverId() );
         assertEventually( memberInfos -> message + printableMemberInfos.apply( memberInfos ),
-                () -> clusterOverview( member.database() ), expected, 90, SECONDS );
+                () -> clusterOverview( member.database() ), expected, 180, SECONDS );
     }
 
     @SafeVarargs
@@ -389,6 +391,7 @@ public abstract class BaseClusterOverviewIT
                 List<String> addresses = (List<String>) row[1];
                 infos.add( new MemberInfo( addresses.toArray( new String[addresses.size()] ), RoleInfo.valueOf( (String) row[2] ) ) );
             }
+
             return infos;
         }
     }
