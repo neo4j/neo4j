@@ -2881,6 +2881,63 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     }
 
     @Test
+    void getBytesMustRespectLargeOffsets() throws IOException
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            for ( int i = 0; i < 200; i++ )
+            {
+                cursor.putByte( (byte) (i + 1) );
+            }
+            byte[] data = new byte[200];
+            for ( int i = 0; i < data.length; i++ )
+            {
+                data[i] = (byte) (data.length - i);
+            }
+            cursor.setOffset( 1 );
+            cursor.getBytes( data, 1, data.length - 2 );
+            assertThat( data[0], is( (byte) 200 ) );
+            for ( int i = 1; i < 199; i++ )
+            {
+                assertThat( data[i], is( (byte) (i + 1) ) );
+            }
+            assertThat( data[199], is( (byte) 1 ) );
+        }
+    }
+
+    @Test
+    void putBytesMustRespectLargeOffsets() throws IOException
+    {
+        configureStandardPageCache();
+        try ( PagedFile pf = map( file( "a" ), filePageSize );
+              PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            for ( int i = 0; i < 200; i++ )
+            {
+                cursor.putByte( (byte) (i + 1) );
+            }
+            byte[] data = new byte[200];
+            for ( int i = 0; i < data.length; i++ )
+            {
+                data[i] = (byte) (data.length - i);
+            }
+            cursor.setOffset( 1 );
+            cursor.putBytes( data, 1, data.length - 2 );
+            cursor.setOffset( 0 );
+            assertThat( cursor.getByte(), is( (byte) 1 ) );
+            for ( int i = 0; i < 198; i++ )
+            {
+                assertThat( cursor.getByte(), is( (byte) (199 - i) ) );
+            }
+            assertThat( cursor.getByte(), is( (byte) 200 ) );
+        }
+    }
+
+    @Test
     void getBytesMustThrowArrayIndexOutOfBounds() throws Exception
     {
         configureStandardPageCache();

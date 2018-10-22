@@ -692,7 +692,17 @@ abstract class MuninnPageCursor extends PageCursor
         if ( !outOfBounds )
         {
             int inset = UnsafeUtil.arrayOffset( arrayOffset, BYTE_ARRAY_BASE_OFFSET, BYTE_ARRAY_INDEX_SCALE );
-            UnsafeUtil.copyMemory( null, p, data, inset, length );
+            if ( length < 16 )
+            {
+                for ( int i = 0; i < length; i++ )
+                {
+                    UnsafeUtil.putByte( data, inset + i, UnsafeUtil.getByte( p + i ) );
+                }
+            }
+            else
+            {
+                UnsafeUtil.copyMemory( null, p, data, inset, length );
+            }
         }
         offset += length;
     }
@@ -714,7 +724,17 @@ abstract class MuninnPageCursor extends PageCursor
         if ( !outOfBounds )
         {
             int inset = UnsafeUtil.arrayOffset( arrayOffset, BYTE_ARRAY_BASE_OFFSET, BYTE_ARRAY_INDEX_SCALE );
-            UnsafeUtil.copyMemory( data, inset, null, p, length );
+            if ( length < 16 )
+            {
+                for ( int i = 0; i < length; i++ )
+                {
+                    UnsafeUtil.putByte( p + i, UnsafeUtil.getByte( data, inset + i ) );
+                }
+            }
+            else
+            {
+                UnsafeUtil.copyMemory( data, inset, null, p, length );
+            }
         }
         offset += length;
     }
