@@ -21,35 +21,10 @@ package cypher.features
 
 import java.io.File
 import java.net.{URI, URL}
-import java.nio.file.{FileSystems, Files, Paths}
-import java.util
 
-import org.opencypher.tools.tck.api.CypherTCK.{featureSuffix, featuresPath, parseFeature}
-import org.opencypher.tools.tck.api.{Feature, Scenario}
-
-import scala.collection.JavaConverters._
-import scala.io.{Codec, Source}
+import org.opencypher.tools.tck.api.{CypherTCK, Scenario}
 
 abstract class BaseFeatureTest {
-
-  //  ---- TCK methods
-  // TODO: Remove those when M12 is released
-
-  def parseFilesystemFeatures(directory: File): Seq[Feature] = {
-    require(directory.isDirectory)
-    val featureFileNames = directory.listFiles.filter(_.getName.endsWith(featureSuffix))
-    featureFileNames.map(parseFilesystemFeature)
-  }
-
-  def parseFilesystemFeature(file: File): Feature = {
-    parseFeature(file.getAbsolutePath, Source.fromFile(file)(Codec.UTF8).mkString)
-  }
-
-  def parseClasspathFeature(pathUrl: URL): Feature = {
-    parseFeature(pathUrl.toString, Source.fromURL(pathUrl)(Codec.UTF8).mkString)
-  }
-
-  def allTckScenarios: Seq[Scenario] = parseClasspathFeatures(featuresPath).flatMap(_.scenarios)
 
   // When running externally from e.g. TeamCity we will get a jar and can use the same procedure as for allTckScenarios
   // When running locally we need to use the file system instead
@@ -58,28 +33,12 @@ abstract class BaseFeatureTest {
     val resourcePath: String = "/acceptance/features"
 
     if (packageURL.toString.contains("jar"))
-      parseClasspathFeatures(resourcePath).flatMap(_.scenarios)
+      CypherTCK.parseClasspathFeatures(resourcePath).flatMap(_.scenarios)
     else {
       val featuresURI: URI = new URL(packageURL.toString + resourcePath).toURI
-      parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios) //TODO: Change this back to the following line when TCK M12 is released
-      //val all = CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
+      CypherTCK.parseFilesystemFeatures(new File(featuresURI)).flatMap(_.scenarios)
     }
   }
-
-  def parseClasspathFeatures(path: String): Seq[Feature] = {
-    val resource = getClass.getResource(path).toURI
-    val fs = FileSystems.newFileSystem(resource, new util.HashMap[String, String]) // Needed to support `Paths.get` below
-    try {
-      val directoryPath = Paths.get(resource)
-      val paths = Files.newDirectoryStream(directoryPath).asScala.toSeq
-      val featurePathStrings = paths.map(path => path.toString).filter(_.endsWith(featureSuffix))
-      val featureUrls = featurePathStrings.map(getClass.getResource(_))
-      featureUrls.map(parseClasspathFeature)
-    } finally {
-      fs.close()
-    }
-  }
-  // ---- TCK methods end
 
   def filterScenarios(allScenarios: Seq[Scenario], featureToRun: String, scenarioToRun: String): Seq[Scenario] = {
     if (featureToRun.nonEmpty) {
