@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.helpers.ArrayUtil
+
 import scala.collection.immutable
 
 /**
@@ -48,7 +50,7 @@ case class IndexedInclusiveLongRange(start: Long, end: Long, step: Long) extends
   override def length: Int = if (len != -1) len
   else {
     val l = ((end - start) / step) + 1
-    if (l > Int.MaxValue) throw new OutOfMemoryError(s"Cannot index an collection of size $l")
+    if (l > ArrayUtil.MAX_ARRAY_SIZE) throw new OutOfMemoryError(s"Cannot index an collection of size $l")
     len = l.toInt
     len
   }

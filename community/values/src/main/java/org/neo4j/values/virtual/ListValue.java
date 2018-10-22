@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
@@ -449,7 +450,7 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
             else
             {
                 long l = ((end - start) / step) + 1;
-                if ( l > Integer.MAX_VALUE )
+                if ( l > ArrayUtil.MAX_ARRAY_SIZE )
                 {
                     throw new OutOfMemoryError( "Cannot index an collection of size " + l );
                 }

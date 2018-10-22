@@ -34,6 +34,8 @@ import static java.util.Arrays.copyOf;
 @Deprecated
 public abstract class ArrayUtil
 {
+    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+
     @Deprecated
     public static int hashCode( Object array )
     {

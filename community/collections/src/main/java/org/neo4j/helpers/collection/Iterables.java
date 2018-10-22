@@ -907,7 +907,7 @@ public final class Iterables
     /**
      * Method for calling a lambda function on many objects when it is expected that the function might
      * throw an exception. First exception will be thrown and subsequent will be suppressed.
-     * This method guarantees that all subjects will be consumed, unless {@link OutOfMemoryError} or some other serious error happens.
+     * This method guarantees that all subjects will be consumed, unless {@link Error} happens.
      *
      * @param consumer lambda function to call on each object passed
      * @param subjects {@link Iterable} of objects to call the function on

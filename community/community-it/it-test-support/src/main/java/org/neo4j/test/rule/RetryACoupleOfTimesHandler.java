@@ -86,7 +86,7 @@ public class RetryACoupleOfTimesHandler implements RetryHandler
     };
 
     /**
-     * Retries on any {@link Exception}, i.e. not {@link OutOfMemoryError} or similar.
+     * Retries on any {@link Exception}, i.e. not {@link Error}.
      */
     public static final Predicate<Throwable> ANY_EXCEPTION = t ->
     {
