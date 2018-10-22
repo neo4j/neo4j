@@ -41,7 +41,7 @@ object Neo4jExceptionToExecutionFailed {
       case Phase.compile => compileTimeDetail(msg)
       case Phase.runtime => runtimeDetail(msg)
     }
-    ExecutionFailed(if(errorType != null) errorType.toString else "", phase, detail)
+    ExecutionFailed(if(errorType != null) errorType.toString else "", phase, detail, Some(t))
   }
 
   private def runtimeDetail(msg: String): String = {
