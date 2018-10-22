@@ -28,7 +28,7 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v4.ResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
 
 import static org.neo4j.util.Preconditions.checkState;

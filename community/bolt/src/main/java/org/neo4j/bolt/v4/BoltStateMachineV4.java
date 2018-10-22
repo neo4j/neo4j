@@ -28,9 +28,9 @@ import org.neo4j.bolt.v3.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
-import org.neo4j.bolt.v3.runtime.StreamingState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
-import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
+import org.neo4j.bolt.v4.runtime.StreamingState;
+import org.neo4j.bolt.v4.runtime.TransactionStreamingState;
 
 public class BoltStateMachineV4 extends BoltStateMachineV1
 {
@@ -44,9 +44,9 @@ public class BoltStateMachineV4 extends BoltStateMachineV1
     {
         ConnectedState connected = new ConnectedState();
         ReadyState ready = new ReadyState();
-        StreamingState streaming = new StreamingState();
+        StreamingState streaming = new StreamingState(); // v4
         TransactionReadyState txReady = new TransactionReadyState();
-        TransactionStreamingState txStreaming = new TransactionStreamingState();
+        TransactionStreamingState txStreaming = new TransactionStreamingState(); // v4
         FailedState failed = new FailedState();
         InterruptedState interrupted = new InterruptedState();
 

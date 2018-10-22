@@ -27,6 +27,7 @@ import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.storable.BooleanValue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertNotNull;
@@ -55,7 +56,13 @@ public class BoltResponseRecorder extends BoltResponseHandlerV1Adaptor
     @Override
     public boolean onPullRecords( BoltResult result, long size ) throws Exception
     {
-        return result.handlePullRecords( new RecordingBoltResultVisitor(), size );
+        boolean hasMore = result.handlePullRecords( new RecordingBoltResultVisitor(), size );
+        if ( hasMore )
+        {
+            onMetadata( "has_more", BooleanValue.TRUE );
+        }
+
+        return hasMore;
     }
 
     @Override

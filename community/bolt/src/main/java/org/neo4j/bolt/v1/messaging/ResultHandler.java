@@ -43,7 +43,6 @@ public class ResultHandler extends MessageProcessingHandler
         if ( hasMore )
         {
             onMetadata( "has_more", BooleanValue.TRUE );
-
         }
         return hasMore;
     }

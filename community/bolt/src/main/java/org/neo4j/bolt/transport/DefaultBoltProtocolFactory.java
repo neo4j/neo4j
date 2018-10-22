@@ -26,6 +26,7 @@ import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
+import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.logging.internal.LogService;
 
 public class DefaultBoltProtocolFactory implements BoltProtocolFactory
@@ -56,6 +57,10 @@ public class DefaultBoltProtocolFactory implements BoltProtocolFactory
         else if ( protocolVersion == BoltProtocolV3.VERSION )
         {
             return new BoltProtocolV3( channel, connectionFactory, stateMachineFactory, logService );
+        }
+        else if ( protocolVersion == BoltProtocolV4.VERSION )
+        {
+            return new BoltProtocolV4( channel, connectionFactory, stateMachineFactory, logService );
         }
         else
         {

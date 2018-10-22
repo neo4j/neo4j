@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime.integration;
+package org.neo4j.bolt.v4.runtime.integration;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -35,39 +35,87 @@ import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
-import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
-import org.neo4j.bolt.v3.runtime.TransactionReadyState;
-import org.neo4j.bolt.v3.runtime.TransactionStreamingState;
+import org.neo4j.bolt.v3.runtime.ReadyState;
+import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.runtime.StreamingState;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.util.ValueUtils;
+import org.neo4j.values.storable.BooleanValue;
 
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
+import static org.neo4j.bolt.testing.BoltMatchers.succeededWithMetadata;
 import static org.neo4j.bolt.testing.BoltMatchers.verifyKillsConnection;
 import static org.neo4j.bolt.testing.NullResponseHandler.nullResponseHandler;
 import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class TransactionStreamingStateIT extends BoltStateMachineStateTestBase
+class StreamingStateIT extends BoltStateMachineV4StateTestBase
 {
     @Test
-    void shouldMoveFromTxStreamingToTxReadyOnDiscardAll_succ() throws Throwable
+    void shouldMoveFromStreamingToReadyOnPullN_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 100L ) ) ), recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, succeeded() );
+        assertTrue( response.hasMetadata( "type" ) );
+        assertTrue( response.hasMetadata( "t_last" ) );
+        assertTrue( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+    }
+
+    @Test
+    void shouldMoveFromStreamingToReadyOnPullN_succ_hasMore() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState( "Unwind [1, 2, 3] as n return n" );
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, containsRecord( 1L ) );
+        assertThat( response, succeededWithMetadata( "has_more", BooleanValue.TRUE ) );
+
+        machine.process( new PullNMessage( ValueUtils.asMapValue( singletonMap( "n", 2L ) ) ), recorder );
+        response = recorder.nextResponse();
+        assertThat( response, containsRecord( 3L ) );
+        assertTrue( response.hasMetadata( "type" ) );
+        assertTrue( response.hasMetadata( "t_last" ) );
+        assertTrue( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+    }
+
+    @Test
+    void shouldMoveFromStreamingToReadyOnDiscardAll_succ() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -76,34 +124,15 @@ class TransactionStreamingStateIT extends BoltStateMachineStateTestBase
         // Then
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
-        assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertTrue( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( ReadyState.class ) );
     }
 
     @Test
-    void shouldMoveFromTxStreamingToTxReadyOnPullAll_succ() throws Throwable
+    void shouldMoveFromStreamingToInterruptedOnInterrupt() throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = getBoltStateMachineInTxStreamingState();
-
-        // When
-        BoltResponseRecorder recorder = new BoltResponseRecorder();
-        machine.process( PullAllMessage.INSTANCE, recorder );
-
-        // Then
-        RecordedBoltResponse response = recorder.nextResponse();
-        assertThat( response, succeeded() );
-        assertTrue( response.hasMetadata( "type" ) );
-        assertTrue( response.hasMetadata( "t_last" ) );
-        assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
-    }
-
-    @Test
-    void shouldMoveFromTxStreamingToInterruptedOnInterrupt() throws Throwable
-    {
-        // Given
-        BoltStateMachineV3 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -115,13 +144,12 @@ class TransactionStreamingStateIT extends BoltStateMachineStateTestBase
 
     @ParameterizedTest
     @MethodSource( "pullAllDiscardAllMessages" )
-    void shouldMoveFromTxStreamingStateToFailedStateOnPullAllOrDiscardAll_fail( RequestMessage message ) throws Throwable
+    void shouldMoveFromStreamingStateToFailedStateOnPullAllOrDiscardAll_fail( RequestMessage message ) throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInStreamingState();
 
         // When
-
         BoltResponseHandlerV1Adaptor handler = mock( BoltResponseHandlerV1Adaptor.class );
         doThrow( new RuntimeException( "Fail" ) ).when( handler ).onRecords( any(), anyBoolean() );
         machine.process( message, handler );
@@ -132,20 +160,19 @@ class TransactionStreamingStateIT extends BoltStateMachineStateTestBase
 
     @ParameterizedTest
     @MethodSource( "illegalV3Messages" )
-    void shouldCloseConnectionOnIllegalV3MessagesInTxStreamingState( RequestMessage message ) throws Throwable
+    void shouldCloseConnectionOnIllegalV3MessagesInStreamingState( RequestMessage message ) throws Throwable
     {
-        shouldThrowExceptionOnIllegalMessagesInTxStreamingState( message );
+        shouldThrowExceptionOnIllegalMessagesInStreamingState( message );
     }
 
-    private void shouldThrowExceptionOnIllegalMessagesInTxStreamingState( RequestMessage message ) throws Throwable
+    private void shouldThrowExceptionOnIllegalMessagesInStreamingState( RequestMessage message ) throws Throwable
     {
         // Given
-        BoltStateMachineV3 machine = newStateMachine();
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
-        machine.process( new BeginMessage(), nullResponseHandler() );
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) );
+        assertThat( machine.state(), instanceOf( StreamingState.class ) );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -167,15 +194,18 @@ class TransactionStreamingStateIT extends BoltStateMachineStateTestBase
         return Stream.of( PullAllMessage.INSTANCE, DiscardAllMessage.INSTANCE );
     }
 
-    private BoltStateMachineV3 getBoltStateMachineInTxStreamingState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInStreamingState() throws BoltConnectionFatality, BoltIOException
     {
-        BoltStateMachineV3 machine = newStateMachine();
+        return getBoltStateMachineInStreamingState( "CREATE (n {k:'k'}) RETURN n.k" );
+    }
+
+    private BoltStateMachineV4 getBoltStateMachineInStreamingState( String query ) throws BoltConnectionFatality, BoltIOException
+    {
+        BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
 
-        machine.process( new BeginMessage(), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
-        machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) ); // tx streaming state
+        machine.process( new RunMessage( query, EMPTY_PARAMS ), nullResponseHandler() );
+        assertThat( machine.state(), instanceOf( StreamingState.class ) );
         return machine;
     }
 }

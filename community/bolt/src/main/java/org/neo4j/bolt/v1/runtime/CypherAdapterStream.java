@@ -81,19 +81,17 @@ public class CypherAdapterStream implements BoltResult
         {
             QueryResult.Record current = allRecords.poll();
 
-            if( current != null )
+            if ( current != null )
             {
                 visitor.visit( current );
             }
-
             // if we are at the end of the queue
-            if( current == null || allRecords.peek() == null )
+            if ( current == null || allRecords.peek() == null )
             {
                 metadata.forEach( visitor::addMetadata );
                 return false;
             }
         }
-
         return true;
     }
 
@@ -104,12 +102,15 @@ public class CypherAdapterStream implements BoltResult
         metadata.forEach( visitor::addMetadata );
     }
 
-    private void pullInAllRecords( )
+    private void pullInAllRecords()
     {
         long start = clock.millis();
         delegate.accept( row ->
         {
-            allRecords.add( row );
+            AnyValue[] src = row.fields();
+            AnyValue[] dest = new AnyValue[src.length];
+            System.arraycopy( src, 0, dest, 0, src.length );
+            allRecords.add( () -> dest );
             return true;
         } );
         addRecordStreamingTime(clock.millis() - start );

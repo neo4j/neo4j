@@ -2,7 +2,7 @@ package org.neo4j.bolt.v1;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v4.ResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 public class ResultConsumerV1Adaptor implements ResultConsumer
 {

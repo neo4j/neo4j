@@ -28,11 +28,8 @@ import java.util.Optional;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-<<<<<<< HEAD
 import org.neo4j.exceptions.KernelException;
-=======
-import org.neo4j.bolt.v4.ResultConsumer;
->>>>>>> Fixed compilation errors
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.security.LoginContext;

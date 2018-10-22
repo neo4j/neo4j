@@ -28,10 +28,11 @@ import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessageWriterV1;
 import org.neo4j.bolt.v2.messaging.Neo4jPackV2;
+import org.neo4j.bolt.v4.messaging.BoltRequestMessageReaderV4;
 import org.neo4j.logging.internal.LogService;
 
 /**
- * Bolt protocol V3. It hosts all the components that are specific to BoltV3
+ * Bolt protocol V4. It hosts all the components that are specific to BoltV4
  */
 public class BoltProtocolV4 extends BoltProtocolV1
 {

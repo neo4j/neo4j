@@ -25,7 +25,7 @@ import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.ResultConsumerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v4.ResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 import static org.neo4j.util.Preconditions.checkState;
 

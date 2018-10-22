@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4;
+package org.neo4j.bolt.v4.messaging;
 
 import java.util.Arrays;
 import java.util.List;
@@ -30,7 +30,6 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.v1.messaging.MessageProcessingHandler;
 import org.neo4j.bolt.v1.messaging.ResultHandler;
 import org.neo4j.bolt.v1.messaging.decoder.DiscardAllMessageDecoder;
-import org.neo4j.bolt.v1.messaging.decoder.PullAllMessageDecoder;
 import org.neo4j.bolt.v1.messaging.decoder.ResetMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.BeginMessageDecoder;
 import org.neo4j.bolt.v3.messaging.decoder.CommitMessageDecoder;

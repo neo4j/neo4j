@@ -28,9 +28,9 @@ import java.util.stream.Stream;
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
@@ -120,8 +120,8 @@ class StreamingStateIT extends BoltStateMachineStateTestBase
         BoltStateMachineV3 machine = getBoltStateMachineInStreamingState();
 
         // When
-        BoltResponseHandler handler = mock( BoltResponseHandler.class );
-        doThrow( new RuntimeException( "Fail" ) ).when( handler ).onPullRecords( any(), anyBoolean() );
+        BoltResponseHandlerV1Adaptor handler = mock( BoltResponseHandlerV1Adaptor.class );
+        doThrow( new RuntimeException( "Fail" ) ).when( handler ).onRecords( any(), anyBoolean() );
         machine.process( message, handler );
 
         // Then

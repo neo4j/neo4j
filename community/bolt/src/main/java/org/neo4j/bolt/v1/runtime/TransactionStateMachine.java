@@ -32,7 +32,7 @@ import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.security.auth.AuthenticationResult;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v1.runtime.spi.BookmarkResult;
-import org.neo4j.bolt.v4.ResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.cypher.InvalidSemanticsException;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionTerminatedException;

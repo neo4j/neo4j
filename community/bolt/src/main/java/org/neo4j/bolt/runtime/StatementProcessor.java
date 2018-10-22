@@ -24,7 +24,7 @@ import java.util.Map;
 
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.bolt.v4.ResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.values.virtual.MapValue;
 

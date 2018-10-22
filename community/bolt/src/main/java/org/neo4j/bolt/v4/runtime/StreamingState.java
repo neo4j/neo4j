@@ -17,11 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4;
+package org.neo4j.bolt.v4.runtime;
 
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 /**
  * When STREAMING, additionally attach bookmark to PULL_ALL, DISCARD_ALL result

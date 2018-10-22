@@ -28,13 +28,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.testing.RecordedBoltResponse;
+import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.BoltResponseMessage;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
@@ -429,12 +429,23 @@ public class BoltConnectionIT
 
         // When something fails while publishing the result stream
         machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() );
-        machine.process( PullAllMessage.INSTANCE, new BoltResponseHandler()
+        machine.process( PullAllMessage.INSTANCE, new BoltResponseHandlerV1Adaptor()
         {
             @Override
             public void onRecords( BoltResult result, boolean pull )
             {
                 throw new RuntimeException( "Ooopsies!" );
+            }
+
+            @Override
+            public boolean onPullRecords( BoltResult result, long size ) throws Exception
+            {
+                return false;
+            }
+
+            @Override
+            public void onDiscardRecords( BoltResult result ) throws Exception
+            {
             }
 
             @Override

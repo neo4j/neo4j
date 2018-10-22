@@ -20,6 +20,7 @@
 package org.neo4j.bolt.testing;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,7 +37,7 @@ public class RecordedBoltResponse
 {
     private List<QueryResult.Record> records;
     private BoltResponseMessage response;
-    private Map<String, AnyValue> metadata;
+    private Map<String,AnyValue> metadata;
 
     public RecordedBoltResponse()
     {
@@ -47,7 +48,7 @@ public class RecordedBoltResponse
 
     public void addRecord( QueryResult.Record record )
     {
-        records.add( record );
+        records.add( new RecordedRecord( record ) );
     }
 
     public void addMetadata( String key, AnyValue value )
@@ -91,5 +92,31 @@ public class RecordedBoltResponse
     public String toString()
     {
         return "RecordedBoltResponse{" + "records=" + records + ", response=" + response + ", metadata=" + metadata + '}';
+    }
+
+    private static class RecordedRecord implements QueryResult.Record
+    {
+        private final QueryResult.Record record;
+        private final AnyValue[] fields;
+
+        public RecordedRecord( QueryResult.Record record )
+        {
+            this.record = record;
+            AnyValue[] src = record.fields();
+            AnyValue[] dest = new AnyValue[src.length];
+            System.arraycopy( src, 0, dest, 0, src.length );
+            fields = dest;
+        }
+
+        @Override
+        public AnyValue[] fields()
+        {
+            return fields;
+        }
+
+        public String toString()
+        {
+            return "RecordedRecord{" + Arrays.toString( fields ) + "}";
+        }
     }
 }

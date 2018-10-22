@@ -17,13 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4;
+package org.neo4j.bolt.v4.runtime;
 
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v3.runtime.FailSafeBoltStateMachineState;
+import org.neo4j.bolt.v4.messaging.DiscardAllResultConsumer;
+import org.neo4j.bolt.v4.messaging.PullNMessage;
+import org.neo4j.bolt.v4.messaging.PullResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 import static org.neo4j.util.Preconditions.checkState;
 

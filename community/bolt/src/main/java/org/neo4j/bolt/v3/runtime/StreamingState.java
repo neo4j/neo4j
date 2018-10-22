@@ -22,7 +22,7 @@ package org.neo4j.bolt.v3.runtime;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
-import org.neo4j.bolt.v4.ResultConsumer;
+import org.neo4j.bolt.v4.messaging.ResultConsumer;
 
 /**
  * When STREAMING, additionally attach bookmark to PULL_ALL, DISCARD_ALL result

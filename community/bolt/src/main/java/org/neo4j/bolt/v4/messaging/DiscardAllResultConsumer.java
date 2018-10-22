@@ -1,4 +1,4 @@
-package org.neo4j.bolt.v4;
+package org.neo4j.bolt.v4.messaging;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.StateMachineContext;
