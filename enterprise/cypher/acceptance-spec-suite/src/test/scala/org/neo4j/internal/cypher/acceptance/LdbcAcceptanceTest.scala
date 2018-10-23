@@ -98,7 +98,7 @@ class LdbcAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val result =
     // when
-      executeWith(Configs.Interpreted, ldbcQuery, params = params)
+      executeWith(Configs.InterpretedAndSlotted, ldbcQuery, params = params)
 
     // then
     result should not be empty

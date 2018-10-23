@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.proc.Procedures
 
 class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  private val expectSucceed = Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3
+  private val expectSucceed = Configs.InterpretedAndSlotted - Configs.AllRulePlanners - Configs.Version2_3
 
   test("should return result") {
     registerTestProcedures()

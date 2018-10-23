@@ -31,7 +31,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
  * [[org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlanningIntegrationTest]]
  */
 class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
-  val expectedToSucceed = Configs.Interpreted
+  val expectedToSucceed = Configs.InterpretedAndSlotted
   val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("should be case sensitive for CONTAINS with indexes") {
@@ -118,7 +118,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
-    val result = executeWith(Configs.Interpreted, query,
+    val result = executeWith(Configs.InterpretedAndSlotted, query,
     planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
 
     result should evaluateTo(List(Map("l" -> london)))

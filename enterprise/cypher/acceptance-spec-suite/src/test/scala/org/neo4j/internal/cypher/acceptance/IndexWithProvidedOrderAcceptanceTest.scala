@@ -77,7 +77,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
   for (TestOrder(cypherToken, expectedOrder, providedOrder) <- List(ASCENDING, DESCENDING)) {
 
     test(s"$cypherToken: should use index order for range predicate when returning that property") {
-      val result = executeWith(Configs.Interpreted, s"MATCH (n:Awesome) WHERE n.prop2 > 1 RETURN n.prop2 ORDER BY n.prop2 $cypherToken", executeBefore = createSomeNodes)
+      val result = executeWith(Configs.InterpretedAndSlotted, s"MATCH (n:Awesome) WHERE n.prop2 > 1 RETURN n.prop2 ORDER BY n.prop2 $cypherToken", executeBefore = createSomeNodes)
 
       result.executionPlanDescription() should not (includeSomewhere.aPlan("Sort"))
       result.toList should be(expectedOrder(List(
@@ -93,7 +93,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     }
 
     test(s"$cypherToken: Order by index backed property renamed in an earlier WITH") {
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.InterpretedAndSlotted,
         s"""MATCH (n:Awesome) WHERE n.prop3 STARTS WITH 'foo'
            |WITH n AS nnn
            |MATCH (m)<-[r]-(nnn)
@@ -115,7 +115,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     }
 
     test(s"$cypherToken: Order by index backed property in a plan with an Apply") {
-      val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
+      val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
         s"MATCH (a:DateString), (b:DateDate) WHERE a.ds STARTS WITH '2018' AND b.d > date(a.ds) RETURN a.ds ORDER BY a.ds $cypherToken", executeBefore = createSomeNodes)
 
       result.executionPlanDescription() should (
@@ -143,7 +143,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     }
 
     test(s"$cypherToken: Order by index backed property in a plan with an aggregation and an expand") {
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.InterpretedAndSlotted,
         s"MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN a.prop2, count(b) ORDER BY a.prop2 $cypherToken", executeBefore = createSomeNodes)
 
       result.executionPlanDescription() should (
@@ -168,7 +168,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     }
 
     test(s"$cypherToken: Order by index backed property in a plan with a distinct") {
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.InterpretedAndSlotted,
         s"MATCH (a:Awesome)-[r]->(b) WHERE a.prop2 > 1 RETURN DISTINCT a.prop2 ORDER BY a.prop2 $cypherToken", executeBefore = createSomeNodes)
 
       result.executionPlanDescription() should (
@@ -196,7 +196,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     test(s"$cypherToken: Order by index backed property should plan with provided order (contains scan)") {
       createStringyNodes()
 
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.InterpretedAndSlotted,
         s"MATCH (n:Awesome) WHERE n.prop3 CONTAINS 'cat' RETURN n.prop3 ORDER BY n.prop3 $cypherToken",
         executeBefore = createStringyNodes)
 
@@ -215,7 +215,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     test(s"$cypherToken: Order by index backed property should plan with provided order (ends with scan)") {
       createStringyNodes()
 
-      val result = executeWith(Configs.Interpreted,
+      val result = executeWith(Configs.InterpretedAndSlotted,
         s"MATCH (n:Awesome) WHERE n.prop3 ENDS WITH 'og' RETURN n.prop3 ORDER BY n.prop3 $cypherToken",
         executeBefore = createStringyNodes)
 
@@ -232,7 +232,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
   // Only tested in ASC mode because it's hard to make compatibility check out otherwise
   test("ASC: Order by index backed property in a plan with an outer join") {
     // Be careful with what is created in createSomeNodes. It underwent careful cardinality tuning to get exactly the plan we want here.
-    val result =  executeWith(Configs.Interpreted - Configs.Cost3_1 - Configs.Cost2_3,
+    val result =  executeWith(Configs.InterpretedAndSlotted - Configs.Cost3_1 - Configs.Cost2_3,
       """MATCH (b:B {foo:1, bar:1})
         |OPTIONAL MATCH (a:Awesome)-[r]->(b) USING JOIN ON b
         |WHERE a.prop3 > 'foo'

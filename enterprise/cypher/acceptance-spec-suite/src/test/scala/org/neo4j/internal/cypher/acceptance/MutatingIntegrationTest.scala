@@ -306,7 +306,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
   }
 
   test("failed query should not leave dangling transactions") {
-    failWithError(Configs.AbsolutelyAll, "RETURN 1 / 0", List("/ by zero", "divide by zero"))
+    failWithError(Configs.All, "RETURN 1 / 0", List("/ by zero", "divide by zero"))
 
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
     contextBridge.getKernelTransactionBoundToThisThread( false ) should be(null)
@@ -339,7 +339,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("create with parameters is not ok when variable already exists") {
     val errorMessages = List("The variable is already declared in this context", "It already exists in this context")
-    failWithError(Configs.AbsolutelyAll - Configs.Cost2_3, "create (a) with a create (a {name:\"Foo\"})-[:BAR]->()", errorMessages)
+    failWithError(Configs.All - Configs.Cost2_3, "create (a) with a create (a {name:\"Foo\"})-[:BAR]->()", errorMessages)
   }
 
   test("failure_only_fails_inner_transaction") {
@@ -360,7 +360,7 @@ class MutatingIntegrationTest extends ExecutionEngineFunSuite with QueryStatisti
 
   test("cant set properties after node is already created") {
     val errorMessages = List("The variable is already declared in this context", "It already exists in this context")
-    failWithError(Configs.AbsolutelyAll - Configs.Cost2_3, "create (a)-[:test]->(b), (a {name:'a'})-[:test2]->(c)", errorMessages)
+    failWithError(Configs.All - Configs.Cost2_3, "create (a)-[:test]->(b), (a {name:'a'})-[:test2]->(c)", errorMessages)
   }
 
   test("can create anonymous nodes inside foreach") {

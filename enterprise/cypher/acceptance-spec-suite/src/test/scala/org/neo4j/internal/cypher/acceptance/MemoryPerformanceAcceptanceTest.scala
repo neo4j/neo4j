@@ -68,14 +68,14 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
                   |RETURN ID(a), ID(b), type(r)""".stripMargin
 
     // when
-    executeWith(Configs.Interpreted + Configs.Morsel, query)
+    executeWith(Configs.InterpretedAndSlotted + Configs.Morsel, query)
     // then it should not fail or run out of memory
   }
 
   test("should unwind a long range without going OOM") {
     val expectedResult = 20000000
 
-    val result = executeWith(Configs.Interpreted, s"UNWIND range(1, $expectedResult) AS i RETURN count(*) AS c")
+    val result = executeWith(Configs.InterpretedAndSlotted, s"UNWIND range(1, $expectedResult) AS i RETURN count(*) AS c")
     result.columnAs[Long]("c").toList should equal(List(expectedResult))
   }
 

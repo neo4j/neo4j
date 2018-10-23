@@ -44,7 +44,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
     // when
     val result = executeWith(
-      Configs.Interpreted,
+      Configs.InterpretedAndSlotted,
       "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 RETURN count(*)",
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeSomewhere.aPlan("Apply").withRHS(aPlan("NodeIndexSeek"))
@@ -73,7 +73,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
     graph.createIndex("C", "id")
 
     // when
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       "MATCH (a:A)-->(b), (c:C) WHERE b.id = c.id AND a.id = 42 OPTIONAL MATCH (a)-[:T]->() RETURN count(*)",
       planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeSomewhere.aPlan("Apply").withRHS(aPlan("NodeIndexSeek"))
@@ -220,7 +220,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
     // Matches the word "distance" anywhere in the argument string
     val distanceRegex = ".*distance.*".r
-    val result = executeWith(Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgumentRegex(distanceRegex),
         expectPlansToFail = Configs.OldAndRule))
 

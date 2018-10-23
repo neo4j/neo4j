@@ -47,7 +47,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
         |RETURN count(n)
       """.stripMargin
     val expectedPlan = generateExpectedPlan(query)
-    executeWith(Configs.Interpreted, query,
+    executeWith(Configs.InterpretedAndSlotted, query,
       planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
   }
 
@@ -60,7 +60,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
         |RETURN count(n)
       """.stripMargin
     val expectedPlan = generateExpectedPlan(query)
-    executeWith(Configs.Interpreted, query,
+    executeWith(Configs.InterpretedAndSlotted, query,
       planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
   }
 
@@ -75,7 +75,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
         |RETURN count(r)
       """.stripMargin
     val expectedPlan = generateExpectedPlan(query)
-    executeWith(Configs.Interpreted, query,
+    executeWith(Configs.InterpretedAndSlotted, query,
       planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
   }
 

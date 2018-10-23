@@ -29,27 +29,27 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
 
   test("should provide sensible error message when omitting colon before relationship type on create") {
 
-    failWithError(Configs.AbsolutelyAll - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version2_3,
 
       "CREATE (a)-[ASSOCIATED_WITH]->(b)",
       Seq("Exactly one relationship type must be specified for CREATE. Did you forget to prefix your relationship type with a ':'?"))
   }
 
   test("should provide sensible error message when trying to add multiple relationship types on create") {
-    failWithError(Configs.AbsolutelyAll,
+    failWithError(Configs.All,
       "CREATE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)",
       Seq("A single relationship type must be specified for CREATE",
           "The given query is not currently supported in the selected cost-based planner" ))
   }
 
   test("should provide sensible error message when omitting colon before relationship type on merge") {
-    failWithError(Configs.AbsolutelyAll - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version2_3,
       "MERGE (a)-[ASSOCIATED_WITH]->(b)",
       Seq("Exactly one relationship type must be specified for MERGE. Did you forget to prefix your relationship type with a ':'?"))
   }
 
   test("should provide sensible error message when trying to add multiple relationship types on merge") {
-    failWithError(Configs.AbsolutelyAll - Configs.Rule2_3,
+    failWithError(Configs.All - Configs.Rule2_3,
       "MERGE (a)-[:ASSOCIATED_WITH|:KNOWS]->(b)",
       Seq("A single relationship type must be specified for MERGE",
       "The given query is not currently supported in the selected cost-based planner"))
@@ -71,7 +71,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
 
     // Fixed in 3.2.8
     graph.execute("CREATE (n:Person {text:'abcxxxdefyyyfff'})")
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (x:Person) WHERE x.text =~ '*xxx*yyy*' RETURN x.text", List("Invalid Regex:"))
   }
 
@@ -112,16 +112,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "bool: true, " +
       "flo: 2.9 })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num + n.loc", List("Cannot add `Long` and `Point`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num + n.dur", List("Cannot add `Long` and `Duration`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num + n.dat", List("Cannot add `Long` and `DateTime`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo + n.bool", List("Cannot add `Double` and `Boolean`"))
   }
 
@@ -137,16 +137,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num * n.loc", List("Cannot multiply `Long` and `Point`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num * n.dat", List("Cannot multiply `Long` and `DateTime`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo * n.bool", List("Cannot multiply `Double` and `Boolean`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst * n.str", List("Cannot multiply `LongArray` and `String`"))
   }
 
@@ -162,16 +162,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num - n.loc", List("Cannot subtract `Point` from `Long`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num - n.dat", List("Cannot subtract `DateTime` from `Long`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo - n.bool", List("Cannot subtract `Boolean` from `Double`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst - n.str", List("Cannot subtract `String` from `LongArray`"))
   }
 
@@ -187,16 +187,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num % n.loc", List("Cannot calculate modulus of `Long` and `Point`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num % n.dat", List("Cannot calculate modulus of `Long` and `DateTime`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo % n.bool", List("Cannot calculate modulus of `Double` and `Boolean`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst % n.str", List("Cannot calculate modulus of `LongArray` and `String`"))
   }
 
@@ -212,16 +212,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num / n.loc", List("Cannot divide `Long` by `Point`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num / n.dat", List("Cannot divide `Long` by `DateTime`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo / n.bool", List("Cannot divide `Double` by `Boolean`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst / n.str", List("Cannot divide `LongArray` by `String`"))
   }
 
@@ -237,16 +237,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num ^ n.loc", List("Cannot raise `Long` to the power of `Point`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num ^ n.dat", List("Cannot raise `Long` to the power of `DateTime`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo ^ n.bool", List("Cannot raise `Double` to the power of `Boolean`"))
 
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst ^ n.str", List("Cannot raise `LongArray` to the power of `String`"))
   }
 

@@ -28,7 +28,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val expectedToSucceed = Configs.Interpreted - Configs.Version2_3
+  val expectedToSucceed = Configs.InterpretedAndSlotted - Configs.Version2_3
   val expectedToSucceedRestricted = expectedToSucceed - Configs.AllRulePlanners
 
   test("pattern comprehension involving index seek on RHS") {
@@ -45,7 +45,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         |RETURN [path IN (start)-->(:End {id: 0}) | last(nodes(path))] AS result
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted, query, planComparisonStrategy =
+    val result = executeWith(Configs.InterpretedAndSlotted, query, planComparisonStrategy =
         ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply")
                                            .withRHS(includeSomewhere.aPlan("NodeUniqueIndexSeek")),
           expectPlansToFail = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) + Configs.AllRulePlanners)
@@ -494,7 +494,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         | return c
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
     result.toList should equal(List.empty)
   }
 
@@ -511,7 +511,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         | return c
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
     result.toList should equal(List(Map("c" -> node2), Map("c" -> node3)))
   }
 
@@ -528,7 +528,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
       RETURN [(a)-[:T1]->(b) | [(b)-[:T2]->(c) | c.prop ] ] as result
       """
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.AllRulePlanners, query)
     result.toList should equal(List(Map("result" -> List(List(43, 42)))))
   }
 
@@ -551,7 +551,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     graph.execute(setup)
 
-    val res = executeWith(Configs.Interpreted - Configs.Version2_3 - Configs.AllRulePlanners, query,
+    val res = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.AllRulePlanners, query,
       expectedDifferentResults = Configs.Version3_1)
     // If the (b)-->(:C) does not get correctly evaluated, this will be two instead
     res.toList should equal(List(Map("arraySize" -> 1)))

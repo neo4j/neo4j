@@ -169,7 +169,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
   test("Shortest path from first to last node via top right") {
     val start = System.currentTimeMillis
-    val results = executeWith(Configs.Interpreted,
+    val results = executeWith(Configs.InterpretedAndSlotted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin,
@@ -189,7 +189,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
   test("Shortest path from first to last node via bottom left") {
     val start = System.currentTimeMillis
-    val results = executeWith(Configs.Interpreted,
+    val results = executeWith(Configs.InterpretedAndSlotted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[*]-(dst:$bottomRight))
          |WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
@@ -209,7 +209,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
 
   test("Fallback expander should take on rel-type predicates") {
     val start = System.currentTimeMillis
-    val results = executeWith(Configs.Interpreted,
+    val results = executeWith(Configs.InterpretedAndSlotted,
       s"""PROFILE MATCH p = shortestPath((src:$topLeft)-[rels*]-(dst:$bottomRight))
          |WHERE ALL(r in rels WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
@@ -616,7 +616,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
                   |WHERE ALL(id IN wps WHERE id IN EXTRACT(n IN nodes(p) | n.id))
                   |WITH p, size(nodes(p)) as length order by length DESC limit 1
                   |RETURN EXTRACT(n IN nodes(p) | n.id) as nodes""".stripMargin
-    val result = executeWith(Configs.Interpreted, query,
+    val result = executeWith(Configs.InterpretedAndSlotted, query,
       expectedDifferentResults = Configs.AllRulePlanners + Configs.Cost2_3)
 
     result.toList should equal(List(Map("nodes" -> List(3, 2, 1, 11, 12, 13, 26, 27, 14))))

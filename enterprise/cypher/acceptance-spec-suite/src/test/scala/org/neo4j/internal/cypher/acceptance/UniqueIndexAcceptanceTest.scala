@@ -130,7 +130,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      executeWith(Configs.Interpreted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name",
+      executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3, "MERGE (n:Person {name: 'Andres'}) RETURN n.name",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
           plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
@@ -146,7 +146,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
       graph should haveConstraints(s"${constraintCreator.typeName}:Person(name)")
 
       //WHEN
-      executeWith(Configs.Interpreted - Configs.Cost2_3,
+      executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3,
         "PROFILE MATCH (n:Person {name: 'Andres'}) MERGE (n)-[:KNOWS]->(m:Person {name: 'Maria'}) RETURN n.name",
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           // THEN
@@ -165,7 +165,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
       val query = "MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} SET n:Foo RETURN n.name"
       //WHEN
-      executeWith(Configs.Interpreted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")),
+      executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3, query, params = Map("coll" -> List("Jacob")),
         planComparisonStrategy = ComparePlansWithAssertion((plan) => {
           //THEN
           plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
@@ -183,7 +183,7 @@ class UniqueIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
     val query = "MATCH (n:Person) WHERE n.name = null SET n:FOO"
     //WHEN
-    executeWith(Configs.Interpreted - Configs.Cost2_3, query, planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3, query, planComparisonStrategy = ComparePlansWithAssertion((plan) => {
       //THEN
       plan shouldNot includeSomewhere.aPlan("NodeIndexSeek")
       plan shouldNot includeSomewhere.aPlan("NodeByLabelScan")

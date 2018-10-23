@@ -31,7 +31,7 @@ import scala.collection.JavaConversions._
 
 class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with CypherComparisonSupport {
 
-  private val combinedCallconfiguration = Configs.Interpreted + Configs.Default - Configs.AllRulePlanners - Configs.Version2_3
+  private val combinedCallconfiguration = Configs.InterpretedAndSlotted + Configs.Default - Configs.AllRulePlanners - Configs.Version2_3
 
   private val config = Configs.All - Configs.AllRulePlanners - Configs.Version2_3
 
@@ -127,7 +127,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
 
   test("should not be able to filter as part of standalone call") {
     failWithError(
-      Configs.AbsolutelyAll - Configs.Version2_3,
+      Configs.All - Configs.Version2_3,
       "CALL db.labels() YIELD label WHERE label <> 'A'",
       List("Cannot use standalone call with WHERE"))
   }

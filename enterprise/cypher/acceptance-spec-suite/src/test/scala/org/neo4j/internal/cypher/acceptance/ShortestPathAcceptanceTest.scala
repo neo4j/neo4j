@@ -32,7 +32,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val expectedToSucceed = Configs.Interpreted
+  val expectedToSucceed = Configs.InterpretedAndSlotted
 
   var nodeA: Node = _
   var nodeB: Node = _

@@ -32,8 +32,8 @@ import org.neo4j.values.storable.{DateValue, DurationValue}
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  private val failConf1 = Configs.Interpreted + Configs.Default - Configs.Before3_3AndRule
-  private val failConf2 = Configs.Interpreted + Configs.Default - Configs.Version2_3
+  private val failConf1 = Configs.InterpretedAndSlotted + Configs.Default - Configs.Before3_3AndRule
+  private val failConf2 = Configs.InterpretedAndSlotted + Configs.Default - Configs.Version2_3
 
   // Getting current value of a temporal
 
@@ -163,7 +163,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
                                plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
+      }, expectPlansToFail = Configs.All - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1))))
 
@@ -188,7 +188,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
                                plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
+      }, expectPlansToFail = Configs.All - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         List(LocalDate.of(2018, 4, 1))))
 
@@ -214,7 +214,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
                                plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
+      }, expectPlansToFail = Configs.All - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         Array(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
@@ -241,7 +241,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
                              planComparisonStrategy = ComparePlansWithAssertion({ plan =>
                                plan should includeSomewhere.aPlan("Projection").containingArgumentRegex(cached("timeSpan", "o.timeSpan"))
                                  .onTopOf(aPlan("NodeIndexSeek").containingArgument(":Occasion(timeSpan)"))
-      }, expectPlansToFail = Configs.AbsolutelyAll - Configs.Version3_5 - Configs.Version3_4),
+      }, expectPlansToFail = Configs.All - Configs.Version3_5 - Configs.Version3_4),
                              params = Map("param" ->
         List(LocalDate.of(2018, 4, 1), LocalDate.of(2018, 4, 2))))
 
@@ -371,7 +371,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not create date time with conflicting time zones") {
     val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
     val errorMsg = "Timezone and offset do not match"
-    failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Default, query, Seq(errorMsg), Seq("InvalidArgumentException"))
+    failWithError(Configs.InterpretedAndSlotted - Configs.Version2_3 + Configs.Default, query, Seq(errorMsg), Seq("InvalidArgumentException"))
   }
 
   // Failing when providing wrong values
@@ -858,7 +858,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
     for (func <- Seq("time", "localtime", "date", "datetime", "localdatetime", "duration")) {
       val query = s"RETURN $func('', '', '', '')"
       withClue(s"Executing $query") {
-        failWithError(Configs.AbsolutelyAll - Configs.Version2_3, query,
+        failWithError(Configs.All - Configs.Version2_3, query,
           Seq("Function call does not provide the required number of arguments"))
       }
     }
@@ -902,7 +902,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
         | RETURN time({hour: 12, minute: 34, second: 56, timezone:'Europe/Stockholm'}) = currentCorrectTime as comparison
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
     result.toList should equal(List(Map("comparison" -> true)))
   }
 
@@ -913,7 +913,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
         | RETURN toString(time({time:dt})) as t1, toString(time.truncate('second', dt)) as t2
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
     result.toList should equal(List(Map("t1" -> "12:31:14+02:00", "t2" -> "12:31:14+02:00")))
   }
 
@@ -927,7 +927,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
         |        time.truncate('second', ld, {timezone: 'Europe/Stockholm'}) = currentCorrectTime as comp2
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
     result.toList should equal(List(Map("comp1" -> true, "comp2" -> true)))
   }
 

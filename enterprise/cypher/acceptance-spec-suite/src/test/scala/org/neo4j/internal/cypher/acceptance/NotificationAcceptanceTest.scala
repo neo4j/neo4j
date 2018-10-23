@@ -176,7 +176,7 @@ class NotificationAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
   }
 
   test("do warn when using length on a pattern expression") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       "explain match (a) where a.name='Alice' return length((a)-->()-->())")
 
     result.notifications should contain(LENGTH_ON_NON_PATH.notification(new graphdb.InputPosition(82, 1, 83)))

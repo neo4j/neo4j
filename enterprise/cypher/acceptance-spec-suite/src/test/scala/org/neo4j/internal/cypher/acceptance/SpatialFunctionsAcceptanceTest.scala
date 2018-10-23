@@ -29,8 +29,8 @@ import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  val pointConfig = Configs.Interpreted + Configs.Default - Configs.Version2_3
-  val equalityAndLatestPointConfig = Configs.Interpreted + Configs.Default - Configs.Before3_3AndRule
+  val pointConfig = Configs.InterpretedAndSlotted + Configs.Default - Configs.Version2_3
+  val equalityAndLatestPointConfig = Configs.InterpretedAndSlotted + Configs.Default - Configs.Before3_3AndRule
 
   test("toString on points") {
     executeWith(equalityAndLatestPointConfig, "RETURN toString(point({x:1, y:2})) AS s").toList should equal(List(Map("s" -> "point({x: 1.0, y: 2.0, crs: 'cartesian'})")))
@@ -286,7 +286,7 @@ class SpatialFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cypher
   }
 
   test("point function should fail on wrong type") {
-    val config = Configs.AbsolutelyAll + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
+    val config = Configs.All + TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default) - Configs.Version2_3
     failWithError(config, "RETURN point(1) as dist", List("Type mismatch: expected Map, Node or Relationship but was Integer"))
   }
 

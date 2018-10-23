@@ -99,7 +99,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("handle null value in property map from parameter for create node") {
     val query = "CREATE (a {props}) RETURN a.foo, a.bar"
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz")))
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
@@ -127,7 +127,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("handle null value in property map from parameter") {
     val query = "CREATE (a {props})-[r:REL {props}]->() RETURN a.foo, a.bar, r.foo, r.bar"
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3, query, params = Map("props" -> Map("foo" -> null, "bar" -> "baz")))
 
     result.toSet should equal(Set(Map("a.foo" -> null, "a.bar" -> "baz", "r.foo" -> null, "r.bar" -> "baz")))
     assertStats(result, nodesCreated = 2, relationshipsCreated = 1, propertiesWritten = 2)
@@ -223,7 +223,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should throw on CREATE relationship if start-point is missing") {
     graph.execute("CREATE (a), (b)")
 
-    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+    val config = Configs.All - Configs.Compiled - Configs.Cost2_3
 
     failWithError(config, """MATCH (a), (b)
                             |WHERE id(a)=0 AND id(b)=1
@@ -237,7 +237,7 @@ class CreateAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   test("should throw on CREATE relationship if end-point is missing") {
     graph.execute("CREATE (a), (b)")
 
-    val config = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+    val config = Configs.All - Configs.Compiled - Configs.Cost2_3
 
     failWithError(config, """MATCH (a), (b)
                             |WHERE id(a)=0 AND id(b)=1

@@ -28,7 +28,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should reduce on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN" +
         " reduce(acc=0, s IN ['1','22','1','333'] | acc + size(s)) AS result," +
         " reduce(acc=0, s IN ['1','22','1','333'] | acc + null) AS nullExpression," +
@@ -50,7 +50,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "RETURN" +
@@ -66,7 +66,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should extract on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN" +
         " extract(s IN ['1','22','1','333'] | size(s)) AS result," +
         " extract(s IN ['1','22','1','333'] | null) AS nullExpression," +
@@ -86,7 +86,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "RETURN" +
@@ -102,21 +102,21 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should list comprehension on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN [s IN ['1','22','1','333']] AS result")
 
     result.toList.head should equal(Map("result" -> List("1", "22", "1", "333")))
   }
 
   test("should list comprehension on values, with predicate") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN [s IN ['1','22','1','333'] WHERE s STARTS WITH '1'] AS result")
 
     result.toList.head should equal(Map("result" -> List("1", "1")))
   }
 
   test("should list comprehension on values, with predicate and extract") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN" +
         " [s IN ['1','22','1','333'] WHERE s STARTS WITH '1' | size(s)] AS result," +
         " [s IN ['1','22','1','333'] WHERE null | size(s)] AS nullPredicate," +
@@ -137,7 +137,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "RETURN [n IN nodes(p)] AS result")
@@ -151,7 +151,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "RETURN [n IN nodes(p) WHERE n.x <= 2] AS result")
@@ -165,7 +165,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "RETURN [n IN nodes(p) WHERE n.x <= 2 | n.x] AS result")
@@ -174,7 +174,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should filter on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN" +
         " filter(s IN ['1','22','1','333'] WHERE s STARTS WITH '1') AS result," +
         " filter(s IN ['1','22','1','333'] WHERE null) AS nullPredicate," +
@@ -195,7 +195,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "RETURN" +
@@ -211,7 +211,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should all predicate on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN " +
         " all(s IN ['1','22','1','333'] WHERE size(s) > 0) AS allTrue, " +
         " all(s IN ['1','22','1','333'] WHERE size(s) > 1) AS someFalse, " +
@@ -235,7 +235,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE all(n IN nodes(p) WHERE n:Label)" +
@@ -255,7 +255,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should any predicate on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN " +
         " any(s IN ['1','22','1','333'] WHERE size(s) = 1) AS someTrue, " +
         " any(s IN ['1','22','1','333'] WHERE size(s) = 0) AS allFalse, " +
@@ -279,7 +279,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE any(n IN nodes(p) WHERE n:Label) " +
@@ -299,7 +299,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should none predicate on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN" +
         " none(s IN ['1','22','1','333'] WHERE size(s) = 0) AS allFalse," +
         " none(s IN ['1','22','1','333'] WHERE size(s) = 1) AS someTrue," +
@@ -324,7 +324,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE none(n IN nodes(p) WHERE n:Fake) " +
@@ -345,7 +345,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   }
 
   test("should single predicate on values") {
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN " +
         " single(s IN ['1','22','1','333'] WHERE s = '0') AS noneTrue," +
         " single(s IN ['1','22','1','333'] WHERE s = '333') AS oneTrue," +
@@ -368,11 +368,11 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
   // NOTE: should be merged with above test, but older Cypher versions fail on ONLY this case. it would be a shame to remove asserts on all other cases.
   test("should single predicate on values -- multiple true with null case") {
     val costPlannerAndCurrentRuntimes = TestConfiguration(Versions(Versions.V3_4, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes.all)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN " +
         " single(s IN ['1',null,'1','333'] WHERE s = '1') AS twoTrueWithNull",
       expectedDifferentResults =
-        Configs.Interpreted - costPlannerAndCurrentRuntimes)
+        Configs.InterpretedAndSlotted - costPlannerAndCurrentRuntimes)
 
     result.toList.head should equal(Map(
       "twoTrueWithNull" -> false))
@@ -384,7 +384,7 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val n3 = createLabeledNode(Map("x" -> 3), "Label")
     relate(n1, n2)
     relate(n2, n3)
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       query =
         "MATCH p=(n1:Label {x:1})-[*2]-(n3:Label {x:3}) " +
           "WHERE single(n IN nodes(p) WHERE n.x = 1) " +

@@ -95,7 +95,7 @@ class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisti
         |MERGE (a)-[r:X]->()
       """.stripMargin
 
-    failWithError(Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3, query, Seq(
+    failWithError(Configs.All - Configs.Compiled - Configs.Cost2_3, query, Seq(
       "Expected to find a node, but found instead: null",
       "Expected to find a node at a but found nothing Some(null)",
       "Failed to create relationship `r`, node `a` is missing. " +

@@ -50,7 +50,7 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    executeWith(Configs.Interpreted + Configs.Version3_4 - Configs.Cost2_3 - Configs.Cost3_1, query,
+    executeWith(Configs.InterpretedAndSlotted + Configs.Version3_4 - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should includeSomewhere.aPlan("NodeLeftOuterHashJoin")
       p should not(includeSomewhere.aPlan("NodeHashJoin"))
@@ -69,7 +69,7 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
+    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
       p should not(includeSomewhere.aPlan("NodeHashJoin"))
     }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
@@ -84,7 +84,7 @@ class HintAcceptanceTest
         |USING JOIN ON pB
         |RETURN *""".stripMargin
 
-    executeWith(Configs.Interpreted - Configs.Cost2_3 - Configs.Cost3_1, query,
+    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
@@ -111,7 +111,7 @@ class HintAcceptanceTest
                   |RETURN a.prop, b.prop
                 """.stripMargin
 
-    executeWith(Configs.Interpreted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1, query,
+    executeWith(Configs.InterpretedAndSlotted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek"))
       }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))

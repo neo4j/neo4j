@@ -39,7 +39,7 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
   test("should fail at run time when using the shortest path fallback") {
     // when
-    failWithError(Configs.AbsolutelyAll - Configs.AllRulePlanners - Configs.Cost2_3,
+    failWithError(Configs.All - Configs.AllRulePlanners - Configs.Cost2_3,
       s"""MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin,
@@ -49,7 +49,7 @@ class ShortestPathExhaustiveForbiddenAcceptanceTest extends ExecutionEngineFunSu
 
   test("should warn if shortest path fallback is planned") {
     // when
-    val result = executeWith(Configs.Interpreted,
+    val result = executeWith(Configs.InterpretedAndSlotted,
       s"""EXPLAIN MATCH p = shortestPath((src:$topLeft)-[*0..]-(dst:$topLeft))
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin)

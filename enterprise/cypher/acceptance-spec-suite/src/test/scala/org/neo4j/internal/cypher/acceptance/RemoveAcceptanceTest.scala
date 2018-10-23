@@ -44,7 +44,7 @@ class RemoveAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsT
   }
 
   test("remove property from null literal") {
-    executeWith(Configs.Interpreted - Configs.Cost2_3, "REMOVE null.p") should have size 0
+    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3, "REMOVE null.p") should have size 0
   }
 
 }

@@ -49,7 +49,7 @@ class LoadCsvAcceptanceTest
     with RunWithConfigTestSupport
     with ResourceTracking {
 
-  private val expectedToFail = Configs.AbsolutelyAll - Configs.Compiled - Configs.Cost2_3
+  private val expectedToFail = Configs.All - Configs.Compiled - Configs.Cost2_3
 
   override protected def initTest(): Unit = {
     super.initTest()
@@ -86,7 +86,7 @@ class LoadCsvAcceptanceTest
 
     // when & then
     for (url <- urls) {
-      val result = executeWith(Configs.Interpreted - Configs.Version2_3,
+      val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3,
         s"""LOAD CSV WITH HEADERS FROM '$url' AS row
             | MATCH (user:User{userID: row.USERID}) USING INDEX user:User(userID)
             | MATCH (order:Order{orderID: row.OrderId})

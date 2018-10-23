@@ -35,14 +35,14 @@ class LoadCsvAcceptanceUserAgentTest
   test("should be able to download data from the web") {
     val url = s"http://127.0.0.1:$port/test.csv".cypherEscape
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
 
   test("should be able to download from a website when redirected and cookies are set") {
     val url = s"http://127.0.0.1:$port/redirect_test.csv".cypherEscape
 
-    val result = executeWith(Configs.Interpreted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3, s"LOAD CSV FROM '$url' AS line RETURN count(line)")
     result.columnAs[Long]("count(line)").toList should equal(List(3))
   }
   private val CSV_DATA_CONTENT = "1,1,1\n2,2,2\n3,3,3\n".getBytes

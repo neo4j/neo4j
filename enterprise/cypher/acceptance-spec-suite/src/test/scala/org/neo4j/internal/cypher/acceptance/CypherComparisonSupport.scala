@@ -29,6 +29,26 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Planners.Cost
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Planners.Rule
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.CompiledBytecode
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.CompiledSource
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.Interpreted
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.Slotted
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.SlottedWithCompiledExpressions
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V2_3
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_4
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_5
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.opencypher.v9_0.util.Eagerly
 import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
@@ -95,7 +115,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom - Configs.Morsel
 
     val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
-    val scenariosToExecute = Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios
+    val scenariosToExecute = Configs.All.scenarios ++ explicitlyRequestedExperimentalScenarios
     for (thisScenario <- scenariosToExecute) {
       val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
 
@@ -182,7 +202,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       val baseScenario = extractBaseScenario(expectSucceedEffective, compareResults)
       val explicitlyRequestedExperimentalScenarios = expectSucceedEffective.scenarios intersect Configs.Experimental.scenarios
 
-      val positiveResults = ((Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios) - baseScenario).flatMap {
+      val positiveResults = ((Configs.All.scenarios ++ explicitlyRequestedExperimentalScenarios) - baseScenario).flatMap {
         thisScenario =>
           executeScenario(thisScenario,
                           query,
@@ -228,7 +248,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
         fail("At least one scenario must be expected to succeed to be able to compare plans")
       }
 
-      val baseScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+      val baseScenario = TestScenario(Versions.Default, Planners.Default, Interpreted)
       executeBefore()
       val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
       baseResult
@@ -241,7 +261,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     if (scenariosToChooseFrom.scenarios.isEmpty) {
       fail("At least one scenario must be expected to succeed, to be comparable with plan and result")
     }
-    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Interpreted)
     if (scenariosToChooseFrom.containsScenario(preferredScenario))
       preferredScenario
     else
@@ -364,7 +384,7 @@ object NewRuntimeMonitor {
 /**
   * Will run a query across versions and configurations, making sure they all agree on the results and/or errors.
   *
-  * For every query tested using `testWith`, the query will be run against all configurations. Every configuration
+  * For every query tested using `executeWith`, the query will be run against all configurations. Every configuration
   * is expected to either succeed or fail. When new features are added that enable queries in new configurations,
   * acceptance tests will start failing because now a configuration is succeeding that was not successful before.
   *
@@ -383,7 +403,7 @@ object CypherComparisonSupport {
   }
 
   object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_4, v3_5)
+    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_4, V3_5)
 
     implicit def versionToVersions(version: Version): Versions = Versions(version)
 
@@ -400,7 +420,7 @@ object CypherComparisonSupport {
       override val acceptedRuntimeVersionNames = Set("3.5")
     }
 
-    object v3_5 extends Version("3.5")
+    object V3_5 extends Version("3.5")
 
     object Default extends Version("") {
       override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.4", "3.5")
@@ -427,7 +447,7 @@ object CypherComparisonSupport {
 
   object Planners {
 
-    val all = Planners(Cost, Rule)
+    val all = Planners(Cost, Rule, Default)
 
     implicit def plannerToPlanners(planner: Planner): Planners = Planners(planner)
 
@@ -463,6 +483,7 @@ object CypherComparisonSupport {
 
     object Default extends Runtime(Set("COMPILED", "SLOTTED", "INTERPRETED", "PROCEDURE"), "")
 
+    // Not included in `all`
     object Morsel extends Runtime(Set("MORSEL", "PROCEDURE"), "runtime=morsel")
 
   }
@@ -577,7 +598,7 @@ object CypherComparisonSupport {
 
       // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
       // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
-      val versionsWithUnreportedProcedureUsage = (Versions.V2_3 -> Versions.V3_1) + Versions.Default
+      val versionsWithUnreportedProcedureUsage = (V2_3 -> V3_1) + Versions.Default
       val (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) =
         if (versionsWithUnreportedProcedureUsage.versions.contains(version))
           (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"), reportedPlannerVersion.getOrElse("NONE"))
@@ -627,53 +648,45 @@ object CypherComparisonSupport {
 
     def Default: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default)
 
-    def Compiled: TestConfiguration = TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
+    def Compiled: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(CompiledSource, CompiledBytecode))
 
-    def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
+    def Morsel: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(Runtimes.Morsel))
 
-    def Interpreted: TestConfiguration =
-      TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def CommunityInterpreted: TestConfiguration = TestConfiguration(Versions.all, Planners.all, Runtimes(Interpreted))
 
-    def CommunityInterpreted: TestConfiguration =
-      TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def SlottedInterpreted: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(Slotted, SlottedWithCompiledExpressions))
 
-    def SlottedInterpreted: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions))
+    def InterpretedAndSlotted: TestConfiguration = CommunityInterpreted + SlottedInterpreted
 
-    def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+    // TODO is this needed?
+    def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Interpreted)
 
-    def Cost2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Cost, Runtimes.Default)
+    def Cost2_3: TestConfiguration = TestConfiguration(V2_3, Cost, Runtimes.all)
 
-    def Cost3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Cost, Runtimes.Default)
+    def Cost3_1: TestConfiguration = TestConfiguration(V3_1, Cost, Runtimes.all)
 
-    def Cost3_4: TestConfiguration = TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def Cost3_4: TestConfiguration = TestConfiguration(V3_4, Cost, Runtimes.all)
 
-    def Rule2_3: TestConfiguration = TestScenario(Versions.V2_3, Planners.Rule, Runtimes.Default)
+    def Rule2_3: TestConfiguration = TestConfiguration(V2_3, Rule, Runtimes.all)
 
-    def Rule3_1: TestConfiguration = TestScenario(Versions.V3_1, Planners.Rule, Runtimes.Default)
+    def Rule3_1: TestConfiguration = TestConfiguration(V3_1, Rule, Runtimes.all)
 
-    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Planners.Rule, Runtimes.Default)
+    // TODO that does not exist
+    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Rule, Runtimes.Default)
 
-    def Version2_3: TestConfiguration = TestConfiguration(Versions.V2_3, Planners.all, Runtimes.Default)
+    def Version2_3: TestConfiguration = TestConfiguration(V2_3, Planners.all, Runtimes.all)
 
-    def Version3_1: TestConfiguration = TestConfiguration(Versions.V3_1, Planners.all, Runtimes.Default)
+    def Version3_1: TestConfiguration = TestConfiguration(V3_1, Planners.all, Runtimes.all)
 
-    def Version3_4: TestConfiguration = TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def Version3_4: TestConfiguration = TestConfiguration(V3_4, Planners.all, Runtimes.all)
 
-    def Version3_5: TestConfiguration =
-      TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions)) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default)
+    def Version3_5: TestConfiguration = TestConfiguration(V3_5, Planners.all, Runtimes.all)
 
-    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions(Versions.V2_3, Versions.V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
+    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions.all, Rule, Runtimes.all)
 
-    def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-      TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    // TODO do we need these?
+    def BackwardsCompatibility: TestConfiguration = TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes.Default) +
+      TestScenario(V3_4, Cost, Runtimes.Default)
 
     /**
       * Handy configs for things not supported in older versions
@@ -685,26 +698,23 @@ object CypherComparisonSupport {
     /**
       * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
       */
-    def UpdateConf: TestConfiguration = Interpreted + Default - Cost2_3
-
-    /*
-    If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
-    interesting scenarios. TODO
-     */
-    def All: TestConfiguration = AbsolutelyAll
+    def UpdateConf: TestConfiguration = InterpretedAndSlotted + Default - Cost2_3
 
     /**
       * These are all configurations that will be executed even if not explicitly expected to succeed or fail.
       * Even if not explicitly requested, they are executed to check if they unexpectedly succeed to make sure that
       * test coverage is kept up-to-date with new features.
       */
-    def AbsolutelyAll: TestConfiguration =
-      TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
-        TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions,
-                                                                       Runtimes.Default)) +
-        TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
-        TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
-        TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
+    def All: TestConfiguration =
+      TestConfiguration(Versions.all, Planners.all, Runtimes.all) -
+    // No rule planner after 3.1
+        TestConfiguration(V3_4 -> V3_5, Rule, Runtimes.all) -
+    // No slotted runtime before 3.4
+        TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes(Slotted, SlottedWithCompiledExpressions)) -
+    // No slotted runtime with compiled expressions before 3.5
+        TestConfiguration(V3_4, Planners.all, Runtimes(SlottedWithCompiledExpressions)) -
+    // No compiled runtime before 3.4
+    TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes(CompiledSource, CompiledBytecode))
 
     /**
       * These experimental configurations will only be executed if you explicitly specify them in the test expectation.

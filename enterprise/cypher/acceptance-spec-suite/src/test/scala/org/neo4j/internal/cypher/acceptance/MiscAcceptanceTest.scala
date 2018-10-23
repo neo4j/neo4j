@@ -36,7 +36,7 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
       WHERE i <> j
       RETURN i, j"""
 
-    val result = executeWith(Configs.Interpreted + Configs.Morsel, query)
+    val result = executeWith(Configs.InterpretedAndSlotted + Configs.Morsel, query)
     result.toList should equal(List(Map("j" -> 1, "i" -> 0), Map("j" -> 0, "i" -> 1)))
   }
 

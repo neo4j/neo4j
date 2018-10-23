@@ -32,7 +32,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
  * [[org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LeafPlanningIntegrationTest]]
  */
 class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
-  private val expectedToSucceed = Configs.Interpreted
+  private val expectedToSucceed = Configs.InterpretedAndSlotted
   private val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
 
   test("should be case sensitive for ENDS WITH with indexes") {
@@ -119,7 +119,7 @@ class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     val query = "MATCH (l:Location) WHERE l.name ENDS WITH 'ondon' AND l.country = 'UK' RETURN l"
 
-    val result = executeWith(Configs.Interpreted, query,
+    val result = executeWith(Configs.InterpretedAndSlotted, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
 
     result should evaluateTo(List(Map("l" -> london)))
@@ -186,7 +186,7 @@ class NodeIndexEndsWithScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     graph.createConstraint("Location", "name")
 
-    val config = Configs.AbsolutelyAll - Configs.Compiled - TestConfiguration(Versions(V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
+    val config = Configs.All - Configs.Compiled - TestConfiguration(Versions(V3_1, Versions.Default), Planners.Rule, Runtimes.Default)
     val query = "MATCH (l:Location) WHERE l.name ENDS WITH {param} RETURN l"
     val message = List("Expected a string value, but got 42","Expected a string value, but got Int(42)","Expected two strings, but got London and 42")
 

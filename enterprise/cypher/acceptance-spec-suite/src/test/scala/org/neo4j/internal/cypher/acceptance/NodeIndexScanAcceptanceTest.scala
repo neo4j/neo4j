@@ -32,7 +32,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
  */
 class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
 
-  val expectedToSucceed = Configs.Interpreted
+  val expectedToSucceed = Configs.InterpretedAndSlotted
 
   test("should use index on IS NOT NULL") {
     // Given
@@ -107,7 +107,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         | merge (pm)-[:Call]->(f);
       """.stripMargin
 
-    val result = executeWith(Configs.Interpreted - Configs.Cost2_3, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3, query)
     result.toList should be(empty)
   }
 }

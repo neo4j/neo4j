@@ -34,7 +34,7 @@ import scala.collection.mutable
 
 class VarLengthPlanningTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  private val expectedToSucceed = Configs.Interpreted
+  private val expectedToSucceed = Configs.InterpretedAndSlotted
 
   test("should handle LIKES*0.LIKES") {
     //Given

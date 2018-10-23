@@ -29,7 +29,7 @@ import org.neo4j.values.storable.DurationValue
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  private val INTERPRETED_33_35_NO_RULE = Configs.Interpreted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners
+  private val INTERPRETED_33_35_NO_RULE = Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners
 
   // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
@@ -48,8 +48,8 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
                    |RETURN id(selectedFriendship) AS friendshipId, selectedFriendship.propFive AS propertyValue""".stripMargin
     val params = Map("param" -> 3)
 
-    val result1 = executeWith(Configs.Interpreted, query1, params = params).toList
-    val result2 = executeWith(Configs.Interpreted, query2, params = params).toList
+    val result1 = executeWith(Configs.InterpretedAndSlotted, query1, params = params).toList
+    val result2 = executeWith(Configs.InterpretedAndSlotted, query2, params = params).toList
 
     result1.size should equal(result2.size)
   }
@@ -185,7 +185,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val node2 = createNode(Map("prop" -> 2))
     val query = "MATCH (a) WITH DISTINCT a SKIP 1 LIMIT 1 RETURN count(a)"
 
-    val result = executeWith(Configs.Interpreted, query)
+    val result = executeWith(Configs.InterpretedAndSlotted, query)
 
     result.toList should equal(List(Map("count(a)" -> 1)))
   }
