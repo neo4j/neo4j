@@ -118,6 +118,7 @@ public class AppendOnlyValuesContainer implements ValuesContainer
 {
     private static final int CHUNK_SIZE = (int) ByteUnit.kibiBytes( 512 );
     private static final int REMOVED = 0xFF;
+    private static final ValueType[] VALUE_TYPES = ValueType.values();
 
     private final int chunkSize;
     private final List<ByteBuffer> chunks = new ArrayList<>();
@@ -170,10 +171,10 @@ public class AppendOnlyValuesContainer implements ValuesContainer
         checkArgument( offset >= 0 && offset < chunk.position(), "invalid chunk offset (%d), ref: 0x%X", offset, ref );
         final int typeId = chunk.get( offset ) & 0xFF;
         checkArgument( typeId != REMOVED, "element is already removed, ref: 0x%X", ref );
-        checkArgument( typeId < ValueType.values().length, "invaling typeId (%d) for ref 0x%X", typeId, ref );
+        checkArgument( typeId < VALUE_TYPES.length, "invaling typeId (%d) for ref 0x%X", typeId, ref );
         offset++;
 
-        final ValueType type = ValueType.values()[typeId];
+        final ValueType type = VALUE_TYPES[typeId];
         return type.getReader().read( chunk, offset );
     }
 
