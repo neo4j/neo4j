@@ -84,6 +84,7 @@ public final class CypherCoercions
 
     public static TextValue asTextValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof TextValue) )
         {
             throw cantCoerce( value, "String" );
@@ -93,6 +94,7 @@ public final class CypherCoercions
 
     public static NodeValue asNodeValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof NodeValue) )
         {
             throw cantCoerce( value, "Node" );
@@ -102,6 +104,7 @@ public final class CypherCoercions
 
     public static RelationshipValue asRelationshipValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof RelationshipValue) )
         {
             throw cantCoerce( value, "Relationship" );
@@ -111,6 +114,7 @@ public final class CypherCoercions
 
     public static PathValue asPathValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof PathValue) )
         {
             throw cantCoerce( value, "Path" );
@@ -120,6 +124,7 @@ public final class CypherCoercions
 
     public static IntegralValue asIntegralValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof NumberValue) )
         {
             throw cantCoerce( value, "Integer" );
@@ -129,6 +134,7 @@ public final class CypherCoercions
 
     public static FloatingPointValue asFloatingPointValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof NumberValue) )
         {
             throw cantCoerce( value, "Float" );
@@ -138,6 +144,7 @@ public final class CypherCoercions
 
     public static BooleanValue asBooleanValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof BooleanValue) )
         {
             throw cantCoerce( value, "Boolean" );
@@ -147,6 +154,7 @@ public final class CypherCoercions
 
     public static NumberValue asNumberValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof NumberValue) )
         {
             throw cantCoerce( value, "Number" );
@@ -156,6 +164,7 @@ public final class CypherCoercions
 
     public static PointValue asPointValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof PointValue) )
         {
             throw cantCoerce( value, "Point" );
@@ -165,6 +174,7 @@ public final class CypherCoercions
 
     public static DateValue asDateValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof DateValue) )
         {
             throw cantCoerce( value, "Date" );
@@ -174,6 +184,7 @@ public final class CypherCoercions
 
     public static TimeValue asTimeValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof TimeValue) )
         {
             throw cantCoerce( value, "Time" );
@@ -183,6 +194,7 @@ public final class CypherCoercions
 
     public static LocalTimeValue asLocalTimeValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof LocalTimeValue) )
         {
             throw cantCoerce( value, "LocalTime" );
@@ -192,6 +204,7 @@ public final class CypherCoercions
 
     public static LocalDateTimeValue asLocalDateTimeValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof LocalDateTimeValue) )
         {
             throw cantCoerce( value, "LocalDateTime" );
@@ -201,6 +214,7 @@ public final class CypherCoercions
 
     public static DateTimeValue asDateTimeValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof DateTimeValue) )
         {
             throw cantCoerce( value, "DateTime" );
@@ -210,6 +224,7 @@ public final class CypherCoercions
 
     public static DurationValue asDurationValue( AnyValue value )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( !(value instanceof DurationValue) )
         {
             throw cantCoerce( value, "Duration" );
@@ -219,6 +234,7 @@ public final class CypherCoercions
 
     public static MapValue asMapValue( AnyValue value, DbAccess access )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( value instanceof MapValue )
         {
             return (MapValue) value;
@@ -239,6 +255,7 @@ public final class CypherCoercions
 
     public static ListValue asList( AnyValue value, Neo4jTypes.AnyType innerType, DbAccess access )
     {
+        assert value != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new ListCoercer().apply( value, innerType, access );
     }
 

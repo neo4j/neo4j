@@ -36,6 +36,7 @@ import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.ZERO_INT;
 import static org.neo4j.values.storable.Values.doubleValue;
 import static org.neo4j.values.storable.Values.longValue;
@@ -55,6 +56,8 @@ public final class CypherMath
     //TODO this is horrible spaghetti code, we should push most of this down to AnyValue
     public static AnyValue add( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).plus( (NumberValue) rhs );
@@ -148,6 +151,8 @@ public final class CypherMath
 
     public static AnyValue subtract( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         //numbers
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
@@ -174,6 +179,8 @@ public final class CypherMath
 
     public static AnyValue multiply( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).times( (NumberValue) rhs );
@@ -199,18 +206,22 @@ public final class CypherMath
 
     public static boolean divideCheckForNull( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( rhs instanceof IntegralValue && rhs.equals( ZERO_INT ) )
         {
             throw new ArithmeticException( "/ by zero", null );
         }
         else
         {
-            return lhs == Values.NO_VALUE || rhs == Values.NO_VALUE;
+            return lhs == NO_VALUE || rhs == NO_VALUE;
         }
     }
 
     public static AnyValue divide( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return ((NumberValue) lhs).divideBy( (NumberValue) rhs );
@@ -229,6 +240,8 @@ public final class CypherMath
 
     public static AnyValue modulo( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             if ( lhs instanceof FloatingPointValue || rhs instanceof FloatingPointValue )
@@ -247,6 +260,8 @@ public final class CypherMath
 
     public static AnyValue pow( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( lhs instanceof NumberValue && rhs instanceof NumberValue )
         {
             return doubleValue( Math.pow( ((NumberValue) lhs).doubleValue(), ((NumberValue) rhs).doubleValue() ) );

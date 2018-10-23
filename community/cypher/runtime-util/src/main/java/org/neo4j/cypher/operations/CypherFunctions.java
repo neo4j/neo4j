@@ -81,6 +81,7 @@ public final class CypherFunctions
 
     public static DoubleValue sin( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.sin( ((NumberValue) in).doubleValue() ) );
@@ -93,6 +94,7 @@ public final class CypherFunctions
 
     public static DoubleValue asin( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.asin( ((NumberValue) in).doubleValue() ) );
@@ -105,6 +107,7 @@ public final class CypherFunctions
 
     public static DoubleValue haversin( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( (1.0 - Math.cos( ((NumberValue) in).doubleValue() )) / 2 );
@@ -117,6 +120,7 @@ public final class CypherFunctions
 
     public static DoubleValue cos( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.cos( ((NumberValue) in).doubleValue() ) );
@@ -129,6 +133,7 @@ public final class CypherFunctions
 
     public static DoubleValue cot( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( 1.0 / Math.tan( ((NumberValue) in).doubleValue() ) );
@@ -141,6 +146,7 @@ public final class CypherFunctions
 
     public static DoubleValue acos( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.acos( ((NumberValue) in).doubleValue() ) );
@@ -153,6 +159,7 @@ public final class CypherFunctions
 
     public static DoubleValue tan( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.tan( ((NumberValue) in).doubleValue() ) );
@@ -165,6 +172,7 @@ public final class CypherFunctions
 
     public static DoubleValue atan( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.atan( ((NumberValue) in).doubleValue() ) );
@@ -177,6 +185,7 @@ public final class CypherFunctions
 
     public static DoubleValue atan2( AnyValue y, AnyValue x )
     {
+        assert y != NO_VALUE && x != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( y instanceof NumberValue && x instanceof NumberValue )
         {
             return doubleValue( Math.atan2( ((NumberValue) y).doubleValue(), ((NumberValue) x).doubleValue() ) );
@@ -189,6 +198,7 @@ public final class CypherFunctions
 
     public static DoubleValue ceil( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.ceil( ((NumberValue) in).doubleValue() ) );
@@ -201,6 +211,7 @@ public final class CypherFunctions
 
     public static DoubleValue floor( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.floor( ((NumberValue) in).doubleValue() ) );
@@ -213,7 +224,8 @@ public final class CypherFunctions
 
     public static DoubleValue round( AnyValue in )
     {
-       if ( in instanceof NumberValue )
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( in instanceof NumberValue )
         {
             return doubleValue( Math.round( ((NumberValue) in).doubleValue() ) );
         }
@@ -225,6 +237,7 @@ public final class CypherFunctions
 
     public static NumberValue abs( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             if ( in instanceof IntegralValue )
@@ -244,6 +257,7 @@ public final class CypherFunctions
 
     public static DoubleValue toDegrees( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.toDegrees( ((NumberValue) in).doubleValue() ) );
@@ -256,6 +270,7 @@ public final class CypherFunctions
 
     public static DoubleValue exp( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.exp( ((NumberValue) in).doubleValue() ) );
@@ -268,6 +283,7 @@ public final class CypherFunctions
 
     public static DoubleValue log( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.log( ((NumberValue) in).doubleValue() ) );
@@ -280,6 +296,7 @@ public final class CypherFunctions
 
     public static DoubleValue log10( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.log10( ((NumberValue) in).doubleValue() ) );
@@ -292,6 +309,7 @@ public final class CypherFunctions
 
     public static DoubleValue toRadians( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.toRadians( ((NumberValue) in).doubleValue() ) );
@@ -320,6 +338,7 @@ public final class CypherFunctions
 
     public static LongValue signum( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return longValue( (long) Math.signum( ((NumberValue) in).doubleValue() ) );
@@ -332,6 +351,7 @@ public final class CypherFunctions
 
     public static DoubleValue sqrt( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof NumberValue )
         {
             return doubleValue( Math.sqrt( ((NumberValue) in).doubleValue() ) );
@@ -363,6 +383,7 @@ public final class CypherFunctions
 
     public static NodeValue startNode( AnyValue anyValue, DbAccess access )
     {
+        assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof RelationshipValue )
         {
             return access.relationshipGetStartNode( (RelationshipValue) anyValue );
@@ -375,6 +396,7 @@ public final class CypherFunctions
 
     public static NodeValue endNode( AnyValue anyValue, DbAccess access )
     {
+        assert anyValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( anyValue instanceof RelationshipValue )
         {
             return access.relationshipGetEndNode( (RelationshipValue) anyValue );
@@ -387,6 +409,7 @@ public final class CypherFunctions
 
     public static BooleanValue propertyExists( String key, AnyValue container, DbAccess dbAccess )
     {
+        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ) ) ? TRUE : FALSE;
@@ -408,6 +431,7 @@ public final class CypherFunctions
 
     public static AnyValue propertyGet( String key, AnyValue container, DbAccess dbAccess )
     {
+        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ) );
@@ -448,6 +472,7 @@ public final class CypherFunctions
 
     public static AnyValue containerIndex( AnyValue container, AnyValue index, DbAccess dbAccess )
     {
+        assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
         if ( container instanceof VirtualNodeValue )
         {
             return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( asString( index ) ) );
@@ -476,6 +501,7 @@ public final class CypherFunctions
 
     public static AnyValue head( AnyValue container )
     {
+        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof SequenceValue )
         {
             SequenceValue sequence = (SequenceValue) container;
@@ -494,7 +520,8 @@ public final class CypherFunctions
 
     public static ListValue tail( AnyValue container )
     {
-       if ( container instanceof ListValue )
+        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        if ( container instanceof ListValue )
        {
            return ((ListValue) container).tail();
        }
@@ -510,6 +537,7 @@ public final class CypherFunctions
 
     public static AnyValue last( AnyValue container )
     {
+        assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof SequenceValue )
         {
             SequenceValue sequence = (SequenceValue) container;
@@ -529,6 +557,7 @@ public final class CypherFunctions
 
     public static TextValue left( AnyValue in, AnyValue endPos )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             int len = asInt( endPos );
@@ -542,6 +571,7 @@ public final class CypherFunctions
 
     public static TextValue ltrim( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             return ((TextValue) in).ltrim();
@@ -554,6 +584,7 @@ public final class CypherFunctions
 
     public static TextValue rtrim( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             return ((TextValue) in).rtrim();
@@ -566,6 +597,7 @@ public final class CypherFunctions
 
     public static TextValue trim( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             return ((TextValue) in).trim();
@@ -578,6 +610,8 @@ public final class CypherFunctions
 
     public static TextValue replace( AnyValue original, AnyValue search, AnyValue replaceWith )
     {
+        assert original != NO_VALUE && search != NO_VALUE && replaceWith != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
+
         if ( original instanceof TextValue )
         {
             return ((TextValue) original).replace( asString( search ), asString( replaceWith ) );
@@ -590,6 +624,7 @@ public final class CypherFunctions
 
     public static AnyValue reverse( AnyValue original )
     {
+        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( original instanceof TextValue )
         {
             return ((TextValue) original).reverse();
@@ -608,6 +643,7 @@ public final class CypherFunctions
 
     public static TextValue right( AnyValue original, AnyValue length )
     {
+        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( original instanceof TextValue )
         {
             TextValue asText = (TextValue) original;
@@ -627,6 +663,8 @@ public final class CypherFunctions
 
     public static ListValue split( AnyValue original, AnyValue separator )
     {
+        assert original != NO_VALUE && separator != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
+
         if ( original instanceof TextValue )
         {
             TextValue asText = (TextValue) original;
@@ -644,6 +682,7 @@ public final class CypherFunctions
 
     public static TextValue substring( AnyValue original, AnyValue start )
     {
+        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( original instanceof TextValue )
         {
             TextValue asText = (TextValue) original;
@@ -658,6 +697,7 @@ public final class CypherFunctions
 
     public static TextValue substring( AnyValue original, AnyValue start, AnyValue length )
     {
+        assert original != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( original instanceof TextValue )
         {
             TextValue asText = (TextValue) original;
@@ -672,6 +712,7 @@ public final class CypherFunctions
 
     public static TextValue toLower( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             return ((TextValue) in).toLower();
@@ -684,6 +725,7 @@ public final class CypherFunctions
 
     public static TextValue toUpper( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             return ((TextValue) in).toUpper();
@@ -696,6 +738,7 @@ public final class CypherFunctions
 
     public static LongValue id( AnyValue item )
     {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof VirtualNodeValue )
         {
             return longValue( ((VirtualNodeValue) item).id() );
@@ -714,6 +757,7 @@ public final class CypherFunctions
 
     public static ListValue labels( AnyValue item, DbAccess access )
     {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof NodeValue )
         {
             return access.getLabelsForNode( ((NodeValue) item).id() );
@@ -726,6 +770,7 @@ public final class CypherFunctions
 
     public static boolean hasLabel( AnyValue entity, int labelToken, DbAccess access )
     {
+        assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( entity instanceof NodeValue )
         {
             return access.isLabelSetOnNode( labelToken, ((NodeValue) entity).id() );
@@ -738,6 +783,7 @@ public final class CypherFunctions
 
     public static TextValue type( AnyValue item )
     {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof RelationshipValue )
         {
             return ((RelationshipValue) item).type();
@@ -750,6 +796,7 @@ public final class CypherFunctions
 
     public static ListValue nodes( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof PathValue )
         {
             return VirtualValues.list( ((PathValue) in).nodes() );
@@ -762,6 +809,7 @@ public final class CypherFunctions
 
     public static ListValue relationships( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof PathValue )
         {
             return VirtualValues.list( ((PathValue) in).relationships() );
@@ -774,6 +822,7 @@ public final class CypherFunctions
 
     public static Value point( AnyValue in, DbAccess access )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof VirtualNodeValue )
         {
             return asPoint( access, (VirtualNodeValue) in );
@@ -799,6 +848,7 @@ public final class CypherFunctions
 
     public static ListValue keys( AnyValue in, DbAccess access )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof VirtualNodeValue )
         {
             return extractKeys( access, access.nodePropertyIds( ((VirtualNodeValue) in).id() ) );
@@ -819,6 +869,7 @@ public final class CypherFunctions
 
     public static MapValue properties( AnyValue in, DbAccess access )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof VirtualNodeValue )
         {
             return access.nodeAsMap( ((VirtualNodeValue) in).id() );
@@ -839,6 +890,7 @@ public final class CypherFunctions
 
     public static IntegralValue size( AnyValue item )
     {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof PathValue )
         {
             throw new CypherTypeException( "SIZE cannot be used on paths", null );
@@ -860,6 +912,7 @@ public final class CypherFunctions
     //NOTE all usage except for paths is deprecated
     public static IntegralValue length( AnyValue item )
     {
+        assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof PathValue )
         {
             return longValue( ((PathValue) item).size() );
@@ -880,6 +933,7 @@ public final class CypherFunctions
 
     public static Value toBoolean( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof BooleanValue )
         {
             return (BooleanValue) in;
@@ -904,6 +958,7 @@ public final class CypherFunctions
 
     public static Value toFloat( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof DoubleValue )
         {
             return (DoubleValue) in;
@@ -931,6 +986,7 @@ public final class CypherFunctions
 
     public static Value toInteger( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof IntegralValue )
         {
             return (IntegralValue) in;
@@ -951,6 +1007,7 @@ public final class CypherFunctions
 
     public static TextValue toString( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof TextValue )
         {
             return (TextValue) in;
@@ -976,7 +1033,9 @@ public final class CypherFunctions
 
     public static ListValue fromSlice( AnyValue collection, AnyValue fromValue )
     {
-       int from = asInt( fromValue );
+        assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
+        int from = asInt( fromValue );
        ListValue list = makeTraversable( collection );
        if ( from >= 0 )
        {
@@ -988,9 +1047,10 @@ public final class CypherFunctions
        }
     }
 
-    public static ListValue toSlice( AnyValue collection, AnyValue fromValue )
+    public static ListValue toSlice( AnyValue collection, AnyValue toValue )
     {
-        int from = asInt( fromValue );
+        assert collection != NO_VALUE && toValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+        int from = asInt( toValue );
         ListValue list = makeTraversable( collection );
         if ( from >= 0 )
         {
@@ -1004,6 +1064,9 @@ public final class CypherFunctions
 
     public static ListValue fullSlice( AnyValue collection, AnyValue fromValue, AnyValue toValue )
     {
+        assert collection != NO_VALUE && fromValue != NO_VALUE && toValue != NO_VALUE :
+                "NO_VALUE checks need to happen outside this call";
+
         int from = asInt( fromValue );
         int to = asInt( toValue );
         ListValue list = makeTraversable( collection );
@@ -1223,6 +1286,7 @@ public final class CypherFunctions
 
     private static CypherTypeException notAString( String method, AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return new CypherTypeException(
                 format( "Expected a string value for `%s`, but got: %s; consider converting it to a string with " +
                         "toString().",

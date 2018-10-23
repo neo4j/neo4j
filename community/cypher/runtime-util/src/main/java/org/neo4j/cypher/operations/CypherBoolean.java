@@ -67,16 +67,19 @@ public final class CypherBoolean
 
     public static Value xor( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return (lhs == TRUE) ^ (rhs == TRUE) ? TRUE : FALSE;
     }
 
     public static Value not( AnyValue in )
     {
+        assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         return in != TRUE ? TRUE : FALSE;
     }
 
     public static Value equals( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         Boolean compare = lhs.ternaryEquals( rhs );
         if ( compare == null )
         {
@@ -87,6 +90,7 @@ public final class CypherBoolean
 
     public static Value notEquals( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         Boolean compare = lhs.ternaryEquals( rhs );
         if ( compare == null )
         {
@@ -97,6 +101,7 @@ public final class CypherBoolean
 
     public static BooleanValue regex( TextValue lhs, TextValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         String regexString = rhs.stringValue();
         try
         {
@@ -111,12 +116,15 @@ public final class CypherBoolean
 
     public static BooleanValue regex( TextValue text, Pattern pattern )
     {
+        assert text != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         boolean matches = pattern.matcher( text.stringValue() ).matches();
         return matches ? TRUE : FALSE;
     }
 
     public static Value lessThan( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
@@ -165,6 +173,7 @@ public final class CypherBoolean
 
     public static Value lessThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
@@ -213,6 +222,7 @@ public final class CypherBoolean
 
     public static Value greaterThan( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
@@ -261,6 +271,7 @@ public final class CypherBoolean
 
     public static Value greaterThanOrEqual( AnyValue lhs, AnyValue rhs )
     {
+        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;
