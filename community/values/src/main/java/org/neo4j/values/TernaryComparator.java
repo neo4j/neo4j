@@ -19,17 +19,17 @@
  */
 package org.neo4j.values;
 
+import java.util.Comparator;
+
 /**
  * Comparator that allows undefined comparison.
  */
-@FunctionalInterface
-public interface TernaryComparator<T>
+public interface TernaryComparator<T> extends Comparator<T>
 {
     /**
-     * Should return a negative integer if o1 is smaller than o2,
-     * a positive integer if o1 is bigger than o2,
-     * 0 if o1 and o2 are equal, and
-     * {@code null} if they are not comparable.
+     * Compares two values under ternary logic, see {@link Comparison}
+     * @param o1 the left-hand side of the comparison
+     * @param o2 the right-hand side of the comparison
      */
     Comparison ternaryCompare( T o1, T o2 );
 }

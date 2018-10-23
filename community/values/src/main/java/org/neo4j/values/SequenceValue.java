@@ -162,6 +162,20 @@ public interface SequenceValue extends Iterable<AnyValue>
         }
     }
 
+    default Comparison ternaryCompareToSequence( SequenceValue other, TernaryComparator<AnyValue> comparator )
+    {
+        IterationPreference pref = iterationPreference();
+        IterationPreference otherPref = other.iterationPreference();
+        if ( pref == RANDOM_ACCESS && otherPref == RANDOM_ACCESS )
+        {
+            return ternaryCompareUsingRandomAccess( this, other, comparator );
+        }
+        else
+        {
+            return ternaryCompareUsingIterators( this, other, comparator );
+        }
+    }
+
     static int compareUsingRandomAccess( SequenceValue a, SequenceValue b, Comparator<AnyValue> comparator )
     {
         int i = 0;
@@ -188,7 +202,7 @@ public interface SequenceValue extends Iterable<AnyValue>
         Iterator<AnyValue> aIterator = a.iterator();
         Iterator<AnyValue> bIterator = b.iterator();
 
-        while ( aIterator.hasNext() && bIterator.hasNext() )
+        while ( x == 0 && aIterator.hasNext() && bIterator.hasNext() )
         {
             x = comparator.compare( aIterator.next(), bIterator.next() );
         }
@@ -199,6 +213,43 @@ public interface SequenceValue extends Iterable<AnyValue>
         }
 
         return x;
+    }
+
+    static Comparison ternaryCompareUsingRandomAccess( SequenceValue a, SequenceValue b, TernaryComparator<AnyValue> comparator )
+    {
+        Comparison cmp = Comparison.EQUAL;
+        int i = 0;
+        int length = Math.min( a.length(), b.length() );
+        while ( cmp == Comparison.EQUAL && i < length )
+        {
+            cmp = comparator.ternaryCompare( a.value( i ), b.value( i ) );
+            i++;
+        }
+        if (  cmp == Comparison.EQUAL )
+        {
+            cmp = Comparison.from( a.length() - b.length() );
+        }
+
+        return cmp;
+    }
+
+    static Comparison ternaryCompareUsingIterators( SequenceValue a, SequenceValue b, TernaryComparator<AnyValue> comparator )
+    {
+        Comparison cmp = Comparison.EQUAL;
+        Iterator<AnyValue> aIterator = a.iterator();
+        Iterator<AnyValue> bIterator = b.iterator();
+
+        while ( cmp == Comparison.EQUAL && aIterator.hasNext() && bIterator.hasNext() )
+        {
+            cmp = comparator.ternaryCompare( aIterator.next(), bIterator.next() );
+        }
+
+        if ( cmp == Comparison.EQUAL )
+        {
+            cmp = Comparison.from( Boolean.compare( aIterator.hasNext(), bIterator.hasNext() ) );
+        }
+
+        return cmp;
     }
 
     default Boolean ternaryEquality( SequenceValue other )

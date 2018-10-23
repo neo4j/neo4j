@@ -125,6 +125,7 @@ public final class CypherBoolean
     public static Value lessThan( AnyValue lhs, AnyValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
+
         if ( isNan( lhs ) || isNan( rhs ) )
         {
             return NO_VALUE;

@@ -549,7 +549,7 @@ public class PointValue extends ScalarValue implements Point, Comparable<PointVa
             {
             case "crs":
                 checkUnassigned( crs, key );
-                assignTextValue( key, value, str -> crs = quotesPattern.matcher( str ).replaceAll( "" ) );
+                assignTextValue( key, value, str -> crs = QUOTES_PATTERN.matcher( str ).replaceAll( "" ) );
                 break;
             case "x":
                 checkUnassigned( x, key );

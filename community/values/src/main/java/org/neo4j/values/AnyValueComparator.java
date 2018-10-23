@@ -29,7 +29,7 @@ import org.neo4j.values.virtual.VirtualValueGroup;
 /**
  * Comparator for any values.
  */
-class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyValue>
+class AnyValueComparator implements TernaryComparator<AnyValue>
 {
     private final Comparator<VirtualValueGroup> virtualValueGroupComparator;
     private final ValueComparator valueComparator;
@@ -40,7 +40,9 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
         this.valueComparator = valueComparator;
     }
 
-    private Comparison cmp( AnyValue v1, AnyValue v2, boolean ternary )
+    @SuppressWarnings( "ConstantConditions" )
+    @Override
+    public int compare( AnyValue v1, AnyValue v2 )
     {
         assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
@@ -48,15 +50,15 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
         // front
         if ( v1 == v2 )
         {
-            return Comparison.EQUAL;
+            return 0;
         }
         if ( v1 == Values.NO_VALUE )
         {
-            return Comparison.GREATER_THAN;
+            return 1;
         }
         if ( v2 == Values.NO_VALUE )
         {
-            return Comparison.SMALLER_THAN;
+            return -1;
         }
 
         // We must handle sequences as a special case, as they can be both storable and virtual
@@ -65,15 +67,15 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
 
         if ( isSequence1 && isSequence2 )
         {
-            return Comparison.from( compareSequences( (SequenceValue) v1, (SequenceValue) v2 ) );
+            return ((SequenceValue) v1).compareToSequence( (SequenceValue) v2, this );
         }
         else if ( isSequence1 )
         {
-            return Comparison.from( compareSequenceAndNonSequence( (SequenceValue) v1, v2 ) );
+            return  compareSequenceAndNonSequence( (SequenceValue) v1, v2 );
         }
         else if ( isSequence2 )
         {
-            return Comparison.from( -compareSequenceAndNonSequence( (SequenceValue) v2, v1 ) );
+            return  -compareSequenceAndNonSequence( (SequenceValue) v2, v1 );
         }
 
         // Handle remaining AnyValues
@@ -88,35 +90,57 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
             // Do not turn this into ?-operator
             if ( isValue1 )
             {
-                if ( ternary )
-                {
-                    return valueComparator.ternaryCompare( (Value) v1, (Value) v2 );
-                }
-                else
-                {
-                    return Comparison.from( valueComparator.compare( (Value) v1, (Value) v2 ) );
-                }
+                return valueComparator.compare( (Value) v1, (Value) v2 );
             }
             else
             {
                 // This returns int
-                return Comparison.from( compareVirtualValues( (VirtualValue) v1, (VirtualValue) v2 ) );
+                return  compareVirtualValues( (VirtualValue) v1, (VirtualValue) v2 );
             }
 
         }
-        return Comparison.from( x );
-    }
-
-    @Override
-    public int compare( AnyValue v1, AnyValue v2 )
-    {
-        return cmp( v1, v2, false ).value();
+        return x;
     }
 
     @Override
     public Comparison ternaryCompare( AnyValue v1, AnyValue v2 )
     {
-        return cmp( v1, v2, true );
+        assert v1 != null && v2 != null : "null values are not supported, use NoValue.NO_VALUE instead";
+
+        if ( v1 == Values.NO_VALUE || v2 == Values.NO_VALUE )
+        {
+            return Comparison.UNDEFINED;
+        }
+
+        // We must handle sequences as a special case, as they can be both storable and virtual
+        boolean isSequence1 = v1.isSequenceValue();
+        boolean isSequence2 = v2.isSequenceValue();
+
+        if ( isSequence1 && isSequence2 )
+        {
+            return ((SequenceValue) v1).ternaryCompareToSequence( (SequenceValue) v2, this );
+        }
+        else if ( isSequence1 || isSequence2 )
+        {
+            return Comparison.UNDEFINED;
+        }
+
+        // Handle remaining AnyValues
+        boolean isValue1 = v1 instanceof Value;
+        boolean isValue2 = v2 instanceof Value;
+
+        if ( isValue1 && isValue2 )
+        {
+            return valueComparator.ternaryCompare( (Value) v1, (Value) v2 );
+        }
+        else if ( !isValue1 && !isValue2 )
+        {
+            return ternaryCompareVirtualValues( (VirtualValue) v1, (VirtualValue) v2 );
+        }
+        else
+        {
+            return Comparison.UNDEFINED;
+        }
     }
 
     @Override
@@ -140,9 +164,24 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
 
         if ( x == 0 )
         {
-            return v1.compareTo( v2, this );
+            return v1.unsafeCompareTo( v2, this );
         }
         return x;
+    }
+
+    private Comparison ternaryCompareVirtualValues( VirtualValue v1, VirtualValue v2 )
+    {
+        VirtualValueGroup id1 = v1.valueGroup();
+        VirtualValueGroup id2 = v2.valueGroup();
+
+        if ( id1 == id2 )
+        {
+            return v1.unsafeTernaryCompareTo( v2, this );
+        }
+        else
+        {
+            return Comparison.UNDEFINED;
+        }
     }
 
     private int compareSequenceAndNonSequence( SequenceValue v1, AnyValue v2 )
@@ -156,10 +195,5 @@ class AnyValueComparator implements Comparator<AnyValue>, TernaryComparator<AnyV
         {
             return virtualValueGroupComparator.compare( VirtualValueGroup.LIST, ((VirtualValue) v2).valueGroup() );
         }
-    }
-
-    private int compareSequences( SequenceValue v1, SequenceValue v2 )
-    {
-        return v1.compareToSequence( v2, this );
     }
 }

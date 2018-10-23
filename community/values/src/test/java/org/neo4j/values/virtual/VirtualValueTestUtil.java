@@ -23,14 +23,13 @@ import java.util.Arrays;
 
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.VirtualValue;
-import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.values.storable.Values.stringArray;
 import static org.neo4j.values.storable.Values.stringValue;
-import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 import static org.neo4j.values.virtual.VirtualValues.emptyMap;
 import static org.neo4j.values.virtual.VirtualValues.nodeValue;
+import static org.neo4j.values.virtual.VirtualValues.relationshipValue;
 
 @SuppressWarnings( "WeakerAccess" )
 public class VirtualValueTestUtil
@@ -49,11 +48,6 @@ public class VirtualValueTestUtil
 
     public static NodeValue node( long id, String... labels )
     {
-        TextValue[] labelValues = new TextValue[labels.length];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            labelValues[i] = stringValue( labels[i] );
-        }
         return nodeValue( id, stringArray( labels ), emptyMap() );
     }
 
@@ -86,7 +80,7 @@ public class VirtualValueTestUtil
         return VirtualValues.list( values );
     }
 
-    public static VirtualValue map( Object... keyOrVal )
+    public static MapValue map( Object... keyOrVal )
     {
         assert keyOrVal.length % 2 == 0;
         String[] keys = new String[keyOrVal.length / 2];

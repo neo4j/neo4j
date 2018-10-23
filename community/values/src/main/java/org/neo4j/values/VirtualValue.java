@@ -68,5 +68,7 @@ public abstract class VirtualValue extends AnyValue
 
     public abstract VirtualValueGroup valueGroup();
 
-    public abstract int compareTo( VirtualValue other, Comparator<AnyValue> comparator );
+    public abstract int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator );
+
+    public abstract Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator );
 }

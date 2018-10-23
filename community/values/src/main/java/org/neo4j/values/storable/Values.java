@@ -72,6 +72,7 @@ public final class Values
     public static final TextValue EMPTY_STRING = StringValue.EMPTY;
     public static final DoubleValue E = Values.doubleValue( Math.E );
     public static final DoubleValue PI = Values.doubleValue( Math.PI );
+    public static final DoubleValue NaN = Values.doubleValue( Double.NaN );
     public static final ArrayValue EMPTY_SHORT_ARRAY = Values.shortArray( new short[0] );
     public static final ArrayValue EMPTY_BOOLEAN_ARRAY = Values.booleanArray( new boolean[0] );
     public static final ArrayValue EMPTY_BYTE_ARRAY = Values.byteArray( new byte[0] );

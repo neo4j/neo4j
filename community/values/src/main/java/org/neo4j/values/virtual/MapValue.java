@@ -35,6 +35,8 @@ import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.Comparison;
+import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.Values;
@@ -539,12 +541,8 @@ public abstract class MapValue extends VirtualValue
     }
 
     @Override
-    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof MapValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different virtual values" );
-        }
         MapValue otherMap = (MapValue) other;
         int size = size();
         int compare = Integer.compare( size, otherMap.size() );
@@ -574,6 +572,40 @@ public abstract class MapValue extends VirtualValue
             }
         }
         return compare;
+    }
+
+    @Override
+    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
+    {
+        MapValue otherMap = (MapValue) other;
+        int size = size();
+        int compare = Integer.compare( size, otherMap.size() );
+        if ( compare == 0 )
+        {
+            String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false).toArray( String[]::new  );
+            Arrays.sort( thisKeys, String::compareTo );
+            String[] thatKeys = StreamSupport.stream( otherMap.keySet().spliterator(), false).toArray( String[]::new  );
+            Arrays.sort( thatKeys, String::compareTo );
+            for ( int i = 0; i < size; i++ )
+            {
+                compare = thisKeys[i].compareTo( thatKeys[i] );
+                if ( compare != 0 )
+                {
+                    return Comparison.from( compare );
+                }
+            }
+
+            for ( int i = 0; i < size; i++ )
+            {
+                String key = thisKeys[i];
+                Comparison comparison = comparator.ternaryCompare( get( key ), otherMap.get( key ) );
+                if ( comparison != Comparison.EQUAL )
+                {
+                    return comparison;
+                }
+            }
+        }
+        return Comparison.from( compare );
     }
 
     @Override

@@ -30,7 +30,9 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
+import org.neo4j.values.Comparison;
 import org.neo4j.values.SequenceValue;
+import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -757,22 +759,17 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     @Override
-    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof ListValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different virtual values" );
-        }
-
         ListValue otherList = (ListValue) other;
-        if ( iterationPreference() == RANDOM_ACCESS && otherList.iterationPreference() == RANDOM_ACCESS )
-        {
-            return randomAccessCompareTo( comparator, otherList );
-        }
-        else
-        {
-            return iteratorCompareTo( comparator, otherList );
-        }
+        return compareToSequence( otherList, comparator );
+    }
+
+    @Override
+    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
+    {
+        ListValue otherList = (ListValue) other;
+        return ternaryCompareToSequence( otherList, comparator );
     }
 
     public AnyValue[] asArray()
@@ -942,48 +939,4 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
         writer.endList();
     }
 
-    private int randomAccessCompareTo( Comparator<AnyValue> comparator, ListValue otherList )
-    {
-        int x = Integer.compare( this.length(), otherList.length() );
-
-        if ( x == 0 )
-        {
-            for ( int i = 0; i < length(); i++ )
-            {
-                x = comparator.compare( this.value( i ), otherList.value( i ) );
-                if ( x != 0 )
-                {
-                    return x;
-                }
-            }
-        }
-
-        return x;
-    }
-
-    private int iteratorCompareTo( Comparator<AnyValue> comparator, ListValue otherList )
-    {
-        Iterator<AnyValue> thisIterator = iterator();
-        Iterator<AnyValue> thatIterator = otherList.iterator();
-        while ( thisIterator.hasNext() )
-        {
-            if ( !thatIterator.hasNext() )
-            {
-                return 1;
-            }
-            int compare = comparator.compare( thisIterator.next(), thatIterator.next() );
-            if ( compare != 0 )
-            {
-                return compare;
-            }
-        }
-        if ( thatIterator.hasNext() )
-        {
-            return -1;
-        }
-        else
-        {
-            return 0;
-        }
-    }
 }

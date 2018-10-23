@@ -40,12 +40,12 @@ import static org.neo4j.values.storable.Values.NO_VALUE;
 
 public abstract class Value extends AnyValue
 {
-    static final Pattern mapPattern = Pattern.compile( "\\{(.*)\\}" );
+    private static final Pattern MAP_PATTERN = Pattern.compile( "\\{(.*)\\}" );
 
-    static final Pattern keyValuePattern =
+    private static final Pattern KEY_VALUE_PATTERN =
             Pattern.compile( "(?:\\A|,)\\s*+(?<k>[a-z_A-Z]\\w*+)\\s*:\\s*(?<v>[^\\s,]+)" );
 
-    static final Pattern quotesPattern = Pattern.compile( "^[\"']|[\"']$" );
+    static final Pattern QUOTES_PATTERN = Pattern.compile( "^[\"']|[\"']$" );
 
     @Override
     public boolean eq( Object other )
@@ -163,7 +163,8 @@ public abstract class Value extends AnyValue
     @Override
     public Boolean ternaryEquals( AnyValue other )
     {
-        if ( other == null || other == NO_VALUE )
+        assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
+        if ( other == NO_VALUE )
         {
             return null;
         }
@@ -174,7 +175,7 @@ public abstract class Value extends AnyValue
         if ( other instanceof Value && ((Value) other).valueGroup() == valueGroup() )
         {
             Value otherValue = (Value) other;
-            if ( this.isNaN() || otherValue.isNaN() )
+            if ( this.ternaryUndefined() || otherValue.ternaryUndefined() )
             {
                 return null;
             }
@@ -186,12 +187,21 @@ public abstract class Value extends AnyValue
     abstract int unsafeCompareTo( Value other );
 
     /**
-     * Should return {@code null} for values that cannot be compared
+     * Should return {@code Comparison.UNDEFINED} for values that cannot be compared
      * under Comparability semantics.
      */
     Comparison unsafeTernaryCompareTo( Value other )
     {
+        if ( ternaryUndefined() || other.ternaryUndefined() )
+        {
+            return Comparison.UNDEFINED;
+        }
         return Comparison.from( unsafeCompareTo( other ) );
+    }
+
+    boolean ternaryUndefined()
+    {
+        return false;
     }
 
     @Override
@@ -239,14 +249,9 @@ public abstract class Value extends AnyValue
 
     public abstract long updateHash( HashFunction hashFunction, long hash );
 
-    public boolean isNaN()
-    {
-        return false;
-    }
-
     static void parseHeaderInformation( CharSequence text, String type, CSVHeaderInformation info )
     {
-        Matcher mapMatcher = mapPattern.matcher( text );
+        Matcher mapMatcher = MAP_PATTERN.matcher( text );
         String errorMessage = format( "Failed to parse %s value: '%s'", type, text );
         if ( !(mapMatcher.find() && mapMatcher.groupCount() == 1) )
         {
@@ -259,7 +264,7 @@ public abstract class Value extends AnyValue
             throw new InvalidValuesArgumentException( errorMessage );
         }
 
-        Matcher matcher = keyValuePattern.matcher( mapContents );
+        Matcher matcher = KEY_VALUE_PATTERN.matcher( mapContents );
         if ( !(matcher.find()) )
         {
             throw new InvalidValuesArgumentException( errorMessage );

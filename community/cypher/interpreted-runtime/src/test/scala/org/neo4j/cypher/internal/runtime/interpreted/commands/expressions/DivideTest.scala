@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.values.storable.{FloatingPointValue, NumberValue}
 import org.opencypher.v9_0.util.ArithmeticException
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.neo4j.values.storable.{NumberValue}
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {
@@ -36,6 +36,6 @@ class DivideTest extends CypherFunSuite {
     // The behaviour is defined as:
     Divide(Literal(1), Literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(Double.PositiveInfinity)
     Divide(Literal(-1), Literal(0.0))(ctx, state).asInstanceOf[NumberValue].doubleValue() should equal(Double.NegativeInfinity)
-    Divide(Literal(0), Literal(0.0))(ctx, state).asInstanceOf[NumberValue].isNaN shouldBe true
+    Divide(Literal(0), Literal(0.0))(ctx, state).asInstanceOf[FloatingPointValue].isNaN shouldBe true
   }
 }

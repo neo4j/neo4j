@@ -51,6 +51,12 @@ public final class NoValue extends Value
     }
 
     @Override
+    boolean ternaryUndefined()
+    {
+        return true;
+    }
+
+    @Override
     public <T> T map( ValueMapper<T> mapper )
     {
         return mapper.mapNoValue();

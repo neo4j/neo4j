@@ -23,6 +23,8 @@ package org.neo4j.values.virtual;
 import java.util.Comparator;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.Comparison;
+import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
 
@@ -31,15 +33,16 @@ public abstract class VirtualRelationshipValue extends VirtualValue
     public abstract long id();
 
     @Override
-    public int compareTo( VirtualValue other, Comparator<AnyValue> comparator )
+    public int unsafeCompareTo( VirtualValue other, Comparator<AnyValue> comparator )
     {
-        if ( !(other instanceof VirtualRelationshipValue) )
-        {
-            throw new IllegalArgumentException( "Cannot compare different virtual values" );
-        }
-
         VirtualRelationshipValue otherNode = (VirtualRelationshipValue) other;
         return Long.compare( id(), otherNode.id() );
+    }
+
+    @Override
+    public Comparison unsafeTernaryCompareTo( VirtualValue other, TernaryComparator<AnyValue> comparator )
+    {
+        return Comparison.from( unsafeCompareTo( other, comparator ) );
     }
 
     @Override
