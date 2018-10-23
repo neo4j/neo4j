@@ -24,59 +24,23 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import org.neo4j.configuration.Config;
 import org.neo4j.configuration.GraphDatabaseSettings;
-import org.neo4j.consistency.checking.CheckDecorator;
-import org.neo4j.consistency.checking.CheckerEngine;
-import org.neo4j.consistency.checking.ComparativeRecordChecker;
 import org.neo4j.consistency.checking.GraphStoreFixture;
-import org.neo4j.consistency.checking.OwningRecordCheck;
-import org.neo4j.consistency.checking.RecordCheck;
-import org.neo4j.consistency.checking.cache.CacheAccess;
-import org.neo4j.consistency.checking.cache.DefaultCacheAccess;
-import org.neo4j.consistency.report.ConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.LabelTokenConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.NodeConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.PropertyConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.PropertyKeyTokenConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.RelationshipConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.RelationshipGroupConsistencyReport;
-import org.neo4j.consistency.report.ConsistencyReport.RelationshipTypeConsistencyReport;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.report.InconsistencyLogger;
 import org.neo4j.consistency.report.InconsistencyReport;
-import org.neo4j.consistency.report.PendingReferenceCheck;
-import org.neo4j.consistency.statistics.DefaultCounts;
 import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.consistency.store.RecordAccess;
-import org.neo4j.consistency.store.RecordReference;
-import org.neo4j.counts.CountsStore;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.StoreAccess;
-import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
-import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
-import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.store.record.PropertyRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -85,9 +49,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.withSettings;
 import static org.neo4j.consistency.ConsistencyCheckService.defaultConsistencyCheckThreadsNumber;
-import static org.neo4j.consistency.checking.cache.PackedMultiFieldCache.defaultArray;
 import static org.neo4j.consistency.report.ConsistencyReporter.NO_MONITOR;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.test.Property.property;
@@ -139,21 +101,16 @@ public class ExecutionOrderIntegrationTest
     void shouldRunChecksInSingleThreadedPass() throws Exception
     {
         // given
-        StoreAccess store = fixture.directStoreAccess().nativeStores();
         int threads = defaultConsistencyCheckThreadsNumber();
-        CacheAccess cacheAccess = new DefaultCacheAccess( defaultArray( store.getNodeStore().getHighId() ), new DefaultCounts( threads ), threads );
-        RecordAccess access = FullCheck.recordAccess( store, cacheAccess );
-        CountsStore countsStore = fixture.counts().get();
 
         FullCheck singlePass = new FullCheck( ConsistencyFlags.DEFAULT, getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
 
         ConsistencySummaryStatistics singlePassSummary = new ConsistencySummaryStatistics();
         InconsistencyLogger logger = mock( InconsistencyLogger.class );
-        InvocationLog singlePassChecks = new InvocationLog();
 
         // when
-        singlePass.execute( fixture.directStoreAccess(), new LogDecorator( singlePassChecks ), access, new InconsistencyReport( logger,
-                singlePassSummary ), cacheAccess, NO_MONITOR, countsStore );
+        singlePass.execute( fixture.getInstantiatedPageCache(), fixture.directStoreAccess(),
+                new InconsistencyReport( logger, singlePassSummary ), NO_MONITOR, fixture.counts().get() );
 
         // then
         verifyZeroInteractions( logger );
@@ -171,312 +128,8 @@ public class ExecutionOrderIntegrationTest
         return StringUtils.EMPTY;
     }
 
-    private static class InvocationLog
-    {
-        private final Map<String, Throwable> data = new HashMap<>();
-        private final Map<String, Integer> duplicates = new HashMap<>();
-
-        @SuppressWarnings( "ThrowableResultOfMethodCallIgnored" )
-        void log( PendingReferenceCheck<?> check, InvocationOnMock invocation )
-        {
-            Method method = invocation.getMethod();
-            if ( Object.class == method.getDeclaringClass() && "finalize".equals( method.getName() ) )
-            {
-                /* skip invocations to finalize - they are not of interest to us,
-                 * and GC is not predictable enough to reliably trace this. */
-                return;
-            }
-            StringBuilder entry = new StringBuilder( method.getName() ).append( '(' );
-            entry.append( check );
-            for ( Object arg : invocation.getArguments() )
-            {
-                if ( arg instanceof AbstractBaseRecord )
-                {
-                    AbstractBaseRecord record = (AbstractBaseRecord) arg;
-                    entry.append( ',' ).append( record.getClass().getSimpleName() )
-                            .append( '[' ).append( record.getId() ).append( ']' );
-                }
-            }
-            String message = entry.append( ')' ).toString();
-            if ( null != data.put( message, new Throwable( message ) ) )
-            {
-                Integer cur = duplicates.get( message );
-                if ( cur == null )
-                {
-                    cur = 1;
-                }
-                duplicates.put( message, cur + 1 );
-            }
-        }
-    }
-
-    private static class LogDecorator implements CheckDecorator
-    {
-        private final InvocationLog log;
-
-        LogDecorator( InvocationLog log )
-        {
-            this.log = log;
-        }
-
-        @Override
-        public void prepare()
-        {
-        }
-
-        <REC extends AbstractBaseRecord, REP extends ConsistencyReport> OwningRecordCheck<REC, REP> logging(
-                RecordCheck<REC, REP> checker )
-        {
-            return new LoggingChecker<>( checker, log );
-        }
-
-        @Override
-        public OwningRecordCheck<NodeRecord, NodeConsistencyReport> decorateNodeChecker(
-                OwningRecordCheck<NodeRecord, NodeConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> decorateRelationshipChecker(
-                OwningRecordCheck<RelationshipRecord, RelationshipConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public RecordCheck<PropertyRecord, PropertyConsistencyReport> decoratePropertyChecker(
-                RecordCheck<PropertyRecord, PropertyConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> decoratePropertyKeyTokenChecker(
-                RecordCheck<PropertyKeyTokenRecord, PropertyKeyTokenConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> decorateRelationshipTypeTokenChecker(
-                RecordCheck<RelationshipTypeTokenRecord, RelationshipTypeConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> decorateLabelTokenChecker(
-                RecordCheck<LabelTokenRecord, LabelTokenConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-
-        @Override
-        public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
-                RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
-        {
-            return logging( checker );
-        }
-    }
-
-    private static class LoggingChecker<REC extends AbstractBaseRecord, REP extends ConsistencyReport>
-            implements OwningRecordCheck<REC, REP>
-    {
-        private final RecordCheck<REC, REP> checker;
-        private final InvocationLog log;
-
-        LoggingChecker( RecordCheck<REC, REP> checker, InvocationLog log )
-        {
-            this.checker = checker;
-            this.log = log;
-        }
-
-        @Override
-        public void check( REC record, CheckerEngine<REC, REP> engine, RecordAccess records )
-        {
-            checker.check( record, engine, new ComparativeLogging( records, log ) );
-        }
-
-        @SuppressWarnings( "unchecked" )
-        @Override
-        public ComparativeRecordChecker<REC,PrimitiveRecord,REP> ownerCheck()
-        {
-            if ( checker instanceof OwningRecordCheck )
-            {
-                return ((OwningRecordCheck) checker).ownerCheck();
-            }
-
-            throw new UnsupportedOperationException();
-        }
-    }
-
-    private static class LoggingReference<T extends AbstractBaseRecord> implements RecordReference<T>
-    {
-        private final RecordReference<T> reference;
-        private final InvocationLog log;
-
-        LoggingReference( RecordReference<T> reference, InvocationLog log )
-        {
-            this.reference = reference;
-            this.log = log;
-        }
-
-        @SuppressWarnings( "unchecked" )
-        @Override
-        public void dispatch( PendingReferenceCheck<T> reporter )
-        {
-            reference.dispatch( mock( (Class<PendingReferenceCheck<T>>) reporter.getClass(),
-                    withSettings().spiedInstance( reporter )
-                            .defaultAnswer( new ReporterSpy<>( reference, reporter, log ) ) ) );
-        }
-    }
-
-    private static class ReporterSpy<T extends AbstractBaseRecord> implements Answer<Object>
-    {
-        private final RecordReference<T> reference;
-        private final PendingReferenceCheck<T> reporter;
-        private final InvocationLog log;
-
-        ReporterSpy( RecordReference<T> reference, PendingReferenceCheck<T> reporter, InvocationLog log )
-        {
-            this.reference = reference;
-            this.reporter = reporter;
-            this.log = log;
-        }
-
-        @Override
-        public Object answer( InvocationOnMock invocation ) throws Throwable
-        {
-            if ( !(reference instanceof RecordReference.SkippingReference<?>) )
-            {
-                log.log( reporter, invocation );
-            }
-            return invocation.callRealMethod();
-        }
-    }
-
     protected Map<Setting<?>,Object> getSettings()
     {
         return new HashMap<>();
-    }
-
-    private static class ComparativeLogging implements RecordAccess
-    {
-        private final RecordAccess access;
-        private final InvocationLog log;
-
-        ComparativeLogging( RecordAccess access, InvocationLog log )
-        {
-            this.access = access;
-            this.log = log;
-        }
-
-        private <T extends AbstractBaseRecord> LoggingReference<T> logging( RecordReference<T> actual )
-        {
-            return new LoggingReference<>( actual, log );
-        }
-
-        @Override
-        public RecordReference<SchemaRecord> schema( long id )
-        {
-            return logging( access.schema( id ) );
-        }
-
-        @Override
-        public RecordReference<NodeRecord> node( long id )
-        {
-            return logging( access.node( id ) );
-        }
-
-        @Override
-        public RecordReference<RelationshipRecord> relationship( long id )
-        {
-            return logging( access.relationship( id ) );
-        }
-
-        @Override
-        public RecordReference<RelationshipGroupRecord> relationshipGroup( long id )
-        {
-            return logging( access.relationshipGroup( id ) );
-        }
-
-        @Override
-        public RecordReference<PropertyRecord> property( long id )
-        {
-            return logging( access.property( id ) );
-        }
-
-        @Override
-        public RecordReference<RelationshipTypeTokenRecord> relationshipType( int id )
-        {
-            return logging( access.relationshipType( id ) );
-        }
-
-        @Override
-        public RecordReference<PropertyKeyTokenRecord> propertyKey( int id )
-        {
-            return logging( access.propertyKey( id ) );
-        }
-
-        @Override
-        public RecordReference<DynamicRecord> string( long id )
-        {
-            return logging( access.string( id ) );
-        }
-
-        @Override
-        public RecordReference<DynamicRecord> array( long id )
-        {
-            return logging( access.array( id ) );
-        }
-
-        @Override
-        public RecordReference<DynamicRecord> relationshipTypeName( int id )
-        {
-            return logging( access.relationshipTypeName( id ) );
-        }
-
-        @Override
-        public RecordReference<DynamicRecord> nodeLabels( long id )
-        {
-            return logging( access.nodeLabels( id ) );
-        }
-
-        @Override
-        public RecordReference<LabelTokenRecord> label( int id )
-        {
-            return logging( access.label( id ) );
-        }
-
-        @Override
-        public RecordReference<DynamicRecord> labelName( int id )
-        {
-            return logging( access.labelName( id ) );
-        }
-
-        @Override
-        public RecordReference<DynamicRecord> propertyKeyName( int id )
-        {
-            return logging( access.propertyKeyName( id ) );
-        }
-
-        @Override
-        public boolean shouldCheck( long id, MultiPassStore store )
-        {
-            return access.shouldCheck( id, store );
-        }
-
-        @Override
-        public CacheAccess cacheAccess()
-        {
-            return access.cacheAccess();
-        }
-
-        @Override
-        public Iterator<PropertyRecord> rawPropertyChain( long firstId )
-        {
-            return access.rawPropertyChain( firstId );
-        }
     }
 }

@@ -215,8 +215,16 @@ public interface ProgressListener
         public void add( long delta )
         {
             started();
-            progress.addAndGet( delta );
-            aggregator.update( delta );
+            long current = progress.get();
+            if ( current + delta > totalCount )
+            {
+                delta = totalCount - current;
+            }
+            if ( delta > 0 )
+            {
+                progress.addAndGet( delta );
+                aggregator.update( delta );
+            }
         }
 
         @Override

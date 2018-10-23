@@ -37,7 +37,6 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.consistency.checking.cache.PackedMultiFieldCache.defaultArray;
 
 class CheckNextRelTaskTest
 {
@@ -58,7 +57,7 @@ class CheckNextRelTaskTest
         StoreAccess storeAccess = new StoreAccess( neoStores );
         storeAccess.initialize();
 
-        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( defaultArray( highNodeId ), Counts.NONE, 1 );
+        DefaultCacheAccess cacheAccess = new DefaultCacheAccess( DefaultCacheAccess.defaultByteArray( highNodeId ), Counts.NONE, 1 );
         CacheTask.CheckNextRel cacheTask = new CacheTask.CheckNextRel( Stage.SEQUENTIAL_FORWARD, cacheAccess, storeAccess, storeProcessor );
 
         cacheAccess.setCacheSlotSizes( CheckStage.Stage5_Check_NextRel.getCacheSlotSizes() );

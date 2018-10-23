@@ -1650,7 +1650,7 @@ class IndexingServiceTest
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader()
+        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
         {
             throw new UnsupportedOperationException( "Not required" );
         }

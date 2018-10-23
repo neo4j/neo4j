@@ -75,7 +75,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             ProxyFactory.create( ConsistencyReport.DynamicLabelConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.LabelScanConsistencyReport> LABEL_SCAN_REPORT =
             ProxyFactory.create( ConsistencyReport.LabelScanConsistencyReport.class );
-    private static final ProxyFactory<ConsistencyReport.IndexConsistencyReport> INDEX =
+    private static final ProxyFactory<ConsistencyReport.IndexConsistencyReport> INDEX_REPORT =
             ProxyFactory.create( ConsistencyReport.IndexConsistencyReport.class );
     private static final ProxyFactory<ConsistencyReport.RelationshipGroupConsistencyReport> RELATIONSHIP_GROUP_REPORT =
             ProxyFactory.create( ConsistencyReport.RelationshipGroupConsistencyReport.class );
@@ -123,7 +123,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             handler.report.error( type, record, "Failed to check record: " + stringify( e ),
                     new Object[0] );
         }
-        handler.updateSummary();
     }
 
     static void dispatchReference( CheckerEngine engine, ComparativeRecordChecker checker,
@@ -131,7 +130,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
         ReportInvocationHandler handler = (ReportInvocationHandler) engine;
         handler.checkReference( engine, checker, referenced, records );
-        handler.updateSummary();
     }
 
     static String pendingCheckToString( CheckerEngine engine, ComparativeRecordChecker checker )
@@ -146,25 +144,23 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     {
         ReportInvocationHandler handler = (ReportInvocationHandler) engine;
         handler.checkDiffReference( engine, checker, oldReferenced, newReferenced, records );
-        handler.updateSummary();
     }
 
     static void dispatchSkip( CheckerEngine engine )
     {
-        ((ReportInvocationHandler) engine ).updateSummary();
     }
 
+    @Override
     public <RECORD extends AbstractBaseRecord,REPORT extends ConsistencyReport> REPORT report( RECORD record,
             Class<REPORT> cls, RecordType recordType )
     {
         ProxyFactory<REPORT> proxyFactory = ProxyFactory.get( cls );
         ReportInvocationHandler<RECORD,REPORT> handler =
-                new ReportHandler<>( report, proxyFactory, recordType, records, record, monitor )
+                new ReportHandler<RECORD,REPORT>( report, proxyFactory, recordType, records, record, monitor )
                 {
                     @Override
                     protected void inconsistencyReported()
                     {
-                        updateSummary();
                     }
                 };
         return handler.report();
@@ -218,8 +214,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
         final InconsistencyReport report;
         private final ProxyFactory<REPORT> factory;
         final RecordType type;
-        private short errors;
-        private short warnings;
         private short references = 1/*this*/;
         private final RecordAccess records;
         private final Monitor monitor;
@@ -232,14 +226,6 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             this.type = type;
             this.records = records;
             this.monitor = monitor;
-        }
-
-        synchronized void updateSummary()
-        {
-            if ( --references == 0 )
-            {
-                report.updateSummary( type, errors, warnings );
-            }
         }
 
         String pendingCheckToString( ComparativeRecordChecker checker )
@@ -294,15 +280,15 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
             String message = DocumentedUtils.extractMessage( method );
             if ( method.getAnnotation( ConsistencyReport.Warning.class ) == null )
             {
-                errors++;
                 args = getRealRecords( args );
                 logError( message, args );
+                report.updateSummary( type, 1, 0 );
             }
             else
             {
-                warnings++;
                 args = getRealRecords( args );
                 logWarning( message, args );
+                report.updateSummary( type, 0, 1 );
             }
             monitor.reported( factory.type(), method.getName(), message );
             inconsistencyReported();
@@ -457,7 +443,7 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
     public void forIndexEntry( IndexEntry entry,
                                RecordCheck<IndexEntry, ConsistencyReport.IndexConsistencyReport> checker )
     {
-        dispatch( RecordType.INDEX, INDEX, entry, checker );
+        dispatch( RecordType.INDEX, INDEX_REPORT, entry, checker );
     }
 
     @Override
@@ -493,6 +479,91 @@ public class ConsistencyReporter implements ConsistencyReport.Reporter
                            RecordCheck<CountsEntry,ConsistencyReport.CountsConsistencyReport> checker )
     {
         dispatch( RecordType.COUNTS, COUNTS_REPORT, countsEntry, checker );
+    }
+
+    // Plain and simple report instances
+
+    @Override
+    public ConsistencyReport.SchemaConsistencyReport forSchema( SchemaRecord schema )
+    {
+        return report( SCHEMA_REPORT, RecordType.SCHEMA, schema );
+    }
+
+    @Override
+    public ConsistencyReport.NodeConsistencyReport forNode( NodeRecord node )
+    {
+        return report( NODE_REPORT, RecordType.NODE, node );
+    }
+
+    @Override
+    public ConsistencyReport.RelationshipConsistencyReport forRelationship( RelationshipRecord relationship )
+    {
+        return report( RELATIONSHIP_REPORT, RecordType.RELATIONSHIP, relationship );
+    }
+
+    @Override
+    public ConsistencyReport.PropertyConsistencyReport forProperty( PropertyRecord property )
+    {
+        return report( PROPERTY_REPORT, RecordType.PROPERTY, property );
+    }
+
+    @Override
+    public ConsistencyReport.RelationshipTypeConsistencyReport forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType )
+    {
+        return report( RELATIONSHIP_TYPE_REPORT, RecordType.RELATIONSHIP_TYPE, relationshipType );
+    }
+
+    @Override
+    public ConsistencyReport.LabelTokenConsistencyReport forLabelName( LabelTokenRecord label )
+    {
+        return report( LABEL_KEY_REPORT, RecordType.LABEL, label );
+    }
+
+    @Override
+    public ConsistencyReport.PropertyKeyTokenConsistencyReport forPropertyKey( PropertyKeyTokenRecord key )
+    {
+        return report( PROPERTY_KEY_REPORT, RecordType.PROPERTY_KEY, key );
+    }
+
+    @Override
+    public ConsistencyReport.DynamicConsistencyReport forDynamicBlock( RecordType type, DynamicRecord record )
+    {
+        return report( DYNAMIC_REPORT, type, record );
+    }
+
+    @Override
+    public DynamicLabelConsistencyReport forDynamicLabelBlock( RecordType type, DynamicRecord record )
+    {
+        return report( DYNAMIC_LABEL_REPORT, type, record );
+    }
+
+    @Override
+    public ConsistencyReport.LabelScanConsistencyReport forNodeLabelScan( LabelScanDocument document )
+    {
+        return report( LABEL_SCAN_REPORT, RecordType.LABEL_SCAN_DOCUMENT, document );
+    }
+
+    @Override
+    public ConsistencyReport.IndexConsistencyReport forIndexEntry( IndexEntry entry )
+    {
+        return report( INDEX_REPORT, RecordType.INDEX, entry );
+    }
+
+    @Override
+    public RelationshipGroupConsistencyReport forRelationshipGroup( RelationshipGroupRecord group )
+    {
+        return report( RELATIONSHIP_GROUP_REPORT, RecordType.RELATIONSHIP_GROUP, group );
+    }
+
+    @Override
+    public ConsistencyReport.CountsConsistencyReport forCounts( CountsEntry countsEntry )
+    {
+        return report( COUNTS_REPORT, RecordType.COUNTS, countsEntry );
+    }
+
+    private <RECORD extends AbstractBaseRecord,REPORT extends ConsistencyReport> REPORT report( ProxyFactory<REPORT> factory, RecordType type, RECORD record )
+    {
+        return new ReportHandler<>( report, factory, type, records, record, monitor ).report();
     }
 
     public static class ProxyFactory<T>

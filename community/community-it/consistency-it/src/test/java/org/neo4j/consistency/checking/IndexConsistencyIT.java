@@ -105,7 +105,7 @@ class IndexConsistencyIT
 
         ConsistencyCheckService.Result result = fullConsistencyCheck();
         assertFalse( result.isSuccessful(), "Expected consistency check to fail" );
-        assertThat( readReport( result ), containsString("WARN : Index was not properly shutdown and rebuild is required.") );
+        assertThat( readReport( result ), containsString( "WARN : Index was not properly shutdown and rebuild is required." ) );
     }
 
     @Test
@@ -244,7 +244,7 @@ class IndexConsistencyIT
             ConsistencyCheckService service = new ConsistencyCheckService();
             DatabaseLayout databaseLayout = db.databaseLayout();
             Config config = Config.defaults( logs_directory, databaseLayout.databaseDirectory().toPath() );
-            return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, true, ConsistencyFlags.DEFAULT );
+            return service.runFullConsistencyCheck( databaseLayout, config, NONE, log, fsa, false, ConsistencyFlags.DEFAULT );
         }
     }
 }

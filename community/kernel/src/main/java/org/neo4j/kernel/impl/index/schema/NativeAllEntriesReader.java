@@ -33,12 +33,16 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
 {
     private final GBPTree<KEY,VALUE> tree;
     private final Layout<KEY,VALUE> layout;
+    private final long fromIdInclusive;
+    private final long toIdExclusive;
     private Seeker<KEY,VALUE> seeker;
 
-    NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout )
+    NativeAllEntriesReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout, long fromIdInclusive, long toIdExclusive )
     {
         this.tree = tree;
         this.layout = layout;
+        this.fromIdInclusive = fromIdInclusive;
+        this.toIdExclusive = toIdExclusive;
     }
 
     @Override
@@ -59,14 +63,26 @@ public class NativeAllEntriesReader<KEY extends NativeIndexKey<KEY>,VALUE extend
                 @Override
                 protected Long fetchNextOrNull()
                 {
-                    try
+                    do
                     {
-                        return seeker.next() ? seeker.key().getEntityId() : null;
+                        try
+                        {
+                            if ( !seeker.next() )
+                            {
+                                return null;
+                            }
+                            long id = seeker.key().getEntityId();
+                            if ( id >= fromIdInclusive && id < toIdExclusive )
+                            {
+                                return id;
+                            }
+                        }
+                        catch ( IOException e )
+                        {
+                            throw new UncheckedIOException( e );
+                        }
                     }
-                    catch ( IOException e )
-                    {
-                        throw new UncheckedIOException( e );
-                    }
+                    while ( true );
                 }
             };
         }

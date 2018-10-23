@@ -47,9 +47,9 @@ public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader()
+    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
     {
-        return super.newAllEntriesReader( LuceneDocumentStructure::getNodeId );
+        return super.newAllEntriesReader( LuceneDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive );
     }
 
     @Override

@@ -27,7 +27,6 @@ import org.neo4j.internal.batchimport.cache.NodeLabelsCache;
 import org.neo4j.internal.batchimport.cache.NumberArrayFactory;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.longThat;
@@ -82,10 +81,10 @@ class RelationshipCountsProcessorTest
 
         NodeLabelsCache.Client client = mock( NodeLabelsCache.Client.class );
         when( nodeLabelCache.newClient() ).thenReturn( client );
-        when( nodeLabelCache.get( eq( client ), eq( 1L ), any( int[].class ) ) ).thenReturn( new int[]{0, 2} );
-        when( nodeLabelCache.get( eq( client ), eq( 2L ), any( int[].class ) ) ).thenReturn( new int[]{1} );
-        when( nodeLabelCache.get( eq( client ), eq( 3L ), any( int[].class ) ) ).thenReturn( new int[]{1, 2} );
-        when( nodeLabelCache.get( eq( client ), eq( 4L ), any( int[].class ) ) ).thenReturn( new int[]{} );
+        when( nodeLabelCache.get( eq( client ), eq( 1L ) ) ).thenReturn( new long[]{0, 2} );
+        when( nodeLabelCache.get( eq( client ), eq( 2L ) ) ).thenReturn( new long[]{1} );
+        when( nodeLabelCache.get( eq( client ), eq( 3L ) ) ).thenReturn( new long[]{1, 2} );
+        when( nodeLabelCache.get( eq( client ), eq( 4L ) ) ).thenReturn( new long[]{} );
 
         RelationshipCountsProcessor countsProcessor = new RelationshipCountsProcessor( nodeLabelCache, labels,
                 relationTypes, countsUpdater, NumberArrayFactory.AUTO_WITHOUT_PAGECACHE );

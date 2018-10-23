@@ -650,7 +650,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return getStringFor( propertyBlock.getValueRecords() );
     }
 
-    private String getStringFor( Collection<DynamicRecord> dynamicRecords )
+    public String getStringFor( Collection<DynamicRecord> dynamicRecords )
     {
         Pair<byte[], byte[]> source = stringStore.readFullByteArray( dynamicRecords, PropertyType.STRING );
         // A string doesn't have a header in the data array
@@ -663,7 +663,7 @@ public class PropertyStore extends CommonAbstractStore<PropertyRecord,NoStoreHea
         return getArrayFor( propertyBlock.getValueRecords() );
     }
 
-    private Value getArrayFor( Iterable<DynamicRecord> records )
+    public Value getArrayFor( Iterable<DynamicRecord> records )
     {
         return getRightArray( arrayStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }

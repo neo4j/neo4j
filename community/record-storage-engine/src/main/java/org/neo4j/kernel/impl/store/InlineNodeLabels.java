@@ -34,7 +34,6 @@ import static org.neo4j.kernel.impl.store.LabelIdArray.concatAndSort;
 import static org.neo4j.kernel.impl.store.LabelIdArray.filter;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsBody;
 import static org.neo4j.util.Bits.bits;
-import static org.neo4j.util.Bits.bitsFromLongs;
 
 public class InlineNodeLabels implements NodeLabels
 {
@@ -146,11 +145,12 @@ public class InlineNodeLabels implements NodeLabels
 
         long existingLabelsField = parseLabelsBody( labelField );
         byte bitsPerLabel = (byte) (LABEL_BITS / numberOfLabels);
-        Bits bits = bitsFromLongs( new long[]{existingLabelsField} );
+        long mask = (1L << bitsPerLabel) - 1;
         long[] result = new long[numberOfLabels];
-        for ( int i = 0; i < result.length; i++ )
+        for ( int i = 0; i < numberOfLabels; i++ )
         {
-            result[i] = bits.getLong( bitsPerLabel );
+            result[i] = existingLabelsField & mask;
+            existingLabelsField >>>= bitsPerLabel;
         }
         return result;
     }

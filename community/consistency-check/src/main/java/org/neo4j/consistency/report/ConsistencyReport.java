@@ -23,6 +23,10 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Proxy;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.annotations.documented.Documented;
 import org.neo4j.consistency.RecordType;
@@ -32,6 +36,7 @@ import org.neo4j.consistency.store.synthetic.IndexEntry;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.internal.schema.SchemaRule;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -91,6 +96,34 @@ public interface ConsistencyReport
 
         void forCounts( CountsEntry countsEntry,
                         RecordCheck<CountsEntry, ConsistencyReport.CountsConsistencyReport> checker );
+
+        SchemaConsistencyReport forSchema( SchemaRecord schema );
+
+        NodeConsistencyReport forNode( NodeRecord node );
+
+        RelationshipConsistencyReport forRelationship( RelationshipRecord relationship );
+
+        PropertyConsistencyReport forProperty( PropertyRecord property );
+
+        RelationshipTypeConsistencyReport forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType );
+
+        LabelTokenConsistencyReport forLabelName( LabelTokenRecord label );
+
+        PropertyKeyTokenConsistencyReport forPropertyKey( PropertyKeyTokenRecord key );
+
+        DynamicConsistencyReport forDynamicBlock( RecordType type, DynamicRecord record );
+
+        DynamicLabelConsistencyReport forDynamicLabelBlock( RecordType type, DynamicRecord record );
+
+        LabelScanConsistencyReport forNodeLabelScan( LabelScanDocument document );
+
+        IndexConsistencyReport forIndexEntry( IndexEntry entry );
+
+        RelationshipGroupConsistencyReport forRelationshipGroup( RelationshipGroupRecord group );
+
+        CountsConsistencyReport forCounts( CountsEntry countsEntry );
+
+        <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> REPORT report( RECORD record, Class<REPORT> cls, RecordType recordType );
     }
 
     interface PrimitiveConsistencyReport extends ConsistencyReport
@@ -116,6 +149,15 @@ public interface ConsistencyReport
 
         @Documented( "The property record points to a previous record in the chain, making it a circular reference." )
         void propertyChainContainsCircularReference( PropertyRecord propertyRecord );
+
+        @Documented( "This entity was not found in the expected index." )
+        void notIndexed( IndexDescriptor index, Object[] propertyValues );
+
+        @Documented( "This entity was found in the expected index, although multiple times" )
+        void indexedMultipleTimes( IndexDescriptor index, Object[] propertyValues, long count );
+
+        @Documented( "There is another entity in the unique index with the same property value(s)." )
+        void uniqueIndexNotUnique( IndexDescriptor index, Object[] propertyValues, long duplicateEntityId );
     }
 
     interface NeoStoreConsistencyReport extends PrimitiveConsistencyReport
@@ -213,6 +255,9 @@ public interface ConsistencyReport
 
         @Documented( "The first relationship group record has another node set as owner." )
         void relationshipGroupHasOtherOwner( RelationshipGroupRecord group );
+
+        @Documented( "The label does not exist" )
+        void illegalLabel();
     }
 
     interface RelationshipConsistencyReport
@@ -280,6 +325,9 @@ public interface ConsistencyReport
 
         @Documented( "This relationship was found in the expected index, although multiple times" )
         void indexedMultipleTimes( IndexDescriptor index, Object[] propertyValues, long count );
+
+        @Documented( "There is another relationship in the unique index with the same property value(s)." )
+        void uniqueIndexNotUnique( IndexDescriptor index, Object[] propertyValues, long duplicateEntityId );
     }
 
     interface PropertyConsistencyReport extends ConsistencyReport
@@ -420,13 +468,13 @@ public interface ConsistencyReport
         void firstLoopRelationshipNotFirstInChain();
 
         @Documented( "The first outgoing relationship is of a different type than its group." )
-        void firstOutgoingRelationshipOfOfOtherType();
+        void firstOutgoingRelationshipOfOtherType();
 
         @Documented( "The first incoming relationship is of a different type than its group." )
-        void firstIncomingRelationshipOfOfOtherType();
+        void firstIncomingRelationshipOfOtherType();
 
         @Documented( "The first loop relationship is of a different type than its group." )
-        void firstLoopRelationshipOfOfOtherType();
+        void firstLoopRelationshipOfOtherType();
 
         @Documented( "The owner of the relationship group is not in use." )
         void ownerNotInUse();
@@ -436,6 +484,15 @@ public interface ConsistencyReport
 
         @Documented( "Next chained relationship group has another owner." )
         void nextHasOtherOwner( RelationshipGroupRecord referred );
+
+        @Documented( "The first incoming relationship does not share node with group" )
+        void firstIncomingRelationshipDoesNotShareNodeWithGroup( RelationshipRecord record );
+
+        @Documented( "The first outgoing relationship does not share node with group" )
+        void firstOutgoingRelationshipDoesNotShareNodeWithGroup( RelationshipRecord record );
+
+        @Documented( "The first loop relationship does not share node with group" )
+        void firstLoopRelationshipDoesNotShareNodeWithGroup( RelationshipRecord record );
     }
 
     interface DynamicConsistencyReport extends ConsistencyReport
@@ -458,8 +515,8 @@ public interface ConsistencyReport
         @Documented( "The next block is empty." )
         void emptyNextBlock( DynamicRecord next );
 
-        @Documented( "The next block references this (the same) record." )
-        void selfReferentialNext();
+        @Documented( "The next block references a previous record in the chain." )
+        void circularReferenceNext( DynamicRecord next );
 
         @Documented( "The next block of this record is also referenced by another dynamic record." )
         void nextMultipleOwners( DynamicRecord otherOwner );
@@ -558,11 +615,192 @@ public interface ConsistencyReport
 
         @Documented( "The relationship count does not correspond with the expected count." )
         void inconsistentRelationshipCount( long expectedCount );
-
-        @Documented( "The node key entries in the store does not correspond with the expected number." )
-        void inconsistentNumberOfNodeKeys( long expectedCount );
-
-        @Documented( "The relationship key entries in the store does not correspond with the expected number." )
-        void inconsistentNumberOfRelationshipKeys( long expectedCount );
     }
+
+    class NoConsistencyReport implements Reporter
+    {
+        private final Object proxy;
+
+        NoConsistencyReport()
+        {
+            List<Class<?>> reports = new ArrayList<>();
+            reports.add( SchemaConsistencyReport.class );
+            reports.add( NodeConsistencyReport.class );
+            reports.add( RelationshipConsistencyReport.class );
+            reports.add( PropertyConsistencyReport.class );
+            reports.add( RelationshipTypeConsistencyReport.class );
+            reports.add( LabelTokenConsistencyReport.class );
+            reports.add( PropertyKeyTokenConsistencyReport.class );
+            reports.add( DynamicConsistencyReport.class );
+            reports.add( DynamicLabelConsistencyReport.class );
+            reports.add( RelationshipGroupConsistencyReport.class );
+            reports.add( CountsConsistencyReport.class );
+            InvocationHandler noop = ( proxy, method, args ) -> null;
+            this.proxy = Proxy.newProxyInstance( NoConsistencyReport.class.getClassLoader(), reports.toArray( new Class[0] ), noop );
+        }
+
+        @Override
+        public void forSchema( SchemaRecord schema, RecordCheck<SchemaRecord,SchemaConsistencyReport> checker )
+        {
+        }
+
+        @Override
+        public void forNode( NodeRecord node, RecordCheck<NodeRecord,NodeConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forRelationship( RelationshipRecord relationship, RecordCheck<RelationshipRecord,RelationshipConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forProperty( PropertyRecord property, RecordCheck<PropertyRecord,PropertyConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType,
+                RecordCheck<RelationshipTypeTokenRecord,RelationshipTypeConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forLabelName( LabelTokenRecord label, RecordCheck<LabelTokenRecord,LabelTokenConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forPropertyKey( PropertyKeyTokenRecord key, RecordCheck<PropertyKeyTokenRecord,PropertyKeyTokenConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forDynamicBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forDynamicLabelBlock( RecordType type, DynamicRecord record, RecordCheck<DynamicRecord,DynamicLabelConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forNodeLabelScan( LabelScanDocument document, RecordCheck<LabelScanDocument,LabelScanConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forIndexEntry( IndexEntry entry, RecordCheck<IndexEntry,IndexConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forRelationshipGroup( RelationshipGroupRecord record, RecordCheck<RelationshipGroupRecord,RelationshipGroupConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public void forCounts( CountsEntry countsEntry, RecordCheck<CountsEntry,CountsConsistencyReport> checker )
+        {
+
+        }
+
+        @Override
+        public SchemaConsistencyReport forSchema( SchemaRecord schema )
+        {
+            return (SchemaConsistencyReport) proxy;
+        }
+
+        @Override
+        public NodeConsistencyReport forNode( NodeRecord node )
+        {
+            return (NodeConsistencyReport) proxy;
+        }
+
+        @Override
+        public RelationshipConsistencyReport forRelationship( RelationshipRecord relationship )
+        {
+            return (RelationshipConsistencyReport) proxy;
+        }
+
+        @Override
+        public PropertyConsistencyReport forProperty( PropertyRecord property )
+        {
+            return (PropertyConsistencyReport) proxy;
+        }
+
+        @Override
+        public RelationshipTypeConsistencyReport forRelationshipTypeName( RelationshipTypeTokenRecord relationshipType )
+        {
+            return (RelationshipTypeConsistencyReport) proxy;
+        }
+
+        @Override
+        public LabelTokenConsistencyReport forLabelName( LabelTokenRecord label )
+        {
+            return (LabelTokenConsistencyReport) proxy;
+        }
+
+        @Override
+        public PropertyKeyTokenConsistencyReport forPropertyKey( PropertyKeyTokenRecord key )
+        {
+            return (PropertyKeyTokenConsistencyReport) proxy;
+        }
+
+        @Override
+        public DynamicConsistencyReport forDynamicBlock( RecordType type, DynamicRecord record )
+        {
+            return (DynamicConsistencyReport) proxy;
+        }
+
+        @Override
+        public DynamicLabelConsistencyReport forDynamicLabelBlock( RecordType type, DynamicRecord record )
+        {
+            return (DynamicLabelConsistencyReport) proxy;
+        }
+
+        @Override
+        public LabelScanConsistencyReport forNodeLabelScan( LabelScanDocument document )
+        {
+            return (LabelScanConsistencyReport) proxy;
+        }
+
+        @Override
+        public IndexConsistencyReport forIndexEntry( IndexEntry entry )
+        {
+            return (IndexConsistencyReport) proxy;
+        }
+
+        @Override
+        public RelationshipGroupConsistencyReport forRelationshipGroup( RelationshipGroupRecord group )
+        {
+            return (RelationshipGroupConsistencyReport) proxy;
+        }
+
+        @Override
+        public CountsConsistencyReport forCounts( CountsEntry countsEntry )
+        {
+            return (CountsConsistencyReport) proxy;
+        }
+
+        @Override
+        public <RECORD extends AbstractBaseRecord, REPORT extends ConsistencyReport> REPORT report( RECORD record, Class<REPORT> cls, RecordType recordType )
+        {
+            return (REPORT) proxy;
+        }
+    }
+
+    Reporter NO_REPORT = new NoConsistencyReport();
 }

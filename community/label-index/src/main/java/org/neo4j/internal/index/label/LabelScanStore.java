@@ -139,6 +139,13 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
      */
     AllEntriesLabelScanReader allNodeLabelRanges();
 
+    /**
+     * Acquire a reader for all {@link NodeLabelRange node label} ranges.
+     *
+     * @return the {@link AllEntriesLabelScanReader reader}.
+     */
+    AllEntriesLabelScanReader allNodeLabelRanges( long fromNodeId, long toNodeId );
+
     ResourceIterator<File> snapshotStoreFiles();
 
     /**
@@ -179,6 +186,8 @@ public interface LabelScanStore extends Lifecycle, ConsistencyCheckable
      * @return whether or not this index is read-only.
      */
     boolean isReadOnly();
+
+    boolean isDirty();
 
     /**
      * @return whether or not there's an existing store present for this label scan store.

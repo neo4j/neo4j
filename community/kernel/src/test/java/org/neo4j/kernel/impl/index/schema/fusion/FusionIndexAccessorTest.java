@@ -57,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -487,7 +488,7 @@ abstract class FusionIndexAccessorTest
     private static BoundedIterable<Long> mockSingleAllEntriesReader( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReader( entries );
-        when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
+        when( targetAccessor.newAllEntriesReader( anyLong(), anyLong() ) ).thenReturn( allEntriesReader );
         return allEntriesReader;
     }
 
@@ -499,7 +500,7 @@ abstract class FusionIndexAccessorTest
     private static void mockSingleAllEntriesReaderWithUnknownMaxCount( IndexAccessor targetAccessor, List<Long> entries )
     {
         BoundedIterable<Long> allEntriesReader = mockedAllEntriesReaderUnknownMaxCount( entries );
-        when( targetAccessor.newAllEntriesReader() ).thenReturn( allEntriesReader );
+        when( targetAccessor.newAllEntriesReader( anyLong(), anyLong() ) ).thenReturn( allEntriesReader );
     }
 
     private static BoundedIterable<Long> mockedAllEntriesReaderUnknownMaxCount( List<Long> entries )

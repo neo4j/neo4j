@@ -60,7 +60,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.consistency.checking.cache.PackedMultiFieldCache.defaultArray;
+import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 import static org.neo4j.internal.helpers.collection.Iterables.resourceIterable;
 
 public class RecordAccessStub implements RecordAccess
@@ -189,7 +189,7 @@ public class RecordAccessStub implements RecordAccess
     private final Map<Long, Delta<DynamicRecord>> propertyKeyNames = new HashMap<>();
     private final Map<Long, Delta<RelationshipGroupRecord>> relationshipGroups = new HashMap<>();
     private Delta<NeoStoreRecord> graph;
-    private final CacheAccess cacheAccess = new DefaultCacheAccess( defaultArray( 1_000 ), Counts.NONE, 1 );
+    private final CacheAccess cacheAccess = new DefaultCacheAccess( defaultByteArray( (long) 1_000 ), Counts.NONE, 1 );
     private final MultiPassStore[] storesToCheck;
 
     public RecordAccessStub()

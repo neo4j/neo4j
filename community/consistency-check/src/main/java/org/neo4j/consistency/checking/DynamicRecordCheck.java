@@ -59,7 +59,7 @@ public class DynamicRecordCheck
         {
             if ( record.getNextBlock() == record.getId() )
             {
-                engine.report().selfReferentialNext();
+                engine.report().circularReferenceNext( record );
             }
             else
             {

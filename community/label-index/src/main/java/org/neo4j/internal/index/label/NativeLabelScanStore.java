@@ -49,6 +49,8 @@ import org.neo4j.monitoring.Monitors;
 import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
+import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
+
 /**
  * {@link LabelScanStore} which is implemented using {@link GBPTree} atop a {@link PageCache}.
  * Only a single writer is allowed at any given point in time so synchronization or merging of updates
@@ -282,13 +284,19 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
     @Override
     public AllEntriesLabelScanReader allNodeLabelRanges()
     {
+        return allNodeLabelRanges( 0, Long.MAX_VALUE );
+    }
+
+    @Override
+    public AllEntriesLabelScanReader allNodeLabelRanges( long fromNodeId, long toNodeId )
+    {
         IntFunction<Seeker<LabelScanKey,LabelScanValue>> seekProvider = labelId ->
         {
             try
             {
                 return index.seek(
-                        new LabelScanKey().set( labelId, 0 ),
-                        new LabelScanKey().set( labelId, Long.MAX_VALUE ) );
+                        new LabelScanKey().set( labelId, fromNodeId / RANGE_SIZE ),
+                        new LabelScanKey().set( labelId, (toNodeId - 1) / RANGE_SIZE + 1 ) );
             }
             catch ( IOException e )
             {
@@ -498,6 +506,7 @@ public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateList
         return readOnly;
     }
 
+    @Override
     public boolean isDirty()
     {
         return index == null || index.wasDirtyOnStartup();

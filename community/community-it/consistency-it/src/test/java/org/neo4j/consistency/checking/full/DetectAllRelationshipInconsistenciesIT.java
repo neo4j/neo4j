@@ -44,6 +44,7 @@ import org.neo4j.internal.id.IdGeneratorFactory;
 import org.neo4j.internal.index.label.LabelScanStore;
 import org.neo4j.internal.recordstorage.RecordStorageEngine;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -65,6 +66,7 @@ import org.neo4j.token.TokenHolders;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.configuration.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.kernel.impl.store.record.Record.NULL_REFERENCE;
 
 @TestDirectoryExtension
 @ExtendWith( RandomExtension.class )
@@ -89,12 +91,14 @@ public class DetectAllRelationshipInconsistenciesIT
         {
             Node[] nodes = new Node[1_000];
             Relationship[] relationships = new Relationship[10_000];
+            long additionalNodeId;
             try ( Transaction tx = db.beginTx() )
             {
                 for ( int i = 0; i < nodes.length; i++ )
                 {
                     nodes[i] = tx.createNode( label( "Foo" ) );
                 }
+                additionalNodeId = tx.createNode().getId();
                 for ( int i = 0; i < 10_000; i++ )
                 {
                     relationships[i] = random.among( nodes ).createRelationshipTo( random.among( nodes ), MyRelTypes.TEST );
@@ -107,7 +111,7 @@ public class DetectAllRelationshipInconsistenciesIT
             NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             RelationshipStore relationshipStore = neoStores.getRelationshipStore();
             Relationship sabotagedRelationships = random.among( relationships );
-            sabotage = sabotage( relationshipStore, sabotagedRelationships.getId() );
+            sabotage = sabotage( relationshipStore, sabotagedRelationships.getId(), additionalNodeId );
         }
         finally
         {
@@ -133,7 +137,8 @@ public class DetectAllRelationshipInconsistenciesIT
             FullCheck checker = new FullCheck( ConsistencyFlags.DEFAULT,
                     getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
             AssertableLogProvider logProvider = new AssertableLogProvider( true );
-            ConsistencySummaryStatistics summary = checker.execute( directStoreAccess, () -> counts, logProvider.getLog( FullCheck.class ) );
+            ConsistencySummaryStatistics summary =
+                    checker.execute( resolver.resolveDependency( PageCache.class ), directStoreAccess, () -> counts, logProvider.getLog( FullCheck.class ) );
             int relationshipInconsistencies = summary.getInconsistencyCountForRecordType( RecordType.RELATIONSHIP );
 
             assertTrue( relationshipInconsistencies > 0, "Couldn't detect sabotaged relationship " + sabotage );
@@ -149,7 +154,7 @@ public class DetectAllRelationshipInconsistenciesIT
     {
         return Config.newBuilder()
                 .set( GraphDatabaseSettings.pagecache_memory, "8m" )
-                .set( GraphDatabaseSettings.record_format, getRecordFormatName() )
+                .set( getConfig() )
                 .build();
     }
 
@@ -191,40 +196,56 @@ public class DetectAllRelationshipInconsistenciesIT
         }
     }
 
-    private Sabotage sabotage( RelationshipStore store, long id ) throws CloneNotSupportedException
+    private Sabotage sabotage( RelationshipStore store, long id, long lonelyNodeId ) throws CloneNotSupportedException
     {
         RelationshipRecord before = store.getRecord( id, store.newRecord(), RecordLoad.NORMAL );
         RelationshipRecord after = before.clone();
 
         boolean sabotageSourceChain = random.nextBoolean(); // otherwise target chain
-        long otherReference;
-        if ( sabotageSourceChain )
+        boolean sabotageNodeId = random.nextBoolean();
+        long otherReference = NULL_REFERENCE.longValue();
+        if ( sabotageNodeId )
         {
-            if ( !after.isFirstInFirstChain() )
+            boolean useLonelyNodeId = random.nextBoolean();
+            if ( sabotageSourceChain )
             {
-                after.setFirstPrevRel( otherReference = after.getFirstPrevRel() + 1 );
+                after.setFirstNode( useLonelyNodeId ? lonelyNodeId : after.getFirstNode() + 1 );
             }
             else
             {
-                after.setFirstNextRel( otherReference = after.getFirstNextRel() + 1 );
+                after.setSecondNode( useLonelyNodeId ? lonelyNodeId : after.getSecondNode() + 1 );
             }
         }
         else
         {
-            if ( !after.isFirstInSecondChain() )
+            if ( sabotageSourceChain )
             {
-                after.setSecondPrevRel( otherReference = after.getSecondPrevRel() + 1 );
+                if ( !after.isFirstInFirstChain() )
+                {
+                    after.setFirstPrevRel( otherReference = after.getFirstPrevRel() + 1 );
+                }
+                else
+                {
+                    after.setFirstNextRel( otherReference = after.getFirstNextRel() + 1 );
+                }
             }
             else
             {
-                after.setSecondNextRel( otherReference = after.getSecondNextRel() + 1 );
+                if ( !after.isFirstInSecondChain() )
+                {
+                    after.setSecondPrevRel( otherReference = after.getSecondPrevRel() + 1 );
+                }
+                else
+                {
+                    after.setSecondNextRel( otherReference = after.getSecondNextRel() + 1 );
+                }
             }
         }
 
         store.prepareForCommit( after );
         store.updateRecord( after );
 
-        RelationshipRecord other = store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE );
+        RelationshipRecord other = NULL_REFERENCE.is( otherReference ) ? null : store.getRecord( otherReference, store.newRecord(), RecordLoad.FORCE );
         return new Sabotage( before, after, other );
     }
 }

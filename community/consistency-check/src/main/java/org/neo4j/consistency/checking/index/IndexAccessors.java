@@ -26,9 +26,12 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.EnumMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
@@ -37,9 +40,10 @@ import org.neo4j.internal.schema.IndexDescriptor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexSamplingConfig;
-import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.token.TokenHolders;
 
 public class IndexAccessors implements Closeable
@@ -47,26 +51,27 @@ public class IndexAccessors implements Closeable
     private final MutableLongObjectMap<IndexAccessor> accessors = new LongObjectHashMap<>();
     private final List<IndexDescriptor> onlineIndexRules = new ArrayList<>();
     private final List<IndexDescriptor> notOnlineIndexRules = new ArrayList<>();
+    private final EnumMap<EntityType,List<IndexDescriptor>> onlineIndexRulesByEntityType = new EnumMap<>( EntityType.class );
 
     public IndexAccessors(
             IndexProviderMap providers,
-            StoreAccess storeAccess,
+            NeoStores neoStores,
             IndexSamplingConfig samplingConfig )
             throws IOException
     {
-        this( providers, storeAccess, samplingConfig, null /*we'll use a default below, if this is null*/ );
+        this( providers, neoStores, samplingConfig, null /*we'll use a default below, if this is null*/ );
     }
 
     public IndexAccessors(
             IndexProviderMap providers,
-            StoreAccess storeAccess,
+            NeoStores neoStores,
             IndexSamplingConfig samplingConfig,
             ThrowingFunction<IndexDescriptor,IndexAccessor,IOException> accessorLookup )
             throws IOException
     {
-        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( storeAccess.getRawNeoStores() );
-        Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore(), tokenHolders ).indexesGetAll();
-        for ( ; ; )
+        TokenHolders tokenHolders = StoreTokens.readOnlyTokenHolders( neoStores );
+        Iterator<IndexDescriptor> indexes = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore(), tokenHolders ).indexesGetAll();
+        while ( true )
         {
             try
             {
@@ -85,6 +90,8 @@ public class IndexAccessors implements Closeable
                         if ( InternalIndexState.ONLINE == provider( providers, indexDescriptor ).getInitialState( indexDescriptor ) )
                         {
                             onlineIndexRules.add( indexDescriptor );
+                            onlineIndexRulesByEntityType.computeIfAbsent( indexDescriptor.schema().entityType(), type -> new ArrayList<>() ).add(
+                                    indexDescriptor );
                         }
                         else
                         {
@@ -127,9 +134,19 @@ public class IndexAccessors implements Closeable
         return accessors.get( indexRule.getId() );
     }
 
-    public Iterable<IndexDescriptor> onlineRules()
+    public List<IndexDescriptor> onlineRules()
     {
         return onlineIndexRules;
+    }
+
+    public List<IndexDescriptor> onlineRules( EntityType entityType )
+    {
+        return onlineIndexRulesByEntityType.getOrDefault( entityType, Collections.emptyList() );
+    }
+
+    public IndexReaders readers()
+    {
+        return new IndexReaders();
     }
 
     public void remove( IndexDescriptor descriptor )
@@ -155,6 +172,30 @@ public class IndexAccessors implements Closeable
             accessors.clear();
             onlineIndexRules.clear();
             notOnlineIndexRules.clear();
+        }
+    }
+
+    public class IndexReaders implements AutoCloseable
+    {
+        private MutableLongObjectMap<IndexReader> readers = new LongObjectHashMap<>();
+
+        public IndexReader reader( IndexDescriptor index )
+        {
+            long indexId = index.getId();
+            IndexReader reader = readers.get( indexId );
+            if ( reader == null )
+            {
+                reader = accessors.get( indexId ).newReader();
+                readers.put( indexId, reader );
+            }
+            return reader;
+        }
+
+        @Override
+        public void close()
+        {
+            IOUtils.closeAllUnchecked( readers.values() );
+            readers.clear();
         }
     }
 }

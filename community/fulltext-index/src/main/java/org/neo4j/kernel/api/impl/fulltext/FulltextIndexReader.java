@@ -29,6 +29,7 @@ import org.apache.lucene.search.TotalHitCountCollector;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.neo4j.internal.kernel.api.IndexQuery;

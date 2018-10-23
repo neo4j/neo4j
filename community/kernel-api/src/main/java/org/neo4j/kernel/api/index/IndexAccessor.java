@@ -99,7 +99,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
      */
     IndexReader newReader();
 
-    BoundedIterable<Long> newAllEntriesReader();
+    default BoundedIterable<Long> newAllEntriesReader()
+    {
+        return newAllEntriesReader( 0, Long.MAX_VALUE );
+    }
+
+    BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive );
 
     default IndexEntriesReader[] newAllIndexEntriesReader( int partitions )
     {
@@ -198,7 +203,7 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         }
 
         @Override
-        public BoundedIterable<Long> newAllEntriesReader()
+        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
         {
             return new BoundedIterable<>()
             {
@@ -294,6 +299,12 @@ public interface IndexAccessor extends Closeable, IndexConfigProvider, Consisten
         public BoundedIterable<Long> newAllEntriesReader()
         {
             return delegate.newAllEntriesReader();
+        }
+
+        @Override
+        public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
+        {
+            return newAllEntriesReader( fromIdInclusive, toIdExclusive );
         }
 
         @Override

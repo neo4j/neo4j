@@ -25,16 +25,22 @@ import java.util.Iterator;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.internal.helpers.collection.BoundedIterable;
+import org.neo4j.internal.helpers.collection.PrefetchingIterator;
 
 public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long>
 {
     private final BoundedIterable<Document> documents;
     private final ToLongFunction<Document> entityIdReader;
+    private final long fromIdInclusive;
+    private final long toIdExclusive;
 
-    public LuceneAllEntriesIndexAccessorReader( BoundedIterable<Document> documents, ToLongFunction<Document> entityIdReader )
+    public LuceneAllEntriesIndexAccessorReader( BoundedIterable<Document> documents, ToLongFunction<Document> entityIdReader,
+            long fromIdInclusive, long toIdExclusive )
     {
         this.documents = documents;
         this.entityIdReader = entityIdReader;
+        this.fromIdInclusive = fromIdInclusive;
+        this.toIdExclusive = toIdExclusive;
     }
 
     @Override
@@ -47,18 +53,24 @@ public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long
     public Iterator<Long> iterator()
     {
         Iterator<Document> iterator = documents.iterator();
-        return new Iterator<>()
+        return new PrefetchingIterator<Long>()
         {
             @Override
-            public boolean hasNext()
+            protected Long fetchNextOrNull()
             {
-                return iterator.hasNext();
-            }
-
-            @Override
-            public Long next()
-            {
-                return entityIdReader.applyAsLong( iterator.next() );
+                do
+                {
+                    if ( !iterator.hasNext() )
+                    {
+                        return null;
+                    }
+                    long id = entityIdReader.applyAsLong( iterator.next() );
+                    if ( id >= fromIdInclusive && id < toIdExclusive )
+                    {
+                        return id;
+                    }
+                }
+                while ( true );
             }
         };
     }

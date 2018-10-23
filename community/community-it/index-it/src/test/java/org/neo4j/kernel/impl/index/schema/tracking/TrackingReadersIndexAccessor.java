@@ -93,9 +93,9 @@ public class TrackingReadersIndexAccessor implements IndexAccessor
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader()
+    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
     {
-        return accessor.newAllEntriesReader();
+        return accessor.newAllEntriesReader( fromIdInclusive, toIdExclusive );
     }
 
     @Override

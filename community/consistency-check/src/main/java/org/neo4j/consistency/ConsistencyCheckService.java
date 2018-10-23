@@ -252,8 +252,8 @@ public class ConsistencyCheckService
             }
             storeAccess.initialize();
             DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, tokenHolders, indexStatisticsStore, idGeneratorFactory );
-            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config );
-            summary = check.execute( stores, countsManager, new DuplicatingLog( log, reportLog ) );
+            FullCheck check = new FullCheck( progressFactory, statistics, numberOfThreads, consistencyFlags, config, verbose );
+            summary = check.execute( pageCache, stores, countsManager, new DuplicatingLog( log, reportLog ) );
         }
         finally
         {
@@ -267,9 +267,9 @@ public class ConsistencyCheckService
         if ( !summary.isConsistent() )
         {
             log.warn( "See '%s' for a detailed consistency report.", reportFile.getPath() );
-            return Result.failure( reportFile );
+            return Result.failure( reportFile, summary );
         }
-        return Result.success( reportFile );
+        return Result.success( reportFile, summary );
     }
 
     private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem )
@@ -320,52 +320,48 @@ public class ConsistencyCheckService
         return format( "inconsistencies-%s.report", new SimpleDateFormat( "yyyy-MM-dd.HH.mm.ss" ).format( date ) );
     }
 
-    public interface Result
+    public static class Result
     {
-        static Result failure( File reportFile )
-        {
-            return new Result()
-            {
-                @Override
-                public boolean isSuccessful()
-                {
-                    return false;
-                }
+        private final boolean successful;
+        private final File reportFile;
+        private final ConsistencySummaryStatistics summary;
 
-                @Override
-                public File reportFile()
-                {
-                    return reportFile;
-                }
-            };
+        public static Result failure( File reportFile, ConsistencySummaryStatistics summary )
+        {
+            return new Result( false, reportFile, summary );
         }
 
-        static Result success( File reportFile )
+        public static Result success( File reportFile, ConsistencySummaryStatistics summary )
         {
-            return new Result()
-            {
-                @Override
-                public boolean isSuccessful()
-                {
-                    return true;
-                }
-
-                @Override
-                public File reportFile()
-                {
-                    return reportFile;
-                }
-            };
+            return new Result( true, reportFile, summary );
         }
 
-        boolean isSuccessful();
+        private Result( boolean successful, File reportFile, ConsistencySummaryStatistics summary )
+        {
+            this.successful = successful;
+            this.reportFile = reportFile;
+            this.summary = summary;
+        }
 
-        File reportFile();
+        public boolean isSuccessful()
+        {
+            return successful;
+        }
+
+        public File reportFile()
+        {
+            return reportFile;
+        }
+
+        public ConsistencySummaryStatistics summary()
+        {
+            return summary;
+        }
     }
 
     public static int defaultConsistencyCheckThreadsNumber()
     {
-        return Math.max( 1, Runtime.getRuntime().availableProcessors() - 1 );
+        return Runtime.getRuntime().availableProcessors();
     }
 
     private class RebuildPreventingCountsInitializer implements CountsBuilder

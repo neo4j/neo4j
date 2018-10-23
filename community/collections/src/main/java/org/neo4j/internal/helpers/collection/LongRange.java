@@ -51,9 +51,22 @@ public class LongRange
         this.to = to;
     }
 
+    /**
+     * @param val value to compare whether or not it's within this range.
+     * @return {@code true} if {@code from <= val <= to}, i.e. inclusive from and inclusive to.
+     */
     public boolean isWithinRange( long val )
     {
         return val >= from && val <= to;
+    }
+
+    /**
+     * @param val value to compare whether or not it's within this range.
+     * @return {@code true} if {@code from <= val < to}, i.e. inclusive from and exclusive to.
+     */
+    public boolean isWithinRangeExclusiveTo( long val )
+    {
+        return val >= from && val < to;
     }
 
     @Override

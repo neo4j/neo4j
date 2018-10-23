@@ -50,11 +50,11 @@ import org.neo4j.internal.index.label.NativeLabelScanStore;
 import org.neo4j.internal.recordstorage.SchemaRuleAccess;
 import org.neo4j.internal.recordstorage.StoreTokens;
 import org.neo4j.internal.schema.IndexDescriptor;
-import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
+import org.neo4j.token.NonTransactionalTokenNameLookup;
 import org.neo4j.token.TokenHolders;
 
 import static java.lang.String.format;
@@ -262,7 +262,7 @@ public class ConsistencyCheckTasks
         {
             if ( labelScanStore instanceof NativeLabelScanStore )
             {
-                if ( ((NativeLabelScanStore)labelScanStore).isDirty() )
+                if ( labelScanStore.isDirty() )
                 {
                     reporter.report( new LabelScanIndex( labelScanStore.getLabelScanStoreFile() ), ConsistencyReport.LabelScanConsistencyReport.class,
                             RecordType.LABEL_SCAN_DOCUMENT ).dirtyIndex();

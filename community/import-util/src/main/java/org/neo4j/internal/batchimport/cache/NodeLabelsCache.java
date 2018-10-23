@@ -36,6 +36,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         private final Bits labelBits;
         private final long[] fieldScratch = new long[1];
         private final Bits fieldBits = Bits.bitsFromLongs( fieldScratch );
+        private long[] target = new long[20];
 
         public Client( int worstCaseLongsNeeded )
         {
@@ -66,13 +67,18 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
     }
 
     /**
-     * @return a new {@link Client} used in {@link #get(Client, long, int[])}. {@link Client} contains
-     * mutable state and so each thread calling {@link #get(Client, long, int[])} must create their own
+     * @return a new {@link Client} used in {@link #get(Client, long)}. {@link Client} contains
+     * mutable state and so each thread calling {@link #get(Client, long)} must create their own
      * client instance once and (re)use it for every get-call they do.
      */
     public Client newClient()
     {
         return new Client( worstCaseLongsNeeded );
+    }
+
+    public void put( long nodeId, long[] labelIds )
+    {
+        put( putClient, nodeId, labelIds );
     }
 
     /**
@@ -87,7 +93,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * This method may only be called by a single thread, putting from multiple threads may cause undeterministic
      * behaviour.
      */
-    public void put( long nodeId, long[] labelIds )
+    public void put( Client putClient, long nodeId, long[] labelIds )
     {
         putClient.labelBits.clear( true );
         putClient.labelBits.put( labelIds.length, bitsPerLabel );
@@ -126,23 +132,23 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
      * Multiple threads may call this method simultaneously, given that they do so with each their own {@link Client}
      * instance.
      */
-    public int[] get( Client client, long nodeId, int[] target )
+    public long[] get( Client client, long nodeId )
     {
         // make this field available to our Bits instance, hackish? meh
         client.fieldBits.clear( false );
         client.fieldScratch[0] = cache.get( nodeId );
         if ( client.fieldScratch[0] == 0 )
         {   // Nothing here
-            target[0] = -1; // mark the end
-            return target;
+            client.target[0] = -1; // mark the end
+            return client.target;
         }
 
         int length = client.fieldBits.getInt( bitsPerLabel );
         int longsInUse = ((bitsPerLabel * (length + 1)) - 1) / Long.SIZE + 1;
-        target = ensureCapacity( target, length );
+        client.target = ensureCapacity( client.target, length );
         if ( longsInUse == 1 )
         {
-            decode( client.fieldBits, length, target );
+            decode( client.fieldBits, length, client.target );
         }
         else
         {
@@ -154,10 +160,10 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
                 client.labelScratch[i] = spillOver.get( spillOverIndex + i );
             }
             client.labelBits.getInt( bitsPerLabel ); // first one ignored, since it's just the length
-            decode( client.labelBits, length, target );
+            decode( client.labelBits, length, client.target );
         }
 
-        return target;
+        return client.target;
     }
 
     @Override
@@ -167,7 +173,7 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         spillOver.acceptMemoryStatsVisitor( visitor );
     }
 
-    private void decode( Bits bits, int length, int[] target )
+    private void decode( Bits bits, int length, long[] target )
     {
         for ( int i = 0; i < length; i++ )
         {
@@ -180,10 +186,10 @@ public class NodeLabelsCache implements MemoryStatsVisitor.Visitable, AutoClosea
         }
     }
 
-    private static int[] ensureCapacity( int[] target, int capacity )
+    private static long[] ensureCapacity( long[] target, int capacity )
     {
         return capacity > target.length
-                ? new int[capacity]
+                ? new long[capacity]
                 : target;
     }
 

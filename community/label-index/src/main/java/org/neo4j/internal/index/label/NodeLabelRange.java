@@ -25,6 +25,7 @@ import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.internal.index.label.LabelScanValue.RANGE_SIZE;
 
 /**
  * Represents a range of nodes and label ids attached to those nodes. All nodes in the range are present in
@@ -33,9 +34,12 @@ import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
  */
 public class NodeLabelRange
 {
+    public static final long[][] NO_LABELS = new long[RANGE_SIZE][];
     private final long idRange;
     private final long[] nodes;
     private final long[][] labels;
+    private final long lowRangeId;
+    private final long highRangeId;
 
     /**
      * @param idRange node id range, e.g. in which id span the nodes are.
@@ -48,12 +52,13 @@ public class NodeLabelRange
         this.idRange = idRange;
         this.labels = labels;
         int rangeSize = labels.length;
-        long baseNodeId = idRange * rangeSize;
+        this.lowRangeId = idRange * rangeSize;
+        this.highRangeId = lowRangeId + rangeSize - 1;
 
         this.nodes = new long[rangeSize];
         for ( int i = 0; i < rangeSize; i++ )
         {
-            nodes[i] = baseNodeId + i;
+            nodes[i] = lowRangeId + i;
         }
     }
 
@@ -66,6 +71,16 @@ public class NodeLabelRange
     public long id()
     {
         return idRange;
+    }
+
+    public boolean covers( long nodeId )
+    {
+        return nodeId >= lowRangeId && nodeId <= highRangeId;
+    }
+
+    public boolean isBelow( long nodeId )
+    {
+        return highRangeId < nodeId;
     }
 
     /**
@@ -86,8 +101,7 @@ public class NodeLabelRange
      */
     public long[] labels( long nodeId )
     {
-        long firstNodeId = idRange * labels.length;
-        int index = toIntExact( nodeId - firstNodeId );
+        int index = toIntExact( nodeId - lowRangeId );
         assert index >= 0 && index < labels.length : "nodeId:" + nodeId + ", idRange:" + idRange;
         return labels[index] != null ? labels[index] : EMPTY_LONG_ARRAY;
     }
@@ -124,7 +138,7 @@ public class NodeLabelRange
     @Override
     public String toString()
     {
-        String rangeString = idRange * labels.length + "-" + (idRange + 1) * labels.length;
+        String rangeString = lowRangeId + "-" + (highRangeId + 1);
         String prefix = "NodeLabelRange[idRange=" + rangeString;
         return toString( prefix, nodes, labels );
     }

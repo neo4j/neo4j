@@ -31,6 +31,7 @@ import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -120,7 +121,7 @@ public abstract class DynamicRecordCheckTest
         ConsistencyReport.DynamicConsistencyReport report = check( property );
 
         // then
-        verify( report ).selfReferentialNext();
+        verify( report ).circularReferenceNext( any() );
         verifyNoMoreInteractions( report );
     }
 

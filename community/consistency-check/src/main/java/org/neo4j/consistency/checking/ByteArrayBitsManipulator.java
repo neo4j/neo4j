@@ -63,6 +63,11 @@ public class ByteArrayBitsManipulator
                 boolean bitIsSet = (field & fbMask) != 0;
                 return bitIsSet ? -1 : 0; // the -1 here is a bit weird, but for the time being this is what the rest of the code expects
             }
+            else if ( bitCount == Short.SIZE )
+            {
+                long raw = array.getShort( index, byteOffset ) & mask;
+                return raw == mask ? -1 : raw;
+            }
             else // we know that this larger field starts at the beginning of a byte
             {
                 long field = array.get5ByteLong( index, byteOffset );
@@ -83,6 +88,10 @@ public class ByteArrayBitsManipulator
                 int field = array.getByte( index, byteOffset ) & 0xFF;
                 int otherBits = field & ~fbMask;
                 array.setByte( index, byteOffset, (byte) (otherBits | (value << bitOffset)) );
+            }
+            else if ( bitCount == Short.SIZE )
+            {
+                array.setShort( index, byteOffset, (short) value );
             }
             else
             {

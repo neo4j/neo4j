@@ -19,7 +19,9 @@
  */
 package org.neo4j.internal.helpers.progress;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.atomic.AtomicLongFieldUpdater;
@@ -50,7 +52,7 @@ final class Aggregator
         this.totalCount += totalCount;
     }
 
-    synchronized void initialize()
+    synchronized ProgressMonitorFactory.Completer initialize()
     {
         indicator.startProcess( totalCount );
         if ( states.isEmpty() )
@@ -58,6 +60,9 @@ final class Aggregator
             indicator.progress( 0, indicator.reportResolution() );
             indicator.completeProcess();
         }
+
+        List<ProgressListener> progressesToClose = new ArrayList<>( states.keySet() );
+        return () -> progressesToClose.forEach( ProgressListener::done );
     }
 
     void update( long delta )
@@ -99,6 +104,11 @@ final class Aggregator
     synchronized void signalFailure( Throwable e )
     {
         indicator.failure( e );
+    }
+
+    void done()
+    {
+        states.keySet().forEach( ProgressListener::done );
     }
 
     enum State

@@ -375,13 +375,17 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                         return;
                     }
                 }
-                engine.report().duplicateRuleName( namedSchema.indexRecord, name );
+                if ( namedSchema.indexRecord.getId() != rule.getId() /*don't report itself*/ )
+                {
+                    engine.report().duplicateRuleName( namedSchema.indexRecord, name );
+                }
             }
         }
         else
         {
             IndexDescriptor index = (IndexDescriptor) rule;
-            if ( namedSchema.index != null )
+            if ( namedSchema.index != null &&
+                    namedSchema.indexRecord.getId() != index.getId() /*don't report itself*/ )
             {
                 engine.report().duplicateRuleName( namedSchema.indexRecord, name );
             }
@@ -427,64 +431,6 @@ public class SchemaRecordCheck implements RecordCheck<SchemaRecord, ConsistencyR
                     engine.report().propertyKeyNotInUse( propertyKeyTokenRecord );
                 }
             };
-
-    private static class SchemaRuleKey
-    {
-        private final boolean isConstraint;
-        private final boolean isUnique;
-        private final SchemaDescriptor schema;
-
-        private SchemaRuleKey( SchemaRule rule )
-        {
-            if ( rule instanceof ConstraintDescriptor )
-            {
-                ConstraintDescriptor constraint = (ConstraintDescriptor) rule;
-                this.isConstraint = true;
-                this.isUnique = constraint.enforcesUniqueness();
-            }
-            else
-            {
-                IndexDescriptor index = (IndexDescriptor) rule;
-                this.isConstraint = false;
-                this.isUnique = index.isUnique();
-            }
-            this.schema = rule.schema();
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( this == o )
-            {
-                return true;
-            }
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            SchemaRuleKey that = (SchemaRuleKey) o;
-
-            if ( isConstraint != that.isConstraint )
-            {
-                return false;
-            }
-            if ( isUnique != that.isUnique )
-            {
-                return false;
-            }
-            return schema.equals( that.schema );
-        }
-
-        @Override
-        public int hashCode()
-        {
-            int result = isConstraint ? 1 : 0;
-            result = 31 * result + (isUnique ? 1 : 0);
-            result = 31 * result + schema.hashCode();
-            return result;
-        }
-    }
 
     private static class NamedSchema
     {

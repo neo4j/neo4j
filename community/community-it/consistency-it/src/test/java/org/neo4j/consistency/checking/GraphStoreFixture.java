@@ -190,6 +190,11 @@ public abstract class GraphStoreFixture implements AutoCloseable
         return directStoreAccess( true );
     }
 
+    public PageCache getInstantiatedPageCache()
+    {
+        return pageCache;
+    }
+
     private DirectStoreAccess directStoreAccess( boolean readOnly )
     {
         if ( directStoreAccess == null )

@@ -22,6 +22,7 @@ package org.neo4j.internal.batchimport.cache;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.test.Race;
@@ -31,12 +32,10 @@ import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 @ExtendWith( RandomExtension.class )
 class NodeLabelsCacheTest
 {
-    private static final int CHUNK_SIZE = 100;
     @Inject
     private RandomRule random;
 
@@ -44,7 +43,7 @@ class NodeLabelsCacheTest
     void shouldCacheSmallSetOfLabelsPerNode()
     {
         // GIVEN
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, 5, 4 );
         NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
@@ -52,9 +51,8 @@ class NodeLabelsCacheTest
         cache.put( nodeId, new long[] {1,2,3} );
 
         // THEN
-        int[] readLabels = new int[3];
-        cache.get( client, nodeId, readLabels );
-        assertArrayEquals( new int[] {1,2,3}, readLabels );
+        long[] readLabels = cache.get( client, nodeId );
+        assertArrayEquals( new long[] {1,2,3}, shrunk( readLabels ) );
     }
 
     @Test
@@ -62,17 +60,16 @@ class NodeLabelsCacheTest
     {
         // GIVEN
         int highLabelId = 1000;
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId, CHUNK_SIZE );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId );
         NodeLabelsCache.Client client = cache.newClient();
         long nodeId = 0;
 
         // WHEN
-        int[] labels = randomLabels( 200, 1000 );
-        cache.put( nodeId, asLongArray( labels ) );
+        long[] labels = randomLabels( 200, 1000 );
+        cache.put( nodeId, labels );
 
         // THEN
-        int[] readLabels = new int[labels.length];
-        cache.get( client, nodeId, readLabels );
+        long[] readLabels = cache.get( client, nodeId );
         assertArrayEquals( labels, readLabels );
     }
 
@@ -81,23 +78,22 @@ class NodeLabelsCacheTest
     {
         // GIVEN a really weird scenario where we have 5000 different labels
         int highLabelId = 1_000;
-        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId, 1_000_000 );
+        NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId );
         NodeLabelsCache.Client client = cache.newClient();
         int numberOfNodes = 100_000;
-        int[][] expectedLabels = new int[numberOfNodes][];
+        long[][] expectedLabels = new long[numberOfNodes][];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            int[] labels = randomLabels( random.nextInt( 30 ) + 1, highLabelId );
+            long[] labels = randomLabels( random.nextInt( 30 ) + 1, highLabelId );
             expectedLabels[i] = labels;
-            cache.put( i, asLongArray( labels ) );
+            cache.put( i, labels );
         }
 
         // THEN
-        int[] forceCreationOfNewIntArray = new int[0];
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            int[] labels = cache.get( client, i, forceCreationOfNewIntArray );
-            assertArrayEquals( expectedLabels[i], labels, "For node " + i );
+            long[] labels = cache.get( client, i );
+            assertArrayEquals( expectedLabels[i], shrunk( labels ), "For node " + i );
         }
     }
 
@@ -110,8 +106,7 @@ class NodeLabelsCacheTest
         cache.put( 10, new long[] { 5, 6, 7, 8 } );
 
         // WHEN
-        int[] target = new int[20];
-        assertSame( target, cache.get( client, 10, target ) );
+        long[] target = cache.get( client, 10 );
         assertEquals( 5, target[0] );
         assertEquals( 6, target[1] );
         assertEquals( 7, target[2] );
@@ -129,8 +124,7 @@ class NodeLabelsCacheTest
         NodeLabelsCache.Client client = cache.newClient();
 
         // WHEN
-        int[] target = new int[3];
-        cache.get( client, 0, target );
+        long[] target = cache.get( client, 0 );
 
         // THEN
         assertEquals( -1, target[0] );
@@ -142,11 +136,11 @@ class NodeLabelsCacheTest
         // GIVEN
         int highLabelId = 10;
         int numberOfNodes = 100;
-        int[][] expectedLabels = new int[numberOfNodes][];
+        long[][] expectedLabels = new long[numberOfNodes][];
         NodeLabelsCache cache = new NodeLabelsCache( NumberArrayFactory.AUTO_WITHOUT_PAGECACHE, highLabelId );
         for ( int i = 0; i < numberOfNodes; i++ )
         {
-            cache.put( i, asLongArray( expectedLabels[i] = randomLabels( random.nextInt( 5 ), highLabelId ) ) );
+            cache.put( i, expectedLabels[i] = randomLabels( random.nextInt( 5 ), highLabelId ) );
         }
 
         // WHEN
@@ -163,12 +157,12 @@ class NodeLabelsCacheTest
     private static class LabelGetter implements Runnable
     {
         private final NodeLabelsCache cache;
-        private final int[][] expectedLabels;
+        private final long[][] expectedLabels;
         private final NodeLabelsCache.Client client;
         private final int numberOfNodes;
-        private int[] scratch = new int[10];
+        private long[] scratch;
 
-        LabelGetter( NodeLabelsCache cache, int[][] expectedLabels, int numberOfNodes )
+        LabelGetter( NodeLabelsCache cache, long[][] expectedLabels, int numberOfNodes )
         {
             this.cache = cache;
             this.client = cache.newClient();
@@ -182,14 +176,14 @@ class NodeLabelsCacheTest
             for ( int i = 0; i < 1_000; i++ )
             {
                 int nodeId = ThreadLocalRandom.current().nextInt( numberOfNodes );
-                scratch = cache.get( client, nodeId, scratch );
+                scratch = cache.get( client, nodeId );
                 assertCorrectLabels( nodeId, scratch );
             }
         }
 
-        private void assertCorrectLabels( int nodeId, int[] gotten )
+        private void assertCorrectLabels( int nodeId, long[] gotten )
         {
-            int[] expected = expectedLabels[nodeId];
+            long[] expected = expectedLabels[nodeId];
             for ( int i = 0; i < expected.length; i++ )
             {
                 assertEquals( expected[i], gotten[i] );
@@ -203,23 +197,25 @@ class NodeLabelsCacheTest
         }
     }
 
-    private static long[] asLongArray( int[] labels )
+    private long[] randomLabels( int count, int highId )
     {
-        long[] result = new long[labels.length];
-        for ( int i = 0; i < labels.length; i++ )
-        {
-            result[i] = labels[i];
-        }
-        return result;
-    }
-
-    private int[] randomLabels( int count, int highId )
-    {
-        int[] result = new int[count];
+        long[] result = new long[count];
         for ( int i = 0; i < count; i++ )
         {
             result[i] = random.nextInt( highId );
         }
         return result;
+    }
+
+    private static long[] shrunk( long[] readLabels )
+    {
+        for ( int i = 0; i < readLabels.length; i++ )
+        {
+            if ( readLabels[i] == -1 )
+            {
+                return Arrays.copyOf( readLabels, i );
+            }
+        }
+        return readLabels;
     }
 }

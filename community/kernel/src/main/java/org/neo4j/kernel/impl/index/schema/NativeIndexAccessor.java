@@ -105,9 +105,9 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     public abstract IndexReader newReader();
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader()
+    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
     {
-        return new NativeAllEntriesReader<>( tree, layout );
+        return new NativeAllEntriesReader<>( tree, layout, fromIdInclusive, toIdExclusive );
     }
 
     @Override

@@ -39,6 +39,7 @@ import org.neo4j.consistency.CheckConsistencyCommand;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
+import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.dbms.api.DatabaseManagementService;
 import org.neo4j.internal.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -158,7 +159,7 @@ class CheckConsistencyCommandIT
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
         checkConsistencyCommand.execute();
@@ -203,7 +204,7 @@ class CheckConsistencyCommandIT
                 .runFullConsistencyCheck( eq( databaseLayout ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--verbose" );
         checkConsistencyCommand.execute();
@@ -225,7 +226,7 @@ class CheckConsistencyCommandIT
                 .runFullConsistencyCheck( any( DatabaseLayout.class ), any( Config.class ), any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( true ), any(),
                         any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ) ) );
+                .thenReturn( ConsistencyCheckService.Result.failure( new File( "/the/report/path" ), new ConsistencySummaryStatistics() ) );
 
         CommandFailedException commandFailed =
                 assertThrows( CommandFailedException.class, () ->
@@ -248,7 +249,7 @@ class CheckConsistencyCommandIT
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb" );
         checkConsistencyCommand.execute();
@@ -270,7 +271,7 @@ class CheckConsistencyCommandIT
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--report-dir=some-dir-or-other" );
         checkConsistencyCommand.execute();
@@ -292,7 +293,7 @@ class CheckConsistencyCommandIT
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--report-dir=" + Paths.get( "..", "bar" ) );
         checkConsistencyCommand.execute();
@@ -313,7 +314,7 @@ class CheckConsistencyCommandIT
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--database=mydb", "--check-graph=false",
             "--check-indexes=false", "--check-index-structure=false", "--check-label-scan-store=false", "--check-property-owners=true" );
@@ -334,7 +335,7 @@ class CheckConsistencyCommandIT
 
         when( consistencyCheckService.runFullConsistencyCheck( any(), any(), any(), any(),
                 any(), anyBoolean(), any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         MutuallyExclusiveArgsException incorrectUsage =
                 assertThrows( MutuallyExclusiveArgsException.class, () ->
@@ -378,7 +379,7 @@ class CheckConsistencyCommandIT
                         any( ProgressMonitorFactory.class ),
                         any( LogProvider.class ), any( FileSystemAbstraction.class ), eq( false ), any(),
                         any( ConsistencyFlags.class ) ) )
-                .thenReturn( ConsistencyCheckService.Result.success( null ) );
+                .thenReturn( ConsistencyCheckService.Result.success( null, null ) );
 
         CommandLine.populateCommand( checkConsistencyCommand, "--backup=" + backupLayout.databaseDirectory() );
         checkConsistencyCommand.execute();

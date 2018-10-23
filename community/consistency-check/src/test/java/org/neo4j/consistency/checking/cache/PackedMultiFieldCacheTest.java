@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.consistency.checking.cache.CacheSlots.ID_SLOT_SIZE;
-import static org.neo4j.consistency.checking.cache.PackedMultiFieldCache.defaultArray;
+import static org.neo4j.consistency.checking.cache.DefaultCacheAccess.defaultByteArray;
 
 class PackedMultiFieldCacheTest
 {
@@ -32,7 +32,7 @@ class PackedMultiFieldCacheTest
     void shouldPutValuesIntoSlots()
     {
         // GIVEN
-        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultArray( 20 ), 8, 16, 24, 32, 1 );
+        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultByteArray( (long) 20 ), 8, 16, 24, 32, 1 );
         int index = 10;
         long[] values = new long[] {3, 100, 12345, 67890, 0};
 
@@ -50,7 +50,7 @@ class PackedMultiFieldCacheTest
     void shouldHaveCorrectDefaultValues()
     {
         // GIVEN
-        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultArray( 10 ), ID_SLOT_SIZE, 5, 1 );
+        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultByteArray( (long) 10 ), ID_SLOT_SIZE, 5, 1 );
         int index = 0;
 
         // WHEN
@@ -66,7 +66,7 @@ class PackedMultiFieldCacheTest
     void shouldBeAbleToChangeSlotSize()
     {
         // GIVEN
-        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultArray( 20 ), 5, 1 );
+        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultByteArray( (long) 20 ), 5, 1 );
         int index = 10;
         assertThrows( IllegalArgumentException.class, () -> cache.put( index, 2, 0 ) );
 
@@ -82,7 +82,7 @@ class PackedMultiFieldCacheTest
     void shouldHandleTwoIdsAndFourBooleans()
     {
         // given
-        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultArray( 10 ), ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1, 1 );
+        PackedMultiFieldCache cache = new PackedMultiFieldCache( defaultByteArray( (long) 10 ), ID_SLOT_SIZE, ID_SLOT_SIZE, 1, 1, 1, 1 );
         int index = 3;
 
         // when

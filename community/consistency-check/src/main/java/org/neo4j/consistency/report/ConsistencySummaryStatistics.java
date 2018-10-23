@@ -29,7 +29,7 @@ import org.neo4j.consistency.RecordType;
 public class ConsistencySummaryStatistics
 {
     private final Map<RecordType, AtomicInteger> inconsistentRecordCount = new EnumMap<>( RecordType.class );
-    private final AtomicInteger totalInconsistencyCount = new AtomicInteger();
+    private final AtomicLong totalInconsistencyCount = new AtomicLong();
     private final AtomicLong errorCount = new AtomicLong();
     private final AtomicLong warningCount = new AtomicLong();
 
@@ -68,9 +68,14 @@ public class ConsistencySummaryStatistics
         return inconsistentRecordCount.get( recordType ).get();
     }
 
-    public int getTotalInconsistencyCount()
+    public long getTotalInconsistencyCount()
     {
         return totalInconsistencyCount.get();
+    }
+
+    public long getTotalWarningCount()
+    {
+        return warningCount.get();
     }
 
     public void update( RecordType recordType, int errors, int warnings )

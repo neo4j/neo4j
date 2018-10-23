@@ -63,4 +63,9 @@ public class OffHeapLongArray extends OffHeapRegularNumberArray<LongArray> imple
             }
         }
     }
+
+    public long getAndAdd( long index, long delta )
+    {
+        return UnsafeUtil.getAndAddLong( null, addressOf( index ), delta );
+    }
 }

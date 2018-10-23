@@ -28,6 +28,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.time.Clocks;
+import org.neo4j.util.Preconditions;
 
 public abstract class ProgressMonitorFactory
 {
@@ -137,14 +138,31 @@ public abstract class ProgressMonitorFactory
             }
         }
 
-        public void build()
+        /**
+         * Have to be called after all individual progresses have been added.
+         * @return a {@link Completer} which can be called do issue {@link ProgressListener#done()} for all individual progress parts.
+         */
+        public Completer build()
         {
-            if ( aggregator != null )
-            {
-                aggregator.initialize();
-            }
+            Preconditions.checkState( aggregator != null, "Already built" );
+            Completer completer = aggregator.initialize();
             aggregator = null;
             parts = null;
+            return completer;
         }
+
+        /**
+         * Can be called to invoke all individual {@link ProgressListener#done()}.
+         */
+        public void done()
+        {
+            aggregator.done();
+        }
+    }
+
+    public interface Completer extends AutoCloseable
+    {
+        @Override
+        void close();
     }
 }

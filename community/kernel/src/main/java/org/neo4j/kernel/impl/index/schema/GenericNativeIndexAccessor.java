@@ -133,7 +133,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
                     @Override
                     public Value[] values()
                     {
-                        return null; // TODO
+                        return seeker.key().asValues();
                     }
 
                     @Override

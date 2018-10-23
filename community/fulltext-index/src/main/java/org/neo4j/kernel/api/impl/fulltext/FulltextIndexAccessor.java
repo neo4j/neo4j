@@ -75,9 +75,9 @@ public class FulltextIndexAccessor extends AbstractLuceneIndexAccessor<FulltextI
     }
 
     @Override
-    public BoundedIterable<Long> newAllEntriesReader()
+    public BoundedIterable<Long> newAllEntriesReader( long fromIdInclusive, long toIdExclusive )
     {
-        return super.newAllEntriesReader( LuceneFulltextDocumentStructure::getNodeId );
+        return super.newAllEntriesReader( LuceneFulltextDocumentStructure::getNodeId, fromIdInclusive, toIdExclusive );
     }
 
     @Override

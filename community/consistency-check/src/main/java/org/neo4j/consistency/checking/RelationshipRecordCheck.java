@@ -473,7 +473,6 @@ public class RelationshipRecordCheck extends
             {
                 if ( referenceShouldBeSkipped( relationship, reference, records ) )
                 {
-                    // wrong direction, so skip
                     cacheAccess.incAndGetCount( Counts.Type.correctSkipCheck );
                     return RecordReference.SkippingReference.skipReference();
                 }
@@ -531,11 +530,13 @@ public class RelationshipRecordCheck extends
                     long nodeId = NODE == NodeField.SOURCE ? relationship.getFirstNode() : relationship.getSecondNode();
                     if ( Record.NO_NEXT_RELATIONSHIP.is( cacheAccess.getFromCache( nodeId, SLOT_RELATIONSHIP_ID ) ) )
                     {
+                        // First, i.e. nothing to compare with
                         referred = RecordReference.SkippingReference.skipReference();
                         cacheAccess.incAndGetCount( Counts.Type.noCacheSkip );
                     }
                     else
                     {
+                        // Not first, we can compare to the previous value
                         referred = buildFromCache( relationship, reference, nodeId, records );
                         if ( referred == RecordReference.SkippingReference.<RelationshipRecord>skipReference() )
                         {

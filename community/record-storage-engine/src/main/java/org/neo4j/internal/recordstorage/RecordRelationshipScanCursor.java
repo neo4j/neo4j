@@ -28,7 +28,7 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static java.lang.Math.min;
 
-class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
+public class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
     private int filterType;
     private long next;

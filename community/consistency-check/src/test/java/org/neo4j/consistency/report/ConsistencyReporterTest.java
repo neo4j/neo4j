@@ -111,11 +111,7 @@ public class ConsistencyReporterTest
                     mock( ConsistencyReporter.ProxyFactory.class ), RecordType.PROPERTY, records,
                     new PropertyRecord( 0 ), NO_MONITOR );
 
-            // when
-            handler.updateSummary();
-
             // then
-            verify( summary ).update( RecordType.PROPERTY, 0, 0 );
             verifyNoMoreInteractions( summary );
         }
 
@@ -141,9 +137,6 @@ public class ConsistencyReporterTest
             verify( reference ).dispatch( captor.capture() );
             PendingReferenceCheck pendingRefCheck = captor.getValue();
 
-            // when
-            handler.updateSummary();
-
             // then
             verifyZeroInteractions( summary );
 
@@ -151,7 +144,6 @@ public class ConsistencyReporterTest
             pendingRefCheck.skip();
 
             // then
-            verify( summary ).update( RecordType.PROPERTY, 0, 0 );
             verifyNoMoreInteractions( summary );
         }
 
@@ -279,12 +271,15 @@ public class ConsistencyReporterTest
             ArrayList<Object[]> methods = new ArrayList<>();
             for ( Method reporterMethod : ConsistencyReport.Reporter.class.getMethods() )
             {
-                Type[] parameterTypes = reporterMethod.getGenericParameterTypes();
-                ParameterizedType checkerParameter = (ParameterizedType) parameterTypes[parameterTypes.length - 1];
-                Class reportType = (Class) checkerParameter.getActualTypeArguments()[1];
-                for ( Method method : reportType.getMethods() )
+                if ( reporterMethod.getReturnType() == Void.class )
                 {
-                    methods.add( new Object[]{reporterMethod, method} );
+                    Type[] parameterTypes = reporterMethod.getGenericParameterTypes();
+                    ParameterizedType checkerParameter = (ParameterizedType) parameterTypes[parameterTypes.length - 1];
+                    Class reportType = (Class) checkerParameter.getActualTypeArguments()[1];
+                    for ( Method method : reportType.getMethods() )
+                    {
+                        methods.add( new Object[]{reporterMethod, method} );
+                    }
                 }
             }
             return methods;
