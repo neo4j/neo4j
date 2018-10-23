@@ -27,8 +27,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  val expectedToFail = Configs.Interpreted + Configs.Procs - Configs.Cost2_3
-  val expectedToFail2 = Configs.Interpreted  + Configs.Procs - Configs.Version2_3
+  val expectedToFail = Configs.Interpreted + Configs.Default - Configs.Cost2_3
 
   test("optional match and set") {
     val n1 = createLabeledNode("L1")
@@ -79,7 +78,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     node should haveProperty("property")
 
     // and
-    val result2 = executeWith(Configs.Interpreted, "MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
+    val result2 = executeWith(Configs.Interpreted + Configs.Default, "MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
     result2.columnAs("count(*)").toList should be(List(1))
   }
 
@@ -160,8 +159,9 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
 
   //Not suitable for the TCK
   test("should fail at runtime when the expression is not a node or a relationship") {
-    failWithError(expectedToFail2, "SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)",
-      List("The expression GenericCase(Vector((true,{node})),None) should have been a node or a relationship"), params = Map("node" -> 42))
+    failWithError(expectedToFail, "SET (CASE WHEN true THEN {node} END).name = 'neo4j' RETURN count(*)",
+      List("The expression GenericCase(Vector((true,{node})),None) should have been a node or a relationship",
+        "Developer: Stefan claims that: This should be a node or a relationship"), params = Map("node" -> 42))
   }
 
   //Not suitable for the TCK

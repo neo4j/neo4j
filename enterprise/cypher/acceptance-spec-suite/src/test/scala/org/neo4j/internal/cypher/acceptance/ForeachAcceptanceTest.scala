@@ -191,13 +191,13 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |FOREACH (x IN mixedTypeCollection | CREATE (n)-[:FOOBAR]->(x) );""".stripMargin
 
     // when
-    val explain = executeWith(Configs.Interpreted - Configs.Version2_3, s"EXPLAIN $query")
+    val explain = executeWith(Configs.Interpreted + Configs.Default - Configs.Version2_3, s"EXPLAIN $query")
 
     // then
     explain.executionPlanDescription().toString shouldNot include("CreateNode")
 
     // when
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.ProcedureOrSchema, Runtimes.SlottedWithCompiledExpressions)) +
+    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default, Runtimes.SlottedWithCompiledExpressions)) +
       TestConfiguration(Versions(Versions.V3_1, Versions.V3_4), Planners.Cost, Runtimes.Default)
     failWithError(config, query, List("Expected to find a node at"))
   }

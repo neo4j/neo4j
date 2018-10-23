@@ -245,7 +245,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
   test("Should not sum durations and numbers together") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN sum(x) AS length"
-    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Procs, query, Seq("cannot mix number and durations"))
+    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Default, query, Seq("cannot mix number and durations"))
   }
 
   test("Should avg durations") {
@@ -264,7 +264,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
   test("Should not avg durations and numbers together") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN avg(x) AS length"
-    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Procs, query, Seq("cannot mix number and durations"))
+    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Default, query, Seq("cannot mix number and durations"))
   }
 
   test("Aggregations should keep LHS order") {

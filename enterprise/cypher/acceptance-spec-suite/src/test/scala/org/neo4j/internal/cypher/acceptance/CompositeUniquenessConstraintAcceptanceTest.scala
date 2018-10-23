@@ -30,7 +30,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should be able to create and remove single property uniqueness constraint") {
 
-    val testconfiguration = Configs.Procs - Configs.Cost3_1
+    val testconfiguration = Configs.All - Configs.Cost3_1 - Configs.Cost2_3 - Configs.AllRulePlanners
     // When
     executeWith(testconfiguration, "CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS UNIQUE")
 
@@ -60,7 +60,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should fail to to drop composite uniqueness constraints") {
     // When
-    failWithError(singlePropertyUniquenessFailConf + Configs.Procs - Configs.Cost3_1,
+    failWithError(singlePropertyUniquenessFailConf + Configs.Default - Configs.Cost3_1,
       "DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
       List("Only single property uniqueness constraints are supported"))
 

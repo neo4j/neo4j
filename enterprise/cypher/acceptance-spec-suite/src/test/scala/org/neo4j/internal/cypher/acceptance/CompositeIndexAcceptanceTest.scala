@@ -50,7 +50,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph should haveIndexes(":Person(firstname)", ":Person(firstname,lastname)")
 
     // When
-    executeWith(Configs.Procs, "DROP INDEX ON :Person(firstname , lastname)")
+    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, "DROP INDEX ON :Person(firstname , lastname)")
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -319,8 +319,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should not fail on multiple attempts to create a composite index") {
     // Given
-    executeWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
-    executeWith(Configs.Procs, "CREATE INDEX ON :Person(firstname, lastname)")
+    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, "CREATE INDEX ON :Person(firstname, lastname)")
+    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, "CREATE INDEX ON :Person(firstname, lastname)")
   }
 
   test("should not use range queries against a composite index") {

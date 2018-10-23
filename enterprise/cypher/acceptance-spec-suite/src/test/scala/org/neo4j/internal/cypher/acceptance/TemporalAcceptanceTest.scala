@@ -32,8 +32,8 @@ import org.neo4j.values.storable.{DateValue, DurationValue}
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  private val failConf1 = Configs.Interpreted + Configs.Procs - Configs.Before3_3AndRule
-  private val failConf2 = Configs.Interpreted + Configs.Procs - Configs.Version2_3
+  private val failConf1 = Configs.Interpreted + Configs.Default - Configs.Before3_3AndRule
+  private val failConf2 = Configs.Interpreted + Configs.Default - Configs.Version2_3
 
   // Getting current value of a temporal
 
@@ -371,7 +371,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not create date time with conflicting time zones") {
     val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
     val errorMsg = "Timezone and offset do not match"
-    failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Procs, query, Seq(errorMsg), Seq("InvalidArgumentException"))
+    failWithError(Configs.Interpreted - Configs.Version2_3 + Configs.Default, query, Seq(errorMsg), Seq("InvalidArgumentException"))
   }
 
   // Failing when providing wrong values
@@ -836,7 +836,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
           *  Version 3.3 returns null instead due to running with 3.5 runtime
           *  SyntaxException come from the 3.5 planner and IncomparableValuesException from earlier runtimes
           */
-        failWithError(Configs.Version3_5 + Configs.DefaultProcs - Configs.AllRulePlanners, query, Seq("Type mismatch"))
+        failWithError(Configs.Version3_5 + Configs.Default - Configs.AllRulePlanners, query, Seq("Type mismatch"))
       }
     }
   }

@@ -22,7 +22,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.io.{File, PrintWriter}
+import java.io.File
+import java.io.PrintWriter
 
 import org.neo4j.cypher.ExecutionEngineHelper.createEngine
 import org.neo4j.cypher._
@@ -33,15 +34,17 @@ import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.ProcedureOrSchema
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{V3_1, V3_4, v3_5}
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_4
+import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.v3_5
 import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction
-import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase
 
 import scala.collection.JavaConverters._
@@ -474,8 +477,8 @@ order by a.COL1""".format(a, b))
   test("shouldReturnASimplePath") {
     val errorMessage = List("Index `missingIndex` does not exist")
 
-    val conf = startConf + Configs.DefaultProcs
-    val conf2 = Configs.AllRulePlanners + Configs.DefaultInterpreted + Configs.DefaultProcs
+    val conf = startConf + Configs.Default
+    val conf2 = Configs.AllRulePlanners + Configs.DefaultInterpreted + Configs.Default
     failWithError(conf, "start a=node:missingIndex(key='value') return a", errorMessage)
     failWithError(conf, "start a=node:missingIndex('value') return a", errorMessage)
     failWithError(conf2, "start a=relationship:missingIndex(key='value') return a", errorMessage)
@@ -726,7 +729,7 @@ order by a.COL1""".format(a, b))
       TestConfiguration(
         Versions(V3_1, V3_4, v3_5, Versions.Default),
         Planners(Planners.Cost, Planners.Default),
-        Runtimes(ProcedureOrSchema, Runtimes.Default)
+        Runtimes(Runtimes.Default)
       ) + Configs.Rule2_3
 
     // WHEN

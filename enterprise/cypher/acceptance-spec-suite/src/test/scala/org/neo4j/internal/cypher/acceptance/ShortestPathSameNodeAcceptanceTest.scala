@@ -37,7 +37,7 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ru
   val expectedToFail = TestConfiguration(
     Versions(Versions.Default, V3_1, V3_4),
     Planners(Planners.Cost, Planners.Rule, Planners.Default),
-    Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions, Runtimes.Default, Runtimes.ProcedureOrSchema))
+    Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions, Runtimes.Default))
 
   def setupModel(db: GraphDatabaseCypherService) {
     db.inTx {
@@ -100,7 +100,7 @@ class ShortestPathSameNodeAcceptanceTest extends ExecutionEngineFunSuite with Ru
   test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should not throw exception by default") {
     setupModel(graph)
     val query = "MATCH (a), (b) MATCH p=shortestPath((a)-[*0..]-(b)) RETURN p"
-    executeWith(Configs.Interpreted, query).toList.length should be(9)
+    executeWith(Configs.Interpreted + Configs.Default, query).toList.length should be(9)
   }
 
   test("shortest paths with min length 0 that discover at runtime that the start and end nodes are the same should throw exception even when when configured to do so") {

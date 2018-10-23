@@ -31,9 +31,9 @@ import scala.collection.JavaConversions._
 
 class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with CypherComparisonSupport {
 
-  private val combinedCallconfiguration = Configs.Interpreted - Configs.AllRulePlanners - Configs.Version2_3
+  private val combinedCallconfiguration = Configs.Interpreted + Configs.Default - Configs.AllRulePlanners - Configs.Version2_3
 
-  private val config = Configs.Procs + Configs.Cost3_1
+  private val config = Configs.All - Configs.AllRulePlanners - Configs.Version2_3
 
   test("should be able to filter as part of call") {
     // Given
@@ -329,7 +329,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   }
 
   test("yield from void procedure should return correct error msg") {
-    failWithError(Configs.Procs + Configs.Version3_5 + Configs.Version3_4 - Configs.AllRulePlanners,
+    failWithError(Configs.Default + Configs.Version3_5 + Configs.Version3_4 - Configs.AllRulePlanners,
                   "CALL db.createLabel('Label') yield node",
                   List("Cannot yield value from void procedure."))
   }

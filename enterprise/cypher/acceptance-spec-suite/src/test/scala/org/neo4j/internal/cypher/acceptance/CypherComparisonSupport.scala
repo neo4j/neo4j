@@ -433,7 +433,7 @@ object CypherComparisonSupport {
 
     object Cost extends Planner(Set("COST", "IDP", "PROCEDURE"), "planner=cost")
 
-    object Rule extends Planner(Set("RULE"), "planner=rule")
+    object Rule extends Planner(Set("RULE", "PROCEDURE"), "planner=rule")
 
     object Default extends Planner(Set("COST", "IDP", "RULE", "PROCEDURE"), "")
 
@@ -447,25 +447,23 @@ object CypherComparisonSupport {
   object Runtimes {
 
     // Default behaves different from specifying a specific runtime - thus it's included
-    val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted, ProcedureOrSchema, Default)
+    val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted, Default)
 
     implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
-    object CompiledSource extends Runtime(Set("COMPILED"), "runtime=compiled debug=generate_java_source")
+    object CompiledSource extends Runtime(Set("COMPILED", "PROCEDURE"), "runtime=compiled debug=generate_java_source")
 
-    object CompiledBytecode extends Runtime(Set("COMPILED"), "runtime=compiled")
+    object CompiledBytecode extends Runtime(Set("COMPILED", "PROCEDURE"), "runtime=compiled")
 
-    object Slotted extends Runtime(Set("SLOTTED"), "runtime=slotted")
+    object Slotted extends Runtime(Set("SLOTTED", "PROCEDURE"), "runtime=slotted")
 
-    object SlottedWithCompiledExpressions extends Runtime(Set("SLOTTED"), "runtime=slotted expressionEngine=COMPILED")
+    object SlottedWithCompiledExpressions extends Runtime(Set("SLOTTED", "PROCEDURE"), "runtime=slotted expressionEngine=COMPILED")
 
-    object Interpreted extends Runtime(Set("INTERPRETED"), "runtime=interpreted")
-
-    object ProcedureOrSchema extends Runtime(Set("PROCEDURE"), "")
+    object Interpreted extends Runtime(Set("INTERPRETED", "PROCEDURE"), "runtime=interpreted")
 
     object Default extends Runtime(Set("COMPILED", "SLOTTED", "INTERPRETED", "PROCEDURE"), "")
 
-    object Morsel extends Runtime(Set("MORSEL"), "runtime=morsel")
+    object Morsel extends Runtime(Set("MORSEL", "PROCEDURE"), "runtime=morsel")
 
   }
 
@@ -527,7 +525,6 @@ object CypherComparisonSupport {
       val plannerName = if (planner == Planners.Default) "<default planner>" else planner.preparserOption
       val runtimeName = runtime match {
         case Runtimes.Default => "<default runtime>"
-        case Runtimes.ProcedureOrSchema => "<procedure or schema runtime>"
         case _ => runtime.preparserOption
       }
       s"$versionName $plannerName $runtimeName"
@@ -536,7 +533,7 @@ object CypherComparisonSupport {
     def preparserOptions: String = List(version.name, planner.preparserOption, runtime.preparserOption).mkString(" ")
 
     def checkResultForSuccess(query: String, internalExecutionResult: RewindableExecutionResult): Unit = {
-      val (reportedRuntime: String, reportedPlanner: String, reportedVersion: String, reportedPlannerVersion: String) = extractConfiguration(internalExecutionResult)
+      val ScenarioConfig(reportedRuntime, reportedPlanner, reportedVersion, reportedPlannerVersion) = extractConfiguration(internalExecutionResult)
       if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
         fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
       if (!planner.acceptedPlannerNames.contains(reportedPlanner))
@@ -551,7 +548,7 @@ object CypherComparisonSupport {
       internalExecutionResult match {
         case Failure(_) => // not unexpected
         case Success(result) =>
-          val (reportedRuntimeName: String, reportedPlannerName: String, reportedVersionName: String, reportedPlannerVersionName: String) = extractConfiguration(result)
+          val ScenarioConfig(reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) = extractConfiguration(result)
 
           if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
             && planner.acceptedPlannerNames.contains(reportedPlannerName)
@@ -561,10 +558,10 @@ object CypherComparisonSupport {
       }
     }
 
-    private def extractConfiguration(result: RewindableExecutionResult): (String, String, String, String) =
+    private def extractConfiguration(result: RewindableExecutionResult): ScenarioConfig =
       extractConfiguration(result.executionPlanDescription().arguments)
 
-    private def extractConfiguration(arguments: Seq[Argument]): (String, String, String, String) = {
+    private def extractConfiguration(arguments: Seq[Argument]): ScenarioConfig = {
       val reportedRuntime = arguments.collectFirst {
         case IPDRuntime(reported) => reported
       }
@@ -586,11 +583,13 @@ object CypherComparisonSupport {
           (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"), reportedPlannerVersion.getOrElse("NONE"))
         else
           (reportedRuntime.get, reportedPlanner.get, reportedVersion.get, reportedPlannerVersion.get)
-      (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName)
+      ScenarioConfig(reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName)
     }
 
     def +(other: TestConfiguration): TestConfiguration = other + this
   }
+
+  case class ScenarioConfig(runtime: String, planner: String, runtimeVersion: String, plannerVersion: String)
 
   /**
     * A set of scenarios.
@@ -676,15 +675,6 @@ object CypherComparisonSupport {
     def BackwardsCompatibility: TestConfiguration = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
       TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
 
-    def DefaultProcs: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Runtimes.ProcedureOrSchema)
-
-    def Procs: TestConfiguration =
-      TestConfiguration(
-        Versions(Versions.Default, Versions.V3_4, Versions.v3_5),
-        Planners(Planners.Default, Planners.Cost),
-        Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema)
-      )
-
     /**
       * Handy configs for things not supported in older versions
       */
@@ -695,13 +685,13 @@ object CypherComparisonSupport {
     /**
       * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
       */
-    def UpdateConf: TestConfiguration = Interpreted - Cost2_3
+    def UpdateConf: TestConfiguration = Interpreted + Default - Cost2_3
 
     /*
     If you are unsure what you need, this is a good start. It's not really all scenarios, but this is testing all
-    interesting scenarios.
+    interesting scenarios. TODO
      */
-    def All: TestConfiguration = AbsolutelyAll - DefaultProcs
+    def All: TestConfiguration = AbsolutelyAll
 
     /**
       * These are all configurations that will be executed even if not explicitly expected to succeed or fail.
@@ -711,7 +701,7 @@ object CypherComparisonSupport {
     def AbsolutelyAll: TestConfiguration =
       TestConfiguration(Versions.v3_5, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode)) +
         TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions,
-                                                                       Runtimes.ProcedureOrSchema)) +
+                                                                       Runtimes.Default)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
         TestScenario(Versions.Default, Planners.Rule, Runtimes.Default) +
         TestScenario(Versions.V3_4, Planners.Cost, Runtimes.Default)
