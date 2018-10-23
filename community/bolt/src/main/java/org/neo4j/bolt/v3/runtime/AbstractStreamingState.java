@@ -60,7 +60,7 @@ public abstract class AbstractStreamingState extends FailSafeBoltStateMachineSta
         this.readyState = readyState;
     }
 
-    abstract protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable;
+    protected abstract BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable;
 
     @Override
     protected void assertInitialized()

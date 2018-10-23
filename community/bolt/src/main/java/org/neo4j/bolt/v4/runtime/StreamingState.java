@@ -39,7 +39,7 @@ public class StreamingState extends AbstractStreamingState
     protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
     {
         Bookmark bookmark = context.connectionState().getStatementProcessor().streamResult( resultConsumer );
-        if( resultConsumer.hasMore() )
+        if ( resultConsumer.hasMore() )
         {
             return this;
         }

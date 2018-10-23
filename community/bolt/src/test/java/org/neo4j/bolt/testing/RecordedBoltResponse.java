@@ -99,7 +99,7 @@ public class RecordedBoltResponse
         private final QueryResult.Record record;
         private final AnyValue[] fields;
 
-        public RecordedRecord( QueryResult.Record record )
+        RecordedRecord( QueryResult.Record record )
         {
             this.record = record;
             AnyValue[] src = record.fields();

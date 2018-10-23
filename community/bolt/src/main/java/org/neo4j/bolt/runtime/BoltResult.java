@@ -24,7 +24,7 @@ import org.neo4j.values.AnyValue;
 
 /**
  * Represents a data stream of records, this is the output cypher produces.
- *
+ * <p>
  * Streams contains nominally uniform records meaning each record has the same set of named fields.
  * However, the contents of these fields may vary by both type and value and may be null.
  */
@@ -46,11 +46,10 @@ public interface BoltResult extends AutoCloseable
 
         /**
          * Associate arbitrary metadata with the result stream. This will get transferred at the end of the stream.
-         * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc) */
+         * Please stick to Neo4j type system types (Map, List, Integer, Float, Boolean, String etc)
+         */
         void addMetadata( String key, AnyValue value );
     }
-
-
 
     BoltResult EMPTY = new BoltResult()
     {

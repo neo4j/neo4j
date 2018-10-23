@@ -328,7 +328,7 @@ public class TransactionStateMachine implements StatementProcessor
                         try
                         {
                             consumeResult( ctx, resultConsumer );
-                            if( !resultConsumer.hasMore() )
+                            if ( !resultConsumer.hasMore() )
                             {
                                 closeTransaction( ctx, true );
                                 success = true;
@@ -499,7 +499,7 @@ public class TransactionStateMachine implements StatementProcessor
             finally
             {
                 // if throws errors or if we finished consuming result
-                if( !success || !resultConsumer.hasMore() )
+                if ( !success || !resultConsumer.hasMore() )
                 {
                     ctx.currentResult.close();
                     ctx.currentResult = null;

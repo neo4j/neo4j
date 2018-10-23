@@ -62,7 +62,10 @@ public class MutableConnectionState extends BoltResponseHandlerV1Adaptor
         {
             return responseHandler.onPullRecords( result, size );
         }
-        else return false;
+        else
+        {
+            return false;
+        }
     }
 
     @Override
