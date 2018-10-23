@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
@@ -139,6 +140,45 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         {
             SchemaRead schemaRead = transaction.schemaRead();
             assertThat( schemaRead.index( label, prop1 ), equalTo( NO_INDEX ) );
+        }
+    }
+
+    @Test
+    public void shouldFailToDropNoIndex() throws Exception
+    {
+        //Expect
+        exception.expect( SchemaKernelException.class );
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( IndexReference.NO_INDEX );
+            transaction.success();
+        }
+    }
+
+    @Test
+    public void shouldFailToDropNonExistentIndex() throws Exception
+    {
+        IndexReference index;
+        try ( Transaction transaction = beginTransaction() )
+        {
+            index = transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( index );
+            transaction.success();
+        }
+
+        //Expect
+        exception.expect( SchemaKernelException.class );
+
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexDrop( index );
+            transaction.success();
         }
     }
 
@@ -321,6 +361,49 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
         try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+    }
+
+    @Test
+    public void shouldFailToCreateIndexIfExistingUniqueConstraint() throws Exception
+    {
+        //Given
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+
+        //Expect
+        exception.expect( SchemaKernelException.class );
+
+        //When
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().indexCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+    }
+
+    @Test
+    public void shouldFailToDropIndexIfExistingUniqueConstraint() throws Exception
+    {
+        //Given
+        try ( Transaction transaction = beginTransaction() )
+        {
+            transaction.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1 ) );
+            transaction.success();
+        }
+
+        //Expect
+        exception.expect( SchemaKernelException.class );
+
+        //When
+        try ( Transaction transaction = beginTransaction() )
+        {
+            IndexReference index = transaction.schemaRead().index( label, prop1 );
+            transaction.schemaWrite().indexDrop( index );
             transaction.success();
         }
     }
@@ -777,6 +860,33 @@ public abstract class SchemaReadWriteTestBase<G extends KernelAPIWriteTestSuppor
             assertThat( allConstraints, containsInAnyOrder( inStore, createdInTx ) );
 
             tx.success();
+        }
+    }
+
+    @Test( expected = SchemaKernelException.class )
+    public void shouldFailIndexCreateForRepeatedProperties() throws Exception
+    {
+        try ( Transaction tx = beginTransaction() )
+        {
+            tx.schemaWrite().indexCreate( labelDescriptor( label, prop1, prop1 ) );
+        }
+    }
+
+    @Test( expected = SchemaKernelException.class )
+    public void shouldFailUniquenessConstraintCreateForRepeatedProperties() throws Exception
+    {
+        try ( Transaction tx = beginTransaction() )
+        {
+            tx.schemaWrite().uniquePropertyConstraintCreate( labelDescriptor( label, prop1, prop1 ) );
+        }
+    }
+
+    @Test( expected = SchemaKernelException.class )
+    public void shouldFailNodeKeyCreateForRepeatedProperties() throws Exception
+    {
+        try ( Transaction tx = beginTransaction() )
+        {
+            tx.schemaWrite().nodeKeyConstraintCreate( labelDescriptor( label, prop1, prop1 ) );
         }
     }
 
