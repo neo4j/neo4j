@@ -23,8 +23,6 @@ import java.util.Arrays;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
-import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
-import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
 import org.neo4j.kernel.impl.util.Validator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
@@ -43,24 +41,11 @@ class GenericIndexKeyValidator implements Validator<Value[]>
 {
     private final int maxLength;
     private final Layout<GenericKey,NativeIndexValue> layout;
-    private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
-    private final int maxNumberOfCRSs;
 
-    GenericIndexKeyValidator( int maxLength, Layout<GenericKey,NativeIndexValue> layout,
-            IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, int pageSize )
+    GenericIndexKeyValidator( int maxLength, Layout<GenericKey,NativeIndexValue> layout )
     {
         this.maxLength = maxLength;
         this.layout = layout;
-        this.spaceFillingCurveSettings = spaceFillingCurveSettings;
-
-        // Here's the thing: we want to prevent the number of coordinate reference systems in any given index to exceed
-        // max allowed such that all no longer fits in the GB+Tree header, because that would brick the index as well as the db.
-        // This limit is high, over a hundred, so practically this limit isn't hit in any "normal" use case.
-        // There's also no single point on the commit path, before tx is committed AND is single-threaded so that number of settings
-        // can be 100% verified. What we can do is to set this limit a bit below the actual limit and verify on that limit
-        // in this validator, which is called concurrently by multiple committers.
-        int actualMax = SpaceFillingCurveSettingsWriter.maxNumberOfSettings( pageSize );
-        this.maxNumberOfCRSs = actualMax - actualMax / 10;
     }
 
     @Override
@@ -76,12 +61,6 @@ class GenericIndexKeyValidator implements Validator<Value[]>
                         "Property value size:%d of %s is too large to index into this particular index. Please see index documentation for limitations.",
                         size, Arrays.toString( values ) ) );
             }
-        }
-
-        if ( spaceFillingCurveSettings.additionalValuesCouldExceed( values, maxNumberOfCRSs ) )
-        {
-            throw new UnsupportedOperationException(
-                    format( "Adding %s would exceed number of crs settings limit %d for this index", Arrays.toString( values ), maxNumberOfCRSs ) );
         }
     }
 
