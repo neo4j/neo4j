@@ -142,13 +142,11 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
 
     val projection = Projection(labelScan, Map("  FRESHID37" -> ageProperty))
     val sort = Sort(projection, Seq(Ascending("  FRESHID37")))
-    val projection2 = Projection(sort, Map("  FRESHID21" -> nameProperty))
-    val result = Projection(projection2, Map("a.name" -> varFor("  FRESHID21")))
+    val result = Projection(sort, Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }
 
-  // Does not regress but has some awkward Projections we could get rid of
   test("ORDER BY previously unprojected column in RETURN and return that column") {
     val plan = new given().getLogicalPlanFor("""MATCH (a:A) RETURN a.name, a.age ORDER BY a.age""")._2
 
@@ -156,15 +154,13 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID29" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID29")))
-    val projection2 = Projection(sort, Map("  FRESHID21" -> nameProperty))
-    val result = Projection(projection2, Map("a.name" -> varFor("  FRESHID21"), "a.age" -> varFor("  FRESHID29")))
+    val projection = Projection(labelScan, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
+    val result = Projection(sort, Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }
 
-  // Does not regress but has some awkward Projections we could get rid of
   test("ORDER BY previously unprojected column in RETURN and project and return that column") {
     val plan = new given().getLogicalPlanFor("MATCH (a:A) RETURN a.name, a.age AS age ORDER BY age")._2
 
@@ -172,10 +168,9 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID29" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID29")))
-    val projection2 = Projection(sort, Map("  FRESHID21" -> nameProperty))
-    val result = Projection(projection2, Map("a.name" -> varFor("  FRESHID21"), "age" -> varFor("  FRESHID29")))
+    val projection = Projection(labelScan, Map("age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("age")))
+    val result = Projection(sort, Map("a.name" -> nameProperty))
 
     plan should equal(result)
   }
@@ -198,11 +193,10 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val labelScan = NodeByLabelScan("a", LabelName("A") _, Set.empty)
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID24" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID24")))
-    val result = Projection(sort, Map("a.age" -> varFor("  FRESHID24")))
+    val projection = Projection(labelScan, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
 
-    plan should equal(result)
+    plan should equal(sort)
   }
 
   test("ORDER BY previously unprojected column in RETURN * and project and return that column") {
@@ -211,11 +205,10 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val labelScan = NodeByLabelScan("a", LabelName("A") _, Set.empty)
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID24" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID24")))
-    val result = Projection(sort, Map("age" -> varFor("  FRESHID24")))
+    val projection = Projection(labelScan, Map("age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("age")))
 
-    plan should equal(result)
+    plan should equal(sort)
   }
 
   test("ORDER BY previously unprojected column with expression in WITH") {
