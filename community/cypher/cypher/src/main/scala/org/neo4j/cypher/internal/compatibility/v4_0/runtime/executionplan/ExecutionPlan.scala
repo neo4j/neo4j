@@ -28,7 +28,7 @@ import org.opencypher.v9_0.util.InternalNotification
 
 abstract class ExecutionPlan {
 
-  def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult
+  def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue, prePopulateResults: Boolean): RuntimeResult
 
   def runtimeName: RuntimeName
 
@@ -38,8 +38,10 @@ abstract class ExecutionPlan {
 }
 
 abstract class DelegatingExecutionPlan(inner: ExecutionPlan) extends ExecutionPlan {
-  override def run(queryContext: QueryContext, doProfile: Boolean,
-                   params: MapValue): RuntimeResult = inner.run(queryContext, doProfile, params)
+  override def run(queryContext: QueryContext,
+                   doProfile: Boolean,
+                   params: MapValue,
+                   prePopulateResults: Boolean): RuntimeResult = inner.run(queryContext, doProfile, params, prePopulateResults)
 
   override def runtimeName: RuntimeName = inner.runtimeName
 

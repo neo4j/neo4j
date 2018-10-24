@@ -50,7 +50,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    val res = proc.run(ctx, false, EMPTY_MAP)
+    val res = proc.run(ctx, false, EMPTY_MAP, false)
 
     // Then
     toList(res) should equal(List(Map("b" -> 84)))
@@ -63,7 +63,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, false, EMPTY_MAP)
+    proc.run(ctx, false, EMPTY_MAP, false)
 
     // Then without touching the result, it should have been spooled out
     iteratorExhausted should equal(true)
@@ -76,7 +76,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, false, EMPTY_MAP)
+    proc.run(ctx, false, EMPTY_MAP, false)
 
     // Then without touching the result, the Kernel iterator should not be touched
     iteratorExhausted should equal(false)

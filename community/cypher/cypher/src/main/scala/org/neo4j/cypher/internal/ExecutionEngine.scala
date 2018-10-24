@@ -86,7 +86,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   def profile(query: String, params: MapValue, context: TransactionalContext): Result =
     execute(query, params, context, profile = true)
 
-  def execute(query: String, params: MapValue, context: TransactionalContext, profile: Boolean = false): Result = {
+  def execute(query: String,
+              params: MapValue,
+              context: TransactionalContext,
+              profile: Boolean = false,
+              prePopulate: Boolean = false): Result = {
     val queryTracer = tracer.compileQuery(query)
 
     try {
@@ -97,7 +101,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       }
       val combinedParams = params.updatedWith(executableQuery.extractedParams)
       context.executingQuery().compilationCompleted(executableQuery.compilerInfo)
-      executableQuery.execute(context, preParsedQuery, combinedParams)
+      executableQuery.execute(context, preParsedQuery, combinedParams, prePopulate)
 
     } catch {
       case t: Throwable =>

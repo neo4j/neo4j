@@ -168,8 +168,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
       new ExceptionTranslatingQueryContext(ctx)
     }
 
-    def execute(transactionalContext: TransactionalContext, preParsedQuery: PreParsedQuery,
-                params: MapValue): Result = {
+    def execute(transactionalContext: TransactionalContext,
+                preParsedQuery: PreParsedQuery,
+                params: MapValue,
+                prePopulateResults: Boolean): Result = {
       val innerExecutionMode = preParsedQuery.executionMode match {
         case CypherExecutionMode.explain => ExplainMode
         case CypherExecutionMode.profile => ProfileMode
@@ -198,7 +200,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
           } else {
 
             val doProfile = innerExecutionMode == ProfileMode
-            val runtimeResult = executionPlan.run(queryContext, doProfile, params)
+            val runtimeResult = executionPlan.run(queryContext, doProfile, params, prePopulateResults)
 
             new StandardInternalExecutionResult(queryContext,
                                                 executionPlan.runtimeName,

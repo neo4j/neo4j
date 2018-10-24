@@ -188,7 +188,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         {
             try
             {
-                Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext );
+                Result result = queryExecutionEngine.executeQuery( statement, params, transactionalContext, true );
                 if ( result instanceof QueryResultProvider )
                 {
                     return newBoltResult( (QueryResultProvider) result, clock );

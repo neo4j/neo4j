@@ -24,10 +24,10 @@ import org.neo4j.values.virtual.MapValue;
 
 public interface QueryExecutionEngine
 {
-    Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+    Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException;
 
-    Result profileQuery( String query, MapValue parameters, TransactionalContext context )
+    Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException;
 
     boolean isPeriodicCommit( String query );

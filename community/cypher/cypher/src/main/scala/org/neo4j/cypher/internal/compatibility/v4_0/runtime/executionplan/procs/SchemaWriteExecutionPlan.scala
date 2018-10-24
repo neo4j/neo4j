@@ -37,7 +37,10 @@ import org.opencypher.v9_0.util.InternalNotification
 case class SchemaWriteExecutionPlan(name: String, schemaWrite: QueryContext => Unit)
   extends ExecutionPlan {
 
-  override def run(ctx: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult = {
+  override def run(ctx: QueryContext,
+                   doProfile: Boolean,
+                   params: MapValue,
+                   prePopulateResults: Boolean): RuntimeResult = {
 
     ctx.assertSchemaWritesAllowed()
 

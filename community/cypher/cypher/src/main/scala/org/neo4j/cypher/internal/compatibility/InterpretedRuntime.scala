@@ -66,7 +66,10 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
                                  override val runtimeName: RuntimeName,
                                  readOnly: Boolean) extends ExecutionPlan {
 
-    override def run(queryContext: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult = {
+    override def run(queryContext: QueryContext,
+                     doProfile: Boolean,
+                     params: MapValue,
+                     prePopulateResults: Boolean): RuntimeResult = {
       val builderContext = if (!readOnly || doProfile) new UpdateCountingQueryContext(queryContext) else queryContext
       val builder = resultBuilderFactory.create(builderContext)
 
@@ -83,7 +86,8 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
 
       builder.build(params,
                     readOnly,
-                    profileInformation)
+                    profileInformation,
+                    prePopulateResults)
     }
 
     override def metadata: Seq[Argument] = Nil

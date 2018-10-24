@@ -73,6 +73,17 @@ public class NodeProxyWrappingNodeValue extends NodeValue
         writer.writeNode( node.getId(), l, p );
     }
 
+    public void populate()
+    {
+        labels();
+        properties();
+    }
+
+    public boolean isPopulated()
+    {
+        return labels != null && properties != null;
+    }
+
     @Override
     public TextArray labels()
     {

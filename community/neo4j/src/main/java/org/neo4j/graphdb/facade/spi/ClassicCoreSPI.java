@@ -82,7 +82,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return dataSource.neoStoreDataSource.getExecutionEngine().executeQuery( query, parameters, transactionalContext );
+            return dataSource.neoStoreDataSource.getExecutionEngine().executeQuery( query, parameters, transactionalContext, false );
         }
         catch ( QueryExecutionKernelException e )
         {

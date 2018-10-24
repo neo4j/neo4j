@@ -42,7 +42,6 @@ import org.neo4j.server.rest.repr.InvalidArgumentsException;
 import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.transactional.CommitOnSuccessfulStatusCodeRepresentationWriteHandler;
 import org.neo4j.udc.UsageData;
-import org.neo4j.values.VirtualValue;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.udc.UsageDataKeys.Features.http_cypher_endpoint;
@@ -127,12 +126,12 @@ public class CypherService
             Result result;
             if ( profile )
             {
-                result = executionEngine.profileQuery( query, params, tc );
+                result = executionEngine.profileQuery( query, params, tc, false );
                 includePlan = true;
             }
             else
             {
-                result = executionEngine.executeQuery( query, params, tc );
+                result = executionEngine.executeQuery( query, params, tc, false );
                 includePlan = result.getQueryExecutionType().requestedExecutionPlanDescription();
             }
 

@@ -23,14 +23,14 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeDecorator
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 
 trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
   def setPipeDecorator(newDecorator: PipeDecorator)
   def build(params: MapValue,
             readOnly: Boolean,
-            queryProfile: QueryProfile): RuntimeResult
+            queryProfile: QueryProfile,
+            prePopulateResults: Boolean): RuntimeResult
 }
 
 trait ExecutionResultBuilderFactory {

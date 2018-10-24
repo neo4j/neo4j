@@ -196,7 +196,7 @@ public class QueryExecutionLocksIT
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
-            executionEngine.executeQuery( query, VirtualValues.emptyMap(), context );
+            executionEngine.executeQuery( query, VirtualValues.emptyMap(), context, false );
             return new ArrayList<>( context.recordingLocks.getLockOperationRecords() );
         }
     }

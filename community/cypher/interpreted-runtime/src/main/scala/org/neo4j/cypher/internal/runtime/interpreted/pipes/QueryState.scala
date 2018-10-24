@@ -38,7 +38,8 @@ class QueryState(val query: QueryContext,
                  val triadicState: mutable.Map[String, LongSet] = mutable.Map.empty,
                  val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
-                 val lenientCreateRelationship: Boolean = false) {
+                 val lenientCreateRelationship: Boolean = false,
+                 val prePopulateResults: Boolean = false ) {
 
   private var _pathValueBuilder: PathValueBuilder = _
   private var _exFactory: ExecutionContextFactory = _
@@ -66,11 +67,11 @@ class QueryState(val query: QueryContext,
 
   def withDecorator(decorator: PipeDecorator) =
     new QueryState(query, resources, params, decorator, initialContext, triadicState,
-                   repeatableReads, cachedIn, lenientCreateRelationship)
+                   repeatableReads, cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def withInitialContext(initialContext: ExecutionContext) =
     new QueryState(query, resources, params, decorator, Some(initialContext), triadicState,
-                   repeatableReads, cachedIn, lenientCreateRelationship)
+                   repeatableReads, cachedIn, lenientCreateRelationship, prePopulateResults)
 
   /**
     * When running on the RHS of an Apply, this method will fill an execution context with argument data
@@ -84,7 +85,7 @@ class QueryState(val query: QueryContext,
 
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, decorator, initialContext, triadicState,
-                   repeatableReads, cachedIn, lenientCreateRelationship)
+                   repeatableReads, cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory) = {
     _exFactory = exFactory

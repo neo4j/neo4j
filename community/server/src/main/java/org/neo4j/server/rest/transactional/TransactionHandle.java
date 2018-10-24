@@ -372,7 +372,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     {
         try
         {
-            return engine.executeQuery( statement.statement(), ValueUtils.asMapValue( statement.parameters() ), tc );
+            return engine.executeQuery( statement.statement(), ValueUtils.asMapValue( statement.parameters() ), tc, false );
         }
         finally
         {

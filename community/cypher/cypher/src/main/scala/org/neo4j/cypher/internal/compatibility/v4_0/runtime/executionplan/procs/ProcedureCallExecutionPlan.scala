@@ -65,7 +65,10 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   private val maybeDefaultArgs: Seq[Option[CommandExpression]] =  signature.inputSignature.map(_.default).map(option => option.map( df => Literal(df.value)))
   private val zippedArgCandidates = actualArgs.map(Some(_)).zipAll(parameterArgs.zip(maybeDefaultArgs), None, null).map { case (a, (b, c)) => (a, b, c)}
 
-  override def run(ctx: QueryContext, doProfile: Boolean, params: MapValue): RuntimeResult = {
+  override def run(ctx: QueryContext,
+                   doProfile: Boolean,
+                   params: MapValue,
+                   prePopulateResults: Boolean): RuntimeResult = {
     val input = evaluateArguments(ctx, params)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
     new ProcedureCallRuntimeResult(ctx, signature.name, signature.id, callMode, input, resultMappings, doProfile)

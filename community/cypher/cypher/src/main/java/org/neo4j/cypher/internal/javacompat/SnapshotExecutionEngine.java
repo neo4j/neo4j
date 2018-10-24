@@ -49,21 +49,21 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
-        return executeWithRetries( query, parameters, context, super::executeQuery );
+        return executeWithRetries( query, parameters, context, super::executeQuery, prePopulate );
     }
 
     @Override
-    public Result profileQuery( String query, MapValue parameters, TransactionalContext context )
+    public Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
-        return executeWithRetries( query, parameters, context, super::profileQuery );
+        return executeWithRetries( query, parameters, context, super::profileQuery, prePopulate );
     }
 
     protected <T> Result executeWithRetries( String query, T parameters, TransactionalContext context,
-            ParametrizedQueryExecutor<T> executor ) throws QueryExecutionKernelException
+            ParametrizedQueryExecutor<T> executor, boolean prePopulate ) throws QueryExecutionKernelException
     {
         VersionContext versionContext = getCursorContext( context );
         EagerResult eagerResult;
@@ -78,7 +78,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
             }
             attempt++;
             versionContext.initRead();
-            Result result = executor.execute( query, parameters, context );
+            Result result = executor.execute( query, parameters, context, prePopulate );
             eagerResult = new EagerResult( result, versionContext );
             eagerResult.consume();
             dirtySnapshot = versionContext.isDirty();
@@ -106,7 +106,7 @@ public class SnapshotExecutionEngine extends ExecutionEngine
     @FunctionalInterface
     protected interface ParametrizedQueryExecutor<T>
     {
-        Result execute( String query, T parameters, TransactionalContext context ) throws QueryExecutionKernelException;
+        Result execute( String query, T parameters, TransactionalContext context, boolean prePopulate ) throws QueryExecutionKernelException;
     }
 
 }

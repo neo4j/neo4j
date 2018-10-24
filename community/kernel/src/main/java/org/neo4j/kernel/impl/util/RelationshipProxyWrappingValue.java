@@ -72,6 +72,19 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
         writer.writeRelationship( id(), startNode().id(), endNode().id(), type(), p );
     }
 
+    public void populate()
+    {
+        type();
+        properties();
+        startNode();
+        endNode();
+    }
+
+    public boolean isPopulated()
+    {
+        return type != null && properties != null && startNode != null && endNode != null;
+    }
+
     @Override
     public NodeValue startNode()
     {

@@ -31,11 +31,9 @@ import org.neo4j.cypher.internal.tracing.TimingCompilationTracer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.kernel.GraphDatabaseQueryService;
-import org.neo4j.kernel.impl.query.QueryExecution;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.kernel.impl.query.ResultBuffer;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -77,12 +75,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result executeQuery( String query, MapValue parameters, TransactionalContext context )
+    public Result executeQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
         try
         {
-            return inner.execute( query, parameters, context, false );
+            return inner.execute( query, parameters, context, false, prePopulate );
         }
         catch ( CypherException e )
         {
@@ -91,12 +89,12 @@ public class ExecutionEngine implements QueryExecutionEngine
     }
 
     @Override
-    public Result profileQuery( String query, MapValue parameters, TransactionalContext context )
+    public Result profileQuery( String query, MapValue parameters, TransactionalContext context, boolean prePopulate )
             throws QueryExecutionKernelException
     {
         try
         {
-            return inner.execute( query, parameters, context, true );
+            return inner.execute( query, parameters, context, true, prePopulate );
         }
         catch ( CypherException e )
         {

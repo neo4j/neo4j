@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.ValuePopulation
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.attribution.Id
@@ -32,9 +33,18 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
     input.map {
       original =>
         val m = MutableMaps.create[String, AnyValue](columns.size)
-        columns.foreach {
-          case (name) => m.put(name, original(name))
-        }
+        if (state.prePopulateResults)
+          columns.foreach(
+            name => {
+              val value = original(name)
+              ValuePopulation.populate(value)
+              m.put(name, value)
+            }
+          )
+         else
+          columns.foreach(
+            name => m.put(name, original(name))
+          )
 
         ExecutionContext(m)
     }

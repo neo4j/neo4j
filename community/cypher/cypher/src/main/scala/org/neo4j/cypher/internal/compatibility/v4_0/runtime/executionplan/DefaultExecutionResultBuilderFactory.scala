@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, ExecutionCon
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.CypherException
 
 import scala.collection.mutable
@@ -40,7 +39,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
     protected var pipeDecorator: PipeDecorator = NullPipeDecorator
     protected var exceptionDecorator: CypherException => CypherException = identity
 
-    protected def createQueryState(params: MapValue): QueryState
+    protected def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState
 
     def queryContext: QueryContext
 
@@ -55,8 +54,9 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
     override def build(params: MapValue,
                        readOnly: Boolean,
-                       queryProfile: QueryProfile): RuntimeResult = {
-      val state = createQueryState(params)
+                       queryProfile: QueryProfile,
+                       prePopulateResults: Boolean): RuntimeResult = {
+      val state = createQueryState(params, prePopulateResults)
       try {
         val results = pipe.createResults(state)
         val resultIterator = buildResultIterator(results, readOnly)
@@ -81,14 +81,15 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder(queryContext: QueryContext)
 
   case class InterpretedExecutionWorkflowBuilder(queryContext: QueryContext) extends BaseExecutionWorkflowBuilder {
-    override def createQueryState(params: MapValue): QueryState = {
+    override def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState = {
       new QueryState(queryContext,
                      externalResource,
                      params,
                      pipeDecorator,
                      triadicState = mutable.Map.empty,
                      repeatableReads = mutable.Map.empty,
-                     lenientCreateRelationship = lenientCreateRelationship)
+                     lenientCreateRelationship = lenientCreateRelationship,
+                     prePopulateResults = prePopulateResults)
     }
 
     override def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult = {

@@ -76,15 +76,15 @@ public class SnapshotExecutionEngineTest
         Result result = mock( Result.class );
         QueryStatistics statistics = mock( QueryStatistics.class );
         when( result.getQueryStatistics() ).thenReturn( statistics );
-        when( executor.execute( any(), anyMap(), any() ) ).thenReturn( result );
+        when( executor.execute( any(), anyMap(), any(), any() ) ).thenReturn( result );
     }
 
     @Test
     public void executeQueryWithoutRetries() throws QueryExecutionKernelException
     {
-        executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor );
+        executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
 
-        verify( executor, times( 1 ) ).execute( any(), anyMap(), any() );
+        verify( executor, times( 1 ) ).execute( any(), anyMap(), any(), any() );
         verify( versionContext, times( 1 ) ).initRead();
     }
 
@@ -93,9 +93,9 @@ public class SnapshotExecutionEngineTest
     {
         when( versionContext.isDirty() ).thenReturn( true, true, false );
 
-        executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor );
+        executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
 
-        verify( executor, times( 3 ) ).execute( any(), anyMap(), any() );
+        verify( executor, times( 3 ) ).execute( any(), anyMap(), any(), any() );
         verify( versionContext, times( 3 ) ).initRead();
     }
 
@@ -106,14 +106,14 @@ public class SnapshotExecutionEngineTest
 
         try
         {
-            executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor );
+            executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
         }
         catch ( QueryExecutionKernelException e )
         {
             assertEquals( "Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage() );
         }
 
-        verify( executor, times( 5 ) ).execute( any(), anyMap(), any() );
+        verify( executor, times( 5 ) ).execute( any(), anyMap(), any(), any() );
         verify( versionContext, times( 5 ) ).initRead();
     }
 
@@ -128,9 +128,9 @@ public class SnapshotExecutionEngineTest
 
         @Override
         public <T> Result executeWithRetries( String query, T parameters, TransactionalContext context,
-                ParametrizedQueryExecutor<T> executor ) throws QueryExecutionKernelException
+                ParametrizedQueryExecutor<T> executor, boolean prePopulateResults ) throws QueryExecutionKernelException
         {
-            return super.executeWithRetries( query, parameters, context, executor );
+            return super.executeWithRetries( query, parameters, context, executor, prePopulateResults );
         }
     }
 
