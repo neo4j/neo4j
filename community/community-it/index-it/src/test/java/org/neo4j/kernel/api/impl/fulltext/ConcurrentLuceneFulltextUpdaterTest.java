@@ -33,7 +33,10 @@ import java.util.stream.Collectors;
 
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -136,23 +139,27 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            ScoreEntityIterator bob = fulltextAdapter.query( ktx, "nodes", "bob" );
-            List<ScoreEntityIterator.ScoreEntry> list = bob.stream().collect( Collectors.toList() );
-            try
+            IndexReference indexReference = ktx.schemaRead().indexGetForName( "nodes" );
+            try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                assertEquals( bobThreads * nodesCreatedPerThread, list.size() );
-            }
-            catch ( Throwable e )
-            {
-                log.debug( "Nodes found in query for bob:" );
-                for ( ScoreEntityIterator.ScoreEntry entry : list )
+                ktx.dataRead().nodeIndexSeek( indexReference, bobCursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "bob" ) );
+                int bobCount = 0;
+                while ( bobCursor.next() )
                 {
-                    log.debug( "\t" + db.getNodeById( entry.entityId() ) );
+                    bobCount += 1;
                 }
-                throw e;
+                assertEquals( bobThreads * nodesCreatedPerThread, bobCount );
             }
-            ScoreEntityIterator alice = fulltextAdapter.query( ktx, "nodes", "alice" );
-            assertEquals( 0, alice.stream().count() );
+            try ( NodeValueIndexCursor aliceCursor = ktx.cursors().allocateNodeValueIndexCursor() )
+            {
+                ktx.dataRead().nodeIndexSeek( indexReference, aliceCursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "alice" ) );
+                int aliceCount = 0;
+                while ( aliceCursor.next() )
+                {
+                    aliceCount += 1;
+                }
+                assertEquals( 0, aliceCount );
+            }
         }
     }
 

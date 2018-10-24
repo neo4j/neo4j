@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.queryparser.classic.ParseException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
@@ -39,10 +38,13 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
+import org.neo4j.internal.kernel.api.IndexOrder;
+import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelImpl;
@@ -147,32 +149,41 @@ public class LuceneFulltextTestSupport
         return (KernelTransaction) transactionField.get( tx );
     }
 
-    void assertQueryFindsNothing( KernelTransaction ktx, String indexName, String query ) throws Exception
+    void assertQueryFindsNothing( KernelTransaction ktx, boolean nodes, String indexName, String query ) throws Exception
     {
-        assertQueryFindsIds( ktx, indexName, query );
+        assertQueryFindsIds( ktx, nodes, indexName, query );
     }
 
-    void assertQueryFindsIds( KernelTransaction ktx, String indexName, String query, long... ids ) throws Exception
+    void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
     {
-        ScoreEntityIterator result = fulltextAdapter.query( ktx, indexName, query );
-        assertQueryResultsMatch( result, ids );
-    }
-
-    void assertQueryFindsIdsInOrder( KernelTransaction ktx, String indexName, String query, long... ids )
-            throws IOException, IndexNotFoundKernelException, ParseException
-    {
-        ScoreEntityIterator result = fulltextAdapter.query( ktx, indexName, query );
-        assertQueryResultsMatchInOrder( result, ids );
-    }
-
-    private static void assertQueryResultsMatch( ScoreEntityIterator result, long[] ids )
-    {
+        IndexReference index = ktx.schemaRead().indexGetForName( indexName );
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
-        while ( result.hasNext() )
+        if ( nodes )
         {
-            long next = result.next().entityId();
-            assertTrue( format( "Result returned node id %d, expected one of %s", next, Arrays.toString( ids ) ), set.remove( next ) );
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+            {
+                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+                while ( cursor.next() )
+                {
+                    long nodeId = cursor.nodeReference();
+                    assertTrue( format( "Result returned node id %d, expected one of %s", nodeId, Arrays.toString( ids ) ), set.remove( nodeId ) );
+                }
+            }
         }
+        else
+        {
+            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
+            {
+                ktx.dataRead().relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( query ) );
+                while ( cursor.next() )
+                {
+                    long relationshipId = cursor.relationshipReference();
+                    assertTrue( format( "Result returned relationship id %d, expected one of %s",
+                            relationshipId, Arrays.toString( ids ) ), set.remove( relationshipId ) );
+                }
+            }
+        }
+
         if ( !set.isEmpty() )
         {
             List<Long> list = new ArrayList<>();
@@ -181,21 +192,27 @@ public class LuceneFulltextTestSupport
         }
     }
 
-    private static void assertQueryResultsMatchInOrder( ScoreEntityIterator result, long[] ids )
+    void assertQueryFindsNodeIdsInOrder( KernelTransaction ktx, String indexName, String query, long... ids )
+            throws Exception
     {
-        int num = 0;
-        float score = Float.MAX_VALUE;
-        while ( result.hasNext() )
+
+        IndexReference index = ktx.schemaRead().indexGetForName( indexName );
+        try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
         {
-            ScoreEntityIterator.ScoreEntry scoredResult = result.next();
-            long nextId = scoredResult.entityId();
-            float nextScore = scoredResult.score();
-            assertThat( nextScore, lessThanOrEqualTo( score ) );
-            score = nextScore;
-            assertEquals( format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
-            num++;
+            int num = 0;
+            float score = Float.MAX_VALUE;
+            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+            while ( cursor.next() )
+            {
+                long nextId = cursor.nodeReference();
+                float nextScore = cursor.score();
+                assertThat( nextScore, lessThanOrEqualTo( score ) );
+                score = nextScore;
+                assertEquals( format( "Result returned node id %d, expected %d", nextId, ids[num] ), ids[num], nextId );
+                num++;
+            }
+            assertEquals( "Number of results differ from expected", ids.length, num );
         }
-        assertEquals( "Number of results differ from expected", ids.length, num );
     }
 
     void setNodeProp( long nodeId, String value )

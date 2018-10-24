@@ -63,10 +63,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "hello", firstID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "zebra", secondID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "zedonk", secondID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "cross", secondID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "hello", firstID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "zebra", secondID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "zedonk", secondID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "cross", secondID );
         }
     }
 
@@ -103,13 +103,13 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "hello" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zebra" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zedonk" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "cross" );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "finally", firstID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "farmer", secondID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "potato", firstID, secondID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "hello" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zedonk" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "cross" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "finally", firstID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "farmer", secondID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "potato", firstID, secondID );
         }
     }
 
@@ -147,10 +147,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "hello" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zebra" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zedonk" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "cross" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "hello" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zedonk" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "cross" );
         }
     }
 
@@ -201,10 +201,10 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "hello", secondID );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zebra" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zedonk" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "cross" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "hello", secondID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zedonk" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "cross" );
         }
     }
 
@@ -236,8 +236,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "hello", firstID );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "hello", firstID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zebra" );
         }
     }
 
@@ -272,7 +272,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "tomtar Karl", firstID, secondID, thirdID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "tomtar Karl", firstID, secondID, thirdID );
         }
     }
 
@@ -312,7 +312,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIdsInOrder( ktx, NODE_INDEX_NAME, "Tom Hanks", fourthID, thirdID, firstID, secondID );
+            assertQueryFindsNodeIdsInOrder( ktx, NODE_INDEX_NAME, "Tom Hanks", fourthID, thirdID, firstID, secondID );
         }
     }
 
@@ -350,13 +350,13 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "hello", firstNodeID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "zebra", secondNodeID );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "different" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "hello", firstNodeID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "zebra", secondNodeID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "different" );
 
-            assertQueryFindsIds( ktx, REL_INDEX_NAME, "hello", firstRelID );
-            assertQueryFindsNothing( ktx, REL_INDEX_NAME, "zebra" );
-            assertQueryFindsIds( ktx, REL_INDEX_NAME, "different", secondRelID );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "hello", firstRelID );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "zebra" );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "different", secondRelID );
         }
     }
 
@@ -391,8 +391,8 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "zebra" );
-            assertQueryFindsNothing( ktx, REL_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "zebra" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "zebra" );
         }
     }
 
@@ -434,15 +434,15 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "hello", firstNodeID );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "string", secondNodeID );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "goodbye" );
-            assertQueryFindsNothing( ktx, NODE_INDEX_NAME, "different" );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "hello", firstNodeID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "string", secondNodeID );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "goodbye" );
+            assertQueryFindsNothing( ktx, true, NODE_INDEX_NAME, "different" );
 
-            assertQueryFindsNothing( ktx, REL_INDEX_NAME, "hello" );
-            assertQueryFindsNothing( ktx, REL_INDEX_NAME, "string" );
-            assertQueryFindsIds( ktx, REL_INDEX_NAME, "goodbye", firstRelID );
-            assertQueryFindsIds( ktx, REL_INDEX_NAME, "different", secondRelID );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "hello" );
+            assertQueryFindsNothing( ktx, false, REL_INDEX_NAME, "string" );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "goodbye", firstRelID );
+            assertQueryFindsIds( ktx, false, REL_INDEX_NAME, "different", secondRelID );
         }
     }
 
@@ -476,7 +476,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "thing zebra", firstID, thirdID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "thing zebra", firstID, thirdID );
         }
 
         try ( KernelTransactionImplementation tx = getKernelTransaction() )
@@ -500,7 +500,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "thing zebra", firstID, secondID, fourthID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "thing zebra", firstID, secondID, fourthID );
         }
     }
 
@@ -542,7 +542,7 @@ public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, NODE_INDEX_NAME, "thing zebra", firstID, secondID );
+            assertQueryFindsIds( ktx, true, NODE_INDEX_NAME, "thing zebra", firstID, secondID );
         }
     }
 }

@@ -65,12 +65,12 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, "nodes", "and" );
-            assertQueryFindsNothing( ktx, "nodes", "in" );
-            assertQueryFindsNothing( ktx, "nodes", "the" );
-            assertQueryFindsIds( ktx, "nodes", "en", id );
-            assertQueryFindsIds( ktx, "nodes", "och", id );
-            assertQueryFindsIds( ktx, "nodes", "ett", id );
+            assertQueryFindsNothing( ktx, true, "nodes", "and" );
+            assertQueryFindsNothing( ktx, true, "nodes", "in" );
+            assertQueryFindsNothing( ktx, true, "nodes", "the" );
+            assertQueryFindsIds( ktx, true, "nodes", "en", id );
+            assertQueryFindsIds( ktx, true, "nodes", "och", id );
+            assertQueryFindsIds( ktx, true, "nodes", "ett", id );
         }
     }
 
@@ -100,12 +100,12 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsIds( ktx, "nodes", "and", id );
-            assertQueryFindsIds( ktx, "nodes", "in", id );
-            assertQueryFindsIds( ktx, "nodes", "the", id );
-            assertQueryFindsNothing( ktx, "nodes", "en" );
-            assertQueryFindsNothing( ktx, "nodes", "och" );
-            assertQueryFindsNothing( ktx, "nodes", "ett" );
+            assertQueryFindsIds( ktx, true, "nodes", "and", id );
+            assertQueryFindsIds( ktx, true, "nodes", "in", id );
+            assertQueryFindsIds( ktx, true, "nodes", "the", id );
+            assertQueryFindsNothing( ktx, true, "nodes", "en" );
+            assertQueryFindsNothing( ktx, true, "nodes", "och" );
+            assertQueryFindsNothing( ktx, true, "nodes", "ett" );
         }
     }
 
@@ -136,12 +136,12 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            assertQueryFindsNothing( ktx, "nodes", "and" );
-            assertQueryFindsNothing( ktx, "nodes", "in" );
-            assertQueryFindsNothing( ktx, "nodes", "the" );
-            assertQueryFindsIds( ktx, "nodes", "en", secondID );
-            assertQueryFindsIds( ktx, "nodes", "och", secondID );
-            assertQueryFindsIds( ktx, "nodes", "ett", secondID );
+            assertQueryFindsNothing( ktx, true, "nodes", "and" );
+            assertQueryFindsNothing( ktx, true, "nodes", "in" );
+            assertQueryFindsNothing( ktx, true, "nodes", "the" );
+            assertQueryFindsIds( ktx, true, "nodes", "en", secondID );
+            assertQueryFindsIds( ktx, true, "nodes", "och", secondID );
+            assertQueryFindsIds( ktx, true, "nodes", "ett", secondID );
         }
 
         applySetting( FulltextConfig.fulltext_default_analyzer, SWEDISH );
@@ -150,12 +150,12 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
             SchemaRead schemaRead = ktx.schemaRead();
             await( schemaRead.indexGetForName( "nodes" ) );
             // These results should be exactly the same as before the configuration change and restart.
-            assertQueryFindsNothing( ktx, "nodes", "and" );
-            assertQueryFindsNothing( ktx, "nodes", "in" );
-            assertQueryFindsNothing( ktx, "nodes", "the" );
-            assertQueryFindsIds( ktx, "nodes", "en", secondID );
-            assertQueryFindsIds( ktx, "nodes", "och", secondID );
-            assertQueryFindsIds( ktx, "nodes", "ett", secondID );
+            assertQueryFindsNothing( ktx, true, "nodes", "and" );
+            assertQueryFindsNothing( ktx, true, "nodes", "in" );
+            assertQueryFindsNothing( ktx, true, "nodes", "the" );
+            assertQueryFindsIds( ktx, true, "nodes", "en", secondID );
+            assertQueryFindsIds( ktx, true, "nodes", "och", secondID );
+            assertQueryFindsIds( ktx, true, "nodes", "ett", secondID );
         }
     }
 }

@@ -37,21 +37,19 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.helpers.NodeValueIndexCursorAdapter;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
@@ -76,6 +74,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
+import static org.neo4j.internal.kernel.api.IndexQuery.fulltextSearch;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexProviderFactory.DESCRIPTOR;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.NODE_CREATE;
 import static org.neo4j.kernel.api.impl.fulltext.FulltextProceduresTest.RELATIONSHIP_CREATE;
@@ -165,10 +164,10 @@ public class FulltextIndexProviderTest
         await( indexReference );
         long thirdNodeid;
         thirdNodeid = createTheThirdNode();
-        verifyNodeData( provider, thirdNodeid );
+        verifyNodeData( thirdNodeid );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
-        verifyNodeData( provider, thirdNodeid );
+        verifyNodeData( thirdNodeid );
     }
 
     @Test
@@ -192,10 +191,10 @@ public class FulltextIndexProviderTest
             ho.setProperty( "ho", "value3" );
             transaction.success();
         }
-        verifyRelationshipData( provider, secondRelId );
+        verifyRelationshipData( secondRelId );
         db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
-        verifyRelationshipData( provider, secondRelId );
+        verifyRelationshipData( secondRelId );
     }
 
     @Test
@@ -405,26 +404,32 @@ public class FulltextIndexProviderTest
             };
             int propertyKey = ktx.tokenRead().propertyKey( "hej" );
             Read read = ktx.dataRead();
-            IndexQuery.ExactPredicate exactPredicate = IndexQuery.exact( propertyKey, "villa" );
-            read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, exactPredicate );
-            int counter = 0;
-            while ( cursor.next() )
+
             {
-                assertThat( cursor.nodeReference(), is( nodeId ) );
-                counter++;
+                read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKey, "villa" ) );
+                int counter = 0;
+                while ( cursor.next() )
+                {
+                    assertThat( cursor.nodeReference(), is( nodeId ) );
+                    counter++;
+                }
+                assertThat( counter, is( 1 ) );
+                assertThat( acceptedEntities.size(), is( 1 ) );
+                acceptedEntities.clear();
             }
-            assertThat( counter, is( 1 ) );
-            assertThat( acceptedEntities.size(), is( 1 ) );
-            FulltextIndexProvider provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
-            ScoreEntityIterator query = provider.query( ktx, NAME, "hej:\"villa\"" );
-            counter = 0;
-            while ( query.hasNext() )
+
             {
-                ScoreEntityIterator.ScoreEntry entry = query.next();
-                assertThat( entry.entityId(), is( nodeId ) );
-                counter++;
+                read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
+                int counter = 0;
+                while ( cursor.next() )
+                {
+                    assertThat( cursor.nodeReference(), is( nodeId ) );
+                    counter++;
+                }
+                assertThat( counter, is( 1 ) );
+                assertThat( acceptedEntities.size(), is( 1 ) );
+                acceptedEntities.clear();
             }
-            assertThat( counter, is( 1 ) );
         }
     }
 
@@ -481,55 +486,63 @@ public class FulltextIndexProviderTest
         return nodeId;
     }
 
-    private void verifyNodeData( FulltextIndexProvider provider, long thirdNodeid ) throws Exception
+    private void verifyNodeData( long thirdNodeid ) throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
-            ScoreEntityIterator result = provider.query( ktx, "fulltext", "value" );
-            assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next().entityId() );
-            assertFalse( result.hasNext() );
+            IndexReference index = ktx.schemaRead().indexGetForName( "fulltext" );
+            try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
+            {
+                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value" ) );
+                assertTrue( cursor.next() );
+                assertEquals( 0L, cursor.nodeReference() );
+                assertFalse( cursor.next() );
 
-            result = provider.query( ktx, "fulltext", "villa" );
-            assertTrue( result.hasNext() );
-            assertEquals( thirdNodeid, result.next().entityId() );
-            assertFalse( result.hasNext() );
+                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "villa" ) );
+                assertTrue( cursor.next() );
+                assertEquals( thirdNodeid, cursor.nodeReference() );
+                assertFalse( cursor.next() );
 
-            result = provider.query( ktx, "fulltext", "value3" );
-            PrimitiveLongSet ids = Primitive.longSet();
-            ids.add( 0L );
-            ids.add( thirdNodeid );
-            assertTrue( result.hasNext() );
-            assertTrue( ids.remove( result.next().entityId() ) );
-            assertTrue( result.hasNext() );
-            assertTrue( ids.remove( result.next().entityId() ) );
-            assertFalse( result.hasNext() );
+                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value3" ) );
+                PrimitiveLongSet ids = Primitive.longSet();
+                ids.add( 0L );
+                ids.add( thirdNodeid );
+                assertTrue( cursor.next() );
+                assertTrue( ids.remove( cursor.nodeReference() ) );
+                assertTrue( cursor.next() );
+                assertTrue( ids.remove( cursor.nodeReference() ) );
+                assertFalse( cursor.next() );
+            }
             tx.success();
         }
     }
 
-    private void verifyRelationshipData( FulltextIndexProvider provider, long secondRelId ) throws Exception
+    private void verifyRelationshipData( long secondRelId ) throws Exception
     {
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
-            ScoreEntityIterator result = provider.query( ktx, "fulltext", "valuuu" );
-            assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next().entityId() );
-            assertFalse( result.hasNext() );
+            IndexReference index = ktx.schemaRead().indexGetForName( "fulltext" );
+            try ( RelationshipIndexCursor cursor = ktx.cursors().allocateRelationshipIndexCursor() )
+            {
+                ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "valuuu" ) );
+                assertTrue( cursor.next() );
+                assertEquals( 0L, cursor.relationshipReference() );
+                assertFalse( cursor.next() );
 
-            result = provider.query( ktx, "fulltext", "villa" );
-            assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next().entityId() );
-            assertFalse( result.hasNext() );
+                ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "villa" ) );
+                assertTrue( cursor.next() );
+                assertEquals( secondRelId, cursor.relationshipReference() );
+                assertFalse( cursor.next() );
 
-            result = provider.query( ktx, "fulltext", "value3" );
-            assertTrue( result.hasNext() );
-            assertEquals( 0L, result.next().entityId() );
-            assertTrue( result.hasNext() );
-            assertEquals( secondRelId, result.next().entityId() );
-            assertFalse( result.hasNext() );
+                ktx.dataRead().relationshipIndexSeek( index, cursor, fulltextSearch( "value3" ) );
+                assertTrue( cursor.next() );
+                assertEquals( 0L, cursor.relationshipReference() );
+                assertTrue( cursor.next() );
+                assertEquals( secondRelId, cursor.relationshipReference() );
+                assertFalse( cursor.next() );
+            }
             tx.success();
         }
     }
