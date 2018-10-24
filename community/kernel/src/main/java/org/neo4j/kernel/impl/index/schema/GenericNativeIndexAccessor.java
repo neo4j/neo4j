@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.index.internal.gbptree.GBPTree;
@@ -28,6 +29,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
@@ -39,18 +41,34 @@ import org.neo4j.values.storable.Value;
 class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIndexValue>
 {
     private final IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings;
+    private final IndexDirectoryStructure directoryStructure;
     private final SpaceFillingCurveConfiguration configuration;
     private Validator<Value[]> validator;
 
     GenericNativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-            IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, SpaceFillingCurveConfiguration configuration ) throws IOException
+            IndexSpecificSpaceFillingCurveSettingsCache spaceFillingCurveSettings, IndexDirectoryStructure directoryStructure,
+            SpaceFillingCurveConfiguration configuration )
     {
-        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
-                new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spaceFillingCurveSettings ) );
         this.spaceFillingCurveSettings = spaceFillingCurveSettings;
+        this.directoryStructure = directoryStructure;
         this.configuration = configuration;
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
+    }
+
+    @Override
+    public void drop()
+    {
+        super.drop();
+        try
+        {
+            NativeIndexes.deleteIndex( fileSystem, directoryStructure, descriptor.getId(), false );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 
     @Override

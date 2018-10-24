@@ -54,6 +54,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
+import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexKey.Inclusion.NEUTRAL;
 import static org.neo4j.test.rule.PageCacheRule.config;
 
@@ -71,7 +72,7 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     StoreIndexDescriptor indexDescriptor;
     ValueCreatorUtil<KEY,VALUE> valueCreatorUtil;
     IndexLayout<KEY,VALUE> layout;
-    private IndexDirectoryStructure indexDirectoryStructure;
+    IndexDirectoryStructure indexDirectoryStructure;
     private File indexFile;
     PageCache pageCache;
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
@@ -82,7 +83,8 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
         valueCreatorUtil = createValueCreatorUtil();
         indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
-        indexFile = directory.file( "index" );
+        indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.providerDescriptor() );
+        indexFile = indexDirectoryStructure.directoryForIndex( indexDescriptor.getId() );
         pageCache = pageCacheRule.getPageCache( fs );
     }
 

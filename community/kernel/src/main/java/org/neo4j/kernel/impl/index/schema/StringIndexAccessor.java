@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -43,9 +42,9 @@ public class StringIndexAccessor extends NativeIndexAccessor<StringIndexKey,Nati
     private Validator<Value> validator;
 
     StringIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<StringIndexKey,NativeIndexValue> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor )
     {
-        super( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, NO_HEADER_WRITER );
+        super( pageCache, fs, storeFile, layout, monitor, descriptor, NO_HEADER_WRITER );
         instantiateTree( recoveryCleanupWorkCollector, headerWriter );
     }
 

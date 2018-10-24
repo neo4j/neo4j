@@ -26,7 +26,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -49,8 +48,7 @@ public abstract class NativeIndexAccessor<KEY extends NativeIndexKey<KEY>, VALUE
     final NativeIndexHeaderWriter headerWriter;
 
     NativeIndexAccessor( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
-            Consumer<PageCursor> additionalHeaderWriter ) throws IOException
+            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor );
         singleUpdater = new NativeIndexUpdater<>( layout.newKey(), layout.newValue() );

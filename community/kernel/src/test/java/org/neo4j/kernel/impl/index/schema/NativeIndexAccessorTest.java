@@ -33,6 +33,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
@@ -141,7 +142,8 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     @Override
     NativeIndexAccessor<KEY,VALUE> makeAccessor() throws IOException
     {
-        return accessorFactory.create( pageCache, fs, getIndexFile(), layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor );
+        return accessorFactory.create( pageCache, fs, getIndexFile(), layout, RecoveryCleanupWorkCollector.immediate(), monitor, indexDescriptor,
+                indexDirectoryStructure );
     }
 
     @Override
@@ -165,17 +167,19 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     /* Helpers */
     private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
     {
-        return NumberIndexAccessor::new;
+        return ( pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor, directory ) -> new NumberIndexAccessor(
+                pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor );
     }
 
     private static AccessorFactory<StringIndexKey,NativeIndexValue> stringAccessorFactory()
     {
-        return StringIndexAccessor::new;
+        return ( pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor, directory ) -> new StringIndexAccessor(
+                pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor );
     }
 
     private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
     {
-        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor ) ->
+        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
         {
             TemporalIndexFiles.FileLayout<TK> fileLayout = new TemporalIndexFiles.FileLayout<>( storeFile, layout, temporalValueGroup );
             return new TemporalIndexAccessor.PartAccessor<>( pageCache, fs, fileLayout, cleanup, monitor, descriptor );
@@ -184,15 +188,16 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
 
     private static AccessorFactory<GenericKey,NativeIndexValue> genericAccessorFactory()
     {
-        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor ) ->
-                new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings, configuration );
+        return ( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, directory ) ->
+                new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, cleanup, monitor, descriptor, spaceFillingCurveSettings,
+                        directory, configuration );
     }
 
     @FunctionalInterface
     private interface AccessorFactory<KEY extends NativeIndexKey<KEY>, VALUE extends NativeIndexValue>
     {
-        NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs,
-                File storeFile, IndexLayout<KEY,VALUE> layout, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
-                IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor ) throws IOException;
+        NativeIndexAccessor<KEY,VALUE> create( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+                IndexDirectoryStructure directory ) throws IOException;
     }
 }
