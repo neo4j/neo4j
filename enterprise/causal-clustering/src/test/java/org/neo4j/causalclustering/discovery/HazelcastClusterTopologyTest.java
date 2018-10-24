@@ -40,6 +40,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -56,6 +57,11 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+import static java.util.Collections.singleton;
+import static java.util.Collections.singletonList;
+import static java.util.Collections.singletonMap;
 import static org.hamcrest.CoreMatchers.hasItems;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertEquals;
@@ -68,6 +74,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.CLUSTER_UUID_DB_NAME_MAP;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.DB_NAME_LEADER_TERM_PREFIX;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICAS_DB_NAME_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributesForCore;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.toCoreMemberMap;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -112,6 +122,47 @@ public class HazelcastClusterTopologyTest
     private static List<Config> generateConfigs( int numConfigs, IntFunction<HashMap<String, String>> generator )
     {
         return IntStream.range(0, numConfigs).mapToObj( generator ).map( Config::defaults ).collect( Collectors.toList() );
+    }
+
+    @Test
+    public void shouldCollectReadReplicasAsMap()
+    {
+        // given
+        MemberId memberId = new MemberId( UUID.randomUUID() );
+        List<ClientConnectorAddresses.ConnectorUri> connectorUris = singletonList(
+                new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
+                        new AdvertisedSocketAddress( "losthost", 4444 ) ) );
+        ClientConnectorAddresses addresses = new ClientConnectorAddresses( connectorUris );
+        ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( addresses, new AdvertisedSocketAddress( "localhost", 1353 ), GROUPS, "foo" );
+        generateReadReplicaAttributes( memberId, readReplicaInfo );
+
+        // when
+        Map<MemberId,ReadReplicaInfo> rrMap = HazelcastClusterTopology.readReplicas( hzInstance, NullLog.getInstance() );
+
+        // then
+        assertEquals( singletonMap( memberId, readReplicaInfo ), rrMap );
+    }
+
+    @Test
+    public void shouldValidateNullReadReplicaAttrMaps()
+    {
+        // given
+        MemberId memberId = new MemberId( UUID.randomUUID() );
+        List<ClientConnectorAddresses.ConnectorUri> connectorUris = singletonList(
+                new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
+                        new AdvertisedSocketAddress( "losthost", 4444 ) ) );
+        ClientConnectorAddresses addresses = new ClientConnectorAddresses( connectorUris );
+        ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( addresses, new AdvertisedSocketAddress( "localhost", 1353 ), GROUPS, "foo" );
+        generateReadReplicaAttributes( memberId, readReplicaInfo, emptySet(), asSet( READ_REPLICAS_DB_NAME_MAP ) );
+
+        // when
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( this.getClass() );
+        Map<MemberId,ReadReplicaInfo> rrMap = HazelcastClusterTopology.readReplicas( hzInstance, log );
+
+        // then
+        assertEquals( emptyMap(), rrMap );
+        logProvider.assertContainsMessageContaining( "Missing attribute %s for read replica" );
     }
 
     @Test
@@ -257,4 +308,35 @@ public class HazelcastClusterTopologyTest
         assertEquals( "First member was expected to be leader.", RoleInfo.LEADER, roleMap.get( chosenLeaderId ) );
     }
 
+    private void generateReadReplicaAttributes( MemberId memberId, ReadReplicaInfo readReplicaInfo )
+    {
+        generateReadReplicaAttributes( memberId, readReplicaInfo, emptySet(), emptySet() );
+    }
+
+    private void generateReadReplicaAttributes( MemberId memberId, ReadReplicaInfo readReplicaInfo, Set<String> missingAttrs, Set<String> nullAttrs )
+    {
+        Map<String,BiFunction<MemberId,ReadReplicaInfo,String>> attributeFactories = new HashMap<>();
+        attributeFactories.put( READ_REPLICAS_DB_NAME_MAP, ( ignored, rr ) -> rr.getDatabaseName() );
+        attributeFactories.put( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP, ( ignored, rr ) -> rr.getCatchupServer().toString() );
+        attributeFactories.put( READ_REPLICA_MEMBER_ID_MAP, ( mId, ignored ) -> mId.getUuid().toString() );
+        attributeFactories.put( READ_REPLICA_BOLT_ADDRESS_MAP, ( ignored, rr ) -> rr.connectors().toString() );
+
+        UUID hzId = UUID.randomUUID();
+        attributeFactories.entrySet().stream()
+                .filter( e -> !missingAttrs.contains( e.getKey() ) )
+                .forEach( e ->
+                {
+                    String attrValue = nullAttrs.contains( e.getKey() ) ? null : e.getValue().apply( memberId, readReplicaInfo );
+                    generateReadReplicaAttribute( e.getKey(), hzId, attrValue );
+                } );
+    }
+
+    private void generateReadReplicaAttribute( String attrKey, UUID hzId, String attrValue )
+    {
+        IMap<String,String> attrs = (IMap<String, String>) mock( IMap.class );
+        when( attrs.keySet() ).thenReturn( singleton( hzId.toString() ) );
+        when( attrs.get( hzId.toString() ) ).thenReturn( attrValue );
+//        when( attrs.get( AdditionalMatchers.not( hzId.toString() ) ) ).thenReturn( null );
+        when( hzInstance.<String,String>getMap( attrKey ) ).thenReturn( attrs );
+    }
 }
