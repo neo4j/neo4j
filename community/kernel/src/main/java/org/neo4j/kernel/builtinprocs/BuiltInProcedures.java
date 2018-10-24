@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -97,11 +98,11 @@ public class BuiltInProcedures
     public Stream<LabelResult> listLabels()
     {
         List<LabelResult> labelResults =
-                asList( TokenAccess.LABELS.inUse( tx ).map( label ->
+                TokenAccess.LABELS.inUse( tx ).stream().map( label ->
                 {
                     int labelId = tx.tokenRead().nodeLabel( label.name() );
                     return new LabelResult( label, tx.dataRead().countsForNode( labelId ) );
-                } ) );
+                } ).collect( Collectors.toList() );
         return labelResults.stream();
     }
 
@@ -110,7 +111,7 @@ public class BuiltInProcedures
     public Stream<PropertyKeyResult> listPropertyKeys()
     {
         List<PropertyKeyResult> propertyKeys =
-                asList( TokenAccess.PROPERTY_KEYS.inUse( tx ).map( PropertyKeyResult::new ) );
+                TokenAccess.PROPERTY_KEYS.inUse( tx ).stream().map( PropertyKeyResult::new ).collect( Collectors.toList() );
         return propertyKeys.stream();
     }
 
@@ -119,11 +120,11 @@ public class BuiltInProcedures
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
         List<RelationshipTypeResult> relationshipTypes =
-                asList( TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).map( type ->
+                TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).stream().map( type ->
                 {
                     int typeId = tx.tokenRead().relationshipType( type.name() );
                     return new RelationshipTypeResult( type, tx.dataRead().countsForRelationship( Read.ANY_LABEL, typeId, Read.ANY_LABEL ) );
-                } ) );
+                } ).collect( Collectors.toList() );
         return relationshipTypes.stream();
     }
 
