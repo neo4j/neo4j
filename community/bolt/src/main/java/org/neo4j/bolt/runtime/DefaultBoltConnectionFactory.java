@@ -25,6 +25,8 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.transport.TransportThrottleGroup;
 import org.neo4j.bolt.v1.runtime.BoltFactory;
 import org.neo4j.bolt.v1.transport.ChunkedOutput;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.logging.LogService;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -35,20 +37,19 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     private final TransportThrottleGroup throttleGroup;
     private final LogService logService;
     private final Clock clock;
-    private final BoltConnectionQueueMonitor queueMonitor;
+    private final Config config;
     private final Monitors monitors;
     private final BoltConnectionMetricsMonitor metricsMonitor;
 
     public DefaultBoltConnectionFactory( BoltFactory machineFactory, BoltSchedulerProvider schedulerProvider, TransportThrottleGroup throttleGroup,
-            LogService logService, Clock clock,
-            BoltConnectionQueueMonitor queueMonitor, Monitors monitors )
+            Config config, LogService logService, Clock clock, Monitors monitors )
     {
         this.machineFactory = machineFactory;
         this.schedulerProvider = schedulerProvider;
         this.throttleGroup = throttleGroup;
+        this.config = config;
         this.logService = logService;
         this.clock = clock;
-        this.queueMonitor = queueMonitor;
         this.monitors = monitors;
         this.metricsMonitor = monitors.newMonitor( BoltConnectionMetricsMonitor.class );
     }
@@ -57,8 +58,8 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     public BoltConnection newConnection( BoltChannel channel )
     {
         BoltScheduler scheduler = schedulerProvider.get( channel );
-        BoltConnectionQueueMonitor connectionQueueMonitor =
-                queueMonitor == null ? scheduler : new BoltConnectionQueueMonitorAggregate( scheduler, queueMonitor );
+        BoltConnectionReadLimiter readLimiter = createReadLimiter( config, logService );
+        BoltConnectionQueueMonitor connectionQueueMonitor = new BoltConnectionQueueMonitorAggregate( scheduler, readLimiter );
         ChunkedOutput chunkedOutput = new ChunkedOutput( channel.rawChannel(), throttleGroup );
 
         BoltConnection connection;
@@ -77,5 +78,12 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         connection.start();
 
         return connection;
+    }
+
+    private static BoltConnectionReadLimiter createReadLimiter( Config config, LogService logService )
+    {
+        int lowWatermark = config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark );
+        int highWatermark = config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark );
+        return new BoltConnectionReadLimiter( logService, lowWatermark, highWatermark );
     }
 }

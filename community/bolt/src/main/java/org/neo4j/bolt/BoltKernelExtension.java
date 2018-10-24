@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory;
 import org.neo4j.bolt.runtime.DefaultBoltConnectionFactory;
@@ -175,10 +174,7 @@ public class BoltKernelExtension extends KernelExtensionFactory<BoltKernelExtens
             TransportThrottleGroup throttleGroup,
             Dependencies dependencies, LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, throttleGroup, logService, clock,
-                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ),
-                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark ),
-                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), dependencies.monitors() );
+        return new DefaultBoltConnectionFactory( boltFactory, schedulerProvider, throttleGroup, config, logService, clock, dependencies.monitors() );
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( Config config, SslPolicyLoader sslPolicyFactory, LogService logService, Log log,
