@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import org.apache.lucene.queryparser.classic.ParseException;
-
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Properties;
@@ -31,14 +29,11 @@ import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.storage.IndexStorageFactory;
@@ -51,17 +46,14 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
@@ -283,19 +275,6 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_ANALYZER, defaultAnalyzerName );
         indexConfiguration.putIfAbsent( FulltextIndexSettings.INDEX_CONFIG_EVENTUALLY_CONSISTENT, defaultEventuallyConsistentSetting );
         return new FulltextSchemaDescriptor( schema, indexConfiguration );
-    }
-
-    @Deprecated
-    @Override
-    public ScoreEntityIterator query( KernelTransaction ktx, String indexName, String queryString ) throws IndexNotFoundKernelException, ParseException
-    {
-        KernelTransactionImplementation kti = (KernelTransactionImplementation) ktx;
-        AllStoreHolder allStoreHolder = (AllStoreHolder) kti.dataRead();
-        IndexReference indexReference = kti.schemaRead().indexGetForName( indexName );
-        FulltextIndexReader fulltextIndexReader;
-        IndexReader indexReader = allStoreHolder.indexReader( indexReference, false );
-        fulltextIndexReader = (FulltextIndexReader) indexReader;
-        return fulltextIndexReader.query( queryString );
     }
 
     @Override

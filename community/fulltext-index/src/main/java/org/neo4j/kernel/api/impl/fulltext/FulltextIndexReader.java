@@ -67,19 +67,6 @@ public class FulltextIndexReader implements IndexReader
         this.transactionState = new FulltextIndexTransactionState( descriptor );
     }
 
-    /**
-     * Queires the fulltext index with the given lucene-syntax query
-     *
-     * @param query the lucene query
-     * @return A {@link ScoreEntityIterator} over the results
-     */
-    @Deprecated
-    public ScoreEntityIterator query( String query ) throws ParseException
-    {
-        Query queryObject = parseFulltextQuery( query );
-        return indexQuery( queryObject );
-    }
-
     private Query parseFulltextQuery( String query ) throws ParseException
     {
         FulltextIndexDescriptor descriptor = getDescriptor();
