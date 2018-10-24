@@ -49,6 +49,7 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
+import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -118,7 +119,11 @@ public class BuiltInProcedures
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
         List<RelationshipTypeResult> relationshipTypes =
-                asList( TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).map( RelationshipTypeResult::new ) );
+                asList( TokenAccess.RELATIONSHIP_TYPES.inUse( tx ).map( type ->
+                {
+                    int typeId = tx.tokenRead().relationshipType( type.name() );
+                    return new RelationshipTypeResult( type, tx.dataRead().countsForRelationship( Read.ANY_LABEL, typeId, Read.ANY_LABEL ) );
+                } ) );
         return relationshipTypes.stream();
     }
 
@@ -900,10 +905,12 @@ public class BuiltInProcedures
     public static class RelationshipTypeResult
     {
         public final String relationshipType;
+        public final long count;
 
-        private RelationshipTypeResult( RelationshipType relationshipType )
+        private RelationshipTypeResult( RelationshipType relationshipType, long count )
         {
             this.relationshipType = relationshipType.name();
+            this.count = count;
         }
     }
 

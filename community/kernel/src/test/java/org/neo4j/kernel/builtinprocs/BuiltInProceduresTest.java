@@ -221,8 +221,8 @@ public class BuiltInProceduresTest
         // When/Then
         assertThat( call( "db.relationshipTypes" ),
                 containsInAnyOrder(
-                        record( "EATS" ),
-                        record( "SPROUTS" ) ) );
+                        record( "EATS", 1L ),
+                        record( "SPROUTS", 1L ) ) );
     }
 
     @Test
@@ -277,7 +277,7 @@ public class BuiltInProceduresTest
                 record( "db.labels", "db.labels() :: (label :: STRING?, count :: INTEGER?)", "List all labels in the database.", "READ" ),
                 record( "db.propertyKeys", "db.propertyKeys() :: (propertyKey :: STRING?)",
                         "List all property keys in the database.", "READ" ),
-                record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)",
+                record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?, count :: INTEGER?)",
                         "List all relationship types in the database.", "READ" ),
                 record( "db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID",
                         "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),

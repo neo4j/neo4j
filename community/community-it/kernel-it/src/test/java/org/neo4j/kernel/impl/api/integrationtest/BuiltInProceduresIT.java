@@ -121,7 +121,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "relationshipTypes" ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType"} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyRelType", 1L} ) ) );
     }
 
     @Test
@@ -161,7 +161,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 proc( "db.schema.relTypeProperties", "() :: (relType :: STRING?, " +
                                 "propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
                         "Show the derived property schema of the relationships in tabular form.", "READ" ),
-                proc( "db.relationshipTypes", "() :: (relationshipType :: " + "STRING?)",
+                proc( "db.relationshipTypes", "() :: (relationshipType :: STRING?, count :: INTEGER?)",
                         "List all relationship types in the database.", "READ" ),
                 proc( "dbms.procedures", "() :: (name :: STRING?, signature :: " + "STRING?, description :: STRING?, mode :: STRING?)",
                         "List all procedures in the DBMS.", "DBMS" ),
