@@ -86,7 +86,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "labels" ) ).id(), new Object[0] );
 
         // Then
-        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel"} ) ) );
+        assertThat( asList( stream ), contains( equalTo( new Object[]{"MyLabel", 1L} ) ) );
     }
 
     @Test
@@ -149,7 +149,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
                 proc( "db.resampleOutdatedIndexes", "() :: VOID", "Schedule resampling of all outdated indexes.", "READ" ),
                 proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.", "READ" ),
-                proc( "db.labels", "() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
+                proc( "db.labels", "() :: (label :: STRING?, count :: INTEGER?)", "List all labels in the database.", "READ" ),
                 proc( "db.schema", "() :: (nodes :: LIST? OF NODE?, relationships :: LIST? " + "OF " + "RELATIONSHIP?)",
                         "Show the schema of the data.", "READ" ),
                 proc( "db.schema.visualization","() :: (nodes :: LIST? OF NODE?, relationships :: LIST? OF RELATIONSHIP?)",

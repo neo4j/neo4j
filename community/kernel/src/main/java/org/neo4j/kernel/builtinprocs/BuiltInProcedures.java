@@ -95,7 +95,12 @@ public class BuiltInProcedures
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
-        List<LabelResult> labelResults = asList( TokenAccess.LABELS.inUse( tx ).map( LabelResult::new ) );
+        List<LabelResult> labelResults =
+                asList( TokenAccess.LABELS.inUse( tx ).map( label ->
+                {
+                    int labelId = tx.tokenRead().nodeLabel( label.name() );
+                    return new LabelResult( label, tx.dataRead().countsForNode( labelId ) );
+                } ) );
         return labelResults.stream();
     }
 
@@ -873,10 +878,12 @@ public class BuiltInProcedures
     public static class LabelResult
     {
         public final String label;
+        public final long count;
 
-        private LabelResult( Label label )
+        private LabelResult( Label label, long count )
         {
             this.label = label.name();
+            this.count = count;
         }
     }
 

@@ -41,6 +41,7 @@ import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsCollectionContaining.hasItems;
 import static org.junit.Assert.assertNotNull;
 import static org.neo4j.helpers.collection.Iterators.asList;
+import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTInteger;
 import static org.neo4j.internal.kernel.api.procs.Neo4jTypes.NTString;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureName;
 import static org.neo4j.internal.kernel.api.procs.ProcedureSignature.procedureSignature;
@@ -80,7 +81,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
-                .out(  "label", NTString ).build() ) );
+                .out(  "label", NTString ).out( "count", NTInteger ).build() ) );
         commit();
     }
 
