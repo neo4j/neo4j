@@ -28,14 +28,12 @@ import org.neo4j.values.storable._
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
-  def comparator: ((AnyValue, AnyValue) => Value)
+  def comparator: (AnyValue, AnyValue) => Value
 
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = {
     val l = left(m, state)
     val r = right(m, state)
-
-    if (l == Values.NO_VALUE || r == Values.NO_VALUE) None
-    else comparator(l, r) match {
+    comparator(l, r) match {
       case Values.TRUE => Some(true)
       case Values.FALSE => Some(false)
       case Values.NO_VALUE => None
@@ -44,13 +42,13 @@ abstract sealed class ComparablePredicate(val left: Expression, val right: Expre
 
   def sign: String
 
-  override def toString = left.toString() + " " + sign + " " + right.toString()
+  override def toString: String = left.toString() + " " + sign + " " + right.toString()
 
   def containsIsNull = false
 
   def arguments = Seq(left, right)
 
-  def symbolTableDependencies = left.symbolTableDependencies ++ right.symbolTableDependencies
+  def symbolTableDependencies: Set[String] = left.symbolTableDependencies ++ right.symbolTableDependencies
 
   def other(e: Expression): Expression = if (e != left) {
     assert(e == right, "This expression is neither LHS nor RHS")
@@ -80,16 +78,16 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
 
   override def toString = s"$a == $b"
 
-  def containsIsNull = (a, b) match {
+  def containsIsNull: Boolean = (a, b) match {
     case (Variable(_), Literal(null)) => true
     case _ => false
   }
 
-  def rewrite(f: (Expression) => Expression) = f(Equals(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(Equals(a.rewrite(f), b.rewrite(f)))
 
   def arguments = Seq(a, b)
 
-  def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+  def symbolTableDependencies: Set[String] = a.symbolTableDependencies ++ b.symbolTableDependencies
 }
 
 case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
@@ -98,7 +96,7 @@ case class LessThan(a: Expression, b: Expression) extends ComparablePredicate(a,
 
   def sign: String = "<"
 
-  def rewrite(f: (Expression) => Expression) = f(LessThan(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(LessThan(a.rewrite(f), b.rewrite(f)))
 }
 
 case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
@@ -107,7 +105,7 @@ case class GreaterThan(a: Expression, b: Expression) extends ComparablePredicate
 
   def sign: String = ">"
 
-  def rewrite(f: (Expression) => Expression) = f(GreaterThan(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(GreaterThan(a.rewrite(f), b.rewrite(f)))
 }
 
 case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
@@ -116,7 +114,7 @@ case class LessThanOrEqual(a: Expression, b: Expression) extends ComparablePredi
 
   def sign: String = "<="
 
-  def rewrite(f: (Expression) => Expression) = f(LessThanOrEqual(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(LessThanOrEqual(a.rewrite(f), b.rewrite(f)))
 }
 
 case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePredicate(a, b) {
@@ -125,5 +123,5 @@ case class GreaterThanOrEqual(a: Expression, b: Expression) extends ComparablePr
 
   def sign: String = ">="
 
-  def rewrite(f: (Expression) => Expression) = f(GreaterThanOrEqual(a.rewrite(f), b.rewrite(f)))
+  def rewrite(f: Expression => Expression) = f(GreaterThanOrEqual(a.rewrite(f), b.rewrite(f)))
 }
