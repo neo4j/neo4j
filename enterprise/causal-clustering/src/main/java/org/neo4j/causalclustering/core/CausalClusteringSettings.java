@@ -247,6 +247,7 @@ public class CausalClusteringSettings implements LoadableConfig
     public static final Setting<DiscoveryType> discovery_type =
             setting( "causal_clustering.discovery_type", optionsIgnoreCase( DiscoveryType.class ), DiscoveryType.LIST.name() );
 
+    @Internal
     @Description( "Select the middleware used for cluster topology discovery" )
     public static final Setting<DiscoveryServiceFactorySelector.DiscoveryImplementation> discovery_implementation =
             setting( "causal_clustering.discovery_implementation", optionsIgnoreCase( DiscoveryServiceFactorySelector.DiscoveryImplementation.class ),
