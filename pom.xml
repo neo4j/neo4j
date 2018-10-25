@@ -904,7 +904,7 @@
       <id>java9And10</id>
       <activation>
         <activeByDefault>false</activeByDefault>
-        <jdk>[9, 10]</jdk>
+        <jdk>[9, 11)</jdk>
       </activation>
       <properties>
         <java.exports>--add-exports=java.base/sun.nio.ch=ALL-UNNAMED --add-modules java.xml.bind</java.exports>
