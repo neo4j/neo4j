@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.extension.ConditionEvaluationResult.disabled;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 /**
@@ -62,6 +63,14 @@ class DirectoryExtensionLifecycleVerificationTest
         File file = directory.createFile( "b" );
         CONTEXT.setValue( FAILED_TEST_FILE_KEY, file );
         throw new RuntimeException( "simulate test failure" );
+    }
+
+    @Test
+    void lockFileAndFailToDeleteDirectory()
+    {
+        File nonDeletableDirectory = directory.directory( "c" );
+        CONTEXT.setValue( LOCKED_TEST_FILE_KEY, nonDeletableDirectory );
+        assertTrue( nonDeletableDirectory.setReadable( false, false ) );
     }
 
     static class ConfigurationParameterCondition implements ExecutionCondition

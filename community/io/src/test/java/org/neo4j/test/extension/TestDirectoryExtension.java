@@ -24,10 +24,12 @@ import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
+import org.junit.platform.commons.JUnitException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.rule.TestDirectory;
 
+import static java.lang.String.format;
 import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class TestDirectoryExtension extends StatefullFieldExtension<TestDirectory> implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
@@ -46,7 +48,14 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
     public void afterEach( ExtensionContext context ) throws Exception
     {
         TestDirectory testDirectory = getStoredValue( context );
-        testDirectory.complete( !context.getExecutionException().isPresent() );
+        try
+        {
+            testDirectory.complete( !context.getExecutionException().isPresent() );
+        }
+        catch ( Exception e )
+        {
+            throw new JUnitException( format( "Fail to cleanup test directory for %s test.", context.getDisplayName() ), e );
+        }
     }
 
     @Override

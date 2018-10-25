@@ -20,28 +20,40 @@
 package org.neo4j.test.extension;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.platform.engine.TestExecutionResult;
 import org.junit.platform.launcher.Launcher;
 import org.junit.platform.launcher.LauncherDiscoveryRequest;
+import org.junit.platform.launcher.TestExecutionListener;
+import org.junit.platform.launcher.TestIdentifier;
 import org.junit.platform.launcher.core.LauncherDiscoveryRequestBuilder;
 import org.junit.platform.launcher.core.LauncherFactory;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.platform.engine.TestExecutionResult.Status.FAILED;
 import static org.junit.platform.engine.discovery.DiscoverySelectors.selectMethod;
 import static org.neo4j.test.extension.DirectoryExtensionLifecycleVerificationTest.ConfigurationParameterCondition.TEST_TOGGLE;
 import static org.neo4j.test.extension.ExecutionSharedContext.CONTEXT;
 import static org.neo4j.test.extension.ExecutionSharedContext.FAILED_TEST_FILE_KEY;
+import static org.neo4j.test.extension.ExecutionSharedContext.LOCKED_TEST_FILE_KEY;
 import static org.neo4j.test.extension.ExecutionSharedContext.SUCCESSFUL_TEST_FILE_KEY;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -102,13 +114,49 @@ class TestDirectoryExtensionTest
         assertFalse( greenTestFail.exists() );
     }
 
-    private static void execute( String testName )
+    @Test
+    @EnabledOnOs( OS.LINUX )
+    void exceptionOnDirectoryDeletionIncludeTestDisplayName() throws IOException
+    {
+        CONTEXT.clear();
+        FailedTestExecutionListener failedTestListener = new FailedTestExecutionListener();
+        execute( "lockFileAndFailToDeleteDirectory", failedTestListener );
+        File lockedFile = CONTEXT.getValue( LOCKED_TEST_FILE_KEY );
+
+        assertNotNull( lockedFile );
+        assertTrue( lockedFile.setReadable( true, true ) );
+        FileUtils.deleteRecursively( lockedFile );
+        failedTestListener.assertTestObserver();
+    }
+
+    private static void execute( String testName, TestExecutionListener... testExecutionListeners )
     {
         LauncherDiscoveryRequest discoveryRequest = LauncherDiscoveryRequestBuilder.request()
                 .selectors( selectMethod( DirectoryExtensionLifecycleVerificationTest.class, testName ))
                 .configurationParameter( TEST_TOGGLE, "true" )
                 .build();
         Launcher launcher = LauncherFactory.create();
-        launcher.execute( discoveryRequest );
+        launcher.execute( discoveryRequest, testExecutionListeners );
+    }
+
+    private static class FailedTestExecutionListener implements TestExecutionListener
+    {
+        private int resultsObserved;
+
+        @Override
+        public void executionFinished( TestIdentifier testIdentifier, TestExecutionResult testExecutionResult )
+        {
+            if ( testExecutionResult.getStatus() == FAILED )
+            {
+                resultsObserved++;
+                String exceptionMessage = testExecutionResult.getThrowable().map( Throwable::getMessage ).orElse( EMPTY );
+                assertThat( exceptionMessage, containsString( "Fail to cleanup test directory for lockFileAndFailToDeleteDirectory" ) );
+            }
+        }
+
+        void assertTestObserver()
+        {
+            assertEquals( 1, resultsObserved );
+        }
     }
 }
