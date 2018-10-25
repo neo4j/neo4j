@@ -19,30 +19,32 @@
  */
 package org.neo4j.kernel.impl.api.transaction.trace;
 
-import java.io.PrintWriter;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 
-public class TransactionInitializationTrace extends Throwable
+public class TransactionInitializationTrace
 {
     private static final String MESSAGE = "Transaction initialization stacktrace.";
     public static final TransactionInitializationTrace NONE = new EmptyTransactionInitializationTrace();
 
+    private final Throwable trace;
+
     public TransactionInitializationTrace()
     {
-        super( MESSAGE );
+        trace = new Throwable( MESSAGE );
+    }
+
+    public String getTrace()
+    {
+        return ExceptionUtils.getStackTrace( trace );
     }
 
     private static class EmptyTransactionInitializationTrace extends TransactionInitializationTrace
     {
         @Override
-        public synchronized Throwable fillInStackTrace()
+        public String getTrace()
         {
-            return this;
-        }
-
-        @Override
-        public void printStackTrace( PrintWriter s )
-        {
-            //nothing to print;
+            return StringUtils.EMPTY;
         }
     }
 }
