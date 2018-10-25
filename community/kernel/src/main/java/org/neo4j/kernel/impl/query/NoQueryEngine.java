@@ -33,13 +33,6 @@ enum NoQueryEngine implements QueryExecutionEngine
     }
 
     @Override
-    public QueryExecution executeQuery( String query, MapValue parameters, TransactionalContext context,
-                                        ResultBuffer resultBuffer )
-    {
-        throw noQueryEngine();
-    }
-
-    @Override
     public Result profileQuery( String query, MapValue parameter, TransactionalContext context )
     {
         throw noQueryEngine();

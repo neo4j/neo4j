@@ -27,18 +27,16 @@ case class Planners(planners: Planner*)
 object Planners {
   implicit def plannerToPlanners(planner: Planner): Planners = Planners(planner)
 
-  val all = Planners(Cost, Rule, Default)
+  val all = Planners(Cost, Rule)
 
-  def definedBy(preParserArgs: Array[String]): Planners = Planners(all.planners.filter(_.isDefinedBy(preParserArgs)): _*)
+  def definedBy(preParserArgs: Array[String]): Planners = {
+    val planners = all.planners.filter(_.isDefinedBy(preParserArgs))
+    if (planners.nonEmpty) Planners(planners: _*) else all
+  }
 
   object Cost extends Planner(Set("COST", "IDP", "PROCEDURE"), "planner=cost")
 
   object Rule extends Planner(Set("RULE", "PROCEDURE"), "planner=rule")
-
-  object Default extends Planner(Set("COST", "IDP", "RULE", "PROCEDURE"), "") {
-    override def isDefinedBy(preParserArgs: Array[String]): Boolean =
-      preParserArgs.toSet.forall(_.contains("planner") == false)
-  }
 
 }
 

@@ -28,9 +28,12 @@ object Runtimes {
   implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
   // Default behaves different from specifying a specific runtime - thus it's included
-  val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted, Default)
+  val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted)
 
-  def definedBy(preParserArgs: Array[String]): Runtimes = Runtimes(all.runtimes.filter(_.isDefinedBy(preParserArgs)): _*)
+  def definedBy(preParserArgs: Array[String]): Runtimes = {
+    val runtimes = all.runtimes.filter(_.isDefinedBy(preParserArgs))
+    if (runtimes.nonEmpty) Runtimes(runtimes: _*) else all
+  }
 
   object CompiledSource extends Runtime(Set("COMPILED", "PROCEDURE"), "runtime=compiled debug=generate_java_source")
 
@@ -41,11 +44,6 @@ object Runtimes {
   object SlottedWithCompiledExpressions extends Runtime(Set("SLOTTED", "PROCEDURE"), "runtime=slotted expressionEngine=COMPILED")
 
   object Interpreted extends Runtime(Set("INTERPRETED", "PROCEDURE"), "runtime=interpreted")
-
-  object Default extends Runtime(Set("COMPILED", "SLOTTED", "INTERPRETED", "PROCEDURE"), "") {
-    override def isDefinedBy(preParserArgs: Array[String]): Boolean =
-      preParserArgs.toSet.forall(_.contains("runtime") == false)
-  }
 
   // Not included in `all`
   object Morsel extends Runtime(Set("MORSEL", "PROCEDURE"), "runtime=morsel")

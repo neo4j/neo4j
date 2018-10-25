@@ -22,33 +22,40 @@
  */
 package org.neo4j.internal.cypher.acceptance.comparisonsupport
 
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_1
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_4
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_5
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class TestConfigurationTest extends CypherFunSuite {
 
   test("should parse empty config") {
-    TestConfiguration("") should be(Configs.Default)
+    TestConfiguration("") should be(Configs.Empty)
+    TestConfiguration(
+      """
+        |
+      """.stripMargin) should be(Configs.Empty)
   }
 
   test("should parse just version") {
-    TestConfiguration("3.5") should be(TestConfiguration(Versions.V3_5, Planners.Default, Runtimes.Default))
-    TestConfiguration("3.4") should be(TestConfiguration(Versions.V3_4, Planners.Default, Runtimes.Default))
+    TestConfiguration("3.5") should be(TestConfiguration(Versions.V3_5, Planners.all, Runtimes.all))
+    TestConfiguration("3.4") should be(TestConfiguration(Versions.V3_4, Planners.all, Runtimes.all))
   }
 
   test("should parse just planner") {
-    TestConfiguration("planner=rule") should be(TestConfiguration(Versions.Default, Planners.Rule, Runtimes.Default))
-    TestConfiguration("planner=cost") should be(TestConfiguration(Versions.Default, Planners.Cost, Runtimes.Default))
+    TestConfiguration("planner=rule") should be(TestConfiguration(Versions.all, Planners.Rule, Runtimes.all))
+    TestConfiguration("planner=cost") should be(TestConfiguration(Versions.all, Planners.Cost, Runtimes.all))
   }
 
   test("should parse just runtime") {
-    TestConfiguration("runtime=interpreted") should be(TestConfiguration(Versions.Default, Planners.Default, Runtimes.Interpreted))
-    TestConfiguration("runtime=slotted") should be(TestConfiguration(Versions.Default, Planners.Default, Runtimes.Slotted))
-    TestConfiguration("runtime=slotted expressionEngine=COMPILED") should be(TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions)))
+    TestConfiguration("runtime=interpreted") should be(TestConfiguration(Versions.all, Planners.all, Runtimes.Interpreted))
+    TestConfiguration("runtime=slotted") should be(TestConfiguration(Versions.all, Planners.all, Runtimes.Slotted))
+    TestConfiguration("runtime=slotted expressionEngine=COMPILED") should be(TestConfiguration(Versions.all, Planners.all, Runtimes(Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions)))
   }
 
   test("should parse version and planner") {
-    TestConfiguration("3.5 planner=cost") should be(TestConfiguration(Versions.V3_5, Planners.Cost, Runtimes.Default))
-    TestConfiguration("3.1 planner=rule") should be(TestConfiguration(Versions.V3_1, Planners.Rule, Runtimes.Default))
+    TestConfiguration("3.5 planner=cost") should be(TestConfiguration(Versions.V3_5, Planners.Cost, Runtimes.all))
+    TestConfiguration("3.1 planner=rule") should be(TestConfiguration(Versions.V3_1, Planners.Rule, Runtimes.all))
   }
 
   test("should parse version and planner and runtime") {
@@ -60,5 +67,16 @@ class TestConfigurationTest extends CypherFunSuite {
     TestConfiguration(
       """3.5 planner=cost runtime=compiled
         |3.1 planner=rule runtime=interpreted""".stripMargin) should be(TestConfiguration(Versions.V3_5, Planners.Cost, Runtimes.CompiledBytecode) + TestConfiguration(Versions.V3_1, Planners.Rule, Runtimes.Interpreted))
+    TestConfiguration(
+      """2.3 planner=rule
+        |3.1
+        |3.4
+        |3.5
+      """.stripMargin
+    ) should be(
+      TestConfiguration(Versions(V3_1, V3_4, V3_5),
+        Planners.all,
+        Runtimes.all
+      ) + Configs.Rule2_3)
   }
 }

@@ -36,28 +36,22 @@ import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_5
 
 object Configs {
 
-  // Default
-  def Default: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default)
-
   // Configurations with runtimes
-  def Compiled: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(CompiledSource, CompiledBytecode))
+  def Compiled: TestConfiguration = TestConfiguration(V3_4 -> V3_5, Planners.all, Runtimes(CompiledSource, CompiledBytecode))
 
-  def Morsel: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(Runtimes.Morsel))
+  def Morsel: TestConfiguration = TestConfiguration(V3_4 -> V3_5, Planners.all, Runtimes(Runtimes.Morsel))
 
-  def CommunityInterpreted: TestConfiguration =
+  def InterpretedRuntime: TestConfiguration =
     TestConfiguration(Versions.all, Planners.all, Runtimes(Interpreted))
 
-  def SlottedInterpreted: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(Slotted, SlottedWithCompiledExpressions))
+  def SlottedRuntime: TestConfiguration = TestConfiguration(V3_4 -> V3_5, Planners.all, Runtimes(Slotted, SlottedWithCompiledExpressions))
 
-  def InterpretedAndSlotted: TestConfiguration = CommunityInterpreted + SlottedInterpreted
+  def InterpretedAndSlotted: TestConfiguration = InterpretedRuntime + SlottedRuntime
 
   // Configurations for planners
   def RulePlanner: TestConfiguration = TestConfiguration(Versions.all, Rule, Runtimes.all)
 
   def CostPlanner: TestConfiguration = TestConfiguration(Versions.all, Cost, Runtimes.all)
-
-  // TODO is this needed?
-  def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Interpreted)
 
   // Configurations for versions + planners
   def Cost2_3: TestConfiguration = TestConfiguration(V2_3, Cost, Runtimes.all)
@@ -92,7 +86,7 @@ object Configs {
   /**
     * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
     */
-  def UpdateConf: TestConfiguration = InterpretedAndSlotted + Default - Cost2_3
+  def UpdateConf: TestConfiguration = InterpretedAndSlotted - Cost2_3
 
   /**
     * These are all configurations that will be executed even if not explicitly expected to succeed or fail.

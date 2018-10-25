@@ -44,12 +44,9 @@ case class TestScenario(version: Version, planner: Planner, runtime: Runtime) ex
   override def toString: String = name
 
   def name: String = {
-    val versionName = if (version == Versions.Default) "<default version>" else version.name
-    val plannerName = if (planner == Planners.Default) "<default planner>" else planner.preparserOption
-    val runtimeName = runtime match {
-      case Runtimes.Default => "<default runtime>"
-      case _ => runtime.preparserOption
-    }
+    val versionName = version.name
+    val plannerName = planner.preparserOption
+    val runtimeName = runtime.preparserOption
     s"$versionName $plannerName $runtimeName"
   }
 
@@ -100,7 +97,7 @@ case class TestScenario(version: Version, planner: Planner, runtime: Runtime) ex
 
     // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
     // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
-    val versionsWithUnreportedProcedureUsage = (V2_3 -> V3_1) + Versions.Default
+    val versionsWithUnreportedProcedureUsage = V2_3 -> V3_1
     val (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) =
       if (versionsWithUnreportedProcedureUsage.versions.contains(version))
         (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"), reportedPlannerVersion.getOrElse("NONE"))

@@ -50,14 +50,18 @@ object TestConfiguration {
   }
 
   def apply(description:String): TestConfiguration = {
-    val configs = description.split(System.lineSeparator())
+    val configs = description.split(System.lineSeparator()).map(_.trim)
     configs.map { stringDescription =>
-      val args = stringDescription.split(" ")
-      val versions = Versions.definedBy(args)
-      val planners = Planners.definedBy(args)
-      val runtimes = Runtimes.definedBy(args)
-      TestConfiguration(versions, planners, runtimes)
-    }.reduceOption(_ + _).getOrElse(Configs.Default)
+      if(stringDescription.isEmpty) {
+        empty
+      } else {
+        val args = stringDescription.split(" ")
+        val versions = Versions.definedBy(args)
+        val planners = Planners.definedBy(args)
+        val runtimes = Runtimes.definedBy(args)
+        TestConfiguration(versions, planners, runtimes)
+      }
+    }.reduceOption(_ + _).getOrElse(Configs.Empty)
   }
 
   def empty: TestConfiguration = {

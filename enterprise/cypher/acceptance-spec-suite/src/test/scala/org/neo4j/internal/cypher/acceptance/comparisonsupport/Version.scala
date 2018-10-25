@@ -38,7 +38,10 @@ object Versions {
   val latest: Version = orderedVersions.last
   val all = Versions(orderedVersions: _*)
 
-  def definedBy(preParserArgs: Array[String]): Versions = Versions((all.versions :+ Default).filter(_.isDefinedBy(preParserArgs)):_*)
+  def definedBy(preParserArgs: Array[String]): Versions = {
+    val versions = all.versions.filter(_.isDefinedBy(preParserArgs))
+    if (versions.nonEmpty) Versions(versions: _*) else all
+  }
 
   object V2_3 extends Version("2.3")
 
@@ -49,13 +52,10 @@ object Versions {
     override val acceptedRuntimeVersionNames = Set("3.5")
   }
 
-  object V3_5 extends Version("3.5")
-
-  object Default extends Version("") {
-    override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.4", "3.5")
-    override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.4", "3.5")
-
-    override def isDefinedBy(preParserArgs: Array[String]): Boolean = preParserArgs.toSet.intersect(acceptedRuntimeVersionNames).isEmpty
+  object V3_5 extends Version("3.5") {
+    // 3.5 may fall back to 3.1 deprecated features
+    override val acceptedRuntimeVersionNames = Set("3.5", "3.1")
+    override val acceptedPlannerVersionNames = Set("3.5", "3.1")
   }
 
 }

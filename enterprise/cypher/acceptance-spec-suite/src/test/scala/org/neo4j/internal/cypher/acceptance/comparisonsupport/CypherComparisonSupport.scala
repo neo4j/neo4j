@@ -176,6 +176,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             executeBefore: () => Unit = () => {},
                             executeExpectedFailures: Boolean = true,
                             params: Map[String, Any] = Map.empty): RewindableExecutionResult = {
+    // TODO this is weird
     // Never consider Morsel even if test requests it
     val expectSucceedEffective = expectSucceed - Configs.Morsel
 
@@ -209,6 +210,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
       // Assumption: baseOption.get is safe because the baseScenario is expected to succeed
       val baseResult = baseOption.get._2
 
+      // TODO we do not run this for the base scenario
       positiveResults.foreach {
         case (scenario, result) =>
           planComparisonStrategy.compare(expectSucceedEffective, scenario, result)
@@ -231,7 +233,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
         fail("At least one scenario must be expected to succeed to be able to compare plans")
       }
 
-      val baseScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+      val baseScenario = TestScenario(Versions.V3_5, Planners.Cost, Runtimes.Interpreted)
       executeBefore()
       val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
       baseResult
@@ -244,7 +246,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     if (scenariosToChooseFrom.scenarios.isEmpty) {
       fail("At least one scenario must be expected to succeed, to be comparable with plan and result")
     }
-    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
+    val preferredScenario = TestScenario(Versions.V3_5, Planners.Cost, Runtimes.Interpreted)
     if (scenariosToChooseFrom.containsScenario(preferredScenario))
       preferredScenario
     else
@@ -258,7 +260,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               params: Map[String, Any],
                               resultAssertionInTx: Option[RewindableExecutionResult => Unit],
                               executeExpectedFailures: Boolean,
-                              rollback: Boolean = true) = {
+                              rollback: Boolean = true): Option[(TestScenario, RewindableExecutionResult)] = {
 
     def execute() = {
       executeBefore()
@@ -276,23 +278,22 @@ trait CypherComparisonSupport extends CypherTestSupport {
           // No need to do anything: will be handled by match below
         }
       }
-      tryRes
-    }
-
-    val tryResult = if (rollback) graph.rollback(execute()) else graph.inTx(execute())
-
-    if (expectedToSucceed) {
-      tryResult match {
-        case Success(thisResult) =>
-          scenario.checkResultForSuccess(query, thisResult)
-          Some(scenario -> thisResult)
-        case Failure(e) =>
-          fail(s"Expected to succeed in ${scenario.name} but got exception", e)
+      if (expectedToSucceed) {
+        tryRes match {
+          case Success(thisResult) =>
+            scenario.checkResultForSuccess(query, thisResult)
+            Some(scenario -> thisResult)
+          case Failure(e) =>
+            fail(s"Expected to succeed in ${scenario.name} but got exception", e)
+        }
+      } else {
+        scenario.checkResultForFailure(query, tryRes)
+        None
       }
-    } else {
-      scenario.checkResultForFailure(query, tryResult)
-      None
     }
+
+    // TODO test the case where the default (base?) scenario is expected to fail
+    if (rollback) graph.rollback(execute()) else graph.inTx(execute())
   }
 
   @deprecated("Rewrite to use executeWith instead")
