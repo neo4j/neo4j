@@ -20,42 +20,25 @@
  * More information is also available at:
  * https://neo4j.com/licensing/
  */
-package org.neo4j.internal.cypher.acceptance
+package org.neo4j.internal.cypher.acceptance.comparisonsupport
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{Planner => IPDPlanner, PlannerVersion => IPDPlannerVersion, Runtime => IPDRuntime, RuntimeVersion => IPDRuntimeVersion}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Planners.Cost
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Planners.Rule
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.CompiledBytecode
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.CompiledSource
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.Interpreted
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.Slotted
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Runtimes.SlottedWithCompiledExpressions
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V2_3
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_4
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_5
-import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
+import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
+import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.v9_0.util.Eagerly
 import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
 import org.scalatest.Assertions
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 trait CypherComparisonSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
@@ -248,7 +231,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
         fail("At least one scenario must be expected to succeed to be able to compare plans")
       }
 
-      val baseScenario = TestScenario(Versions.Default, Planners.Default, Interpreted)
+      val baseScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
       executeBefore()
       val baseResult = innerExecute(s"CYPHER ${baseScenario.preparserOptions} $query", params)
       baseResult
@@ -261,7 +244,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
     if (scenariosToChooseFrom.scenarios.isEmpty) {
       fail("At least one scenario must be expected to succeed, to be comparable with plan and result")
     }
-    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Interpreted)
+    val preferredScenario = TestScenario(Versions.Default, Planners.Default, Runtimes.Interpreted)
     if (scenariosToChooseFrom.containsScenario(preferredScenario))
       preferredScenario
     else
@@ -395,102 +378,6 @@ object CypherComparisonSupport {
 
   val newPlannerMonitor = NewPlannerMonitor
 
-  case class Versions(versions: Version*) {
-    def +(other: Version): Versions = {
-      val newVersions = if (!versions.contains(other)) versions :+ other else versions
-      Versions(newVersions: _*)
-    }
-  }
-
-  object Versions {
-    val orderedVersions: Seq[Version] = Seq(V2_3, V3_1, V3_4, V3_5)
-
-    implicit def versionToVersions(version: Version): Versions = Versions(version)
-
-    val oldest: Version = orderedVersions.head
-    val latest: Version = orderedVersions.last
-    val all = Versions(orderedVersions: _*)
-
-    object V2_3 extends Version("2.3")
-
-    object V3_1 extends Version("3.1")
-
-    object V3_4 extends Version("3.4") {
-      // 3.4 has 3.5 runtime
-      override val acceptedRuntimeVersionNames = Set("3.5")
-    }
-
-    object V3_5 extends Version("3.5")
-
-    object Default extends Version("") {
-      override val acceptedRuntimeVersionNames = Set("2.3", "3.1", "3.4", "3.5")
-      override val acceptedPlannerVersionNames = Set("2.3", "3.1", "3.4", "3.5")
-    }
-
-  }
-
-  case class Version(name: String) {
-    // inclusive
-    def ->(other: Version): Versions = {
-      val fromIndex = Versions.orderedVersions.indexOf(this)
-      val toIndex = Versions.orderedVersions.indexOf(other) + 1
-      Versions(Versions.orderedVersions.slice(fromIndex, toIndex): _*)
-    }
-
-    val acceptedRuntimeVersionNames: Set[String] = Set(name)
-    val acceptedPlannerVersionNames: Set[String] = Set(name)
-
-  }
-
-
-  case class Planners(planners: Planner*)
-
-  object Planners {
-
-    val all = Planners(Cost, Rule, Default)
-
-    implicit def plannerToPlanners(planner: Planner): Planners = Planners(planner)
-
-    object Cost extends Planner(Set("COST", "IDP", "PROCEDURE"), "planner=cost")
-
-    object Rule extends Planner(Set("RULE", "PROCEDURE"), "planner=rule")
-
-    object Default extends Planner(Set("COST", "IDP", "RULE", "PROCEDURE"), "")
-
-  }
-
-  case class Planner(acceptedPlannerNames: Set[String], preparserOption: String)
-
-
-  case class Runtimes(runtimes: Runtime*)
-
-  object Runtimes {
-
-    // Default behaves different from specifying a specific runtime - thus it's included
-    val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted, Default)
-
-    implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
-
-    object CompiledSource extends Runtime(Set("COMPILED", "PROCEDURE"), "runtime=compiled debug=generate_java_source")
-
-    object CompiledBytecode extends Runtime(Set("COMPILED", "PROCEDURE"), "runtime=compiled")
-
-    object Slotted extends Runtime(Set("SLOTTED", "PROCEDURE"), "runtime=slotted")
-
-    object SlottedWithCompiledExpressions extends Runtime(Set("SLOTTED", "PROCEDURE"), "runtime=slotted expressionEngine=COMPILED")
-
-    object Interpreted extends Runtime(Set("INTERPRETED", "PROCEDURE"), "runtime=interpreted")
-
-    object Default extends Runtime(Set("COMPILED", "SLOTTED", "INTERPRETED", "PROCEDURE"), "")
-
-    // Not included in `all`
-    object Morsel extends Runtime(Set("MORSEL", "PROCEDURE"), "runtime=morsel")
-
-  }
-
-  case class Runtime(acceptedRuntimeNames: Set[String], preparserOption: String)
-
-
   sealed trait PlanComparisonStrategy extends Assertions {
     def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit
   }
@@ -534,198 +421,6 @@ object CypherComparisonSupport {
         }
       }
     }
-  }
-
-  /**
-    * A single scenario, which can be composed to configurations.
-    */
-  case class TestScenario(version: Version, planner: Planner, runtime: Runtime) extends Assertions {
-
-    def name: String = {
-      val versionName = if (version == Versions.Default) "<default version>" else version.name
-      val plannerName = if (planner == Planners.Default) "<default planner>" else planner.preparserOption
-      val runtimeName = runtime match {
-        case Runtimes.Default => "<default runtime>"
-        case _ => runtime.preparserOption
-      }
-      s"$versionName $plannerName $runtimeName"
-    }
-
-    def preparserOptions: String = List(version.name, planner.preparserOption, runtime.preparserOption).mkString(" ")
-
-    def checkResultForSuccess(query: String, internalExecutionResult: RewindableExecutionResult): Unit = {
-      val ScenarioConfig(reportedRuntime, reportedPlanner, reportedVersion, reportedPlannerVersion) = extractConfiguration(internalExecutionResult)
-      if (!runtime.acceptedRuntimeNames.contains(reportedRuntime))
-        fail(s"did not use ${runtime.acceptedRuntimeNames} runtime - instead $reportedRuntime was used. Scenario $name")
-      if (!planner.acceptedPlannerNames.contains(reportedPlanner))
-        fail(s"did not use ${planner.acceptedPlannerNames} planner - instead $reportedPlanner was used. Scenario $name")
-      if (!version.acceptedRuntimeVersionNames.contains(reportedVersion))
-        fail(s"did not use ${version.acceptedRuntimeVersionNames} runtime version - instead $reportedVersion was used. Scenario $name")
-      if (!version.acceptedPlannerVersionNames.contains(reportedPlannerVersion))
-        fail(s"did not use ${version.acceptedPlannerVersionNames} planner version - instead $reportedPlannerVersion was used. Scenario $name")
-    }
-
-    def checkResultForFailure(query: String, internalExecutionResult: Try[RewindableExecutionResult]): Unit = {
-      internalExecutionResult match {
-        case Failure(_) => // not unexpected
-        case Success(result) =>
-          val ScenarioConfig(reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) = extractConfiguration(result)
-
-          if (runtime.acceptedRuntimeNames.contains(reportedRuntimeName)
-            && planner.acceptedPlannerNames.contains(reportedPlannerName)
-            && version.acceptedRuntimeVersionNames.contains(reportedVersionName)) {
-            fail(s"Unexpectedly succeeded using $name for query $query, with $reportedVersionName $reportedRuntimeName runtime and $reportedPlannerVersionName $reportedPlannerName planner.")
-          }
-      }
-    }
-
-    private def extractConfiguration(result: RewindableExecutionResult): ScenarioConfig =
-      extractConfiguration(result.executionPlanDescription().arguments)
-
-    private def extractConfiguration(arguments: Seq[Argument]): ScenarioConfig = {
-      val reportedRuntime = arguments.collectFirst {
-        case IPDRuntime(reported) => reported
-      }
-      val reportedPlanner = arguments.collectFirst {
-        case IPDPlanner(reported) => reported
-      }
-      val reportedVersion = arguments.collectFirst {
-        case IPDRuntimeVersion(reported) => reported
-      }
-      val reportedPlannerVersion = arguments.collectFirst {
-        case IPDPlannerVersion(reported) => reported
-      }
-
-      // Neo4j versions 3.2 and earlier do not accurately report when they used procedure runtime/planner,
-      // in executionPlanDescription. In those versions, a missing runtime/planner is assumed to mean procedure
-      val versionsWithUnreportedProcedureUsage = (V2_3 -> V3_1) + Versions.Default
-      val (reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName) =
-        if (versionsWithUnreportedProcedureUsage.versions.contains(version))
-          (reportedRuntime.getOrElse("PROCEDURE"), reportedPlanner.getOrElse("PROCEDURE"), reportedVersion.getOrElse("NONE"), reportedPlannerVersion.getOrElse("NONE"))
-        else
-          (reportedRuntime.get, reportedPlanner.get, reportedVersion.get, reportedPlannerVersion.get)
-      ScenarioConfig(reportedRuntimeName, reportedPlannerName, reportedVersionName, reportedPlannerVersionName)
-    }
-
-    def +(other: TestConfiguration): TestConfiguration = other + this
-  }
-
-  case class ScenarioConfig(runtime: String, planner: String, runtimeVersion: String, plannerVersion: String)
-
-  /**
-    * A set of scenarios.
-    */
-  case class TestConfiguration(scenarios: Set[TestScenario]) {
-
-    def +(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios ++ other.scenarios)
-
-    def -(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios -- other.scenarios)
-
-    def containsScenario(scenario: TestScenario): Boolean = this.scenarios.contains(scenario)
-  }
-
-  object TestConfiguration {
-    def apply(scenarios: TestScenario*): TestConfiguration = {
-      TestConfiguration(scenarios.toSet)
-    }
-
-    def apply(versions: Versions, planners: Planners, runtimes: Runtimes): TestConfiguration = {
-      val scenarios = for (v <- versions.versions;
-                           p <- planners.planners;
-                           r <- runtimes.runtimes)
-        yield TestScenario(v, p, r)
-      TestConfiguration(scenarios.toSet)
-    }
-
-    def empty: TestConfiguration = {
-      TestConfiguration(Nil: _*)
-    }
-
-    implicit def scenarioToTestConfiguration(scenario: TestScenario): TestConfiguration = TestConfiguration(scenario)
-  }
-
-  object Configs {
-
-    def Default: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes.Default)
-
-    def Compiled: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(CompiledSource, CompiledBytecode))
-
-    def Morsel: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(Runtimes.Morsel))
-
-    def CommunityInterpreted: TestConfiguration = TestConfiguration(Versions.all, Planners.all, Runtimes(Interpreted))
-
-    def SlottedInterpreted: TestConfiguration = TestConfiguration(V3_4 -> V3_5 + Versions.Default, Planners.all, Runtimes(Slotted, SlottedWithCompiledExpressions))
-
-    def InterpretedAndSlotted: TestConfiguration = CommunityInterpreted + SlottedInterpreted
-
-    // TODO is this needed?
-    def DefaultInterpreted: TestConfiguration = TestScenario(Versions.Default, Planners.Default, Interpreted)
-
-    def Cost2_3: TestConfiguration = TestConfiguration(V2_3, Cost, Runtimes.all)
-
-    def Cost3_1: TestConfiguration = TestConfiguration(V3_1, Cost, Runtimes.all)
-
-    def Cost3_4: TestConfiguration = TestConfiguration(V3_4, Cost, Runtimes.all)
-
-    def Rule2_3: TestConfiguration = TestConfiguration(V2_3, Rule, Runtimes.all)
-
-    def Rule3_1: TestConfiguration = TestConfiguration(V3_1, Rule, Runtimes.all)
-
-    // TODO that does not exist
-    def CurrentRulePlanner: TestConfiguration = TestScenario(Versions.latest, Rule, Runtimes.Default)
-
-    def Version2_3: TestConfiguration = TestConfiguration(V2_3, Planners.all, Runtimes.all)
-
-    def Version3_1: TestConfiguration = TestConfiguration(V3_1, Planners.all, Runtimes.all)
-
-    def Version3_4: TestConfiguration = TestConfiguration(V3_4, Planners.all, Runtimes.all)
-
-    def Version3_5: TestConfiguration = TestConfiguration(V3_5, Planners.all, Runtimes.all)
-
-    def AllRulePlanners: TestConfiguration = TestConfiguration(Versions.all, Rule, Runtimes.all)
-
-    // TODO do we need these?
-    def BackwardsCompatibility: TestConfiguration = TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes.Default) +
-      TestScenario(V3_4, Cost, Runtimes.Default)
-
-    /**
-      * Handy configs for things not supported in older versions
-      */
-    def Before3_3AndRule: TestConfiguration = Cost2_3 + Cost3_1 + AllRulePlanners
-
-    def OldAndRule: TestConfiguration = BackwardsCompatibility + AllRulePlanners
-
-    /**
-      * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
-      */
-    def UpdateConf: TestConfiguration = InterpretedAndSlotted + Default - Cost2_3
-
-    /**
-      * These are all configurations that will be executed even if not explicitly expected to succeed or fail.
-      * Even if not explicitly requested, they are executed to check if they unexpectedly succeed to make sure that
-      * test coverage is kept up-to-date with new features.
-      */
-    def All: TestConfiguration =
-      TestConfiguration(Versions.all, Planners.all, Runtimes.all) -
-    // No rule planner after 3.1
-        TestConfiguration(V3_4 -> V3_5, Rule, Runtimes.all) -
-    // No slotted runtime before 3.4
-        TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes(Slotted, SlottedWithCompiledExpressions)) -
-    // No slotted runtime with compiled expressions before 3.5
-        TestConfiguration(V3_4, Planners.all, Runtimes(SlottedWithCompiledExpressions)) -
-    // No compiled runtime before 3.4
-    TestConfiguration(V2_3 -> V3_1, Planners.all, Runtimes(CompiledSource, CompiledBytecode))
-
-    /**
-      * These experimental configurations will only be executed if you explicitly specify them in the test expectation.
-      * I.e. there will be no check to see if they unexpectedly succeed on tests where they were not explicitly requested.
-      */
-    def Experimental: TestConfiguration =
-      //TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
-      TestConfiguration.empty
-
-    def Empty: TestConfiguration = TestConfiguration.empty
-
   }
 
   object NotExecutedException extends Exception
