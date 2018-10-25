@@ -187,9 +187,15 @@ public final class MapValue extends VirtualValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "Map";
+    }
+
+    @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "Map{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
         String sep = "";
         for ( Map.Entry<String,AnyValue> entry : map.entrySet() )
         {

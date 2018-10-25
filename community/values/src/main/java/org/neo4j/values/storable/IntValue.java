@@ -64,4 +64,10 @@ public final class IntValue extends IntegralValue
     {
         return format( "Int(%d)", value );
     }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Integer";
+    }
 }

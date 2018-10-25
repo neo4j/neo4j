@@ -54,4 +54,6 @@ public abstract class AnyValue
     }
 
     public abstract Boolean ternaryEquals( AnyValue other );
+
+    public abstract String getTypeName();
 }

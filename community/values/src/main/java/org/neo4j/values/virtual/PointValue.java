@@ -113,8 +113,14 @@ public abstract class PointValue extends VirtualValue
     @Override
     public String toString()
     {
-        return format( "Point{ %s, %.3e, %.3e}",
-                getCoordinateReferenceSystem().name, xCoordinate, yCoordinate );
+        return format( "%s{ %s, %.3e, %.3e}",
+                getTypeName(), getCoordinateReferenceSystem().name, xCoordinate, yCoordinate );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Relationship";
     }
 
     static class CartesianPointValue extends PointValue

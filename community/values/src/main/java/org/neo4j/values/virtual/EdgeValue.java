@@ -45,6 +45,12 @@ public abstract class EdgeValue extends VirtualEdgeValue
         return format( "-[%d]-", id );
     }
 
+    @Override
+    public String getTypeName()
+    {
+        return "Relationship";
+    }
+
     public abstract NodeValue startNode();
 
     public abstract NodeValue endNode();

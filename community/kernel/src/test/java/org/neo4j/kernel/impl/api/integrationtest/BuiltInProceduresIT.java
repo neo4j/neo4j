@@ -163,11 +163,18 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                                                        "description :: STRING?, attributes :: MAP?)",
                         "Query JMX management data by domain and name." +
                         " For instance, \"org.neo4j:*\""} ),
-                equalTo( new Object[]{"db.createLabel", "db.createLabel(newLabel :: STRING?) :: VOID", "Create a label"
-                } ),
+                equalTo( new Object[]{"db.createLabel", "db.createLabel(newLabel :: STRING?) :: VOID",
+                        "Create a label"} ),
                 equalTo( new Object[]{"db.createProperty", "db.createProperty(newProperty :: STRING?) :: VOID",
-                        "Create a Property"
-                } ),
+                        "Create a Property"} ),
+                equalTo( new Object[]{"db.schema.nodeTypeProperties",
+                        "db.schema.nodeTypeProperties() :: (nodeType :: STRING?, nodeLabels :: LIST? OF STRING?," +
+                                " propertyName :: STRING?, propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the nodes in tabular form."} ),
+                equalTo( new Object[]{"db.schema.relTypeProperties",
+                        "db.schema.relTypeProperties() :: (relType :: STRING?, propertyName :: STRING?," +
+                                " propertyTypes :: LIST? OF STRING?, mandatory :: BOOLEAN?)",
+                        "Show the derived property schema of the relationships in tabular form."} ),
                 equalTo( new Object[]{"db.createRelationshipType",
                         "db.createRelationshipType(newRelationshipType :: STRING?) :: VOID",
                         "Create a RelationshipType"

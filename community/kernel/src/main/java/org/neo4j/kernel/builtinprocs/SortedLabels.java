@@ -17,42 +17,54 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.values.virtual;
+package org.neo4j.kernel.builtinprocs;
 
-import org.neo4j.values.AnyValueWriter;
+import java.util.Arrays;
 
-import static java.lang.String.format;
-
-public class EdgeReference extends VirtualEdgeValue
+public class SortedLabels
 {
-    private final long id;
+    private int[] labels;
 
-    EdgeReference( long id )
+    private SortedLabels( int[] labels )
     {
-        this.id = id;
+        this.labels = labels;
+    }
+
+    public static SortedLabels from( int[] labels )
+    {
+        Arrays.sort( labels );
+        return new SortedLabels( labels );
+    }
+
+    private int[] all()
+    {
+        return labels;
     }
 
     @Override
-    public <E extends Exception> void writeTo( AnyValueWriter<E> writer ) throws E
+    public int hashCode()
     {
-        writer.writeEdgeReference( id );
+        return Arrays.hashCode( labels );
     }
 
     @Override
-    public String getTypeName()
+    public boolean equals( Object obj )
     {
-        return "RelationshipReference";
+        if ( obj instanceof SortedLabels )
+        {
+            int[] input = ((SortedLabels) obj).all();
+            return Arrays.equals( labels, input );
+        }
+        return false;
     }
 
-    @Override
-    public String toString()
+    public int numberOfLabels()
     {
-        return format( "-[%d]-", id );
+        return labels.length;
     }
 
-    @Override
-    public long id()
+    public Integer label( int offset )
     {
-        return id;
+        return (int) labels[offset];
     }
 }

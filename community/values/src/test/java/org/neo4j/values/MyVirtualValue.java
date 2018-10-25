@@ -51,6 +51,12 @@ public class MyVirtualValue extends VirtualValue
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "MyVirtualValue";
+    }
+
+    @Override
     public int computeHash()
     {
         return hashCode;

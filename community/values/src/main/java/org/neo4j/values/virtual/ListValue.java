@@ -59,9 +59,15 @@ public abstract class ListValue extends VirtualValue implements SequenceValue, I
     }
 
     @Override
+    public String getTypeName()
+    {
+        return "List";
+    }
+
+    @Override
     public String toString()
     {
-        StringBuilder sb = new StringBuilder( "List{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
         int i = 0;
         for ( ; i < size() - 1; i++ )
         {

@@ -80,6 +80,12 @@ public final class FloatValue extends FloatingPointValue
     @Override
     public String toString()
     {
-        return format( "Float(%e)", value );
+        return format( "%s(%e)", getTypeName(), value );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Float";
     }
 }

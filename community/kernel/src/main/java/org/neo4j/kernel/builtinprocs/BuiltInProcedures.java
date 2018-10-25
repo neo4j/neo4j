@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.StatementTokenNameLookup;
 import org.neo4j.kernel.api.TokenNameLookup;
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
@@ -225,6 +226,36 @@ public class BuiltInProcedures
     public Stream<SchemaProcedure.GraphResult> metaGraph() throws ProcedureException
     {
         return Stream.of( new SchemaProcedure( graphDatabaseAPI, tx ).buildSchemaGraph() );
+    }
+
+    @Procedure( name = "db.schema.nodeTypeProperties", mode = READ )
+    @Description( "Show the derived property schema of the nodes in tabular form." )
+    public Stream<NodePropertySchemaInfoResult> nodePropertySchema() throws ProcedureException
+    {
+        try
+        {
+            return new SchemaCalculator( tx ).calculateTabularResultStreamForNodes();
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // this should never happen
+            throw new ProcedureException( Status.General.UnknownError, e.getMessage() );
+        }
+    }
+
+    @Procedure( name = "db.schema.relTypeProperties", mode = READ )
+    @Description( "Show the derived property schema of the relationships in tabular form." )
+    public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema() throws ProcedureException
+    {
+        try
+        {
+            return new SchemaCalculator( tx ).calculateTabularResultStreamForRels();
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // this should never happen
+            throw new ProcedureException( Status.General.UnknownError, e.getMessage() );
+        }
     }
 
     @Description( "List all constraints in the database." )

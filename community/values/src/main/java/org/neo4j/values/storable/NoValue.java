@@ -153,6 +153,12 @@ final class NoValue extends Value
     @Override
     public String prettyPrint()
     {
+        return getTypeName();
+    }
+
+    @Override
+    public String getTypeName()
+    {
         return "NO_VALUE";
     }
 

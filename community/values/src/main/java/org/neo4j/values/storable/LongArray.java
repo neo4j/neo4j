@@ -155,7 +155,13 @@ public abstract class LongArray extends IntegralArray
         @Override
         public String toString()
         {
-            return format( "LongArray%s", Arrays.toString( value() ) );
+            return format( "%s%s", getTypeName(), Arrays.toString( value() ) );
+        }
+
+        @Override
+        public String getTypeName()
+        {
+            return "LongArray";
         }
     }
 }

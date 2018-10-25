@@ -80,6 +80,12 @@ public final class LongValue extends IntegralValue
     @Override
     public String toString()
     {
-        return format( "Long(%d)", value );
+        return format( "%s(%d)", getTypeName(), value );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Long";
     }
 }

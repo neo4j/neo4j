@@ -352,6 +352,12 @@ public final class ValueUtils
         }
 
         @Override
+        public String getTypeName()
+        {
+            return "JavaObjectAnyValue";
+        }
+
+        @Override
         protected int computeHash()
         {
             return object.hashCode();

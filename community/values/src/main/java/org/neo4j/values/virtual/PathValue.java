@@ -117,7 +117,7 @@ public abstract class PathValue extends VirtualValue
     {
         NodeValue[] nodes = nodes();
         EdgeValue[] relationships = edges();
-        StringBuilder sb = new StringBuilder( "Path{" );
+        StringBuilder sb = new StringBuilder( getTypeName() + "{" );
         int i = 0;
         for ( ; i < relationships.length; i++ )
         {
@@ -127,6 +127,12 @@ public abstract class PathValue extends VirtualValue
         sb.append( nodes[i] );
         sb.append( '}' );
         return sb.toString();
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "Path";
     }
 
     public ListValue asList()

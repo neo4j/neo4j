@@ -66,7 +66,13 @@ public abstract class StringValue extends TextValue
     @Override
     public String toString()
     {
-        return format( "String(\"%s\")", value() );
+        return format( "%s(\"%s\")", getTypeName(), value() );
+    }
+
+    @Override
+    public String getTypeName()
+    {
+        return "String";
     }
 
     @Override
