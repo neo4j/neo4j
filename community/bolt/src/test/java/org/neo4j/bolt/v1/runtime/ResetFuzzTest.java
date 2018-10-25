@@ -94,14 +94,15 @@ public class ResetFuzzTest
     private final AtomicLong liveTransactions = new AtomicLong();
     private final Monitors monitors = new Monitors();
     private final JobScheduler scheduler = life.add( createScheduler() );
+    private final Config config = createConfig();
     private final BoltSchedulerProvider boltSchedulerProvider = life.add(
-            new ExecutorBoltSchedulerProvider( createConfig(), new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
+            new ExecutorBoltSchedulerProvider( config, new CachedThreadPoolExecutorFactory( NullLog.getInstance() ), scheduler,
                     NullLogService.getInstance() ) );
     private final Clock clock = Clock.systemUTC();
     private final BoltStateMachine machine = new BoltStateMachineV1( new FuzzStubSPI(), BoltTestUtil.newTestBoltChannel(), clock );
     private final BoltConnectionFactory connectionFactory =
             new DefaultBoltConnectionFactory( boltSchedulerProvider, TransportThrottleGroup.NO_THROTTLE,
-                    NullLogService.getInstance(), clock, null, monitors );
+                    config, NullLogService.getInstance(), clock, monitors );
     private BoltChannel boltChannel;
 
     private final List<List<RequestMessage>> sequences = asList(

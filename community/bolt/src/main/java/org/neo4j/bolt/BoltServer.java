@@ -26,7 +26,6 @@ import java.time.Clock;
 import java.util.Map;
 
 import org.neo4j.bolt.runtime.BoltConnectionFactory;
-import org.neo4j.bolt.runtime.BoltConnectionReadLimiter;
 import org.neo4j.bolt.runtime.BoltSchedulerProvider;
 import org.neo4j.bolt.runtime.BoltStateMachineFactory;
 import org.neo4j.bolt.runtime.BoltStateMachineFactoryImpl;
@@ -139,10 +138,7 @@ public class BoltServer extends LifecycleAdapter
     private BoltConnectionFactory createConnectionFactory( Config config, BoltSchedulerProvider schedulerProvider,
             TransportThrottleGroup throttleGroup, LogService logService, Clock clock )
     {
-        return new DefaultBoltConnectionFactory( schedulerProvider, throttleGroup, logService, clock,
-                new BoltConnectionReadLimiter( logService.getInternalLog( BoltConnectionReadLimiter.class ),
-                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_low_water_mark ),
-                        config.get( GraphDatabaseSettings.bolt_inbound_message_throttle_high_water_mark ) ), monitors );
+        return new DefaultBoltConnectionFactory( schedulerProvider, throttleGroup, config, logService, clock, monitors );
     }
 
     private Map<BoltConnector,ProtocolInitializer> createConnectors( BoltProtocolFactory boltProtocolFactory,

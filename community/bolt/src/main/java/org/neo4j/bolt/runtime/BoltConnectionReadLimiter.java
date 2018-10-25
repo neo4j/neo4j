@@ -22,20 +22,25 @@ package org.neo4j.bolt.runtime;
 import io.netty.channel.Channel;
 
 import java.util.Collection;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.bolt.v1.runtime.Job;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 
+/**
+ * Queue monitor that changes {@link Channel} auto-read setting based on the job queue size.
+ * Methods {@link #enqueued(BoltConnection, Job)} and {@link #drained(BoltConnection, Collection)} are synchronized to make sure
+ * queue size and channel auto-read are modified together as an atomic operation.
+ */
 public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
 {
-    private final ConcurrentHashMap<String, AtomicInteger> counters = new ConcurrentHashMap<>();
     private final Log log;
     private final int lowWatermark;
     private final int highWatermark;
 
-    public BoltConnectionReadLimiter( Log log, int lowWatermark, int highWatermark )
+    private int queueSize;
+
+    public BoltConnectionReadLimiter( LogService logService, int lowWatermark, int highWatermark )
     {
         if ( highWatermark <= 0 )
         {
@@ -47,7 +52,7 @@ public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
             throw new IllegalArgumentException( "invalid lowWatermark value" );
         }
 
-        this.log = log;
+        this.log = logService.getInternalLog( getClass() );
         this.lowWatermark = lowWatermark;
         this.highWatermark = highWatermark;
     }
@@ -63,37 +68,39 @@ public class BoltConnectionReadLimiter implements BoltConnectionQueueMonitor
     }
 
     @Override
-    public void enqueued( BoltConnection to, Job job )
+    public synchronized void enqueued( BoltConnection to, Job job )
     {
-        checkLimitsOnEnqueue( to, counters.computeIfAbsent( to.id(), k -> new AtomicInteger( 0 ) ).incrementAndGet() );
+        queueSize += 1;
+        checkLimitsOnEnqueue( to );
     }
 
     @Override
-    public void drained( BoltConnection from, Collection<Job> batch )
+    public synchronized void drained( BoltConnection from, Collection<Job> batch )
     {
-        checkLimitsOnDequeue( from, counters.computeIfAbsent( from.id(), k -> new AtomicInteger( 0 ) ).addAndGet( -batch.size() ) );
+        queueSize -= batch.size();
+        checkLimitsOnDequeue( from );
     }
 
-    private void checkLimitsOnEnqueue( BoltConnection connection, int currentSize )
+    private void checkLimitsOnEnqueue( BoltConnection connection )
     {
         Channel channel = connection.channel();
 
-        if ( currentSize > highWatermark && channel.config().isAutoRead() )
+        if ( queueSize > highWatermark && channel.config().isAutoRead() )
         {
             if ( log != null )
             {
-                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.remoteAddress(), currentSize );
+                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.remoteAddress(), queueSize );
             }
 
             channel.config().setAutoRead( false );
         }
     }
 
-    private void checkLimitsOnDequeue( BoltConnection connection, int currentSize )
+    private void checkLimitsOnDequeue( BoltConnection connection )
     {
         Channel channel = connection.channel();
 
-        if ( currentSize <= lowWatermark && !channel.config().isAutoRead() )
+        if ( queueSize <= lowWatermark && !channel.config().isAutoRead() )
         {
             if ( log != null )
             {
