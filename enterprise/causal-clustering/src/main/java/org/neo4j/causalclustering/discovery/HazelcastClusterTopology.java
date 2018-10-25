@@ -80,11 +80,11 @@ public final class HazelcastClusterTopology
     static final String DB_NAME_LEADER_TERM_PREFIX = "leader_term_for_database_name_";
 
     // the attributes used for reconstructing read replica information
-    private static Set<String> simpleRRAttrMapKeys = Stream.of( READ_REPLICA_BOLT_ADDRESS_MAP, READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP,
+    static final Set<String> RR_ATTR_KEYS = Stream.of( READ_REPLICA_BOLT_ADDRESS_MAP, READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP,
             READ_REPLICA_MEMBER_ID_MAP, READ_REPLICAS_DB_NAME_MAP ).collect( Collectors.toSet() );
 
     // the attributes used for reconstructing core member information
-    private static Set<String> coreAttrKeys = Stream.of( MEMBER_UUID, RAFT_SERVER, TRANSACTION_SERVER, CLIENT_CONNECTOR_ADDRESSES,
+    static final Set<String> CORE_ATTR_KEYS = Stream.of( MEMBER_UUID, RAFT_SERVER, TRANSACTION_SERVER, CLIENT_CONNECTOR_ADDRESSES,
             MEMBER_DB_NAME ).collect( Collectors.toSet() );
 
     private HazelcastClusterTopology()
@@ -201,7 +201,7 @@ public final class HazelcastClusterTopology
         if ( !missingAttrKeys.isEmpty() )
         {
             // We might well not have any read replicas, in which case missing maps is not an error, but we *can't* have some maps and not others
-            boolean missingAllKeys = missingAttrKeys.containsAll( simpleRRAttrMapKeys ) && missingAttrKeys.contains( SERVER_GROUPS_MULTIMAP );
+            boolean missingAllKeys = missingAttrKeys.containsAll( RR_ATTR_KEYS ) && missingAttrKeys.contains( SERVER_GROUPS_MULTIMAP );
             if ( !missingAllKeys )
             {
                 String missingAttrs = String.join( ", ", missingAttrKeys );
@@ -228,7 +228,7 @@ public final class HazelcastClusterTopology
         Set<String> missingAttrKeys = new HashSet<>();
         Map<String,IMap<String,String>> validatedSimpleAttrMaps = new HashMap<>();
 
-        for ( String attrMapKey : simpleRRAttrMapKeys )
+        for ( String attrMapKey : RR_ATTR_KEYS )
         {
             IMap<String,String> attrMap = hazelcastInstance.getMap( attrMapKey );
             if ( attrMap == null )
@@ -254,10 +254,10 @@ public final class HazelcastClusterTopology
     {
         Map<String,String> memberAttrs = simpleAttrMaps.entrySet().stream()
                 .map( e -> Pair.of( e.getKey(), e.getValue().get( hzId ) ) )
-                .filter( p -> loggingNonNullMemberAttrPredicate( p, hzId, log ) )
+                .filter( p -> hasAttribute( p, hzId, log ) )
                 .collect( CollectorsUtil.pairsToMap() );
 
-        if ( !memberAttrs.keySet().containsAll( simpleRRAttrMapKeys ) )
+        if ( !memberAttrs.keySet().containsAll( RR_ATTR_KEYS ) )
         {
             return null;
         }
@@ -279,7 +279,7 @@ public final class HazelcastClusterTopology
         return Pair.of( memberId, rrInfo );
     }
 
-    private static boolean loggingNonNullMemberAttrPredicate( Pair<String,String> memberAttr, String hzId, Log log )
+    private static boolean hasAttribute( Pair<String,String> memberAttr, String hzId, Log log )
     {
         if ( memberAttr.other() == null )
         {
@@ -347,7 +347,7 @@ public final class HazelcastClusterTopology
         {
             Map<String,String> attrMap = new HashMap<>();
             boolean incomplete = false;
-            for ( String attrKey : coreAttrKeys )
+            for ( String attrKey : CORE_ATTR_KEYS )
             {
                 String attrValue = member.getStringAttribute( attrKey );
                 if ( attrValue == null )

@@ -40,8 +40,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.BiFunction;
 import java.util.function.IntFunction;
+import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -51,6 +53,8 @@ import org.neo4j.causalclustering.core.consensus.LeaderInfo;
 import org.neo4j.causalclustering.helpers.CausalClusteringTestHelpers;
 import org.neo4j.causalclustering.identity.MemberId;
 import org.neo4j.helpers.AdvertisedSocketAddress;
+import org.neo4j.helpers.collection.CollectorsUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.BoltConnector;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.AssertableLogProvider;
@@ -78,6 +82,7 @@ import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_BOLT_ADDRESS_MAP;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_MEMBER_ID_MAP;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP;
+import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.RR_ATTR_KEYS;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.buildMemberAttributesForCore;
 import static org.neo4j.causalclustering.discovery.HazelcastClusterTopology.toCoreMemberMap;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -104,6 +109,7 @@ public class HazelcastClusterTopologyTest
     };
 
     private final HazelcastInstance hzInstance = mock( HazelcastInstance.class );
+    private Map<String,IMap<String,String>> rrAttributeMaps;
 
     @Before
     public void setup()
@@ -112,6 +118,7 @@ public class HazelcastClusterTopologyTest
         MultiMap<String,String> serverGroupsMMap = mock( MultiMap.class );
         when( serverGroupsMMap.get( any() ) ).thenReturn( GROUPS );
         when( hzInstance.getMultiMap( anyString() ) ).thenReturn( (MultiMap) serverGroupsMMap );
+        rrAttributeMaps = RR_ATTR_KEYS.stream().map( k -> Pair.of( k, (IMap<String,String>) mock( IMap.class ) ) ).collect( CollectorsUtil.pairsToMap() );
     }
 
     private static List<Config> generateConfigs( int numConfigs )
@@ -129,18 +136,15 @@ public class HazelcastClusterTopologyTest
     {
         // given
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        List<ClientConnectorAddresses.ConnectorUri> connectorUris = singletonList(
-                new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
-                        new AdvertisedSocketAddress( "losthost", 4444 ) ) );
-        ClientConnectorAddresses addresses = new ClientConnectorAddresses( connectorUris );
-        ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( addresses, new AdvertisedSocketAddress( "localhost", 1353 ), GROUPS, "foo" );
-        generateReadReplicaAttributes( memberId, readReplicaInfo );
+        ReadReplicaInfo readReplicaInfo = generateReadReplicaInfo();
+        Map<MemberId,ReadReplicaInfo> mockedRRs = singletonMap( memberId, readReplicaInfo );
+        mockReadReplicaAttributes( mockedRRs );
 
         // when
         Map<MemberId,ReadReplicaInfo> rrMap = HazelcastClusterTopology.readReplicas( hzInstance, NullLog.getInstance() );
 
         // then
-        assertEquals( singletonMap( memberId, readReplicaInfo ), rrMap );
+        assertEquals( mockedRRs, rrMap );
     }
 
     @Test
@@ -148,12 +152,8 @@ public class HazelcastClusterTopologyTest
     {
         // given
         MemberId memberId = new MemberId( UUID.randomUUID() );
-        List<ClientConnectorAddresses.ConnectorUri> connectorUris = singletonList(
-                new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
-                        new AdvertisedSocketAddress( "losthost", 4444 ) ) );
-        ClientConnectorAddresses addresses = new ClientConnectorAddresses( connectorUris );
-        ReadReplicaInfo readReplicaInfo = new ReadReplicaInfo( addresses, new AdvertisedSocketAddress( "localhost", 1353 ), GROUPS, "foo" );
-        generateReadReplicaAttributes( memberId, readReplicaInfo, emptySet(), asSet( READ_REPLICAS_DB_NAME_MAP ) );
+        ReadReplicaInfo readReplicaInfo = generateReadReplicaInfo();
+        mockReadReplicaAttributes( singletonMap( memberId, readReplicaInfo ), singleton( READ_REPLICAS_DB_NAME_MAP ), emptyMap() );
 
         // when
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -162,6 +162,34 @@ public class HazelcastClusterTopologyTest
 
         // then
         assertEquals( emptyMap(), rrMap );
+        logProvider.assertContainsMessageContaining( "Some, but not all, of the read replica attribute maps are null" );
+    }
+
+    @Test
+    public void shouldValidateReadReplicaAttrMapNullValues()
+    {
+        // given
+        Map<MemberId,ReadReplicaInfo> mockedRRs = new HashMap<>();
+
+        MemberId validMemberId = new MemberId( UUID.randomUUID() );
+        MemberId invalidMemberId = new MemberId( UUID.randomUUID() );
+        ReadReplicaInfo validReadReplicaInfo = generateReadReplicaInfo();
+        ReadReplicaInfo invalidReadReplicaInfo = generateReadReplicaInfo();
+
+        mockedRRs.put( validMemberId, validReadReplicaInfo );
+        mockedRRs.put( invalidMemberId, invalidReadReplicaInfo );
+
+        Map<MemberId,Set<String>> nullAttrValues = singletonMap( invalidMemberId, singleton( READ_REPLICA_TRANSACTION_SERVER_ADDRESS_MAP ) );
+
+        mockReadReplicaAttributes( mockedRRs, emptySet(), nullAttrValues );
+
+        // when
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        Log log = logProvider.getLog( this.getClass() );
+        Map<MemberId,ReadReplicaInfo> rrMap = HazelcastClusterTopology.readReplicas( hzInstance, log );
+
+        // then
+        assertEquals( singletonMap( validMemberId, validReadReplicaInfo ), rrMap );
         logProvider.assertContainsMessageContaining( "Missing attribute %s for read replica" );
     }
 
@@ -308,12 +336,25 @@ public class HazelcastClusterTopologyTest
         assertEquals( "First member was expected to be leader.", RoleInfo.LEADER, roleMap.get( chosenLeaderId ) );
     }
 
-    private void generateReadReplicaAttributes( MemberId memberId, ReadReplicaInfo readReplicaInfo )
+    private void mockReadReplicaAttributes( Map<MemberId,ReadReplicaInfo> readReplicaInfos )
     {
-        generateReadReplicaAttributes( memberId, readReplicaInfo, emptySet(), emptySet() );
+        mockReadReplicaAttributes( readReplicaInfos, emptySet(), emptyMap() );
     }
 
-    private void generateReadReplicaAttributes( MemberId memberId, ReadReplicaInfo readReplicaInfo, Set<String> missingAttrs, Set<String> nullAttrs )
+    private void mockReadReplicaAttributes( Map<MemberId,ReadReplicaInfo> readReplicaInfos, Set<String> missingAttrsMaps, Map<MemberId,Set<String>> nullAttrs )
+    {
+        Set<String> hzIds = new HashSet<>();
+        readReplicaInfos.forEach( ( memberId, readReplicaInfo ) ->
+        {
+            UUID hzId = UUID.randomUUID();
+            hzIds.add( hzId.toString() );
+            generateReadReplicaAttributes( hzId, memberId, readReplicaInfo, missingAttrsMaps, nullAttrs.getOrDefault( memberId, emptySet() ) );
+        } );
+        rrAttributeMaps.forEach( ( ignored, attrs ) -> when( attrs.keySet() ).thenReturn( hzIds ) );
+    }
+
+    private void generateReadReplicaAttributes( UUID hzId, MemberId memberId, ReadReplicaInfo readReplicaInfo,
+            Set<String> missingAttrsMaps, Set<String> nullAttrs )
     {
         Map<String,BiFunction<MemberId,ReadReplicaInfo,String>> attributeFactories = new HashMap<>();
         attributeFactories.put( READ_REPLICAS_DB_NAME_MAP, ( ignored, rr ) -> rr.getDatabaseName() );
@@ -321,22 +362,30 @@ public class HazelcastClusterTopologyTest
         attributeFactories.put( READ_REPLICA_MEMBER_ID_MAP, ( mId, ignored ) -> mId.getUuid().toString() );
         attributeFactories.put( READ_REPLICA_BOLT_ADDRESS_MAP, ( ignored, rr ) -> rr.connectors().toString() );
 
-        UUID hzId = UUID.randomUUID();
         attributeFactories.entrySet().stream()
-                .filter( e -> !missingAttrs.contains( e.getKey() ) )
+                .filter( e -> !missingAttrsMaps.contains( e.getKey() ) )
                 .forEach( e ->
                 {
                     String attrValue = nullAttrs.contains( e.getKey() ) ? null : e.getValue().apply( memberId, readReplicaInfo );
-                    generateReadReplicaAttribute( e.getKey(), hzId, attrValue );
-                } );
+                    mockReadReplicaAttribute( e.getKey(), hzId, attrValue );
+                });
     }
 
-    private void generateReadReplicaAttribute( String attrKey, UUID hzId, String attrValue )
+    private void mockReadReplicaAttribute( String attrKey, UUID hzId, String attrValue )
     {
-        IMap<String,String> attrs = (IMap<String, String>) mock( IMap.class );
-        when( attrs.keySet() ).thenReturn( singleton( hzId.toString() ) );
+        IMap<String,String> attrs = rrAttributeMaps.get( attrKey );
         when( attrs.get( hzId.toString() ) ).thenReturn( attrValue );
-//        when( attrs.get( AdditionalMatchers.not( hzId.toString() ) ) ).thenReturn( null );
         when( hzInstance.<String,String>getMap( attrKey ) ).thenReturn( attrs );
+    }
+
+    private ReadReplicaInfo generateReadReplicaInfo()
+    {
+        IntSupplier portFactory = () -> ThreadLocalRandom.current().nextInt( 1000, 10000 );
+
+        List<ClientConnectorAddresses.ConnectorUri> connectorUris = singletonList(
+                new ClientConnectorAddresses.ConnectorUri( ClientConnectorAddresses.Scheme.bolt,
+                        new AdvertisedSocketAddress( "losthost", portFactory.getAsInt() ) ) );
+        ClientConnectorAddresses addresses = new ClientConnectorAddresses( connectorUris );
+        return new ReadReplicaInfo( addresses, new AdvertisedSocketAddress( "localhost", portFactory.getAsInt() ), GROUPS, "foo" );
     }
 }
