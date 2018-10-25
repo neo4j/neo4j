@@ -432,4 +432,20 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
       "key" -> "lucene+native"))
     mapResult("failureMessage") should equal("")
   }
+
+  test("should list indexes in alphabetical order") {
+    // Given
+    graph.createIndex("A", "prop")
+    graph.createIndex("C", "foo")
+    graph.createIndex("B", "foo")
+    graph.createIndex("A", "foo")
+    graph.createIndex("A", "bar")
+
+    //When
+    val result = executeWith(combinedCallconfiguration, "CALL db.indexes() YIELD description RETURN description")
+
+    // Then
+    result.columnAs("description").toList should equal(
+      List("INDEX ON :A(bar)", "INDEX ON :A(foo)", "INDEX ON :A(prop)", "INDEX ON :B(foo)", "INDEX ON :C(foo)"))
+  }
 }
