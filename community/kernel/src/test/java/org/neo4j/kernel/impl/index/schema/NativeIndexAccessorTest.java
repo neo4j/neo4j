@@ -167,14 +167,14 @@ public class NativeIndexAccessorTest<KEY extends NativeIndexKey<KEY>, VALUE exte
     /* Helpers */
     private static AccessorFactory<NumberIndexKey,NativeIndexValue> numberAccessorFactory()
     {
-        return ( pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor, directory ) -> new NumberIndexAccessor(
-                pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor );
+        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
+                new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     private static AccessorFactory<StringIndexKey,NativeIndexValue> stringAccessorFactory()
     {
-        return ( pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor, directory ) -> new StringIndexAccessor(
-                pageCache1, fs1, storeFile, layout1, recoveryCleanupWorkCollector, monitor1, descriptor );
+        return ( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor, directory ) ->
+                new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     private static <TK extends NativeIndexSingleValueKey<TK>> AccessorFactory<TK,NativeIndexValue> temporalAccessorFactory( ValueGroup temporalValueGroup )
