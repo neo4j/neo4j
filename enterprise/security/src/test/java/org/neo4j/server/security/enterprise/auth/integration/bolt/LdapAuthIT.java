@@ -151,6 +151,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
             Record record = session.run( "CALL dbms.showCurrentUser()" ).single();
 
             // then
+            // Assuming showCurrentUser has fields username, roles, flags
             assertThat( record.get( 0 ).asString(), equalTo( "smith" ) );
             assertThat( record.get( 1 ).asList(), equalTo( Collections.emptyList() ) );
             assertThat( record.get( 2 ).asList(), equalTo( Collections.emptyList() ) );
@@ -158,7 +159,17 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     }
 
     @Test
-    public void shouldFailIfAuthorizationExpiredWithUserLdapContext()
+    public void shouldBeAbleToLoginAndAuthorizeNoPermissionUserWithLdapOnlyAndNoGroupToRoleMapping() throws IOException
+    {
+        restartServerWithOverriddenSettings( SecuritySettings.ldap_authorization_group_to_role_mapping.name(), null );
+        // Then
+        // User 'neo' has reader role by default, but since we are not passing a group-to-role mapping
+        // he should get no permissions
+        assertReadFails( "neo", "abc123" );
+    }
+
+    @Test
+    public void shouldFailIfAuthorizationExpiredWithserLdapContext()
     {
         // Given
         try ( Driver driver = connectDriver( "neo4j", "abc123" ) )
@@ -205,6 +216,18 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldKeepAuthorizationForLifetimeOfTransaction() throws Throwable
     {
+        assertKeepAuthorizationForLifetimeOfTransaction( "neo" );
+    }
+
+    @Test
+    public void shouldKeepAuthorizationForLifetimeOfTransactionWithProcedureAllowed() throws Throwable
+    {
+        restartServerWithOverriddenSettings( SecuritySettings.ldap_authorization_group_to_role_mapping.name(), "503=admin;504=role1" );
+        assertKeepAuthorizationForLifetimeOfTransaction( "smith" );
+    }
+
+    private void assertKeepAuthorizationForLifetimeOfTransaction( String username ) throws Throwable
+    {
         DoubleLatch latch = new DoubleLatch( 2 );
         final Throwable[] threadFail = {null};
 
@@ -212,7 +235,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         {
             try
             {
-                try ( Driver driver = connectDriver( "neo", "abc123" );
+                try ( Driver driver = connectDriver( username, "abc123" );
                         Session session = driver.session();
                         Transaction tx = session.beginTransaction() )
                 {
@@ -270,6 +293,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         {
             restartServerWithOverriddenSettings(
                     SecuritySettings.ldap_read_timeout.name(), "1s",
+                    SecuritySettings.ldap_authorization_connection_pooling.name(), "true",
                     SecuritySettings.ldap_authorization_use_system_account.name(), "true"
             );
 
@@ -364,10 +388,34 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     // ===== Logging tests =====
 
     @Test
-    public void shouldNotLogErrorsFromLdapRealmWhenLoginSuccessfulInNativeRealm() throws IOException, InvalidArgumentsException
+    public void shouldNotLogErrorsFromLdapRealmWhenLoginSuccessfulInNativeRealmNativeFirst() throws IOException, InvalidArgumentsException
     {
         restartServerWithOverriddenSettings(
                 SecuritySettings.auth_providers.name(), SecuritySettings.NATIVE_REALM_NAME + "," + SecuritySettings.LDAP_REALM_NAME,
+                SecuritySettings.native_authentication_enabled.name(), "true",
+                SecuritySettings.native_authorization_enabled.name(), "true",
+                SecuritySettings.ldap_authentication_enabled.name(), "true",
+                SecuritySettings.ldap_authorization_enabled.name(), "true",
+                SecuritySettings.ldap_authorization_use_system_account.name(), "true"
+        );
+
+        // Given
+        // we have a native 'foo' that does not exist in ldap
+        createNativeUser( "foo", "bar" );
+
+        // Then
+        // the created "foo" can log in
+        assertAuth( "foo", "bar" );
+
+        // We should not get errors spammed in the security log
+        assertSecurityLogDoesNotContain( "ERROR" );
+    }
+
+    @Test
+    public void shouldNotLogErrorsFromLdapRealmWhenLoginSuccessfulInNativeRealmLdapFirst() throws IOException, InvalidArgumentsException
+    {
+        restartServerWithOverriddenSettings(
+                SecuritySettings.auth_providers.name(), SecuritySettings.LDAP_REALM_NAME + "," + SecuritySettings.NATIVE_REALM_NAME,
                 SecuritySettings.native_authentication_enabled.name(), "true",
                 SecuritySettings.native_authorization_enabled.name(), "true",
                 SecuritySettings.ldap_authentication_enabled.name(), "true",

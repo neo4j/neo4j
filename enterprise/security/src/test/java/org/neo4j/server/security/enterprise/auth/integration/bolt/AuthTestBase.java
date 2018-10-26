@@ -28,10 +28,10 @@ import org.neo4j.driver.v1.Driver;
 
 public abstract class AuthTestBase extends EnterpriseAuthenticationTestBase
 {
-    protected static final String NONE_USER = "smith";
-    protected static final String READ_USER = "neo";
-    protected static final String WRITE_USER = "tank";
-    protected static final String PROC_USER = "jane";
+    static final String NONE_USER = "smith";
+    static final String READ_USER = "neo";
+    static final String WRITE_USER = "tank";
+    static final String PROC_USER = "jane";
 
     @Test
     public void shouldLoginWithCorrectInformation()
@@ -52,6 +52,13 @@ public abstract class AuthTestBase extends EnterpriseAuthenticationTestBase
     {
         assertAuth( READ_USER, getPassword() );
         assertAuthFail( READ_USER, "WRONG" );
+    }
+
+    @Test
+    public void shouldLoginFollowingFailedLogin()
+    {
+        assertAuthFail( READ_USER, "WRONG" );
+        assertAuth( READ_USER, getPassword() );
     }
 
     @Test
@@ -90,6 +97,7 @@ public abstract class AuthTestBase extends EnterpriseAuthenticationTestBase
         try ( Driver driver = connectDriver( PROC_USER, getPassword() ) )
         {
             assertProcSucceeds( driver );
+            assertReadFails( driver );
             assertWriteFails( driver );
         }
     }
