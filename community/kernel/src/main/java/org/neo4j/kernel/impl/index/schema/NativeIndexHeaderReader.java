@@ -40,6 +40,12 @@ class NativeIndexHeaderReader implements Header.Reader
     @Override
     public void read( ByteBuffer headerData )
     {
+        if ( !headerData.hasRemaining() )
+        {
+            state = BYTE_FAILED;
+            failureMessage = "Initial state byte is missing. Index was never fully constructed and need to be recreated.";
+            return;
+        }
         state = headerData.get();
         if ( state == BYTE_FAILED )
         {
@@ -55,7 +61,7 @@ class NativeIndexHeaderReader implements Header.Reader
      * Alternative header readers should react to FAILED indexes by using this, because their specific headers will have been
      * overwritten by the FailedHeaderWriter.
      */
-    public static String readFailureMessage( ByteBuffer headerData )
+    static String readFailureMessage( ByteBuffer headerData )
     {
         short messageLength = headerData.getShort();
         byte[] failureMessageBytes = new byte[messageLength];
