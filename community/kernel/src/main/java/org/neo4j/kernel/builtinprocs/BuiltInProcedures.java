@@ -210,6 +210,7 @@ public class BuiltInProcedures
     {
         return new SchemaCalculator( tx ).calculateTabularResultStreamForNodes();
     }
+
     @Procedure( name = "db.schema.relTypeProperties", mode = READ )
     @Description( "Show the derived property schema of the relationships in tabular form." )
     public Stream<RelationshipPropertySchemaInfoResult> relationshipPropertySchema()

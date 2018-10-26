@@ -32,13 +32,23 @@ trait ExceptionTranslationSupport {
   protected def translateException[A](f: => A) = try {
     f
   } catch {
-    case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {
-      def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
+    case e: KernelException =>
+      val userMessage = e.getUserMessage(new TokenNameLookup {
+        def propertyKeyGetName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
 
-      def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
+        def labelGetName(labelId: Int): String = inner.getLabelName(labelId)
 
-      def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
-    }), e)
+        def relationshipTypeGetName(relTypeId: Int): String = inner.getRelTypeName(relTypeId)
+      })
+
+      // Only valid for 3.4
+      val actualMessage =
+        if (userMessage startsWith "There is no procedure with the name `okapi.schema` registered for this database instance.")
+          "The procedure 'okapi.schema' has been removed. Please use 'db.schema.nodeTypeProperties' and 'db.schema.relTypeProperties' instead."
+        else
+          userMessage
+      throw new CypherExecutionException(actualMessage, e)
+
     case e : KernelConstraintViolationException => throw new ConstraintValidationException(e.getMessage, e)
     case e : ResourceCloseFailureException => throw new CypherExecutionException(e.getMessage, e)
   }

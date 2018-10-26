@@ -544,6 +544,20 @@ public class ProcedureIT
     }
 
     @Test
+    public void shouldGiveHelpfulErrorOnMissingOkapiSchemaProcedure()
+    {
+        // This is an 3.4 only thing!
+
+        // Expect
+        exception.expect( QueryExecutionException.class );
+        exception.expectMessage( "The procedure 'okapi.schema' has been removed. " +
+                "Please use 'db.schema.nodeTypeProperties' and 'db.schema.relTypeProperties' instead." );
+
+        // When
+        db.execute( "CALL okapi.schema" );
+    }
+
+    @Test
     public void shouldGiveHelpfulErrorOnMissingProcedure()
     {
         // Expect
