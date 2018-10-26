@@ -23,10 +23,8 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.cypher.result.QueryResult;
@@ -47,10 +45,9 @@ import static org.neo4j.values.storable.Values.stringValue;
 
 public class CypherAdapterStream implements BoltResult
 {
-    private final QueryResult delegate;
+    protected final QueryResult delegate;
     private final String[] fieldNames;
-    private final Clock clock;
-    private final Queue<QueryResult.Record> allRecords;
+    protected final Clock clock;
     protected final Map<String, AnyValue> metadata = new HashMap<>();
 
     public CypherAdapterStream( QueryResult delegate, Clock clock )
@@ -58,8 +55,6 @@ public class CypherAdapterStream implements BoltResult
         this.delegate = delegate;
         this.fieldNames = delegate.fieldNames();
         this.clock = clock;
-        this.allRecords = new LinkedList<>();
-        pullInAllRecords();
     }
 
     @Override
@@ -75,49 +70,36 @@ public class CypherAdapterStream implements BoltResult
     }
 
     @Override
-    public boolean handlePullRecords( final Visitor visitor, long size ) throws Exception
+    public boolean handlePullRecords( Visitor visitor, long ignored ) throws Exception
     {
-        while ( size-- > 0 )
-        {
-            QueryResult.Record current = allRecords.poll();
-
-            if ( current != null )
-            {
-                visitor.visit( current );
-            }
-            // if we are at the end of the queue
-            if ( current == null || allRecords.peek() == null )
-            {
-                metadata.forEach( visitor::addMetadata );
-                return false;
-            }
-        }
-        return true;
+        return handleRecords( visitor );
     }
 
     @Override
     public void handleDiscardRecords( Visitor visitor ) throws Exception
     {
-        // We shall also still go though all records but not sending them back to client.
-        metadata.forEach( visitor::addMetadata );
+        handleRecords( visitor );
     }
 
-    private void pullInAllRecords()
+    private boolean handleRecords( Visitor visitor ) throws Exception
     {
         long start = clock.millis();
-        delegate.accept( row ->
-        {
-            AnyValue[] src = row.fields();
-            AnyValue[] dest = new AnyValue[src.length];
-            System.arraycopy( src, 0, dest, 0, src.length );
-            allRecords.add( () -> dest );
+        delegate.accept( row -> {
+            visitor.visit( row );
             return true;
         } );
-        addRecordStreamingTime(clock.millis() - start );
+        addRecordStreamingTime( clock.millis() - start );
         addMetadata();
+        metadata.forEach( visitor::addMetadata );
+        return false;
     }
 
-    private void addMetadata()
+    protected void addRecordStreamingTime( long time )
+    {
+        metadata.put( "result_consumed_after", longValue( time ) );
+    }
+
+    protected void addMetadata()
     {
         QueryExecutionType qt = delegate.executionType();
         metadata.put( "type", Values.stringValue( queryTypeCode( qt.queryType() ) ) );
@@ -139,11 +121,6 @@ public class CypherAdapterStream implements BoltResult
         {
             metadata.put( "notifications", NotificationConverter.convert( notifications ) );
         }
-    }
-
-    protected void addRecordStreamingTime( long time )
-    {
-        metadata.put( "result_consumed_after", longValue( time ) );
     }
 
     @Override

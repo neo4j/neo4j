@@ -26,11 +26,11 @@ import org.neo4j.cypher.result.QueryResult;
 
 import static org.neo4j.values.storable.Values.longValue;
 
-class CypherAdapterStreamV3 extends CypherAdapterStream
+public class CypherAdapterStreamV3 extends CypherAdapterStream
 {
     private static final String LAST_RESULT_CONSUMED_KEY = "t_last";
 
-    CypherAdapterStreamV3( QueryResult delegate, Clock clock )
+    public CypherAdapterStreamV3( QueryResult delegate, Clock clock )
     {
         super( delegate, clock );
     }

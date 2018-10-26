@@ -35,6 +35,7 @@ import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
 import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.bolt.v4.BoltProtocolV4;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
+import org.neo4j.bolt.v4.runtime.TransactionStateMachineV4SPI;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
@@ -100,7 +101,7 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
 
     private BoltStateMachine newStateMachineV4( BoltChannel boltChannel )
     {
-        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV3SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
+        TransactionStateMachineSPI transactionSPI = new TransactionStateMachineV4SPI( getActiveDatabase(), boltChannel, getAwaitDuration(), clock );
         BoltStateMachineSPI boltSPI = new BoltStateMachineV1SPI( usageData, logging, authentication, transactionSPI );
         return new BoltStateMachineV4( boltSPI, boltChannel, clock );
     }
