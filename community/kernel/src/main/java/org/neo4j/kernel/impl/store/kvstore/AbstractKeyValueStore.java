@@ -35,6 +35,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.impl.locking.LockWrapper;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.util.FeatureToggles;
 
 import static org.neo4j.kernel.impl.locking.LockWrapper.readLock;
 import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
@@ -48,6 +49,8 @@ import static org.neo4j.kernel.impl.locking.LockWrapper.writeLock;
 @State( State.Strategy.CONCURRENT_HASH_MAP )
 public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
 {
+    static final long MAX_LOOKUP_RETRY_COUNT = FeatureToggles.getLong( AbstractKeyValueStore.class, "maxLookupRetryCount", 1024 );
+
     private final ReadWriteLock updateLock = new ReentrantReadWriteLock( /*fair=*/true );
     private final Format format;
     final RotationStrategy rotationStrategy;
@@ -92,8 +95,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     protected final <Value> Value lookup( Key key, Reader<Value> reader ) throws IOException
     {
         ValueLookup<Value> lookup = new ValueLookup<>( reader );
-        int attemptsLeft = 1024;
-        while ( attemptsLeft > 0 )
+        long retriesLeft = MAX_LOOKUP_RETRY_COUNT;
+        while ( retriesLeft > 0 )
         {
             ProgressiveState<Key> originalState = this.state;
             try
@@ -109,9 +112,9 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     throw e;
                 }
             }
-            attemptsLeft--;
+            retriesLeft--;
         }
-        throw new IOException( String.format( "Failed to lookup `%s` in key value store", key ) );
+        throw new IOException( String.format( "Failed to lookup `%s` in key value store, after %d retries", key, MAX_LOOKUP_RETRY_COUNT ) );
     }
 
     /** Introspective feature, not thread safe. */
