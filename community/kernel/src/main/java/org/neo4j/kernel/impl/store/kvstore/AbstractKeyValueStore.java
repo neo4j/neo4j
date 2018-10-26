@@ -92,7 +92,8 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
     protected final <Value> Value lookup( Key key, Reader<Value> reader ) throws IOException
     {
         ValueLookup<Value> lookup = new ValueLookup<>( reader );
-        while ( true )
+        int attemptsLeft = 1024;
+        while ( attemptsLeft > 0 )
         {
             ProgressiveState<Key> originalState = this.state;
             try
@@ -108,7 +109,9 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     throw e;
                 }
             }
+            attemptsLeft--;
         }
+        throw new IOException( String.format( "Failed to lookup `%s` in key value store", key ) );
     }
 
     /** Introspective feature, not thread safe. */

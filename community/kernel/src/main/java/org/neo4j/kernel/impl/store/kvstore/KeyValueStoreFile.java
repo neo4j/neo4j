@@ -36,6 +36,7 @@ import static org.neo4j.kernel.impl.store.kvstore.BigEndianByteArrayBuffer.newBu
  */
 public class KeyValueStoreFile implements Closeable
 {
+    private static final int ALLOWED_READ_ATTEMPTS = 1024;
     private final PagedFile file;
     private final int keySize;
     private final int valueSize;
@@ -210,29 +211,46 @@ public class KeyValueStoreFile implements Closeable
         return acceptZeroKey || !key.allZeroes();
     }
 
-    private static void readKeyValuePair( PageCursor cursor, int offset, WritableBuffer key, WritableBuffer value )
+    static void readKeyValuePair( PageCursor cursor, int offset, WritableBuffer key, WritableBuffer value )
             throws IOException
     {
+        int attemptsLeft = ALLOWED_READ_ATTEMPTS;
         do
         {
             cursor.setOffset( offset );
             key.getFrom( cursor );
             value.getFrom( cursor );
         }
-        while ( cursor.shouldRetry() );
+        while ( cursor.shouldRetry() && (--attemptsLeft) > 0 );
+
         if ( cursor.checkAndClearBoundsFlag() )
         {
             throwOutOfBounds( cursor, offset );
         }
+
+        if ( attemptsLeft == 0 )
+        {
+            throwFailedRead( cursor, offset );
+        }
+    }
+
+    private static void throwFailedRead( PageCursor cursor, int offset )
+    {
+        throwReadError( cursor, offset, "Failed to read after " + ALLOWED_READ_ATTEMPTS + " attempts" );
     }
 
     private static void throwOutOfBounds( PageCursor cursor, int offset )
+    {
+        throwReadError( cursor, offset, "Out of page bounds" );
+    }
+
+    private static void throwReadError( PageCursor cursor, int offset, String error )
     {
         long pageId = cursor.getCurrentPageId();
         int pageSize = cursor.getCurrentPageSize();
         String file = cursor.getCurrentFile().getAbsolutePath();
         throw new UnderlyingStorageException(
-                "Out of page bounds when reading key-value pair from offset " + offset + " into page " +
+                error + " when reading key-value pair from offset " + offset + " into page " +
                 pageId + " (with a size of " + pageSize + " bytes) of file " + file );
     }
 
