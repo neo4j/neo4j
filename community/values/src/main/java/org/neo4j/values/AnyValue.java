@@ -55,7 +55,7 @@ public abstract class AnyValue
         return false; // per default Values are no SequenceValues
     }
 
-    public abstract Boolean ternaryEquals( AnyValue other );
+    public abstract Equality ternaryEquals( AnyValue other );
 
     public abstract <T> T map( ValueMapper<T> mapper );
 

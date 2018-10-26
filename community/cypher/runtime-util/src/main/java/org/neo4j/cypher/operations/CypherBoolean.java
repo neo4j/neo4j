@@ -29,6 +29,7 @@ import java.util.regex.PatternSyntaxException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.BooleanValue;
@@ -43,11 +44,13 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
+import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
 import org.neo4j.values.virtual.VirtualRelationshipValue;
 
+import static java.lang.String.format;
 import static org.neo4j.values.storable.Values.FALSE;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.TRUE;
@@ -80,23 +83,35 @@ public final class CypherBoolean
     public static Value equals( AnyValue lhs, AnyValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        Boolean compare = lhs.ternaryEquals( rhs );
-        if ( compare == null )
+        Equality compare = lhs.ternaryEquals( rhs );
+        switch ( compare )
         {
+        case TRUE:
+            return Values.TRUE;
+        case FALSE:
+            return Values.FALSE;
+        case UNDEFINED:
             return NO_VALUE;
+        default:
+            throw new IllegalArgumentException( format("%s is not a valid result for %s=%s", compare, lhs, rhs )  );
         }
-        return compare ? TRUE : FALSE;
     }
 
     public static Value notEquals( AnyValue lhs, AnyValue rhs )
     {
         assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-        Boolean compare = lhs.ternaryEquals( rhs );
-        if ( compare == null )
+        Equality compare = lhs.ternaryEquals( rhs );
+        switch ( compare )
         {
+        case TRUE:
+            return Values.FALSE;
+        case FALSE:
+            return Values.TRUE;
+        case UNDEFINED:
             return NO_VALUE;
+        default:
+            throw new IllegalArgumentException( format("%s is not a valid result for %s<>%s", compare, lhs, rhs )  );
         }
-        return compare ? FALSE : TRUE;
     }
 
     public static BooleanValue regex( TextValue lhs, TextValue rhs )

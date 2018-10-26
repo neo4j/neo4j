@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.opencypher.v9_0.util.CypherTypeException;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,8 +37,6 @@ import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 
-import org.opencypher.v9_0.util.CypherTypeException;
-import org.opencypher.v9_0.util.IncomparableValuesException;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.util.NodeProxyWrappingNodeValue;
 import org.neo4j.kernel.impl.util.RelationshipProxyWrappingValue;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
 import org.neo4j.values.storable.BooleanValue;
@@ -210,24 +211,21 @@ public abstract class CompiledConversionUtils
             return null;
         }
 
-        boolean lhsVirtualNodeValue = lhs instanceof VirtualNodeValue;
-        if ( lhsVirtualNodeValue || rhs instanceof VirtualNodeValue || lhs instanceof VirtualRelationshipValue ||
-             rhs instanceof VirtualRelationshipValue )
-        {
-            if ( (lhsVirtualNodeValue && !(rhs instanceof VirtualNodeValue)) ||
-                 (rhs instanceof VirtualNodeValue && !lhsVirtualNodeValue) ||
-                 (lhs instanceof VirtualRelationshipValue && !(rhs instanceof VirtualRelationshipValue)) ||
-                 (rhs instanceof VirtualRelationshipValue && !(lhs instanceof VirtualRelationshipValue)) )
-            {
-                throw new IncomparableValuesException( lhs.getClass().getSimpleName(), rhs.getClass().getSimpleName() );
-            }
-            return lhs.equals( rhs );
-        }
-
         AnyValue lhsValue = lhs instanceof AnyValue ? (AnyValue) lhs : ValueUtils.of( lhs );
         AnyValue rhsValue = rhs instanceof AnyValue ? (AnyValue) rhs : ValueUtils.of( rhs );
 
-        return lhsValue.ternaryEquals( rhsValue );
+        Equality equality = lhsValue.ternaryEquals( rhsValue );
+        switch ( equality )
+        {
+        case TRUE:
+            return Boolean.TRUE;
+        case FALSE:
+            return Boolean.FALSE;
+        case UNDEFINED:
+            return null;
+        default:
+            throw new IllegalStateException( format( "%s = %s -> %s is not an expected outcome", lhsValue, rhsValue, equality ) );
+        }
     }
 
     // Ternary OR
@@ -673,7 +671,7 @@ public abstract class CompiledConversionUtils
 
         // NOTE: VirtualNodeValue and VirtualRelationshipValue will fall through to here
         // To handle these we would need specialized cursor code
-        throw new CypherTypeException( String.format( "Type mismatch: expected a map but was %s", object ), null );
+        throw new CypherTypeException( format( "Type mismatch: expected a map but was %s", object ), null );
     }
 
     static class ArrayIterator implements Iterator

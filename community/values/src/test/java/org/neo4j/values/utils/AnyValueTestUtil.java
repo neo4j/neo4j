@@ -22,12 +22,11 @@ package org.neo4j.values.utils;
 import java.util.function.Supplier;
 
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.Equality;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 public class AnyValueTestUtil
 {
@@ -35,10 +34,10 @@ public class AnyValueTestUtil
     {
         assertEquals( formatMessage( "should be equivalent to", a, b ), a, b );
         assertEquals( formatMessage( "should be equivalent to", b, a ), b, a );
-        assertTrue( formatMessage( "should be equal to", a, b ),
-                a.ternaryEquals( b ) );
-        assertTrue( formatMessage( "should be equal to", b, a ),
-                b.ternaryEquals( a ) );
+        assertEquals( formatMessage( "should be equal to", a, b ),
+                a.ternaryEquals( b ), Equality.TRUE );
+        assertEquals( formatMessage( "should be equal to", b, a ),
+                b.ternaryEquals( a ), Equality.TRUE );
         assertEquals( formatMessage( "should have same hashcode as", a, b ), a.hashCode(), b.hashCode() );
     }
 
@@ -51,16 +50,16 @@ public class AnyValueTestUtil
     {
         assertEquals( a + " should be equivalent to " + b, a, b );
         assertEquals( a + " should be equivalent to " + b, b, a );
-        assertTrue( a + " should be equal to " + b, a.ternaryEquals( b ) );
-        assertTrue( a + " should be equal to " + b, b.ternaryEquals( a ) );
+        assertEquals( a + " should be equal to " + b, a.ternaryEquals( b ), Equality.TRUE );
+        assertEquals( a + " should be equal to " + b, b.ternaryEquals( a ), Equality.TRUE );
     }
 
     public static void assertNotEqual( AnyValue a, AnyValue b )
     {
         assertNotEquals( a + " should not be equivalent to " + b, a, b );
         assertNotEquals( b + " should not be equivalent to " + a, b, a );
-        assertFalse( a + " should not equal " + b, a.ternaryEquals( b ) );
-        assertFalse( b + " should not equal " + a, b.ternaryEquals( a ) );
+        assertEquals( a + " should not equal " + b, a.ternaryEquals( b ), Equality.FALSE );
+        assertEquals( b + " should not equal " + a, b.ternaryEquals( a ), Equality.FALSE );
     }
 
     public static void assertIncomparable( AnyValue a, AnyValue b )

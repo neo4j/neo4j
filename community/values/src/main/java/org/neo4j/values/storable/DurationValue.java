@@ -37,6 +37,7 @@ import java.util.regex.Pattern;
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.Equality;
 import org.neo4j.values.StructureBuilder;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
@@ -234,7 +235,8 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     @Override
     Comparison unsafeTernaryCompareTo( Value other )
     {
-        if ( ternaryEquals( other ) == Boolean.TRUE )
+
+        if ( ternaryEquals( other ) == Equality.TRUE )
         {
             return Comparison.EQUAL;
         }

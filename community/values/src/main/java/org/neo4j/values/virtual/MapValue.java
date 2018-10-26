@@ -36,6 +36,7 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.Equality;
 import org.neo4j.values.TernaryComparator;
 import org.neo4j.values.ValueMapper;
 import org.neo4j.values.VirtualValue;
@@ -609,22 +610,22 @@ public abstract class MapValue extends VirtualValue
     }
 
     @Override
-    public Boolean ternaryEquals( AnyValue other )
+    public Equality ternaryEquals( AnyValue other )
     {
         assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
         if ( other == NO_VALUE )
         {
-            return null;
+            return Equality.UNDEFINED;
         }
         else if ( !(other instanceof MapValue) )
         {
-            return Boolean.FALSE;
+            return Equality.UNDEFINED;
         }
         MapValue otherMap = (MapValue) other;
         int size = size();
         if ( size != otherMap.size() )
         {
-            return Boolean.FALSE;
+            return Equality.UNDEFINED;
         }
         String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false ).toArray( String[]::new );
         Arrays.sort( thisKeys, String::compareTo );
@@ -634,23 +635,15 @@ public abstract class MapValue extends VirtualValue
         {
             if ( thisKeys[i].compareTo( thatKeys[i] ) != 0 )
             {
-                return Boolean.FALSE;
+                return Equality.FALSE;
             }
         }
-        Boolean equalityResult = Boolean.TRUE;
+        Equality equalityResult = Equality.TRUE;
 
-        for ( int i = 0; i < size; i++ )
+        for ( int i = 0; i < size && equalityResult == Equality.TRUE; i++ )
         {
             String key = thisKeys[i];
-            Boolean s = get( key ).ternaryEquals( otherMap.get( key ) );
-            if ( s == null )
-            {
-                equalityResult = null;
-            }
-            else if ( !s )
-            {
-                return Boolean.FALSE;
-            }
+            equalityResult = get( key ).ternaryEquals( otherMap.get( key ) );
         }
         return equalityResult;
     }

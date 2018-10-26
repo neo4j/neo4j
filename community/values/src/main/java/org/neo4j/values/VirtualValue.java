@@ -49,13 +49,13 @@ public abstract class VirtualValue extends AnyValue
     public abstract boolean equals( VirtualValue other );
 
     @Override
-    public Boolean ternaryEquals( AnyValue other )
+    public Equality ternaryEquals( AnyValue other )
     {
         assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
 
         if ( other == NO_VALUE )
         {
-            return null;
+            return Equality.UNDEFINED;
         }
         if ( other instanceof SequenceValue && this.isSequenceValue() )
         {
@@ -63,9 +63,9 @@ public abstract class VirtualValue extends AnyValue
         }
         if ( other instanceof VirtualValue && ((VirtualValue) other).valueGroup() == valueGroup() )
         {
-            return equals( (VirtualValue) other );
+            return equals( (VirtualValue) other ) ? Equality.TRUE : Equality.FALSE;
         }
-        return Boolean.FALSE;
+        return Equality.UNDEFINED;
     }
 
     public abstract VirtualValueGroup valueGroup();

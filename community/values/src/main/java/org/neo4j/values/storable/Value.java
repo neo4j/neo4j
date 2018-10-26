@@ -32,6 +32,7 @@ import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValueWriter;
 import org.neo4j.values.Comparison;
+import org.neo4j.values.Equality;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.utils.InvalidValuesArgumentException;
 
@@ -161,12 +162,12 @@ public abstract class Value extends AnyValue
     }
 
     @Override
-    public Boolean ternaryEquals( AnyValue other )
+    public Equality ternaryEquals( AnyValue other )
     {
         assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
         if ( other == NO_VALUE )
         {
-            return null;
+            return Equality.UNDEFINED;
         }
         if ( other.isSequenceValue() && this.isSequenceValue() )
         {
@@ -177,11 +178,11 @@ public abstract class Value extends AnyValue
             Value otherValue = (Value) other;
             if ( this.ternaryUndefined() || otherValue.ternaryUndefined() )
             {
-                return null;
+                return Equality.UNDEFINED;
             }
-            return equals( otherValue );
+            return equals( otherValue ) ? Equality.TRUE : Equality.FALSE;
         }
-        return Boolean.FALSE;
+        return Equality.UNDEFINED;
     }
 
     abstract int unsafeCompareTo( Value other );

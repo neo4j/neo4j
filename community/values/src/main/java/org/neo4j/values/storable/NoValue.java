@@ -21,6 +21,7 @@ package org.neo4j.values.storable;
 
 import org.neo4j.hashing.HashFunction;
 import org.neo4j.values.AnyValue;
+import org.neo4j.values.Equality;
 import org.neo4j.values.ValueMapper;
 
 /**
@@ -45,9 +46,9 @@ public final class NoValue extends Value
     }
 
     @Override
-    public Boolean ternaryEquals( AnyValue other )
+    public Equality ternaryEquals( AnyValue other )
     {
-        return null;
+        return Equality.UNDEFINED;
     }
 
     @Override
