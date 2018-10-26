@@ -134,7 +134,7 @@ trait AbstractCypherComparisonSupport extends CypherFunSuite with CypherTestSupp
                               errorType: Seq[String] = Seq.empty,
                               params: Map[String, Any] = Map.empty): Unit = {
     // Never consider Morsel even if test requests it
-    val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom - Configs.Morsel
+    val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom
 
     val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
     val scenariosToExecute = Configs.All.scenarios ++ explicitlyRequestedExperimentalScenarios
@@ -216,10 +216,10 @@ trait AbstractCypherComparisonSupport extends CypherFunSuite with CypherTestSupp
                             executeExpectedFailures: Boolean = true,
                             params: Map[String, Any] = Map.empty): RewindableExecutionResult = {
     // Never consider Morsel even if test requests it
-    val expectSucceedEffective = expectSucceed - Configs.Morsel
+    val expectSucceedEffective = expectSucceed
 
     if (expectSucceedEffective.scenarios.nonEmpty) {
-      val expectedDifferentResultsEffective = expectedDifferentResults - Configs.Morsel
+      val expectedDifferentResultsEffective = expectedDifferentResults
       val compareResults = expectSucceedEffective - expectedDifferentResultsEffective
       val baseScenario = extractBaseScenario(expectSucceedEffective, compareResults)
       val explicitlyRequestedExperimentalScenarios = expectSucceedEffective.scenarios intersect Configs.Experimental.scenarios
