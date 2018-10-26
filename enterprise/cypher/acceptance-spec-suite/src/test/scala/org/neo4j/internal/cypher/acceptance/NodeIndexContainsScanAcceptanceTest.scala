@@ -23,7 +23,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -32,7 +34,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
  */
 class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
   val expectedToSucceed = Configs.InterpretedAndSlotted
-  val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
+  val expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3
 
   test("should be case sensitive for CONTAINS with indexes") {
     val london = createLabeledNode(Map("name" -> "London"), "Location")
@@ -53,7 +55,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val result = executeWith(expectedToSucceed, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail))
 
-    result should evaluateTo(List(Map("l" -> london)))
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   test("should be case sensitive for CONTAINS with unique indexes") {
@@ -75,7 +77,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val result = executeWith(expectedToSucceed, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail))
 
-    result should evaluateTo(List(Map("l" -> london)))
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   test("should be case sensitive for CONTAINS with multiple indexes and predicates") {
@@ -98,7 +100,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val result = executeWith(expectedToSucceed, query,
     planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail))
 
-    result should evaluateTo(List(Map("l" -> london)))
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   test("should not use contains index with multiple indexes and predicates where other index is more selective") {
@@ -119,9 +121,9 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     val result = executeWith(Configs.InterpretedAndSlotted, query,
-    planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
+    planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.RulePlanner))
 
-    result should evaluateTo(List(Map("l" -> london)))
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   test("should use contains index with multiple indexes and predicates where other index is more selective but we add index hint") {
@@ -142,9 +144,9 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
     val query = "MATCH (l:Location) USING INDEX l:Location(name) WHERE l.name CONTAINS 'ondo' AND l.country = 'UK' RETURN l"
 
     // RULE has bug with this query
-    val result = executeWith(expectedToSucceed - Configs.Version2_3, query, expectedDifferentResults = Configs.AllRulePlanners)
+    val result = executeWith(expectedToSucceed - Configs.Version2_3, query, expectedDifferentResults = Configs.RulePlanner)
 
-    result should evaluateTo(List(Map("l" -> london)))
+    result.toList should equal(List(Map("l" -> london)))
   }
 
   test("should return nothing when invoked with a null value") {
@@ -167,7 +169,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexContainsScan"), expectPlansToFail),
       params = Map("param" -> null))
 
-    result should evaluateTo(List.empty)
+    result.toList should equal(List.empty)
   }
 
   test("throws appropriate type error") {
@@ -186,10 +188,7 @@ class NodeIndexContainsScanAcceptanceTest extends ExecutionEngineFunSuite with C
 
     val query = "MATCH (l:Location) WHERE l.name CONTAINS {param} RETURN l"
 
-    failWithError(TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default,
-                                                                                 Runtimes.SlottedWithCompiledExpressions)) +
-      TestConfiguration(Versions.all, Planners.Cost, Runtimes(Runtimes.Interpreted, Runtimes.Default)) +
-      TestConfiguration(Versions.V2_3, Planners.Rule, Runtimes(Runtimes.Interpreted, Runtimes.Default)),
+    failWithError(Configs.InterpretedAndSlotted - Configs.Rule3_1,
       query, message = List("Expected a string value, but got 42","Expected a string value, but got Int(42)","Expected two strings, but got London and 42"),
       params = Map("param" -> 42))
   }

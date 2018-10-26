@@ -24,13 +24,16 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryPlanTestSupport, QueryStatisticsTestSupport}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
 
 class MatchAggregationsBackedByCountStoreAcceptanceTest
   extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport with QueryPlanTestSupport {
 
   val defaultConfig = Configs.All
-  val expectOtherPlan = Configs.AllRulePlanners + Configs.Cost2_3
+  val expectOtherPlan = Configs.RulePlanner + Configs.Cost2_3
 
   test("do not plan counts store lookup for loop matches") {
     val n = createNode()
@@ -40,7 +43,7 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     // one non-loop
     relate(n, createNode())
 
-    val resultStar = executeWith(Configs.InterpretedAndSlotted + Configs.BackwardsCompatibility, "MATCH (a)-->(a) RETURN count(*)")
+    val resultStar = executeWith(Configs.InterpretedAndSlotted, "MATCH (a)-->(a) RETURN count(*)")
     val resultVar = executeWith(Configs.All, "MATCH (a)-[r]->(a) RETURN count(r)")
 
     resultStar.toList should equal(List(Map("count(*)" -> 2)))
@@ -196,8 +199,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (:User)-[r:KNOWS]->(:User) RETURN count(r)"
 
     // Then
-    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners)
-    compareCount(query, 1, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners, executeBefore = executeBefore)
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner)
+    compareCount(query, 1, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner, executeBefore = executeBefore)
   }
 
   test("counts relationships with unspecified type and labeled source and destination without using count store") {
@@ -206,8 +209,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (:User)-[r]->(:User) RETURN count(r)"
 
     // Then
-    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners)
-    compareCount(query, 1, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners, executeBefore = executeBefore)
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner)
+    compareCount(query, 1, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner, executeBefore = executeBefore)
   }
 
   test("counts relationships with type, reverse direction and labeled source node using count store") {
@@ -246,8 +249,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH ()-[r:KNOWS]-(:User) RETURN count(r)"
 
     // Then
-    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners)
-    compareCount(query, 2, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners, executeBefore = executeBefore)
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner)
+    compareCount(query, 2, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner, executeBefore = executeBefore)
   }
 
   test("counts relationships with type, any direction and no labeled nodes without using count store") {
@@ -256,8 +259,8 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH ()-[r:KNOWS]-() RETURN count(r)"
 
     // Then
-    compareCount(query, 0, Configs.All, expectedLogicalPlan = "AllNodesScan", expectOtherPlanIn = Configs.AllRulePlanners)
-    compareCount(query, 2, Configs.All, expectedLogicalPlan = "AllNodesScan", expectOtherPlanIn = Configs.AllRulePlanners, executeBefore = executeBefore)
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "AllNodesScan", expectOtherPlanIn = Configs.RulePlanner)
+    compareCount(query, 2, Configs.All, expectedLogicalPlan = "AllNodesScan", expectOtherPlanIn = Configs.RulePlanner, executeBefore = executeBefore)
   }
 
   test("counts nodes using count store considering transaction state") {
@@ -510,9 +513,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (:User)-[r:KNOWS]->(:User) RETURN count(r)"
 
     // Then
-    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners)
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner)
     setupBigModel()
-    compareCount(query, 3, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners, assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, 3, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner, assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("counts relationships with unspecified type and labeled source and destination without using count store considering transaction state") {
@@ -521,9 +524,9 @@ class MatchAggregationsBackedByCountStoreAcceptanceTest
     val query = "MATCH (:User)-[r]->(:User) RETURN count(r)"
 
     // Then
-    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners)
+    compareCount(query, 0, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner)
     setupBigModel()
-    compareCount(query, 3, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.AllRulePlanners, assertCountInTransaction = true, executeBefore = executeBefore)
+    compareCount(query, 3, Configs.All, expectedLogicalPlan = "NodeByLabelScan", expectOtherPlanIn = Configs.RulePlanner, assertCountInTransaction = true, executeBefore = executeBefore)
   }
 
   test("should work even when the tokens are already known") {

@@ -23,14 +23,20 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V2_3
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_1
 
 class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
   // START gets executed on legacy cypher, because it's deprecated and will be removed in 4.0. Therefore it is only
   // executable on the community interpreted runtime.
-  val expectedToSucceed = Configs.CommunityInterpreted - Configs.Version3_4
-  val expectedToSucceedNoCost = Configs.CommunityInterpreted - Configs.Cost3_1 - Configs.Cost2_3 - Configs.Version3_4
+  val expectedToSucceed = Configs.InterpretedRuntime - Configs.Version3_4
+  val expectedToSucceedNoCost = TestConfiguration(V2_3 -> V3_1, Planners.Rule, Runtimes.Interpreted)
 
   test("START n=node:index(key = \"value\") RETURN n") {
     val node = createNode()
@@ -320,7 +326,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       graph.index().forRelationships("rels").add(rel, "key", "B")
     }
 
-    val result = innerExecuteDeprecated("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b", Map())
+    val result = executeSingle("START n=node:nodes(key = 'A'), r=rel:rels(key = 'B') MATCH (n)-[r]->(b) RETURN b", Map())
     result.toList should equal(List(Map("b" -> resultNode)))
   }
 
@@ -332,7 +338,7 @@ class StartAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     }
 
     // check if we find the node
-    innerExecuteDeprecated("start n=node:index(key = 'value') return n", Map.empty).size should equal(1)
+    executeSingle("start n=node:index(key = 'value') return n", Map.empty).size should equal(1)
 
     // when
     graph.inTx {

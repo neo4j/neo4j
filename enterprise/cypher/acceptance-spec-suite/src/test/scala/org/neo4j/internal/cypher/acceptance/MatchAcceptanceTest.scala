@@ -26,7 +26,9 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.graphdb._
 import org.neo4j.helpers.collection.Iterators.single
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -51,7 +53,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       relate(prevNode, n)
       prevNode = n
     }
-    val result = innerExecuteDeprecated( // Bug in 3.1 makes it difficult to use the backwards compability mode here
+    val result = executeSingle( // Bug in 3.1 makes it difficult to use the backwards compability mode here
       queryText = "MATCH ()-[r]->() WHERE id(r) IN {ids} RETURN id(r)",
       params = Map("ids" -> List(-2, -3, 0, -4)))
     result.executionPlanDescription() should includeSomewhere.aPlan("DirectedRelationshipByIdSeek")
@@ -84,7 +86,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   test("should not fail when planning independent optional matches") {
     // Should plan without throwing exception
-    innerExecuteDeprecated(
+    executeSingle(
       """MATCH (study:Study {UUID:$studyUUID})
         |MATCH (study)-[hasSubject:HAS_SUBJECT]->(subject:Study_Subject)-[:HAS_DATASET]->(dataset:Study_Dataset)<-[:HAS_DATASET]-(study)
         |WHERE toLower(COALESCE(subject.Archived,'false')) = 'false' AND toLower(COALESCE(dataset.Archived,'false')) = 'false'
@@ -1009,7 +1011,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
               |WHERE realm.id = permission.realmId
               |RETURN realm""".stripMargin
 
-    val res = executeWith(Configs.All, q)
+    val res = executeWith(Configs.InterpretedAndSlotted + TestConfiguration("3.5 runtime=compiled debug=generate_java_source"), q)
     res.toList should equal(List(Map("realm" -> realm)))
     }
 
@@ -1111,7 +1113,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   }
 
   test("Should pick a sensible plan for WITH and WHERE") {
-    val result = innerExecuteDeprecated(
+    val result = executeSingle(
       """
         MATCH (a:A)
         WITH a.name AS name WHERE name = 'boo'

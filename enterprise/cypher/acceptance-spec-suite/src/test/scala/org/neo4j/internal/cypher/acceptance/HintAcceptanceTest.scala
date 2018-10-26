@@ -25,7 +25,9 @@ package org.neo4j.internal.cypher.acceptance
 import java.time.LocalDate
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
 
 import scala.collection.Map
@@ -35,7 +37,7 @@ class HintAcceptanceTest
 
   test("should use a simple hint") {
     val query = "MATCH (a)--(b)--(c) USING JOIN ON b RETURN a,b,c"
-    executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeHashJoin"), expectPlansToFail = Configs.AllRulePlanners))
+    executeWith(Configs.All, query, planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeHashJoin"), expectPlansToFail = Configs.RulePlanner))
   }
 
   test("should not plan multiple joins for one hint - left outer join") {
@@ -50,7 +52,7 @@ class HintAcceptanceTest
                   |USING JOIN ON a
                   |RETURN a.name, b.name""".stripMargin
 
-    executeWith(Configs.InterpretedAndSlotted + Configs.Version3_4 - Configs.Cost2_3 - Configs.Cost3_1, query,
+    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should includeSomewhere.aPlan("NodeLeftOuterHashJoin")
       p should not(includeSomewhere.aPlan("NodeHashJoin"))
@@ -72,7 +74,7 @@ class HintAcceptanceTest
     executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
       p should not(includeSomewhere.aPlan("NodeHashJoin"))
-    }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+    }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should solve join hint on 1 variable with join on more, if possible") {
@@ -87,7 +89,7 @@ class HintAcceptanceTest
     executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should do index seek instead of index scan with explicit index seek hint") {
@@ -111,10 +113,10 @@ class HintAcceptanceTest
                   |RETURN a.prop, b.prop
                 """.stripMargin
 
-    executeWith(Configs.InterpretedAndSlotted - Configs.AllRulePlanners - Configs.Cost2_3 - Configs.Cost3_1, query,
+    executeWith(Configs.InterpretedAndSlotted - Configs.RulePlanner - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek"))
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should accept hint on spatial index with distance function") {
@@ -134,7 +136,7 @@ class HintAcceptanceTest
         |AND date("2017-01-01") <= r.date <= date("2018-01-01")
         |RETURN COUNT(*)""".stripMargin
 
-    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.RulePlanner, query)
 
     // Then
     result.toList should be(List(Map("COUNT(*)" -> 1)))

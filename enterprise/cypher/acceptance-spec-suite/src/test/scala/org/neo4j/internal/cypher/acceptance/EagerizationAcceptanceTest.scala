@@ -23,17 +23,26 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.collection.RawIterator
-import org.neo4j.cypher.internal.runtime.{Counter, CreateTempFileTestSupport, InternalExecutionResult}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.internal.runtime.Counter
+import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.PlanComparisonStrategy
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException
-import org.neo4j.internal.kernel.api.helpers.{RelationshipSelectionCursor, RelationshipSelections}
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
+import org.neo4j.internal.kernel.api.helpers.RelationshipSelections
 import org.neo4j.internal.kernel.api.procs
-import org.neo4j.internal.kernel.api.procs.{Neo4jTypes, ProcedureSignature}
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
+import org.neo4j.internal.kernel.api.procs.ProcedureSignature
 import org.neo4j.kernel.api.proc.CallableProcedure.BasicProcedure
 import org.neo4j.kernel.api.proc.Context
-import org.neo4j.kernel.api.{ResourceTracker, proc}
+import org.neo4j.kernel.api.ResourceTracker
+import org.neo4j.kernel.api.proc
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.Values
 import org.scalatest.prop.TableDrivenPropertyChecks
@@ -225,7 +234,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) YIELD relId WITH * MATCH ()-[rel]->() WHERE id(rel) = relId RETURN rel.foo"
 
     // Correct! Eagerization happens as part of query context operation
-    val result = executeWith(Configs.UpdateConf - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.UpdateConf - Configs.RulePlanner, query,
       executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
@@ -267,7 +276,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a), (b) CALL user.mkRel(a, b) MATCH (a)-[rel]->(b) RETURN rel.foo"
 
     // Correct! Eagerization happens as part of query context operation
-    val result = executeWith(Configs.UpdateConf - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.UpdateConf - Configs.RulePlanner, query,
       executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
@@ -321,7 +330,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) YIELD relId RETURN x, y, relId"
 
     // Correct! No eagerization necessary
-    val result = executeWith(Configs.UpdateConf - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.UpdateConf - Configs.RulePlanner, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
     result.size should equal(2)
@@ -371,7 +380,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (x), (y) CALL user.expand(x, y) WITH * MATCH (x)-[rel]->(y) RETURN *"
 
     // Correct! No eagerization necessary
-    val result = executeWith(Configs.UpdateConf - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.UpdateConf - Configs.RulePlanner, query,
       executeBefore = () => counter.reset(),
       planComparisonStrategy = testEagerPlanComparisonStrategy(0))
 
@@ -398,7 +407,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a)-[t:T {prop1: 'foo'}]-(b) CREATE (a)-[:T {prop2: 'bar'}]->(b) RETURN count(*) as count"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     result.columnAs[Int]("count").next should equal(2)
     assertStats(result, relationshipsCreated = 2, propertiesWritten = 2)
   }
@@ -554,7 +563,7 @@ class EagerizationAcceptanceTest
       """.stripMargin
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.RulePlanner - Configs.Rule2_3))
     assertStats(result, nodesCreated = 2, nodesDeleted = 2, propertiesWritten = 2, labelsAdded = 2)
     result.columnAs[Node]("b2.deleted").toList should equal(List(null, null))
   }
@@ -806,7 +815,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a {prop1: 42}), (n {prop2: 42}) CREATE ({prop3: 42}) RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, nodesCreated = 4, propertiesWritten = 4)
   }
@@ -1302,7 +1311,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Person) MERGE (b) WITH * OPTIONAL MATCH (a)-[r1]-(b) DELETE r1 RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.RulePlanner - Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 3
     assertStats(result, relationshipsDeleted = 2)
   }
@@ -1418,7 +1427,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (b {id: 0}), (c {id: 0}) MERGE (a) ON MATCH SET a.id2 = 0 RETURN count(*) AS c"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     result.toList should equal(List(Map("c" -> 12)))
     assertStats(result, propertiesWritten = 12)
   }
@@ -1532,7 +1541,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON MATCH SET b:Foo RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0, expectPlansToFailPredicate = Configs.RulePlanner - Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 1)
 
@@ -1564,7 +1573,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (a:Foo), (b:Bar) MERGE (a)-[r:KNOWS]->(b) ON CREATE SET b:Foo RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0, expectPlansToFailPredicate = Configs.AllRulePlanners - Configs.Rule2_3))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, optimalEagerCount = 0, expectPlansToFailPredicate = Configs.RulePlanner - Configs.Rule2_3))
 
     result.columnAs[Long]("count(*)").next shouldBe 4
     assertStats(result, relationshipsCreated = 3, labelsAdded = 2)
@@ -1747,7 +1756,7 @@ class EagerizationAcceptanceTest
     val query = "MERGE(a {p: 1}) MERGE(b {p: a.p}) MERGE(c {p: b.p}) RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners - Configs.Rule2_3))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.RulePlanner - Configs.Rule2_3))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, nodesCreated = 1, propertiesWritten = 1)
   }
@@ -1861,7 +1870,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (n:A) CREATE (m:C) WITH * MATCH (o:B), (p:C) SET p:B RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query, expectedDifferentResults = Configs.Rule2_3,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.RulePlanner))
     result.columnAs[Long]("count(*)").next shouldBe 8
     assertStats(result, labelsAdded = 4, nodesCreated = 2)
   }
@@ -2086,7 +2095,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop = 42 RETURN count(*) as count"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.RulePlanner))
     result.columnAs[Int]("count").next should equal(8)
     assertStats(result, propertiesWritten = 8, nodesCreated = 4)
   }
@@ -2120,7 +2129,7 @@ class EagerizationAcceptanceTest
         |RETURN count(*) as count""".stripMargin
 
     val result = executeWith(Configs.UpdateConf, query, expectedDifferentResults = Configs.Rule2_3,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.AllRulePlanners - Configs.Rule2_3))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(1, Configs.RulePlanner - Configs.Rule2_3))
     result.columnAs[Int]("count").next should equal(14)
     assertStats(result, propertiesWritten = 14, nodesCreated = 3)
   }
@@ -2133,7 +2142,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH (n) CREATE (m) WITH * MATCH (o {prop:42}) SET n.prop2 = 42 RETURN count(*) as count"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     result.columnAs[Int]("count").next should equal(8)
     assertStats(result, propertiesWritten = 8, nodesCreated = 4)
   }
@@ -2151,7 +2160,7 @@ class EagerizationAcceptanceTest
     relate(createNode(Map("prop" -> 5)), createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
   }
@@ -2174,7 +2183,7 @@ class EagerizationAcceptanceTest
     relate(createNode(Map("prop" -> 5)), createNode())
     val query = "MATCH (n {prop : 5})-[r]-(m) SET m += {prop2: 5} RETURN count(*)"
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     assertStats(result, propertiesWritten = 1)
     result.toList should equal(List(Map("count(*)" -> 1)))
   }
@@ -2227,7 +2236,7 @@ class EagerizationAcceptanceTest
     val query = "MATCH  (m1:A), (m2:B), (n:C) REMOVE n:C RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(0, Configs.RulePlanner))
     result.columnAs[Long]("count(*)").next shouldBe 1
     assertStats(result, labelsRemoved = 1)
   }
@@ -2417,7 +2426,7 @@ class EagerizationAcceptanceTest
     val query = "MERGE () WITH * UNWIND [0] as i MATCH () UNWIND [0] as j CREATE () RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.RulePlanner))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
   }
@@ -2517,7 +2526,7 @@ class EagerizationAcceptanceTest
         |RETURN count(*)""".stripMargin
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, Configs.RulePlanner))
     result.columnAs[Long]("count(*)").next() should equal(2)
     assertStats(result, nodesCreated = 4, labelsAdded = 4, propertiesWritten = 24)
   }
@@ -2615,7 +2624,7 @@ class EagerizationAcceptanceTest
     val query = s"MERGE () WITH * LOAD CSV FROM '$url' AS line MATCH () LOAD CSV FROM '$url' AS line2 CREATE () RETURN count(*)"
 
     val result = executeWith(Configs.UpdateConf, query,
-      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.AllRulePlanners))
+      planComparisonStrategy = testEagerPlanComparisonStrategy(2, optimalEagerCount = 1, expectPlansToFailPredicate = Configs.RulePlanner))
     result.columnAs[Long]("count(*)").next() should equal(4)
     assertStats(result, nodesCreated = 4)
   }
@@ -2786,7 +2795,7 @@ class EagerizationAcceptanceTest
 
     val nonBugFixedConfig = Configs.Cost3_1
 
-    val result = executeWith(Configs.UpdateConf - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.UpdateConf - Configs.RulePlanner, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(1, nonBugFixedConfig),
       expectedDifferentResults = nonBugFixedConfig)
 
@@ -2806,7 +2815,7 @@ class EagerizationAcceptanceTest
         |RETURN COUNT(t.value) as nbrTags
       """.stripMargin
 
-    val nonBugFixedConfig = Configs.Cost3_1 + Configs.AllRulePlanners
+    val nonBugFixedConfig = Configs.Cost3_1 + Configs.RulePlanner
 
     val result = executeWith(Configs.UpdateConf, query,
       planComparisonStrategy = testEagerPlanComparisonStrategy(2, nonBugFixedConfig),

@@ -26,7 +26,8 @@ import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 
 class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
@@ -106,7 +107,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
   }
 
   test("compiled creates an extra dbhit because it can't get values from indexes") {
-    val result = innerExecuteDeprecated("CYPHER runtime=compiled PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1 AS foo")
+    val result = executeSingle("CYPHER runtime=compiled PROFILE MATCH (n:Awesome) WHERE n.prop1 = 42 RETURN n.prop1 AS foo")
 
     result.executionPlanDescription() should includeSomewhere.aPlan("Projection")
       .containingArgument("{foo : cached[n.prop1]}")
@@ -169,7 +170,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
   }
 
   test("should correctly project cached node property through ORDER BY") {
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner,
       "MATCH (a:DateString), (b:DateDate) WHERE a.ds STARTS WITH '2018' AND b.d > date(a.ds) RETURN a.ds ORDER BY a.ds",
       executeBefore = createSomeNodes)
 
@@ -335,7 +336,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
 
   test("index-backed property values should be removed on node delete") {
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 DETACH DELETE n RETURN n.prop1"
-    failWithError(Configs.InterpretedAndSlotted - Configs.Cost2_3 + Configs.Default, query, Seq(/* Node with id 4 */ "has been deleted in this transaction"))
+    failWithError(Configs.InterpretedAndSlotted - Configs.Cost2_3, query, Seq(/* Node with id 4 */ "has been deleted in this transaction"))
   }
 
   test("index-backed property values should not exist after node deleted") {
@@ -376,7 +377,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
   test("index-backed property values should be updated on procedure property write") {
     registerTestProcedures()
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 CALL org.neo4j.setProperty(n, 'prop1', 'newValue') YIELD node RETURN n.prop1"
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.RulePlanner, query)
     assertIndexSeek(result)
     result.toList should equal(List(Map("n.prop1" -> "newValue")))
   }
@@ -384,7 +385,7 @@ class IndexWithValuesAcceptanceTest extends ExecutionEngineFunSuite with QuerySt
   test("index-backed property values should be updated on procedure property remove") {
     registerTestProcedures()
     val query = "MATCH (n:Awesome) WHERE n.prop1 = 42 CALL org.neo4j.setProperty(n, 'prop1', null) YIELD node RETURN n.prop1"
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.AllRulePlanners, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.RulePlanner, query)
     assertIndexSeek(result)
     result.toList should equal(List(Map("n.prop1" -> null)))
   }

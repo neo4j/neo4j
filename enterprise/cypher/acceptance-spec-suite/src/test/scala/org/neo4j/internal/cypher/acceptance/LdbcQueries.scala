@@ -23,7 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.joda.time.{DateTime, DateTimeZone}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.{Configs, TestConfiguration}
 
 /**
  * These are the 14 LDBC stream that runs in the LDBC projects. The stream are (semi-)generated so the idea is rather

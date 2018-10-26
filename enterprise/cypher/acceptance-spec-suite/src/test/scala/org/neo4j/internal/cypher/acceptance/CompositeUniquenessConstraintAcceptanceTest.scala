@@ -23,14 +23,20 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.{Default, V3_4, V3_5}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_4
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_5
 
 class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   test("should be able to create and remove single property uniqueness constraint") {
 
-    val testconfiguration = Configs.All - Configs.Cost3_1 - Configs.Cost2_3 - Configs.AllRulePlanners
+    val testconfiguration = Configs.All - Configs.Cost3_1 - Configs.Cost2_3 - Configs.RulePlanner
     // When
     executeWith(testconfiguration, "CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS UNIQUE")
 
@@ -45,7 +51,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
   }
 
   val singlePropertyUniquenessFailConf =
-    TestConfiguration(Versions(V3_5, V3_4, Default), Planners(Planners.Default, Planners.Cost), Runtimes.all)
+    TestConfiguration(Versions(V3_5, V3_4), Planners.Cost, Runtimes.all)
 
   test("should fail to to create composite uniqueness constraints") {
     // When
@@ -60,7 +66,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should fail to to drop composite uniqueness constraints") {
     // When
-    failWithError(singlePropertyUniquenessFailConf + Configs.Default - Configs.Cost3_1,
+    failWithError(singlePropertyUniquenessFailConf - Configs.Cost3_1,
       "DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
       List("Only single property uniqueness constraints are supported"))
 

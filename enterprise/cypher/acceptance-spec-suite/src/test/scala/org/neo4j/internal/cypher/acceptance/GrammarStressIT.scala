@@ -27,6 +27,7 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.scalacheck.{Arbitrary, Gen, Shrink}
 import org.scalatest.prop.PropertyChecks
 
@@ -318,8 +319,8 @@ class GrammarStressIT extends ExecutionEngineFunSuite with PropertyChecks with C
         // We resort to using internals of CypherComparisonSupport,
         // since with randomized patterns we cannot know at compile time, for which
         // of those we expect plans to be equal or not.
-        val resultInterpreted = innerExecuteDeprecated(s"CYPHER runtime=interpreted $query", Map.empty)
-        val resultCompiled = innerExecuteDeprecated(s"CYPHER runtime=compiled $query", Map.empty)
+        val resultInterpreted = executeSingle(s"CYPHER runtime=interpreted $query", Map.empty)
+        val resultCompiled = executeSingle(s"CYPHER runtime=compiled $query", Map.empty)
         assertResultsSameDeprecated(resultCompiled, resultInterpreted, query,
           "Diverging results between interpreted and compiled runtime")
         resultCompiled

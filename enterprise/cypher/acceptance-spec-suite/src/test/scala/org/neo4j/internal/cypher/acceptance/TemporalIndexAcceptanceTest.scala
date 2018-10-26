@@ -24,7 +24,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time._
 
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.values.storable._
 
 class TemporalIndexAcceptanceTest extends IndexingTestSupport {
@@ -91,8 +92,12 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
     val resultNoIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
 
     graph.createIndex("Runner", "results")
+    resampleIndexes()
+    // TODO this should not be necessary. Creating an index should invalidate the caches.
+    eengine.clearQueryCaches()
+
     val resultIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
-      planComparisonStrategy = ComparePlansWithAssertion((plan) => {
+      planComparisonStrategy = ComparePlansWithAssertion(plan => {
         //THEN
         plan should includeSomewhere.aPlan("NodeIndexSeek")
       }))

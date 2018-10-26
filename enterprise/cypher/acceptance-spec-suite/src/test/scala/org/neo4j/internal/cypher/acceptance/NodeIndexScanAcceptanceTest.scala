@@ -23,7 +23,9 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -46,10 +48,10 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should includeSomewhere.aPlan("NodeIndexScan")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
 
     // Then
-    result should evaluateTo(List(Map("p" -> person)))
+    result.toList should equal(List(Map("p" -> person)))
   }
 
   test("should use index on exists") {
@@ -64,10 +66,10 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
         plan should includeSomewhere.aPlan("NodeIndexScan")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
 
     // Then
-    result should evaluateTo(List(Map("p" -> person)))
+    result.toList should equal(List(Map("p" -> person)))
   }
 
   test("Regexp filter on top of NodeIndexScan (GH #7059)") {
@@ -92,7 +94,7 @@ class NodeIndexScanAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // Then
     result.executionPlanDescription() should includeSomewhere.aPlan("NodeIndexScan")
-    result should evaluateTo(List(Map("count(n)" -> 3)))
+    result.toList should equal(List(Map("count(n)" -> 3)))
   }
 
   test("should work just fine and use an index scan") {

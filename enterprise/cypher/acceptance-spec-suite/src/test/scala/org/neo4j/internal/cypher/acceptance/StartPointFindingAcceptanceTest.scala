@@ -24,7 +24,9 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -114,7 +116,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     val r = relate(a, b)
 
     val result = executeWith(Configs.InterpretedAndSlotted, s"PROFILE UNWIND [${r.getId}] as rId match (a)-[r]->(b) where id(r) = rId return a,r,b",
-      planComparisonStrategy = ComparePlansWithAssertion(_.toString should include("RelationshipById"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_.toString should include("RelationshipById"), expectPlansToFail = Configs.RulePlanner))
 
     result.toList should equal(List(Map("r" -> r, "a" -> a, "b" -> b)))
   }

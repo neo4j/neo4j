@@ -23,6 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.opencypher.v9_0.util.test_helpers.WindowsStringSafe
 
 class DumpToStringAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {

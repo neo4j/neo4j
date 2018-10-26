@@ -22,18 +22,22 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.{LocalDate, LocalTime}
+import java.time.LocalDate
+import java.time.LocalTime
 import java.util
 
 import org.neo4j.cypher._
 import org.neo4j.graphdb.QueryExecutionException
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
-import org.neo4j.values.storable.{DateValue, DurationValue}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.values.storable.DateValue
+import org.neo4j.values.storable.DurationValue
 
 class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  private val failConf1 = Configs.InterpretedAndSlotted + Configs.Default - Configs.Before3_3AndRule
-  private val failConf2 = Configs.InterpretedAndSlotted + Configs.Default - Configs.Version2_3
+  private val failConf1 = Configs.InterpretedAndSlotted - Configs.Before3_3AndRule
+  private val failConf2 = Configs.InterpretedAndSlotted - Configs.Version2_3
 
   // Getting current value of a temporal
 
@@ -371,7 +375,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
   test("should not create date time with conflicting time zones") {
     val query = "WITH datetime('1984-07-07T12:34+03:00[Europe/Stockholm]') as d RETURN d"
     val errorMsg = "Timezone and offset do not match"
-    failWithError(Configs.InterpretedAndSlotted - Configs.Version2_3 + Configs.Default, query, Seq(errorMsg), Seq("InvalidArgumentException"))
+    failWithError(Configs.InterpretedAndSlotted - Configs.Version2_3, query, Seq(errorMsg), Seq("InvalidArgumentException"))
   }
 
   // Failing when providing wrong values
@@ -836,7 +840,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
           *  Version 3.3 returns null instead due to running with 3.5 runtime
           *  SyntaxException come from the 3.5 planner and IncomparableValuesException from earlier runtimes
           */
-        failWithError(Configs.Version3_5 + Configs.Default - Configs.AllRulePlanners, query, Seq("Type mismatch"))
+        failWithError(Configs.Version3_5 - Configs.RulePlanner, query, Seq("Type mismatch"))
       }
     }
   }
@@ -846,7 +850,7 @@ class TemporalAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistic
       val query = "RETURN $d1 " + op + " $d2 as x"
       withClue(s"Executing $query") {
         // TODO: change to using executeWith when compiled supports temporal parameters
-        val res = innerExecuteDeprecated(query, Map("d1" -> DurationValue.duration(1, 0, 0 ,0), "d2" -> DurationValue.duration(0, 30, 0 ,0))).toList
+        val res = executeSingle(query, Map("d1" -> DurationValue.duration(1, 0, 0 ,0), "d2" -> DurationValue.duration(0, 30, 0 ,0))).toList
         res should be(List(Map("x" -> null)))
       }
     }

@@ -23,12 +23,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 import scala.language.postfixOps
 
 class UnsupportedFeaturesAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
-  val configs = Configs.Version3_5 + Configs.Default - Configs.AllRulePlanners
+  val configs = Configs.Version3_5 - Configs.RulePlanner
 
   test("from graph") {
     val query = "FROM GRAPH foo.bar MATCH (a)-->() RETURN a"

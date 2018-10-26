@@ -24,7 +24,9 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -32,7 +34,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
     val query = "MATCH (n:Person) RETURN n"
     val expectedPlan = generateExpectedPlan(query)
     executeWith(Configs.All, query,
-      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.RulePlanner))
   }
 
   test("should produce compatible plans for simple MATCH relationship query") {
@@ -48,7 +50,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
       """.stripMargin
     val expectedPlan = generateExpectedPlan(query)
     executeWith(Configs.InterpretedAndSlotted, query,
-      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.RulePlanner))
   }
 
   test("should produce compatible plans with unwind") {
@@ -61,7 +63,7 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
       """.stripMargin
     val expectedPlan = generateExpectedPlan(query)
     executeWith(Configs.InterpretedAndSlotted, query,
-      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.RulePlanner))
   }
 
   // Too much has changed from 2.3, only compare plans for newer versions
@@ -76,14 +78,14 @@ class QueryPlanCompatibilityTest extends ExecutionEngineFunSuite with CypherComp
       """.stripMargin
     val expectedPlan = generateExpectedPlan(query)
     executeWith(Configs.InterpretedAndSlotted, query,
-      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
+      planComparisonStrategy = ComparePlansWithAssertion(assertSimilarPlans(_, expectedPlan), expectPlansToFail = Configs.RulePlanner + Configs.Version2_3))
   }
 
   private def assertSimilarPlans(plan: InternalPlanDescription, expected: InternalPlanDescription): Unit = {
     plan.flatten.map(simpleName).toString should equal(expected.flatten.map(simpleName).toString())
   }
 
-  private def generateExpectedPlan(query: String): InternalPlanDescription = innerExecuteDeprecated(query, Map.empty).executionPlanDescription()
+  private def generateExpectedPlan(query: String): InternalPlanDescription = executeSingle(query, Map.empty).executionPlanDescription()
 
   private def simpleName(plan: InternalPlanDescription): String = plan.name.replace("SetNodeProperty", "SetProperty").toLowerCase
 }

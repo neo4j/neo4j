@@ -23,7 +23,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport, SyntaxException}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
 
 class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with QueryStatisticsTestSupport {
 
@@ -75,7 +81,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
       planComparisonStrategy = ComparePlansWithAssertion(plan => {
         //THEN
         plan should includeSomewhere.aPlan("Foreach").withRHS(aPlan("Create"))
-      }, Configs.AllRulePlanners + Configs.Version3_1))
+      }, Configs.RulePlanner + Configs.Version3_1))
 
     // then
     assertStats(result, nodesCreated = 2, labelsAdded = 2)
@@ -191,14 +197,13 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
         |FOREACH (x IN mixedTypeCollection | CREATE (n)-[:FOOBAR]->(x) );""".stripMargin
 
     // when
-    val explain = executeWith(Configs.InterpretedAndSlotted + Configs.Default - Configs.Version2_3, s"EXPLAIN $query")
+    val explain = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3, s"EXPLAIN $query")
 
     // then
     explain.executionPlanDescription().toString shouldNot include("CreateNode")
 
     // when
-    val config = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.Default, Runtimes.SlottedWithCompiledExpressions)) +
-      TestConfiguration(Versions(Versions.V3_1, Versions.V3_4), Planners.Cost, Runtimes.Default)
+    val config = Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Rule3_1
     failWithError(config, query, List("Expected to find a node at"))
   }
 
@@ -219,7 +224,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     graph.execute("CREATE (:X)-[:T]->(), (:X)")
 
     val result = executeWith(
-      expectSucceed = Configs.InterpretedAndSlotted - Configs.BackwardsCompatibility - Configs.AllRulePlanners,
+      expectSucceed = Configs.InterpretedAndSlotted - Configs.BackwardsCompatibility - Configs.RulePlanner,
       query = "FOREACH (x in  [ (n:X)-->() | n ] | SET x.prop = 12 )")
     assertStats(result, propertiesWritten = 1)
   }

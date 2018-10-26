@@ -24,8 +24,10 @@ package org.neo4j.internal.cypher.acceptance
 
 import java.time._
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, FakeClock}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.FakeClock
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class TemporalFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with FakeClock {
 
@@ -81,7 +83,7 @@ class TemporalFunctionsAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
 
   test("timstamp should be query local") {
     //older versions don't use the clock which we fake in this test
-    val result = innerExecuteDeprecated("UNWIND range(1, 1000) AS ignore RETURN timestamp() AS t").toList
+    val result = executeSingle("UNWIND range(1, 1000) AS ignore RETURN timestamp() AS t").toList
 
     result.map(m => m("t")).distinct should have size 1
   }

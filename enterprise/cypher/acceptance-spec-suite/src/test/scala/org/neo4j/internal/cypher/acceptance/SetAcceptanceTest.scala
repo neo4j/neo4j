@@ -23,11 +23,12 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
-  val expectedToFail = Configs.InterpretedAndSlotted + Configs.Default - Configs.Cost2_3
+  val expectedToFail = Configs.InterpretedAndSlotted - Configs.Cost2_3
 
   test("optional match and set") {
     val n1 = createLabeledNode("L1")
@@ -78,7 +79,7 @@ class SetAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTest
     node should haveProperty("property")
 
     // and
-    val result2 = executeWith(Configs.InterpretedAndSlotted + Configs.Default, "MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
+    val result2 = executeWith(Configs.InterpretedAndSlotted, "MATCH (n) WHERE n.property = ['foo','bar'] RETURN count(*)")
     result2.columnAs("count(*)").toList should be(List(1))
   }
 

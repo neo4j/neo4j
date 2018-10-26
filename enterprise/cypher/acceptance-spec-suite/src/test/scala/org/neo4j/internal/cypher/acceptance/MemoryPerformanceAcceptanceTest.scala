@@ -23,7 +23,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 
 // Only put tests that assert on memory performance behaviour in this class
 class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -89,7 +90,7 @@ class MemoryPerformanceAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
 
     //we cannot use executeWith here since this query will OOM in older releases and break the test
     for (runtime <- List("compiled", "interpreted", "slotted", "morsel")) {
-      innerExecuteDeprecated(s"CYPHER runtime=$runtime $query").toList should equal(List(
+      executeSingle(s"CYPHER runtime=$runtime $query").toList should equal(List(
         Map("x" -> 1),
         Map("x" -> 2),
         Map("x" -> 3),

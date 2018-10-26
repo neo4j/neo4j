@@ -23,7 +23,15 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V2_3
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_4
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_5
 
 /**
  * These tests are testing the actual index implementation, thus they should all check the actual result.
@@ -32,7 +40,7 @@ import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlan
  */
 class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport{
 
-  private val expectPlansToFailConfig1 =  Configs.Cost2_3 + Configs.AllRulePlanners
+  private val expectPlansToFailConfig1 =  Configs.Cost2_3 + Configs.RulePlanner
 
   test("should handle OR when using index") {
     // Given
@@ -169,7 +177,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
 
     // When
     val result = executeWith(Configs.All, "MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.RulePlanner))
 
     // Then
     result should be(empty)
@@ -188,11 +196,11 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     val result = executeWith(Configs.All, "unwind [1,2,3] as x match (n:Prop) where n.id = x return n;",
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should includeSomewhere.aPlan("NodeIndexSeek")
-      }, Configs.AllRulePlanners))
+      }, Configs.RulePlanner))
 
     // Then
     val expected = List(Map("n" -> n1), Map("n" -> n2), Map("n" -> n3))
-    result should evaluateTo(expected)
+    result.toList should equal(expected)
   }
 
   test("should use index selectivity when planning") {
@@ -216,7 +224,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     graph.createIndex("R", "r")
 
     val result = executeWith(Configs.All, "MATCH (l:L {l: 9})-[:REL]->(r:R {r: 23}) RETURN l, r",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.RulePlanner))
     result should have size 100
   }
 
@@ -240,10 +248,10 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
         |WHERE p.name = placeName
         |RETURN p, placeName
       """.stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"), expectPlansToFail = Configs.RulePlanner))
 
     // Then
-    result should evaluateTo(List(Map("p" -> null, "placeName" -> null)))
+    result.toList should equal(List(Map("p" -> null, "placeName" -> null)))
   }
 
   test("should not use indexes when RHS of property comparison depends on the node searched for (equality)") {
@@ -435,7 +443,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     resampleIndexes()
 
     // When
-    val plansToFail = Configs.AllRulePlanners + Configs.Cost2_3
+    val plansToFail = Configs.RulePlanner + Configs.Cost2_3
     val result = executeWith(Configs.InterpretedAndSlotted, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeek"),
         expectPlansToFail = plansToFail))
@@ -463,7 +471,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     resampleIndexes()
 
     // When
-    val plansToFail = Configs.All - Configs.Default - Configs.SlottedInterpreted - Configs.DefaultInterpreted
+    val plansToFail = TestConfiguration(V2_3 -> V3_4, Planners.all, Runtimes.all)
     val result = executeWith(Configs.InterpretedAndSlotted, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgument(":L1(prop3) < m.prop4"),
         expectPlansToFail = plansToFail))

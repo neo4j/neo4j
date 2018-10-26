@@ -33,7 +33,9 @@ import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.graphdb.config.Configuration
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.security.URLAccessRule
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.test.{TestEnterpriseGraphDatabaseFactory, TestGraphDatabaseFactory}
 import org.opencypher.v9_0.util.helpers.StringHelper.RichString
 import org.scalatest.BeforeAndAfterAll
@@ -95,7 +97,7 @@ class LoadCsvAcceptanceTest
             | acc.field2=row.field2
             | RETURN count(*); """.stripMargin,
         planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.atLeastNTimes(1, aPlan("NodeIndexSeek").containingVariables("user"))
-          , expectPlansToFail = Configs.AllRulePlanners))
+          , expectPlansToFail = Configs.RulePlanner))
 
       resourceMonitor.assertClosedAndClear(1)
       assertStats(result, propertiesWritten = 6)
@@ -237,7 +239,7 @@ class LoadCsvAcceptanceTest
         writer.println("5,'Emerald',")
     })
     for (url <- urls) {
-      val result = executeWith(Configs.UpdateConf + Configs.SlottedInterpreted, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
+      val result = executeWith(Configs.UpdateConf + Configs.SlottedRuntime, s"LOAD CSV WITH HEADERS FROM '$url' AS line WITH line WHERE line.x IS NOT NULL RETURN line.name")
       resourceMonitor.assertClosedAndClear(1)
       assert(result.toList === List(
         Map("line.name" -> "'Aardvark'"),
@@ -415,7 +417,7 @@ class LoadCsvAcceptanceTest
 
     for (url <- urls) {
       //Using innerExecuteDeprecated because different versions has different ordering for keys
-      val result =  innerExecuteDeprecated(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN keys(line)").toList
+      val result =  executeSingle(s"LOAD CSV WITH HEADERS FROM '$url' AS line FIELDTERMINATOR ';' RETURN keys(line)").toList
 
       assert(result === List(
         Map("keys(line)" -> List(null, "DEPARTMENT ID", "DEPARTMENT NAME" )),
@@ -594,7 +596,7 @@ class LoadCsvAcceptanceTest
            |MERGE (country:Country {name: csvLine.country})
            |CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})
            |CREATE (movie)-[:MADE_IN]->(country)""".stripMargin
-      innerExecuteDeprecated(query, Map.empty)
+      executeSingle(query, Map.empty)
       resourceMonitor.assertClosedAndClear(1)
 
       //make sure three unique movies are created
@@ -602,7 +604,7 @@ class LoadCsvAcceptanceTest
 
       result should equal(List(Map("id" -> 1), Map("id" -> 2), Map("id" -> 3)))
       //empty database
-      innerExecuteDeprecated("MATCH (n) DETACH DELETE n", Map.empty)
+      executeSingle("MATCH (n) DETACH DELETE n", Map.empty)
     }
   }
 

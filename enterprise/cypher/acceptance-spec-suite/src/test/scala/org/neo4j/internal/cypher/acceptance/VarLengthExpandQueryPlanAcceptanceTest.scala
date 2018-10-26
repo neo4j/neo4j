@@ -24,8 +24,14 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Path
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs.InterpretedAndSlotted
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs.InterpretedAndSlotted
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestScenario
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
 
 class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -39,7 +45,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       ComparePlansWithAssertion(plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)").containingArgument("(e)<-[:*..4]-(a)")
         plan should includeSomewhere.aPlan("NodeByLabelScan").containingArgument(":To")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+      }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3))
   }
 
   test("Plan should have right relationship direction, other direction") {
@@ -49,7 +55,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)").containingArgument("(a)-[:*..4]->(e)")
         plan should includeSomewhere.aPlan("NodeByLabelScan").containingArgument(":From")
-      }, expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+      }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3))
   }
 
   test("Plan pruning var expand on distinct var-length match") {
@@ -89,7 +95,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
   }
 
   test("Double var expand with distinct result") {
@@ -121,7 +127,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted + Configs.Cost2_3, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
   }
 
   test("on longer var-lengths, we also use PruningVarExpand") {
@@ -137,7 +143,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
   }
 
   test("AllNodesInPath") {
@@ -148,7 +154,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
 
@@ -160,7 +166,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
 
@@ -172,7 +178,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
 
@@ -184,7 +190,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
 
@@ -196,7 +202,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     val result = executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion(plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
     result.toList should equal(List(Map("pB.name" -> "d")))
   }
 
@@ -299,8 +305,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
         | RETURN p
       """.stripMargin
 
-    val configs = Configs.CommunityInterpreted + TestScenario(Versions.Default, Planners.Default, Runtimes.Slotted) +
-      TestScenario(Versions.Default, Planners.Default, Runtimes.SlottedWithCompiledExpressions)
+    val configs = Configs.InterpretedAndSlotted
 
     val result = executeWith(configs, query)
     val path = result.toList.head("p").asInstanceOf[Path]
@@ -385,7 +390,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(All)")
-      }, expectPlansToFail = Configs.AllRulePlanners))
+      }, expectPlansToFail = Configs.RulePlanner))
   }
 
   private def setUp(startLabel: String) {

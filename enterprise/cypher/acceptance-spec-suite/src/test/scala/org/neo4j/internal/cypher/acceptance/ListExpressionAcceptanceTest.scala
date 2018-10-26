@@ -23,7 +23,12 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
 
 class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
@@ -367,12 +372,11 @@ class ListExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   // NOTE: should be merged with above test, but older Cypher versions fail on ONLY this case. it would be a shame to remove asserts on all other cases.
   test("should single predicate on values -- multiple true with null case") {
-    val costPlannerAndCurrentRuntimes = TestConfiguration(Versions(Versions.V3_4, Versions.Default), Planners(Planners.Cost, Planners.Default), Runtimes.all)
     val result = executeWith(Configs.InterpretedAndSlotted,
       query = "RETURN " +
         " single(s IN ['1',null,'1','333'] WHERE s = '1') AS twoTrueWithNull",
       expectedDifferentResults =
-        Configs.InterpretedAndSlotted - costPlannerAndCurrentRuntimes)
+        Configs.Version2_3 + Configs.Version3_1)
 
     result.toList.head should equal(Map(
       "twoTrueWithNull" -> false))

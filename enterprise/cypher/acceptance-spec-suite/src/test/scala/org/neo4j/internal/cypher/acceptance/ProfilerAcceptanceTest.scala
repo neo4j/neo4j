@@ -24,12 +24,19 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows}
-import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription}
-import org.neo4j.cypher.internal.runtime.{CreateTempFileTestSupport, ProfileMode}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, ProfilerStatisticsNotReadyException, TxCounts}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.DbHits
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.Rows
+import org.neo4j.cypher.internal.runtime.planDescription.Argument
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
+import org.neo4j.cypher.internal.runtime.CreateTempFileTestSupport
+import org.neo4j.cypher.internal.runtime.ProfileMode
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.ProfilerStatisticsNotReadyException
+import org.neo4j.cypher.TxCounts
 import org.neo4j.graphdb.QueryExecutionException
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{Configs, TestConfiguration}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
 import org.opencypher.v9_0.util.helpers.StringHelper.RichString
 
 import scala.reflect.ClassTag
@@ -302,7 +309,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("LIMIT should influence cardinality estimation by default value when expression contains rand()") {
     (0 until 100).map(i => createLabeledNode("Person"))
     // NOTE: We cannot executeWith because of random result
-    val result = innerExecuteDeprecated(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)", Map.empty)
+    val result = executeSingle(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT toInt(rand()*10)", Map.empty)
     result.executionPlanDescription() should includeSomewhere.aPlan("Limit").withEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)
   }
 
@@ -311,13 +318,13 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     //TODO this cannot be run with executeWith since it will occasionally succeed on 2.3 and we have decided not
     //to fix this on 2.3. So if we fix the issue on 2.3 or if we no longer need to depend on 2.3 we should update test
     //to run with `executeWith`
-    val r1 = innerExecuteDeprecated(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty)
+    val r1 = executeSingle(s"PROFILE MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty)
     r1.executionPlanDescription() should includeSomewhere.aPlan("Limit").withEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)
 
-    val r2 = innerExecuteDeprecated(s"PROFILE CYPHER runtime=slotted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty)
+    val r2 = executeSingle(s"PROFILE CYPHER runtime=slotted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty)
     r2.executionPlanDescription() should includeSomewhere.aPlan("Limit").withEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)
 
-    val r3 = innerExecuteDeprecated(s"PROFILE CYPHER runtime=interpreted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty)
+    val r3 = executeSingle(s"PROFILE CYPHER runtime=interpreted MATCH (p:Person) with 10 as x, p RETURN p LIMIT timestamp()", Map.empty)
     r3.executionPlanDescription() should includeSomewhere.aPlan("Limit").withEstimatedRows(GraphStatistics.DEFAULT_LIMIT_CARDINALITY.amount.toInt)
   }
 
@@ -390,7 +397,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   //this test asserts a specific optimization in pipe building and is not
   //valid for the compiled runtime
   test("should not use eager plans for distinct") {
-    val a = innerExecuteDeprecated("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.name", Map.empty)
+    val a = executeSingle("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.name", Map.empty)
     a.executionPlanDescription().toString should not include "Eager"
   }
 
@@ -542,7 +549,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     graph.createIndex("Glass", "name")
 
     // when
-    val result = innerExecuteDeprecated(
+    val result = executeSingle(
       "profile cypher runtime=interpreted match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name", Map.empty)
 
     // then
@@ -561,7 +568,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     graph.createIndex("Glass", "name")
 
     // when
-    val result = innerExecuteDeprecated(
+    val result = executeSingle(
       "profile match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p:Glass) USING INDEX n:Glass(name) return p.name", Map.empty)
 
     // then
@@ -580,7 +587,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     graph.createIndex("Glass", "name")
 
     // when
-    val result = innerExecuteDeprecated(
+    val result = executeSingle(
       "profile match (n:Glass {name: 'Seymour'})-[:R1]->(o)-[:R2]->(p) USING INDEX n:Glass(name) WHERE p.name = 'Franny' return p.name", Map.empty)
 
     // then
@@ -601,7 +608,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
       |MATCH (a:Company) RETURN a""".stripMargin
 
     //when
-    val result = innerExecuteDeprecated(query, Map.empty)
+    val result = executeSingle(query, Map.empty)
 
     result.toSet should be(Set(Map("a" -> corp), Map("a" -> corp)))
 
@@ -617,7 +624,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     createNode("prop" -> 42)
 
     // WHEN
-    val result = innerExecuteDeprecated("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.prop", Map.empty)
+    val result = executeSingle("PROFILE CYPHER runtime=interpreted MATCH (n) RETURN DISTINCT n.prop", Map.empty)
 
     // THEN
     result.executionPlanDescription() should includeSomewhere.aPlan("Distinct").withDBHits(2)
@@ -704,7 +711,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   override def profile(q: String, params: (String, Any)*): RewindableExecutionResult = fail("Don't use profile all together in ProfilerAcceptanceTest")
 
-  def legacyProfile(q: String, params: (String, Any)*): RewindableExecutionResult = profileWithPlanner(innerExecuteDeprecated, q, params.toMap)
+  def legacyProfile(q: String, params: (String, Any)*): RewindableExecutionResult = profileWithPlanner(executeSingle, q, params.toMap)
 
   private def getArgument[A <: Argument](plan: InternalPlanDescription)(implicit manifest: ClassTag[A]): A = plan.arguments.collectFirst {
     case x: A => x

@@ -25,6 +25,7 @@ package org.neo4j.internal.cypher.acceptance
 import java.util.UUID
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class BuiltInFunctionsAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 

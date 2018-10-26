@@ -23,12 +23,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.kernel.impl.proc.Procedures
 
 class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  private val expectSucceed = Configs.InterpretedAndSlotted - Configs.AllRulePlanners - Configs.Version2_3
+  private val expectSucceed = Configs.InterpretedAndSlotted - Configs.RulePlanner - Configs.Version2_3
 
   test("should return result") {
     registerTestProcedures()
@@ -93,7 +94,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
 
     executeWith(expectSucceed, "CALL org.neo4j.createNodeWithLoop( 'Node', 'Rel' ) YIELD node RETURN count(node)")
 
-    val result = innerExecuteDeprecated("MATCH (n)-->(n) RETURN n")
+    val result = executeSingle("MATCH (n)-->(n) RETURN n")
     result.size should equal(1)
   }
 
@@ -145,7 +146,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
   test("should use correct temporal types") {
     registerTestProcedures()
 
-    val result = innerExecuteDeprecated(
+    val result = executeSingle(
       "CALL org.neo4j.time(localtime.statement())")
 
     result.toList should be(empty) // and not crash
@@ -158,7 +159,7 @@ class ProceduresAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
 
     val result = executeWith(Configs.All - Configs.Version2_3,
       "CALL org.neo4j.aNodeWithLabel", params = Map("label" -> "Cat"),
-      expectedDifferentResults = Configs.Cost3_1 + Configs.AllRulePlanners) // this bugfix is not backported to 3.1?
+      expectedDifferentResults = Configs.Cost3_1 + Configs.RulePlanner) // this bugfix is not backported to 3.1?
 
     result.size should equal(1)
   }

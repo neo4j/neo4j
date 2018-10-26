@@ -34,10 +34,15 @@ import org.neo4j.cypher.internal.tracing.TimingCompilationTracer.QueryEvent
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_1
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_4
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Versions.V3_5
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V2_3
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_1
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_5
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.io.fs.FileUtils
 import org.neo4j.kernel.NeoStoreDataSource
@@ -52,7 +57,7 @@ import scala.collection.mutable
 
 class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport with CypherComparisonSupport {
 
-  private val startConf = Configs.CommunityInterpreted - Configs.Version3_4
+  private val startConf = Configs.InterpretedRuntime - Configs.Version3_4
 
   test("shouldGetRelationshipById") {
     val n = createNode()
@@ -477,8 +482,9 @@ order by a.COL1""".format(a, b))
   test("shouldReturnASimplePath") {
     val errorMessage = List("Index `missingIndex` does not exist")
 
-    val conf = startConf + Configs.Default
-    val conf2 = Configs.AllRulePlanners + Configs.DefaultInterpreted + Configs.Default
+    // Version 3.5 silently falls back to 3.1
+    val conf = TestConfiguration(Versions(V2_3, V3_1, V3_5), Planners.all, Runtimes.Interpreted)
+    val conf2 = TestConfiguration(Versions(V2_3, V3_1, V3_5), Planners.Rule, Runtimes.Interpreted)
     failWithError(conf, "start a=node:missingIndex(key='value') return a", errorMessage)
     failWithError(conf, "start a=node:missingIndex('value') return a", errorMessage)
     failWithError(conf2, "start a=relationship:missingIndex(key='value') return a", errorMessage)
@@ -727,10 +733,11 @@ order by a.COL1""".format(a, b))
 
     val testConfiguration =
       TestConfiguration(
-        Versions(V3_1, V3_4, V3_5, Versions.Default),
-        Planners(Planners.Cost, Planners.Default),
-        Runtimes(Runtimes.Default)
-      ) + Configs.Rule2_3
+        """2.3 planner=rule
+          |3.1
+          |3.4
+          |3.5
+        """.stripMargin)
 
     // WHEN
     executeWith(testConfiguration, s"""CREATE INDEX ON :$labelName(${propertyKeys.reduce(_ ++ "," ++ _)})""")
@@ -874,7 +881,7 @@ order by a.COL1""".format(a, b))
   test("should iterate all node id sets from start during matching") {
     // given
     val nodes: Vector[Node] =
-      innerExecuteDeprecated("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes", Map.empty)
+      executeSingle("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes", Map.empty)
         .columnAs[Vector[Node]]("nodes").next().sortBy(_.getId)
 
     val nodeIds = s"[${nodes.map(_.getId).mkString(",")}]"

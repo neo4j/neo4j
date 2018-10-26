@@ -24,7 +24,12 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.graphdb.Node
 import org.neo4j.graphdb.spatial.Point
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
 import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
 
 import scala.collection.Map
@@ -33,7 +38,7 @@ import scala.collection.immutable.{Map => ImmutableMap}
 class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
   private val equalityConfig = Configs.InterpretedAndSlotted - Configs.Before3_3AndRule
-  private val indexConfig = Configs.InterpretedAndSlotted - Configs.Cost3_1 - Configs.Cost2_3 - Configs.AllRulePlanners
+  private val indexConfig = Configs.InterpretedAndSlotted - Configs.Cost3_1 - Configs.Cost2_3 - Configs.RulePlanner
 
   override def cypherComparisonSupport = true
 
@@ -63,7 +68,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
-    val localConfig = Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.AllRulePlanners
+    val localConfig = Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.RulePlanner
     val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
@@ -220,8 +225,8 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
     graph.execute("CREATE (p:Place) SET p.location = point({latitude: 40.7, longitude: -35.78, crs: 'WGS-84'})")
 
-    val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.V3_5, Versions.Default), Planners(Planners.Cost, Planners.Default),
-                                          Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions, Runtimes.Default))
+    val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.V3_5), Planners.Cost,
+                                          Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions))
     val query = "MATCH (p:Place) WHERE p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point"
 
     // When
@@ -243,7 +248,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
 
     // When
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner,
       "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should includeSomewhere
@@ -265,9 +270,9 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
     graph.execute("CREATE (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.601})")
 
-    val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.V3_5, Versions.Default),
-                                          Planners(Planners.Cost, Planners.Default),
-                                          Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions, Runtimes.Default))
+    val configuration = TestConfiguration(Versions(Versions.V3_4, Versions.V3_5),
+                                          Planners(Planners.Cost),
+                                          Runtimes(Runtimes.Interpreted, Runtimes.Slotted, Runtimes.SlottedWithCompiledExpressions))
     // When
     val result = executeWith(configuration,
       "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
@@ -578,8 +583,8 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     ).toList.foreach {
       case (op, expected) =>
         // When
-        val resultsWithIndex = innerExecuteDeprecated(s"MATCH (n:Label) WHERE n.prop $op point({x: 1, y: 5}) RETURN n").toList.map(_ ("n"))
-        val resultsWithoutIndex = innerExecuteDeprecated(s"MATCH (n) WHERE n.prop $op point({x: 1, y: 5}) RETURN n").toList.map(_ ("n"))
+        val resultsWithIndex = executeSingle(s"MATCH (n:Label) WHERE n.prop $op point({x: 1, y: 5}) RETURN n").toList.map(_ ("n"))
+        val resultsWithoutIndex = executeSingle(s"MATCH (n) WHERE n.prop $op point({x: 1, y: 5}) RETURN n").toList.map(_ ("n"))
 
         // Then
         val expectAxes = op contains "="
@@ -593,7 +598,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
         }
     }
     // When running a spatial range query for points greater than or equal to the search point
-    val includingBorder = innerExecuteDeprecated("MATCH (n:Label) WHERE n.prop >= point({x: 1, y: 5}) RETURN n")
+    val includingBorder = executeSingle("MATCH (n:Label) WHERE n.prop >= point({x: 1, y: 5}) RETURN n")
 
     // Then expect to also find nodes on the intersecting axes
     withClue("Should find nodes that are on the axes defined by the search point") {
@@ -601,7 +606,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     }
 
     // When running a spatial range query for points only greater than the search point
-    val excludingBorder = innerExecuteDeprecated("MATCH (n:Label) WHERE n.prop > point({x: 1, y: 5}) RETURN n")
+    val excludingBorder = executeSingle("MATCH (n:Label) WHERE n.prop > point({x: 1, y: 5}) RETURN n")
 
     // Then expect to find nodes above the search point and not on the intersecting axes
     withClue("Should NOT find nodes that are on the axes defined by the search point") {
@@ -622,11 +627,11 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     val vertices = Seq(grid(11)(15), grid(11)(16), grid(12)(16), grid(12)(15))
 
     // When running a bounding box query we expect to include all or none of the border points
-    val includingBorder = innerExecuteDeprecated("MATCH (n:Label) WHERE point({x: 1, y: 5}) <= n.prop <= point({x: 2, y: 6}) RETURN n")
+    val includingBorder = executeSingle("MATCH (n:Label) WHERE point({x: 1, y: 5}) <= n.prop <= point({x: 2, y: 6}) RETURN n")
     withClue("Should find nodes that are on the axes defined by the search point") {
       includingBorder.toList.size should be(5)
     }
-    val excludingBorder = innerExecuteDeprecated("MATCH (n:Label) WHERE point({x: 1, y: 5}) < n.prop < point({x: 2, y: 6}) RETURN n")
+    val excludingBorder = executeSingle("MATCH (n:Label) WHERE point({x: 1, y: 5}) < n.prop < point({x: 2, y: 6}) RETURN n")
     withClue("Should find nodes that are on NOT the axes defined by the search point") {
       excludingBorder.toList.size should be(1)
     }
@@ -648,7 +653,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     createIndexedNode(atPoint)
 
     def runTest(name: String): Unit = {
-      val results = innerExecuteDeprecated(query, scala.Predef.Map("prop" -> atPoint))
+      val results = executeSingle(query, scala.Predef.Map("prop" -> atPoint))
       withClue(s"Should not find on-axis points when searching for < $atPoint ($name)") {
         results.toList.map(_ ("prop")).toSet should be(Set(inRange))
       }

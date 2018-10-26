@@ -23,11 +23,13 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
   private val expectedToSucceed = Configs.InterpretedAndSlotted
-  private val expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3
+  private val expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3
 
   test("find friends of others") {
     // given
@@ -89,7 +91,7 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val expectSucceed = Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1
     executeWith(expectSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeRightOuterHashJoin"), Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("should handle node left outer hash join with different types for the node variable") {
@@ -127,7 +129,7 @@ class JoinAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
 
     val expectSucceed = Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1
     val result = executeWith(expectSucceed, query,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeRightOuterHashJoin"), Configs.AllRulePlanners + Configs.Cost2_3 + Configs.Cost3_1))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeRightOuterHashJoin"), Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
   }
 
   test("optional match join should not crash") {

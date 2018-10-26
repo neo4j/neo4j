@@ -25,7 +25,9 @@ package org.neo4j.internal.cypher.acceptance
 import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
 import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 import scala.collection.Map
 
@@ -34,7 +36,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
 
   val hasActiveRead = ComparePlansWithAssertion((plan) => {
     plan should includeSomewhere.aPlan("ActiveRead")
-  }, Configs.Cost3_1 + Configs.Cost2_3 + Configs.AllRulePlanners)
+  }, Configs.Cost3_1 + Configs.Cost2_3 + Configs.RulePlanner)
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 
@@ -109,7 +111,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
       createLabeledNode(Map("id" -> 23), "User")
 
       // when + then
-      failWithError(Configs.UpdateConf + Configs.Default, "merge (a:Person:User {id: 23}) return a",
+      failWithError(Configs.UpdateConf, "merge (a:Person:User {id: 23}) return a",
         List("can not create a new node due to conflicts with existing unique nodes"))
       countNodes() should equal(2)
     }
@@ -160,7 +162,7 @@ class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with 
     def expectMergeConstraintConflictException(query: String, messages: Seq[String]): Unit = {
       Seq("2.3", "3.1", "3.5").foreach { version =>
         val exception = intercept[MergeConstraintConflictException] {
-          innerExecuteDeprecated(s"CYPHER $version $query", Map.empty)
+          executeSingle(s"CYPHER $version $query", Map.empty)
         }
         messages.foreach { message =>
           exception.getMessage should include(message)

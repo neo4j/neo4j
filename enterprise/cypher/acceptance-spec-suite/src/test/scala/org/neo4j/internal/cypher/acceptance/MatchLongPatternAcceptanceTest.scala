@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.{CommunityCompilerFactory, ExecutionEngine}
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.factory.GraphDatabaseSettings.{cypher_idp_solver_duration_threshold, cypher_idp_solver_table_threshold}
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.kernel.monitoring
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.NullLogProvider
@@ -100,7 +101,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       println(s"\t$query")
     }
     val start = System.currentTimeMillis()
-    val result = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
+    val result = executeSingle(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
     val duration = System.currentTimeMillis() - start
     if (VERBOSE) {
       println(result.executionPlanDescription())
@@ -133,13 +134,13 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
 
         // measure planning time
         val startPlaning = System.currentTimeMillis()
-        val resultPlanning = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=$planner $query", Map.empty)
+        val resultPlanning = executeSingle(s"EXPLAIN CYPHER planner=$planner $query", Map.empty)
         val durationPlanning = System.currentTimeMillis()-startPlaning
         val plan = resultPlanning.executionPlanDescription()
 
         // measure query time
         val start = System.currentTimeMillis()
-        val result = innerExecuteDeprecated(s"CYPHER planner=$planner $query", Map.empty)
+        val result = executeSingle(s"CYPHER planner=$planner $query", Map.empty)
         val resultCount = result.toList.length
         val duration = System.currentTimeMillis()-start
         val expectedResultCount = Math.pow(2, pathlen % indexStep).toInt
@@ -210,7 +211,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
           val monitor = TestIDPSolverMonitor()
           val monitors: monitoring.Monitors = graph.getDependencyResolver.resolveDependency(classOf[monitoring.Monitors])
           monitors.addMonitorListener(monitor)
-          innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
+          executeSingle(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
           acc(configValue) = monitor.maxStartIteration
       }
       acc

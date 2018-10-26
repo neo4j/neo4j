@@ -22,14 +22,22 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.{LocalDate, LocalTime, OffsetTime, ZoneOffset}
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.OffsetTime
+import java.time.ZoneOffset
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.values.storable.{CoordinateReferenceSystem, DurationValue, Values}
-import org.scalatest.matchers.{MatchResult, Matcher}
+import org.neo4j.values.storable.CoordinateReferenceSystem
+import org.neo4j.values.storable.DurationValue
+import org.neo4j.values.storable.Values
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 import scala.collection.JavaConverters._
 
@@ -50,7 +58,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     graph should haveIndexes(":Person(firstname)", ":Person(firstname,lastname)")
 
     // When
-    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, "DROP INDEX ON :Person(firstname , lastname)")
+    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner, "DROP INDEX ON :Person(firstname , lastname)")
 
     // Then
     graph should haveIndexes(":Person(firstname)")
@@ -151,7 +159,7 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
         plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname,lastname)"))
         plan should not(includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(firstname)"))
         plan should includeSomewhere.aPlan("NodeIndexSeek").containingArgument(":User(lastname)")
-      }, Configs.AllRulePlanners))
+      }, Configs.RulePlanner))
 
     // Then
     result.toComparableResult should equal(List(Map("n" -> n1)))
@@ -319,8 +327,8 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
 
   test("should not fail on multiple attempts to create a composite index") {
     // Given
-    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, "CREATE INDEX ON :Person(firstname, lastname)")
-    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners, "CREATE INDEX ON :Person(firstname, lastname)")
+    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner, "CREATE INDEX ON :Person(firstname, lastname)")
+    executeWith(Configs.All - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner, "CREATE INDEX ON :Person(firstname, lastname)")
   }
 
   test("should not use range queries against a composite index") {
@@ -423,6 +431,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val resultNoIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
 
     graph.createIndex("User", "name", "city")
+    resampleIndexes()
+    // TODO this should not be necessary. Creating an index should invalidate the caches.
+    eengine.clearQueryCaches()
+
     val resultIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
@@ -452,6 +464,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val resultNoIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
 
     graph.createIndex("Label", "date", "time")
+    resampleIndexes()
+    // TODO this should not be necessary. Creating an index should invalidate the caches.
+    eengine.clearQueryCaches()
+
     val resultIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN
@@ -480,6 +496,10 @@ class CompositeIndexAcceptanceTest extends ExecutionEngineFunSuite with CypherCo
     val resultNoIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
 
     graph.createIndex("Runner", "name", "result")
+    resampleIndexes()
+    // TODO this should not be necessary. Creating an index should invalidate the caches.
+    eengine.clearQueryCaches()
+
     val resultIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         //THEN

@@ -23,7 +23,8 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.graphdb.{Label, Node, Relationship}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
 import org.scalatest.LoneElement._
 
@@ -31,9 +32,9 @@ import scala.collection.JavaConversions._
 
 class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with CypherComparisonSupport {
 
-  private val combinedCallconfiguration = Configs.InterpretedAndSlotted + Configs.Default - Configs.AllRulePlanners - Configs.Version2_3
+  private val combinedCallconfiguration = Configs.InterpretedAndSlotted - Configs.RulePlanner - Configs.Version2_3
 
-  private val config = Configs.All - Configs.AllRulePlanners - Configs.Version2_3
+  private val config = Configs.All - Configs.Version2_3
 
   test("should be able to filter as part of call") {
     // Given
@@ -329,7 +330,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   }
 
   test("yield from void procedure should return correct error msg") {
-    failWithError(Configs.Default + Configs.Version3_5 + Configs.Version3_4 - Configs.AllRulePlanners,
+    failWithError(Configs.Version3_5 + Configs.Version3_4 - Configs.RulePlanner,
                   "CALL db.createLabel('Label') yield node",
                   List("Cannot yield value from void procedure."))
   }

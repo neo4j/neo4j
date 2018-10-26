@@ -28,7 +28,8 @@ import org.neo4j.cypher._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.utils.TemporalParseException

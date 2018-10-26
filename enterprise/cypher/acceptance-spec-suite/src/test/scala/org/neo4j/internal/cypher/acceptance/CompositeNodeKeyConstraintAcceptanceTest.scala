@@ -22,12 +22,14 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import java.time.{LocalDate, LocalDateTime}
+import java.time.LocalDate
+import java.time.LocalDateTime
 
 import org.neo4j.cypher._
-import org.opencypher.v9_0.util.helpers.StringHelper._
 import org.neo4j.graphdb.ConstraintViolationException
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.opencypher.v9_0.util.helpers.StringHelper._
 
 import scala.collection.Map
 
@@ -37,7 +39,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("Node key constraint creation should be reported") {
     // When
-    val result = innerExecuteDeprecated("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY", Map.empty)
+    val result = executeSingle("CREATE CONSTRAINT ON (n:Person) ASSERT (n.email) IS NODE KEY", Map.empty)
 
     // Then
     assertStats(result, nodekeyConstraintsAdded = 1)
@@ -45,7 +47,7 @@ class CompositeNodeKeyConstraintAcceptanceTest extends ExecutionEngineFunSuite w
 
   test("Uniqueness constraint creation should be reported") {
     // When
-    val result = innerExecuteDeprecated("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE", Map.empty)
+    val result = executeSingle("CREATE CONSTRAINT ON (n:Person) ASSERT n.email IS UNIQUE", Map.empty)
 
     // Then
     assertStats(result, uniqueConstraintsAdded = 1)

@@ -23,13 +23,14 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.values.storable.DurationValue
 
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
-  private val INTERPRETED_33_35_NO_RULE = Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.AllRulePlanners
+  private val INTERPRETED_33_35_NO_RULE = Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner
 
   // Non-deterministic query -- needs TCK design
   test("should aggregate using as grouping key expressions using variables in scope and nothing else") {
@@ -245,7 +246,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
   test("Should not sum durations and numbers together") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN sum(x) AS length"
-    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Default, query, Seq("cannot mix number and durations"))
+    failWithError(INTERPRETED_33_35_NO_RULE, query, Seq("cannot mix number and durations"))
   }
 
   test("Should avg durations") {
@@ -264,7 +265,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
 
   test("Should not avg durations and numbers together") {
     val query = "UNWIND [duration('PT10S'), duration('P1D'), duration('PT30.5S'), 90] as x RETURN avg(x) AS length"
-    failWithError(INTERPRETED_33_35_NO_RULE + Configs.Default, query, Seq("cannot mix number and durations"))
+    failWithError(INTERPRETED_33_35_NO_RULE, query, Seq("cannot mix number and durations"))
   }
 
   test("Aggregations should keep LHS order") {
@@ -272,7 +273,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with CypherCompa
     val query = "UNWIND [1, 2, 2, 3, 3, 4, 5, 5, 5, 6, 7, 8, 9, 99] AS n WITH n ORDER BY n RETURN n, count(n)"
     val result = executeWith(Configs.All, query,
       // The order of aggregation has been changed in 3.5
-      expectedDifferentResults = Configs.Version3_1 + Configs.Version2_3 + Configs.AllRulePlanners)
+      expectedDifferentResults = Configs.Version3_1 + Configs.Version2_3 + Configs.RulePlanner)
 
     result.toList should be(List(
       Map("n" -> 1, "count(n)" -> 1),

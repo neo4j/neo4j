@@ -30,8 +30,11 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphalgo.impl.path.ShortestPath
 import org.neo4j.graphalgo.impl.path.ShortestPath.DataMonitor
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{Node, Path}
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport.{ComparePlansWithAssertion, Configs}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Path
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.kernel.monitoring.Monitors
 import org.scalatest.matchers.Matcher
 
@@ -174,7 +177,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |WHERE ANY(n in nodes(p) WHERE n:$topRight)
          |RETURN nodes(p) AS nodes""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
-        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+        expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3))
 
     dprintln(s"Query took ${(System.currentTimeMillis - start)/1000.0}s")
 
@@ -194,7 +197,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |WHERE ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
-        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+        expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3))
 
     val result = results.columnAs[List[Node]]("nodes").toList
 
@@ -215,7 +218,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
-        expectPlansToFail = Configs.AllRulePlanners + Configs.Cost2_3))
+        expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3))
 
     val result = results.columnAs[List[Node]]("nodes").toList
 
@@ -234,7 +237,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
          |WHERE ALL(r in rels(p) WHERE type(r) = "DOWN")
          |  AND ANY(n in nodes(p) WHERE n:$bottomLeft)
          |RETURN nodes(p) AS nodes""".stripMargin,
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"), expectPlansToFail = Configs.RulePlanner))
 
     val result = results.columnAs[List[Node]]("nodes").toList
 
@@ -617,7 +620,7 @@ class ShortestPathLongerAcceptanceTest extends ExecutionEngineFunSuite with Cyph
                   |WITH p, size(nodes(p)) as length order by length DESC limit 1
                   |RETURN EXTRACT(n IN nodes(p) | n.id) as nodes""".stripMargin
     val result = executeWith(Configs.InterpretedAndSlotted, query,
-      expectedDifferentResults = Configs.AllRulePlanners + Configs.Cost2_3)
+      expectedDifferentResults = Configs.RulePlanner + Configs.Cost2_3)
 
     result.toList should equal(List(Map("nodes" -> List(3, 2, 1, 11, 12, 13, 26, 27, 14))))
   }

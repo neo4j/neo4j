@@ -26,7 +26,10 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{EstimatedRows, ExpandExpression}
 import org.neo4j.graphdb.Node
-import org.neo4j.internal.cypher.acceptance.CypherComparisonSupport._
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.scalatest.Matchers
 
@@ -52,7 +55,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     val query = "return case when true then (:A)-->() else 42 end as p"
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.AllRulePlanners, query,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.RulePlanner, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("Expand(All)")))
 
     result.toList.head("p").asInstanceOf[Seq[_]] should have size 2
@@ -303,7 +306,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
     relate(start, createNode())
 
     executeWith(Configs.InterpretedAndSlotted, "match (n)-->(b) with (n)-->() as p, count(b) as c return p, c",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("Expand(All)"), expectPlansToFail = Configs.AllRulePlanners))
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("Expand(All)"), expectPlansToFail = Configs.RulePlanner))
   }
 
   test("should use varlength expandInto when variables are bound") {
@@ -313,7 +316,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     executeWith(Configs.InterpretedAndSlotted, "match (a:Start), (b:End) with (a)-[*]->(b) as path, count(a) as c return path, c",
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("VarLengthExpand(Into)"),
-        expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
+        expectPlansToFail = Configs.RulePlanner + Configs.Version2_3))
   }
 
   // FAIL: <default version> <default planner> runtime=slotted returned different results than <default version> <default planner> runtime=interpreted List() did not contain the same elements as List(Map("r" -> (20000)-[T,0]->(20001)))
@@ -362,7 +365,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
         expandArgs collect {
           case ExpandExpression("n", _, Seq("HAS"), _, SemanticDirection.OUTGOING, 1, Some(1)) => true
         } should not be empty
-      }, Configs.AllRulePlanners + Configs.Version2_3))
+      }, Configs.RulePlanner + Configs.Version2_3))
   }
 
   test("should be able to execute aggregating-functions on pattern expressions") {
@@ -374,7 +377,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
 
     executeWith(Configs.InterpretedAndSlotted, "MATCH (n:A) RETURN count((n)-[:HAS]->()) as c",
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("Expand(All)"),
-        expectPlansToFail = Configs.AllRulePlanners + Configs.Version2_3))
+        expectPlansToFail = Configs.RulePlanner + Configs.Version2_3))
   }
 
   test("use getDegree for simple pattern expression with length clause, outgoing") {
@@ -405,10 +408,13 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
 
+
+  private val configurationWithPatternExpressionFix = Configs.InterpretedAndSlotted - Configs.Cost2_3 - TestConfiguration("3.4 runtime=slotted")
+
   test("solve pattern expressions in set node properties") {
     setup()
 
-    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3,
+    executeWith(configurationWithPatternExpressionFix,
       "MATCH (n) SET n.friends = size((n)<--())",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -416,7 +422,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set relationship properties") {
     setup()
 
-    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3,
+    executeWith(configurationWithPatternExpressionFix,
       "MATCH (n)-[r]-() SET r.friends = size((n)<--())",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -424,7 +430,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set node/relationship properties") {
     setup()
 
-    executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3,
+    executeWith(configurationWithPatternExpressionFix - Configs.Rule2_3,
       "MATCH (n)-[r]-() UNWIND [n,r] AS x SET x.friends = size((n)<--())",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -432,7 +438,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set node properties from map") {
     setup()
 
-    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3,
+    executeWith(configurationWithPatternExpressionFix,
       "MATCH (n) SET n += {friends: size((n)<--())}",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
@@ -440,7 +446,7 @@ class PatternExpressionImplementationAcceptanceTest extends ExecutionEngineFunSu
   test("solve pattern expressions in set relationship properties from map") {
     setup()
 
-    executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3,
+    executeWith(configurationWithPatternExpressionFix,
       "MATCH (n)-[r]-() SET r += {friends: size((n)<--())}",
       planComparisonStrategy = ComparePlansWithAssertion(_ shouldNot includeSomewhere.aPlan("RollUpApply")))
   }
