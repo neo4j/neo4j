@@ -32,7 +32,6 @@ import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.TemporalValue;
 import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.VirtualValues;
 
@@ -206,8 +205,6 @@ public final class CypherMath
 
     public static boolean divideCheckForNull( AnyValue lhs, AnyValue rhs )
     {
-        assert lhs != NO_VALUE && rhs != NO_VALUE : "NO_VALUE checks need to happen outside this call";
-
         if ( rhs instanceof IntegralValue && rhs.equals( ZERO_INT ) )
         {
             throw new ArithmeticException( "/ by zero", null );
