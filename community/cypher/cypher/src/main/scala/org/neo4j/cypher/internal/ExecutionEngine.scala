@@ -107,14 +107,6 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     } finally queryTracer.close()
   }
 
-  def execute(query: String,
-              mapParams: MapValue,
-              context: TransactionalContext,
-              resultBuffer: ResultBuffer
-             ): QueryExecution = {
-    ???
-  }
-
   /*
    * Return the primary and secondary compile to be used
    *

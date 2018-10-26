@@ -29,15 +29,13 @@ import org.neo4j.graphdb.{Notification, Result}
 
 import scala.collection.mutable.ArrayBuffer
 
-/**
-  * Helper class to ease asserting on cypher results from scala.
-  */
-class RewindableExecutionResult(val columns: Array[String],
-                                result: Seq[Map[String, AnyRef]],
-                                val executionMode: ExecutionMode,
-                                planDescription: InternalPlanDescription,
-                                statistics: QueryStatistics,
-                                val notifications: Iterable[Notification]) {
+trait RewindableExecutionResult {
+  def columns: Array[String]
+  protected def result: Seq[Map[String, AnyRef]]
+  def executionMode: ExecutionMode
+  protected def planDescription: InternalPlanDescription
+  protected def statistics: QueryStatistics
+  def notifications: Iterable[Notification]
 
   def columnAs[T](column: String): Iterator[T] = result.iterator.map(row => row(column).asInstanceOf[T])
   def toList: List[Map[String, AnyRef]] = result.toList
@@ -53,6 +51,16 @@ class RewindableExecutionResult(val columns: Array[String],
 
   def isEmpty: Boolean = result.isEmpty
 }
+
+/**
+  * Helper class to ease asserting on cypher results from scala.
+  */
+class RewindableExecutionResultImplementation(val columns: Array[String],
+                                              protected val result: Seq[Map[String, AnyRef]],
+                                              val executionMode: ExecutionMode,
+                                              protected val planDescription: InternalPlanDescription,
+                                              protected val statistics: QueryStatistics,
+                                              val notifications: Iterable[Notification]) extends RewindableExecutionResult
 
 object RewindableExecutionResult {
 
@@ -79,7 +87,7 @@ object RewindableExecutionResult {
       }
     })
 
-    new RewindableExecutionResult(columns, result, NormalMode, null, runtimeResult.queryStatistics(), Seq.empty)
+    new RewindableExecutionResultImplementation(columns, result, NormalMode, null, runtimeResult.queryStatistics(), Seq.empty)
   }
 
   def apply(internal: InternalExecutionResult) : RewindableExecutionResult = {
@@ -97,7 +105,7 @@ object RewindableExecutionResult {
       }
     })
 
-    new RewindableExecutionResult(
+    new RewindableExecutionResultImplementation(
       columns,
       result.toList,
       internal.executionMode,

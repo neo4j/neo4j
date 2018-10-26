@@ -24,32 +24,71 @@ package org.neo4j.internal.cypher.acceptance.comparisonsupport
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.graphdb.Result
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.kernel.impl.query.TransactionalContext
+import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.test.TestEnterpriseGraphDatabaseFactory
 import org.neo4j.test.TestGraphDatabaseFactory
+import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.Eagerly
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
-import org.scalatest.Assertions
-import org.scalatest.matchers.MatchResult
-import org.scalatest.matchers.Matcher
 
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-trait CypherComparisonSupport extends CypherTestSupport {
+/**
+  * Will run a query across versions and configurations, making sure they all agree on the results and/or errors.
+  *
+  * For every query tested using `executeWith`, the query will be run against all configurations. Every configuration
+  * is expected to either succeed or fail. When new features are added that enable queries in new configurations,
+  * acceptance tests will start failing because now a configuration is succeeding that was not successful before.
+  *
+  * This is expected and useful - it let's us know how a change impacts how many acceptance tests now start
+  * succeeding where they weren't earlier.
+  */
+trait CypherComparisonSupport extends AbstractCypherComparisonSupport {
   self: ExecutionEngineFunSuite =>
 
-  import CypherComparisonSupport._
+  override def eengineExecute(query: String,
+                              params: MapValue,
+                              context: TransactionalContext,
+                              profile: Boolean): Result = eengine.execute(query, params, context, profile)
+
+  override def makeRewinadable(in: Result): RewindableExecutionResult = RewindableExecutionResult(in)
+
+  override def rollback[T](f: => T): T = graph.rollback(f)
+
+  override def inTx[T](f: => T): T = graph.inTx(f)
+
+  override def transactionalContext(query: (String, Map[String, Any])): TransactionalContext = graph.transactionalContext(query = query)
 
   override def databaseConfig(): collection.Map[Setting[_], String] = {
     Map(GraphDatabaseSettings.cypher_hints_error -> "true")
   }
 
   override protected def createDatabaseFactory(): TestGraphDatabaseFactory = new TestEnterpriseGraphDatabaseFactory()
+}
+
+trait AbstractCypherComparisonSupport extends CypherFunSuite with CypherTestSupport {
+
+  // abstract, can be defined through CypherComparisonSupport
+  def eengineExecute(query: String, params: MapValue, context: TransactionalContext, profile: Boolean = false): Result
+
+  def makeRewinadable(in:Result): RewindableExecutionResult
+
+  def rollback[T](f: => T): T
+
+  def inTx[T](f: => T): T
+
+  def transactionalContext(query: (String, Map[String, Any])): TransactionalContext
+
+  def kernelMonitors: Monitors
+
+  // Concrete stuff
 
   /**
     * Get rid of Arrays and java.util.Map to make it easier to compare results by equality.
@@ -86,7 +125,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
   override protected def initTest() {
     super.initTest()
-    self.kernelMonitors.addMonitorListener(newPlannerMonitor)
+    kernelMonitors.addMonitorListener(NewPlannerMonitor)
   }
 
   protected def failWithError(expectedSpecificFailureFrom: TestConfiguration,
@@ -128,10 +167,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  private def correctError(actualError: String, possibleErrors: Seq[String]): Boolean = {
-    possibleErrors == Seq.empty || (actualError != null && possibleErrors.exists(s => actualError.replaceAll("\\r", "").contains(s.replaceAll("\\r", ""))))
-  }
-
   /**
     * Execute query on all compatibility versions and dump the result into a string.
     *
@@ -143,14 +178,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
     case class DumpResult(maybeResult:Try[String], version: Version)
 
-    val paramValue = asMapValue(params)
+    val paramValue = ExecutionEngineHelper.asMapValue(params)
     val results: Seq[DumpResult] =
       Versions.orderedVersions.map {
         version => {
           val queryText = s"CYPHER ${version.name} $query"
-          val txContext = graph.transactionalContext(query = queryText -> params)
+          val txContext = transactionalContext(queryText -> params)
           val maybeResult =
-            Try(eengine.execute(queryText, paramValue, txContext).resultAsString())
+            Try(eengineExecute(queryText, paramValue, txContext).resultAsString())
           DumpResult(maybeResult, version)
         }
       }
@@ -168,6 +203,10 @@ trait CypherComparisonSupport extends CypherTestSupport {
     reference
   }
 
+  /**
+    * Execute a query with different pre-parser options and
+    * assert which configurations should success and which ones should fail.
+    */
   protected def executeWith(expectSucceed: TestConfiguration,
                             query: String,
                             expectedDifferentResults: TestConfiguration = Configs.Empty,
@@ -176,7 +215,6 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             executeBefore: () => Unit = () => {},
                             executeExpectedFailures: Boolean = true,
                             params: Map[String, Any] = Map.empty): RewindableExecutionResult = {
-    // TODO this is weird
     // Never consider Morsel even if test requests it
     val expectSucceedEffective = expectSucceed - Configs.Morsel
 
@@ -205,12 +243,11 @@ trait CypherComparisonSupport extends CypherTestSupport {
                                        params,
                                        resultAssertionInTx = None,
                                        executeExpectedFailures = false,
-                                       rollback = false)
+                                       shouldRollback = false)
 
       // Assumption: baseOption.get is safe because the baseScenario is expected to succeed
       val baseResult = baseOption.get._2
 
-      // TODO we do not run this for the base scenario
       positiveResults.foreach {
         case (scenario, result) =>
           planComparisonStrategy.compare(expectSucceedEffective, scenario, result)
@@ -240,6 +277,20 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
+  @deprecated("Rewrite to use executeWith instead")
+  protected def assertResultsSameDeprecated(result1: RewindableExecutionResult, result2: RewindableExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
+    assertResultsSame(result1, result2, queryText, errorMsg, replaceNaNs)
+
+  /**
+    * Execute a single CYPHER query (without multiple different pre-parser options). Obtain a RewindableExecutionResult.
+    */
+  protected def executeSingle(queryText: String, params: Map[String, Any] = Map.empty): RewindableExecutionResult =
+    innerExecute(queryText, params)
+
+  private def correctError(actualError: String, possibleErrors: Seq[String]): Boolean = {
+    possibleErrors == Seq.empty || (actualError != null && possibleErrors.exists(s => actualError.replaceAll("\\r", "").contains(s.replaceAll("\\r", ""))))
+  }
+
   private def extractBaseScenario(expectSucceed: TestConfiguration, compareResults: TestConfiguration): TestScenario = {
     val scenariosToChooseFrom = if (compareResults.scenarios.isEmpty) expectSucceed else compareResults
 
@@ -260,7 +311,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               params: Map[String, Any],
                               resultAssertionInTx: Option[RewindableExecutionResult => Unit],
                               executeExpectedFailures: Boolean,
-                              rollback: Boolean = true): Option[(TestScenario, RewindableExecutionResult)] = {
+                              shouldRollback: Boolean = true): Option[(TestScenario, RewindableExecutionResult)] = {
 
     def execute() = {
       executeBefore()
@@ -292,13 +343,8 @@ trait CypherComparisonSupport extends CypherTestSupport {
       }
     }
 
-    // TODO test the case where the default (base?) scenario is expected to fail
-    if (rollback) graph.rollback(execute()) else graph.inTx(execute())
+    if (shouldRollback) rollback(execute()) else inTx(execute())
   }
-
-  @deprecated("Rewrite to use executeWith instead")
-  protected def assertResultsSameDeprecated(result1: RewindableExecutionResult, result2: RewindableExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit =
-    assertResultsSame(result1, result2, queryText, errorMsg, replaceNaNs)
 
   private def assertResultsSame(result1: RewindableExecutionResult, result2: RewindableExecutionResult, queryText: String, errorMsg: String, replaceNaNs: Boolean = false): Unit = {
     withClue(errorMsg) {
@@ -320,24 +366,9 @@ trait CypherComparisonSupport extends CypherTestSupport {
     }
   }
 
-  // Should this really be deprecated? We have real use cases where we want to get the RewindableExecutionResult
-  // But do NOT want comparison support, for example see the query statistics support used in CompositeNodeKeyAcceptanceTests
-  @deprecated("Rewrite to use executeWith instead")
-  protected def innerExecuteDeprecated(queryText: String, params: Map[String, Any] = Map.empty): RewindableExecutionResult =
-    innerExecute(queryText, params)
-
   private def innerExecute(queryText: String, params: Map[String, Any]): RewindableExecutionResult = {
-    val innerResult: Result = eengine.execute(queryText, asMapValue(params), graph.transactionalContext(query = queryText -> params))
-    RewindableExecutionResult(innerResult)
-  }
-
-  def evaluateTo(expected: Seq[Map[String, Any]]): Matcher[RewindableExecutionResult] = new Matcher[RewindableExecutionResult] {
-    override def apply(actual: RewindableExecutionResult): MatchResult = {
-      MatchResult(
-        matches = actual.toComparableResult == expected.toComparableSeq(replaceNaNs = false),
-        rawFailureMessage = s"Results differ: ${actual.toComparableResult} did not equal to $expected",
-        rawNegatedFailureMessage = s"Results are equal")
-    }
+    val innerResult: Result = eengineExecute(queryText, ExecutionEngineHelper.asMapValue(params), transactionalContext(queryText -> params))
+    makeRewinadable(innerResult)
   }
 }
 
@@ -365,64 +396,4 @@ object NewRuntimeMonitor {
 
 }
 
-/**
-  * Will run a query across versions and configurations, making sure they all agree on the results and/or errors.
-  *
-  * For every query tested using `executeWith`, the query will be run against all configurations. Every configuration
-  * is expected to either succeed or fail. When new features are added that enable queries in new configurations,
-  * acceptance tests will start failing because now a configuration is succeeding that was not successful before.
-  *
-  * This is expected and useful - it let's us know how a change impacts how many acceptance tests now start
-  * succeeding where they weren't earlier.
-  */
-object CypherComparisonSupport {
-
-  val newPlannerMonitor = NewPlannerMonitor
-
-  sealed trait PlanComparisonStrategy extends Assertions {
-    def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit
-  }
-
-  case object DoNotComparePlans extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit = {}
-  }
-
-  case class ComparePlansWithPredicate(predicate: InternalPlanDescription => Boolean,
-                                       expectPlansToFailPredicate: TestConfiguration = TestConfiguration.empty,
-                                       predicateFailureMessage: String = "") extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit = {
-      val comparePlans = expectSucceed - expectPlansToFailPredicate
-      if (comparePlans.containsScenario(scenario)) {
-        if (!predicate(result.executionPlanDescription())) {
-          fail(s"plan for ${scenario.name} did not fulfill predicate.\n$predicateFailureMessage\n${result.executionPlanString()}")
-        }
-      } else {
-        if (predicate(result.executionPlanDescription())) {
-          fail(s"plan for ${scenario.name} did unexpectedly fulfill predicate\n$predicateFailureMessage\n${result.executionPlanString()}")
-        }
-      }
-    }
-  }
-
-  case class ComparePlansWithAssertion(assertion: InternalPlanDescription => Unit,
-                                       expectPlansToFail: TestConfiguration = TestConfiguration.empty) extends PlanComparisonStrategy {
-    override def compare(expectSucceed: TestConfiguration, scenario: TestScenario, result: RewindableExecutionResult): Unit = {
-      val comparePlans = expectSucceed - expectPlansToFail
-      if (comparePlans.containsScenario(scenario)) {
-        withClue(s"plan for ${scenario.name}\n") {
-          assertion(result.executionPlanDescription())
-        }
-      } else {
-        val tryResult = Try(assertion(result.executionPlanDescription()))
-        tryResult match {
-          case Success(_) =>
-            fail(s"plan for ${scenario.name} did unexpectedly succeed \n${result.executionPlanString()}")
-          case Failure(_) =>
-          // Expected to fail
-        }
-      }
-    }
-  }
-
-  object NotExecutedException extends Exception
-}
+object NotExecutedException extends Exception
