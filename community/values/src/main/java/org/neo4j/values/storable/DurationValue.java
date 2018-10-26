@@ -234,7 +234,6 @@ public final class DurationValue extends ScalarValue implements TemporalAmount, 
     @Override
     Comparison unsafeTernaryCompareTo( Value other )
     {
-        //Durations cannot be compared with anything else including itself
         if ( ternaryEquals( other ) == Boolean.TRUE )
         {
             return Comparison.EQUAL;

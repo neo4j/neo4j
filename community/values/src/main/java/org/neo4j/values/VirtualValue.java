@@ -51,7 +51,9 @@ public abstract class VirtualValue extends AnyValue
     @Override
     public Boolean ternaryEquals( AnyValue other )
     {
-        if ( other == null || other == NO_VALUE )
+        assert other != null : "null values are not supported, use NoValue.NO_VALUE instead";
+
+        if ( other == NO_VALUE )
         {
             return null;
         }
