@@ -74,26 +74,24 @@ public class FulltextIndexReader implements IndexReader
         return multiFieldQueryParser.parse( query );
     }
 
-    private ScoreEntityIterator indexQuery( Query query )
+    private ValuesIterator indexQuery( Query query )
     {
-        List<ScoreEntityIterator> results = new ArrayList<>();
+        List<ValuesIterator> results = new ArrayList<>();
         for ( SearcherReference searcher : searchers )
         {
-            ScoreEntityIterator iterator = searchLucene( searcher, query );
+            ValuesIterator iterator = searchLucene( searcher, query );
             results.add( iterator );
         }
         return ScoreEntityIterator.mergeIterators( results );
     }
 
-    static ScoreEntityIterator searchLucene( SearcherReference searcher, Query query )
+    static ValuesIterator searchLucene( SearcherReference searcher, Query query )
     {
         try
         {
             DocValuesCollector docValuesCollector = new DocValuesCollector( true );
             searcher.getIndexSearcher().search( query, docValuesCollector );
-            ValuesIterator sortedValuesIterator =
-                    docValuesCollector.getSortedValuesIterator( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, Sort.RELEVANCE );
-            return new ScoreEntityIterator( sortedValuesIterator );
+            return docValuesCollector.getSortedValuesIterator( LuceneFulltextDocumentStructure.FIELD_ENTITY_ID, Sort.RELEVANCE );
         }
         catch ( IOException e )
         {
@@ -181,7 +179,7 @@ public class FulltextIndexReader implements IndexReader
             }
         }
         BooleanQuery query = queryBuilder.build();
-        ScoreEntityIterator itr = indexQuery( query );
+        ValuesIterator itr = indexQuery( query );
         ReadableTransactionState state = context.getTransactionStateOrNull();
         if ( state != null && !descriptor.isEventuallyConsistent() )
         {
@@ -245,10 +243,10 @@ public class FulltextIndexReader implements IndexReader
 
     private static class FulltextIndexProgressor implements IndexProgressor
     {
-        private final ScoreEntityIterator itr;
+        private final ValuesIterator itr;
         private final EntityValueClient client;
 
-        private FulltextIndexProgressor( ScoreEntityIterator itr, EntityValueClient client )
+        private FulltextIndexProgressor( ValuesIterator itr, EntityValueClient client )
         {
             this.itr = itr;
             this.client = client;
@@ -261,12 +259,12 @@ public class FulltextIndexReader implements IndexReader
             {
                 return false;
             }
-            ScoreEntityIterator.ScoreEntry entry;
             boolean accepted;
             do
             {
-                entry = itr.next();
-                accepted = client.acceptEntity( entry.entityId(), entry.score(), (Value[]) null );
+                long entityId = itr.next();
+                float score = itr.currentScore();
+                accepted = client.acceptEntity( entityId, score, (Value[]) null );
             }
             while ( !accepted && itr.hasNext() );
             return accepted;

@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 
-import org.neo4j.kernel.api.impl.fulltext.ScoreEntityIterator.ScoreEntry;
+import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -35,42 +35,37 @@ public class ScoreEntityIteratorTest
     @Test
     public void mergeShouldReturnOrderedResults()
     {
-        ScoreEntityIterator one = iteratorOf( new ScoreEntry[]{entry( 3, 10 ), entry( 10, 3 ), entry( 12, 1 )} );
-        ScoreEntityIterator two = iteratorOf( new ScoreEntry[]{entry( 1, 12 ), entry( 5, 8 ), entry( 7, 6 ), entry( 8, 5 ), entry( 11, 2 )} );
-        ScoreEntityIterator three = iteratorOf( new ScoreEntry[]{entry( 2, 11 ), entry( 4, 9 ), entry( 6, 7 ), entry( 9, 4 )} );
+        StubValuesIterator one = new StubValuesIterator().add( 3, 10 ).add( 10, 3 ).add( 12, 1 );
+        StubValuesIterator two = new StubValuesIterator().add( 1, 12 ).add( 5, 8 ).add( 7, 6 ).add( 8, 5 ).add( 11, 2 );
+        StubValuesIterator three = new StubValuesIterator().add( 2, 11 ).add( 4, 9 ).add( 6, 7 ).add( 9, 4 );
 
-        ScoreEntityIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
+        ValuesIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
 
         for ( int i = 1; i <= 12; i++ )
         {
             assertTrue( concat.hasNext() );
-            ScoreEntry entry = concat.next();
-            assertEquals( i, entry.entityId() );
-            assertEquals( 13 - i, entry.score(), 0.001 );
+            assertEquals( i, concat.next() );
+            assertEquals( i, concat.current() );
+            assertEquals( 13 - i, concat.currentScore(), 0.001 );
         }
         assertFalse( concat.hasNext() );
-    }
-
-    private static ScoreEntry entry( long id, float s )
-    {
-        return new ScoreEntry( id, s );
     }
 
     @Test
     public void mergeShouldHandleEmptyIterators()
     {
-        ScoreEntityIterator one = iteratorOf( emptyEntries() );
-        ScoreEntityIterator two = iteratorOf( new ScoreEntry[]{entry( 1, 5 ), entry( 2, 4 ), entry( 3, 3 ), entry( 4, 2 ), entry( 5, 1 )} );
-        ScoreEntityIterator three = iteratorOf( emptyEntries() );
+        StubValuesIterator one = new StubValuesIterator();
+        StubValuesIterator two = new StubValuesIterator().add( 1, 5 ).add( 2, 4 ).add( 3, 3 ).add( 4, 2 ).add( 5, 1 );
+        StubValuesIterator three = new StubValuesIterator();
 
-        ScoreEntityIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
+        ValuesIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
 
         for ( int i = 1; i <= 5; i++ )
         {
             assertTrue( concat.hasNext() );
-            ScoreEntry entry = concat.next();
-            assertEquals( i, entry.entityId() );
-            assertEquals( 6 - i, entry.score(), 0.001 );
+            assertEquals( i, concat.next() );
+            assertEquals( i, concat.current() );
+            assertEquals( 6 - i, concat.currentScore(), 0.001 );
         }
         assertFalse( concat.hasNext() );
     }
@@ -78,37 +73,64 @@ public class ScoreEntityIteratorTest
     @Test
     public void mergeShouldHandleAllEmptyIterators()
     {
-        ScoreEntityIterator one = iteratorOf( emptyEntries() );
-        ScoreEntityIterator two = iteratorOf( emptyEntries() );
-        ScoreEntityIterator three = iteratorOf( emptyEntries() );
+        StubValuesIterator one = new StubValuesIterator();
+        StubValuesIterator two = new StubValuesIterator();
+        StubValuesIterator three = new StubValuesIterator();
 
-        ScoreEntityIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
+        ValuesIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two, three ) );
 
         assertFalse( concat.hasNext() );
     }
 
-    private static ScoreEntry[] emptyEntries()
+    private class StubValuesIterator implements ValuesIterator
     {
-        return new ScoreEntry[]{};
-    }
+        private ArrayList<Long> entityIds = new ArrayList<>();
+        private ArrayList<Float> scores = new ArrayList<>();
+        private int nextIndex;
 
-    private static ScoreEntityIterator iteratorOf( ScoreEntry[] input )
-    {
-        return new ScoreEntityIterator( null )
+        public StubValuesIterator add( long entityId, float score )
         {
-            Iterator<ScoreEntry> entries = Arrays.asList( input ).iterator();
+            entityIds.add( entityId );
+            scores.add( score );
+            return this;
+        }
 
-            @Override
-            public boolean hasNext()
-            {
-                return entries.hasNext();
-            }
+        @Override
+        public int remaining()
+        {
+            return entityIds.size() - nextIndex;
+        }
 
-            @Override
-            public ScoreEntry next()
-            {
-                return entries.next();
-            }
-        };
+        @Override
+        public float currentScore()
+        {
+            return scores.get( nextIndex - 1 );
+        }
+
+        @Override
+        public long next()
+        {
+            long entityId = entityIds.get( nextIndex );
+            nextIndex++;
+            return entityId;
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return remaining() > 0;
+        }
+
+        @Override
+        public long current()
+        {
+            return entityIds.get( nextIndex - 1 );
+        }
+
+        @Override
+        public long getValue( String field )
+        {
+            return 0;
+        }
     }
 }

@@ -899,7 +899,7 @@ public class DocValuesCollector extends SimpleCollector
         @Override
         public long current()
         {
-            return index;
+            return currentValue;
         }
 
         @Override

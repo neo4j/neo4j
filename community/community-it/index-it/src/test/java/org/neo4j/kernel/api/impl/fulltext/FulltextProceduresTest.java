@@ -96,7 +96,7 @@ import static org.junit.Assert.fail;
 
 public class FulltextProceduresTest
 {
-    private static final String DB_INDEXES = "CALL db.indexes";
+    private static final String DB_INDEXES = "CALL db.indexes()";
     private static final String DROP = "CALL db.index.fulltext.drop(\"%s\")";
     private static final String LIST_AVAILABLE_ANALYZERS = "CALL db.index.fulltext.listAvailableAnalyzers()";
     static final String QUERY_NODES = "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\")";
@@ -236,18 +236,18 @@ public class FulltextProceduresTest
         db.execute( format( NODE_CREATE, "node", array( "Label1", "Label2" ), array( "prop1", "prop2" ) ) ).close();
         db.execute( format( RELATIONSHIP_CREATE, "rel", array( "Reltype1", "Reltype2" ), array( "prop1", "prop2" ) ) ).close();
         Map<String,String> indexes = new HashMap<>();
-        db.execute( "call db.indexes" ).forEachRemaining( m -> indexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+        db.execute( "call db.indexes()" ).forEachRemaining( m -> indexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
 
         db.execute( format( DROP, "node" ) );
         indexes.remove( "node" );
         Map<String,String> newIndexes = new HashMap<>();
-        db.execute( "call db.indexes" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+        db.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
         assertEquals( indexes, newIndexes );
 
         db.execute( format( DROP, "rel" ) );
         indexes.remove( "rel" );
         newIndexes.clear();
-        db.execute( "call db.indexes" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
+        db.execute( "call db.indexes()" ).forEachRemaining( m -> newIndexes.put( (String) m.get( "indexName" ), (String) m.get( "description" ) ) );
         assertEquals( indexes, newIndexes );
     }
 
@@ -1995,7 +1995,7 @@ public class FulltextProceduresTest
         String schemaIndexName;
         try ( Transaction ignore = db.beginTx() )
         {
-            try ( Result result = db.execute( "call db.indexes" ) )
+            try ( Result result = db.execute( "call db.indexes()" ) )
             {
                 assertTrue( result.hasNext() );
                 schemaIndexName = result.next().get( "indexName" ).toString();

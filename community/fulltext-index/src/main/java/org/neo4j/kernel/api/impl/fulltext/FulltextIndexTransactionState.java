@@ -35,9 +35,7 @@ import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
-import org.neo4j.kernel.api.txstate.TransactionState;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
+import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.QueryContext;
@@ -122,9 +120,9 @@ class FulltextIndexTransactionState implements Closeable
         IOUtils.closeAll( toCloseLater );
     }
 
-    public ScoreEntityIterator filter( ScoreEntityIterator iterator, BooleanQuery query )
+    public ValuesIterator filter( ValuesIterator iterator, BooleanQuery query )
     {
-        iterator = iterator.filter( entry -> !modifiedEntityIdsInThisTransaction.contains( entry.entityId() ) );
+        iterator = ScoreEntityIterator.filter( iterator, entityId -> !modifiedEntityIdsInThisTransaction.contains( entityId ) );
         iterator = mergeIterators( asList( iterator, FulltextIndexReader.searchLucene( currentSearcher, query ) ) );
         return iterator;
     }

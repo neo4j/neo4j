@@ -19,81 +19,96 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
-import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.Spliterator;
-import java.util.Spliterators;
-import java.util.function.Predicate;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
+import java.util.PriorityQueue;
+import java.util.function.LongPredicate;
 
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 
 /**
  * Iterator over entity ids together with their respective score.
  */
-public class ScoreEntityIterator implements Iterator<ScoreEntityIterator.ScoreEntry>
+public class ScoreEntityIterator implements ValuesIterator
 {
     private final ValuesIterator iterator;
-    private final Predicate<ScoreEntry> predicate;
-    private ScoreEntry next;
+    private final LongPredicate predicate;
+    private boolean hasNext;
+    private long currentEntityId;
+    private float currentScore;
+    private long nextEntityId;
+    private float nextScore;
 
-    ScoreEntityIterator( ValuesIterator sortedValuesIterator )
-    {
-        this.iterator = sortedValuesIterator;
-        this.predicate = null;
-    }
-
-    private ScoreEntityIterator( ValuesIterator sortedValuesIterator, Predicate<ScoreEntry> predicate )
+    private ScoreEntityIterator( ValuesIterator sortedValuesIterator, LongPredicate predicate )
     {
         this.iterator = sortedValuesIterator;
         this.predicate = predicate;
-    }
-
-    public Stream<ScoreEntry> stream()
-    {
-        return StreamSupport.stream( Spliterators.spliteratorUnknownSize( this, Spliterator.ORDERED ), false );
+        advanceIterator();
     }
 
     @Override
     public boolean hasNext()
     {
-        while ( next == null && iterator.hasNext() )
-        {
-            long entityId = iterator.next();
-            float score = iterator.currentScore();
-            ScoreEntry tmp = new ScoreEntry( entityId, score );
-            if ( predicate == null || predicate.test( tmp ) )
-            {
-                next = tmp;
-            }
-        }
-        return next != null;
+        return hasNext;
     }
 
     @Override
-    public ScoreEntry next()
+    public long current()
     {
-        if ( hasNext() )
+        return currentEntityId;
+    }
+
+    @Override
+    public long getValue( String field )
+    {
+        throw new IllegalStateException( "Filtered iterators have no value fields." );
+    }
+
+    @Override
+    public int remaining()
+    {
+        return iterator.remaining() + (hasNext ? 1 : 0);
+    }
+
+    @Override
+    public float currentScore()
+    {
+        return currentScore;
+    }
+
+    @Override
+    public long next()
+    {
+        if ( hasNext )
         {
-            ScoreEntry tmp = next;
-            next = null;
-            return tmp;
+            currentEntityId = nextEntityId;
+            currentScore = nextScore;
+            advanceIterator();
+            return currentEntityId;
         }
         else
         {
-            throw new NoSuchElementException( "The iterator is exhausted" );
+            throw new NoSuchElementException( "The iterator is exhausted." );
         }
     }
 
-    ScoreEntityIterator filter( Predicate<ScoreEntry> predicate )
+    private void advanceIterator()
     {
-        if ( this.predicate != null )
+        do
         {
-            predicate = this.predicate.and( predicate );
+            hasNext = iterator.hasNext();
+            if ( hasNext )
+            {
+                nextEntityId = iterator.next();
+                nextScore = iterator.currentScore();
+            }
         }
-        return new ScoreEntityIterator( iterator, predicate );
+        while ( hasNext && !predicate.test( nextEntityId ) );
+    }
+
+    public static ValuesIterator filter( ValuesIterator itr, LongPredicate predicate )
+    {
+        return new ScoreEntityIterator( itr, predicate );
     }
 
     /**
@@ -102,7 +117,7 @@ public class ScoreEntityIterator implements Iterator<ScoreEntityIterator.ScoreEn
      * @param iterators to concatenate
      * @return a {@link ScoreEntityIterator} that iterates over all of the elements in all of the given iterators
      */
-    static ScoreEntityIterator mergeIterators( List<ScoreEntityIterator> iterators )
+    static ValuesIterator mergeIterators( List<ValuesIterator> iterators )
     {
         if ( iterators.size() == 1 )
         {
@@ -111,102 +126,78 @@ public class ScoreEntityIterator implements Iterator<ScoreEntityIterator.ScoreEn
         return new ConcatenatingScoreEntityIterator( iterators );
     }
 
-    private static class ConcatenatingScoreEntityIterator extends ScoreEntityIterator
+    private static class ConcatenatingScoreEntityIterator implements ValuesIterator
     {
-        private final List<? extends ScoreEntityIterator> iterators;
-        private final ScoreEntry[] buffer;
-        private boolean fetched;
-        private ScoreEntry nextHead;
+        private final PriorityQueue<ValuesIterator> sources;
+        private boolean hasNext;
+        private long entityId;
+        private float score;
 
-        ConcatenatingScoreEntityIterator( List<? extends ScoreEntityIterator> iterators )
+        ConcatenatingScoreEntityIterator( List<? extends ValuesIterator> iterators )
         {
-            super( null );
-            this.iterators = iterators;
-            this.buffer = new ScoreEntry[iterators.size()];
+            sources = new PriorityQueue<>( ( o1, o2 ) -> Float.compare( o2.currentScore(), o1.currentScore() ) );
+            for ( ValuesIterator iterator : iterators )
+            {
+                if ( iterator.hasNext() )
+                {
+                    iterator.next();
+                    sources.add( iterator );
+                    hasNext = true;
+                }
+            }
         }
 
         @Override
         public boolean hasNext()
         {
-            if ( !fetched )
-            {
-                fetch();
-            }
-            return nextHead != null;
-        }
-
-        private void fetch()
-        {
-            int candidateHead = -1;
-            for ( int i = 0; i < iterators.size(); i++ )
-            {
-                ScoreEntry entry = buffer[i];
-                //Fill buffer if needed.
-                if ( entry == null && iterators.get( i ).hasNext() )
-                {
-                    entry = iterators.get( i ).next();
-                    buffer[i] = entry;
-                }
-
-                //Check if entry might be candidate for next to return.
-                if ( entry != null && (nextHead == null || entry.score > nextHead.score) )
-                {
-                    nextHead = entry;
-                    candidateHead = i;
-                }
-            }
-            if ( candidateHead != -1 )
-            {
-                buffer[candidateHead] = null;
-            }
-            fetched = true;
+            return hasNext;
         }
 
         @Override
-        public ScoreEntry next()
+        public int remaining()
         {
-            if ( hasNext() )
-            {
-                fetched = false;
-                ScoreEntry best = nextHead;
-                nextHead = null;
-                return best;
-            }
-            else
-            {
-                throw new NoSuchElementException( "The iterator is exhausted" );
-            }
-        }
-    }
-
-    /**
-     * A ScoreEntry consists of an entity id together with its score.
-     */
-    static class ScoreEntry
-    {
-        private final long entityId;
-        private final float score;
-
-        long entityId()
-        {
-            return entityId;
+            return 0;
         }
 
-        float score()
+        @Override
+        public float currentScore()
         {
             return score;
         }
 
-        ScoreEntry( long entityId, float score )
+        @Override
+        public long next()
         {
-            this.entityId = entityId;
-            this.score = score;
+            if ( hasNext )
+            {
+                ValuesIterator itr = sources.poll();
+                assert itr != null;
+                entityId = itr.current();
+                score = itr.currentScore();
+                if ( itr.hasNext() )
+                {
+                    itr.next();
+                    sources.add( itr );
+                }
+                hasNext = !sources.isEmpty();
+                return entityId;
+            }
+            else
+            {
+                throw new NoSuchElementException();
+            }
         }
 
         @Override
-        public String toString()
+        public long current()
         {
-            return "ScoreEntry[entityId=" + entityId + ", score=" + score + "]";
+            return entityId;
+        }
+
+        @Override
+        public long getValue( String field )
+        {
+            return 0;
         }
     }
 }
