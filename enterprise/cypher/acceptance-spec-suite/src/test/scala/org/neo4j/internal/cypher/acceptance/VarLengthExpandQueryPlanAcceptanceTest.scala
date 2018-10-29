@@ -63,7 +63,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("Plan pruning var expand on distinct var-length match with projection and aggregation") {
@@ -71,7 +71,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("query with distinct aggregation") {
@@ -79,7 +79,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("Simple query that filters between expand and distinct") {
@@ -87,7 +87,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("Query that aggregates before making the result DISTINCT") {
@@ -103,7 +103,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("var expand followed by normal expand") {
@@ -111,7 +111,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("optional match can be solved with PruningVarExpand") {
@@ -119,7 +119,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("should not rewrite when doing non-distinct aggregation") {
@@ -135,7 +135,7 @@ class VarLengthExpandQueryPlanAcceptanceTest extends ExecutionEngineFunSuite wit
     executeWith(InterpretedAndSlotted, query, planComparisonStrategy =
       ComparePlansWithAssertion( plan => {
         plan should includeSomewhere.aPlan("VarLengthExpand(Pruning)")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("Do not plan pruning var expand for length=1") {

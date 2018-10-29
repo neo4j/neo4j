@@ -37,7 +37,7 @@ import scala.collection.immutable.{Map => ImmutableMap}
 
 class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
-  private val equalityConfig = Configs.InterpretedAndSlotted - Configs.Before3_3AndRule
+  private val equalityConfig = Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1
   private val indexConfig = Configs.InterpretedAndSlotted - Configs.Cost3_1 - Configs.Cost2_3 - Configs.RulePlanner
 
   override def cypherComparisonSupport = true
@@ -91,7 +91,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'}) RETURN p.location as point")
 
     // When
-    val localConfig = Configs.All - Configs.Before3_3AndRule
+    val localConfig = Configs.All - Configs.Version2_3 - Configs.Version3_1
     val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
@@ -116,7 +116,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = [point({latitude: 56.7, longitude: 12.78, crs: 'WGS-84'})] RETURN p.location as point")
 
     // When
-    val localConfig = Configs.All - Configs.Before3_3AndRule
+    val localConfig = Configs.All - Configs.Version2_3 - Configs.Version3_1
     val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
@@ -144,7 +144,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
         |RETURN p.location as point""".stripMargin)
 
     // When
-    val localConfig = Configs.All - Configs.Before3_3AndRule
+    val localConfig = Configs.All - Configs.Version2_3 - Configs.Version3_1
     val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
@@ -178,7 +178,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
         |RETURN p.location as point""".stripMargin)
 
     // When
-    val localConfig = Configs.All - Configs.Before3_3AndRule
+    val localConfig = Configs.All - Configs.Version2_3 - Configs.Version3_1
     val result = executeWith(localConfig,
       "MATCH (p:Place) WHERE p.location = $param RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
@@ -687,7 +687,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
     val result =
       executeWith(
-        Configs.InterpretedAndSlotted - Configs.Before3_3AndRule - Configs.Version3_4,
+        Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1 - Configs.Version3_4,
         query,
         planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange")
           .containingArgument(s":$LABEL($PROPERTY) > min AND :$LABEL($PROPERTY) < max"))
@@ -717,7 +717,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
 
     val result =
       executeWith(
-        Configs.InterpretedAndSlotted - Configs.Before3_3AndRule - Configs.Version3_4,
+        Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1 - Configs.Version3_4,
         query,
         planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange")
           .containingArgument(s":$LABEL($PROPERTY) > point({x: min.x, y: min.y}) AND :$LABEL($PROPERTY) < max"))

@@ -50,7 +50,7 @@ class MiscAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSu
         |ORDER BY y
       """.stripMargin
 
-    val result = executeWith(Configs.All, query, expectedDifferentResults = Configs.Before3_3AndRule)
+    val result = executeWith(Configs.All, query, expectedDifferentResults = Configs.Version2_3 + Configs.Version3_1)
     result.toList should equal(List(Map("y" -> 1, "y3" -> 3), Map("y" -> 1, "y3" -> 4), Map("y" -> 2, "y3" -> 3), Map("y" -> 2, "y3" -> 4)))
   }
 

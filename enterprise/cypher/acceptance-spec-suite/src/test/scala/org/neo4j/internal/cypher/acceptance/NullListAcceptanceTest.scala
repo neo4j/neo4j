@@ -29,7 +29,7 @@ import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSu
 class NullListAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
 
   // Changed behaviour to comply with opencypher in 3.3
-  val nullInListConfigOld = Configs.Before3_3AndRule
+  val nullInListConfigOld = Configs.Version2_3 + Configs.Version3_1
 
   // Comparison between lists and non-lists
 

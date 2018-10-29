@@ -39,7 +39,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNode("id" -> 0)
     for (i <- 1 to 1000) createNode("id" -> i)
     val result = executeWith(
-      Configs.InterpretedAndSlotted - Configs.Before3_3AndRule,
+      Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1,
       "MATCH (n) WHERE id(n) IN {ids} RETURN n.id",
       params = Map("ids" -> List(-2, -3, 0, -4)))
     result.executionPlanDescription() should includeSomewhere.aPlan("NodeByIdSeek")

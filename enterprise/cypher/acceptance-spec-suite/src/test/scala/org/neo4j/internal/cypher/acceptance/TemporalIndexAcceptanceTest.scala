@@ -89,14 +89,14 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
         |RETURN n
       """.stripMargin
 
-    val resultNoIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
+    val resultNoIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1, query)
 
     graph.createIndex("Runner", "results")
     resampleIndexes()
     // TODO this should not be necessary. Creating an index should invalidate the caches.
     eengine.clearQueryCaches()
 
-    val resultIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
+    val resultIndex = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion(plan => {
         //THEN
         plan should includeSomewhere.aPlan("NodeIndexSeek")
@@ -153,7 +153,7 @@ class TemporalIndexAcceptanceTest extends IndexingTestSupport {
         | RETURN n
       """.stripMargin
 
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange")))
 
     result.toList should equal(List(Map("n" -> node2)))

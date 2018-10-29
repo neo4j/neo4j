@@ -1057,7 +1057,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
 
     val query = "MATCH (n:Label) WHERE n.prop >= {param} RETURN n.prop AS prop"
 
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1, query,
                              planComparisonStrategy = ComparePlansWithAssertion(plan => {
                                //THEN
                                plan should includeSomewhere.aPlan(IndexSeekByRange.name)
@@ -1288,7 +1288,7 @@ class NodeIndexSeekByRangeAcceptanceTest extends ExecutionEngineFunSuite with Cy
                 planComparisonStrategy = ComparePlansWithAssertion(plan => {
                   //THEN
                   plan should includeSomewhere.aPlan(IndexSeekByRange.name).containingVariables("n", "cached[n.prop1]")
-                }, Configs.OldAndRule))
+                }, Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_4))
   }
 
   private def createTestModelBigEnoughToConsiderPickingIndexSeek: Int = {

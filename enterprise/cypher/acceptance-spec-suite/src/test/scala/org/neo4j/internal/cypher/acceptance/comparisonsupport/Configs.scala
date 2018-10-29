@@ -73,16 +73,6 @@ object Configs {
 
   def Version3_5: TestConfiguration = TestConfiguration(V3_5, Planners.all, Runtimes.all)
 
-  // TODO are these needed?
-  def BackwardsCompatibility: TestConfiguration = TestConfiguration(V2_3 -> V3_4, Planners.all, Runtimes.all)
-
-  /**
-    * Handy configs for things not supported in older versions
-    */
-  def Before3_3AndRule: TestConfiguration = Cost2_3 + Cost3_1 + RulePlanner
-
-  def OldAndRule: TestConfiguration = BackwardsCompatibility + RulePlanner
-
   /**
     * Configs which support CREATE, DELETE, SET, REMOVE, MERGE etc.
     */

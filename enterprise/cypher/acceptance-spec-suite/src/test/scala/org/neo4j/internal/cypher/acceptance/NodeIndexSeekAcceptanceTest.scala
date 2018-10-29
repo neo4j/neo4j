@@ -89,7 +89,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek"))
         plan should includeSomewhere.aPlan("Union")
-    }, expectPlansToFail = Configs.Before3_3AndRule))
+    }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -109,7 +109,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should includeSomewhere.nTimes(2, aPlan("NodeIndexScan"))
         plan should includeSomewhere.aPlan("Union")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -129,7 +129,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should includeSomewhere.nTimes(2, aPlan("NodeIndexSeekByRange"))
         plan should includeSomewhere.aPlan("Union")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -149,7 +149,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should includeSomewhere.nTimes(2, aPlan("NodeIndexScan"))
         plan should includeSomewhere.aPlan("Union")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -167,7 +167,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
       planComparisonStrategy = ComparePlansWithAssertion((plan) => {
         plan should includeSomewhere.nTimes(2, aPlan("NodeIndexScan"))
         plan should includeSomewhere.aPlan("Union")
-      }, expectPlansToFail = Configs.Before3_3AndRule))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     result.columnAs("c").toSet should be(Set(nodes(1), nodes(11)))
   }
@@ -319,7 +319,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(1, aPlan("NodeIndexSeek")), expectPlansToFail = Configs.Before3_3AndRule),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(1, aPlan("NodeIndexSeek")), expectPlansToFail = Configs.Version2_3 + Configs.Version3_1),
       params = Map("uuids" -> Array("a", "b", "c")))
 
     //Then
@@ -337,7 +337,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.All,
       "MATCH (root:Company) WHERE root.uuid IN {uuids} RETURN DISTINCT root",
-      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(1, aPlan("NodeIndexSeek")), expectPlansToFail = Configs.Before3_3AndRule),
+      planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(1, aPlan("NodeIndexSeek")), expectPlansToFail = Configs.Version2_3 + Configs.Version3_1),
       params = Map("uuids" -> Array(1, 2, 3)))
 
     //Then
@@ -381,7 +381,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.InterpretedAndSlotted, "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek")),
-        expectPlansToFail = Configs.Before3_3AndRule))
+        expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     // Then
     result.toList should be (empty)
@@ -397,7 +397,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.InterpretedAndSlotted, "MATCH (n:Label1) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek")),
-        expectPlansToFail = Configs.Before3_3AndRule))
+        expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     // Then
     result.toList should equal(List(Map("n" -> node1)))
@@ -418,7 +418,7 @@ class NodeIndexSeekAcceptanceTest extends ExecutionEngineFunSuite with CypherCom
     // When
     val result = executeWith(Configs.InterpretedAndSlotted, "MATCH (n:Label1:Label2) WHERE n.prop1 = 'val' OR n.prop2 = 'val' RETURN n",
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.nTimes(4, aPlan("NodeIndexSeek")),
-        expectPlansToFail = Configs.Before3_3AndRule))
+        expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     // Then
     result.toList should be (empty)

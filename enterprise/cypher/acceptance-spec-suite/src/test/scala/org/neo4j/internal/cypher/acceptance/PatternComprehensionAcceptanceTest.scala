@@ -500,7 +500,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         | return c
       """.stripMargin
 
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1, query)
     result.toList should equal(List.empty)
   }
 
@@ -517,7 +517,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
         | return c
       """.stripMargin
 
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Before3_3AndRule, query)
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version2_3 - Configs.Version3_1, query)
     result.toList should equal(List(Map("c" -> node2), Map("c" -> node3)))
   }
 
