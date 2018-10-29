@@ -27,7 +27,6 @@ case class Runtimes(runtimes: Runtime*)
 object Runtimes {
   implicit def runtimeToRuntimes(runtime: Runtime): Runtimes = Runtimes(runtime)
 
-  // Default behaves different from specifying a specific runtime - thus it's included
   val all = Runtimes(CompiledBytecode, CompiledSource, Slotted, SlottedWithCompiledExpressions, Interpreted)
 
   def definedBy(preParserArgs: Array[String]): Runtimes = {

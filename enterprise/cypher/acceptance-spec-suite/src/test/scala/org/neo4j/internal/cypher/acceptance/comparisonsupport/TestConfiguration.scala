@@ -31,6 +31,8 @@ case class TestConfiguration(scenarios: Set[TestScenario]) {
 
   def -(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios -- other.scenarios)
 
+  def /\(other: TestConfiguration): TestConfiguration = TestConfiguration(scenarios intersect other.scenarios)
+
   def containsScenario(scenario: TestScenario): Boolean = this.scenarios.contains(scenario)
 }
 
