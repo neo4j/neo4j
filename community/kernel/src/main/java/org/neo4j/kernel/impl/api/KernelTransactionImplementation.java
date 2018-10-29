@@ -480,7 +480,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public ExplicitIndexTransactionState explicitIndexTxState()
     {
-
         return explicitIndexTransactionState != null ? explicitIndexTransactionState :
                (explicitIndexTransactionState = explicitIndexTxStateSupplier.get());
     }
