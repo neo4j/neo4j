@@ -39,6 +39,7 @@ import org.apache.directory.server.core.api.interceptor.context.SearchOperationC
 import org.apache.directory.server.core.integ.FrameworkRunner;
 import org.apache.directory.server.ldap.handlers.extended.StartTlsHandler;
 import org.apache.shiro.realm.ldap.JndiLdapContextFactory;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -48,6 +49,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Function;
 import javax.naming.directory.BasicAttribute;
 import javax.naming.directory.DirContext;
 import javax.naming.directory.ModificationItem;
@@ -61,7 +64,9 @@ import org.neo4j.driver.v1.exceptions.ServiceUnavailableException;
 import org.neo4j.driver.v1.exceptions.TransientException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.server.security.enterprise.auth.LdapRealm;
+import org.neo4j.server.security.enterprise.auth.ProcedureInteractionTestBase;
 import org.neo4j.server.security.enterprise.auth.plugin.api.PredefinedRoles;
 import org.neo4j.server.security.enterprise.configuration.SecuritySettings;
 import org.neo4j.test.DoubleLatch;
@@ -136,7 +141,7 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
         settings.put( SecuritySettings.ldap_authorization_user_search_filter, "(&(objectClass=*)(uid={0}))" );
         settings.put( SecuritySettings.ldap_authorization_group_membership_attribute_names, "gidnumber" );
         settings.put( SecuritySettings.ldap_authorization_group_to_role_mapping, "500=reader;501=publisher;502=architect;503=admin" );
-        settings.put( SecuritySettings.procedure_roles, "test.allowedReadProcedure:role1" );
+        settings.put( SecuritySettings.procedure_roles, "test.staticReadProcedure:role1" );
         settings.put( SecuritySettings.ldap_read_timeout, "1s" );
         settings.put( SecuritySettings.ldap_authorization_use_system_account, "false" );
         return settings;
@@ -216,17 +221,20 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
     @Test
     public void shouldKeepAuthorizationForLifetimeOfTransaction() throws Throwable
     {
-        assertKeepAuthorizationForLifetimeOfTransaction( "neo" );
+        assertKeepAuthorizationForLifetimeOfTransaction( "neo",
+                tx -> assertThat( tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asInt(), greaterThanOrEqualTo( 0 ) ) );
     }
 
     @Test
     public void shouldKeepAuthorizationForLifetimeOfTransactionWithProcedureAllowed() throws Throwable
     {
         restartServerWithOverriddenSettings( SecuritySettings.ldap_authorization_group_to_role_mapping.name(), "503=admin;504=role1" );
-        assertKeepAuthorizationForLifetimeOfTransaction( "smith" );
+        dbRule.resolveDependency( Procedures.class ).registerProcedure( ProcedureInteractionTestBase.ClassWithProcedures.class );
+        assertKeepAuthorizationForLifetimeOfTransaction( "smith",
+                tx -> assertThat( tx.run( "CALL test.staticReadProcedure()" ).single().get( 0 ).asString(), equalTo( "static" ) ) );
     }
 
-    private void assertKeepAuthorizationForLifetimeOfTransaction( String username ) throws Throwable
+    private void assertKeepAuthorizationForLifetimeOfTransaction( String username, Consumer<Transaction> assertion ) throws Throwable
     {
         DoubleLatch latch = new DoubleLatch( 2 );
         final Throwable[] threadFail = {null};
@@ -239,10 +247,10 @@ public class LdapAuthIT extends EnterpriseAuthenticationTestBase
                         Session session = driver.session();
                         Transaction tx = session.beginTransaction() )
                 {
-                    assertThat( tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asInt(), greaterThanOrEqualTo( 0 ) );
+                    assertion.accept( tx );
                     latch.startAndWaitForAllToStart();
                     latch.finishAndWaitForAllToFinish();
-                    assertThat( tx.run( "MATCH (n) RETURN count(n)" ).single().get( 0 ).asInt(), greaterThanOrEqualTo( 0 ) );
+                    assertion.accept( tx );
                     tx.success();
                 }
             }
