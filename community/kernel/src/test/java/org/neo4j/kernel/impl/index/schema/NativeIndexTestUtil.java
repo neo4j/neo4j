@@ -78,13 +78,14 @@ public abstract class NativeIndexTestUtil<KEY extends NativeIndexKey<KEY>,VALUE 
     IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
 
     @Before
-    public void setup()
+    public void setup() throws IOException
     {
         valueCreatorUtil = createValueCreatorUtil();
         indexDescriptor = valueCreatorUtil.indexDescriptor();
         layout = createLayout();
         indexDirectoryStructure = directoriesByProvider( directory.directory( "root" ) ).forProvider( indexDescriptor.providerDescriptor() );
         indexFile = indexDirectoryStructure.directoryForIndex( indexDescriptor.getId() );
+        fs.mkdirs( indexFile.getParentFile() );
         pageCache = pageCacheRule.getPageCache( fs );
     }
 
