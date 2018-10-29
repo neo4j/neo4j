@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.operations.CypherBoolean
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
+import org.neo4j.values.{AnyValue, Equality}
 
 abstract sealed class ComparablePredicate(val left: Expression, val right: Expression) extends Predicate {
 
@@ -71,8 +71,9 @@ case class Equals(a: Expression, b: Expression) extends Predicate {
     val r = b(m, state)
 
     l.ternaryEquals(r) match {
-      case null => None
-      case v => Some(v)
+      case Equality.UNDEFINED => None
+      case Equality.FALSE => Some(false)
+      case Equality.TRUE => Some(true)
     }
   }
 

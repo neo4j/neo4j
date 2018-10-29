@@ -58,8 +58,8 @@ public class AnyValueTestUtil
     {
         assertNotEquals( a + " should not be equivalent to " + b, a, b );
         assertNotEquals( b + " should not be equivalent to " + a, b, a );
-        assertEquals( a + " should not equal " + b, a.ternaryEquals( b ), Equality.FALSE );
-        assertEquals( b + " should not equal " + a, b.ternaryEquals( a ), Equality.FALSE );
+        assertNotEquals( a + " should not equal " + b, a.ternaryEquals( b ), Equality.TRUE );
+        assertNotEquals( b + " should not equal " + a, b.ternaryEquals( a ), Equality.TRUE );
     }
 
     public static void assertIncomparable( AnyValue a, AnyValue b )

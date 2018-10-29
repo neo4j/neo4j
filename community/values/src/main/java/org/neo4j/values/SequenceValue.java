@@ -122,13 +122,9 @@ public interface SequenceValue extends Iterable<AnyValue>
         Equality equivalenceResult = Equality.TRUE;
         Iterator<AnyValue> aIterator = a.iterator();
         Iterator<AnyValue> bIterator = b.iterator();
-        while ( aIterator.hasNext() && bIterator.hasNext() )
+        while ( aIterator.hasNext() && bIterator.hasNext() && equivalenceResult == Equality.TRUE )
         {
             equivalenceResult = aIterator.next().ternaryEquals( bIterator.next() );
-            if ( equivalenceResult != Equality.TRUE )
-            {
-                return equivalenceResult;
-            }
         }
 
         return !aIterator.hasNext() && !bIterator.hasNext() ? equivalenceResult : Equality.FALSE;

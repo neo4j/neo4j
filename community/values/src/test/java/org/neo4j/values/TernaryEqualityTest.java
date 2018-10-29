@@ -178,6 +178,7 @@ class TernaryEqualityTest
         assertTernaryEquality( listWithNoValue, list( intValue( 1 ), NO_VALUE, intValue( 3 ) ), Equality.UNDEFINED );
         assertTernaryEquality( listWithNoValue, listWithNoValue, Equality.UNDEFINED );
         assertTernaryEquality( listWithNoValue, list( intValue( 1 ), NO_VALUE, intValue( 2 ) ), Equality.UNDEFINED );
+        assertTernaryEquality( list( NO_VALUE, NO_VALUE, NO_VALUE ), list( NO_VALUE, NO_VALUE ), Equality.FALSE );
     }
 
     @Test
@@ -189,6 +190,13 @@ class TernaryEqualityTest
         assertTernaryEquality( map( "key1", list( intValue( 42 ) ) ), map( "key2", NO_VALUE ), Equality.FALSE );
         assertTernaryEquality( map( "k1", 42, "k2", NO_VALUE ), map( "k1", 43, "k2", 45 ), Equality.FALSE );
         assertTernaryEquality( map( "k1", 42, "k2", NO_VALUE ), map( "k1", 42, "k2", 45 ), Equality.UNDEFINED );
+    }
+
+    @Test
+    public void shouldHandleDurations()
+    {
+       assertTernaryEquality(  durationValue( Duration.ofDays( 12 ) ),  durationValue( Duration.ofDays( 12 ) ), Equality.TRUE );
+       assertTernaryEquality(  durationValue( Duration.ofDays( 12 ) ),  durationValue( Duration.ofDays( 13 ) ), Equality.FALSE );
     }
 
     private void assertTernaryEquality( AnyValue a, AnyValue b, Equality expected )

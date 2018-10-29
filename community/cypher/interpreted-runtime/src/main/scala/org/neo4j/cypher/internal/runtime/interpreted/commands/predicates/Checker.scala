@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util
 
-import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{ArrayValue, Values}
 import org.neo4j.values.virtual.{ListValue, VirtualValues}
+import org.neo4j.values.{AnyValue, Equality}
 
 import scala.collection.mutable
 
@@ -55,8 +55,8 @@ class BuildUp(list: ListValue) extends Checker {
   }
 
   private def checkAndBuildUpCache(value: AnyValue): (Option[Boolean], Checker) = {
-    var foundMatch: java.lang.Boolean = false
-    while (iterator.hasNext && !foundMatch) {
+    var foundMatch = Equality.FALSE
+    while (iterator.hasNext && foundMatch == Equality.FALSE) {
       val nextValue = iterator.next()
 
       if (nextValue == Values.NO_VALUE) {
@@ -68,9 +68,9 @@ class BuildUp(list: ListValue) extends Checker {
           case (a: ListValue, b: ArrayValue) => VirtualValues.fromArray(b).ternaryEquals(a)
           case (a, b) => a.ternaryEquals(b)
         }
-        if (foundMatch == null) {
+        if (foundMatch == Equality.UNDEFINED) {
           falseResult = None
-          foundMatch = false
+          foundMatch = Equality.FALSE
         }
       }
     }
@@ -78,7 +78,7 @@ class BuildUp(list: ListValue) extends Checker {
       (None, NullListChecker)
     } else {
       val nextState = if (iterator.hasNext) this else new SetChecker(cachedSet, falseResult)
-      val result = if (foundMatch) Some(true) else falseResult
+      val result = if (foundMatch == Equality.TRUE) Some(true) else falseResult
 
       (result, nextState)
     }
