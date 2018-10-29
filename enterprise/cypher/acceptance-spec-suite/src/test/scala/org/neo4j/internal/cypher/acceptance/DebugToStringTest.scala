@@ -23,6 +23,7 @@
 package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.scalatest.matchers.{MatchResult, Matcher}
 
 class DebugToStringTest extends ExecutionEngineFunSuite {
 
@@ -34,7 +35,7 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   test("ast-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("ast")).resultAsString()
 
-    textResult should include(
+    textResult should beLikeString(
       """+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
         || col                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
         |+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
@@ -47,7 +48,7 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   test("logicalplan-tostring works") {
     val textResult = graph.execute(queryWithOutputOf("logicalPlan")).resultAsString()
 
-    textResult should include(
+    textResult should beLikeString(
       """+-----------------------------------------------------------------------------------+
         || col                                                                               |
         |+-----------------------------------------------------------------------------------+
@@ -70,7 +71,7 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
                       |+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
                       |1 row
                       |""".stripMargin
-    textResult should include(expected)
+    textResult should beLikeString(expected)
   }
 
   test("semanticState-tostring works") {
@@ -83,7 +84,7 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   test("cost reporting") {
     val stringResult = graph.execute("CYPHER debug=dumpCosts MATCH (a:A) RETURN *").resultAsString()
 
-        stringResult should include("""+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+        stringResult should beLikeString("""+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
                                     || # | planId | planText                                                            | planCost                                                          | cost   | est cardinality | winner |
                                     |+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
                                     || 1 | 0      | ""                                                                  | ""                                                                | 10.0   | 1.0             | "WON"  |
@@ -108,4 +109,16 @@ class DebugToStringTest extends ExecutionEngineFunSuite {
   }
 
   private def queryWithOutputOf(s: String) = s"CYPHER debug=tostring debug=$s MATCH (a)-[:T]->(b) RETURN *"
+
+  class IsLikeString(expected: String) extends Matcher[String] {
+    private def stripOsLineEndings(string: String): String =
+      string.replace("\r\n", "\n")
+
+    def apply(text: String) = MatchResult(
+      stripOsLineEndings(text).contains(stripOsLineEndings(expected)),
+      s"expected $text to contain the substring $expected",
+      s"expected $text to not contain the substring $expected")
+  }
+
+  def beLikeString[T](expected: String) = new IsLikeString(expected)
 }
