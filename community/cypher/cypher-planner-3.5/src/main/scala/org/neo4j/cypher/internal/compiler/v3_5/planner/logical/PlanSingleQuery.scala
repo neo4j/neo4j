@@ -42,17 +42,16 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
         case Some(plan) =>
           (plan, context.withUpdatedCardinalityInformation(plan))
         case None =>
-
-          // context for this query, which aligns getValueFromIndexBehavior
           val attributes = context.planningAttributes.asAttributes(idGen)
-          val queryContext = context.withLeafPlanUpdater(
-            alignGetValueFromIndexBehavior(in, context.logicalPlanProducer, context.planningAttributes.solveds, attributes))
 
-          val partPlan = planPart(in, queryContext)
-          val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, true /*first QG*/ , queryContext)
+          val partPlan = planPart(in, context)
+          val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, context)
           val projectedPlan = planEventHorizon(in, planWithUpdates, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
-          (projectedPlan, projectedContext)
+
+          // Mark properties from indexes to be fetched, if the properties are used later in the query
+          val alignedPlan = alignGetValueFromIndexBehavior(in, projectedPlan, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
+          (alignedPlan, projectedContext)
       }
 
     val (finalPlan, finalContext) = planWithTail(completePlan, in.tail, ctx, idGen)

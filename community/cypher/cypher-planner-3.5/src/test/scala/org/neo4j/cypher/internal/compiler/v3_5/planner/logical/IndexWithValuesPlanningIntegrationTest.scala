@@ -190,7 +190,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan index seek with GetValue when the property is projected after a renaming projection") {
     val plan = new given {
       indexOn("Awesome", "prop").providesValues()
-    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n as m MATCH (m)-[r]-(o) RETURN m.prop"
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop = 42 WITH n AS m MATCH (m)-[r]-(o) RETURN m.prop"
 
     plan._2 should equal(
       Projection(
@@ -206,6 +206,21 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             Map("m" -> varFor("n"))),
           "m", SemanticDirection.BOTH, Seq.empty, "o", "r"),
         Map("m.prop" -> cached("n.prop")))
+    )
+  }
+
+  test("should plan index seek with GetValue when the property is used in a predicate after a renaming projection") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 42 WITH n AS m MATCH (m)-[r]-(o) WHERE m.prop < 50 RETURN o"
+
+    plan._2 should equal(
+      Expand(
+        Selection(Ands(Set(AndedPropertyInequalities(varFor("m"), prop("m", "prop"), NonEmptyList(LessThan(prop("m", "prop"), SignedDecimalIntegerLiteral("50")(pos))(pos)))))(pos),
+          Projection(
+            IndexSeek("n:Awesome(prop > 42)", GetValue),
+            Map("m" -> varFor("n")))),
+        "m", SemanticDirection.BOTH, Seq.empty, "o", "r")
     )
   }
 

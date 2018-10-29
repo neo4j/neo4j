@@ -37,6 +37,8 @@ case class NodeIndexEndsWithScan(idName: String,
                                 (implicit idGen: IdGen)
   extends IndexLeafPlan(idGen) {
 
+  override def properties: Seq[IndexedProperty] = Seq(property)
+
   override def cachedNodeProperties: Traversable[CachedNodeProperty] = property.maybeCachedNodeProperty(idName)
 
   val availableSymbols: Set[String] = argumentIds + idName

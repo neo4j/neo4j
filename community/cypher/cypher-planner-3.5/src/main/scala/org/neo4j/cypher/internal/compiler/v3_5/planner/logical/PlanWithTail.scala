@@ -39,15 +39,13 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
       case Some(plannerQuery) =>
         val attributes = context.planningAttributes.asAttributes(idGen)
         val lhsContext = context.withUpdatedCardinalityInformation(lhs)
-          // context for this query, which aligns getValueFromIndexBehavior
-          .withLeafPlanUpdater(
-          alignGetValueFromIndexBehavior(plannerQuery, context.logicalPlanProducer, context.planningAttributes.solveds, attributes))
 
         val partPlan = planPart(plannerQuery, lhsContext)
-        val firstPlannerQuery = false
-        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery, lhsContext)
+        val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
 
-        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, planWithUpdates, context)
+        // Mark properties from indexes to be fetched, if the properties are used later in the query
+        val alignedPlan = alignGetValueFromIndexBehavior(plannerQuery, planWithUpdates, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
+        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, alignedPlan, context)
 
         val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)

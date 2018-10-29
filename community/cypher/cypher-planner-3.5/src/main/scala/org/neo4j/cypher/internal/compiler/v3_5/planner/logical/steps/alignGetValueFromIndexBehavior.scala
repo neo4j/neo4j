@@ -37,49 +37,54 @@ import org.opencypher.v9_0.util.topDown
   * The index leaf planners will always set `CanGetValue`, if the index has the capability to provide values.
   * Here, we set this to `GetValue` or `DoNotGetValue`, depending on if the property is used in the rest of the PlannerQuery, aside from the predicate.
   */
-case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanProducer, solveds: Solveds, attributes: Attributes) extends LeafPlanUpdater {
+object alignGetValueFromIndexBehavior {
+  // How many QGs to look into the future for variable accesses
+  private val recursionLimit = 5
 
-  def apply(leafPlan: LogicalPlan): LogicalPlan = {
-    // We want to find property usages only in those predicates that are not already solved by the leaf-plan we are rewriting
-    val solvedPredicates = leafPlanSolvedPredicates(leafPlan, solveds)
-    val usedExps = usedExpressionsInFirstPartWithIgnoredPredicates(query, solvedPredicates) ++ usedExpressionsInLaterParts
-    rewriter(usedExps)(leafPlan).asInstanceOf[LogicalPlan]
+  def apply(query: PlannerQuery, plan: LogicalPlan, lpp: LogicalPlanProducer, solveds: Solveds, attributes: Attributes): LogicalPlan = {
+    val usedExps = usedExpressionsRecursive(query, firstPart = true, recursionLimit)
+    rewriter(usedExps, query, solveds, attributes)(plan).asInstanceOf[LogicalPlan]
   }
 
-  private def usedExpressionsInFirstPartWithIgnoredPredicates(queryPart: PlannerQuery, predicatesToIgnore: Set[Predicate]): Set[Expression] = {
+  private def usedExpressionsInQueryPart(queryPart: PlannerQuery, withPredicates: Boolean): Set[Expression] = {
     val horizonDependingExpressions = queryPart.horizon.dependingExpressions.toSet
     val usedExpressionsInHorizon = collectPropertiesAndVariables(horizonDependingExpressions)
-    val usedExpressionsInPredicates = collectPropertiesAndVariables((queryPart.queryGraph.selections.predicates -- predicatesToIgnore).map(_.expr))
-    usedExpressionsInHorizon ++ usedExpressionsInPredicates
+    if (withPredicates) {
+      val usedExpressionsInPredicates = collectPropertiesAndVariables(queryPart.queryGraph.selections.predicates.map(_.expr))
+      usedExpressionsInHorizon ++ usedExpressionsInPredicates
+    } else {
+      usedExpressionsInHorizon
+    }
   }
 
-  // We can cache the expressions used in later parts, they don't have any dependency on the leafPlan we're aligning
-  private val usedExpressionsInLaterParts = usedExpressionsInLaterPartsRecursive(query, firstPart = true)
-
-  private def usedExpressionsInLaterPartsRecursive(queryPart: PlannerQuery, firstPart: Boolean): Set[Expression] = {
-    val maybeHorizonProjections = queryPart.horizon match {
-      case projection: QueryProjection => Some(projection.projections)
-      case _ => None
-    }
-
-    val usedExpressionsInThisPart =
-      if (firstPart) {
-        // The expressions used in the first part are not relevant here
-        Set.empty
-      } else {
-        // Pass Set.empty since the leaf plan can only solve predicates of the first query part
-        usedExpressionsInFirstPartWithIgnoredPredicates(queryPart, Set.empty)
+  private def usedExpressionsRecursive(queryPart: PlannerQuery, firstPart: Boolean, recursionLimit: Int): Set[Expression] = {
+    if (recursionLimit == 0) {
+      Set.empty
+    } else {
+      val maybeHorizonProjections = queryPart.horizon match {
+        case projection: QueryProjection => Some(projection.projections)
+        case _ => None
       }
 
-    val nextUsedExpressions = for {
-      nextPart <- queryPart.tail.toSet[PlannerQuery]
-      expressions <- usedExpressionsInLaterPartsRecursive(nextPart, firstPart = false)
-      // If the horizon does not rename, keep the expressions as they are. Otherwise rename them for this query part
-      renamedExpressions <- maybeHorizonProjections.fold(Option(expressions))(projections => renameExpressionsFromNextQueryPart(expressions, projections))
-    } yield {
-      renamedExpressions
+      val usedExpressionsInThisPart =
+        if (firstPart) {
+          // The predicates used in the first will be added during the rewriting. We must filter the predicate out that is solved by the leaf plan
+          usedExpressionsInQueryPart(queryPart, withPredicates = false)
+        } else {
+          // Pass true since the leaf plan can only solve predicates of the first query part
+          usedExpressionsInQueryPart(queryPart, withPredicates = true)
+        }
+
+      val nextUsedExpressions = for {
+        nextPart <- queryPart.tail.toSet[PlannerQuery]
+        expressions <- usedExpressionsRecursive(nextPart, firstPart = false, recursionLimit - 1)
+        // If the horizon does not rename, keep the expressions as they are. Otherwise rename them for this query part
+        renamedExpressions <- maybeHorizonProjections.fold(Option(expressions))(projections => renameExpressionsFromNextQueryPart(expressions, projections))
+      } yield {
+        renamedExpressions
+      }
+      usedExpressionsInThisPart ++ nextUsedExpressions
     }
-    usedExpressionsInThisPart ++ nextUsedExpressions
   }
 
   private def collectPropertiesAndVariables(expression: FoldableAny): Set[Expression] =
@@ -128,33 +133,43 @@ case class alignGetValueFromIndexBehavior(query: PlannerQuery, lpp: LogicalPlanP
     }
   }
 
-  private def rewriter(usedExpressions: Set[Expression]): Rewriter = topDown(Rewriter.lift {
+  private def rewriter(usedExpressions: Set[Expression], query: PlannerQuery, solveds: Solveds, attributes: Attributes): Rewriter = topDown(Rewriter.lift {
 
     case x: NodeIndexSeek =>
-      val alignedProperties = x.properties.map(withAlignedGetValueBehavior(x.idName, usedExpressions, _))
-      NodeIndexSeek(x.idName, x.label, alignedProperties, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+      val aligned = alignedProperties(x, usedExpressions, query, solveds)
+      NodeIndexSeek(x.idName, x.label, aligned, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeUniqueIndexSeek =>
-      val alignedProperties = x.properties.map(withAlignedGetValueBehavior(x.idName, usedExpressions, _))
-      NodeUniqueIndexSeek(x.idName, x.label, alignedProperties, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+      val aligned = alignedProperties(x, usedExpressions, query, solveds)
+      NodeUniqueIndexSeek(x.idName, x.label, aligned, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeIndexContainsScan =>
-      val alignedProperty = withAlignedGetValueBehavior(x.idName, usedExpressions, x.property)
-      NodeIndexContainsScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+      val aligned = alignedProperties(x, usedExpressions, query, solveds).head
+      NodeIndexContainsScan(x.idName, x.label, aligned, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeIndexEndsWithScan =>
-      val alignedProperty = withAlignedGetValueBehavior(x.idName, usedExpressions, x.property)
-      NodeIndexEndsWithScan(x.idName, x.label, alignedProperty, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+      val aligned = alignedProperties(x, usedExpressions, query, solveds).head
+      NodeIndexEndsWithScan(x.idName, x.label, aligned, x.valueExpr, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
 
     case x: NodeIndexScan =>
-      val alignedProperty = withAlignedGetValueBehavior(x.idName, usedExpressions, x.property)
-      NodeIndexScan(x.idName, x.label, alignedProperty, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
+      val aligned = alignedProperties(x, usedExpressions, query, solveds).head
+      NodeIndexScan(x.idName, x.label, aligned, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
   },
     // We don't want to traverse down into union trees, even if that means we will leave the setting at CanGetValue, instead of DoNotGetValue
     stopper = {
       case _: Union => true
       case _ => false
     })
+
+  private def alignedProperties(plan: IndexLeafPlan,
+                                usedExpressions: Set[Expression],
+                                query: PlannerQuery,
+                                solveds: Solveds): Seq[IndexedProperty] = {
+    val solvedPredicates = leafPlanSolvedPredicates(plan, solveds)
+    val moreUsedExpressions = collectPropertiesAndVariables((query.queryGraph.selections.predicates -- solvedPredicates).map(_.expr))
+    val allUsedExpressions = usedExpressions ++ moreUsedExpressions
+    plan.properties.map(withAlignedGetValueBehavior(plan.idName, allUsedExpressions, _))
+  }
 
   /**
     * Returns a copy of the provided indexedProperty with the correct GetValueBehavior set.

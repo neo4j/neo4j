@@ -225,6 +225,11 @@ abstract class IndexLeafPlan(idGen: IdGen) extends NodeLogicalLeafPlan(idGen) {
   def cachedNodeProperties: Traversable[CachedNodeProperty]
 
   /**
+    * All properties
+    */
+  def properties: Seq[IndexedProperty]
+
+  /**
     * Get a copy of this index plan where getting values is disabled
     */
   def copyWithoutGettingValues: IndexLeafPlan
