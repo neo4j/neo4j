@@ -22,19 +22,12 @@ package org.neo4j.kernel.impl.store.id;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static java.lang.Math.toIntExact;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ReuseExcessBatchIdsOnRestartIT
 {
@@ -66,49 +59,6 @@ public class ReuseExcessBatchIdsOnRestartIT
 
         // then
         assertEquals( firstNode.getId() + 1, secondNode.getId() );
-    }
-
-    @Test( timeout = 30_000 )
-    public void shouldBeAbleToReuseAllIdsInConcurrentCommitsWithRestart() throws Exception
-    {
-        // given
-        int threads = Runtime.getRuntime().availableProcessors();
-        int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
-        ExecutorService executor = Executors.newFixedThreadPool( threads );
-        boolean[] createdIds = new boolean[threads * batchSize];
-        for ( int i = 0; i < threads; i++ )
-        {
-            executor.submit( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    for ( int j = 0; j < batchSize / 2; j++ )
-                    {
-                        int index = toIntExact( db.createNode().getId() );
-                        createdIds[index] = true;
-                    }
-                    tx.success();
-                }
-            } );
-        }
-        executor.shutdown();
-        while ( !executor.awaitTermination( 1, SECONDS ) )
-        {   // Just wait longer
-        }
-        assertFalse( allTrue( createdIds ) );
-
-        // when/then
-        db.restartDatabase();
-        try ( Transaction tx = db.beginTx() )
-        {
-            while ( !allTrue( createdIds ) )
-            {
-                int index = toIntExact( db.createNode().getId() );
-                assert !createdIds[index];
-                createdIds[index] = true;
-            }
-            tx.success();
-        }
     }
 
     private static boolean allTrue( boolean[] values )
