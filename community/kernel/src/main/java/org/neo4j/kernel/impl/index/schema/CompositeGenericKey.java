@@ -180,6 +180,17 @@ class CompositeGenericKey extends GenericKey
     }
 
     @Override
+    String toDetailedStringInternal()
+    {
+        StringJoiner joiner = new StringJoiner( "," );
+        for ( GenericKey state : states )
+        {
+            joiner.add( state.toDetailedStringInternal() );
+        }
+        return joiner.toString();
+    }
+
+    @Override
     void minimalSplitterInternal( GenericKey left, GenericKey right, GenericKey into )
     {
         int firstStateToDiffer = 0;

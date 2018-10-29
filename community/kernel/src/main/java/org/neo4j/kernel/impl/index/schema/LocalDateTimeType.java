@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalDateTime;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.LocalDateTimeValue;
@@ -114,5 +115,12 @@ class LocalDateTimeType extends Type
     {
         state.long0 = nano;
         state.long1 = epochSecond;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
+        joiner.add( "long1=" + state.long1 );
     }
 }

@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.StringJoiner;
 
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
@@ -61,5 +63,12 @@ class DateArrayType extends AbstractArrayType<LocalDate>
     public void write( GenericKey state, int offset, long epochDay )
     {
         state.long0Array[offset] = epochDay;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

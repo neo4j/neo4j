@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Arrays;
+import java.util.StringJoiner;
+
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
@@ -76,5 +79,12 @@ class BooleanArrayType extends AbstractArrayType<Boolean>
     void write( GenericKey state, int offset, boolean value )
     {
         state.long0Array[offset] = value ? TRUE : FALSE;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

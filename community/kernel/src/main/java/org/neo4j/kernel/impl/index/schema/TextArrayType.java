@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Arrays;
+import java.util.StringJoiner;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.Value;
@@ -38,7 +41,7 @@ import static org.neo4j.kernel.impl.index.schema.TextType.textAsChar;
 class TextArrayType extends AbstractArrayType<String>
 {
     // Affected key state:
-    // long0 (length)
+    // long0Array (length)
     // long1 (bytesDereferenced)
     // long2 (ignoreLength|charValueType)
     // long3 (isHighest)
@@ -160,5 +163,16 @@ class TextArrayType extends AbstractArrayType<String>
     {
         state.byteArrayArray[offset] = bytes;
         state.long0Array[offset] = bytes.length;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long1=" + state.long1 );
+        joiner.add( "long2=" + state.long2 );
+        joiner.add( "long3=" + state.long3 );
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        joiner.add( "byteArrayArray=" + Arrays.deepToString( state.byteArrayArray ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.StringJoiner;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.BooleanValue;
 import org.neo4j.values.storable.Value;
@@ -107,5 +109,11 @@ class BooleanType extends Type
     void write( GenericKey state, boolean value )
     {
         state.long0 = value ? TRUE : FALSE;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
     }
 }

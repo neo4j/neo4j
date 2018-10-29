@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Arrays;
+import java.util.StringJoiner;
+
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
@@ -73,5 +76,15 @@ class DurationArrayType extends AbstractArrayType<DurationValue>
         state.long1Array[offset] = nanos;
         state.long2Array[offset] = months;
         state.long3Array[offset] = days;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        joiner.add( "long1Array=" + Arrays.toString( state.long1Array ) );
+        joiner.add( "long2Array=" + Arrays.toString( state.long2Array ) );
+        joiner.add( "long3Array=" + Arrays.toString( state.long3Array ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

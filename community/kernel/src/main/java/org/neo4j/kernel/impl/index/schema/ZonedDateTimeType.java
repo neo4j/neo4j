@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.DateTimeValue;
@@ -161,5 +162,14 @@ class ZonedDateTimeType extends Type
         state.long1 = nano;
         state.long2 = zoneId;
         state.long3 = offsetSeconds;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
+        joiner.add( "long1=" + state.long1 );
+        joiner.add( "long2=" + state.long2 );
+        joiner.add( "long3=" + state.long3 );
     }
 }

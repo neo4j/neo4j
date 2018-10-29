@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.time.OffsetTime;
 import java.time.ZoneOffset;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.TimeValue;
@@ -124,5 +125,12 @@ class ZonedTimeType extends Type
     {
         state.long0 = nanosOfDayUTC;
         state.long1 = offsetSeconds;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
+        joiner.add( "long1=" + state.long1 );
     }
 }

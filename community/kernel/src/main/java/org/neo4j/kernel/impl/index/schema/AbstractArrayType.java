@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalDate;
+import java.util.StringJoiner;
 import java.util.function.IntFunction;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -216,6 +217,14 @@ abstract class AbstractArrayType<T> extends Type
             return false;
         }
         return true;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "isHighestArray=" + state.isHighestArray );
+        joiner.add( "arrayLength=" + state.arrayLength );
+        joiner.add( "currentArrayOffset=" + state.currentArrayOffset );
     }
 
     @FunctionalInterface

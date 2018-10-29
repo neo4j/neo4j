@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalDate;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.DateValue;
@@ -103,5 +104,11 @@ class DateType extends Type
     void write( GenericKey state, long epochDay )
     {
         state.long0 = epochDay;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
     }
 }

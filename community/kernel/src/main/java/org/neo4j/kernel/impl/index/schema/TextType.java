@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.Arrays;
+import java.util.StringJoiner;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.UTF8StringValue;
 import org.neo4j.values.storable.Value;
@@ -245,5 +248,15 @@ class TextType extends Type
             state.byteArray = new byte[length + length / 2];
         }
         state.long0 = length;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
+        joiner.add( "long1=" + state.long1 );
+        joiner.add( "long2=" + state.long2 );
+        joiner.add( "long3=" + state.long3 );
+        joiner.add( "byteArray=" + Arrays.toString( state.byteArray ) );
     }
 }

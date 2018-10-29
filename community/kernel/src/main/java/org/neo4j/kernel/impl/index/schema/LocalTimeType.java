@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.LocalTime;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.LocalTimeValue;
@@ -103,5 +104,11 @@ class LocalTimeType extends Type
     void write( GenericKey state, long nanoOfDay )
     {
         state.long0 = nanoOfDay;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
     }
 }

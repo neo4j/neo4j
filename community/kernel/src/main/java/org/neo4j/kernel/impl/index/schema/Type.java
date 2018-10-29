@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Comparator;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.Value;
@@ -184,4 +185,20 @@ abstract class Type
     {
         return (longValue & MASK_BOOLEAN) == TRUE;
     }
+
+    String toDetailedString( GenericKey state )
+    {
+        StringJoiner joiner = new StringJoiner( ", " );
+        joiner.add( toString( state ) );
+
+        // Mutable, meta-state
+        joiner.add( "type=" + state.type.getClass().getSimpleName() );
+        joiner.add( "inclusion=" + state.inclusion );
+        joiner.add( "isArray=" + state.isArray );
+
+        addTypeSpecificDetails( joiner, state );
+        return joiner.toString();
+    }
+
+    protected abstract void addTypeSpecificDetails( StringJoiner joiner, GenericKey state );
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import java.util.StringJoiner;
+
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.Value;
@@ -133,5 +135,14 @@ class DurationType extends Type
         state.long1 = nanos;
         state.long2 = months;
         state.long3 = days;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0=" + state.long0 );
+        joiner.add( "long1=" + state.long1 );
+        joiner.add( "long2=" + state.long2 );
+        joiner.add( "long3=" + state.long3 );
     }
 }

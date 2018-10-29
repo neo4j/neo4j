@@ -20,6 +20,8 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
+import java.util.StringJoiner;
 
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.ValueWriter;
@@ -73,5 +75,15 @@ class ZonedDateTimeArrayType extends AbstractArrayType<ZonedDateTime>
         state.long1Array[offset] = nano;
         state.long2Array[offset] = zoneId;
         state.long3Array[offset] = offsetSeconds;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        joiner.add( "long1Array=" + Arrays.toString( state.long1Array ) );
+        joiner.add( "long2Array=" + Arrays.toString( state.long2Array ) );
+        joiner.add( "long3Array=" + Arrays.toString( state.long3Array ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

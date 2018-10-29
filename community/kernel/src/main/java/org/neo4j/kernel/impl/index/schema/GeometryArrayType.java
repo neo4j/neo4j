@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
+import java.util.StringJoiner;
 
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.io.pagecache.PageCursor;
@@ -54,6 +55,7 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     // long1Array (coordinates)
     // long1 (coordinate reference system tableId)
     // long2 (coordinate reference system code)
+    // long3 (dimensions)
 
     GeometryArrayType( byte typeId )
     {
@@ -179,5 +181,16 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
         {
             state.long1Array[base + i] = Double.doubleToLongBits( coordinates[i] );
         }
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long1=" + state.long1 );
+        joiner.add( "long2=" + state.long2 );
+        joiner.add( "long3=" + state.long3 );
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        joiner.add( "long1Array=" + Arrays.toString( state.long1Array ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

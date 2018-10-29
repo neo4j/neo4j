@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Arrays;
+import java.util.StringJoiner;
 
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.values.storable.Value;
@@ -266,5 +267,13 @@ class NumberArrayType extends AbstractArrayType<Number>
     void write( GenericKey state, int offset, long value )
     {
         state.long0Array[offset] = value;
+    }
+
+    @Override
+    protected void addTypeSpecificDetails( StringJoiner joiner, GenericKey state )
+    {
+        joiner.add( "long1=" + state.long1 );
+        joiner.add( "long0Array=" + Arrays.toString( state.long0Array ) );
+        super.addTypeSpecificDetails( joiner, state );
     }
 }

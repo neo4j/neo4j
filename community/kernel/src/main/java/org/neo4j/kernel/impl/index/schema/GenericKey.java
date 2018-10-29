@@ -100,7 +100,7 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     // Mutable, meta-state
     Type type;
     NativeIndexKey.Inclusion inclusion;
-    private boolean isArray;
+    boolean isArray;
 
     // Mutable, non-array values
     long long0;
@@ -690,6 +690,16 @@ public class GenericKey extends NativeIndexKey<GenericKey>
     String toStringInternal()
     {
         return type.toString( this );
+    }
+
+    String toDetailedString()
+    {
+        return "[" + toDetailedStringInternal() + "],entityId=" + getEntityId();
+    }
+
+    String toDetailedStringInternal()
+    {
+        return type.toDetailedString( this );
     }
 
     static void setCursorException( PageCursor cursor, String reason )
