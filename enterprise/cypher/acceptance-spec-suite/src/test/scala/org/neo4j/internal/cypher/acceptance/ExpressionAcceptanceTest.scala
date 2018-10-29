@@ -127,7 +127,7 @@ class ExpressionAcceptanceTest extends ExecutionEngineFunSuite with CypherCompar
     val query = "RETURN true = NOT(42 = 32)"
 
     // this should have the right error message for 3.1 after the next patch releases
-    val config =  Configs.All- Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner
+    val config =  Configs.All - Configs.Version3_1 - Configs.Version2_3
 
     failWithError(config, query,
       List("Unknown function 'NOT'. If you intended to use the negation expression, surround it with parentheses."))

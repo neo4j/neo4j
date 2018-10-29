@@ -22,10 +22,12 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, _}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.graphdb.{Node, QueryExecutionException}
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.QueryExecutionException
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
@@ -802,7 +804,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
         | WHERE f.bar=5 and f.baz=3
         | RETURN f
       """.stripMargin
-    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.RulePlanner, query,
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled, query,
                              planComparisonStrategy = ComparePlansWithAssertion(planDescription => {
         planDescription should includeSomewhere.atLeastNTimes(1, aPlan("NodeIndexSeek").containingVariables("f"))
       }, expectPlansToFail = Configs.RulePlanner))
@@ -822,7 +824,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with RunWithConfigTest
 
     val result = executeWith(Configs.InterpretedAndSlotted, query, planComparisonStrategy = ComparePlansWithAssertion({ plan =>
       plan should includeSomewhere.nTimes(3, aPlan("NodeHashJoin"))
-    }, expectPlansToFail = Configs.RulePlanner + Configs.Version2_3 + Configs.Version3_1))
+    }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
 
     result.toList should equal (List(Map("c" -> 4)))
   }

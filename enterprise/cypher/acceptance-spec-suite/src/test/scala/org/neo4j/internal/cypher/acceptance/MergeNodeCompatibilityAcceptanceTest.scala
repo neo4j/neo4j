@@ -22,8 +22,11 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.internal.helpers.{NodeKeyConstraintCreator, UniquenessConstraintCreator}
-import org.neo4j.cypher.{ExecutionEngineFunSuite, MergeConstraintConflictException, QueryStatisticsTestSupport}
+import org.neo4j.cypher.internal.helpers.NodeKeyConstraintCreator
+import org.neo4j.cypher.internal.helpers.UniquenessConstraintCreator
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.MergeConstraintConflictException
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
@@ -34,9 +37,9 @@ import scala.collection.Map
 class MergeNodeCompatibilityAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport
   with CypherComparisonSupport {
 
-  val hasActiveRead = ComparePlansWithAssertion((plan) => {
+  val hasActiveRead = ComparePlansWithAssertion(plan => {
     plan should includeSomewhere.aPlan("ActiveRead")
-  }, Configs.Cost3_1 + Configs.Cost2_3 + Configs.RulePlanner)
+  }, Configs.Version2_3 + Configs.Version3_1)
 
   Seq(UniquenessConstraintCreator, NodeKeyConstraintCreator).foreach { constraintCreator =>
 

@@ -22,11 +22,12 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, QueryStatisticsTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class LenientCreateRelationshipAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -38,7 +39,7 @@ class LenientCreateRelationshipAcceptanceTest extends ExecutionEngineFunSuite wi
   test("should silently not CREATE relationship if start-point is missing") {
     graph.execute("CREATE (a), (b)")
 
-    val config = Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.RulePlanner
+    val config = Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled
     val result = executeWith(config, """MATCH (a), (b)
                                        |WHERE id(a)=0 AND id(b)=1
                                        |OPTIONAL MATCH (b)-[:LINK_TO]->(c)
@@ -52,7 +53,7 @@ class LenientCreateRelationshipAcceptanceTest extends ExecutionEngineFunSuite wi
   test("should silently not CREATE relationship if end-point is missing") {
     graph.execute("CREATE (a), (b)")
 
-    val config = Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.RulePlanner
+    val config = Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled
     val result = executeWith(config, """MATCH (a), (b)
                                        |WHERE id(a)=0 AND id(b)=1
                                        |OPTIONAL MATCH (b)-[:LINK_TO]->(c)

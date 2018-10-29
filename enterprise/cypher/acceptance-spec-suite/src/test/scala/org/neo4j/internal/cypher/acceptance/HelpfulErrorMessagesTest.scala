@@ -22,7 +22,8 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.cypher.{ExecutionEngineFunSuite, SyntaxException}
+import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.SyntaxException
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
@@ -73,16 +74,14 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
   }
 
   test("should provide sensible error message for invalid regex syntax together with index") {
-
-    // Fixed in 3.2.8
     graph.execute("CREATE (n:Person {text:'abcxxxdefyyyfff'})")
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Compiled - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (x:Person) WHERE x.text =~ '*xxx*yyy*' RETURN x.text", List("Invalid Regex:"))
   }
 
   test("should provide sensible error message for START in newer runtimes") {
     val query = "START n=node(0) RETURN n"
-    failWithError(Configs.Version3_4 + Configs.Version3_5 + Configs.Cost3_1 + Configs.Cost2_3, query, Seq(
+    failWithError(Configs.All - Configs.RulePlanner, query, Seq(
       "The given query is not currently supported in the selected runtime",
       "The given query is not currently supported in the selected cost-based planner",
       "START is deprecated"))
@@ -100,7 +99,7 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
 
   test("should provide sensible error message for CREATE UNIQUE in newer runtimes") {
     val query = "MATCH (root { name: 'root' }) CREATE UNIQUE (root)-[:LOVES]-(someone) RETURN someone"
-    failWithError(Configs.Version3_4 + Configs.Version3_5 + Configs.Cost3_1 + Configs.Cost2_3, query, Seq(
+    failWithError(Configs.All - Configs.RulePlanner, query, Seq(
       "The given query is not currently supported in the selected runtime",
       "The given query is not currently supported in the selected cost-based planner",
       "CREATE UNIQUE is no longer supported"
@@ -124,16 +123,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "bool: true, " +
       "flo: 2.9 })")
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num + n.loc", List("Cannot add `Long` and `Point`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num + n.dur", List("Cannot add `Long` and `Duration`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num + n.dat", List("Cannot add `Long` and `DateTime`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo + n.bool", List("Cannot add `Double` and `Boolean`"))
   }
 
@@ -149,16 +148,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num * n.loc", List("Cannot multiply `Long` and `Point`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num * n.dat", List("Cannot multiply `Long` and `DateTime`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo * n.bool", List("Cannot multiply `Double` and `Boolean`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst * n.str", List("Cannot multiply `LongArray` and `String`"))
   }
 
@@ -174,16 +173,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num - n.loc", List("Cannot subtract `Point` from `Long`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num - n.dat", List("Cannot subtract `DateTime` from `Long`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo - n.bool", List("Cannot subtract `Boolean` from `Double`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst - n.str", List("Cannot subtract `String` from `LongArray`"))
   }
 
@@ -199,16 +198,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num % n.loc", List("Cannot calculate modulus of `Long` and `Point`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num % n.dat", List("Cannot calculate modulus of `Long` and `DateTime`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo % n.bool", List("Cannot calculate modulus of `Double` and `Boolean`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst % n.str", List("Cannot calculate modulus of `LongArray` and `String`"))
   }
 
@@ -224,16 +223,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num / n.loc", List("Cannot divide `Long` by `Point`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num / n.dat", List("Cannot divide `Long` by `DateTime`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo / n.bool", List("Cannot divide `Double` by `Boolean`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst / n.str", List("Cannot divide `LongArray` by `String`"))
   }
 
@@ -249,16 +248,16 @@ class HelpfulErrorMessagesTest extends ExecutionEngineFunSuite with CypherCompar
       "lst: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], " +
       "str: 's' })")
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num ^ n.loc", List("Cannot raise `Long` to the power of `Point`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.num ^ n.dat", List("Cannot raise `Long` to the power of `DateTime`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.flo ^ n.bool", List("Cannot raise `Double` to the power of `Boolean`"))
 
-    failWithError(Configs.All - Configs.RulePlanner - Configs.Version3_1 - Configs.Version2_3,
+    failWithError(Configs.All - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (n:Test) RETURN n.lst ^ n.str", List("Cannot raise `LongArray` to the power of `String`"))
   }
 

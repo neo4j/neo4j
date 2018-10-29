@@ -27,10 +27,7 @@ import org.neo4j.cypher.internal.runtime.PathImpl
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
 import org.neo4j.kernel.impl.proc.Procedures
 
 class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport {
@@ -54,7 +51,7 @@ class PatternComprehensionAcceptanceTest extends ExecutionEngineFunSuite with Cy
     val result = executeWith(Configs.InterpretedAndSlotted, query, planComparisonStrategy =
         ComparePlansWithAssertion(_ should includeSomewhere.aPlan("RollUpApply")
                                            .withRHS(includeSomewhere.aPlan("NodeUniqueIndexSeek")),
-          expectPlansToFail = TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.all) + Configs.RulePlanner)
+          expectPlansToFail = Configs.Version2_3 + Configs.Version3_1)
     )
 
     result.toList should equal(List(Map("result" -> List(ends.head))))

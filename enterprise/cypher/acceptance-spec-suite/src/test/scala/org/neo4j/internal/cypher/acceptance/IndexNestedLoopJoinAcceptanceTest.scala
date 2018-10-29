@@ -222,7 +222,7 @@ class IndexNestedLoopJoinAcceptanceTest extends ExecutionEngineFunSuite with Cyp
 
     // Matches the word "distance" anywhere in the argument string
     val distanceRegex = ".*distance.*".r
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner, query,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3, query,
       planComparisonStrategy = ComparePlansWithAssertion(_ should includeSomewhere.aPlan("NodeIndexSeekByRange").containingArgumentRegex(distanceRegex),
         expectPlansToFail = Configs.Version2_3 + Configs.Version3_1 + Configs.Version3_4))
 

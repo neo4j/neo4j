@@ -28,7 +28,8 @@ import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
-import org.neo4j.values.storable.{CoordinateReferenceSystem, Values}
+import org.neo4j.values.storable.CoordinateReferenceSystem
+import org.neo4j.values.storable.Values
 
 import scala.collection.Map
 
@@ -74,7 +75,7 @@ class HintAcceptanceTest
     executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query, planComparisonStrategy = ComparePlansWithAssertion((p) => {
       p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
       p should not(includeSomewhere.aPlan("NodeHashJoin"))
-    }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
+    }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("should solve join hint on 1 variable with join on more, if possible") {
@@ -89,7 +90,7 @@ class HintAcceptanceTest
     executeWith(Configs.InterpretedAndSlotted - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should includeSomewhere.aPlan("NodeRightOuterHashJoin")
-      }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("should do index seek instead of index scan with explicit index seek hint") {
@@ -116,7 +117,7 @@ class HintAcceptanceTest
     executeWith(Configs.InterpretedAndSlotted - Configs.RulePlanner - Configs.Cost2_3 - Configs.Cost3_1, query,
       planComparisonStrategy = ComparePlansWithAssertion((p) => {
         p should includeSomewhere.nTimes(2, aPlan("NodeIndexSeek"))
-      }, expectPlansToFail = Configs.RulePlanner + Configs.Cost2_3 + Configs.Cost3_1))
+      }, expectPlansToFail = Configs.Version2_3 + Configs.Version3_1))
   }
 
   test("should accept hint on spatial index with distance function") {
@@ -136,7 +137,7 @@ class HintAcceptanceTest
         |AND date("2017-01-01") <= r.date <= date("2018-01-01")
         |RETURN COUNT(*)""".stripMargin
 
-    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled - Configs.RulePlanner, query)
+    val result = executeWith(Configs.Version3_5 + Configs.Version3_4 - Configs.Compiled, query)
 
     // Then
     result.toList should be(List(Map("COUNT(*)" -> 1)))

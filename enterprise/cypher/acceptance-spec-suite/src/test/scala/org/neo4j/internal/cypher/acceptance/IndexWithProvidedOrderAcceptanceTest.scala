@@ -24,8 +24,8 @@ package org.neo4j.internal.cypher.acceptance
 
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
+import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 
 class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CypherComparisonSupport {
 
@@ -116,7 +116,7 @@ class IndexWithProvidedOrderAcceptanceTest extends ExecutionEngineFunSuite with 
     }
 
     test(s"$cypherToken: Order by index backed property in a plan with an Apply") {
-      val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner,
+      val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3,
         s"MATCH (a:DateString), (b:DateDate) WHERE a.ds STARTS WITH '2018' AND b.d > date(a.ds) RETURN a.ds ORDER BY a.ds $cypherToken", executeBefore = createSomeNodes)
 
       result.executionPlanDescription() should (

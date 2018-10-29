@@ -30,7 +30,9 @@ import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions
-import org.neo4j.values.storable.{CoordinateReferenceSystem, PointValue, Values}
+import org.neo4j.values.storable.CoordinateReferenceSystem
+import org.neo4j.values.storable.PointValue
+import org.neo4j.values.storable.Values
 
 import scala.collection.Map
 import scala.collection.immutable.{Map => ImmutableMap}
@@ -248,7 +250,7 @@ class SpatialIndexResultsAcceptanceTest extends IndexingTestSupport {
     graph.execute("MATCH (p:Place) SET p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point")
 
     // When
-    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3 - Configs.RulePlanner,
+    val result = executeWith(Configs.InterpretedAndSlotted - Configs.Version3_1 - Configs.Version2_3,
       "MATCH (p:Place) WHERE p.location = point({x: 1.2, y: 3.4, z: 5.6}) RETURN p.location as point",
       planComparisonStrategy = ComparePlansWithAssertion({ plan =>
         plan should includeSomewhere

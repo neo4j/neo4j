@@ -28,11 +28,6 @@ import org.neo4j.cypher.SyntaxException
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.ComparePlansWithAssertion
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Planners
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Runtimes
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.TestConfiguration
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V2_3
-import org.neo4j.internal.cypher.acceptance.comparisonsupport.Versions.V3_4
 
 class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherComparisonSupport with QueryStatisticsTestSupport {
 
@@ -227,7 +222,7 @@ class ForeachAcceptanceTest extends ExecutionEngineFunSuite with CypherCompariso
     graph.execute("CREATE (:X)-[:T]->(), (:X)")
 
     val result = executeWith(
-      expectSucceed = Configs.InterpretedAndSlotted - TestConfiguration(V2_3 -> V3_4, Planners.all, Runtimes.all) - Configs.RulePlanner,
+      expectSucceed = Configs.InterpretedAndSlotted /\ Configs.Version3_5,
       query = "FOREACH (x in  [ (n:X)-->() | n ] | SET x.prop = 12 )")
     assertStats(result, propertiesWritten = 1)
   }

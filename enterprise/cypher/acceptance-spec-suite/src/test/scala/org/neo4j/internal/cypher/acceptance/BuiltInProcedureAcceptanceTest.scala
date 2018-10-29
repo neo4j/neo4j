@@ -22,7 +22,9 @@
  */
 package org.neo4j.internal.cypher.acceptance
 
-import org.neo4j.graphdb.{Label, Node, Relationship}
+import org.neo4j.graphdb.Label
+import org.neo4j.graphdb.Node
+import org.neo4j.graphdb.Relationship
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.Configs
 import org.neo4j.internal.cypher.acceptance.comparisonsupport.CypherComparisonSupport
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider
@@ -330,7 +332,7 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
   }
 
   test("yield from void procedure should return correct error msg") {
-    failWithError(Configs.Version3_5 + Configs.Version3_4 - Configs.RulePlanner,
+    failWithError(Configs.Version3_5 + Configs.Version3_4,
                   "CALL db.createLabel('Label') yield node",
                   List("Cannot yield value from void procedure."))
   }
