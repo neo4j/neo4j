@@ -82,6 +82,7 @@ public class Config implements DiagnosticsProvider, Configuration
     private final List<ConfigOptions> configOptions;
 
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
+    private final Map<String,Object> parsedParams = new CopyOnWriteHashMap<>(); // Read heavy workload
     private final Map<String, Collection<BiConsumer<String,String>>> updateListeners = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
@@ -419,7 +420,7 @@ public class Config implements DiagnosticsProvider, Configuration
     @Override
     public <T> T get( Setting<T> setting )
     {
-        return setting.apply( params::get );
+        return (T) parsedParams.computeIfAbsent( setting.name(), name -> setting.apply( params::get ) );
     }
 
     /**
@@ -527,6 +528,7 @@ public class Config implements DiagnosticsProvider, Configuration
     {
         overriddenDefaults.put( setting.name(), value );
         params.putIfAbsent( setting.name(), value );
+        parsedParams.remove( setting.name() );
     }
 
     /**
@@ -634,6 +636,7 @@ public class Config implements DiagnosticsProvider, Configuration
             log.info( "Setting changed: '%s' changed from '%s' to '%s' via '%s'",
                     setting, oldValueIsDefault ? "default (" + oldValue + ")" : oldValue,
                     newValueIsDefault ? "default (" + newValue + ")" : newValue, origin );
+            parsedParams.remove( setting );
             updateListeners.getOrDefault( setting, emptyList() ).forEach( l -> l.accept( oldValue, newValue ) );
         }
     }
@@ -774,6 +777,8 @@ public class Config implements DiagnosticsProvider, Configuration
         {
             validator.validate( this, log );
         }
+
+        settings.keySet().forEach( parsedParams::remove );
     }
 
     private Map<String,String> migrateSettings( Map<String,String> settings )
