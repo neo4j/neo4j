@@ -80,7 +80,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
-  def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
+  def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, null, cause)
 
   object runSafely extends RunSafely {
     override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default) = {

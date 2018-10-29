@@ -58,7 +58,8 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     val graph = createDbWithFailedIndex
     try {
       // WHEN THEN
-      intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
+      val e = intercept[FailedIndexException](execute("CREATE INDEX ON :Person(name)"))
+      e.getMessage should include (org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory.POPULATION_FAILURE_MESSAGE)
     } finally {
       graph.shutdown()
       new File("target/test-data/test-impermanent-db").deleteAll()

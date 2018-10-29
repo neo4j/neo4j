@@ -63,7 +63,7 @@ import static java.util.Arrays.copyOfRange;
 public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFactory<GenericNativeIndexProviderFactory.Dependencies>
 {
     public static final String INITIAL_STATE_FAILURE_MESSAGE = "Override initial state as failed";
-    private static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
+    public static final String POPULATION_FAILURE_MESSAGE = "Fail on update during population";
 
     public enum FailureType
     {

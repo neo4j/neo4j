@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.Status
+import scala.compat.Platform.EOL
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
 with Status.HasStatus {
@@ -73,9 +74,11 @@ class MissingIndexException(indexName: String) extends CypherException("Index `"
   val status = Status.Schema.IndexNotFound
 }
 
-class FailedIndexException(indexName: String, cause: Throwable) extends CypherException("Index `" + indexName + "` has failed. Drop and recreate it to get it back online.", cause) {
+class FailedIndexException(indexName: String, failureMessage: String, cause: Throwable) extends CypherException(
+  s"Index `$indexName` has failed. Drop and recreate it to get it back online." +
+    (if (failureMessage != null) s" Actual failure:$EOL==================$EOL$failureMessage$EOL==================" else ""),
+  cause) {
   val status = Status.General.IndexCorruptionDetected
-  def this(indexName: String) = this(indexName, null)
 }
 
 class MissingConstraintException(cause: Throwable) extends CypherException("Constraint not found", cause) {

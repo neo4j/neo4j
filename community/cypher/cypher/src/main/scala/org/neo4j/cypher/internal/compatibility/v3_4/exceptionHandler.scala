@@ -85,7 +85,8 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
-  override def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, cause)
+  // TODO pass along failureMessage as soon as we depend on the next 3.4
+  override def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, null, cause)
 
 }
 

@@ -834,8 +834,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     } catch {
       case _: AlreadyIndexedException =>
         val indexReference = transactionalContext.kernelTransaction.schemaRead().index(kernelDescriptor.getLabelId, kernelDescriptor.getPropertyIds: _*)
-        if (transactionalContext.kernelTransaction.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED)
-          throw new FailedIndexException(indexReference.userDescription(tokenNameLookup))
+        if (transactionalContext.kernelTransaction.schemaRead().indexGetState(indexReference) == InternalIndexState.FAILED) {
+          val message = transactionalContext.kernelTransaction.schemaRead().indexGetFailure(indexReference)
+          throw new FailedIndexException(indexReference.userDescription(tokenNameLookup), message)
+        }
         IdempotentResult(indexReference, wasCreated = false)
     }
   }
