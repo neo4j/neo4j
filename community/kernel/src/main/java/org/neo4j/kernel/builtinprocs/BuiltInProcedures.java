@@ -93,7 +93,7 @@ public class BuiltInProcedures
     @Context
     public GraphDatabaseAPI graphDatabaseAPI;
 
-    @Description( "List all labels in the database." )
+    @Description( "List all labels in the database and their total count." )
     @Procedure( name = "db.labels", mode = READ )
     public Stream<LabelResult> listLabels()
     {
@@ -115,7 +115,7 @@ public class BuiltInProcedures
         return propertyKeys.stream();
     }
 
-    @Description( "List all relationship types in the database." )
+    @Description( "List all relationship types in the database and their total count." )
     @Procedure( name = "db.relationshipTypes", mode = READ )
     public Stream<RelationshipTypeResult> listRelationshipTypes()
     {
@@ -884,12 +884,12 @@ public class BuiltInProcedures
     public static class LabelResult
     {
         public final String label;
-        public final long count;
+        public final long nodeCount;
 
-        private LabelResult( Label label, long count )
+        private LabelResult( Label label, long nodeCount )
         {
             this.label = label.name();
-            this.count = count;
+            this.nodeCount = nodeCount;
         }
     }
 
@@ -906,12 +906,12 @@ public class BuiltInProcedures
     public static class RelationshipTypeResult
     {
         public final String relationshipType;
-        public final long count;
+        public final long relationshipCount;
 
-        private RelationshipTypeResult( RelationshipType relationshipType, long count )
+        private RelationshipTypeResult( RelationshipType relationshipType, long relationshipCount )
         {
             this.relationshipType = relationshipType.name();
-            this.count = count;
+            this.relationshipCount = relationshipCount;
         }
     }
 

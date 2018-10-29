@@ -81,7 +81,7 @@ public class ProceduresKernelIT extends KernelIntegrationTest
 
         // Then
         assertThat( found, equalTo( procedureSignature( procedureName( "db", "labels" ) )
-                .out(  "label", NTString ).out( "count", NTInteger ).build() ) );
+                .out(  "label", NTString ).out( "nodeCount", NTInteger ).build() ) );
         commit();
     }
 
