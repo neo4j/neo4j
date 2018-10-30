@@ -26,7 +26,6 @@ import org.neo4j.values.Equality;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNull;
 
 public class AnyValueTestUtil
 {
@@ -66,8 +65,8 @@ public class AnyValueTestUtil
     {
         assertNotEquals( a + " should not be equivalent to " + b, a, b );
         assertNotEquals( b + " should not be equivalent to " + a, b, a );
-        assertNull( a + " should be incomparable to " + b, a.ternaryEquals( b ) );
-        assertNull( b + " should be incomparable to " + a, b.ternaryEquals( a ) );
+        assertEquals( a + " should be incomparable to " + b, a.ternaryEquals( b ), Equality.UNDEFINED );
+        assertEquals( b + " should be incomparable to " + a, b.ternaryEquals( a ), Equality.UNDEFINED );
     }
 
     public static <X extends Exception, T> X assertThrows( Class<X> exception, Supplier<T> thunk )
