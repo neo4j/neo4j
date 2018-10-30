@@ -19,13 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.opencypher.v9_0.util.{ASTNode, InputPosition, InternalException}
 import org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery.ClauseConverters._
-import org.opencypher.v9_0.ast._
+import org.neo4j.cypher.internal.ir.v3_5.PeriodicCommit
+import org.neo4j.cypher.internal.ir.v3_5.UnionQuery
 import org.opencypher.v9_0.ast
+import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.ir.v3_5.{PeriodicCommit, UnionQuery}
-import org.opencypher.v9_0.expressions.{And, Or, Pattern, PatternPart}
+import org.opencypher.v9_0.expressions.And
+import org.opencypher.v9_0.expressions.Or
+import org.opencypher.v9_0.expressions.Pattern
+import org.opencypher.v9_0.expressions.PatternPart
+import org.opencypher.v9_0.util.ASTNode
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.InternalException
+
+import scala.collection.mutable.ArrayBuffer
 
 object StatementConverters {
   import org.opencypher.v9_0.util.Foldable._
@@ -84,7 +92,7 @@ object StatementConverters {
     *   CREATE (a) CREATE (b) => CREATE (a),(b)
     */
   def flattenCreates(clauses: Seq[Clause]): Seq[Clause] = {
-    val builder = Seq.newBuilder[Clause]
+    val builder = ArrayBuffer.empty[Clause]
     var prevCreate: Option[(Seq[PatternPart], InputPosition)] = None
     for (clause <- clauses) {
       (clause, prevCreate) match {
@@ -105,6 +113,6 @@ object StatementConverters {
     }
     for ((prevParts, pos) <- prevCreate)
       builder += Create(Pattern(prevParts)(pos))(pos)
-    builder.result()
+    builder
   }
 }

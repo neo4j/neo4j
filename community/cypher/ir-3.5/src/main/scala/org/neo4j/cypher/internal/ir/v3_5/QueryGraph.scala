@@ -25,7 +25,9 @@ import org.opencypher.v9_0.ast.prettifier.ExpressionStringifier
 import org.opencypher.v9_0.expressions._
 
 import scala.collection.mutable.ArrayBuffer
-import scala.collection.{GenSeq, GenTraversableOnce, mutable}
+import scala.collection.GenSeq
+import scala.collection.GenTraversableOnce
+import scala.collection.mutable
 import scala.runtime.ScalaRunTime
 
 /*
@@ -332,7 +334,7 @@ case class QueryGraph(// !!! If you change anything here, make sure to update th
   }
 
   def containsReads: Boolean = {
-    (patternNodes -- argumentIds).nonEmpty ||
+    (patternNodes.nonEmpty && (patternNodes -- argumentIds).nonEmpty) ||
       patternRelationships.nonEmpty ||
       selections.nonEmpty ||
       shortestPathPatterns.nonEmpty ||

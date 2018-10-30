@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.ir.v3_5
 
-import org.opencypher.v9_0.util.{Cardinality, InternalException}
 import org.opencypher.v9_0.ast.Hint
-import org.opencypher.v9_0.expressions.{LabelName, Variable}
+import org.opencypher.v9_0.expressions.LabelName
+import org.opencypher.v9_0.expressions.Variable
+import org.opencypher.v9_0.util.InternalException
 
 import scala.annotation.tailrec
 import scala.collection.GenSeq
+import scala.util.hashing.MurmurHash3
 
 /**
   * A linked list of queries, each made up of, a query graph (MATCH ... WHERE ...), a required order, a horizon (WITH ...) and a pointer to the next query.
@@ -243,9 +245,14 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
     case _ => false
   }
 
+  var theHashCode: Int = -1
+
   override def hashCode(): Int = {
-    val state = Seq(queryGraph, horizon, tail, interestingOrder.required)
-    state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
+    if (theHashCode == -1) {
+      val state = Seq(queryGraph, horizon, tail, interestingOrder.required)
+      theHashCode = MurmurHash3.seqHash(state)
+    }
+    theHashCode
   }
 }
 
