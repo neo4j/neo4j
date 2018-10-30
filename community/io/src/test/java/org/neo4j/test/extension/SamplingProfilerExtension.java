@@ -19,13 +19,10 @@
  */
 package org.neo4j.test.extension;
 
-import org.junit.jupiter.api.extension.AfterAllCallback;
-import org.junit.jupiter.api.extension.AfterEachCallback;
-import org.junit.jupiter.api.extension.BeforeEachCallback;
-import org.junit.jupiter.api.extension.ExtensionContext;
-import org.junit.platform.commons.JUnitException;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 
-import java.io.Closeable;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,61 +33,51 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
 
-import static java.lang.String.format;
-
-public class SamplingProfilerExtension extends StatefullFieldExtension<SamplingProfilerExtension.Profiler>
-        implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
+public class SamplingProfilerExtension implements TestRule, SamplingProfilerExtension.Profiler
 {
-    private static final String PROFILER = "samplingProfiler";
-    private static final ExtensionContext.Namespace PROFILER_NAMESPACE = ExtensionContext.Namespace.create( PROFILER );
+    private final ProfilerImpl profiler = new ProfilerImpl();
 
-    @Override
-    public void beforeEach( ExtensionContext context )
+    private void beforeEach()
     {
-        ProfilerImpl profiler = (ProfilerImpl) getStoredValue( context );
         profiler.reset();
     }
 
-    @Override
-    public void afterEach( ExtensionContext context )
+    private void afterEach( boolean failed ) throws InterruptedException
     {
-        ProfilerImpl profiler = (ProfilerImpl) getStoredValue( context );
-        try
+        profiler.stop();
+        if ( failed )
         {
-            profiler.stop();
-            if ( context.getExecutionException().isPresent() )
+            profiler.printProfile();
+        }
+    }
+
+    @Override
+    public Statement apply( Statement base, Description description )
+    {
+        return new Statement()
+        {
+            @Override
+            public void evaluate() throws Throwable
             {
-                profiler.printProfile();
+                beforeEach();
+                try
+                {
+                    base.evaluate();
+                    afterEach( false );
+                }
+                catch ( Throwable th )
+                {
+                    afterEach( true );
+                    throw th;
+                }
             }
-        }
-        catch ( Exception e )
-        {
-            throw new JUnitException( format( "Fail to stop profiler for %s test.", context.getDisplayName() ), e );
-        }
+        };
     }
 
     @Override
-    protected String getFieldKey()
+    public AutoCloseable profile( Thread threadToProfile, long initialDelayNanos )
     {
-        return PROFILER;
-    }
-
-    @Override
-    protected Class<Profiler> getFieldType()
-    {
-        return Profiler.class;
-    }
-
-    @Override
-    protected Profiler createField( ExtensionContext extensionContext )
-    {
-        return new ProfilerImpl();
-    }
-
-    @Override
-    protected ExtensionContext.Namespace getNameSpace()
-    {
-        return PROFILER_NAMESPACE;
+        return profiler.profile( threadToProfile, initialDelayNanos );
     }
 
     public interface Profiler
