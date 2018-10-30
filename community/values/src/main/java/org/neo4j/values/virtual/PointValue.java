@@ -120,7 +120,7 @@ public abstract class PointValue extends VirtualValue
     @Override
     public String getTypeName()
     {
-        return "Relationship";
+        return "Point";
     }
 
     static class CartesianPointValue extends PointValue

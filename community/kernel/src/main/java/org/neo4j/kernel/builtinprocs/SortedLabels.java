@@ -65,6 +65,6 @@ public class SortedLabels
 
     public Integer label( int offset )
     {
-        return (int) labels[offset];
+        return labels[offset];
     }
 }
