@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 
 import java.util
 
-import org.neo4j.values.storable.{ArrayValue, Values}
-import org.neo4j.values.virtual.{ListValue, VirtualValues}
-import org.neo4j.values.{AnyValue, Equality}
+import org.neo4j.values.storable.{Value, Values}
+import org.neo4j.values.virtual.ListValue
+import org.neo4j.values.{AnyValue, Equality, VirtualValue}
 
 import scala.collection.mutable
 
@@ -56,18 +56,22 @@ class BuildUp(list: ListValue) extends Checker {
 
   private def checkAndBuildUpCache(value: AnyValue): (Option[Boolean], Checker) = {
     var foundMatch = Equality.FALSE
-    while (iterator.hasNext && foundMatch == Equality.FALSE) {
+    while (iterator.hasNext && foundMatch != Equality.TRUE) {
       val nextValue = iterator.next()
 
       if (nextValue == Values.NO_VALUE) {
         falseResult = None
       } else {
         cachedSet.add(nextValue)
+        //we will get UNDEFINED if we ternart compare different types but if we get an UNDEFINED when comparing two values
+        //of the same type it means the whole result must be undefined, e.g. [1,2] IN [[null,2]]
         foundMatch = (nextValue, value) match {
-          case (a: ArrayValue, b: ListValue) => VirtualValues.fromArray(a).ternaryEquals(b)
-          case (a: ListValue, b: ArrayValue) => VirtualValues.fromArray(b).ternaryEquals(a)
-          case (a, b) => a.ternaryEquals(b)
+          case (v1: Value, v2: Value) if v1.valueGroup() == v2.valueGroup() => v1.ternaryEquals(v2)
+          case (v1: VirtualValue, v2: VirtualValue) if v1.valueGroup() == v2.valueGroup() => v1.ternaryEquals(v2)
+          //For different types it is either TRUE or FALSE, 'foo' in [1,2] => false
+          case (v1, v2) => if (v1.equals(v2)) Equality.TRUE else Equality.FALSE
         }
+
         if (foundMatch == Equality.UNDEFINED) {
           falseResult = None
           foundMatch = Equality.FALSE
