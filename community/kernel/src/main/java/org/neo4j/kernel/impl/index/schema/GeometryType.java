@@ -123,7 +123,7 @@ class GeometryType extends Type
     @Override
     String toString( GenericKey state )
     {
-        return format( "Geometry[tableId:%d, code:%d, rawValue:%d]", state.long1, state.long2, state.long0 );
+        return format( "Geometry[tableId:%d, code:%d, rawValue:%d, value:%s", state.long1, state.long2, state.long0, asValue( state ) );
     }
 
     @Override

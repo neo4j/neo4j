@@ -43,8 +43,8 @@ import static org.neo4j.kernel.impl.index.schema.GeometryType.readCrs;
 /**
  * Handles {@link PointValue[]}.
  *
- * Note about lazy initialization of {@link GenericKeyState} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
- * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link GenericKeyState} (via the logic in this class)
+ * Note about lazy initialization of {@link GenericKey} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
+ * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link GenericKey} (via the logic in this class)
  * the {@link CoordinateReferenceSystem} isn't known at initialization, where only the type and array length is known.
  * This is why some state is initialize lazily when observing the first point in the array.
  */
@@ -137,8 +137,8 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     @Override
     String toString( GenericKey state )
     {
-        return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s]",
-                state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ) );
+        return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s, value:%s]",
+                state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ), asValue( state ) );
     }
 
     @Override
