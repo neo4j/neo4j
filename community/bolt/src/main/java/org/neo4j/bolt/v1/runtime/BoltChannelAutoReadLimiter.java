@@ -22,23 +22,28 @@ package org.neo4j.bolt.v1.runtime;
 import io.netty.channel.Channel;
 
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Queue monitor that changes {@link Channel} auto-read setting based on the job queue size.
+ * Methods {@link #enqueued(Job)} and {@link #drained(Collection)} are synchronized to make sure
+ * queue size and channel auto-read are modified together as an atomic operation.
+ */
 public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
 {
     protected static final String LOW_WATERMARK_NAME = "low_watermark";
     protected static final String HIGH_WATERMARK_NAME = "high_watermark";
 
-    private final AtomicInteger queueSize = new AtomicInteger( 0 );
     private final Channel channel;
     private final Log log;
     private final int lowWatermark;
     private final int highWatermark;
+
+    private int queueSize;
 
     public BoltChannelAutoReadLimiter( Channel channel, Log log )
     {
@@ -75,43 +80,46 @@ public class BoltChannelAutoReadLimiter implements BoltWorkerQueueMonitor
     }
 
     @Override
-    public void enqueued( Job job )
+    public synchronized void enqueued( Job job )
     {
-        checkLimitsOnEnqueue( queueSize.incrementAndGet() );
+        queueSize += 1;
+        checkLimitsOnEnqueue();
     }
 
     @Override
-    public void dequeued( Job job )
+    public synchronized void dequeued( Job job )
     {
-        checkLimitsOnDequeue( queueSize.decrementAndGet() );
+        queueSize -= 1;
+        checkLimitsOnDequeue();
     }
 
     @Override
-    public void drained( Collection<Job> jobs )
+    public synchronized void drained( Collection<Job> jobs )
     {
-        checkLimitsOnDequeue( queueSize.addAndGet( -jobs.size() ) );
+        queueSize -= jobs.size();
+        checkLimitsOnDequeue();
     }
 
-    private void checkLimitsOnEnqueue( int currentSize )
+    private void checkLimitsOnEnqueue()
     {
-        if ( currentSize > highWatermark && channel.config().isAutoRead() )
+        if ( queueSize > highWatermark && channel.config().isAutoRead() )
         {
             if ( log != null )
             {
-                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.id(), currentSize );
+                log.warn( "Channel [%s]: client produced %d messages on the worker queue, auto-read is being disabled.", channel.id(), queueSize );
             }
 
             channel.config().setAutoRead( false );
         }
     }
 
-    private void checkLimitsOnDequeue( int currentSize )
+    private void checkLimitsOnDequeue()
     {
-        if ( currentSize <= lowWatermark && !channel.config().isAutoRead() )
+        if ( queueSize <= lowWatermark && !channel.config().isAutoRead() )
         {
             if ( log != null )
             {
-                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.id(), currentSize );
+                log.warn( "Channel [%s]: consumed messages on the worker queue below %d, auto-read is being enabled.", channel.id(), queueSize );
             }
 
             channel.config().setAutoRead( true );

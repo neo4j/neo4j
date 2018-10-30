@@ -24,6 +24,8 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+
 import org.neo4j.logging.Log;
 import org.neo4j.unsafe.impl.internal.dragons.FeatureToggles;
 
@@ -155,6 +157,39 @@ public class BoltChannelAutoReadLimiterTest
         assertTrue( channel.config().isAutoRead() );
         verify( log, times( 1 ) ).warn( contains( "disabled" ), eq( channel.id() ), eq( 3 ) );
         verify( log, times( 1 ) ).warn( contains( "enabled" ), eq( channel.id() ), eq( 1 ) );
+    }
+
+    @Test
+    public void shouldDisableAndEnableAutoRead()
+    {
+        int lowWatermark = 3;
+        int highWatermark = 5;
+        BoltChannelAutoReadLimiter limiter = newLimiter( lowWatermark, highWatermark );
+
+        assertTrue( channel.config().isAutoRead() );
+
+        for ( int i = 0; i < highWatermark + 1; i++ )
+        {
+            limiter.enqueued( job );
+        }
+        assertFalse( channel.config().isAutoRead() );
+
+        limiter.dequeued( job );
+        assertFalse( channel.config().isAutoRead() );
+        limiter.dequeued( job );
+        assertFalse( channel.config().isAutoRead() );
+
+        limiter.dequeued( job );
+        assertTrue( channel.config().isAutoRead() );
+
+        for ( int i = 0; i < 3; i++ )
+        {
+            limiter.enqueued( job );
+        }
+        assertFalse( channel.config().isAutoRead() );
+
+        limiter.drained( Arrays.asList( job, job, job, job, job, job ) );
+        assertTrue( channel.config().isAutoRead() );
     }
 
     @Test
