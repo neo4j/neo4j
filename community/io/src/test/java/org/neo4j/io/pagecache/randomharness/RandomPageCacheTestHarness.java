@@ -56,6 +56,7 @@ import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.scheduler.DaemonThreadFactory;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.extension.SamplingProfilerExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 /**
@@ -93,6 +94,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private Phase preparation;
     private Phase verification;
     private RecordFormat recordFormat;
+    private SamplingProfilerExtension.Profiler profiler;
 
     public RandomPageCacheTestHarness()
     {
@@ -117,6 +119,7 @@ public class RandomPageCacheTestHarness implements Closeable
         fs = new EphemeralFileSystemAbstraction();
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
+        profiler = SamplingProfilerExtension.Profiler.NULL;
     }
 
     /**
@@ -286,6 +289,11 @@ public class RandomPageCacheTestHarness implements Closeable
         this.fs = fileSystem;
     }
 
+    public void useProfiler( SamplingProfilerExtension.Profiler profiler )
+    {
+        this.profiler = profiler;
+    }
+
     /**
      * Write out a textual description of the last run iteration, including the exact plan and what thread
      * executed which command, and the random seed that can be used to recreate that plan for improved repeatability.
@@ -404,7 +412,7 @@ public class RandomPageCacheTestHarness implements Closeable
         plan = plan( cache, files, fileMap );
 
         AtomicBoolean stopSignal = new AtomicBoolean();
-        Callable<Void> planRunner = new PlanRunner( plan, stopSignal );
+        Callable<Void> planRunner = new PlanRunner( plan, stopSignal, profiler );
         Future<Void>[] futures = new Future[concurrencyLevel];
         for ( int i = 0; i < concurrencyLevel; i++ )
         {
