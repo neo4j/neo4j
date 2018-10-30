@@ -52,7 +52,8 @@ object TestConfiguration {
   }
 
   def apply(description:String): TestConfiguration = {
-    val configs = description.split(System.lineSeparator()).map(_.trim)
+    // Splitting on "\n" works in both Unix and Windows, since the Strings that come in here are from our source code, which has unix line endings
+    val configs = description.split("\n").map(_.trim)
     configs.map { stringDescription =>
       if(stringDescription.isEmpty) {
         empty
