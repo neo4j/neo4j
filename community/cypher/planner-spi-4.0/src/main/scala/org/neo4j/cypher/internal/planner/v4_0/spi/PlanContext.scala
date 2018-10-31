@@ -58,6 +58,8 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
+  def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String]
+
   def checkNodeIndex(idxName: String)
 
   def checkRelIndex(idxName: String)

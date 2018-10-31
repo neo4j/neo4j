@@ -36,6 +36,8 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
+  override def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String] = ???
+
   override def checkNodeIndex(idxName: String): Unit = ???
 
   override def checkRelIndex(idxName: String): Unit = ???

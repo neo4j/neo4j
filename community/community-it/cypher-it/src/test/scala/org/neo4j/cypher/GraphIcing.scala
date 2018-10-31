@@ -86,10 +86,12 @@ trait GraphIcing {
       }
     }
 
+    def createExistenceConstraint(label: String, property: String) = {
+      graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
+    }
+
     def createNodeKeyConstraint(label: String, property: String): Result = {
-      inTx {
-        graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NODE KEY")
-      }
+      graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NODE KEY")
     }
 
     def createIndex(label: String, properties: String*): Unit = {

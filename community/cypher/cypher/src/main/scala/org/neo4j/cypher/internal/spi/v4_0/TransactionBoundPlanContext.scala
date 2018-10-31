@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v4_0
 
+import java.util
 import java.util.Optional
 
 import org.neo4j.cypher.MissingIndexException
@@ -32,8 +33,10 @@ import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
+import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor
 import org.neo4j.values.storable.ValueCategory
 import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.symbols._
@@ -149,6 +152,17 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       tc.schemaRead.constraintsGetForSchema(SchemaDescriptorFactory.forLabel(labelId, propertyKeyId)).hasNext
     } catch {
       case _: KernelException => false
+    }
+  }
+
+  override def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String] = {
+    try {
+      val labelId = getLabelId(labelName)
+
+      val constraints: util.Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabel(labelId)
+      constraints.asScala.map(_.schema().getPropertyId).map(id => tc.tokenRead.propertyKeyName(id))
+    } catch {
+      case _: KernelException => Iterator.empty
     }
   }
 
