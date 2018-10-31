@@ -27,7 +27,6 @@ import java.net.ServerSocket;
 
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.ports.allocation.PortAuthority;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -38,14 +37,13 @@ import static org.junit.Assert.fail;
 
 public class NeoServerPortConflictIT extends ExclusiveServerTestBase
 {
+
     @Test
     public void shouldComplainIfServerPortIsAlreadyTaken() throws IOException
     {
-        int serverPort = PortAuthority.allocatePort();
-        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", serverPort );
-        try ( ServerSocket ignored = new ServerSocket(
-                contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHostname() ) ) )
+        try ( ServerSocket socket = new ServerSocket( 0, 0, InetAddress.getLocalHost() ) )
         {
+            ListenSocketAddress contestedAddress = new ListenSocketAddress( socket.getInetAddress().getHostName(), socket.getLocalPort() );
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
                     .onAddress( contestedAddress )
@@ -76,17 +74,14 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
     @Test
     public void shouldComplainIfServerHTTPSPortIsAlreadyTaken() throws IOException
     {
-        int serverPort = PortAuthority.allocatePort();
-        int httpsPort = PortAuthority.allocatePort();
-        ListenSocketAddress unContestedAddress = new ListenSocketAddress( "localhost", serverPort );
-        ListenSocketAddress contestedAddress = new ListenSocketAddress( "localhost", httpsPort );
-        try ( ServerSocket ignored = new ServerSocket(
-                contestedAddress.getPort(), 0, InetAddress.getByName( contestedAddress.getHostname() ) ) )
+        try ( ServerSocket httpsSocket = new ServerSocket( 0, 0, InetAddress.getLocalHost() ) )
         {
+            ListenSocketAddress unContestedAddress = new ListenSocketAddress( httpsSocket.getInetAddress().getHostName(), 0 );
+            ListenSocketAddress httpsAddress = new ListenSocketAddress( httpsSocket.getInetAddress().getHostName(), httpsSocket.getLocalPort() );
             AssertableLogProvider logProvider = new AssertableLogProvider();
             CommunityNeoServer server = CommunityServerBuilder.server( logProvider )
                     .onAddress( unContestedAddress )
-                    .onHttpsAddress( contestedAddress )
+                    .onHttpsAddress( httpsAddress )
                     .withHttpsEnabled()
                     .usingDataDir( folder.directory( name.getMethodName() ).getAbsolutePath() )
                     .build();
@@ -106,7 +101,7 @@ public class NeoServerPortConflictIT extends ExclusiveServerTestBase
                             "Failed to start Neo4j on %s: %s",
                             unContestedAddress,
                             format( "At least one of the addresses %s or %s is already in use, cannot bind to it.",
-                                    unContestedAddress, contestedAddress )
+                                    unContestedAddress, httpsAddress )
                     )
             );
             server.stop();
