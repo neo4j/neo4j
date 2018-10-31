@@ -94,9 +94,17 @@ public interface SequenceValue extends Iterable<AnyValue>
         }
         int i = 0;
         Equality equivalenceResult = Equality.TRUE;
-        while ( i < length && equivalenceResult == Equality.TRUE )
+        while ( i < length  )
         {
-            equivalenceResult = a.value( i ).ternaryEquals( b.value( i ) );
+            Equality areEqual = a.value( i ).ternaryEquals( b.value( i ) );
+            if ( areEqual == Equality.UNDEFINED )
+            {
+                equivalenceResult = Equality.UNDEFINED;
+            }
+            else if ( areEqual == Equality.FALSE )
+            {
+                return Equality.FALSE;
+            }
             i++;
         }
 
@@ -122,9 +130,17 @@ public interface SequenceValue extends Iterable<AnyValue>
         Equality equivalenceResult = Equality.TRUE;
         Iterator<AnyValue> aIterator = a.iterator();
         Iterator<AnyValue> bIterator = b.iterator();
-        while ( aIterator.hasNext() && bIterator.hasNext() && equivalenceResult == Equality.TRUE )
+        while ( aIterator.hasNext() && bIterator.hasNext() )
         {
-            equivalenceResult = aIterator.next().ternaryEquals( bIterator.next() );
+            Equality areEqual = aIterator.next().ternaryEquals( bIterator.next() );
+            if ( areEqual == Equality.UNDEFINED )
+            {
+                equivalenceResult = Equality.UNDEFINED;
+            }
+            else if (areEqual == Equality.FALSE )
+            {
+                return Equality.FALSE;
+            }
         }
 
         return !aIterator.hasNext() && !bIterator.hasNext() ? equivalenceResult : Equality.FALSE;
