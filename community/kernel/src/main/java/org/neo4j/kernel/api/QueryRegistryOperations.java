@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
 
 
@@ -58,9 +57,7 @@ public interface QueryRegistryOperations
     /**
      * Registers a query, and creates the ExecutingQuery object for it.
      */
-    ExecutingQuery startQueryExecution(
-        ClientConnectionInfo descriptor, String queryText, MapValue queryParameters
-    );
+    ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters );
 
     /**
      * Registers an already known query to a this transaction.

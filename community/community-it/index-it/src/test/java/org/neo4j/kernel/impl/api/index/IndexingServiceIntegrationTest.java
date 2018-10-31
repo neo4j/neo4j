@@ -131,8 +131,8 @@ public class IndexingServiceIntegrationTest
     public void testManualRelationshipIndexPopulation() throws Exception
     {
         RelationTypeSchemaDescriptor descriptor;
-        try ( org.neo4j.internal.kernel.api.Transaction tx =
-                ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class ).beginTransaction( explicit, AUTH_DISABLED ) )
+        Kernel kernel = ((GraphDatabaseAPI) database).getDependencyResolver().resolveDependency( Kernel.class );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
         {
             int foodId = tx.tokenWrite().relationshipTypeGetOrCreateForName( FOOD_LABEL );
             int propertyId = tx.tokenWrite().propertyKeyGetOrCreateForName( PROPERTY_NAME );

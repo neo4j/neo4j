@@ -52,6 +52,7 @@ import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -77,7 +78,6 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -192,8 +192,7 @@ public class QueryExecutionLocksIT
     {
         GraphDatabaseQueryService graph = databaseRule.resolveDependency( GraphDatabaseQueryService.class );
         QueryExecutionEngine executionEngine = databaseRule.resolveDependency( QueryExecutionEngine.class );
-        try ( InternalTransaction tx = graph
-                .beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( InternalTransaction tx = graph.beginTransaction( KernelTransaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
         {
             TransactionalContextWrapper context =
                     new TransactionalContextWrapper( createTransactionContext( graph, tx, query ), listeners );
@@ -202,12 +201,11 @@ public class QueryExecutionLocksIT
         }
     }
 
-    private TransactionalContext createTransactionContext( GraphDatabaseQueryService graph, InternalTransaction tx,
-            String query )
+    private static TransactionalContext createTransactionContext( GraphDatabaseQueryService graph, InternalTransaction tx, String query )
     {
         PropertyContainerLocker locker = new PropertyContainerLocker();
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( graph, locker );
-        return contextFactory.newContext( ClientConnectionInfo.EMBEDDED_CONNECTION, tx, query, EMPTY_MAP );
+        return contextFactory.newContext( tx, query, EMPTY_MAP );
     }
 
     private static class TransactionalContextWrapper implements TransactionalContext
@@ -688,6 +686,12 @@ public class QueryExecutionLocksIT
         public SecurityContext securityContext()
         {
             return internal.securityContext();
+        }
+
+        @Override
+        public ClientConnectionInfo clientInfo()
+        {
+            return internal.clientInfo();
         }
 
         @Override

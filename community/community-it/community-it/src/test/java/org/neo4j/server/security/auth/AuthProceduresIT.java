@@ -351,9 +351,9 @@ public class AuthProceduresIT
         return Stream.concat( Arrays.stream(strs), Arrays.stream( moreStr ) ).toArray( String[]::new );
     }
 
-    private List<String> listOf( String... values )
+    private static List<String> listOf( String... values )
     {
-        return Stream.of( values ).collect( Collectors.toList() );
+        return Arrays.asList( values );
     }
 
     @SuppressWarnings( "unchecked" )

@@ -23,7 +23,6 @@ import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.KernelStatement;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
 
 /**
@@ -35,12 +34,7 @@ public interface QueryRegistrationOperations
 {
     Stream<ExecutingQuery> executingQueries( KernelStatement statement );
 
-    ExecutingQuery startQueryExecution(
-        KernelStatement statement,
-        ClientConnectionInfo descriptor,
-        String queryText,
-        MapValue queryParameters
-    );
+    ExecutingQuery startQueryExecution( KernelStatement statement, String queryText, MapValue queryParameters );
 
     void registerExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery );
     void unregisterExecutingQuery( KernelStatement statement, ExecutingQuery executingQuery );

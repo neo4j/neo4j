@@ -186,8 +186,8 @@ public class TestRecoveryScenarios
 
         // THEN
         // -- really the problem was that recovery threw exception, so mostly assert that.
-        try ( org.neo4j.internal.kernel.api.Transaction tx = db.getDependencyResolver().resolveDependency( Kernel.class ).beginTransaction(
-                explicit, LoginContext.AUTH_DISABLED ) )
+        Kernel kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
             assertEquals( 0, tx.dataRead().countsForNode( -1 ) );
             final TokenHolder holder = db.getDependencyResolver().resolveDependency( TokenHolders.class ).labelTokens();

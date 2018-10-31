@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -35,18 +36,20 @@ class TransitionalTxManagementKernelTransaction
     private final GraphDatabaseFacade db;
     private final KernelTransaction.Type type;
     private final LoginContext loginContext;
+    private final ClientConnectionInfo connectionInfo;
     private long customTransactionTimeout;
     private final ThreadToStatementContextBridge bridge;
 
     private InternalTransaction tx;
     private KernelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type,
-            LoginContext loginContext, long customTransactionTimeout, ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( GraphDatabaseFacade db, KernelTransaction.Type type, LoginContext loginContext,
+            ClientConnectionInfo connectionInfo, long customTransactionTimeout, ThreadToStatementContextBridge bridge )
     {
         this.db = db;
         this.type = type;
         this.loginContext = loginContext;
+        this.connectionInfo = connectionInfo;
         this.customTransactionTimeout = customTransactionTimeout;
         this.bridge = bridge;
         this.tx = startTransaction();
@@ -124,7 +127,7 @@ class TransitionalTxManagementKernelTransaction
     private InternalTransaction startTransaction()
     {
         return customTransactionTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
-               db.beginTransaction( type, loginContext, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
-               db.beginTransaction( type, loginContext );
+               db.beginTransaction( type, loginContext, connectionInfo, customTransactionTimeout, TimeUnit.MILLISECONDS ) :
+               db.beginTransaction( type, loginContext, connectionInfo );
     }
 }

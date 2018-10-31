@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -73,6 +74,11 @@ public interface KernelTransaction extends Transaction, AssertOpen
      * @throws NotInTransactionException if the transaction is closed.
      */
     SecurityContext securityContext();
+
+    /**
+     * @return transaction originator info
+     */
+    ClientConnectionInfo clientInfo();
 
     /**
      * @return the subject executing this transaction, or {@link AuthSubject#ANONYMOUS} if the transaction is closed.

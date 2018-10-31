@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -69,10 +70,10 @@ public class TransactionFacade
     }
 
     public TransactionHandle newTransactionHandle( TransactionUriScheme uriScheme, boolean implicitTransaction,
-            LoginContext loginContext, long customTransactionTimeout )
+            LoginContext loginContext, ClientConnectionInfo connectionInfo, long customTransactionTimeout )
     {
         return new TransactionHandle( kernel, engine, queryService, registry, uriScheme, implicitTransaction,
-                loginContext, customTransactionTimeout, logProvider );
+                loginContext, connectionInfo, customTransactionTimeout, logProvider );
     }
 
     public TransactionHandle findTransactionHandle( long txId ) throws TransactionLifecycleException

@@ -30,7 +30,6 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
 
 import static org.neo4j.function.Suppliers.lazySingleton;
@@ -87,18 +86,13 @@ public class Neo4jTransactionalContextFactory implements TransactionalContextFac
 
     @Override
     public final Neo4jTransactionalContext newContext(
-        ClientConnectionInfo clientConnection,
         InternalTransaction tx,
         String queryText,
         MapValue queryParameters
     )
     {
         Statement initialStatement = statementSupplier.get();
-        ClientConnectionInfo connectionWithUserName = clientConnection.withUsername(
-                tx.securityContext().subject().username() );
-        ExecutingQuery executingQuery = initialStatement.queryRegistration().startQueryExecution(
-                connectionWithUserName, queryText, queryParameters
-        );
+        ExecutingQuery executingQuery = initialStatement.queryRegistration().startQueryExecution( queryText, queryParameters );
         return contextCreator.create( tx, initialStatement, executingQuery );
     }
 }

@@ -201,8 +201,8 @@ public class IndexSamplingIntegrationTest
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
-                    .beginTransaction( explicit, AUTH_DISABLED ) )
+            Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
+            try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexSample( indexId( tx ), Registers.newDoubleLongRegister() );
             }
@@ -224,8 +224,8 @@ public class IndexSamplingIntegrationTest
             db = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
             @SuppressWarnings( "deprecation" )
             GraphDatabaseAPI api = (GraphDatabaseAPI) db;
-            try ( org.neo4j.internal.kernel.api.Transaction tx = api.getDependencyResolver().resolveDependency( Kernel.class )
-                    .beginTransaction( explicit, AUTH_DISABLED ) )
+            Kernel kernel = api.getDependencyResolver().resolveDependency( Kernel.class );
+            try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
             {
                 return tx.schemaRead().indexUpdatesAndSize( indexId( tx ), Registers.newDoubleLongRegister() );
             }

@@ -28,7 +28,8 @@ import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
-import org.neo4j.internal.kernel.api.security.LoginContext;
+
+import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 /**
  * Creates a key within its own transaction, such that the command(s) for creating the key
@@ -48,7 +49,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int createToken( String name ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( Transaction tx = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             int id = createKey( tx, name );
             tx.success();
@@ -60,7 +61,7 @@ abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized void createTokens( String[] names, int[] ids, IntPredicate filter ) throws KernelException
     {
         Kernel kernel = kernelSupplier.get();
-        try ( Transaction tx = kernel.beginTransaction( Type.implicit, LoginContext.AUTH_DISABLED ) )
+        try ( Transaction tx = kernel.beginTransaction( Type.implicit, AUTH_DISABLED ) )
         {
             for ( int i = 0; i < ids.length; i++ )
             {

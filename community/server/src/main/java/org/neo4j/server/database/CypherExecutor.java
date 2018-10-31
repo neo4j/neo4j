@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.database;
 
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServletRequest;
 
@@ -84,25 +83,25 @@ public class CypherExecutor extends LifecycleAdapter
             HttpServletRequest request )
     {
         InternalTransaction tx = getInternalTransaction( request );
-        return contextFactory.newContext( HttpConnectionInfoFactory.create( request ), tx, query, parameters );
+        return contextFactory.newContext( tx, query, parameters );
     }
 
     private InternalTransaction getInternalTransaction( HttpServletRequest request )
     {
         long customTimeout = getTransactionTimeout( request, log );
-        return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ?
-           beginCustomTransaction( customTimeout ) : beginDefaultTransaction();
+        return customTimeout > GraphDatabaseSettings.UNSPECIFIED_TIMEOUT ? beginCustomTransaction( request, customTimeout )
+                                                                         : beginDefaultTransaction( request );
     }
 
-    private InternalTransaction beginCustomTransaction( long customTimeout )
+    private InternalTransaction beginCustomTransaction( HttpServletRequest request, long customTimeout )
     {
         return service.beginTransaction(
-            KernelTransaction.Type.implicit, AUTH_DISABLED, customTimeout, TimeUnit.MILLISECONDS
+            KernelTransaction.Type.implicit, AUTH_DISABLED, HttpConnectionInfoFactory.create( request ), customTimeout, TimeUnit.MILLISECONDS
         );
     }
 
-    private InternalTransaction beginDefaultTransaction()
+    private InternalTransaction beginDefaultTransaction( HttpServletRequest request )
     {
-        return service.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        return service.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, HttpConnectionInfoFactory.create( request ) );
     }
 }

@@ -38,6 +38,7 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.logging.Log;
 import org.neo4j.server.rest.dbms.AuthorizedRequestWrapper;
@@ -83,8 +84,9 @@ public class TransactionalService
         usage.get( features ).flag( http_tx_endpoint );
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
+        ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
         TransactionHandle transactionHandle =
-                facade.newTransactionHandle( uriScheme, false, loginContext, customTransactionTimeout );
+                facade.newTransactionHandle( uriScheme, false, loginContext, connectionInfo, customTransactionTimeout );
         return createdResponse(
                 transactionHandle,
                 executeStatements( input, transactionHandle, uriInfo.getBaseUri(), request )
@@ -140,7 +142,8 @@ public class TransactionalService
         final TransactionHandle transactionHandle;
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpServletRequest( request );
         long customTransactionTimeout = HttpHeaderUtils.getTransactionTimeout( request, log );
-        transactionHandle = facade.newTransactionHandle( uriScheme, true, loginContext, customTransactionTimeout );
+        ClientConnectionInfo connectionInfo = HttpConnectionInfoFactory.create( request );
+        transactionHandle = facade.newTransactionHandle( uriScheme, true, loginContext, connectionInfo, customTransactionTimeout );
         final StreamingOutput streamingResults =
                 executeStatementsAndCommit( input, transactionHandle, uriInfo.getBaseUri(), request );
         return okResponse( streamingResults );

@@ -22,7 +22,10 @@ package org.neo4j.server.rest.transactional;
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.spi.dispatch.RequestDispatcher;
 
+import javax.servlet.http.HttpServletRequest;
+
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -33,7 +36,9 @@ import org.neo4j.server.rest.web.BatchOperationService;
 import org.neo4j.server.rest.web.CypherService;
 import org.neo4j.server.rest.web.DatabaseMetadataService;
 import org.neo4j.server.rest.web.ExtensionService;
+import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 import org.neo4j.server.rest.web.RestfulGraphDatabase;
+import org.neo4j.server.web.JettyHttpConnection;
 
 import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
 
@@ -54,13 +59,14 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         RepresentationWriteHandler representationWriteHandler = DO_NOTHING;
 
         LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpContext( httpContext );
+        ClientConnectionInfo clientConnection = getConnectionInfo();
 
         final GraphDatabaseFacade graph = database.getGraph();
         if ( o instanceof RestfulGraphDatabase )
         {
             RestfulGraphDatabase restfulGraphDatabase = (RestfulGraphDatabase) o;
 
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext );
+            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
 
             restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ));
@@ -69,7 +75,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             BatchOperationService batchOperationService = (BatchOperationService) o;
 
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext );
+            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext, clientConnection );
 
             batchOperationService.setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
@@ -78,7 +84,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             CypherService cypherService = (CypherService) o;
 
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext );
+            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext, clientConnection );
 
             cypherService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
                     CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
@@ -87,7 +93,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         {
             DatabaseMetadataService databaseMetadataService = (DatabaseMetadataService) o;
 
-            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext );
+            final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
 
             databaseMetadataService.setRepresentationWriteHandler( representationWriteHandler = new
                     RepresentationWriteHandler()
@@ -122,7 +128,7 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                 @Override
                 public void onRepresentationStartWriting()
                 {
-                    transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext );
+                    transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
                 }
 
                 @Override
@@ -152,5 +158,17 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
 
             throw e;
         }
+    }
+
+    private static ClientConnectionInfo getConnectionInfo()
+    {
+        JettyHttpConnection httpConnection = JettyHttpConnection.getCurrentJettyHttpConnection();
+        if ( httpConnection == null )
+        {
+            // if we do not have connection binded we are not in a phase of handling client request and that can be considered as embedded.
+            return ClientConnectionInfo.EMBEDDED_CONNECTION;
+        }
+        HttpServletRequest request = httpConnection.getHttpChannel().getRequest();
+        return HttpConnectionInfoFactory.create( request );
     }
 }

@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.query.clientconnection;
 
 import java.net.SocketAddress;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
+
 import static org.neo4j.helpers.SocketAddress.format;
 
 /**

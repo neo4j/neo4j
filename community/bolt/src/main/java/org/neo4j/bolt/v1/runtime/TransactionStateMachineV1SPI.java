@@ -31,6 +31,7 @@ import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
 import org.neo4j.graphdb.Result;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -95,7 +96,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     @Override
     public KernelTransaction beginTransaction( LoginContext loginContext, Duration txTimeout, Map<String,Object> txMetadata )
     {
-        beginTransaction( explicit, loginContext, txTimeout, txMetadata );
+        beginTransaction( explicit, loginContext, boltChannel.info(), txTimeout, txMetadata );
         return txBridge.getKernelTransactionBoundToThisThread( false );
     }
 
@@ -121,8 +122,8 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     public BoltResultHandle executeQuery( LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
             Map<String,Object> txMetadata )
     {
-        InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, txTimeout, txMetadata );
-        TransactionalContext transactionalContext = contextFactory.newContext( boltChannel.info(), internalTransaction, statement, params );
+        InternalTransaction internalTransaction = beginTransaction( implicit, loginContext, boltChannel.info(), txTimeout, txMetadata );
+        TransactionalContext transactionalContext = contextFactory.newContext( internalTransaction, statement, params );
         return newBoltResultHandle( statement, params, transactionalContext );
     }
 
@@ -131,16 +132,17 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return new BoltResultHandleV1( statement, params, transactionalContext );
     }
 
-    private InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, Duration txTimeout, Map<String, Object> txMetadata )
+    private InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, Duration txTimeout,
+            Map<String,Object> txMetadata )
     {
         InternalTransaction tx;
         if ( txTimeout == null )
         {
-            tx = db.beginTransaction( type, loginContext );
+            tx = db.beginTransaction( type, loginContext, clientInfo );
         }
         else
         {
-            tx = db.beginTransaction( type, loginContext, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
+            tx = db.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
         }
 
         if ( txMetadata != null )

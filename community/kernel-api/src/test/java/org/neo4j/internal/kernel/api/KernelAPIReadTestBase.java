@@ -54,6 +54,26 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected SchemaRead schemaRead;
     protected Token token;
     protected ManagedTestCursors cursors;
+    @Rule
+    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( () -> cursors );
+
+    @After
+    public void closeTransaction() throws Exception
+    {
+        tx.success();
+        tx.close();
+    }
+
+    @AfterClass
+    public static void tearDown()
+    {
+        if ( testSupport != null )
+        {
+            testSupport.tearDown();
+            folder.delete();
+            testSupport = null;
+        }
+    }
 
     /**
      * Creates a new instance of KernelAPIReadTestSupport, which will be used to execute the concrete test
@@ -78,7 +98,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
             testSupport.setup( folder.getRoot(), this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
-        tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
+        tx = beginTransaction( kernel );
         token = tx.token();
         read = tx.dataRead();
         indexRead = tx.indexRead();
@@ -89,27 +109,11 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected Transaction beginTransaction() throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
+        return KernelAPIReadTestBase.this.beginTransaction( kernel );
+    }
+
+    private static Transaction beginTransaction( Kernel kernel ) throws TransactionFailureException
+    {
         return kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
-    }
-
-    @Rule
-    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( () -> cursors );
-
-    @After
-    public void closeTransaction() throws Exception
-    {
-        tx.success();
-        tx.close();
-    }
-
-    @AfterClass
-    public static void tearDown()
-    {
-        if ( testSupport != null )
-        {
-            testSupport.tearDown();
-            folder.delete();
-            testSupport = null;
-        }
     }
 }

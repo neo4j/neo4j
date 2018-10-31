@@ -24,6 +24,7 @@ import java.util.Optional;
 
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -88,6 +89,12 @@ public class PlaceboTransaction implements InternalTransaction
     public SecurityContext securityContext()
     {
         return currentTransaction.securityContext();
+    }
+
+    @Override
+    public ClientConnectionInfo clientInfo()
+    {
+        return currentTransaction.clientInfo();
     }
 
     @Override

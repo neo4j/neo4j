@@ -25,6 +25,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -147,4 +148,10 @@ public interface KernelTransactionHandle
      * @return transaction initialization trace
      */
     TransactionInitializationTrace transactionInitialisationTrace();
+
+    /**
+     * Provide underlying transaction originator details
+     * @return transaction originator details
+     */
+    ClientConnectionInfo clientInfo();
 }

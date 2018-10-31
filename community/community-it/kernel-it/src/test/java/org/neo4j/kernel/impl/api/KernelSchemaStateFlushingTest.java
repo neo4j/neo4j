@@ -148,7 +148,7 @@ public class KernelSchemaStateFlushingTest
     private ConstraintDescriptor createConstraint() throws KernelException
     {
 
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             ConstraintDescriptor descriptor = transaction.schemaWrite().uniquePropertyConstraintCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -159,7 +159,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropConstraint( ConstraintDescriptor descriptor ) throws KernelException
     {
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().constraintDrop( descriptor );
             transaction.success();
@@ -168,7 +168,7 @@ public class KernelSchemaStateFlushingTest
 
     private IndexReference createIndex() throws KernelException
     {
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             IndexReference reference = transaction.schemaWrite().indexCreate(
                     SchemaDescriptorFactory.forLabel( 1, 1 ) );
@@ -179,7 +179,7 @@ public class KernelSchemaStateFlushingTest
 
     private void dropIndex( IndexReference reference ) throws KernelException
     {
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             transaction.schemaWrite().indexDrop( reference );
             transaction.success();
@@ -189,7 +189,7 @@ public class KernelSchemaStateFlushingTest
     private void awaitIndexOnline( IndexReference descriptor, String keyForProbing )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( transaction.schemaRead(), descriptor );
             transaction.success();
@@ -199,7 +199,7 @@ public class KernelSchemaStateFlushingTest
 
     private void awaitSchemaStateCleared( String keyForProbing ) throws TransactionFailureException
     {
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             while ( transaction.schemaRead().schemaStateGetOrCreate( keyForProbing, ignored -> null ) != null )
             {
@@ -211,7 +211,7 @@ public class KernelSchemaStateFlushingTest
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        try ( Transaction transaction = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
+        try ( Transaction transaction = beginTransaction() )
         {
             String result = getOrCreateFromState( transaction, key, value );
             transaction.success();
@@ -222,6 +222,11 @@ public class KernelSchemaStateFlushingTest
     private String getOrCreateFromState( Transaction tx, String key, final String value )
     {
         return tx.schemaRead().schemaStateGetOrCreate( key, from -> value );
+    }
+
+    private Transaction beginTransaction() throws TransactionFailureException
+    {
+        return kernel.beginTransaction( implicit, AUTH_DISABLED );
     }
 
 }

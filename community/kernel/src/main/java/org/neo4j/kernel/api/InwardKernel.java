@@ -21,6 +21,7 @@ package org.neo4j.kernel.api;
 
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -45,9 +46,10 @@ public interface InwardKernel extends Kernel
      *
      * @param type the type of the new transaction: implicit (internally created) or explicit (created by the user)
      * @param loginContext transaction login context
+     * @param clientInfo transaction client info
      * @param timeout transaction timeout in milliseconds
      */
-    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout )
+    KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout )
             throws TransactionFailureException;
 
     /**

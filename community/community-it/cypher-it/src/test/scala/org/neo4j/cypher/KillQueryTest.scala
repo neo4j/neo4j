@@ -28,7 +28,6 @@ import org.neo4j.graphdb.{TransactionTerminatedException, TransientTransactionFa
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo.EMBEDDED_CONNECTION
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContextFactory, TransactionalContext, TransactionalContextFactory}
 import org.neo4j.logging.{LogProvider, NullLogProvider}
 import org.neo4j.values.virtual.VirtualValues
@@ -102,7 +101,7 @@ class KillQueryTest extends ExecutionEngineFunSuite {
         while (continue.get()) {
           val tx = graph.beginTransaction(Type.`implicit`, AUTH_DISABLED)
           try {
-            val transactionalContext: TransactionalContext = contextFactory.newContext(EMBEDDED_CONNECTION, tx, query, EMPTY_MAP)
+            val transactionalContext: TransactionalContext = contextFactory.newContext(tx, query, EMPTY_MAP)
             tcs.put(transactionalContext)
             val result = engine.execute(query, VirtualValues.emptyMap(), transactionalContext)
             result.resultAsString()

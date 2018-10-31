@@ -25,6 +25,7 @@ import java.net.URI;
 import java.time.Clock;
 import javax.servlet.http.HttpServletRequest;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -39,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 public class ConcurrentTransactionAccessTest
 {
@@ -51,11 +53,12 @@ public class ConcurrentTransactionAccessTest
         TransitionalPeriodTransactionMessContainer kernel = mock( TransitionalPeriodTransactionMessContainer.class );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         TransitionalTxManagementKernelTransaction kernelTransaction = mock( TransitionalTxManagementKernelTransaction.class );
-        when(kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), anyLong() ) ).thenReturn( kernelTransaction );
+        when( kernel.newTransaction( any( KernelTransaction.Type.class ), any( LoginContext.class ), any( ClientConnectionInfo.class ),
+                anyLong() ) ).thenReturn( kernelTransaction );
         TransactionFacade actions = new TransactionFacade( kernel, null, queryService, registry, NullLogProvider.getInstance() );
 
         final TransactionHandle transactionHandle =
-                actions.newTransactionHandle( new DisgustingUriScheme(), true, LoginContext.AUTH_DISABLED, -1 );
+                actions.newTransactionHandle( new DisgustingUriScheme(), true, LoginContext.AUTH_DISABLED, EMBEDDED_CONNECTION, -1 );
 
         final DoubleLatch latch = new DoubleLatch();
 

@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -352,7 +353,13 @@ public class ConstraintIndexCreatorTest
         }
 
         @Override
-        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext )
+        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
+        {
+            return remember( createTransaction() );
+        }
+
+        @Override
+        public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext ) throws TransactionFailureException
         {
             return remember( createTransaction() );
         }

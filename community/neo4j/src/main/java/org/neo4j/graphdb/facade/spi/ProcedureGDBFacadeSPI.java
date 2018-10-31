@@ -29,6 +29,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
@@ -166,12 +167,12 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext ignored, long timeout )
+    public KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext ignored, ClientConnectionInfo connectionInfo, long timeout )
     {
         try
         {
             availability.assertDatabaseAvailable();
-            KernelTransaction kernelTx = sourceModule.kernelAPI.get().beginTransaction( type, this.securityContext, timeout );
+            KernelTransaction kernelTx = sourceModule.kernelAPI.get().beginTransaction( type, this.securityContext, connectionInfo, timeout );
             kernelTx.registerCloseListener(
                     txId -> threadToTransactionBridge.unbindTransactionFromCurrentThread() );
             threadToTransactionBridge.bindTransactionToCurrentThread( kernelTx );

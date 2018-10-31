@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.Token;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -183,6 +184,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private Type type;
     private long transactionId;
     private long commitTime;
+    private ClientConnectionInfo clientInfo;
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
     private final Operations operations;
@@ -254,7 +256,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
      * Reset this transaction to a vanilla state, turning it into a logically new transaction.
      */
     public KernelTransactionImplementation initialize( long lastCommittedTx, long lastTimeStamp, StatementLocks statementLocks, Type type,
-            SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId )
+            SecurityContext frozenSecurityContext, long transactionTimeout, long userTransactionId, ClientConnectionInfo clientInfo )
     {
         this.type = type;
         this.statementLocks = statementLocks;
@@ -275,6 +277,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.securityContext = frozenSecurityContext;
         this.transactionId = NOT_COMMITTED_TRANSACTION_ID;
         this.commitTime = NOT_COMMITTED_TRANSACTION_COMMIT_TIME;
+        this.clientInfo = clientInfo;
         PageCursorTracer pageCursorTracer = cursorTracerSupplier.get();
         this.statistics.init( currentThread().getId(), pageCursorTracer );
         this.currentStatement.initialize( statementLocks, pageCursorTracer );
@@ -965,6 +968,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             closeListeners.clear();
             reuseCount++;
             userMetaData = emptyMap();
+            clientInfo = null;
             userTransactionId = 0;
             statistics.reset();
             operations.release();
@@ -1119,6 +1123,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public long getTransactionDataRevision()
     {
         return hasDataChanges() ? txState.getDataRevision() : 0;
+    }
+
+    /**
+     * @return transaction originator information.
+     */
+    public ClientConnectionInfo clientInfo()
+    {
+        return clientInfo;
     }
 
     public static class Statistics

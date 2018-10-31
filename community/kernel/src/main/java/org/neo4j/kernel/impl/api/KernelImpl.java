@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 /**
  * This is the Neo4j Kernel, an implementation of the Kernel API which is an internal component used by Cypher and the
@@ -74,19 +76,26 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     @Override
     public KernelTransaction beginTransaction( Transaction.Type type, LoginContext loginContext ) throws TransactionFailureException
     {
+        return beginTransaction( type, loginContext, EMBEDDED_CONNECTION );
+    }
+
+    @Override
+    public KernelTransaction beginTransaction( Transaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
+            throws TransactionFailureException
+    {
         if ( !isRunning )
         {
             throw new IllegalStateException( "Kernel is not running, so it is not possible to use it" );
         }
-        return beginTransaction( type, loginContext, config.get( transaction_timeout ).toMillis() );
+        return beginTransaction( type, loginContext, connectionInfo, config.get( transaction_timeout ).toMillis() );
     }
 
     @Override
-    public KernelTransaction beginTransaction( Transaction.Type type, LoginContext loginContext, long timeout ) throws
+    public KernelTransaction beginTransaction( Transaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout ) throws
             TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        KernelTransaction transaction = transactions.newInstance( type, loginContext, timeout );
+        KernelTransaction transaction = transactions.newInstance( type, loginContext, connectionInfo, timeout );
         transactionMonitor.transactionStarted();
         return transaction;
     }

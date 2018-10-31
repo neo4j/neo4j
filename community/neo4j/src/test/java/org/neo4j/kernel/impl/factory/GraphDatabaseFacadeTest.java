@@ -41,6 +41,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
@@ -73,7 +74,7 @@ class GraphDatabaseFacadeTest
     {
         graphDatabaseFacade.beginTx( 10, TimeUnit.MILLISECONDS );
 
-        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, 10L );
+        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 10L );
     }
 
     @Test
@@ -82,18 +83,18 @@ class GraphDatabaseFacadeTest
         graphDatabaseFacade.beginTx();
 
         long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
-        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout );
+        verify( spi ).beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
     }
 
     @Test
     void executeQueryWithCustomTimeoutShouldStartTransactionWithRequestedTimeout()
     {
         graphDatabaseFacade.execute( "create (n)", 157L, TimeUnit.SECONDS );
-        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
+        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION,
             TimeUnit.SECONDS.toMillis( 157L ) );
 
         graphDatabaseFacade.execute( "create (n)", new HashMap<>(), 247L, TimeUnit.MINUTES );
-        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
+        verify( spi ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION,
             TimeUnit.MINUTES.toMillis( 247L ) );
     }
 
@@ -103,13 +104,13 @@ class GraphDatabaseFacadeTest
         KernelTransaction kernelTransaction = mock( KernelTransaction.class );
         InternalTransaction transaction = new TopLevelTransaction( kernelTransaction );
 
-        when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED ) )
+        when( queryService.beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION) )
             .thenReturn( transaction );
 
         graphDatabaseFacade.execute( "create (n)" );
         graphDatabaseFacade.execute( "create (n)", new HashMap<>() );
 
         long timeout = Config.defaults().get( GraphDatabaseSettings.transaction_timeout ).toMillis();
-        verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout );
+        verify( spi, times( 2 ) ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout );
     }
 }

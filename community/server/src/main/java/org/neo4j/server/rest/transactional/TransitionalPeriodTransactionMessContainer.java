@@ -23,6 +23,7 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -32,7 +33,6 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
@@ -49,10 +49,10 @@ public class TransitionalPeriodTransactionMessContainer
         this.txBridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
     }
 
-    public TransitionalTxManagementKernelTransaction newTransaction( Type type, LoginContext loginContext,
+    public TransitionalTxManagementKernelTransaction newTransaction( Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long customTransactionTimeout )
     {
-        return new TransitionalTxManagementKernelTransaction( db, type, loginContext, customTransactionTimeout, txBridge );
+        return new TransitionalTxManagementKernelTransaction( db, type, loginContext, connectionInfo, customTransactionTimeout, txBridge );
     }
 
     ThreadToStatementContextBridge getBridge()
@@ -70,7 +70,7 @@ public class TransitionalPeriodTransactionMessContainer
     {
         TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service, locker );
         ClientConnectionInfo clientConnection = HttpConnectionInfoFactory.create( request );
-        InternalTransaction transaction = service.beginTransaction( type, loginContext );
-        return contextFactory.newContext( clientConnection, transaction, query, ValueUtils.asMapValue( queryParameters ) );
+        InternalTransaction transaction = service.beginTransaction( type, loginContext, clientConnection );
+        return contextFactory.newContext( transaction, query, ValueUtils.asMapValue( queryParameters ) );
     }
 }

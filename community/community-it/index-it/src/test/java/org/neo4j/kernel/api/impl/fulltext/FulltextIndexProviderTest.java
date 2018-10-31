@@ -351,7 +351,8 @@ public class FulltextIndexProviderTest
     {
         try
         {
-            return (KernelTransactionImplementation) db.resolveDependency( KernelImpl.class ).beginTransaction(
+            KernelImpl kernel = db.resolveDependency( KernelImpl.class );
+            return (KernelTransactionImplementation) kernel.beginTransaction(
                     org.neo4j.internal.kernel.api.Transaction.Type.explicit, LoginContext.AUTH_DISABLED );
         }
         catch ( TransactionFailureException e )

@@ -45,6 +45,7 @@ import org.neo4j.values.virtual.VirtualValues;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class CypherExecutorTest
@@ -93,7 +94,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED,
+        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS );
         logProvider.assertNoLoggingOccurred();
     }
@@ -161,7 +162,7 @@ public class CypherExecutorTest
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( statementBridge );
         when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( databaseQueryService );
         when( databaseQueryService.beginTransaction( type, loginContext ) ).thenReturn( transaction );
-        when( databaseQueryService.beginTransaction( type, loginContext,
+        when( databaseQueryService.beginTransaction( type, loginContext, EMBEDDED_CONNECTION,
                 CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS ) ).thenReturn( transaction );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( resolver );
         when( request.getScheme() ).thenReturn( "http" );

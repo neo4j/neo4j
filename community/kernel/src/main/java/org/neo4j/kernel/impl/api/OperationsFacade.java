@@ -25,7 +25,6 @@ import java.util.stream.Stream;
 import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
 
 public class OperationsFacade implements QueryRegistryOperations
@@ -69,13 +68,10 @@ public class OperationsFacade implements QueryRegistryOperations
     }
 
     @Override
-    public ExecutingQuery startQueryExecution(
-        ClientConnectionInfo descriptor,
-        String queryText,
-        MapValue queryParameters )
+    public ExecutingQuery startQueryExecution( String queryText, MapValue queryParameters )
     {
         statement.assertOpen();
-        return queryRegistrationOperations().startQueryExecution( statement, descriptor, queryText, queryParameters );
+        return queryRegistrationOperations().startQueryExecution( statement, queryText, queryParameters );
     }
 
     @Override

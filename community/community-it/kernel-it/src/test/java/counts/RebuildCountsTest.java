@@ -98,8 +98,8 @@ public class RebuildCountsTest
         restart( fs );
 
         // then
-        try ( org.neo4j.internal.kernel.api.Transaction tx = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Kernel.class )
-                .beginTransaction( explicit, AUTH_DISABLED ) )
+        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
         {
             assertEquals( ALIENS + HUMANS, tx.dataRead().countsForNode( -1 ) );
             assertEquals( ALIENS, tx.dataRead().countsForNode( labelId( ALIEN ) ) );
@@ -126,8 +126,8 @@ public class RebuildCountsTest
         restart( fs );
 
         // then
-        try ( org.neo4j.internal.kernel.api.Transaction tx = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Kernel.class )
-                .beginTransaction( explicit, AUTH_DISABLED ) )
+        Kernel kernel = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Kernel.class );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = kernel.beginTransaction( explicit, AUTH_DISABLED ) )
         {
             assertEquals( ALIENS, tx.dataRead().countsForNode( -1 ) );
             assertEquals( ALIENS, tx.dataRead().countsForNode( labelId( ALIEN ) ) );

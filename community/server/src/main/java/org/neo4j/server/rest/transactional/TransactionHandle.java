@@ -31,6 +31,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.internal.kernel.api.Transaction.Type;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
@@ -74,6 +75,7 @@ public class TransactionHandle implements TransactionTerminationHandle
     private final TransactionRegistry registry;
     private final TransactionUriScheme uriScheme;
     private final Type type;
+    private final ClientConnectionInfo connectionInfo;
     private final LoginContext loginContext;
     private long customTransactionTimeout;
     private final Log log;
@@ -83,7 +85,7 @@ public class TransactionHandle implements TransactionTerminationHandle
 
     TransactionHandle( TransitionalPeriodTransactionMessContainer txManagerFacade, QueryExecutionEngine engine,
             GraphDatabaseQueryService queryService, TransactionRegistry registry, TransactionUriScheme uriScheme,
-            boolean implicitTransaction, LoginContext loginContext, long customTransactionTimeout,
+            boolean implicitTransaction, LoginContext loginContext, ClientConnectionInfo connectionInfo, long customTransactionTimeout,
             LogProvider logProvider )
     {
         this.txManagerFacade = txManagerFacade;
@@ -92,6 +94,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         this.registry = registry;
         this.uriScheme = uriScheme;
         this.type = implicitTransaction ? Type.implicit : Type.explicit;
+        this.connectionInfo = connectionInfo;
         this.loginContext = loginContext;
         this.customTransactionTimeout = customTransactionTimeout;
         this.log = logProvider.getLog( getClass() );
@@ -210,7 +213,7 @@ public class TransactionHandle implements TransactionTerminationHandle
         {
             try
             {
-                context = txManagerFacade.newTransaction( type, loginContext, customTransactionTimeout );
+                context = txManagerFacade.newTransaction( type, loginContext, connectionInfo, customTransactionTimeout );
             }
             catch ( RuntimeException e )
             {

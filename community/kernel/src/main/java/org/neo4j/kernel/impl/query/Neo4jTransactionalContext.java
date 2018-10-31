@@ -24,6 +24,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -49,6 +50,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
     private final Kernel kernel;
+    private final ClientConnectionInfo clientInfo;
 
     /**
      * Current transaction.
@@ -77,6 +79,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.locker = locker;
         this.transactionType = initialTransaction.transactionType();
         this.securityContext = initialTransaction.securityContext();
+        this.clientInfo = initialTransaction.clientInfo();
         this.executingQuery = executingQuery;
 
         this.transaction = initialTransaction;
@@ -175,7 +178,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
         txBridge.unbindTransactionFromCurrentThread();
 
         // (2) Create, bind, register, and unbind new transaction
-        transaction = graph.beginTransaction( transactionType, securityContext );
+        transaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
         kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
         statement = kernelTransaction.acquireStatement();
         statement.queryRegistration().registerExecutingQuery( executingQuery );
@@ -224,7 +227,7 @@ public class Neo4jTransactionalContext implements TransactionalContext
 
         if ( !isOpen )
         {
-            transaction = graph.beginTransaction( transactionType, securityContext );
+            transaction = graph.beginTransaction( transactionType, securityContext, clientInfo );
             kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
             statement = kernelTransaction.acquireStatement();
             statement.queryRegistration().registerExecutingQuery( executingQuery );

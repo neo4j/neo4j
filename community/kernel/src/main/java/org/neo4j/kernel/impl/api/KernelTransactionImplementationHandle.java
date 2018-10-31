@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
@@ -49,6 +50,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     private final long timeoutMillis;
     private final KernelTransactionImplementation tx;
     private final SystemNanoClock clock;
+    private final ClientConnectionInfo clientInfo;
     private final AuthSubject subject;
     private final Optional<Status> terminationReason;
     private final ExecutingQueryList executingQueries;
@@ -69,6 +71,7 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
         this.metaData = tx.getMetaData();
         this.userTransactionId = tx.userTransactionId();
         this.initializationTrace = tx.getInitializationTrace();
+        this.clientInfo = tx.clientInfo();
         this.tx = tx;
         this.clock = clock;
     }
@@ -174,6 +177,12 @@ class KernelTransactionImplementationHandle implements KernelTransactionHandle
     public TransactionInitializationTrace transactionInitialisationTrace()
     {
         return initializationTrace;
+    }
+
+    @Override
+    public ClientConnectionInfo clientInfo()
+    {
+        return clientInfo;
     }
 
     @Override

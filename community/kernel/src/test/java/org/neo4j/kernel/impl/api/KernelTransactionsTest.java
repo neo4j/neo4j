@@ -116,6 +116,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.api.security.AnonymousContext.none;
 import static org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory.DEFAULT;
@@ -367,7 +368,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
         try
         {
-            kernelTransactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.write(), 0L );
+            kernelTransactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L );
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -383,7 +384,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
 
         Future<KernelTransaction> txOpener =
-                t2.execute( state -> kernelTransactions.newInstance( explicit, AnonymousContext.write(), 0L ) );
+                t2.execute( state -> kernelTransactions.newInstance( explicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
         t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
         assertNotDone( txOpener );
@@ -399,7 +400,7 @@ public class KernelTransactionsTest
         kernelTransactions.blockNewTransactions();
 
         Future<KernelTransaction> txOpener =
-                t2.execute( state -> kernelTransactions.newInstance( explicit, AnonymousContext.write(), 0L ) );
+                t2.execute( state -> kernelTransactions.newInstance( explicit, AnonymousContext.write(), EMBEDDED_CONNECTION, 0L ) );
         t2.get().waitUntilWaiting( location -> location.isAt( KernelTransactions.class, "newInstance" ) );
 
         assertNotDone( txOpener );
@@ -428,7 +429,7 @@ public class KernelTransactionsTest
         LoginContext loginContext = mock( LoginContext.class );
         when( loginContext.authorize( any(), any() ) ).thenThrow( new AuthorizationExpiredException( "Freeze failed." ) );
 
-        assertException(() -> kernelTransactions.newInstance( explicit, loginContext, 0L),
+        assertException( () -> kernelTransactions.newInstance( KernelTransaction.Type.explicit, loginContext, EMBEDDED_CONNECTION, 0L ),
                 AuthorizationExpiredException.class, "Freeze failed.");
 
         assertThat("We should not have any transaction", kernelTransactions.activeTransactions(), is(empty()));
@@ -442,7 +443,7 @@ public class KernelTransactionsTest
         databaseAvailabilityGuard.shutdown();
 
         expectedException.expect( DatabaseShutdownException.class );
-        kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L );
+        kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L );
     }
 
     @Test
@@ -457,7 +458,7 @@ public class KernelTransactionsTest
         } ).get();
 
         expectedException.expect( IllegalStateException.class );
-        kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L );
+        kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L );
     }
 
     @Test
@@ -468,24 +469,27 @@ public class KernelTransactionsTest
         kernelTransactions.stop();
         kernelTransactions.start();
         assertNotNull( "New transaction created by restarted kernel transactions component.",
-                kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L ) );
+                kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ) );
     }
 
     @Test
     public void incrementalUserTransactionId() throws Throwable
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
-        try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+        try ( KernelTransaction kernelTransaction = kernelTransactions
+                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
         {
             assertEquals( 1, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
 
-        try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+        try ( KernelTransaction kernelTransaction = kernelTransactions
+                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
         {
             assertEquals( 2, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
 
-        try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+        try ( KernelTransaction kernelTransaction = kernelTransactions
+                .newInstance( KernelTransaction.Type.explicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L ) )
         {
             assertEquals( 3, kernelTransactions.activeTransactions().iterator().next().getUserTransactionId() );
         }
@@ -496,11 +500,11 @@ public class KernelTransactionsTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
         KernelTransactions kernelTransactions = newKernelTransactions( config );
-        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), 0L );
-        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), 0L );
+        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
+        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
 
         expectedException.expect( MaximumTransactionLimitExceededException.class );
-        kernelTransactions.newInstance( explicit, none(), 0L );
+        kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
     }
 
     @Test
@@ -508,12 +512,12 @@ public class KernelTransactionsTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
         KernelTransactions kernelTransactions = newKernelTransactions( config );
-        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), 0L );
-        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), 0L );
+        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
+        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
 
         try
         {
-            kernelTransactions.newInstance( explicit, none(), 0L );
+            kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
             fail( "should not be able to start" );
         }
         catch ( MaximumTransactionLimitExceededException e )
@@ -523,7 +527,7 @@ public class KernelTransactionsTest
 
         ignore.close();
         // fine to start again
-        kernelTransactions.newInstance( explicit, none(), 0L );
+        kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
     }
 
     @Test
@@ -531,12 +535,12 @@ public class KernelTransactionsTest
     {
         Config config = Config.defaults( GraphDatabaseSettings.max_concurrent_transactions, "2" );
         KernelTransactions kernelTransactions = newKernelTransactions( config );
-        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), 0L );
-        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), 0L );
+        KernelTransaction ignore = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
+        KernelTransaction ignore2 = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
 
         try
         {
-            kernelTransactions.newInstance( explicit, none(), 0L );
+            kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
             fail( "should not be able to start" );
         }
         catch ( MaximumTransactionLimitExceededException e )
@@ -547,7 +551,7 @@ public class KernelTransactionsTest
         config.updateDynamicSetting( GraphDatabaseSettings.max_concurrent_transactions.name(), "3", "test" );
 
         // fine to start again
-        kernelTransactions.newInstance( explicit, none(), 0L );
+        kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L );
     }
 
     @Test
@@ -556,7 +560,7 @@ public class KernelTransactionsTest
         KernelTransactions kernelTransactions = newKernelTransactions();
         for ( int i  = 0; i < 100; i++ )
         {
-            try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+            try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L ) )
             {
                 assertEquals( 1, kernelTransactions.getNumberOfActiveTransactions() );
             }
@@ -578,7 +582,7 @@ public class KernelTransactionsTest
             {
                 Future transactionFuture = executors.submit( () ->
                 {
-                    try ( KernelTransaction ignored = kernelTransactions.newInstance( explicit, none(), 0L ) )
+                    try ( KernelTransaction ignored = kernelTransactions.newInstance( explicit, none(), EMBEDDED_CONNECTION, 0L ) )
                     {
                         phaser.arriveAndAwaitAdvance();
                         assertEquals( expectedTransactions, kernelTransactions.getNumberOfActiveTransactions() );
@@ -617,7 +621,7 @@ public class KernelTransactionsTest
     {
         try
         {
-            kernelTransactions.newInstance( explicit, AUTH_DISABLED, 0L ).close();
+            kernelTransactions.newInstance( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, 0L ).close();
         }
         catch ( TransactionFailureException e )
         {
@@ -770,7 +774,7 @@ public class KernelTransactionsTest
 
     private static KernelTransaction getKernelTransaction( KernelTransactions transactions )
     {
-        return transactions.newInstance( KernelTransaction.Type.implicit, none(), 0L );
+        return transactions.newInstance( KernelTransaction.Type.implicit, AnonymousContext.none(), EMBEDDED_CONNECTION, 0L );
     }
 
     private static class TestKernelTransactions extends KernelTransactions

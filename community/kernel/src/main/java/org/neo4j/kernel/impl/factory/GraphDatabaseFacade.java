@@ -68,6 +68,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Write;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
@@ -105,7 +106,6 @@ import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
-import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
 import org.neo4j.kernel.impl.util.ValueUtils;
@@ -118,6 +118,7 @@ import org.neo4j.values.virtual.MapValue;
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
 import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
@@ -168,9 +169,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
          * Begin a new kernel transaction with specified timeout in milliseconds.
          *
          * @throws org.neo4j.graphdb.TransactionFailureException if unable to begin, or a transaction already exists.
-         * @see GraphDatabaseAPI#beginTransaction(KernelTransaction.Type, LoginContext)
+         * @see GraphDatabaseAPI#beginTransaction(KernelTransaction.Type, LoginContext, ClientConnectionInfo)
          */
-        KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout );
+        KernelTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout );
 
         /** Execute a cypher statement */
         Result executeQuery( String query, MapValue parameters, TransactionalContext context );
@@ -358,26 +359,37 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     @Override
     public Transaction beginTx()
     {
+        return beginTransaction();
+    }
+
+    protected InternalTransaction beginTransaction()
+    {
         return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED );
     }
 
     @Override
     public Transaction beginTx( long timeout, TimeUnit unit )
     {
-        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, timeout, unit );
+        return beginTransaction( KernelTransaction.Type.explicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
     }
 
     @Override
     public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext )
     {
-        return beginTransactionInternal( type, loginContext, config.get( transaction_timeout ).toMillis() );
+        return beginTransaction( type, loginContext, EMBEDDED_CONNECTION );
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext,
-            long timeout, TimeUnit unit )
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
     {
-        return beginTransactionInternal( type, loginContext, unit.toMillis( timeout ) );
+        return beginTransactionInternal( type, loginContext, clientInfo, config.get( transaction_timeout ).toMillis() );
+    }
+
+    @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo, long timeout,
+            TimeUnit unit )
+    {
+        return beginTransactionInternal( type, loginContext, clientInfo, unit.toMillis( timeout ) );
     }
 
     @Override
@@ -396,8 +408,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     public Result execute( String query, Map<String,Object> parameters ) throws QueryExecutionException
     {
         // ensure we have a tx and create a context (the tx is gonna get closed by the Cypher result)
-        InternalTransaction transaction =
-                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        InternalTransaction transaction = beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
 
         return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
@@ -407,15 +418,14 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             QueryExecutionException
     {
         InternalTransaction transaction =
-                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, timeout, unit );
+                beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION, timeout, unit );
         return execute( transaction, query, ValueUtils.asParameterMapValue( parameters ) );
     }
 
     public Result execute( InternalTransaction transaction, String query, MapValue parameters )
             throws QueryExecutionException
     {
-        TransactionalContext context =
-                contextFactory.newContext( ClientConnectionInfo.EMBEDDED_CONNECTION, transaction, query, parameters );
+        TransactionalContext context = contextFactory.newContext( transaction, query, parameters );
         return spi.executeQuery( query, parameters, context );
     }
 
@@ -678,7 +688,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         return allNodesWithLabel( myLabel );
     }
 
-    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, LoginContext loginContext,
+    private InternalTransaction beginTransactionInternal( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo,
             long timeoutMillis )
     {
         if ( statementContext.hasTransaction() )
@@ -686,7 +696,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             // FIXME: perhaps we should check that the new type and access mode are compatible with the current tx
             return new PlaceboTransaction( statementContext.getKernelTransactionBoundToThisThread( true ) );
         }
-        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, timeoutMillis ) );
+        return new TopLevelTransaction( spi.beginTransaction( type, loginContext, connectionInfo, timeoutMillis ) );
     }
 
     private ResourceIterator<Node> nodesByLabelAndProperty( KernelTransaction transaction, int labelId, IndexQuery query )

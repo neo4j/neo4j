@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 
 public class TransitionalTxManagementKernelTransactionTest
 {
@@ -45,21 +46,21 @@ public class TransitionalTxManagementKernelTransactionTest
     public void reopenStartTransactionWithCustomTimeoutIfSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
-                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, 10, contextBridge );
+                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, EMBEDDED_CONNECTION, 10, contextBridge );
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 
-        verify( databaseFacade, times( 2 ) ).beginTransaction( type, loginContext, 10, TimeUnit.MILLISECONDS);
+        verify( databaseFacade, times( 2 ) ).beginTransaction( type, loginContext, EMBEDDED_CONNECTION, 10, TimeUnit.MILLISECONDS);
     }
 
     @Test
     public void reopenStartDefaultTransactionIfTimeoutNotSpecified()
     {
         TransitionalTxManagementKernelTransaction managementKernelTransaction =
-                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, -1, contextBridge );
+                new TransitionalTxManagementKernelTransaction( databaseFacade, type, loginContext, EMBEDDED_CONNECTION, -1, contextBridge );
 
         managementKernelTransaction.reopenAfterPeriodicCommit();
 
-        verify( databaseFacade, times( 2 ) ).beginTransaction( type, loginContext );
+        verify( databaseFacade, times( 2 ) ).beginTransaction( type, loginContext, EMBEDDED_CONNECTION );
     }
 }

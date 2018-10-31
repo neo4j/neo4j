@@ -50,6 +50,7 @@ import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -206,10 +207,16 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, long timeout,
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo )
+    {
+        return getGraphDatabaseAPI().beginTransaction( type, loginContext, connectionInfo );
+    }
+
+    @Override
+    public InternalTransaction beginTransaction( KernelTransaction.Type type, LoginContext loginContext, ClientConnectionInfo connectionInfo, long timeout,
             TimeUnit unit )
     {
-        return getGraphDatabaseAPI().beginTransaction( type, loginContext, timeout, unit );
+        return getGraphDatabaseAPI().beginTransaction( type, loginContext, connectionInfo, timeout, unit );
     }
 
     @Override
