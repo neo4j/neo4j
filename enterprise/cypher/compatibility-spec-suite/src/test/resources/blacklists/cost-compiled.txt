@@ -695,3 +695,6 @@ Feature "TemporalParseAcceptance": Scenario "Should parse local date time from s
 Feature "TemporalParseAcceptance": Scenario "Should parse date time from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse date time with named time zone from string"
 Feature "TemporalParseAcceptance": Scenario "Should parse duration from string"
+
+// Depends on an old error message, needs a new TCK release
+Feature "ReturnAcceptance2": Scenario "Fail when sorting on variable removed by DISTINCT"

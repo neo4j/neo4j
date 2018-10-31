@@ -467,3 +467,6 @@ Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure with a
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with argument of type INTEGER accepts value of type FLOAT"
 Feature "ProcedureCallAcceptance": Scenario "In-query call to procedure with null argument"
 Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
+
+// Depends on an old error message, needs a new TCK release
+Feature "ReturnAcceptance2": Scenario "Fail when sorting on variable removed by DISTINCT"
