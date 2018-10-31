@@ -639,11 +639,18 @@ public abstract class MapValue extends VirtualValue
             }
         }
         Equality equalityResult = Equality.TRUE;
-
-        for ( int i = 0; i < size && equalityResult == Equality.TRUE; i++ )
+        for ( int i = 0; i < size; i++ )
         {
             String key = thisKeys[i];
-            equalityResult = get( key ).ternaryEquals( otherMap.get( key ) );
+            Equality equality = get( key ).ternaryEquals( otherMap.get( key ) );
+            if ( equality == Equality.UNDEFINED )
+            {
+                equalityResult = Equality.UNDEFINED;
+            }
+            else if ( equality == Equality.FALSE )
+            {
+                return Equality.FALSE;
+            }
         }
         return equalityResult;
     }
