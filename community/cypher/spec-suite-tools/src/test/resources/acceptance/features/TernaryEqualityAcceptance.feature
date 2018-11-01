@@ -22,7 +22,7 @@
 
 Feature: TernaryEqualityAcceptance
 
-  Scenario Outline: List equality test
+  Scenario Outline: equality between different types should yield false
     And parameters are:
       | lhs | <lhs> |
       | rhs | <rhs> |
@@ -36,27 +36,117 @@ Feature: TernaryEqualityAcceptance
     And no side effects
 
     Examples:
-      | lhs          | rhs                | eq    | neq   |
-      | [1, 2, 4]    | 'string'           | null  | null  |
-      | [1, 2]       | [1, null]          | null  | null  |
+      | lhs        | rhs                | eq   | neq  |
+      | [1, 2, 4]  | 'string'           | false | true |
+      | {k: 'foo'} | 1                  | false | true |
+      | 1          | 'string'           | false | true |
+      | true       | 'string'           | false | true |
 
-  Scenario Outline: Map equality test
+  Scenario: List equality [1, 2, 3] and [1, null, 3]
     And parameters are:
-      | lhs | <lhs> |
-      | rhs | <rhs> |
+      | lhs | [1, 2, 3]   |
+      | rhs | [1, null, 3] |
     When executing query:
       """
       RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
       """
     Then the result should be:
       | eq   | neq   |
-      | <eq> | <neq> |
+      | null | null |
     And no side effects
 
-    Examples:
-      | lhs       | rhs        | eq    | neq   |
-      | {k: 42}   | {k: null}  | null  | null  |
-      | {k1: 42}  | 42         | null  | null  |
+  Scenario: List equality [1, 2, 3] and [1, null, 4]
+    And parameters are:
+      | lhs | [1, 2, 3]   |
+      | rhs | [1, null, 4] |
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq    | neq  |
+      | false | true |
+    And no side effects
+
+  Scenario: List equality [1, 2, 3] and [1, 'two', 3]
+    And parameters are:
+      | lhs | [1, 2, 3]   |
+      | rhs | [1, 'two', 4] |
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq    | neq  |
+      | false | true |
+    And no side effects
+
+  Scenario: Map equality {k: 42} and {k: null}
+    And parameters are:
+      | lhs | {k: 42} |
+      | rhs | {k: null}|
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq   | neq   |
+      | null | null |
+    And no side effects
+
+  Scenario: Map equality {k1: 42} and {k2: null}
+    And parameters are:
+      | lhs | {k1: 42} |
+      | rhs | {k2: null}|
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq    | neq   |
+      | false | true |
+    And no side effects
+
+  @ignore
+  Scenario: Map equality {k: 42} and {null: 42}
+    And parameters are:
+      | lhs | {k: 42} |
+      | rhs | {null: 42}|
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq   | neq   |
+      | null | null |
+    And no side effects
+
+    @ignore
+  Scenario: Map equality {k: 42} and {null: 43}
+    And parameters are:
+      | lhs | {k: 42} |
+      | rhs | {null: 43}|
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq    | neq  |
+      | false | true |
+    And no side effects
+
+  Scenario: Map equality {k1: 42, k2: 43, k3: 44} and {k1: 42, k2: null, k3: 'fortyfour'}
+    And parameters are:
+      | lhs | {k1: 42, k2: 43, k3: 44}  |
+      | rhs | {k1: 42, k2: null, k3: 'fortyfour'} |
+    When executing query:
+      """
+      RETURN $lhs = $rhs AS eq, $lhs <> $rhs AS neq
+      """
+    Then the result should be:
+      | eq    | neq  |
+      | false | true |
+    And no side effects
 
   Scenario Outline: Spatial equality test
     When executing query:

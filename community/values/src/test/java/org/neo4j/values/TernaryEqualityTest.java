@@ -64,7 +64,7 @@ class TernaryEqualityTest
     private TernaryComparator<AnyValue> comparator = AnyValues.TERNARY_COMPARATOR;
 
     @Test
-    void shouldGiveUndefinedForDifferentTypes()
+    void shouldGiveFalseWhenComparingDifferentTypes()
     {
         Value[] values =
                 new Value[]{booleanValue( true ), longValue( 1337 ), stringValue( "foo" ),
@@ -78,8 +78,7 @@ class TernaryEqualityTest
         {
             for ( int j = i; j < values.length; j++ )
             {
-                Equality expected = i == j ? Equality.TRUE : UNDEFINED;
-                System.out.println();
+                Equality expected = i == j ? Equality.TRUE : Equality.FALSE;
                 assertTernaryEquality( values[i], values[j], expected );
             }
         }
@@ -180,6 +179,8 @@ class TernaryEqualityTest
         assertTernaryEquality( listWithNoValue, list( intValue( 1 ), NO_VALUE, intValue( 2 ) ), Equality.UNDEFINED );
         assertTernaryEquality( listWithNoValue, list( intValue( 2 ), NO_VALUE, intValue( 2 ) ), Equality.FALSE );
         assertTernaryEquality( list( NO_VALUE, NO_VALUE, NO_VALUE ), list( NO_VALUE, NO_VALUE ), Equality.FALSE );
+        assertTernaryEquality( list( intValue( 1 ), intValue( 2 ) ), list( intValue( 1 ), stringValue( "two" ) ), Equality.FALSE );
+
     }
 
     @Test

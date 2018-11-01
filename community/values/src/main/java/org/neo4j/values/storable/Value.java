@@ -182,7 +182,7 @@ public abstract class Value extends AnyValue
             }
             return equals( otherValue ) ? Equality.TRUE : Equality.FALSE;
         }
-        return Equality.UNDEFINED;
+        return Equality.FALSE;
     }
 
     abstract int unsafeCompareTo( Value other );

@@ -619,13 +619,13 @@ public abstract class MapValue extends VirtualValue
         }
         else if ( !(other instanceof MapValue) )
         {
-            return Equality.UNDEFINED;
+            return Equality.FALSE;
         }
         MapValue otherMap = (MapValue) other;
         int size = size();
         if ( size != otherMap.size() )
         {
-            return Equality.UNDEFINED;
+            return Equality.FALSE;
         }
         String[] thisKeys = StreamSupport.stream( keySet().spliterator(), false ).toArray( String[]::new );
         Arrays.sort( thisKeys, String::compareTo );
@@ -642,7 +642,10 @@ public abstract class MapValue extends VirtualValue
         for ( int i = 0; i < size; i++ )
         {
             String key = thisKeys[i];
-            Equality equality = get( key ).ternaryEquals( otherMap.get( key ) );
+            AnyValue thisValue = get( key );
+            AnyValue otherValue = otherMap.get( key );
+
+            Equality equality = thisValue.ternaryEquals( otherValue );
             if ( equality == Equality.UNDEFINED )
             {
                 equalityResult = Equality.UNDEFINED;
