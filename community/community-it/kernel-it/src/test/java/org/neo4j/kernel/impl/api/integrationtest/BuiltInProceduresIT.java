@@ -30,8 +30,11 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.cypher.internal.StringCacheMonitor;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -43,7 +46,9 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 import org.neo4j.kernel.internal.Version;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -239,22 +244,13 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score.", "READ"),
                 proc( "db.index.fulltext.queryRelationships", "(indexName :: STRING?, queryString :: STRING?) :: (relationship :: RELATIONSHIP?, " +
                         "score :: FLOAT?)", "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " +
-                        "score.", "READ" )
+                        "score.", "READ" ),
+                proc( "db.prepareForReplanning", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Clears all query caches, triggers an index resample and waits for it to complete. After this" +
+                        " procedure has finished queries will be planned using the latest database statistics.",
+                        "READ" )
         ) );
         commit();
-    }
-
-    private Matcher<Object[]> proc( String procName, String procSignature, String description, String mode )
-    {
-        return equalTo( new Object[]{procName, procName + procSignature, description, mode} );
-    }
-
-    @SuppressWarnings( {"unchecked", "TypeParameterExplicitlyExtendsObject"} )
-    private Matcher<Object[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
-    {
-        Matcher<Object> desc = (Matcher<Object>) (Matcher<? extends Object>) description;
-        Matcher<Object>[] matchers = new Matcher[]{equalTo( procName ), equalTo( procName + procSignature ), desc, equalTo( mode )};
-        return arrayContaining( matchers );
     }
 
     @Test
@@ -337,5 +333,106 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooBarDescriptor ), ""}
         ) );
         commit();
+    }
+
+    @Test
+    public void prepareForReplanningShouldEmptyQueryCache()
+    {
+        // Given, something is cached
+        db.execute( "MATCH (n) RETURN n" );
+
+        ReplanMonitor monitor = replanMonitor();
+
+        // When
+        db.execute( "CALL db.prepareForReplanning()" );
+
+        // Then, the initial query and the procedure call should now have been cleared
+        assertThat( monitor.numberOfFlushedItems(), equalTo( 2L ) );
+    }
+
+    @Test
+    public void prepareForReplanningShouldTriggerIndexesSampling()
+    {
+        // Given
+        ReplanMonitor monitor = replanMonitor();
+
+        // When
+        db.execute( "CALL db.prepareForReplanning()" );
+
+        // Then
+        assertThat( monitor.samplingMode(), equalTo( IndexSamplingMode.TRIGGER_REBUILD_UPDATED ) );
+    }
+
+    private ReplanMonitor replanMonitor()
+    {
+        Monitors monitors =
+                dependencyResolver.resolveDependency( Monitors.class, DependencyResolver.SelectionStrategy.FIRST );
+
+        ReplanMonitor monitorListener = new ReplanMonitor();
+        monitors.addMonitorListener( monitorListener );
+        return monitorListener;
+    }
+
+    private static class ReplanMonitor extends IndexingService.MonitorAdapter implements StringCacheMonitor
+    {
+        private long numberOfFlushedItems = -1L;
+        private IndexSamplingMode samplingMode;
+
+        @Override
+        public void cacheFlushDetected( long sizeBeforeFlush )
+        {
+            numberOfFlushedItems = sizeBeforeFlush;
+        }
+
+        @Override
+        public void indexSamplingTriggered( IndexSamplingMode mode )
+        {
+            samplingMode = mode;
+        }
+
+        long numberOfFlushedItems()
+        {
+            return numberOfFlushedItems;
+        }
+
+        IndexSamplingMode samplingMode()
+        {
+            return samplingMode;
+        }
+
+        @Override
+        public void cacheHit( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        {
+        }
+
+        @Override
+        public void cacheMiss( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        {
+        }
+
+        @Override
+        public void cacheDiscard( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key, String userKey,
+                int secondsSinceReplan )
+        {
+        }
+
+        @Override
+        public void cacheRecompile( Pair<String,scala.collection.immutable.Map<String,Class<?>>> key )
+        {
+        }
+    }
+
+    private Matcher<Object[]> proc( String procName, String procSignature, String description, String mode )
+    {
+        return equalTo( new Object[]{procName, procName + procSignature, description, mode} );
+    }
+
+    @SuppressWarnings( {"unchecked", "TypeParameterExplicitlyExtendsObject"} )
+    private Matcher<Object[]> proc( String procName, String procSignature, Matcher<String> description, String mode )
+    {
+        Matcher<Object> desc = (Matcher<Object>) (Matcher<? extends Object>) description;
+        Matcher<Object>[] matchers =
+                new Matcher[]{equalTo( procName ), equalTo( procName + procSignature ), desc, equalTo( mode )};
+        return arrayContaining( matchers );
     }
 }

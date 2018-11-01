@@ -398,7 +398,11 @@ public class BuiltInProceduresTest
                                 "(index :: STRING?, providerName :: STRING?, status :: STRING?)",
                         "Create a unique property constraint with index backed by specified index provider " +
                                 "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
-                                "YIELD index, providerName, status", "SCHEMA" )
+                                "YIELD index, providerName, status", "SCHEMA" ),
+                record( "db.prepareForReplanning", "db.prepareForReplanning(timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Clears all query caches, triggers an index resample and waits for it to complete. After this" +
+                        " procedure has finished queries will be planned using the latest database statistics.",
+                        "READ" )
         ) );
     }
 

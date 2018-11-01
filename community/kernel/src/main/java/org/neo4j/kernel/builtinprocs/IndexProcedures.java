@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -30,13 +29,13 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
+import org.neo4j.internal.kernel.api.helpers.Indexes;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
@@ -44,8 +43,6 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 
 public class IndexProcedures implements AutoCloseable
 {
@@ -87,6 +84,18 @@ public class IndexProcedures implements AutoCloseable
     public void resampleOutdatedIndexes()
     {
         indexingService.triggerIndexSampling( IndexSamplingMode.TRIGGER_REBUILD_UPDATED );
+    }
+
+    public void awaitIndexResampling( long timeout ) throws ProcedureException
+    {
+        try
+        {
+            Indexes.awaitResampling( ktx.schemaRead(), timeout);
+        }
+        catch ( TimeoutException e )
+        {
+            throw new ProcedureException( Status.Procedure.ProcedureTimedOut, e, "Index resampling timed out" );
+        }
     }
 
     public Stream<BuiltInProcedures.SchemaIndexInfo> createIndex( String indexSpecification, String providerName ) throws ProcedureException

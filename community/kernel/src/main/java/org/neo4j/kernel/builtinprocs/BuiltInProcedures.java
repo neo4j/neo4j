@@ -60,7 +60,9 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
@@ -212,6 +214,24 @@ public class BuiltInProcedures
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.resampleOutdatedIndexes();
+        }
+    }
+
+    @Admin
+    @Description( "Clears all query caches, triggers an index resample and waits for it to complete. After this " +
+                  "procedure has finished queries will be planned using the latest database statistics." )
+    @Procedure( name = "db.prepareForReplanning", mode = READ )
+    public void prepareForReplanning( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeOutSeconds )
+            throws ProcedureException
+    {
+        QueryExecutionEngine queryExecutionEngine = graphDatabaseAPI.getDependencyResolver()
+                .resolveDependency( QueryExecutionEngine.class, DependencyResolver.SelectionStrategy.FIRST );
+        queryExecutionEngine.clearQueryCaches();
+
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.resampleOutdatedIndexes();
+            indexProcedures.awaitIndexResampling( timeOutSeconds );
         }
     }
 
