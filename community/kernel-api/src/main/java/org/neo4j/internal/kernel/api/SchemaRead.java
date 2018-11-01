@@ -242,15 +242,6 @@ public interface SchemaRead
     <K, V> V schemaStateGetOrCreate( K key, Function<K, V> creator );
 
     /**
-     * Returns the state associated with the key or <tt>null</tt> if nothing assocated with key
-     * @param key The key to access
-     * @param <K> The type of the key
-     * @param <V> The type of the assocated value
-     * @return The value associated with the given key or <tt>null</tt>
-     */
-    <K, V> V schemaStateGet( K key );
-
-    /**
      * Flush the schema state
      */
     void schemaStateFlush();
