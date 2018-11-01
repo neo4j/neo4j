@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong
 
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.kernel.api.query.SchemaIndexUsage
+import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class SchemaToken(x: Long) extends AnyVal
@@ -30,15 +31,16 @@ case class SchemaToken(x: Long) extends AnyVal
 class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
 
   private val schemaToken = new AtomicLong()
+  private val schemaStateKey = SchemaStateKey.newKey()
 
   def readSchemaToken(tc: TransactionalContext): SchemaToken = {
-    val creator = new java.util.function.Function[SchemaHelper, SchemaToken]() {
-      def apply(key: SchemaHelper): SchemaToken = {
+    val creator = new java.util.function.Function[SchemaStateKey, SchemaToken]() {
+      def apply(key: SchemaStateKey): SchemaToken = {
         queryCache.clear()
         SchemaToken(schemaToken.incrementAndGet())
       }
     }
-    tc.kernelTransaction().schemaRead().schemaStateGetOrCreate(this, creator)
+    tc.kernelTransaction().schemaRead().schemaStateGetOrCreate(schemaStateKey, creator)
   }
 
   def lockLabels(schemaTokenBefore: SchemaToken,

@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.api.query.CompilerInfo
 import org.neo4j.kernel.api.txstate.TxStateHolder
 import org.neo4j.kernel.api.{KernelTransaction, ResourceTracker, Statement}
+import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.kernel.impl.query.TransactionalContext
 
@@ -83,4 +84,11 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
   override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])
 
   def resourceTracker: ResourceTracker = tc.resourceTracker
+
+  def getOrCreateFromSchemaState[T](key: SchemaStateKey, f: => T): T = {
+    val javaCreator = new java.util.function.Function[SchemaStateKey, T]() {
+      def apply(key: SchemaStateKey) = f
+    }
+    schemaRead.schemaStateGetOrCreate(key, javaCreator)
+  }
 }

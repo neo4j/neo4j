@@ -40,8 +40,6 @@ class NotImplementedPlanContext extends PlanContext {
 
   override def checkRelIndex(idxName: String): Unit = ???
 
-  override def getOrCreateFromSchemaState[T](key: Any, f: => T): T = ???
-
   override def txIdProvider: () => Long = ???
 
   override def statistics: GraphStatistics = ???
