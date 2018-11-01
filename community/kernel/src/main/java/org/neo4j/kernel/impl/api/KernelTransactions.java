@@ -205,7 +205,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         }
         catch ( InterruptedException ie )
         {
-            Thread.currentThread().interrupt();
+            Thread.interrupted();
             throw new TransactionFailureException( "Fail to start new transaction.", ie );
         }
     }
