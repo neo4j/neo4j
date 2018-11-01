@@ -56,7 +56,7 @@ import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.scheduler.DaemonThreadFactory;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.test.extension.SamplingProfilerExtension;
+import org.neo4j.test.extension.Profiler;
 import org.neo4j.test.rule.TestDirectory;
 
 /**
@@ -94,7 +94,7 @@ public class RandomPageCacheTestHarness implements Closeable
     private Phase preparation;
     private Phase verification;
     private RecordFormat recordFormat;
-    private SamplingProfilerExtension.Profiler profiler;
+    private Profiler profiler;
 
     public RandomPageCacheTestHarness()
     {
@@ -119,7 +119,7 @@ public class RandomPageCacheTestHarness implements Closeable
         fs = new EphemeralFileSystemAbstraction();
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
-        profiler = SamplingProfilerExtension.Profiler.NULL;
+        profiler = Profiler.NULL;
     }
 
     /**
@@ -289,7 +289,7 @@ public class RandomPageCacheTestHarness implements Closeable
         this.fs = fileSystem;
     }
 
-    public void useProfiler( SamplingProfilerExtension.Profiler profiler )
+    public void useProfiler( Profiler profiler )
     {
         this.profiler = profiler;
     }

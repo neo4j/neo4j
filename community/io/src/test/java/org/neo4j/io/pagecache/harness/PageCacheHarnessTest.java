@@ -22,6 +22,7 @@ package org.neo4j.io.pagecache.harness;
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +39,9 @@ import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 import org.neo4j.test.extension.Inject;
-import org.neo4j.test.extension.SamplingProfilerExtension;
+import org.neo4j.test.extension.Profiler;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -54,11 +57,17 @@ import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 
-@ExtendWith( SamplingProfilerExtension.class )
+@ExtendWith( TestDirectoryExtension.class )
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
     @Inject
-    public SamplingProfilerExtension.Profiler profiler;
+    public TestDirectory directory; // We need this to capture the output from the profiler extension.
+
+    @RegisterExtension
+    public Profiler profiler = Profiler.config()
+            .delayedConfig( cfg -> cfg.outputTo( directory.createFile( "profiler-output.txt" ) ) )
+            .closeOutputWhenDone( true )
+            .profiler();
 
     @RepeatedTest( 10 )
     void readsAndWritesMustBeMutuallyConsistent()
