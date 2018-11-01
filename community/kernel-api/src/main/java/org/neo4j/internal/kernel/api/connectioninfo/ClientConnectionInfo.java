@@ -27,16 +27,6 @@ package org.neo4j.internal.kernel.api.connectioninfo;
 public abstract class ClientConnectionInfo
 {
     /**
-     * Used by {@link #asConnectionDetails()} only. When the {@code connectionDetails} string is no longer needed,
-     * this can go away, since the username is provided though other means to the places that need it.
-     */
-    @Deprecated
-    public ClientConnectionInfo withUsername( String username )
-    {
-        return new ConnectionInfoWithUsername( this, username );
-    }
-
-    /**
      * This method provides the custom format for each type of connection.
      * <p>
      * Preferably we would not need to have a custom format for each type of connection, but this is provided for
@@ -104,50 +94,4 @@ public abstract class ClientConnectionInfo
             return null;
         }
     };
-
-    /**
-     * Should be removed along with {@link #withUsername(String)} and {@link #asConnectionDetails()}.
-     */
-    @Deprecated
-    private static class ConnectionInfoWithUsername extends ClientConnectionInfo
-    {
-        private final ClientConnectionInfo source;
-        private final String username;
-
-        private ConnectionInfoWithUsername( ClientConnectionInfo source, String username )
-        {
-            this.source = source;
-            this.username = username;
-        }
-
-        @Override
-        public String asConnectionDetails()
-        {
-            return source.asConnectionDetails() + '\t' + username;
-        }
-
-        @Override
-        public String protocol()
-        {
-            return source.protocol();
-        }
-
-        @Override
-        public String connectionId()
-        {
-            return source.connectionId();
-        }
-
-        @Override
-        public String clientAddress()
-        {
-            return source.clientAddress();
-        }
-
-        @Override
-        public String requestURI()
-        {
-            return source.requestURI();
-        }
-    }
 }

@@ -135,6 +135,6 @@ public class BoltChannel implements TrackedNetworkConnection
 
     private ClientConnectionInfo createConnectionInfo()
     {
-        return new BoltConnectionInfo( id, username, userAgent, clientAddress(), serverAddress() );
+        return new BoltConnectionInfo( id, userAgent, clientAddress(), serverAddress() );
     }
 }

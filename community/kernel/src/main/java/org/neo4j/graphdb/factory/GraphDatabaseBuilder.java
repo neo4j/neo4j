@@ -72,6 +72,7 @@ public class GraphDatabaseBuilder
     protected Map<String,String> config = new HashMap<>();
 
     /**
+     * @param creator database creator used by builder
      * @deprecated
      */
     @Deprecated

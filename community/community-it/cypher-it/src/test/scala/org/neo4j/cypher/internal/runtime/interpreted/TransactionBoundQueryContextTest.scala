@@ -31,6 +31,7 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.internal.kernel.api.Transaction.Type
+import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.internal.kernel.api.security.SecurityContext.AUTH_DISABLED
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier
@@ -85,6 +86,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.failure()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
+    when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
 
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
@@ -98,6 +100,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // THEN
     verify(outerTx).transactionType()
+    verify(outerTx).clientInfo()
     verify(outerTx).securityContext()
     verify(outerTx).success()
     verify(outerTx).close()
@@ -109,6 +112,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     when(outerTx.success()).thenThrow(new AssertionError("Shouldn't be called"))
     when(outerTx.transactionType()).thenReturn(Type.`implicit`)
     when(outerTx.securityContext()).thenReturn(AUTH_DISABLED)
+    when(outerTx.clientInfo()).thenReturn(ClientConnectionInfo.EMBEDDED_CONNECTION)
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
@@ -122,6 +126,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     // THEN
     verify(outerTx).transactionType()
+    verify(outerTx).clientInfo()
     verify(outerTx).securityContext()
     verify(outerTx).failure()
     verify(outerTx).close()

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 
@@ -27,52 +27,49 @@ import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.BoltConnectionInfo;
 import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class ClientConnectionInfoTest
+class ClientConnectionInfoTest
 {
     @Test
-    public void connectionDetailsForBoltQuerySource()
+    void connectionDetailsForBoltQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection = new BoltConnectionInfo(
                 "bolt-42",
-                "username",
                 "neo4j-java-bolt-driver",
                 new InetSocketAddress( "127.0.0.1", 56789 ),
-                new InetSocketAddress( "127.0.0.1", 7687 ) )
-                .withUsername( "username" );
+                new InetSocketAddress( "127.0.0.1", 7687 ) );
 
         // when
         String connectionDetails = clientConnection.asConnectionDetails();
 
         // then
         assertEquals(
-                "bolt-session\tbolt\tusername\tneo4j-java-bolt-driver\t\tclient/127.0.0.1:56789\t"
-                        + "server/127.0.0.1:7687>\tusername",
+                "bolt-session\tbolt\tneo4j-java-bolt-driver\t\tclient/127.0.0.1:56789\t"
+                        + "server/127.0.0.1:7687>",
                 connectionDetails );
     }
 
     @Test
-    public void connectionDetailsForHttpQuerySource()
+    void connectionDetailsForHttpQuerySource()
     {
         // given
         ClientConnectionInfo clientConnection =
                 new HttpConnectionInfo( "http-42", "http",
-                        new InetSocketAddress( "127.0.0.1", 1337 ), null, "/db/data/transaction/45/commit" )
-                        .withUsername( "username" );
+                        new InetSocketAddress( "127.0.0.1", 1337 ), null, "/db/data/transaction/45/commit" );
 
         // when
         String connectionDetails = clientConnection.asConnectionDetails();
 
         // then
         assertEquals(
-                "server-session\thttp\t127.0.0.1\t/db/data/transaction/45/commit\tusername",
+                "server-session\thttp\t127.0.0.1\t/db/data/transaction/45/commit",
                 connectionDetails );
     }
 
     @Test
-    public void connectionDetailsForEmbeddedQuerySource()
+    void connectionDetailsForEmbeddedQuerySource()
     {
         // when
         String connectionDetails = ClientConnectionInfo.EMBEDDED_CONNECTION.asConnectionDetails();

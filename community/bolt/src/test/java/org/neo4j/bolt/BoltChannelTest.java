@@ -99,7 +99,6 @@ class BoltChannelTest
     }
 
     @Test
-    @SuppressWarnings( "deprecation" )
     void shouldExposeClientConnectionInfo()
     {
         EmbeddedChannel channel = new EmbeddedChannel();
@@ -116,7 +115,6 @@ class BoltChannelTest
         assertEquals( "bolt-42", info2.connectionId() );
         assertEquals( "bolt", info2.protocol() );
         assertEquals( SocketAddress.format( channel.remoteAddress() ), info2.clientAddress() );
-        assertThat( info2.asConnectionDetails(), containsString( "Tom" ) );
         assertThat( info2.asConnectionDetails(), containsString( "my-driver" ) );
     }
 

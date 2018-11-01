@@ -38,14 +38,16 @@ import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
+import org.neo4j.kernel.impl.query.clientconnection.HttpConnectionInfo;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.server.web.HttpHeaderUtils;
 import org.neo4j.values.virtual.VirtualValues;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 
 public class CypherExecutorTest
@@ -79,7 +81,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ) );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -94,8 +96,8 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED, EMBEDDED_CONNECTION,
-                CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS );
+        verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ),
+                eq( CUSTOM_TRANSACTION_TIMEOUT ), eq( TimeUnit.MILLISECONDS ) );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -110,7 +112,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ) );
         logProvider.assertContainsMessageContaining( "Fail to parse `max-execution-time` header with value: 'not a " +
                                                      "number'. Should be a positive number." );
     }
@@ -126,7 +128,7 @@ public class CypherExecutorTest
 
         cypherExecutor.createTransactionContext( QUERY, VirtualValues.emptyMap(), request );
 
-        verify( databaseQueryService ).beginTransaction( KernelTransaction.Type.implicit, AUTH_DISABLED );
+        verify( databaseQueryService ).beginTransaction( eq( KernelTransaction.Type.implicit ), eq( AUTH_DISABLED ), any( HttpConnectionInfo.class ) );
         logProvider.assertNoLoggingOccurred();
     }
 
@@ -161,9 +163,9 @@ public class CypherExecutorTest
         when( resolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( executionEngine );
         when( resolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( statementBridge );
         when( resolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( databaseQueryService );
-        when( databaseQueryService.beginTransaction( type, loginContext ) ).thenReturn( transaction );
-        when( databaseQueryService.beginTransaction( type, loginContext, EMBEDDED_CONNECTION,
-                CUSTOM_TRANSACTION_TIMEOUT, TimeUnit.MILLISECONDS ) ).thenReturn( transaction );
+        when( databaseQueryService.beginTransaction( eq( type ), eq( loginContext ), any( HttpConnectionInfo.class ) ) ).thenReturn( transaction );
+        when( databaseQueryService.beginTransaction( eq( type ), eq( loginContext ), any( HttpConnectionInfo.class ), eq( CUSTOM_TRANSACTION_TIMEOUT ),
+                eq( TimeUnit.MILLISECONDS ) ) ).thenReturn( transaction );
         when( databaseQueryService.getDependencyResolver() ).thenReturn( resolver );
         when( request.getScheme() ).thenReturn( "http" );
         when( request.getRemoteAddr() ).thenReturn( "127.0.0.1" );

@@ -314,7 +314,7 @@ public class TransactionHandleTest
                 mock( HttpServletRequest.class ) );
 
         // then
-        verify( kernel ).newTransaction( any( Type.class ), any( LoginContext.class ), EMBEDDED_CONNECTION, anyLong() );
+        verify( kernel ).newTransaction( any( Type.class ), any( LoginContext.class ), eq( EMBEDDED_CONNECTION ), anyLong() );
 
         InOrder outputOrder = inOrder( output );
         outputOrder.verify( output ).transactionCommitUri( uriScheme.txCommitUri( 1337 ) );

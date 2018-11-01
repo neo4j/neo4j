@@ -31,20 +31,17 @@ import static org.neo4j.helpers.SocketAddress.format;
 public class BoltConnectionInfo extends ClientConnectionInfo
 {
     private final String connectionId;
-    private final String principalName;
     private final String clientName;
     private final SocketAddress clientAddress;
     private final SocketAddress serverAddress;
 
     public BoltConnectionInfo(
             String connectionId,
-            String principalName,
             String clientName,
             SocketAddress clientAddress,
             SocketAddress serverAddress )
     {
         this.connectionId = connectionId;
-        this.principalName = principalName;
         this.clientName = clientName;
         this.clientAddress = clientAddress;
         this.serverAddress = serverAddress;
@@ -54,8 +51,7 @@ public class BoltConnectionInfo extends ClientConnectionInfo
     public String asConnectionDetails()
     {
         return String.format(
-                "bolt-session\tbolt\t%s\t%s\t\tclient%s\tserver%s>",
-                principalName,
+                "bolt-session\tbolt\t%s\t\tclient%s\tserver%s>",
                 clientName,
                 clientAddress,
                 serverAddress );
