@@ -39,11 +39,6 @@ class BuildUp(list: ListValue) extends Checker {
   val iterator: util.Iterator[AnyValue] = list.iterator()
   assert(iterator.hasNext)
   private val cachedSet: mutable.Set[AnyValue] = new mutable.HashSet[AnyValue]
-
-  // If we don't return true, this is what we will return. If the collection contains any nulls, we'll return None,
-  // else we return Some(false).
-  private var falseResult: Option[Boolean] = Some(false)
-
   override def contains(value: AnyValue): (Option[Boolean], Checker) = {
     if (value == Values.NO_VALUE) (None, this)
     else {
@@ -58,21 +53,17 @@ class BuildUp(list: ListValue) extends Checker {
     var foundMatch = Equality.FALSE
     while (iterator.hasNext && foundMatch != Equality.TRUE) {
       val nextValue = iterator.next()
-
       if (nextValue == Values.NO_VALUE) {
-        falseResult = None
+        foundMatch = Equality.UNDEFINED
       } else {
         cachedSet.add(nextValue)
         foundMatch = nextValue.ternaryEquals(value)
-        if (foundMatch == Equality.UNDEFINED) {
-          falseResult = None
-          foundMatch = Equality.FALSE
-        }
       }
     }
     if (cachedSet.isEmpty) {
       (None, NullListChecker)
     } else {
+      val falseResult = if (foundMatch == Equality.UNDEFINED) None else Some(false)
       val nextState = if (iterator.hasNext) this else new SetChecker(cachedSet, falseResult)
       val result = if (foundMatch == Equality.TRUE) Some(true) else falseResult
 

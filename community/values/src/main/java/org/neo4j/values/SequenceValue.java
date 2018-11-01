@@ -137,7 +137,7 @@ public interface SequenceValue extends Iterable<AnyValue>
             {
                 equivalenceResult = Equality.UNDEFINED;
             }
-            else if (areEqual == Equality.FALSE )
+            else if ( areEqual == Equality.FALSE )
             {
                 return Equality.FALSE;
             }
