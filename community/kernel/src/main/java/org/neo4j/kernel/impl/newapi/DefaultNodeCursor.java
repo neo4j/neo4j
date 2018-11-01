@@ -86,7 +86,7 @@ class DefaultNodeCursor extends NodeRecord implements NodeCursor
         {
             pageCursor = read.nodePage( reference );
         }
-        this.next = reference;
+        this.next = reference >= 0 ? reference : NO_ID;
         //This marks the cursor as a "single cursor"
         this.highMark = NO_ID;
         this.read = read;

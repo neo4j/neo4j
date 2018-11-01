@@ -85,6 +85,21 @@ class BuiltInProcedureAcceptanceTest extends ProcedureCallAcceptanceTest with Cy
     relationshipState should equal(Set("WORKS_AT", "PART_OF"))
   }
 
+  test("yielding db.schema() and inspecting properties should give empty results") {
+    val a = createLabeledNode(Map("name" -> "ajax"), "A")
+    val b = createLabeledNode(Map("name" -> "beetle"), "B")
+    relate(a, b, "R")
+
+    val query = "CALL db.schema() YIELD nodes UNWIND nodes AS node RETURN properties(node) AS props"
+    val result = innerExecuteDeprecated(query).toList
+    result should be(
+      List(
+        Map("props" -> Map()),
+        Map("props" -> Map())
+      )
+    )
+  }
+
   test("should not be able to filter as part of standalone call") {
     failWithError(
       Configs.AbsolutelyAll - Configs.Version2_3,

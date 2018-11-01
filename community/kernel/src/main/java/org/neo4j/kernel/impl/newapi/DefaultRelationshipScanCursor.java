@@ -67,7 +67,7 @@ class DefaultRelationshipScanCursor extends RelationshipCursor implements Relati
         {
             pageCursor = read.relationshipPage( reference );
         }
-        next = reference;
+        next = reference >= 0 ? reference : NO_ID;
         type = -1;
         highMark = NO_ID;
         init( read );

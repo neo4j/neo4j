@@ -138,6 +138,21 @@ public abstract class RelationshipScanCursorTestBase<G extends KernelAPIReadTest
         }
     }
 
+    // This is functionality which is only required for the hacky db.schema not to leak real data
+    @Test
+    public void shouldNotAccessNegativeReferences()
+    {
+        // given
+        try ( RelationshipScanCursor relationship = cursors.allocateRelationshipScanCursor() )
+        {
+            // when
+            read.singleRelationship( -2L, relationship );
+
+            // then
+            assertFalse( "should not access negative reference relationship", relationship.next() );
+        }
+    }
+
     @Test
     public void shouldAccessRelationshipLabels()
     {
