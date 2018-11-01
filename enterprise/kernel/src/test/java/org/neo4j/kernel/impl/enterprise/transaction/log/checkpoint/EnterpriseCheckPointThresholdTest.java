@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThresholdTestS
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -85,20 +86,18 @@ public class EnterpriseCheckPointThresholdTest extends CheckPointThresholdTestSu
 
     @SuppressWarnings( "ConstantConditions" )
     @Test
-    public void continuousPolicyMustAlwaysTriggerCheckPoints()
+    public void continuousPolicyMustTriggerCheckPointsAfterAnyWriteTransaction()
     {
         withPolicy( "continuous" );
         CheckPointThreshold threshold = createThreshold();
         threshold.initialize( 2 );
 
-        assertThat( threshold.checkFrequencyMillis(), is( 0L ) );
+        assertThat( threshold.checkFrequencyMillis(), lessThan( CheckPointThreshold.DEFAULT_CHECKING_FREQUENCY_MILLIS ) );
 
-        assertTrue( threshold.isCheckPointingNeeded( 2, triggered ) );
+        assertFalse( threshold.isCheckPointingNeeded( 2, triggered ) );
         threshold.checkPointHappened( 3 );
-        assertTrue( threshold.isCheckPointingNeeded( 3, triggered ) );
-        assertTrue( threshold.isCheckPointingNeeded( 3, triggered ) );
-        verifyTriggered( "continuous" );
-        verifyTriggered( "continuous" );
+        assertFalse( threshold.isCheckPointingNeeded( 3, triggered ) );
+        assertTrue( threshold.isCheckPointingNeeded( 4, triggered ) );
         verifyTriggered( "continuous" );
         verifyNoMoreTriggers();
     }

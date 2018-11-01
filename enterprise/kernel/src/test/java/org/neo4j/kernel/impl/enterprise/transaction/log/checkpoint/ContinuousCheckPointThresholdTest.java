@@ -22,38 +22,31 @@
  */
 package org.neo4j.kernel.impl.enterprise.transaction.log.checkpoint;
 
-import org.neo4j.kernel.impl.transaction.log.checkpoint.AbstractCheckPointThreshold;
+import org.junit.Test;
 
-class ContinuousCheckPointThreshold extends AbstractCheckPointThreshold
+import static org.hamcrest.Matchers.greaterThan;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
+public class ContinuousCheckPointThresholdTest
 {
-    private volatile long nextTransactionIdTarget;
-
-    ContinuousCheckPointThreshold()
+    @Test
+    public void continuousCheckPointMustReachThresholdOnEveryCommit()
     {
-        super( "continuous threshold" );
+        ContinuousCheckPointThreshold threshold = new ContinuousCheckPointThreshold();
+        threshold.initialize( 10 );
+        assertFalse( threshold.thresholdReached( 10 ) );
+        assertTrue( threshold.thresholdReached( 11 ) );
+        assertTrue( threshold.thresholdReached( 11 ) );
+        threshold.checkPointHappened( 12 );
+        assertFalse( threshold.thresholdReached( 12 ) );
     }
 
-    @Override
-    protected boolean thresholdReached( long lastCommittedTransactionId )
+    @Test
+    public void continuousThresholdMustNotBusySpin()
     {
-        return lastCommittedTransactionId >= nextTransactionIdTarget;
-    }
-
-    @Override
-    public void initialize( long transactionId )
-    {
-        checkPointHappened( transactionId );
-    }
-
-    @Override
-    public void checkPointHappened( long transactionId )
-    {
-        nextTransactionIdTarget = transactionId + 1;
-    }
-
-    @Override
-    public long checkFrequencyMillis()
-    {
-        return 100;
+        ContinuousCheckPointThreshold threshold = new ContinuousCheckPointThreshold();
+        assertThat( threshold.checkFrequencyMillis(), greaterThan( 0L ) );
     }
 }
