@@ -36,7 +36,6 @@
     <module>metrics</module>
     <module>neo4j-enterprise</module>
     <module>server-enterprise</module>
-    <module>management</module>
     <module>security</module>
     <module>deferred-locks</module>
     <module>ha</module>
