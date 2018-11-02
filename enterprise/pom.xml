@@ -41,7 +41,6 @@
     <module>security</module>
     <module>deferred-locks</module>
     <module>ha</module>
-    <module>procedure-compiler-enterprise-tests</module>
   </modules>
 
   <profiles>
