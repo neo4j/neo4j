@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurveConfiguration;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -222,8 +223,8 @@ class ParallelNativeIndexPopulatorTest
         shouldMergePartsOnAccessingFirstCompleteMethodAfterPopulation( ParallelNativeIndexPopulator::sampleResult );
     }
 
-    private void shouldMergePartsOnAccessingFirstCompleteMethodAfterPopulation( Consumer<ParallelNativeIndexPopulator<GenericKey,NativeIndexValue>> method )
-            throws Exception
+    private void shouldMergePartsOnAccessingFirstCompleteMethodAfterPopulation(
+            ThrowingConsumer<ParallelNativeIndexPopulator<GenericKey,NativeIndexValue>,IndexEntryConflictException> method ) throws Exception
     {
         try ( EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction(); JobScheduler jobScheduler = createInitialisedScheduler() )
         {
