@@ -30,7 +30,6 @@
   <modules>
     <module>com</module>
     <module>kernel</module>
-    <module>neo4j-enterprise</module>
     <module>security</module>
   </modules>
 
