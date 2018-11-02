@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NullPipeDecorator, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NullPipeDecorator, ExpressionCursors, QueryState}
 import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.attribution.Id
@@ -39,18 +39,17 @@ case class simpleExpressionEvaluator(queryContext: QueryContext) extends Express
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
-    val emptyQueryState =
-      new QueryState(
-        query = queryContext,
-        resources = null,
-        params = VirtualValues.EMPTY_MAP,
-        decorator = NullPipeDecorator)
+    val cursors = new ExpressionCursors
+    val emptyQueryState = new QueryState(queryContext, null, VirtualValues.EMPTY_MAP, cursors)
 
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))
     }
     catch {
       case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
+    }
+    finally {
+      cursors.close()
     }
   }
 }

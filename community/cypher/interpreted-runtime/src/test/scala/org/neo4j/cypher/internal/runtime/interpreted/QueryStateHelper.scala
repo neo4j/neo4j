@@ -24,7 +24,7 @@ import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, NullPipeDecorator, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -46,10 +46,11 @@ object QueryStateHelper {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: MapValue = EMPTY_MAP,
+                queryCursors: ExpressionCursors = new ExpressionCursors,
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, decorator, initialContext = initialContext)
+    new QueryState(query, resources, params, queryCursors, decorator, initialContext = initialContext)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 

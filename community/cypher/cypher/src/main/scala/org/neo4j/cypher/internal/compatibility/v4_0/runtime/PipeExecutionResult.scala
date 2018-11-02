@@ -60,7 +60,9 @@ class PipeExecutionResult(val result: IteratorBasedResult,
 
   override def queryStatistics(): QueryStatistics = state.getStatistics
 
-  override def close(): Unit = {}
+  override def close(): Unit = {
+    state.close()
+  }
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
     def remove() { throw new UnsupportedOperationException("remove") }

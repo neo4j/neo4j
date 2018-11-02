@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, ExpressionCursors, QueryState}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
 import org.neo4j.cypher.result.RuntimeResult
@@ -75,7 +75,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
-    val state = new QueryState(ctx, ExternalCSVResource.empty, params)
+    val state = new QueryState(ctx, ExternalCSVResource.empty, params, new ExpressionCursors)
     val args = zippedArgCandidates.map {
       // an actual argument (or even a parameter that ResolvedCall puts there instead if there is no default value)
       case (Some(actualArg), _, _) => actualArg
@@ -87,7 +87,9 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
       case (_, ParameterExpression(name), _) => throw new InvalidArgumentException(s"Invalid procedure call. Parameter for $name not specified.")
     }
 
-    args.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
+    val evaluated = args.map(expr => ctx.asObject(expr.apply(ExecutionContext.empty, state)))
+    state.close()
+    evaluated
   }
 
   override def runtimeName: RuntimeName = ProcedureRuntimeName

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.eclipse.collections.api.set.primitive.LongSet
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
@@ -30,14 +29,19 @@ import org.opencypher.v9_0.util.ParameterNotFoundException
 
 import scala.collection.mutable
 
+class ExpressionCursors extends AutoCloseable{
+  override def close(): Unit = {}
+}
+
 class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,
                  val params: MapValue,
+                 val cursors: ExpressionCursors,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[ExecutionContext] = None,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
                  val lenientCreateRelationship: Boolean = false,
-                 val prePopulateResults: Boolean = false ) {
+                 val prePopulateResults: Boolean = false ) extends AutoCloseable {
 
   private var _pathValueBuilder: PathValueBuilder = _
   private var _exFactory: ExecutionContextFactory = _
@@ -64,11 +68,11 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, Some(initialContext),
+    new QueryState(query, resources, params, cursors, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
   /**
@@ -82,7 +86,7 @@ class QueryState(val query: QueryContext,
   def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory) = {
@@ -90,6 +94,10 @@ class QueryState(val query: QueryContext,
   }
 
   def executionContextFactory = _exFactory
+
+  override def close(): Unit = {
+    cursors.close()
+  }
 }
 
 object QueryState {

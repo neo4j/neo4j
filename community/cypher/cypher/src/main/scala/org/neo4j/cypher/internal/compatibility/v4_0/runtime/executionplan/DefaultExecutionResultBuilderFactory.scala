@@ -28,12 +28,11 @@ import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.CypherException
 
-import scala.collection.mutable
-
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  readOnly: Boolean,
                                                  columns: List[String],
                                                  logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
+
   abstract class BaseExecutionWorkflowBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = NullPipeDecorator
@@ -69,6 +68,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
     protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult
   }
+
 }
 
 case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
@@ -82,9 +82,11 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
 
   case class InterpretedExecutionWorkflowBuilder(queryContext: QueryContext) extends BaseExecutionWorkflowBuilder {
     override def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState = {
+      val cursors = new ExpressionCursors
       new QueryState(queryContext,
                      externalResource,
                      params,
+                     cursors,
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults)
@@ -94,4 +96,5 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
       IteratorBasedResult(results)
     }
   }
+
 }
