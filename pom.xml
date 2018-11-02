@@ -111,7 +111,6 @@
   <modules>
     <module>build-resources</module>
     <module>community</module>
-    <module>enterprise</module>
     <module>integrationtests</module>
     <module>stresstests</module>
     <module>tools</module>
