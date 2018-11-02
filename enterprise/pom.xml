@@ -27,10 +27,6 @@
     <license-text.header>headers/AGPL-3-header.txt</license-text.header>
   </properties>
 
-  <modules>
-    <module>kernel</module>
-  </modules>
-
   <profiles>
     <profile>
       <id>include-cypher</id>
