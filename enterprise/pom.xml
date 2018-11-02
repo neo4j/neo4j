@@ -28,7 +28,6 @@
   </properties>
 
   <modules>
-    <module>query-logging</module>
     <module>com</module>
     <module>cluster</module>
     <module>backup</module>
