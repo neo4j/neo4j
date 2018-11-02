@@ -35,6 +35,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
@@ -169,9 +170,12 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException
     {
-        // Not needed since uniqueness is verified automatically w/o cost for every update.
+        for ( NativeSchemaIndexAccessor<?,?> part : this )
+        {
+            part.verifyDeferredConstraints( propertyAccessor );
+        }
     }
 
     @Override
@@ -209,6 +213,13 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         {
             assertOpen();
             return new SpatialIndexPartReader<>( tree, layout, samplingConfig, descriptor, searchConfiguration );
+        }
+
+        @Override
+        public void verifyDeferredConstraints( PropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+        {
+            SpatialVerifyDeferredConstraint.verify( nodePropertyAccessor, layout, tree, descriptor );
+            super.verifyDeferredConstraints( nodePropertyAccessor );
         }
     }
 

@@ -19,6 +19,7 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,6 +46,7 @@ import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
@@ -62,7 +64,9 @@ import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -158,7 +162,15 @@ public class BatchInsertIndexProviderTest
         inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
         inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
         inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
-        inserter.shutdown();
+        try
+        {
+            inserter.shutdown();
+            fail( "Should have failed" );
+        }
+        catch ( RuntimeException e )
+        {
+            assertThat( e.getCause(), Matchers.instanceOf( IndexEntryConflictException.class ) );
+        }
 
         GraphDatabaseService db = graphDatabaseService( inserter.getStoreDir(), config );
         try ( Transaction tx = db.beginTx() )

@@ -30,6 +30,7 @@ import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.PropertyAccessor;
@@ -126,7 +127,7 @@ public abstract class NativeSchemaIndexAccessor<KEY extends NativeSchemaKey<KEY>
     }
 
     @Override
-    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor )
+    public void verifyDeferredConstraints( PropertyAccessor propertyAccessor ) throws IndexEntryConflictException
     {   // Not needed since uniqueness is verified automatically w/o cost for every update.
     }
 }

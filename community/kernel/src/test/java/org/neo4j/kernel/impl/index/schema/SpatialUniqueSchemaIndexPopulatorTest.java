@@ -55,4 +55,18 @@ public class SpatialUniqueSchemaIndexPopulatorTest extends NativeUniqueSchemaInd
         return new UniqueLayoutTestUtil<>(
                 new SpatialLayoutTestUtil( SchemaIndexDescriptorFactory.uniqueForLabel( 42, 666 ), settings.settingsFor( crs ), crs ) );
     }
+
+    @Override
+    public void addShouldThrowOnDuplicateValues()
+    {   // Spatial can not throw on duplicate values during population because it
+        // might throw for points that are in fact unique. Instead, uniqueness will
+        // be verified by ConstraintIndexCreator when population is finished.
+    }
+
+    @Override
+    public void updaterShouldThrowOnDuplicateValues()
+    {   // Spatial can not throw on duplicate values during population because it
+        // might throw for points that are in fact unique. Instead, uniqueness will
+        // be verified by ConstraintIndexCreator when population is finished.
+    }
 }
