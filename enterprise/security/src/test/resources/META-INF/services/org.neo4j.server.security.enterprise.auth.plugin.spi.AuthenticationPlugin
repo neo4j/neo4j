@@ -1,6 +1,0 @@
-org.neo4j.server.security.enterprise.auth.plugin.TestAuthenticationPlugin
-org.neo4j.server.security.enterprise.auth.plugin.TestCacheableAuthenticationPlugin
-org.neo4j.server.security.enterprise.auth.plugin.TestCustomCacheableAuthenticationPlugin
-org.neo4j.server.security.enterprise.auth.plugin.TestCombinedAuthPlugin
-org.neo4j.server.security.enterprise.auth.plugin.TestCustomParametersAuthenticationPlugin
-org.neo4j.server.security.enterprise.auth.plugin.TestCredentialsOnlyPlugin

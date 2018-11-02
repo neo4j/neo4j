@@ -30,7 +30,6 @@
   <modules>
     <module>com</module>
     <module>kernel</module>
-    <module>security</module>
   </modules>
 
   <profiles>
