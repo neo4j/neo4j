@@ -34,7 +34,6 @@
     <module>kernel</module>
     <module>causal-clustering</module>
     <module>neo4j-enterprise</module>
-    <module>server-enterprise</module>
     <module>security</module>
   </modules>
 
