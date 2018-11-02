@@ -72,7 +72,7 @@
             <type>test-jar</type>
         </dependency>
         <dependency>
-            <groupId>org.neo4j</groupId>
+            <groupId>com.neo4j</groupId>
             <artifactId>neo4j-com</artifactId>
             <version>${project.version}</version>
         </dependency>
