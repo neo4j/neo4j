@@ -28,7 +28,6 @@
   </properties>
 
   <modules>
-    <module>com</module>
     <module>kernel</module>
   </modules>
 
