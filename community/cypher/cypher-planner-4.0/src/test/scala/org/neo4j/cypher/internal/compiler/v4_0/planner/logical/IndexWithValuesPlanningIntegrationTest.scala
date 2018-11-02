@@ -730,6 +730,46 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
+  // EXISTENCE / NODE KEY CONSTRAINT
+
+  test("should plan scan with GetValue when existence constraint on projected property") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+      existenceOrNodeKeyConstraintOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop"
+
+    plan._2 should equal(
+      Projection(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map(cachedNodePropertyProj("n", "prop"))
+      )
+    )
+  }
+
+  test("should plan scan with DoNotGetValue when existence constraint but the index does not provide values") {
+    val plan = new given {
+      indexOn("Awesome", "prop")
+      existenceOrNodeKeyConstraintOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop"
+
+    plan._2 should equal(
+      Projection(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map(propertyProj("n", "prop"))
+      )
+    )
+  }
+
   // ENDS WITH scan
 
   test("should plan index ends with scan with GetValue when the property is projected") {

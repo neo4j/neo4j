@@ -116,6 +116,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.uniqueIndexes.filter(p => p._1 == label).map(p => newIndexDescriptor(p._1, p._2)).iterator
       }
 
+      override def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String] = {
+        config.constraints.filter(p => p._1 == labelName).map(p => p._2).iterator
+      }
+
       private def newIndexDescriptor(labelName: String, propertyKeys: Seq[String]) = {
         // Our fake index either can always or never return property values
         val canGetValue = if (config.indexesWithValues((labelName, propertyKeys))) CanGetValue else DoNotGetValue

@@ -55,6 +55,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   var indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
 
+  var constraints: Set[(String, String)] = Set.empty
+
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
   lazy val labelsById: Map[Int, String] = (indexes ++ uniqueIndexes).map(_._1).zipWithIndex.map(_.swap).toMap
@@ -78,6 +80,10 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
   def uniqueIndexOn(label: String, properties: String*): IndexModifier = {
     uniqueIndexes = uniqueIndexes + (label -> properties)
     IndexModifier(label, properties)
+  }
+
+  def existenceOrNodeKeyConstraintOn(label: String, property: String): Unit = {
+    constraints = constraints + (label -> property)
   }
 
   def procedure(signature: ProcedureSignature): Unit = {

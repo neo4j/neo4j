@@ -309,5 +309,22 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         Map("a.prop" -> prop("a", "prop")))
       )
     }
+
+    // Given that we could get provided order for this query (by either a type constraint
+    // or kernel support for ordering in point index), it should be possible to skip the sorting
+    // for this case. Right now this only works on integration test level and not in production.
+    test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan) in case of existence constraint") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        existenceOrNodeKeyConstraintOn("Awesome", "prop")
+      } getLogicalPlanFor s"MATCH (n:Awesome) RETURN n.prop ORDER BY n.prop $cypherToken"
+
+      plan._2 should equal(
+        Projection(
+          IndexSeek(
+            "n:Awesome(prop)", indexOrder = plannedOrder),
+          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+      )
+    }
   }
 }

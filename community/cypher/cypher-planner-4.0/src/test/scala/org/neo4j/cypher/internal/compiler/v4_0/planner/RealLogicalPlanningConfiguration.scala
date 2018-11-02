@@ -48,6 +48,7 @@ case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerC
   override def uniqueIndexes: Set[(String, Seq[String])] = Set.empty
   override def indexesWithValues: Set[(String, Seq[String])] = Set.empty
   override def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
+  override def constraints: Set[(String, String)] = Set.empty
   override def procedureSignatures: Set[ProcedureSignature] = Set.empty
   override def labelCardinality: Map[String, Cardinality] = Map.empty
   override def knownLabels: Set[String] = Set.empty
