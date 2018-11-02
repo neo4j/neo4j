@@ -44,9 +44,7 @@ case class simpleExpressionEvaluator(queryContext: QueryContext) extends Express
         query = queryContext,
         resources = null,
         params = VirtualValues.EMPTY_MAP,
-        decorator = NullPipeDecorator,
-        triadicState = mutable.Map.empty,
-        repeatableReads = mutable.Map.empty)
+        decorator = NullPipeDecorator)
 
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))

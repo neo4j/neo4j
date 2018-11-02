@@ -86,8 +86,6 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      externalResource,
                      params,
                      pipeDecorator,
-                     triadicState = mutable.Map.empty,
-                     repeatableReads = mutable.Map.empty,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults)
     }

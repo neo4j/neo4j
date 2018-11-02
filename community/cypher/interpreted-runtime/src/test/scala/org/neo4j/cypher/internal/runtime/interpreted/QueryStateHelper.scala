@@ -49,8 +49,7 @@ object QueryStateHelper {
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, decorator,
-      triadicState = mutable.Map.empty, repeatableReads = mutable.Map.empty, initialContext = initialContext)
+    new QueryState(query, resources, params, decorator, initialContext = initialContext)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 

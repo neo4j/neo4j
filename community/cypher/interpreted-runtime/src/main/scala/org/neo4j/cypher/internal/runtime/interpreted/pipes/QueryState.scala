@@ -35,8 +35,6 @@ class QueryState(val query: QueryContext,
                  val params: MapValue,
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[ExecutionContext] = None,
-                 val triadicState: mutable.Map[String, LongSet] = mutable.Map.empty,
-                 val repeatableReads: mutable.Map[Pipe, Seq[ExecutionContext]] = mutable.Map.empty,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
                  val lenientCreateRelationship: Boolean = false,
                  val prePopulateResults: Boolean = false ) {
@@ -66,12 +64,12 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, decorator, initialContext, triadicState,
-                   repeatableReads, cachedIn, lenientCreateRelationship, prePopulateResults)
+    new QueryState(query, resources, params, decorator, initialContext,
+                   cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, decorator, Some(initialContext), triadicState,
-                   repeatableReads, cachedIn, lenientCreateRelationship, prePopulateResults)
+    new QueryState(query, resources, params, decorator, Some(initialContext),
+                   cachedIn, lenientCreateRelationship, prePopulateResults)
 
   /**
     * When running on the RHS of an Apply, this method will fill an execution context with argument data
@@ -84,8 +82,8 @@ class QueryState(val query: QueryContext,
   def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, decorator, initialContext, triadicState,
-                   repeatableReads, cachedIn, lenientCreateRelationship, prePopulateResults)
+    new QueryState(query, resources, params, decorator, initialContext,
+                   cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory) = {
     _exFactory = exFactory
