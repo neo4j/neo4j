@@ -39,6 +39,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Stream;
 
+import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.io.pagecache.ByteArrayPageCursor;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
@@ -49,11 +50,14 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
+import org.neo4j.values.AnyValues;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateTimeValue;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.DurationValue;
 import org.neo4j.values.storable.LocalDateTimeValue;
 import org.neo4j.values.storable.LocalTimeValue;
+import org.neo4j.values.storable.PointArray;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.TimeValue;
@@ -198,7 +202,6 @@ class GenericKeyStateTest
     void compareToMustAlignWithValuesCompareTo( ValueGenerator valueGenerator )
     {
         // Given
-        random.reset();
         List<Value> values = new ArrayList<>();
         List<GenericKey> states = new ArrayList<>();
         for ( int i = 0; i < 10; i++ )
@@ -219,6 +222,65 @@ class GenericKeyStateTest
         {
             assertEquals( values.get( i ), states.get( i ).asValue(), "sort order was different" );
         }
+    }
+
+    @Test
+    void comparePointsMustOnlyReturnZeroForEqualPoints()
+    {
+        PointValue firstPoint = random.randomValues().nextPointValue();
+        PointValue equalPoint = Values.point( firstPoint );
+        CoordinateReferenceSystem crs = firstPoint.getCoordinateReferenceSystem();
+        SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs, false );
+        Long spaceFillingCurveValue = curve.derivedValueFor( firstPoint.coordinate() );
+        PointValue centerPoint = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
+
+        GenericKey firstKey = newKeyState();
+        firstKey.writeValue( firstPoint, NEUTRAL );
+        GenericKey equalKey = newKeyState();
+        equalKey.writeValue( equalPoint, NEUTRAL );
+        GenericKey centerKey = newKeyState();
+        centerKey.writeValue( centerPoint, NEUTRAL );
+        GenericKey noCoordsKey = newKeyState();
+        noCoordsKey.writeValue( equalPoint, NEUTRAL );
+        GeometryType.setNoCoordinates( noCoordsKey );
+
+        assertEquals( 0, firstKey.compareValueTo( equalKey ), "expected keys to be equal" );
+        assertEquals( firstPoint.compareTo( centerPoint ) != 0, firstKey.compareValueTo( centerKey ) != 0,
+                "expected keys to be equal if and only if source points are equal" );
+        assertEquals( 0, firstKey.compareValueTo( noCoordsKey ), "expected keys to be equal" );
+    }
+
+    @Test
+    void comparePointArraysMustOnlyReturnZeroForEqualArrays()
+    {
+        PointArray firstArray = random.randomValues().nextPointArray();
+        PointValue[] sourcePointValues = firstArray.asObjectCopy();
+        PointArray equalArray = Values.pointArray( sourcePointValues );
+        PointValue[] centerPointValues = new PointValue[sourcePointValues.length];
+        for ( int i = 0; i < sourcePointValues.length; i++ )
+        {
+            PointValue sourcePointValue = sourcePointValues[i];
+            CoordinateReferenceSystem crs = sourcePointValue.getCoordinateReferenceSystem();
+            SpaceFillingCurve curve = noSpecificIndexSettings.forCrs( crs, false );
+            Long spaceFillingCurveValue = curve.derivedValueFor( sourcePointValue.coordinate() );
+            centerPointValues[i] = Values.pointValue( crs, curve.centerPointFor( spaceFillingCurveValue ) );
+        }
+        PointArray centerArray = Values.pointArray( centerPointValues );
+
+        GenericKey firstKey = newKeyState();
+        firstKey.writeValue( firstArray, NEUTRAL );
+        GenericKey equalKey = newKeyState();
+        equalKey.writeValue( equalArray, NEUTRAL );
+        GenericKey centerKey = newKeyState();
+        centerKey.writeValue( centerArray, NEUTRAL );
+        GenericKey noCoordsKey = newKeyState();
+        noCoordsKey.writeValue( equalArray, NEUTRAL );
+        GeometryType.setNoCoordinates( noCoordsKey );
+
+        assertEquals( 0, firstKey.compareValueTo( equalKey ), "expected keys to be equal" );
+        assertEquals( firstArray.compareToSequence( centerArray, AnyValues.COMPARATOR ) != 0, firstKey.compareValueTo( centerKey ) != 0,
+                "expected keys to be equal if and only if source points are equal" );
+        assertEquals( 0, firstKey.compareValueTo( noCoordsKey ), "expected keys to be equal" );
     }
 
     // The reason this test doesn't test incomparable values is that it relies on ordering being same as that of the Values module.
@@ -538,7 +600,7 @@ class GenericKeyStateTest
         assertEquals( 0, leftState.compareValueTo( minimalSplitter ),
                 "left state not equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
         assertEquals( 0, rightState.compareValueTo( minimalSplitter ),
-                "right state equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
+                "right state not equal to minimal splitter, leftState=" + leftState + ", rightState=" + rightState + ", minimalSplitter=" + minimalSplitter );
     }
 
     private static Value nextValidValue( boolean includeIncomparable )
