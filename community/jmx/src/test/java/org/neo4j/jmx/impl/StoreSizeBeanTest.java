@@ -25,6 +25,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Clock;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -87,6 +88,7 @@ public class StoreSizeBeanTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
     private File storeDirAbsolute;
+    private ManagementData managementData;
 
     public StoreSizeBeanTest() throws IOException
     {
@@ -118,8 +120,12 @@ public class StoreSizeBeanTest
 
         // Create bean
         KernelData kernelData = new DefaultKernelData( fs, mock( PageCache.class ), storeDir, Config.defaults(), db );
-        ManagementData data = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
-        storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
+        managementData = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
+        storeSizeBean = StoreSizeBean.createBean( managementData, false, 0, mock( Clock.class ) );
+
+        when( indexProvider.directoryStructure() ).thenReturn( mock( IndexDirectoryStructure.class ) );
+        when( indexProvider2.directoryStructure() ).thenReturn( mock( IndexDirectoryStructure.class ) );
+        when( labelScanStore.getLabelScanStoreFile() ).thenReturn( new File( storeDir, "labelScanStore" ) );
     }
 
     private IndexProvider mockedIndexProvider( String name )
@@ -131,7 +137,7 @@ public class StoreSizeBeanTest
 
     private void createFakeStoreDirectory() throws IOException
     {
-        Map<String,Integer> dummyStore = new HashMap<>();
+        Map<String, Integer> dummyStore = new HashMap<>();
         dummyStore.put( NODE_STORE.fileName( STORE ), 1 );
         dummyStore.put( NODE_STORE.fileName( ID ), 2 );
         dummyStore.put( NODE_LABEL_STORE.fileName( STORE ), 3 );
@@ -164,7 +170,7 @@ public class StoreSizeBeanTest
         // COUNTS_STORE_RIGHT is created in the test
 
         storeDirAbsolute = storeDir.getCanonicalFile().getAbsoluteFile();
-        for ( Map.Entry<String,Integer> dummyFile : dummyStore.entrySet() )
+        for ( Map.Entry<String, Integer> dummyFile : dummyStore.entrySet() )
         {
             createFileOfSize( new File( storeDirAbsolute, dummyFile.getKey() ), dummyFile.getValue() );
         }
@@ -174,7 +180,7 @@ public class StoreSizeBeanTest
     public void verifyGroupingOfNodeRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected(1, 4 ), storeSizeBean.getNodeStoreSize() );
+        assertEquals( getExpected( 1, 4 ), storeSizeBean.getNodeStoreSize() );
     }
 
     @Test
@@ -188,14 +194,14 @@ public class StoreSizeBeanTest
     public void verifyGroupingOfStringRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected(11, 12 ), storeSizeBean.getStringStoreSize() );
+        assertEquals( getExpected( 11, 12 ), storeSizeBean.getStringStoreSize() );
     }
 
     @Test
     public void verifyGroupingOfArrayRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected(13, 14 ), storeSizeBean.getArrayStoreSize() );
+        assertEquals( getExpected( 13, 14 ), storeSizeBean.getArrayStoreSize() );
     }
 
     @Test
@@ -216,9 +222,9 @@ public class StoreSizeBeanTest
     public void verifyGroupingOfCountStoreRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
+        assertEquals( getExpected( 29, 29 ), storeSizeBean.getCountStoreSize() );
         createFileOfSize( new File( storeDirAbsolute, COUNTS_STORE_RIGHT.fileName( STORE ) ), 30 );
-        assertEquals( getExpected( 29, 30), storeSizeBean.getCountStoreSize() );
+        assertEquals( getExpected( 29, 30 ), storeSizeBean.getCountStoreSize() );
     }
 
     @Test
@@ -278,6 +284,28 @@ public class StoreSizeBeanTest
 
         // Count all files
         assertEquals( 10, storeSizeBean.getIndexStoreSize() );
+    }
+
+    @Test
+    public void shouldCacheValues() throws Throwable
+    {
+        final Clock clock = mock( Clock.class );
+        storeSizeBean = StoreSizeBean.createBean( managementData, false, 100, clock );
+        when( clock.millis() ).thenReturn( 100L );
+
+        createFileOfSize( logFiles.getLogFileForVersion( 0 ), 1 );
+        createFileOfSize( logFiles.getLogFileForVersion( 1 ), 2 );
+
+        assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
+
+        createFileOfSize( logFiles.getLogFileForVersion( 2 ), 3 );
+        createFileOfSize( logFiles.getLogFileForVersion( 3 ), 4 );
+
+        assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
+
+        when( clock.millis() ).thenReturn( 200L );
+
+        assertEquals( 10L, storeSizeBean.getTransactionLogsSize() );
     }
 
     private void createFileOfSize( File file, int size ) throws IOException

@@ -23,7 +23,9 @@ import org.apache.commons.lang3.mutable.MutableLong;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -38,7 +40,10 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
+import org.neo4j.util.VisibleForTesting;
 
+import static java.util.Objects.requireNonNull;
+import static org.neo4j.jmx.impl.ThrottlingBeanSnapshotProxy.newThrottlingBeanSnapshotProxy;
 import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_LEFT;
 import static org.neo4j.kernel.impl.store.StoreFile.COUNTS_STORE_RIGHT;
 import static org.neo4j.kernel.impl.store.StoreFile.LABEL_TOKEN_NAMES_STORE;
@@ -59,6 +64,76 @@ import static org.neo4j.kernel.impl.store.StoreFile.SCHEMA_STORE;
 @Service.Implementation( ManagementBeanProvider.class )
 public final class StoreSizeBean extends ManagementBeanProvider
 {
+    private static final long UPDATE_INTERVAL = 60000;
+    private static final StoreSize NO_STORE_SIZE = new StoreSize()
+    {
+        @Override
+        public long getTransactionLogsSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getNodeStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getRelationshipStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getPropertyStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getStringStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getArrayStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getLabelStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getCountStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getSchemaStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getIndexStoreSize()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getTotalStoreSize()
+        {
+            return 0;
+        }
+    };
+
     @SuppressWarnings( "WeakerAccess" ) // Bean needs public constructor
     public StoreSizeBean()
     {
@@ -68,67 +143,159 @@ public final class StoreSizeBean extends ManagementBeanProvider
     @Override
     protected Neo4jMBean createMBean( ManagementData management )
     {
-        return new StoreSizeImpl( management, false );
+        return createBean( management, false, UPDATE_INTERVAL, Clock.systemUTC() );
     }
 
     @Override
     protected Neo4jMBean createMXBean( ManagementData management )
     {
-        return new StoreSizeImpl( management, true );
+        return createBean( management, true, UPDATE_INTERVAL, Clock.systemUTC() );
     }
 
-    static class StoreSizeImpl extends Neo4jMBean implements StoreSize
+    @VisibleForTesting
+    static StoreSizeMBean createBean( ManagementData management, boolean isMxBean, long updateInterval, Clock clock )
+    {
+        final StoreSizeMBean bean = new StoreSizeMBean( management, isMxBean, updateInterval, clock );
+        final DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
+        dataSourceManager.addListener( bean );
+        return bean;
+    }
+
+    static class StoreSizeMBean extends Neo4jMBean implements StoreSize, DataSourceManager.Listener
     {
         private final FileSystemAbstraction fs;
         private final File storePath;
+        private final long updateInterval;
+        private final Clock clock;
 
-        private LogFiles logFiles;
-        private ExplicitIndexProviderLookup explicitIndexProviderLookup;
-        private IndexProviderMap indexProviderMap;
-        private LabelScanStore labelScanStore;
+        private volatile StoreSize delegate = NO_STORE_SIZE;
 
-        StoreSizeImpl( ManagementData management, boolean isMXBean )
+        StoreSizeMBean( ManagementData management, boolean isMXBean, long updateInterval, Clock clock )
         {
             super( management, isMXBean );
+            this.fs = management.getKernelData().getFilesystemAbstraction();
+            this.storePath = resolveStorePath( management );
+            this.updateInterval = updateInterval;
+            this.clock = clock;
+        }
 
-            fs = management.getKernelData().getFilesystemAbstraction();
-            storePath = resolveStorePath( management );
+        @Override
+        public void registered( NeoStoreDataSource ds )
+        {
+            final StoreSizeProvider dataProvider = new StoreSizeProvider( fs, storePath, ds.getDependencyResolver() );
+            this.delegate = newThrottlingBeanSnapshotProxy( StoreSize.class, dataProvider, updateInterval, clock );
+        }
 
-            DataSourceManager dataSourceManager = management.resolveDependency( DataSourceManager.class );
-            dataSourceManager.addListener( new DataSourceManager.Listener()
-            {
-                @Override
-                public void registered( NeoStoreDataSource ds )
-                {
-                    logFiles = resolveDependency( ds, LogFiles.class );
-                    explicitIndexProviderLookup = resolveDependency( ds, ExplicitIndexProviderLookup.class );
-                    indexProviderMap = resolveDependency( ds, IndexProviderMap.class );
-                    labelScanStore = resolveDependency( ds, LabelScanStore.class );
-                }
-
-                private <T> T resolveDependency( NeoStoreDataSource ds, Class<T> clazz )
-                {
-                    return ds.getDependencyResolver().resolveDependency( clazz );
-                }
-
-                @Override
-                public void unregistered( NeoStoreDataSource ds )
-                {
-                    logFiles = null;
-                    explicitIndexProviderLookup = null;
-                    indexProviderMap = null;
-                    labelScanStore = null;
-                }
-            } );
+        @Override
+        public void unregistered( NeoStoreDataSource ds )
+        {
+            this.delegate = NO_STORE_SIZE;
         }
 
         @Override
         public long getTransactionLogsSize()
         {
-            TotalSizeVersionVisitor logVersionVisitor = new TotalSizeVersionVisitor( fs );
+            return delegate.getTransactionLogsSize();
+        }
 
+        @Override
+        public long getNodeStoreSize()
+        {
+            return delegate.getNodeStoreSize();
+        }
+
+        @Override
+        public long getRelationshipStoreSize()
+        {
+            return delegate.getRelationshipStoreSize();
+        }
+
+        @Override
+        public long getPropertyStoreSize()
+        {
+            return delegate.getPropertyStoreSize();
+        }
+
+        @Override
+        public long getStringStoreSize()
+        {
+            return delegate.getStringStoreSize();
+        }
+
+        @Override
+        public long getArrayStoreSize()
+        {
+            return delegate.getArrayStoreSize();
+        }
+
+        @Override
+        public long getLabelStoreSize()
+        {
+            return delegate.getLabelStoreSize();
+        }
+
+        @Override
+        public long getCountStoreSize()
+        {
+            return delegate.getCountStoreSize();
+        }
+
+        @Override
+        public long getSchemaStoreSize()
+        {
+            return delegate.getSchemaStoreSize();
+        }
+
+        @Override
+        public long getIndexStoreSize()
+        {
+            return delegate.getIndexStoreSize();
+        }
+
+        @Override
+        public long getTotalStoreSize()
+        {
+            return delegate.getTotalStoreSize();
+        }
+
+        private static File resolveStorePath( ManagementData management )
+        {
+            File storeDir = management.getKernelData().getStoreDir();
+            try
+            {
+                return storeDir.getCanonicalFile().getAbsoluteFile();
+            }
+            catch ( IOException e )
+            {
+                return storeDir.getAbsoluteFile();
+            }
+        }
+    }
+
+    private static class StoreSizeProvider implements StoreSize
+    {
+        private final FileSystemAbstraction fs;
+        private final File storePath;
+        private final LogFiles logFiles;
+        private final ExplicitIndexProviderLookup explicitIndexProviderLookup;
+        private final IndexProviderMap indexProviderMap;
+        private final LabelScanStore labelScanStore;
+
+        private StoreSizeProvider( FileSystemAbstraction fs, File storePath, DependencyResolver deps )
+        {
+            this.fs = requireNonNull( fs );
+            this.storePath = requireNonNull( storePath );
+            this.logFiles = deps.resolveDependency( LogFiles.class );
+            this.explicitIndexProviderLookup = deps.resolveDependency( ExplicitIndexProviderLookup.class );
+            this.indexProviderMap = deps.resolveDependency( IndexProviderMap.class );
+            this.labelScanStore = deps.resolveDependency( LabelScanStore.class );
+        }
+
+        @Override
+        public long getTransactionLogsSize()
+        {
+            final TotalSizeVersionVisitor logVersionVisitor = new TotalSizeVersionVisitor();
             logFiles.accept( logVersionVisitor );
-
             return logVersionVisitor.getTotalSize();
         }
 
@@ -222,15 +389,9 @@ public final class StoreSizeBean extends ManagementBeanProvider
             return storePath == null ? 0L : FileUtils.size( fs, new File( storePath, name ) );
         }
 
-        private static class TotalSizeVersionVisitor implements LogVersionVisitor
+        private class TotalSizeVersionVisitor implements LogVersionVisitor
         {
-            private final FileSystemAbstraction fs;
             private long totalSize;
-
-            TotalSizeVersionVisitor( FileSystemAbstraction fs )
-            {
-                this.fs = fs;
-            }
 
             long getTotalSize()
             {
@@ -264,19 +425,6 @@ public final class StoreSizeBean extends ManagementBeanProvider
                 }
             }
             return size;
-        }
-
-        private File resolveStorePath( ManagementData management )
-        {
-            File storeDir = management.getKernelData().getStoreDir();
-            try
-            {
-                return storeDir.getCanonicalFile().getAbsoluteFile();
-            }
-            catch ( IOException e )
-            {
-                return storeDir.getAbsoluteFile();
-            }
         }
     }
 }
