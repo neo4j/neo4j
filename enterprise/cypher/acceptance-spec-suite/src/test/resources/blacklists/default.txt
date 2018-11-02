@@ -1,4 +1,0 @@
-//if this file is not empty it means we have failed
-
-// Different error type in Neo4j
-Feature "ProcedureCallAcceptance": Scenario "Standalone call to procedure should fail if implicit argument is missing"
