@@ -125,17 +125,15 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def getOrCreateRelTypeId(relTypeName: String): Int =
     transactionalContext.kernelTransaction.tokenWrite().relationshipTypeGetOrCreateForName(relTypeName)
 
-  override def getLabelsForNode(node: Long): ListValue = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) {
+  override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue = {
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) {
         if (nodeOps.isDeletedInThisTx(node))
           throw new EntityNotFoundException(s"Node with id $node has been deleted in this transaction")
         else
           VirtualValues.EMPTY_LIST
       }
-      val labelSet = cursor.labels()
+      val labelSet = nodeCursor.labels()
       val labelArray = new Array[TextValue](labelSet.numberOfLabels())
       var i = 0
       while (i < labelSet.numberOfLabels()) {
@@ -143,9 +141,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         i += 1
       }
       VirtualValues.list(labelArray: _*)
-    } finally {
-      cursor.close()
-    }
   }
 
   override def isLabelSetOnNode(label: Int, node: Long): Boolean = {

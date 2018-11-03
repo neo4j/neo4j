@@ -24,13 +24,11 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NullPipeDecorator, ExpressionCursors, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExpressionCursors, QueryState}
 import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
-
-import scala.collection.mutable
 
 case class simpleExpressionEvaluator(queryContext: QueryContext) extends ExpressionEvaluator {
 
@@ -39,7 +37,7 @@ case class simpleExpressionEvaluator(queryContext: QueryContext) extends Express
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
-    val cursors = new ExpressionCursors
+    val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
     val emptyQueryState = new QueryState(queryContext, null, VirtualValues.EMPTY_MAP, cursors)
 
     try {

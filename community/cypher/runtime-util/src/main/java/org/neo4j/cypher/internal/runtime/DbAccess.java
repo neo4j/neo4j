@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime;
 
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -68,7 +69,7 @@ public interface DbAccess
 
     NodeValue relationshipGetEndNode( RelationshipValue relationship );
 
-    ListValue getLabelsForNode( long id );
+    ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
 
     boolean isLabelSetOnNode( int label, long id );
 

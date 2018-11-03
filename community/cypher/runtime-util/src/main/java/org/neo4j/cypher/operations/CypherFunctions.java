@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -755,12 +756,12 @@ public final class CypherFunctions
         }
     }
 
-    public static ListValue labels( AnyValue item, DbAccess access )
+    public static ListValue labels( AnyValue item, DbAccess access, NodeCursor nodeCursor )
     {
         assert item != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( item instanceof NodeValue )
         {
-            return access.getLabelsForNode( ((NodeValue) item).id() );
+            return access.getLabelsForNode( ((NodeValue) item).id(), nodeCursor );
         }
         else
         {

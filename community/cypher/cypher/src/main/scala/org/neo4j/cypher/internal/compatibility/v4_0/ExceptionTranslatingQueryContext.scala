@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeCursor, NodeValueIndexCursor}
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -56,8 +56,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def createNodeId(labels: Array[Int]): Long =
     translateException(inner.createNodeId(labels))
 
-  override def getLabelsForNode(node: Long): ListValue =
-    translateException(inner.getLabelsForNode(node))
+  override def getLabelsForNode(node: Long, nodeCursor: NodeCursor): ListValue =
+    translateException(inner.getLabelsForNode(node, nodeCursor))
 
   override def getLabelName(id: Int): String =
     translateException(inner.getLabelName(id))

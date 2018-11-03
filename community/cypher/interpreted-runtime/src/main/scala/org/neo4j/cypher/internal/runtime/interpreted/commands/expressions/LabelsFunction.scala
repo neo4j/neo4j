@@ -27,7 +27,7 @@ import org.neo4j.values.AnyValue
 case class LabelsFunction(nodeExpr: Expression) extends NullInNullOutExpression(nodeExpr) {
 
   override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue =
-    CypherFunctions.labels(value, state.query)
+    CypherFunctions.labels(value, state.query, state.cursors.nodeCursor)
 
   override def rewrite(f: (Expression) => Expression) = f(LabelsFunction(nodeExpr.rewrite(f)))
 

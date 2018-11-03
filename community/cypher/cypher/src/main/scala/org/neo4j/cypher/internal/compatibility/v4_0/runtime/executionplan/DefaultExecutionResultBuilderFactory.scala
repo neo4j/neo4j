@@ -81,8 +81,10 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
   override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder(queryContext: QueryContext)
 
   case class InterpretedExecutionWorkflowBuilder(queryContext: QueryContext) extends BaseExecutionWorkflowBuilder {
+
     override def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState = {
-      val cursors = new ExpressionCursors
+      val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
+
       new QueryState(queryContext,
                      externalResource,
                      params,
