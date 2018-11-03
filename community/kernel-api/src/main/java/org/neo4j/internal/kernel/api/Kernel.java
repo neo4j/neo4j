@@ -28,9 +28,29 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
  */
 public interface Kernel
 {
+    /**
+     * Begin new transaction.
+     *
+     * @param type type of transaction (implicit/explicit)
+     * @param loginContext the {@link LoginContext} of the user which is beginning this transaction
+     * @param clientInfo {@link ClientConnectionInfo} of the user which is beginning this transaction
+     * @return the transaction
+     */
     <T extends Transaction> T beginTransaction( Transaction.Type type, LoginContext loginContext, ClientConnectionInfo clientInfo )
             throws TransactionFailureException;
 
+    /**
+     * Begin new transaction.
+     *
+     * @param type type of transaction (implicit/explicit)
+     * @param loginContext the {@link LoginContext} of the user which is beginning this transaction
+     * @return the transaction
+     */
     <T extends Transaction> T beginTransaction( Transaction.Type type, LoginContext loginContext )
             throws TransactionFailureException;
+
+    /**
+     * Cursor factory which produces cursors that are not bound to any particular transaction.
+     */
+    CursorFactory cursors();
 }

@@ -86,7 +86,7 @@ import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
-import org.neo4j.kernel.impl.newapi.DefaultCursors;
+import org.neo4j.kernel.impl.newapi.DefaultPooledCursors;
 import org.neo4j.kernel.impl.newapi.IndexTxStateUpdater;
 import org.neo4j.kernel.impl.newapi.KernelToken;
 import org.neo4j.kernel.impl.newapi.Operations;
@@ -231,7 +231,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
-        DefaultCursors cursors = new DefaultCursors( storageReader );
+        DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         AllStoreHolder allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, explicitIndexStore,
                         procedures, schemaState, dataSourceDependencies );

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -31,10 +32,12 @@ import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.newapi.DefaultThreadSafeCursors;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.StorageReader;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -60,10 +63,13 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
     private final Config config;
+    private final StorageReader storageReader;
+    private final DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
-    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health, TransactionMonitor transactionMonitor,
-            Procedures procedures, Config config )
+    public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
+                       TransactionMonitor transactionMonitor,
+                       Procedures procedures, Config config, StorageReader storageReader )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
@@ -71,6 +77,9 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
+        // question for kernel team: does this storage reader need to be closed?
+        this.storageReader = storageReader;
+        this.cursors = new DefaultThreadSafeCursors( storageReader );
     }
 
     @Override
@@ -138,5 +147,11 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
             throw new IllegalStateException( "kernel is not running, so it is not possible to stop it" );
         }
         isRunning = false;
+    }
+
+    @Override
+    public CursorFactory cursors()
+    {
+        return cursors;
     }
 }

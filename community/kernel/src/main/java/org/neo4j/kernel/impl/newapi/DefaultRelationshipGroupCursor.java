@@ -39,14 +39,14 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
 {
     private Read read;
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultRelationshipGroupCursor> pool;
 
     private StorageRelationshipGroupCursor storeCursor;
     private boolean hasCheckedTxState;
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
 
-    DefaultRelationshipGroupCursor( DefaultCursors pool, StorageRelationshipGroupCursor storeCursor )
+    DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;

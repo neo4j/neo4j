@@ -36,10 +36,10 @@ class DefaultRelationshipExplicitIndexCursor extends IndexCursor<IndexProgressor
     private float score;
     private final DefaultRelationshipScanCursor scanCursor;
 
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultRelationshipExplicitIndexCursor> pool;
 
     DefaultRelationshipExplicitIndexCursor( DefaultRelationshipScanCursor scanCursor,
-            DefaultCursors pool )
+            CursorPool<DefaultRelationshipExplicitIndexCursor> pool )
     {
         this.scanCursor = scanCursor;
         this.pool = pool;

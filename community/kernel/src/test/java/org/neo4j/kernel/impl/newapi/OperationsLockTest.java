@@ -118,7 +118,7 @@ public class OperationsLockTest
         when( transaction.txState() ).thenReturn( txState );
         when( transaction.securityContext() ).thenReturn( SecurityContext.AUTH_DISABLED );
 
-        DefaultCursors cursors = mock( DefaultCursors.class );
+        DefaultPooledCursors cursors = mock( DefaultPooledCursors.class );
         nodeCursor = mock( DefaultNodeCursor.class );
         propertyCursor = mock( DefaultPropertyCursor.class );
         relationshipCursor = mock( DefaultRelationshipScanCursor.class );

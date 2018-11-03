@@ -33,9 +33,9 @@ class DefaultNodeExplicitIndexCursor extends IndexCursor<IndexProgressor>
     private long node;
     private float score;
 
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultNodeExplicitIndexCursor> pool;
 
-    DefaultNodeExplicitIndexCursor( DefaultCursors pool )
+    DefaultNodeExplicitIndexCursor( CursorPool<DefaultNodeExplicitIndexCursor> pool )
     {
         this.pool = pool;
         node = NO_ID;

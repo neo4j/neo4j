@@ -33,10 +33,12 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
     private int type;
     private long single;
     private LongIterator addedRelationships;
+    private CursorPool<DefaultRelationshipScanCursor> pool;
 
-    DefaultRelationshipScanCursor( DefaultCursors pool, StorageRelationshipScanCursor storeCursor )
+    DefaultRelationshipScanCursor( CursorPool<DefaultRelationshipScanCursor> pool, StorageRelationshipScanCursor storeCursor )
     {
-        super( pool, storeCursor );
+        super( storeCursor );
+        this.pool = pool;
     }
 
     void scan( int type, Read read )

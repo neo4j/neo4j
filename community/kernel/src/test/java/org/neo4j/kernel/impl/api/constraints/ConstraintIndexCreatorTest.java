@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -362,6 +363,12 @@ public class ConstraintIndexCreatorTest
         public Transaction beginTransaction( Transaction.Type type, LoginContext loginContext ) throws TransactionFailureException
         {
             return remember( createTransaction() );
+        }
+
+        @Override
+        public CursorFactory cursors()
+        {
+            return null;
         }
     }
 

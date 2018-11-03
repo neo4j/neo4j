@@ -43,9 +43,9 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
     private LongIterator added;
     private LongSet removed;
 
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultNodeLabelIndexCursor> pool;
 
-    DefaultNodeLabelIndexCursor( DefaultCursors pool )
+    DefaultNodeLabelIndexCursor( CursorPool<DefaultNodeLabelIndexCursor> pool )
     {
         this.pool = pool;
         node = NO_ID;

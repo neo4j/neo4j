@@ -28,14 +28,12 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
 {
     private boolean hasChanges;
     private boolean checkHasChanges;
-    final DefaultCursors pool;
     Read read;
 
     final STORECURSOR storeCursor;
 
-    DefaultRelationshipCursor( DefaultCursors pool, STORECURSOR storeCursor )
+    DefaultRelationshipCursor( STORECURSOR storeCursor )
     {
-        this.pool = pool;
         this.storeCursor = storeCursor;
     }
 

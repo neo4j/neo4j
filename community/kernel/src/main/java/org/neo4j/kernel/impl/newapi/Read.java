@@ -72,10 +72,10 @@ abstract class Read implements TxStateHolder,
         AssertOpen,
         LockingNodeUniqueIndexSeek.UniqueNodeIndexSeeker<DefaultNodeValueIndexCursor>
 {
-    private final DefaultCursors cursors;
+    private final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
 
-    Read( DefaultCursors cursors, KernelTransactionImplementation ktx )
+    Read( DefaultPooledCursors cursors, KernelTransactionImplementation ktx )
     {
         this.cursors = cursors;
         this.ktx = ktx;

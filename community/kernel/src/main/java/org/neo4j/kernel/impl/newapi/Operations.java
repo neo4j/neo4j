@@ -125,7 +125,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private final StorageReader statement;
     private final AutoIndexing autoIndexing;
     private final IndexTxStateUpdater updater;
-    private final DefaultCursors cursors;
+    private final DefaultPooledCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
     private final ConstraintSemantics constraintSemantics;
     private final IndexingProvidersService indexProviders;
@@ -135,7 +135,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private DefaultRelationshipScanCursor relationshipCursor;
 
     public Operations( AllStoreHolder allStoreHolder, IndexTxStateUpdater updater, StorageReader statement, KernelTransactionImplementation ktx,
-            KernelToken token, DefaultCursors cursors, AutoIndexing autoIndexing, ConstraintIndexCreator constraintIndexCreator,
+            KernelToken token, DefaultPooledCursors cursors, AutoIndexing autoIndexing, ConstraintIndexCreator constraintIndexCreator,
             ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config )
     {
         this.token = token;

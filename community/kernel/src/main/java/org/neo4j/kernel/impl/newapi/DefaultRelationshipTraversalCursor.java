@@ -119,10 +119,12 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     private boolean filterStore;
     private int filterType = NO_ID;
     private LongIterator addedRelationships;
+    private final CursorPool<DefaultRelationshipTraversalCursor> pool;
 
-    DefaultRelationshipTraversalCursor( DefaultCursors pool, StorageRelationshipTraversalCursor storeCursor )
+    DefaultRelationshipTraversalCursor( CursorPool<DefaultRelationshipTraversalCursor> pool, StorageRelationshipTraversalCursor storeCursor )
     {
-        super( pool, storeCursor );
+        super( storeCursor );
+        this.pool = pool;
     }
 
     void init( long nodeReference, long reference, Read read )

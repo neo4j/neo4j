@@ -32,7 +32,10 @@ import org.neo4j.storageengine.api.StorageReader;
 import static java.lang.String.format;
 import static org.neo4j.util.FeatureToggles.flag;
 
-public class DefaultCursors implements CursorFactory
+/**
+ * Cursor factory which pools 1 cursor of each kind. Not thread-safe at all.
+ */
+public class DefaultPooledCursors implements CursorFactory
 {
     private final StorageReader storageReader;
     private DefaultNodeCursor nodeCursor;
@@ -45,10 +48,10 @@ public class DefaultCursors implements CursorFactory
     private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
     private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
-    private static final boolean DEBUG_CLOSING = flag( DefaultCursors.class, "trackCursors", false );
+    private static final boolean DEBUG_CLOSING = flag( DefaultPooledCursors.class, "trackCursors", false );
     private List<CloseableStacktrace> closeables = new ArrayList<>();
 
-    public DefaultCursors( StorageReader storageReader )
+    public DefaultPooledCursors( StorageReader storageReader )
     {
         this.storageReader = storageReader;
     }
@@ -58,7 +61,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeCursor == null )
         {
-            return trace( new DefaultNodeCursor( this, storageReader.allocateNodeCursor() ) );
+            return trace( new DefaultNodeCursor( this::accept, storageReader.allocateNodeCursor() ) );
         }
 
         try
@@ -85,7 +88,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipScanCursor == null )
         {
-            return trace( new DefaultRelationshipScanCursor( this, storageReader.allocateRelationshipScanCursor() ) );
+            return trace( new DefaultRelationshipScanCursor( this::accept, storageReader.allocateRelationshipScanCursor() ) );
         }
 
         try
@@ -112,7 +115,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipTraversalCursor == null )
         {
-            return trace( new DefaultRelationshipTraversalCursor( this, storageReader.allocateRelationshipTraversalCursor() ) );
+            return trace( new DefaultRelationshipTraversalCursor( this::accept, storageReader.allocateRelationshipTraversalCursor() ) );
         }
 
         try
@@ -139,7 +142,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( propertyCursor == null )
         {
-            return trace( new DefaultPropertyCursor( this, storageReader.allocatePropertyCursor() ) );
+            return trace( new DefaultPropertyCursor( this::accept, storageReader.allocatePropertyCursor() ) );
         }
 
         try
@@ -166,7 +169,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( relationshipGroupCursor == null )
         {
-            return trace( new DefaultRelationshipGroupCursor( this, storageReader.allocateRelationshipGroupCursor() ) );
+            return trace( new DefaultRelationshipGroupCursor( this::accept, storageReader.allocateRelationshipGroupCursor() ) );
         }
 
         try
@@ -193,7 +196,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeValueIndexCursor == null )
         {
-            return trace( new DefaultNodeValueIndexCursor( this ) );
+            return trace( new DefaultNodeValueIndexCursor( this::accept ) );
         }
 
         try
@@ -220,7 +223,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeLabelIndexCursor == null )
         {
-            return trace( new DefaultNodeLabelIndexCursor( this ) );
+            return trace( new DefaultNodeLabelIndexCursor( this::accept ) );
         }
 
         try
@@ -247,7 +250,7 @@ public class DefaultCursors implements CursorFactory
     {
         if ( nodeExplicitIndexCursor == null )
         {
-            return trace( new DefaultNodeExplicitIndexCursor( this ) );
+            return trace( new DefaultNodeExplicitIndexCursor( this::accept ) );
         }
 
         try
@@ -275,7 +278,7 @@ public class DefaultCursors implements CursorFactory
         if ( relationshipExplicitIndexCursor == null )
         {
             return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null,
-                    storageReader.allocateRelationshipScanCursor() ), this ) );
+                    storageReader.allocateRelationshipScanCursor() ), this::accept ) );
         }
 
         try

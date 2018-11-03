@@ -44,9 +44,9 @@ class DefaultNodeCursor implements NodeCursor
     private StorageNodeCursor storeCursor;
     private long single;
 
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultNodeCursor> pool;
 
-    DefaultNodeCursor( DefaultCursors pool, StorageNodeCursor storeCursor )
+    DefaultNodeCursor( CursorPool<DefaultNodeCursor> pool, StorageNodeCursor storeCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;

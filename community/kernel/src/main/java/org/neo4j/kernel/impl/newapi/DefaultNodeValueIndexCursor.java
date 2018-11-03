@@ -67,10 +67,10 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
     private LongSet removed = LongSets.immutable.empty();
     private boolean needsValues;
     private IndexOrder indexOrder;
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultNodeValueIndexCursor> pool;
     private SortedMergeJoin sortedMergeJoin = new SortedMergeJoin();
 
-    DefaultNodeValueIndexCursor( DefaultCursors pool )
+    DefaultNodeValueIndexCursor( CursorPool<DefaultNodeValueIndexCursor> pool )
     {
         this.pool = pool;
         node = NO_ID;

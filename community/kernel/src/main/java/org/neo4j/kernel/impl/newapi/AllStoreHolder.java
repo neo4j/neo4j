@@ -100,8 +100,13 @@ public class AllStoreHolder extends Read
     private final SchemaState schemaState;
     private final Dependencies dataSourceDependencies;
 
-    public AllStoreHolder( StorageReader storageReader, KernelTransactionImplementation ktx, DefaultCursors cursors, ExplicitIndexStore explicitIndexStore,
-            Procedures procedures, SchemaState schemaState, Dependencies dataSourceDependencies )
+    public AllStoreHolder( StorageReader storageReader,
+                           KernelTransactionImplementation ktx,
+                           DefaultPooledCursors cursors,
+                           ExplicitIndexStore explicitIndexStore,
+                           Procedures procedures,
+                           SchemaState schemaState,
+                           Dependencies dataSourceDependencies )
     {
         super( cursors, ktx );
         this.storageReader = storageReader;

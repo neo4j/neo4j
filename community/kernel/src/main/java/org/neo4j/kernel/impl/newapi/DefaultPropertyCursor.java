@@ -41,9 +41,9 @@ public class DefaultPropertyCursor implements PropertyCursor
     private Iterator<StorageProperty> txStateChangedProperties;
     private StorageProperty txStateValue;
     private AssertOpen assertOpen;
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultPropertyCursor> pool;
 
-    DefaultPropertyCursor( DefaultCursors pool, StoragePropertyCursor storeCursor )
+    DefaultPropertyCursor( CursorPool<DefaultPropertyCursor> pool, StoragePropertyCursor storeCursor )
     {
         this.pool = pool;
         this.storeCursor = storeCursor;

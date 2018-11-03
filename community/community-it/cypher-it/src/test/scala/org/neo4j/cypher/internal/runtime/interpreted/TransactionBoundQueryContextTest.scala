@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.kernel.impl.api.{ClockContext, KernelStatement, KernelTransactionImplementation, StatementOperationParts}
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
-import org.neo4j.kernel.impl.newapi.DefaultCursors
+import org.neo4j.kernel.impl.newapi.DefaultPooledCursors
 import org.neo4j.kernel.impl.query.{Neo4jTransactionalContext, Neo4jTransactionalContextFactory}
 import org.neo4j.storageengine.api.StorageReader
 import org.neo4j.storageengine.api.lock.LockTracer
@@ -90,7 +90,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
 
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
-    when(transaction.cursors()).thenReturn(new DefaultCursors(null))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, bridge, locker, outerTx, statement,null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
@@ -116,7 +116,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultCursors(null))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, bridge, locker, outerTx, statement,null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
@@ -220,7 +220,7 @@ class TransactionBoundQueryContextTest extends CypherFunSuite {
     val bridge = mock[ThreadToStatementContextBridge]
     val transaction = mock[KernelTransaction]
     when(transaction.acquireStatement()).thenReturn(statement)
-    when(transaction.cursors()).thenReturn(new DefaultCursors(null))
+    when(transaction.cursors()).thenReturn(new DefaultPooledCursors(null))
     when(bridge.getKernelTransactionBoundToThisThread(true)).thenReturn(transaction)
     val tc = new Neo4jTransactionalContext(graph, bridge, locker, outerTx, statement, null, null)
     val transactionalContext = TransactionalContextWrapper(tc)
