@@ -22,6 +22,7 @@ package org.neo4j.bolt.v4.runtime;
 import java.time.Clock;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
 import org.neo4j.cypher.result.QueryResult;
@@ -34,6 +35,7 @@ public class BufferedCypherAdapterStreamV4 extends CypherAdapterStreamV3
 
     private final BlockingQueue<QueryResult.Record> records;
     private volatile Exception error;
+    private volatile boolean stop;
     private final Thread fetchingThread = new Thread()
     {
         public void run()
@@ -41,13 +43,22 @@ public class BufferedCypherAdapterStreamV4 extends CypherAdapterStreamV3
             try
             {
                 long start = clock.millis();
-                delegate.accept( row -> {
+                delegate.accept( row ->
+                {
                     AnyValue[] src = row.fields();
                     AnyValue[] dest = new AnyValue[src.length];
                     System.arraycopy( src, 0, dest, 0, src.length );
-                    records.put( () -> dest );
+
+                    while ( !records.offer( () -> dest, 5, TimeUnit.SECONDS ) )
+                    {
+                        if ( stop )
+                        {
+                            return false;
+                        }
+                    }
                     return true;
                 } );
+
                 addRecordStreamingTime( clock.millis() - start );
                 addMetadata();
 
@@ -58,12 +69,22 @@ public class BufferedCypherAdapterStreamV4 extends CypherAdapterStreamV3
             }
             finally
             {
-                try{
-                    records.put( DONE_RECORD );
-                }
-                catch ( InterruptedException e )
+                if ( !stop )
                 {
-                    e.printStackTrace();
+                    try
+                    {
+                        while ( !records.offer( DONE_RECORD, 5, TimeUnit.SECONDS ) )
+                        {
+                            if ( stop )
+                            {
+                                break;
+                            }
+                        }
+                    }
+                    catch ( InterruptedException e )
+                    {
+                        e.printStackTrace();
+                    }
                 }
             }
         }
@@ -89,7 +110,7 @@ public class BufferedCypherAdapterStreamV4 extends CypherAdapterStreamV3
             // if we are at the end of the records
             if ( current == DONE_RECORD || records.peek() == DONE_RECORD )
             {
-                if( error != null )
+                if ( error != null )
                 {
                     throw error;
                 }
@@ -112,5 +133,12 @@ public class BufferedCypherAdapterStreamV4 extends CypherAdapterStreamV3
             // drain all records
         }
         metadata.forEach( visitor::addMetadata );
+    }
+
+    @Override
+    public void close()
+    {
+        stop = true;
+        super.close();
     }
 }

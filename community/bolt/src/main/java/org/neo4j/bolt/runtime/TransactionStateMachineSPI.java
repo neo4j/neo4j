@@ -43,4 +43,6 @@ public interface TransactionStateMachineSPI
 
     BoltResultHandle executeQuery( LoginContext loginContext, String statement, MapValue params, Duration txTimeout,
             Map<String,Object> txMetaData );
+
+    boolean nestedStatementsInTransactionSupported();
 }

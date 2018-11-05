@@ -33,6 +33,7 @@ import org.neo4j.bolt.runtime.BoltResponseHandler;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltStateMachine;
 import org.neo4j.bolt.runtime.Neo4jError;
+import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.bolt.testing.BoltResponseRecorder;
 import org.neo4j.bolt.v1.messaging.BoltResponseHandlerV1Adaptor;
@@ -42,6 +43,7 @@ import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
 import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementOutcome;
 import org.neo4j.function.ThrowingBiConsumer;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
@@ -444,7 +446,6 @@ public class BoltStateMachineV1Test
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldTerminateOnAuthExpiryDuringSTREAMINGPullAll() throws Throwable
     {
@@ -455,7 +456,7 @@ public class BoltStateMachineV1Test
         BoltStateMachine machine = init( newMachine() );
         machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         // We assume the only implementation of statement processor is TransactionStateMachine
-        txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
+        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_STATEMENT_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         // When & Then
         try
@@ -469,7 +470,6 @@ public class BoltStateMachineV1Test
         }
     }
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldTerminateOnAuthExpiryDuringSTREAMINGDiscardAll() throws Throwable
     {
@@ -480,7 +480,7 @@ public class BoltStateMachineV1Test
         BoltStateMachine machine = init( newMachine() );
         machine.process( new RunMessage( "RETURN 1", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
         // We assume the only implementation of statement processor is TransactionStateMachine
-        txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
+        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_STATEMENT_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         // When & Then
         try
@@ -664,7 +664,7 @@ public class BoltStateMachineV1Test
         BoltStateMachineV1SPI spi = mock( BoltStateMachineV1SPI.class, RETURNS_MOCKS );
         BoltStateMachine machine = init( newMachine( spi ) );
         machine.process( new RunMessage( "RETURN 42", EMPTY_PARAMS ), nullResponseHandler() ); // move to streaming state
-        txStateMachine( machine ).ctx.currentResult = BoltResult.EMPTY;
+        txStateMachine( machine ).ctx.statementOutcomes.put( StatementMetadata.ABSENT_STATEMENT_ID, new StatementOutcome( BoltResult.EMPTY ) );
 
         BoltResponseHandlerV1Adaptor responseHandler = mock( BoltResponseHandlerV1Adaptor.class );
 

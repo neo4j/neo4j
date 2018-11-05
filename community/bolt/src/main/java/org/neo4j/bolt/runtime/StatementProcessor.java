@@ -38,7 +38,7 @@ public interface StatementProcessor
 
     StatementMetadata run( String statement, MapValue params, Bookmark bookmark, Duration txTimeout, Map<String,Object> txMetaData ) throws KernelException;
 
-    Bookmark streamResult( ResultConsumer resultConsumer ) throws Exception;
+    Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Exception;
 
     Bookmark commitTransaction() throws KernelException;
 
@@ -82,7 +82,7 @@ public interface StatementProcessor
         }
 
         @Override
-        public Bookmark streamResult( ResultConsumer resultConsumer ) throws Exception
+        public Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Exception
         {
             throw new UnsupportedOperationException( "Unable to stream results" );
         }

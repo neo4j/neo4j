@@ -27,6 +27,7 @@ import java.util.List;
 import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -98,7 +100,7 @@ class StreamingStateTest
         BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
 
         assertEquals( readyState, nextState );
-        verify( statementProcessor ).streamResult( any() );
+        verify( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
     }
 
     @Test
@@ -107,7 +109,7 @@ class StreamingStateTest
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
@@ -122,7 +124,7 @@ class StreamingStateTest
         RuntimeException error = new RuntimeException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( PullAllMessage.INSTANCE, context );
@@ -140,7 +142,7 @@ class StreamingStateTest
         BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
 
         assertEquals( readyState, nextState );
-        verify( statementProcessor ).streamResult( any() );
+        verify( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
     }
 
     @Test
@@ -149,7 +151,7 @@ class StreamingStateTest
         AuthorizationExpiredException error = new AuthorizationExpiredException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );
@@ -164,7 +166,7 @@ class StreamingStateTest
         RuntimeException error = new RuntimeException( "Hello" );
 
         StatementProcessor statementProcessor = mock( StatementProcessor.class );
-        doThrow( error ).when( statementProcessor ).streamResult( any() );
+        doThrow( error ).when( statementProcessor ).streamResult( eq( StatementMetadata.ABSENT_STATEMENT_ID ), any() );
         connectionState.setStatementProcessor( statementProcessor );
 
         BoltStateMachineState nextState = state.process( DiscardAllMessage.INSTANCE, context );

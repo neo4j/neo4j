@@ -28,9 +28,8 @@ import org.neo4j.bolt.v3.runtime.ConnectedState;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.ReadyState;
-import org.neo4j.bolt.v3.runtime.TransactionReadyState;
+import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.bolt.v4.runtime.StreamingState;
-import org.neo4j.bolt.v4.runtime.TransactionStreamingState;
 
 public class BoltStateMachineV4 extends BoltStateMachineV1
 {
@@ -45,14 +44,13 @@ public class BoltStateMachineV4 extends BoltStateMachineV1
         ConnectedState connected = new ConnectedState();
         ReadyState ready = new ReadyState();
         StreamingState streaming = new StreamingState(); // v4
-        TransactionReadyState txReady = new TransactionReadyState();
-        TransactionStreamingState txStreaming = new TransactionStreamingState(); // v4
+        InTransactionState inTransaction = new InTransactionState(); // v4
         FailedState failed = new FailedState();
         InterruptedState interrupted = new InterruptedState();
 
         connected.setReadyState( ready );
 
-        ready.setTransactionReadyState( txReady );
+        ready.setTransactionReadyState( inTransaction );
         ready.setStreamingState( streaming );
         ready.setFailedState( failed );
         ready.setInterruptedState( interrupted );
@@ -61,14 +59,9 @@ public class BoltStateMachineV4 extends BoltStateMachineV1
         streaming.setFailedState( failed );
         streaming.setInterruptedState( interrupted );
 
-        txReady.setReadyState( ready );
-        txReady.setTransactionStreamingState( txStreaming );
-        txReady.setFailedState( failed );
-        txReady.setInterruptedState( interrupted );
-
-        txStreaming.setReadyState( txReady );
-        txStreaming.setFailedState( failed );
-        txStreaming.setInterruptedState( interrupted );
+        inTransaction.setReadyState( ready );
+        inTransaction.setFailedState( failed );
+        inTransaction.setInterruptedState( interrupted );
 
         failed.setInterruptedState( interrupted );
 

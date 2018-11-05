@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v4.runtime;
+package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.v4.messaging.ResultConsumer;
-
-public class TransactionStreamingState extends AbstractStreamingState
+public class ExplicitTxStatementMetadata implements StatementMetadata
 {
-    @Override
-    public String name()
+    private final String[] fieldNames;
+    private final int statementId;
+
+    public ExplicitTxStatementMetadata( String[] fieldNames, int statementId )
     {
-        return "TX_STREAMING";
+        this.fieldNames = fieldNames;
+        this.statementId = statementId;
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
+    public String[] fieldNames()
     {
-        context.connectionState().getStatementProcessor().streamResult( resultConsumer );
-        if ( resultConsumer.hasMore() )
-        {
-            return this;
-        }
-        return readyState;
+        return fieldNames;
+    }
+
+    @Override
+    public int statementId()
+    {
+        return statementId;
     }
 }

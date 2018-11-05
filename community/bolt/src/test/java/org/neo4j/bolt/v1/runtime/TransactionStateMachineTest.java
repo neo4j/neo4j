@@ -27,6 +27,8 @@ import java.util.Optional;
 
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.runtime.StatementMetadata;
+import org.neo4j.bolt.v1.runtime.TransactionStateMachine.StatementOutcome;
 import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.bolt.v4.messaging.ResultConsumer;
@@ -42,6 +44,7 @@ import org.neo4j.values.virtual.MapValue;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -83,9 +86,10 @@ class TransactionStateMachineTest
     @BeforeEach
     void createMocks()
     {
+        FakeClock clock = new FakeClock();
         stateMachineSPI = mock( TransactionStateMachineV1SPI.class );
-        mutableState = mock(TransactionStateMachine.MutableTransactionState.class);
-        stateMachine = new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, new FakeClock() );
+        mutableState = new TransactionStateMachine.MutableTransactionState( AUTH_DISABLED, clock );
+        stateMachine = new TransactionStateMachine( stateMachineSPI, AUTH_DISABLED, clock );
     }
 
     @Test
@@ -178,8 +182,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertNull( stateMachine.ctx.currentResultHandle );
-        assertNull( stateMachine.ctx.currentResult );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
     }
 
     @Test
@@ -226,8 +229,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertNull( stateMachine.ctx.currentResult );
-        assertNull( stateMachine.ctx.currentResultHandle );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).failure();
@@ -251,8 +253,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertNull( stateMachine.ctx.currentResult );
-        assertNull( stateMachine.ctx.currentResultHandle );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).failure();
@@ -278,8 +279,7 @@ class TransactionStateMachineTest
 
         assertThat( stateMachine.state, is( TransactionStateMachine.State.AUTO_COMMIT ) );
         assertNull( stateMachine.ctx.currentTransaction );
-        assertNull( stateMachine.ctx.currentResult );
-        assertNull( stateMachine.ctx.currentResultHandle );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
 
         verify( transaction ).getReasonIfTerminated();
         verify( transaction ).failure();
@@ -306,7 +306,7 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.run( "SOME STATEMENT", null );
-        stateMachine.streamResult( EMPTY );
+        stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
 
         verify( stateMachineSPI, times( 2 ) ).unbindTransactionFromCurrentThread();
     }
@@ -338,7 +338,7 @@ class TransactionStateMachineTest
 
         TransactionTerminatedException e = assertThrows( TransactionTerminatedException.class, () ->
         {
-            stateMachine.streamResult( EMPTY );
+            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
         } );
         assertEquals( Status.Transaction.TransactionTimedOut, e.status() );
     }
@@ -354,8 +354,7 @@ class TransactionStateMachineTest
         RuntimeException e = assertThrows( RuntimeException.class, () -> stateMachine.run( "SOME STATEMENT", null ) );
         assertEquals( "some error", e.getMessage() );
 
-        assertNull( stateMachine.ctx.currentResultHandle );
-        assertNull( stateMachine.ctx.currentResult );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
         assertNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -368,17 +367,18 @@ class TransactionStateMachineTest
 
         stateMachine.run( "SOME STATEMENT", null );
 
-        assertNotNull( stateMachine.ctx.currentResultHandle );
-        assertNotNull( stateMachine.ctx.currentResult );
+        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_STATEMENT_ID );
+        assertNotNull( outcome );
+        assertNotNull( outcome.resultHandle );
+        assertNotNull( outcome.result );
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.streamResult( ERROR );
+            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, ERROR );
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertNull( stateMachine.ctx.currentResultHandle );
-        assertNull( stateMachine.ctx.currentResult );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
         assertNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -393,13 +393,12 @@ class TransactionStateMachineTest
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
             stateMachine.beginTransaction( null );
-            stateMachine.streamResult( EMPTY );
+            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
             stateMachine.run( "SOME STATEMENT", null );
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertNull( stateMachine.ctx.currentResultHandle );
-        assertNull( stateMachine.ctx.currentResult );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
         assertNotNull( stateMachine.ctx.currentTransaction );
     }
 
@@ -411,20 +410,21 @@ class TransactionStateMachineTest
         TransactionStateMachine stateMachine = newTransactionStateMachine( stateMachineSPI );
 
         stateMachine.beginTransaction( null );
-        stateMachine.streamResult( EMPTY );
+        stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, EMPTY );
         stateMachine.run( "SOME STATEMENT", null );
 
-        assertNotNull( stateMachine.ctx.currentResultHandle );
-        assertNotNull( stateMachine.ctx.currentResult );
+        StatementOutcome outcome = stateMachine.ctx.statementOutcomes.get( StatementMetadata.ABSENT_STATEMENT_ID );
+        assertNotNull( outcome );
+        assertNotNull( outcome.resultHandle );
+        assertNotNull( outcome.result );
 
         RuntimeException e = assertThrows( RuntimeException.class, () ->
         {
-            stateMachine.streamResult( ERROR );
+            stateMachine.streamResult( StatementMetadata.ABSENT_STATEMENT_ID, ERROR );
         } );
         assertEquals( "some error", e.getMessage() );
 
-        assertNull( stateMachine.ctx.currentResultHandle );
-        assertNull( stateMachine.ctx.currentResult );
+        assertThat( stateMachine.ctx.statementOutcomes.entrySet(), hasSize( 0 ) );
         assertNotNull( stateMachine.ctx.currentTransaction );
     }
 

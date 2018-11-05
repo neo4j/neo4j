@@ -42,7 +42,7 @@ import org.neo4j.bolt.v3.runtime.InterruptedState;
 import org.neo4j.bolt.v3.runtime.TransactionReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
-import org.neo4j.bolt.v4.runtime.TransactionStreamingState;
+import org.neo4j.bolt.v4.runtime.InTransactionState;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.ValueUtils;
 import org.neo4j.values.storable.BooleanValue;
@@ -176,7 +176,7 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
 
         machine.process( new BeginMessage(), nullResponseHandler() );
         machine.process( new RunMessage( "CREATE (n {k:'k'}) RETURN n.k", EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
 
         // when
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -209,9 +209,9 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
         machine.process( newHelloMessage(), nullResponseHandler() );
 
         machine.process( new BeginMessage(), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
         machine.process( new RunMessage( query, EMPTY_PARAMS ), nullResponseHandler() );
-        assertThat( machine.state(), instanceOf( TransactionStreamingState.class ) ); // tx streaming state
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) ); // tx streaming state
         return machine;
     }
 

@@ -23,6 +23,7 @@ import org.neo4j.bolt.messaging.RequestMessage;
 import org.neo4j.bolt.runtime.BoltConnectionFatality;
 import org.neo4j.bolt.runtime.BoltStateMachineState;
 import org.neo4j.bolt.runtime.StateMachineContext;
+import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.v1.ResultConsumerV1Adaptor;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
@@ -108,8 +109,9 @@ public class StreamingState implements BoltStateMachineState
     {
         try
         {
+            int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
             ResultConsumer resultConsumer = new ResultConsumerV1Adaptor( context, pull );
-            context.connectionState().getStatementProcessor().streamResult( resultConsumer );
+            context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
 
             return readyState;
         }

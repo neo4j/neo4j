@@ -125,6 +125,12 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return newBoltResultHandle( statement, params, transactionalContext );
     }
 
+    @Override
+    public boolean nestedStatementsInTransactionSupported()
+    {
+        return false;
+    }
+
     protected BoltResultHandle newBoltResultHandle( String statement, MapValue params, TransactionalContext transactionalContext )
     {
         return new BoltResultHandleV1( statement, params, transactionalContext );

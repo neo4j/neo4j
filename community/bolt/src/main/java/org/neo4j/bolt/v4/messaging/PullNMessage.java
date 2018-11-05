@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.neo4j.bolt.messaging.BoltIOException;
 import org.neo4j.bolt.messaging.RequestMessage;
+import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.storable.LongValue;
@@ -36,15 +37,19 @@ public class PullNMessage implements RequestMessage
 {
     public static final byte SIGNATURE = 0x3F;
 
-    private final MapValue meta;
     private static final String PULL_N_KEY = "n";
+    private static final String STATEMENT_ID_KEY = "stmt_id";
     private static final long MINIMAL_N_SIZE = 1;
+
+    private final MapValue meta;
     private final long n;
+    private final int statementId;
 
     public PullNMessage( MapValue meta ) throws BoltIOException
     {
         this.meta = requireNonNull( meta );
         this.n = parseN( meta );
+        this.statementId = parseStatementId( meta );
     }
 
     private long parseN( MapValue meta ) throws BoltIOException
@@ -53,7 +58,7 @@ public class PullNMessage implements RequestMessage
         if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
         {
             long size = ((LongValue) anyValue).longValue();
-            if ( size <= MINIMAL_N_SIZE )
+            if ( size < MINIMAL_N_SIZE )
             {
                 throw new BoltIOException( Status.Request.Invalid, format( "Expecting pull size to be at least %s, but got: %s", MINIMAL_N_SIZE, n ) );
             }
@@ -65,9 +70,28 @@ public class PullNMessage implements RequestMessage
         }
     }
 
+    private int parseStatementId( MapValue meta )
+    {
+        AnyValue anyValue = meta.get( STATEMENT_ID_KEY );
+        if ( anyValue != Values.NO_VALUE && anyValue instanceof LongValue )
+        {
+            long id = ((LongValue) anyValue).longValue();
+            return Math.toIntExact( id );
+        }
+        else
+        {
+            return StatementMetadata.ABSENT_STATEMENT_ID;
+        }
+    }
+
     public long n()
     {
         return this.n;
+    }
+
+    public int statementId()
+    {
+        return statementId;
     }
 
     @Override

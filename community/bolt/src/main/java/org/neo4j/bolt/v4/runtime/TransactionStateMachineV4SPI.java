@@ -44,6 +44,12 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         return new BoltResultHandleV4( statement, params, transactionalContext );
     }
 
+    @Override
+    public boolean nestedStatementsInTransactionSupported()
+    {
+        return true;
+    }
+
     private class BoltResultHandleV4 extends BoltResultHandleV1
     {
         BoltResultHandleV4( String statement, MapValue params, TransactionalContext transactionalContext )

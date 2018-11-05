@@ -50,7 +50,7 @@ public class ResultHandler extends MessageProcessingHandler
     @Override
     public void onDiscardRecords( BoltResult result ) throws Exception
     {
-        result.handleDiscardRecords( new RecordWritingBoltResultVisitor() );
+        result.handleDiscardRecords( new RecordDiscardingBoltResultVisitor() );
     }
 
     private class RecordWritingBoltResultVisitor implements BoltResult.Visitor
@@ -61,10 +61,24 @@ public class ResultHandler extends MessageProcessingHandler
             messageWriter.write( new RecordMessage( record ) );
         }
 
+        @Override
         public void addMetadata( String key, AnyValue value )
         {
             onMetadata( key, value );
         }
     }
 
+    private class RecordDiscardingBoltResultVisitor implements BoltResult.Visitor
+    {
+        @Override
+        public void visit( QueryResult.Record record )
+        {
+        }
+
+        @Override
+        public void addMetadata( String key, AnyValue value )
+        {
+            onMetadata( key, value );
+        }
+    }
 }

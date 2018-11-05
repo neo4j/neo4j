@@ -21,11 +21,14 @@ package org.neo4j.bolt.v1.runtime;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.bolt.runtime.AutoCommitStatementMetadata;
 import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
+import org.neo4j.bolt.runtime.ExplicitTxStatementMetadata;
 import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
@@ -110,7 +113,9 @@ public class TransactionStateMachine implements StatementProcessor
 
             state = state.run( ctx, spi, statement, params, bookmark, txTimeout, txMetaData );
 
-            return ctx.currentStatementMetadata;
+            StatementMetadata metadata = ctx.lastStatementMetadata;
+            ctx.lastStatementMetadata = null; // metadata should not be needed more than once
+            return metadata;
         }
         finally
         {
@@ -119,14 +124,14 @@ public class TransactionStateMachine implements StatementProcessor
     }
 
     @Override
-    public Bookmark streamResult( ResultConsumer resultConsumer ) throws Exception
+    public Bookmark streamResult( int statementId, ResultConsumer resultConsumer ) throws Exception
     {
         before();
         try
         {
             ensureNoPendingTerminationNotice();
 
-            return state.streamResult( ctx, spi, resultConsumer );
+            return state.streamResult( ctx, spi, statementId, resultConsumer );
         }
         finally
         {
@@ -174,7 +179,7 @@ public class TransactionStateMachine implements StatementProcessor
     @Override
     public boolean hasOpenStatement()
     {
-        return ctx.currentResultHandle != null;
+        return !ctx.statementOutcomes.isEmpty();
     }
 
     /**
@@ -255,7 +260,11 @@ public class TransactionStateMachine implements StatementProcessor
                             Map<String,Object> txMetadata ) throws KernelException
                     {
                         waitForBookmark( spi, bookmark );
-                        ctx.currentResult = BoltResult.EMPTY;
+
+                        // add dummy outcome useful for < Bolt V3, i.e. `RUN "BEGIN" & PULL_ALL`
+                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+                        ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
+
                         ctx.currentTransaction = spi.beginTransaction( ctx.loginContext, txTimeout, txMetadata );
                         return EXPLICIT_TRANSACTION;
                     }
@@ -297,8 +306,15 @@ public class TransactionStateMachine implements StatementProcessor
                         boolean failed = true;
                         try
                         {
+                            int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+
                             BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, txTimeout, txMetadata );
-                            startExecution( ctx, resultHandle );
+                            BoltResult result = startExecution( resultHandle );
+                            ctx.statementOutcomes.put( statementId, new StatementOutcome( resultHandle, result ) );
+
+                            String[] fieldNames = result.fieldNames();
+                            ctx.lastStatementMetadata = new AutoCommitStatementMetadata( fieldNames );
+
                             failed = false;
                         }
                         finally
@@ -319,15 +335,19 @@ public class TransactionStateMachine implements StatementProcessor
                     }
 
                     @Override
-                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ResultConsumer resultConsumer )
+                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
                             throws Exception
                     {
-                        assert ctx.currentResult != null;
+                        StatementOutcome outcome = ctx.statementOutcomes.get( statementId );
+                        if ( outcome == null )
+                        {
+                            throw new IllegalArgumentException( "Unknown statement ID: " + statementId + ". Existing IDs: " + ctx.statementOutcomes.keySet() );
+                        }
 
                         boolean success = false;
                         try
                         {
-                            consumeResult( ctx, resultConsumer );
+                            consumeResult( ctx, statementId, outcome, resultConsumer );
                             if ( !resultConsumer.hasMore() )
                             {
                                 closeTransaction( ctx, true );
@@ -356,7 +376,10 @@ public class TransactionStateMachine implements StatementProcessor
                     @Override
                     State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi )
                     {
-                        ctx.currentResult = BoltResult.EMPTY;
+                        // add dummy outcome useful for < Bolt V3, i.e. `RUN "ROLLBACK" & PULL_ALL`
+                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+                        ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
+
                         return AUTO_COMMIT;
                     }
                 },
@@ -393,18 +416,36 @@ public class TransactionStateMachine implements StatementProcessor
                         }
                         else
                         {
+                            // generate real statement ID only when nested statements in transaction are supported
+                            int statementId = spi.nestedStatementsInTransactionSupported() ? ctx.nextStatementId() : StatementMetadata.ABSENT_STATEMENT_ID;
+
                             BoltResultHandle resultHandle = spi.executeQuery( ctx.loginContext, statement, params, null, null /*ignored in explict tx run*/ );
-                            startExecution( ctx, resultHandle );
+                            BoltResult result = startExecution( resultHandle );
+                            ctx.statementOutcomes.put( statementId, new StatementOutcome( resultHandle, result ) );
+
+                            String[] fieldNames = result.fieldNames();
+                            ctx.lastStatementId = statementId;
+                            ctx.lastStatementMetadata = new ExplicitTxStatementMetadata( fieldNames, statementId );
+
                             return EXPLICIT_TRANSACTION;
                         }
                     }
 
                     @Override
-                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ResultConsumer resultConsumer )
+                    Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
                             throws Exception
                     {
-                        assert ctx.currentResult != null;
-                        consumeResult( ctx, resultConsumer );
+                        if ( statementId == StatementMetadata.ABSENT_STATEMENT_ID )
+                        {
+                            statementId = ctx.lastStatementId;
+                        }
+                        StatementOutcome outcome = ctx.statementOutcomes.get( statementId );
+                        if ( outcome == null )
+                        {
+                            throw new IllegalArgumentException( "Unknown statement ID: " + statementId + ". Existing IDs: " + ctx.statementOutcomes.keySet() );
+                        }
+
+                        consumeResult( ctx, statementId, outcome, resultConsumer );
                         return EMPTY_BOOKMARK; // Explict tx shall not get a bookmark in PULL_ALL or DISCARD_ALL
                     }
 
@@ -413,7 +454,11 @@ public class TransactionStateMachine implements StatementProcessor
                     {
                         closeTransaction( ctx, true );
                         Bookmark bookmark = newestBookmark( spi );
-                        ctx.currentResult = new BookmarkResult( bookmark );
+
+                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+                        ctx.statementOutcomes.put( statementId, new StatementOutcome( new BookmarkResult( bookmark ) ) );
+                        ctx.lastStatementId = StatementMetadata.ABSENT_STATEMENT_ID;
+
                         return AUTO_COMMIT;
                     }
 
@@ -421,7 +466,12 @@ public class TransactionStateMachine implements StatementProcessor
                     State rollbackTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException
                     {
                         closeTransaction( ctx, false );
-                        ctx.currentResult = BoltResult.EMPTY;
+
+                        // add dummy outcome useful for < Bolt V3, i.e. `RUN "ROLLBACK" & PULL_ALL`
+                        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
+                        ctx.statementOutcomes.put( statementId, new StatementOutcome( BoltResult.EMPTY ) );
+                        ctx.lastStatementId = StatementMetadata.ABSENT_STATEMENT_ID;
+
                         return AUTO_COMMIT;
                     }
                 };
@@ -433,7 +483,7 @@ public class TransactionStateMachine implements StatementProcessor
                 Duration txTimeout, Map<String,Object> txMetadata )
                 throws KernelException;
 
-        abstract Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, ResultConsumer resultConsumer )
+        abstract Bookmark streamResult( MutableTransactionState ctx, TransactionStateMachineSPI spi, int statementId, ResultConsumer resultConsumer )
                 throws Exception;
 
         abstract State commitTransaction( MutableTransactionState ctx, TransactionStateMachineSPI spi ) throws KernelException;
@@ -442,18 +492,8 @@ public class TransactionStateMachine implements StatementProcessor
 
         void terminateQueryAndRollbackTransaction( MutableTransactionState ctx ) throws TransactionFailureException
         {
-            if ( ctx.currentResultHandle != null )
-            {
-                ctx.currentResultHandle.terminate();
-                ctx.currentResultHandle = null;
-            }
-            if ( ctx.currentResult != null )
-            {
-                ctx.currentResult.close();
-                ctx.currentResult = null;
-            }
-
-           closeTransaction( ctx, false);
+            terminateActiveStatements( ctx );
+            closeTransaction( ctx, false );
         }
 
         /*
@@ -462,6 +502,8 @@ public class TransactionStateMachine implements StatementProcessor
          */
         void closeTransaction( MutableTransactionState ctx, boolean success ) throws TransactionFailureException
         {
+            closeActiveStatements( ctx, success );
+
             KernelTransaction tx = ctx.currentTransaction;
             ctx.currentTransaction = null;
             if ( tx != null )
@@ -484,16 +526,57 @@ public class TransactionStateMachine implements StatementProcessor
                 finally
                 {
                     ctx.currentTransaction = null;
+                    ctx.statementCounter = 0;
                 }
             }
         }
 
-        void consumeResult( MutableTransactionState ctx, ResultConsumer resultConsumer ) throws Exception
+        // todo: handle potential errors from .terminate() and .close()
+        private void terminateActiveStatements( MutableTransactionState ctx )
+        {
+            for ( StatementOutcome outcome : ctx.statementOutcomes.values() )
+            {
+                BoltResultHandle resultHandle = outcome.resultHandle;
+                if ( resultHandle != null )
+                {
+                    resultHandle.terminate();
+                }
+
+                BoltResult result = outcome.result;
+                if ( result != null )
+                {
+                    result.close();
+                }
+            }
+            ctx.statementOutcomes.clear();
+        }
+
+        // todo: handle potential errors from .close(boolean) and .close()
+        private void closeActiveStatements( MutableTransactionState ctx, boolean success )
+        {
+            for ( StatementOutcome outcome : ctx.statementOutcomes.values() )
+            {
+                BoltResultHandle resultHandle = outcome.resultHandle;
+                if ( resultHandle != null )
+                {
+                    resultHandle.close( success );
+                }
+
+                BoltResult result = outcome.result;
+                if ( result != null )
+                {
+                    result.close();
+                }
+            }
+            ctx.statementOutcomes.clear();
+        }
+
+        void consumeResult( MutableTransactionState ctx, int statementId, StatementOutcome outcome, ResultConsumer resultConsumer ) throws Exception
         {
             boolean success = false;
             try
             {
-                resultConsumer.consume( ctx.currentResult );
+                resultConsumer.consume( outcome.result );
                 success = true;
             }
             finally
@@ -501,29 +584,26 @@ public class TransactionStateMachine implements StatementProcessor
                 // if throws errors or if we finished consuming result
                 if ( !success || !resultConsumer.hasMore() )
                 {
-                    ctx.currentResult.close();
-                    ctx.currentResult = null;
-
-                    if ( ctx.currentResultHandle != null )
+                    outcome.result.close();
+                    BoltResultHandle resultHandle = outcome.resultHandle;
+                    if ( resultHandle != null )
                     {
-                        ctx.currentResultHandle.close( success );
-                        ctx.currentResultHandle = null;
+                        resultHandle.close( success );
                     }
+                    ctx.statementOutcomes.remove( statementId );
                 }
             }
         }
 
-        void startExecution( MutableTransactionState ctx, BoltResultHandle resultHandle ) throws KernelException
+        BoltResult startExecution( BoltResultHandle resultHandle ) throws KernelException
         {
-            ctx.currentResultHandle = resultHandle;
             try
             {
-                ctx.currentResult = resultHandle.start();
+                return resultHandle.start();
             }
             catch ( Throwable t )
             {
-                ctx.currentResultHandle.close( false );
-                ctx.currentResultHandle = null;
+                resultHandle.close( false );
                 throw t;
             }
         }
@@ -547,6 +627,8 @@ public class TransactionStateMachine implements StatementProcessor
 
     static class MutableTransactionState
     {
+        int statementCounter;
+
         /** The current session security context to be used for starting transactions */
         final LoginContext loginContext;
 
@@ -558,27 +640,43 @@ public class TransactionStateMachine implements StatementProcessor
         /** Last Cypher statement executed */
         String lastStatement = "";
 
-        /** The current pending result, if present */
-        BoltResult currentResult;
-
-        BoltResultHandle currentResultHandle;
+        final Map<Integer,StatementOutcome> statementOutcomes = new HashMap<>();
 
         final Clock clock;
 
-        /** A re-usable statement metadata instance that always represents the currently running statement */
-        private final StatementMetadata currentStatementMetadata = new StatementMetadata()
-        {
-            @Override
-            public String[] fieldNames()
-            {
-                return currentResult.fieldNames();
-            }
-        };
+        /**
+         * Used to handle RUN + PULL combo that arrives at the same time. PULL will not contain stmt_id in this case
+         */
+        int lastStatementId = StatementMetadata.ABSENT_STATEMENT_ID;
 
-        private MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
+        StatementMetadata lastStatementMetadata;
+
+        MutableTransactionState( AuthenticationResult authenticationResult, Clock clock )
         {
             this.clock = clock;
             this.loginContext = authenticationResult.getLoginContext();
+        }
+
+        int nextStatementId()
+        {
+            return statementCounter++;
+        }
+    }
+
+    static class StatementOutcome
+    {
+        BoltResultHandle resultHandle;
+        BoltResult result;
+
+        StatementOutcome( BoltResult result )
+        {
+            this.result = result;
+        }
+
+        StatementOutcome( BoltResultHandle resultHandle, BoltResult result )
+        {
+            this.resultHandle = resultHandle;
+            this.result = result;
         }
     }
 }

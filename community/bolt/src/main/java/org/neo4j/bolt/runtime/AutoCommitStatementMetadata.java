@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2019 "Neo4j,"
+ * Copyright (c) 2002-2018 "Neo4j,"
  * Neo4j Sweden AB [http://neo4j.com]
  *
  * This file is part of Neo4j.
@@ -17,26 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v3.runtime;
+package org.neo4j.bolt.runtime;
 
-import org.neo4j.bolt.runtime.BoltStateMachineState;
-import org.neo4j.bolt.runtime.StateMachineContext;
-import org.neo4j.bolt.runtime.StatementMetadata;
-import org.neo4j.bolt.v4.messaging.ResultConsumer;
-
-public class TransactionStreamingState extends AbstractStreamingState
+public class AutoCommitStatementMetadata implements StatementMetadata
 {
-    @Override
-    public String name()
+    private final String[] fieldNames;
+
+    public AutoCommitStatementMetadata( String[] fieldNames )
     {
-        return "TX_STREAMING";
+        this.fieldNames = fieldNames;
     }
 
     @Override
-    protected BoltStateMachineState processStreamResultMessage( ResultConsumer resultConsumer, StateMachineContext context ) throws Throwable
+    public String[] fieldNames()
     {
-        int statementId = StatementMetadata.ABSENT_STATEMENT_ID;
-        context.connectionState().getStatementProcessor().streamResult( statementId, resultConsumer );
-        return readyState;
+        return fieldNames;
+    }
+
+    @Override
+    public int statementId()
+    {
+        return ABSENT_STATEMENT_ID;
     }
 }

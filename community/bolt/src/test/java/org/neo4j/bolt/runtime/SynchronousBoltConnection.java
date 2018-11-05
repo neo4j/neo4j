@@ -22,6 +22,8 @@ package org.neo4j.bolt.runtime;
 import io.netty.channel.Channel;
 import io.netty.channel.embedded.EmbeddedChannel;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.SocketAddress;
 
 import org.neo4j.bolt.transport.TransportThrottleGroup;
@@ -118,7 +120,15 @@ public class SynchronousBoltConnection implements BoltConnection
     @Override
     public void stop()
     {
-        channel.finishAndReleaseAll();
-        machine.close();
+        try
+        {
+            channel.finishAndReleaseAll();
+            output.close();
+            machine.close();
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
     }
 }

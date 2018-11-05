@@ -45,8 +45,8 @@ public class ReadyState extends FailSafeBoltStateMachineState
     private BoltStateMachineState streamingState;
     private BoltStateMachineState txReadyState;
 
-    static final String FIELDS_KEY = "fields";
-    static final String FIRST_RECORD_AVAILABLE_KEY = "t_first";
+    public static final String FIELDS_KEY = "fields";
+    public static final String FIRST_RECORD_AVAILABLE_KEY = "t_first";
 
     @Override
     public BoltStateMachineState processUnsafe( RequestMessage message, StateMachineContext context ) throws Exception
