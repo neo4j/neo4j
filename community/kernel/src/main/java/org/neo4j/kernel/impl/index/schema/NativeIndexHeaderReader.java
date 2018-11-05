@@ -19,11 +19,15 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
+
+import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.neo4j.index.internal.gbptree.Header;
 
+import static java.lang.String.format;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 
 class NativeIndexHeaderReader implements Header.Reader
@@ -40,20 +44,23 @@ class NativeIndexHeaderReader implements Header.Reader
     @Override
     public void read( ByteBuffer headerData )
     {
-        if ( !headerData.hasRemaining() )
+        try
+        {
+            state = headerData.get();
+            if ( state == BYTE_FAILED )
+            {
+                failureMessage = readFailureMessage( headerData );
+            }
+            else
+            {
+                additionalReader.read( headerData );
+            }
+        }
+        catch ( BufferUnderflowException e )
         {
             state = BYTE_FAILED;
-            failureMessage = "Initial state byte is missing. Index was never fully constructed and need to be recreated.";
-            return;
-        }
-        state = headerData.get();
-        if ( state == BYTE_FAILED )
-        {
-            failureMessage = readFailureMessage( headerData );
-        }
-        else
-        {
-            additionalReader.read( headerData );
+            failureMessage = format( "Initial state byte is missing. Index was never fully constructed and need to be recreated. Stacktrace:%n%s",
+                    ExceptionUtils.getStackTrace( e ) );
         }
     }
 

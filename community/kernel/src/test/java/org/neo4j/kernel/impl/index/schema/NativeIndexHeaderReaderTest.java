@@ -23,10 +23,10 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.ByteBuffer;
 
-import org.neo4j.index.internal.gbptree.GBPTree;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 import static org.neo4j.kernel.impl.index.schema.NativeIndexPopulator.BYTE_FAILED;
 
 class NativeIndexHeaderReaderTest
@@ -35,10 +35,29 @@ class NativeIndexHeaderReaderTest
     void mustReportFailedIfNoHeader()
     {
         ByteBuffer emptyBuffer = ByteBuffer.wrap( new byte[0] );
-        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( GBPTree.NO_HEADER_READER );
+        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( NO_HEADER_READER );
         nativeIndexHeaderReader.read( emptyBuffer );
-        assertThat( nativeIndexHeaderReader.state, is( BYTE_FAILED ) );
+        assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
         assertThat( nativeIndexHeaderReader.failureMessage,
-                is( "Initial state byte is missing. Index was never fully constructed and need to be recreated." ) );
+                containsString( "Initial state byte is missing. Index was never fully constructed and need to be recreated." ) );
+    }
+
+    @Test
+    void mustReportFailedIfHeaderTooShort()
+    {
+        ByteBuffer emptyBuffer = ByteBuffer.wrap( new byte[1] );
+        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( ByteBuffer::get );
+        nativeIndexHeaderReader.read( emptyBuffer );
+        assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
+        assertThat( nativeIndexHeaderReader.failureMessage,
+                containsString( "Initial state byte is missing. Index was never fully constructed and need to be recreated." ) );
+    }
+
+    @Test
+    void mustNotThrowIfHeaderLongEnough()
+    {
+        ByteBuffer emptyBuffer = ByteBuffer.wrap( new byte[1] );
+        NativeIndexHeaderReader nativeIndexHeaderReader = new NativeIndexHeaderReader( NO_HEADER_READER );
+        nativeIndexHeaderReader.read( emptyBuffer );
     }
 }
