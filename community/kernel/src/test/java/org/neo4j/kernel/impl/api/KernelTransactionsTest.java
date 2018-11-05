@@ -27,11 +27,11 @@ import org.junit.rules.ExpectedException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -586,8 +586,8 @@ public class KernelTransactionsTest
     {
         KernelTransactions kernelTransactions = newKernelTransactions();
         int expectedTransactions = 100;
-        CountDownLatch latch = new CountDownLatch( expectedTransactions );
-        ExecutorService executors = Executors.newCachedThreadPool();
+        ExecutorService executors = Executors.newFixedThreadPool( expectedTransactions );
+        Phaser phaser = new Phaser( expectedTransactions );
         List<Future<Void>> transactionFutures = new ArrayList<>();
         try
         {
@@ -595,15 +595,17 @@ public class KernelTransactionsTest
             {
                 Future transactionFuture = executors.submit( () ->
                 {
-                    try ( KernelTransaction kernelTransaction = kernelTransactions.newInstance( explicit, none(), 0L ) )
+                    try ( KernelTransaction ignored = kernelTransactions.newInstance( explicit, none(), 0L ) )
                     {
-                        latch.countDown();
-                        latch.await();
+                        phaser.arriveAndAwaitAdvance();
+                        assertEquals( expectedTransactions, kernelTransactions.getNumberOfActiveTransactions() );
+                        phaser.arriveAndAwaitAdvance();
                     }
-                    catch ( TransactionFailureException | InterruptedException e )
+                    catch ( TransactionFailureException e )
                     {
                         throw new RuntimeException( e );
                     }
+                    phaser.arriveAndDeregister();
                 } );
                 transactionFutures.add( transactionFuture );
             }
