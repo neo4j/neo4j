@@ -19,20 +19,21 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.Mockito.when
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryContextAdaptation, QueryStateHelper}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class EagerPipeTest extends CypherFunSuite {
 
-  private val queryContext = new QueryContext with QueryContextAdaptation {
-    override val transactionalContext: QueryTransactionalContext = mock[QueryTransactionalContext]
-  }
+  private val queryContext = mock[QueryContext]
+  when(queryContext.transactionalContext).thenReturn(mock[QueryTransactionalContext])
+
   private val queryState = QueryStateHelper.emptyWith(query = queryContext)
 
   test("shouldMakeLazyEager") {
     // Given a lazy iterator that is not empty
-    val lazyIterator = new LazyIterator[ExecutionContext](10, (_) => ExecutionContext.empty)
+    val lazyIterator = new LazyIterator[ExecutionContext](10, _ => ExecutionContext.empty)
     val src = new FakePipe(lazyIterator)
     val eager = EagerPipe(src)()
     lazyIterator should not be empty

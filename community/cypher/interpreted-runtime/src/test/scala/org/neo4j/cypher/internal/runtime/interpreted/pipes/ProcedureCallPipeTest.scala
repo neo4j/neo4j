@@ -19,20 +19,26 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.mockito.ArgumentMatchers.any
+import org.mockito.Mockito
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryContextAdaptation, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{EagerReadWriteCallMode, LazyReadOnlyCallMode, QueryContext}
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{IntValue, LongValue}
+import org.opencypher.v9_0.util.symbols._
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.scalatest.mock.MockitoSugar
 
 class ProcedureCallPipeTest
   extends CypherFunSuite
     with PipeTestSupport
-    with ImplicitDummyPos {
+    with ImplicitDummyPos
+    with MockitoSugar {
 
   val ID = 42
   val procedureName = QualifiedName(List.empty, "foo")
@@ -54,7 +60,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq(0 -> "r")
     )()
 
-    val qtx = new FakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
+    val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadOnlyAccess(emptyStringArray))
 
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" ->1, "r" -> "take 1/1"),
@@ -77,7 +83,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq(0 -> "r")
     )()
 
-    val qtx = new FakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
+    val qtx = fakeQueryContext(ID, resultsTransformer, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1, "r" -> "take 1/1"),
       ExecutionContext.from("a" -> 2, "r" -> "take 1/2"),
@@ -99,7 +105,7 @@ class ProcedureCallPipeTest
       resultIndices = Seq.empty
     )()
 
-    val qtx = new FakeQueryContext(ID, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
+    val qtx = fakeQueryContext(ID, _ => Iterator.empty, ProcedureReadWriteAccess(emptyStringArray))
     pipe.createResults(QueryStateHelper.emptyWith(query = qtx)).toList should equal(List(
       ExecutionContext.from("a" -> 1),
       ExecutionContext.from("a" -> 2)
@@ -114,29 +120,46 @@ class ProcedureCallPipeTest
 
   }.toIterator
 
+  private def fakeQueryContext(id: Int,
+                               result: Seq[Any] => Iterator[Array[AnyRef]],
+                               expectedAccessMode: ProcedureAccessMode): QueryContext = {
 
-  class FakeQueryContext(id: Int, result: Seq[Any] => Iterator[Array[AnyRef]],
-                         expectedAccessMode: ProcedureAccessMode) extends QueryContext with QueryContextAdaptation {
-    override def callReadOnlyProcedure(id: Int, args: Seq[Any], allowed: Array[String]) = {
-      expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
-      doIt(id, args, allowed)
-    }
-
-    override def callReadWriteProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
-      expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
-      doIt(id, args, allowed)
-    }
-
-    override def asObject(value: AnyValue): AnyRef = value match {
-      case i: IntValue => Int.box(i.value())
-      case l: LongValue => Long.box(l.value())
-      case _ => throw new IllegalStateException()
-    }
-
-    private def doIt(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
+    def doIt(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]] = {
       id should equal(ID)
       args.length should be(1)
       result(args)
     }
+
+    val queryContext = mock[QueryContext]
+    Mockito.when(queryContext.callReadOnlyProcedure(any[Int](), any[Seq[Any]](), any[Array[String]]())).thenAnswer(
+      new Answer[Iterator[Array[AnyRef]]] {
+        override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyRef]] = {
+          expectedAccessMode should equal(ProcedureReadOnlyAccess(emptyStringArray))
+          doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1), invocationOnMock.getArgument(2))
+        }
+      }
+    )
+
+    Mockito.when(queryContext.callReadWriteProcedure(any[Int](), any[Seq[Any]](), any[Array[String]]())).thenAnswer(
+      new Answer[Iterator[Array[AnyRef]]] {
+        override def answer(invocationOnMock: InvocationOnMock): Iterator[Array[AnyRef]] = {
+          expectedAccessMode should equal(ProcedureReadWriteAccess(emptyStringArray))
+          doIt(invocationOnMock.getArgument(0), invocationOnMock.getArgument(1), invocationOnMock.getArgument(2))
+        }
+      }
+    )
+
+    Mockito.when(queryContext.asObject(any[AnyValue]())).thenAnswer(
+      new Answer[AnyRef] {
+        override def answer(invocationOnMock: InvocationOnMock): AnyRef =
+          invocationOnMock.getArgument[AnyValue](0) match {
+            case i: IntValue => Int.box(i.value())
+            case l: LongValue => Long.box(l.value())
+            case _ => throw new IllegalStateException()
+          }
+      }
+    )
+
+    queryContext
   }
 }
