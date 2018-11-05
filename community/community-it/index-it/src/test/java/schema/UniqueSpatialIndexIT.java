@@ -119,7 +119,7 @@ class UniqueSpatialIndexIT
         createNonUniqueNodes();
 
         // then
-        assertThrows( ConstraintViolationException.class, this::createUniquenessConstraint);
+        assertThrows( ConstraintViolationException.class, this::createUniquenessConstraint );
     }
 
     @ParameterizedTest
