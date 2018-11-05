@@ -143,17 +143,12 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       VirtualValues.list(labelArray: _*)
   }
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = {
+  override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = {
     if (label == StatementConstants.NO_SUCH_LABEL) false
     else {
-      val cursor = allocateNodeCursor()
-      try {
-        reads().singleNode(node, cursor)
-        if (!cursor.next()) false
-        else cursor.hasLabel(label)
-      } finally {
-        cursor.close()
-      }
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) false
+      else nodeCursor.hasLabel(label)
     }
   }
 
@@ -353,43 +348,31 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def nodeAsMap(id: Long): MapValue = {
-    val node = allocateNodeCursor()
-    val property = allocatePropertyCursor()
-    try {
-      reads().singleNode(id, node)
-      if (!node.next()) VirtualValues.EMPTY_MAP
+  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) VirtualValues.EMPTY_MAP
       else {
         val tokens = tokenRead
-        node.properties(property)
+        nodeCursor.properties(propertyCursor)
         val builder = new MapValueBuilder()
-        while (property.next()) {
-          builder.add(tokens.propertyKeyName(property.propertyKey()), property.propertyValue())
+        while (propertyCursor.next()) {
+          builder.add(tokens.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue())
         }
         builder.build()
-      }
-    } finally {
-      IOUtils.closeAll(node, property)
     }
   }
 
-  override def relationshipAsMap(id: Long): MapValue = {
-    val relationship = allocateRelationshipScanCursor()
-    val property = allocatePropertyCursor()
-    try {
-      reads().singleRelationship(id, relationship)
-      if (!relationship.next()) VirtualValues.EMPTY_MAP
-      else {
-        val tokens = tokenRead
-        relationship.properties(property)
-        val builder = new MapValueBuilder()
-        while (property.next()) {
-          builder.add(tokens.propertyKeyName(property.propertyKey()), property.propertyValue())
-        }
-        builder.build()
+  override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue = {
+    reads().singleRelationship(id, relationshipCursor)
+    if (!relationshipCursor.next()) VirtualValues.EMPTY_MAP
+    else {
+      val tokens = tokenRead
+      relationshipCursor.properties(propertyCursor)
+      val builder = new MapValueBuilder()
+      while (propertyCursor.next()) {
+        builder.add(tokens.propertyKeyName(propertyCursor.propertyKey()), propertyCursor.propertyValue())
       }
-    } finally {
-      IOUtils.closeAll(relationship, property)
+      builder.build()
     }
   }
 
@@ -436,48 +419,28 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else Nodes.countOutgoing(cursor, transactionalContext.cursors, relationship)
-    } finally {
-      cursor.close()
-    }
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors, relationship)
   }
 
-  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else Nodes.countIncoming(cursor, transactionalContext.cursors, relationship)
-    } finally {
-      cursor.close()
-    }
+  override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else Nodes.countIncoming(nodeCursor, transactionalContext.cursors, relationship)
   }
 
-  override def nodeGetTotalDegree(node: Long, relationship: Int): Int = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else Nodes.countAll(cursor, transactionalContext.cursors, relationship)
-    } finally {
-      cursor.close()
-    }
+  override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) 0
+    else Nodes.countAll(nodeCursor, transactionalContext.cursors, relationship)
   }
 
-  override def nodeIsDense(node: Long): Boolean = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) false
-      else cursor.isDense
-    } finally {
-      cursor.close()
-    }
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = {
+    reads().singleNode(node, nodeCursor)
+    if (!nodeCursor.next()) false
+    else nodeCursor.isDense
   }
 
   override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)

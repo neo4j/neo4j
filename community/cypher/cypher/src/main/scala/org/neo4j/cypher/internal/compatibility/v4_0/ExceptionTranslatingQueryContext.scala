@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, Dele
 import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeCursor, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -114,26 +114,28 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     translateException(inner.getNodesByLabelPrimitive(id))
 
 
-  override def nodeAsMap(id: Long): MapValue = translateException(inner.nodeAsMap(id))
+  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue =
+    translateException(inner.nodeAsMap(id, nodeCursor, propertyCursor))
 
-  override def relationshipAsMap(id: Long): MapValue = translateException(inner.relationshipAsMap(id))
+  override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue =
+    translateException(inner.relationshipAsMap(id, relationshipCursor, propertyCursor))
 
   override def nodeGetOutgoingDegree(node: Long): Int =
     translateException(inner.nodeGetOutgoingDegree(node))
 
-  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int =
-    translateException(inner.nodeGetOutgoingDegree(node, relationship))
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
+    translateException(inner.nodeGetOutgoingDegree(node, relationship, nodeCursor))
 
   override def nodeGetIncomingDegree(node: Long): Int =
     translateException(inner.nodeGetIncomingDegree(node))
 
-  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int =
-    translateException(inner.nodeGetIncomingDegree(node, relationship))
+  override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
+    translateException(inner.nodeGetIncomingDegree(node, relationship, nodeCursor))
 
   override def nodeGetTotalDegree(node: Long): Int = translateException(inner.nodeGetTotalDegree(node))
 
-  override def nodeGetTotalDegree(node: Long, relationship: Int): Int =
-    translateException(inner.nodeGetTotalDegree(node, relationship))
+  override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
+    translateException(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
   override def createNodeKeyConstraint(labelId: Int, propertyKeyIds: Seq[Int]): Boolean =
     translateException(inner.createNodeKeyConstraint(labelId, propertyKeyIds))
@@ -197,8 +199,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                  allowed: Array[String]): UserDefinedAggregator =
     translateException(inner.aggregateFunction(name, allowed))
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean =
-    translateException(inner.isLabelSetOnNode(label, node))
+  override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean =
+    translateException(inner.isLabelSetOnNode(label, node, nodeCursor))
 
   override def getRelTypeId(relType: String) =
     translateException(inner.getRelTypeId(relType))
@@ -254,8 +256,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                            indexOrder: IndexOrder): NodeValueIndexCursor =
     translateException(inner.indexScan(index, needsValues, indexOrder))
 
-  override def nodeIsDense(node: Long) =
-    translateException(inner.nodeIsDense(node))
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean =
+    translateException(inner.nodeIsDense(node, nodeCursor))
 
   override def asObject(value: AnyValue): AnyRef =
     translateException(inner.asObject(value))

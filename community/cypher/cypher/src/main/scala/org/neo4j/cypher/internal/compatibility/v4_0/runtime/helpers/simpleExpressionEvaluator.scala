@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
+import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExpressionCursors, QueryState}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.attribution.Id

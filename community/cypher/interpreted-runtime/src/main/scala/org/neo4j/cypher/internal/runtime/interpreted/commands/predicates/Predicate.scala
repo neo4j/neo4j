@@ -328,7 +328,7 @@ case class HasLabel(entity: Expression, label: KeyToken) extends Predicate {
         case None =>
           Some(false)
         case Some(labelId) =>
-          Some(queryCtx.isLabelSetOnNode(labelId, nodeId))
+          Some(queryCtx.isLabelSetOnNode(labelId, nodeId, state.cursors.nodeCursor))
       }
   }
 

@@ -40,7 +40,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
   }
 
   def canUseThis(graphNodeId: Long, state: QueryState, ctx: ExecutionContext): Boolean =
-    nodeHasLabels(graphNodeId, state.query) &&
+    nodeHasLabels(graphNodeId, state) &&
     nodeHasProperties(graphNodeId, ctx, state)
 
   val relationships = scala.collection.mutable.Set[PatternRelationship]()
@@ -93,12 +93,12 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
     }
   }
 
-  private def nodeHasLabels(graphNodeId: Long, ctx: QueryContext): Boolean = {
-    val expectedLabels: Seq[Option[Int]] = labels.map(_.getOptId(ctx))
+  private def nodeHasLabels(graphNodeId: Long, state: QueryState): Boolean = {
+    val expectedLabels: Seq[Option[Int]] = labels.map(_.getOptId(state.query))
 
     expectedLabels.forall {
       case None          => false
-      case Some(labelId) => ctx.isLabelSetOnNode(labelId, graphNodeId)
+      case Some(labelId) => state.query.isLabelSetOnNode(labelId, graphNodeId, state.cursors.nodeCursor)
     }
   }
 

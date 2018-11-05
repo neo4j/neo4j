@@ -88,8 +88,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getOrCreateLabelId(labelName: String): Int
 
-  def isLabelSetOnNode(label: Int, node: Long): Boolean
-
   def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int
 
   def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int
@@ -164,13 +162,13 @@ trait QueryContext extends TokenContext with DbAccess {
     case SemanticDirection.BOTH => nodeGetTotalDegree(node)
   }
 
-  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = dir match {
-    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, relTypeId)
-    case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, relTypeId)
-    case SemanticDirection.BOTH => nodeGetTotalDegree(node, relTypeId)
+  def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int, nodeCursor: NodeCursor): Int = dir match {
+    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, relTypeId, nodeCursor)
+    case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, relTypeId, nodeCursor)
+    case SemanticDirection.BOTH => nodeGetTotalDegree(node, relTypeId, nodeCursor)
   }
 
-  def nodeIsDense(node: Long): Boolean
+  def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean
 
   def asObject(value: AnyValue): AnyRef
 

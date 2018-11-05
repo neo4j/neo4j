@@ -47,35 +47,39 @@ trait CachingExpandInto {
   /**
    * Finds all relationships connecting fromNode and toNode.
    */
-  protected def findRelationships(query: QueryContext, fromNode: NodeValue, toNode: NodeValue,
-                                relCache: RelationshipsCache, dir: SemanticDirection, relTypes: => Option[Array[Int]]): Iterator[RelationshipValue] = {
+  protected def findRelationships(state: QueryState,
+                                  fromNode: NodeValue,
+                                  toNode: NodeValue,
+                                  relCache: RelationshipsCache,
+                                  dir: SemanticDirection,
+                                  relTypes: => Option[Array[Int]]): Iterator[RelationshipValue] = {
 
-    val fromNodeIsDense = query.nodeIsDense(fromNode.id())
-    val toNodeIsDense = query.nodeIsDense(toNode.id())
+    val fromNodeIsDense = state.query.nodeIsDense(fromNode.id(), state.cursors.nodeCursor)
+    val toNodeIsDense = state.query.nodeIsDense(toNode.id(), state.cursors.nodeCursor)
 
     //if both nodes are dense, start from the one with the lesser degree
     if (fromNodeIsDense && toNodeIsDense) {
       //check degree and iterate from the node with smaller degree
-      val fromDegree = getDegree(fromNode, relTypes, dir, query)
+      val fromDegree = getDegree(fromNode, relTypes, dir, state)
       if (fromDegree == 0) {
         return Iterator.empty
       }
 
-      val toDegree = getDegree(toNode, relTypes, dir.reversed, query)
+      val toDegree = getDegree(toNode, relTypes, dir.reversed, state)
       if (toDegree == 0) {
         return Iterator.empty
       }
 
-      relIterator(query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = fromDegree < toDegree, relTypes, relCache, dir)
     }
     // iterate from a non-dense node
     else if (toNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = true, relTypes, relCache, dir)
     else if (fromNodeIsDense)
-      relIterator(query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, preserveDirection = false, relTypes, relCache, dir)
     //both nodes are non-dense, choose a random starting point
     else
-      relIterator(query, fromNode, toNode, alternate(), relTypes, relCache, dir)
+      relIterator(state.query, fromNode, toNode, alternate(), relTypes, relCache, dir)
   }
 
   private var alternateState = false
@@ -109,14 +113,14 @@ trait CachingExpandInto {
     }.asScala
   }
 
-  private def getDegree(node: NodeValue, relTypes: Option[Array[Int]], direction: SemanticDirection, query: QueryContext) = {
+  private def getDegree(node: NodeValue, relTypes: Option[Array[Int]], direction: SemanticDirection, state: QueryState) = {
     relTypes.map {
-      case rels if rels.isEmpty   => query.nodeGetDegree(node.id(), direction)
-      case rels if rels.length == 1 => query.nodeGetDegree(node.id(), direction, rels.head)
-      case rels                   => rels.foldLeft(0)(
-        (acc, rel)                => acc + query.nodeGetDegree(node.id(), direction, rel)
+      case rels if rels.isEmpty     => state.query.nodeGetDegree(node.id(), direction)
+      case rels if rels.length == 1 => state.query.nodeGetDegree(node.id(), direction, rels.head, state.cursors.nodeCursor)
+      case rels                     => rels.foldLeft(0)(
+        (acc, rel)                  => acc + state.query.nodeGetDegree(node.id(), direction, rel, state.cursors.nodeCursor)
       )
-    }.getOrElse(query.nodeGetDegree(node.id(), direction))
+    }.getOrElse(state.query.nodeGetDegree(node.id(), direction))
   }
 
   @inline

@@ -22,21 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
-import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor}
+import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext, QueryStatistics}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.ParameterNotFoundException
 
 import scala.collection.mutable
-
-class ExpressionCursors(cursorFactory: CursorFactory) extends AutoCloseable {
-  val nodeCursor: NodeCursor = cursorFactory.allocateNodeCursor()
-
-  override def close(): Unit = {
-    nodeCursor.close()
-  }
-}
 
 class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,

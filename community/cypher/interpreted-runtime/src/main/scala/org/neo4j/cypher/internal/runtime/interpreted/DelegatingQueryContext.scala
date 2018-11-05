@@ -144,15 +144,15 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def getNodesByLabelPrimitive(id: Int): LongIterator = manyDbHits(inner.getNodesByLabelPrimitive(id))
 
-  override def nodeAsMap(id: Long): MapValue = {
-    val map = inner.nodeAsMap(id)
+  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = {
+    val map = inner.nodeAsMap(id, nodeCursor, propertyCursor)
     //one hit finding the node, then finding the properies
     manyDbHits(1 + map.size())
     map
   }
 
-  override def relationshipAsMap(id: Long): MapValue = {
-    val map = inner.relationshipAsMap(id)
+  override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue = {
+    val map = inner.relationshipAsMap(id, relationshipCursor, propertyCursor)
     manyDbHits(1 + map.size())
     map
   }
@@ -200,17 +200,17 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def nodeGetOutgoingDegree(node: Long): Int = singleDbHit(inner.nodeGetOutgoingDegree(node))
 
-  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, relationship))
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, relationship, nodeCursor))
 
   override def nodeGetIncomingDegree(node: Long): Int = singleDbHit(inner.nodeGetIncomingDegree(node))
 
-  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int = singleDbHit(inner.nodeGetIncomingDegree(node, relationship))
+  override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetIncomingDegree(node, relationship, nodeCursor))
 
   override def nodeGetTotalDegree(node: Long): Int = singleDbHit(inner.nodeGetTotalDegree(node))
 
-  override def nodeGetTotalDegree(node: Long, relationship: Int): Int = singleDbHit(inner.nodeGetTotalDegree(node, relationship))
+  override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
-  override def nodeIsDense(node: Long): Boolean = singleDbHit(inner.nodeIsDense(node))
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = singleDbHit(inner.nodeIsDense(node, nodeCursor))
 
   override def variableLengthPathExpand(realNode: Long,
                                         minHops: Option[Int],
@@ -219,7 +219,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                         relTypes: Seq[String]): Iterator[Path] =
     manyDbHits(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node))
+  override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = singleDbHit(inner.isLabelSetOnNode(label, node, nodeCursor))
 
   override def nodeCountByCountStore(labelId: Int): Long = singleDbHit(inner.nodeCountByCountStore(labelId))
 

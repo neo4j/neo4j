@@ -81,7 +81,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
         }
       }
     })
-    when(query.nodeGetDegree(any(), any(), any())).thenReturn(1)
+    when(query.nodeGetDegree(any(), any(), any(), any())).thenReturn(1)
 
     val pipe = ExpandIntoPipe(newMockedPipe("a", row("a"-> startNode, "b" -> endNode1)), "a", "r", "b", SemanticDirection.OUTGOING, new LazyTypes(Array("FOO", "BAR")))()
 

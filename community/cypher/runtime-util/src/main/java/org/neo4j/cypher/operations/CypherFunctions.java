@@ -28,6 +28,8 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.ArrayValue;
@@ -769,12 +771,12 @@ public final class CypherFunctions
         }
     }
 
-    public static boolean hasLabel( AnyValue entity, int labelToken, DbAccess access )
+    public static boolean hasLabel( AnyValue entity, int labelToken, DbAccess access, NodeCursor nodeCursor )
     {
         assert entity != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( entity instanceof NodeValue )
         {
-            return access.isLabelSetOnNode( labelToken, ((NodeValue) entity).id() );
+            return access.isLabelSetOnNode( labelToken, ((NodeValue) entity).id(), nodeCursor );
         }
         else
         {
@@ -868,16 +870,20 @@ public final class CypherFunctions
         }
     }
 
-    public static MapValue properties( AnyValue in, DbAccess access )
+    public static MapValue properties( AnyValue in,
+                                       DbAccess access,
+                                       NodeCursor nodeCursor,
+                                       RelationshipScanCursor relationshipCursor,
+                                       PropertyCursor propertyCursor )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof VirtualNodeValue )
         {
-            return access.nodeAsMap( ((VirtualNodeValue) in).id() );
+            return access.nodeAsMap( ((VirtualNodeValue) in).id(), nodeCursor, propertyCursor );
         }
         else if ( in instanceof VirtualRelationshipValue )
         {
-           return access.relationshipAsMap( ((VirtualRelationshipValue) in).id() );
+           return access.relationshipAsMap( ((VirtualRelationshipValue) in).id(), relationshipCursor, propertyCursor );
         }
         else if ( in instanceof MapValue )
         {

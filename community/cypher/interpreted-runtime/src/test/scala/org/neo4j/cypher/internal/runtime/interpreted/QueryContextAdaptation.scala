@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeCursor, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -83,7 +83,7 @@ trait QueryContextAdaptation {
 
   override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = ???
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int): Int = ???
+  override def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int, nodeCursor: NodeCursor): Int = ???
 
   override def entityAccessor: EmbeddedProxySPI = ???
 
@@ -93,7 +93,7 @@ trait QueryContextAdaptation {
 
   override def getOrCreatePropertyKeyIds(propertyKeys: Array[String]): Array[Int] = ???
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = ???
+  override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = ???
 
   override def indexReference(label: Int, properties: Int*): IndexReference = ???
 
@@ -106,9 +106,9 @@ trait QueryContextAdaptation {
 
   override def getRelationshipsForIdsPrimitive(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipIterator = ???
 
-  override def nodeAsMap(id: Long): MapValue = ???
+  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = ???
 
-  override def relationshipAsMap(id: Long): MapValue = ???
+  override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue = ???
 
   override def getRelationshipsCursor(node: Long, dir: SemanticDirection, types: Option[Array[Int]]): RelationshipSelectionCursor = ???
 
@@ -138,7 +138,7 @@ trait QueryContextAdaptation {
 
   override def relationshipCountByCountStore(startLabelId: Int, typeId: Int, endLabelId: Int): Long = ???
 
-  override def nodeIsDense(node: Long): Boolean = ???
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = ???
 
   override def setLabelsOnNode(node: Long, labelIds: scala.Iterator[Int]): Int = ???
 
@@ -214,13 +214,13 @@ trait QueryContextAdaptation {
 
   override def nodeGetOutgoingDegree(node: Long): Int = ???
 
-  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int = ???
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = ???
 
   override def nodeGetIncomingDegree(node: Long): Int = ???
 
-  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int = ???
+  override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = ???
 
   override def nodeGetTotalDegree(node: Long): Int = ???
 
-  override def nodeGetTotalDegree(node: Long, relationship: Int): Int = ???
+  override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = ???
 }

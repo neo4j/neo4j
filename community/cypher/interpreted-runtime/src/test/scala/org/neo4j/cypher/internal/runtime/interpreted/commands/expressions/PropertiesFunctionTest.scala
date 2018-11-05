@@ -25,11 +25,13 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
 import org.neo4j.values.virtual.VirtualValues.map
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.util.CypherTypeException
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.mockito.ArgumentMatchers.any
 
 class PropertiesFunctionTest extends CypherFunSuite {
 
@@ -64,7 +66,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.nodeAsMap(0)).thenReturn(value)
+    when(query.nodeAsMap(0, any[NodeCursor], any[PropertyCursor])).thenReturn(value)
 
     properties(node) should equal(value)
   }
@@ -73,7 +75,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.relationshipAsMap(0)).thenReturn(value)
+    when(query.relationshipAsMap(0, any[RelationshipScanCursor], any[PropertyCursor])).thenReturn(value)
 
     properties(rel) should equal(value)
   }

@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeCursor, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api._
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
@@ -76,7 +76,7 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getOrCreateLabelId(labelName: String): Int = notSupported()
 
-  override def isLabelSetOnNode(label: Int, node: Long): Boolean = notSupported()
+  override def isLabelSetOnNode(label: Int, node: Long, nodeCursor: NodeCursor): Boolean = notSupported()
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = notSupported()
 
@@ -117,7 +117,7 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def createNewQueryContext(): QueryContext = notSupported()
 
-  override def nodeIsDense(node: Long): Boolean = notSupported()
+  override def nodeIsDense(node: Long, nodeCursor: NodeCursor): Boolean = notSupported()
 
   override def asObject(value: AnyValue): AnyRef = notSupported()
 
@@ -211,15 +211,15 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def nodeGetOutgoingDegree(node: Long): Int = notSupported()
 
-  override def nodeGetOutgoingDegree(node: Long, relationship: Int): Int = notSupported()
+  override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notSupported()
 
   override def nodeGetIncomingDegree(node: Long): Int = notSupported()
 
-  override def nodeGetIncomingDegree(node: Long, relationship: Int): Int = notSupported()
+  override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notSupported()
 
   override def nodeGetTotalDegree(node: Long): Int = notSupported()
 
-  override def nodeGetTotalDegree(node: Long, relationship: Int): Int = notSupported()
+  override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notSupported()
 
   override def relationshipGetStartNode(relationship: RelationshipValue): NodeValue = notSupported()
 
@@ -229,9 +229,9 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getPropertyKeyName(token: Int): String = notSupported()
 
-  override def nodeAsMap(id: Long): MapValue = notSupported()
+  override def nodeAsMap(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): MapValue = notSupported()
 
-  override def relationshipAsMap(id: Long): MapValue = notSupported()
+  override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue = notSupported()
 
   override def indexSeek[RESULT <: AnyRef](index: IndexReference,
                                            needsValues: Boolean,

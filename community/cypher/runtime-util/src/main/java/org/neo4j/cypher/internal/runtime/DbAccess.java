@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.runtime;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.PropertyCursor;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
@@ -55,15 +57,15 @@ public interface DbAccess
 
     int nodeGetOutgoingDegree( long node );
 
-    int nodeGetOutgoingDegree( long node, int relationship );
+    int nodeGetOutgoingDegree( long node, int relationship, NodeCursor nodeCursor );
 
     int nodeGetIncomingDegree( long node );
 
-    int nodeGetIncomingDegree( long node, int relationship );
+    int nodeGetIncomingDegree( long node, int relationship, NodeCursor nodeCursor );
 
     int nodeGetTotalDegree( long node );
 
-    int nodeGetTotalDegree( long node, int relationship );
+    int nodeGetTotalDegree( long node, int relationship, NodeCursor nodeCursor );
 
     NodeValue relationshipGetStartNode( RelationshipValue relationship );
 
@@ -71,13 +73,13 @@ public interface DbAccess
 
     ListValue getLabelsForNode( long id, NodeCursor nodeCursor );
 
-    boolean isLabelSetOnNode( int label, long id );
+    boolean isLabelSetOnNode( int label, long id, NodeCursor nodeCursor );
 
     String getPropertyKeyName( int token );
 
-    MapValue nodeAsMap( long id );
+    MapValue nodeAsMap( long id, NodeCursor nodeCursor, PropertyCursor propertyCursor );
 
-    MapValue relationshipAsMap( long id );
+    MapValue relationshipAsMap( long id, RelationshipScanCursor relationshipCursor, PropertyCursor propertyCursor );
 
     Value getTxStateNodePropertyOrNull( long nodeId, int propertyKey );
 }
