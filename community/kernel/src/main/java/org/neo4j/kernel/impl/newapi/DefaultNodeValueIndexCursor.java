@@ -83,7 +83,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
                             IndexOrder indexOrder,
                             boolean needsValues )
     {
-        assert query != null && query.length > 0;
+        assert query != null;
         super.initialize( progressor );
         sortedMergeJoin.initialize( indexOrder );
 
@@ -91,7 +91,7 @@ final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         this.needsValues = needsValues;
         this.query = query;
 
-        if ( read.hasTxStateWithChanges() )
+        if ( read.hasTxStateWithChanges() && query.length > 0 )
         {
             IndexQuery firstPredicate = query[0];
             switch ( firstPredicate.type() )

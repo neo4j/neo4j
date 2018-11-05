@@ -23,8 +23,13 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Assume;
 import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -42,8 +47,10 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
@@ -69,6 +76,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         try ( Transaction tx = graphDb.beginTx() )
         {
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
+            graphDb.schema().indexFor( label( "Node" ) ).on( "prop2" ).create();
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -772,7 +780,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldProvideValuesForPoints() throws Exception
     {
         // given
-        Assume.assumeTrue( indexProvidesAllValues() );
+        assumeTrue( indexProvidesAllValues() );
 
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
@@ -795,7 +803,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     public void shouldProvideValuesForAllTypes() throws Exception
     {
         // given
-        Assume.assumeTrue( indexProvidesAllValues() );
+        assumeTrue( indexProvidesAllValues() );
 
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
@@ -1424,6 +1432,63 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // then
             assertTrue( node.next() );
             assertEquals( strOneNoLabel, node.nodeReference() );
+        }
+    }
+
+    @Test
+    public void shouldCountDistinctValues() throws Exception
+    {
+        // Given
+        int label = token.nodeLabel( "Node" );
+        int key = token.propertyKey( "prop2" );
+        IndexReference index = schemaRead.index( label, key );
+        Map<Value,Set<Long>> expected = new HashMap<>();
+        int expectedTotalCount = 100;
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
+        {
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            Write write = tx.dataWrite();
+            for ( int i = 0; i < expectedTotalCount; i++ )
+            {
+                long nodeId = write.nodeCreate();
+                write.nodeAddLabel( nodeId, label );
+                Value value = Values.of( random.nextBoolean() ? String.valueOf( i % 10 ) : (i % 10) );
+                write.nodeSetProperty( nodeId, key, value );
+                expected.computeIfAbsent( value, v -> new HashSet<>() ).add( nodeId );
+            }
+            tx.success();
+        }
+
+        // then
+        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
+                NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            tx.dataRead().nodeIndexDistinctValues( index, node );
+            long totalCount = 0;
+            boolean hasValues = true;
+            while ( node.next() )
+            {
+                long count = node.nodeReference();
+                if ( node.hasValue() && node.propertyValue( 0 ) != null )
+                {
+                    Value value = node.propertyValue( 0 );
+                    Set<Long> expectedNodes = expected.remove( value );
+                    assertNotNull( expectedNodes );
+                    assertEquals( count, expectedNodes.size() );
+                }
+                else
+                {
+                    // Some providers just can't serve the values for all types, which makes this test unable to do detailed checks for those values
+                    // and the total count
+                    hasValues = false;
+                }
+                totalCount += count;
+            }
+            if ( hasValues )
+            {
+                assertTrue( expected.toString(), expected.isEmpty() );
+            }
+            assertEquals( expectedTotalCount, totalCount );
         }
     }
 
