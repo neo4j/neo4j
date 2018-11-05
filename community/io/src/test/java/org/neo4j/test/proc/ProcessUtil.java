@@ -20,8 +20,6 @@
 package org.neo4j.test.proc;
 
 import java.io.File;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
@@ -49,18 +47,6 @@ public class ProcessUtil
     {
         String javaHome = System.getProperty( "java.home" );
         return Paths.get( javaHome, "bin", "java" );
-    }
-
-    /**
-     * Get the list of command line arguments that were passed to the Java runtime, as opposed to the Java program.
-     *
-     * @see RuntimeMXBean#getInputArguments()
-     * @return The list of arguments, as Strings, that were given to the Java runtime.
-     */
-    public static List<String> getJavaExecutableArguments()
-    {
-        RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
-        return runtimeMxBean.getInputArguments();
     }
 
     /**
