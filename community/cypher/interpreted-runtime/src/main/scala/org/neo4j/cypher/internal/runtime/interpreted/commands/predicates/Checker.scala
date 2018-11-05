@@ -53,11 +53,14 @@ class BuildUp(list: ListValue) extends Checker {
     var foundMatch = Equality.FALSE
     while (iterator.hasNext && foundMatch != Equality.TRUE) {
       val nextValue = iterator.next()
-      if (nextValue == Values.NO_VALUE) {
+      if (nextValue eq Values.NO_VALUE) {
         foundMatch = Equality.UNDEFINED
       } else {
         cachedSet.add(nextValue)
-        foundMatch = nextValue.ternaryEquals(value)
+        val areEqual = nextValue.ternaryEquals(value)
+        if ((areEqual eq Equality.UNDEFINED) || (areEqual eq Equality.TRUE)) {
+          foundMatch = areEqual
+        }
       }
     }
     if (cachedSet.isEmpty) {
