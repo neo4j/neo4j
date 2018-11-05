@@ -35,7 +35,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
 
     val mapOfProperties = variableValue match {
       case v if v == Values.NO_VALUE => return Values.NO_VALUE
-      case IsMap(m) => if (includeAllProps) m(state.query) else VirtualValues.emptyMap()
+      case IsMap(m) => if (includeAllProps) m(state) else VirtualValues.emptyMap()
     }
     val builder = new MapValueBuilder(literalExpressions.size)
     literalExpressions.foreach {
@@ -44,7 +44,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
 
     //in case we get a lazy map we need to make sure it has been loaded
     mapOfProperties match {
-      case m :LazyMap[_] => m.load()
+      case m :LazyMap[_,_] => m.load()
       case _ =>
     }
 

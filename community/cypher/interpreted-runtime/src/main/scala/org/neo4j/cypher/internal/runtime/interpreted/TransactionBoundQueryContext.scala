@@ -25,7 +25,7 @@ import java.util.function.Predicate
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.collection.PrimitiveLongResourceIterator
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.cypher.internal.planner.v4_0.spi.{IdempotentResult, IndexDescriptor}
+import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.DirectionConverter.toGraphDb
@@ -386,37 +386,22 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     }
   }
 
-  override def nodeGetOutgoingDegree(node: Long): Int = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else Nodes.countOutgoing(cursor, transactionalContext.cursors)
-    } finally {
-     cursor.close()
-    }
+  override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = {
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) 0
+      else Nodes.countOutgoing(nodeCursor, transactionalContext.cursors)
   }
 
-  override def nodeGetIncomingDegree(node: Long): Int = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else Nodes.countIncoming(cursor, transactionalContext.cursors)
-    } finally {
-      cursor.close()
-    }
+  override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = {
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) 0
+      else Nodes.countIncoming(nodeCursor, transactionalContext.cursors)
   }
 
-  override def nodeGetTotalDegree(node: Long): Int = {
-    val cursor = allocateNodeCursor()
-    try {
-      reads().singleNode(node, cursor)
-      if (!cursor.next()) 0
-      else Nodes.countAll(cursor, transactionalContext.cursors)
-    } finally {
-      cursor.close()
-    }
+  override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = {
+      reads().singleNode(node, nodeCursor)
+      if (!nodeCursor.next()) 0
+      else Nodes.countAll(nodeCursor, transactionalContext.cursors)
   }
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = {
@@ -456,28 +441,22 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
    ops.nodePropertyChangeInTransactionOrNull(nodeId, propertyKey)
   }
 
-  class NodeOperations extends BaseOperations[NodeValue] {
+  class NodeOperations extends BaseOperations[NodeValue, NodeCursor] with org.neo4j.cypher.internal.runtime.NodeOperations {
 
     override def delete(id: Long) {
       writes().nodeDelete(id)
     }
 
-    override def propertyKeyIds(id: Long): Array[Int] = {
-      val node = allocateNodeCursor()
-      val property = allocatePropertyCursor()
-      try {
-        reads().singleNode(id, node)
-        if (!node.next()) Array.empty
-        else {
-          val buffer = ArrayBuffer[Int]()
-          node.properties(property)
-          while (property.next()) {
-            buffer.append(property.propertyKey())
-          }
-          buffer.toArray
+    override def propertyKeyIds(id: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] = {
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) Array.empty
+      else {
+        val buffer = ArrayBuffer[Int]()
+        nodeCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          buffer.append(propertyCursor.propertyKey())
         }
-      } finally {
-        IOUtils.closeAll(node, property)
+        buffer.toArray
       }
     }
 
@@ -597,28 +576,22 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         None
   }
 
-  class RelationshipOperations extends BaseOperations[RelationshipValue] {
+  class RelationshipOperations extends BaseOperations[RelationshipValue, RelationshipScanCursor] with org.neo4j.cypher.internal.runtime.RelationshipOperations {
 
     override def delete(id: Long) {
       writes().relationshipDelete(id)
     }
 
-    override def propertyKeyIds(id: Long): Array[Int] = {
-      val relationship = allocateRelationshipScanCursor()
-      val property = allocatePropertyCursor()
-      try {
-        reads().singleRelationship(id, relationship)
-        if (!relationship.next()) Array.empty
-        else {
-          val buffer = ArrayBuffer[Int]()
-          relationship.properties(property)
-          while (property.next()) {
-            buffer.append(property.propertyKey())
-          }
-          buffer.toArray
+    override def propertyKeyIds(id: Long, relationshipScanCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Array[Int] = {
+      reads().singleRelationship(id, relationshipScanCursor)
+      if (!relationshipScanCursor.next()) Array.empty
+      else {
+        val buffer = ArrayBuffer[Int]()
+        relationshipScanCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          buffer.append(propertyCursor.propertyKey())
         }
-      } finally {
-        IOUtils.closeAll(relationship, property)
+        buffer.toArray
       }
     }
 
@@ -755,7 +728,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ids
   }
 
-  abstract class BaseOperations[T] extends Operations[T] {
+  abstract class BaseOperations[T, CURSOR] extends Operations[T, CURSOR] {
 
     def primitiveLongIteratorToScalaIterator(primitiveIterator: LongIterator): Iterator[Long] =
       new Iterator[Long] {

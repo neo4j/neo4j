@@ -48,9 +48,9 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def resources: ResourceManager = notSupported()
 
-  override def nodeOps: Operations[NodeValue] = notSupported()
+  override def nodeOps: NodeOperations = notSupported()
 
-  override def relationshipOps: Operations[RelationshipValue] = notSupported()
+  override def relationshipOps: RelationshipOperations = notSupported()
 
   override def createNode(labels: Array[Int]): NodeValue = notSupported()
 
@@ -209,15 +209,15 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getRelTypeId(relType: String): Int = notSupported()
 
-  override def nodeGetOutgoingDegree(node: Long): Int = notSupported()
+  override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = notSupported()
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notSupported()
 
-  override def nodeGetIncomingDegree(node: Long): Int = notSupported()
+  override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = notSupported()
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notSupported()
 
-  override def nodeGetTotalDegree(node: Long): Int = notSupported()
+  override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = notSupported()
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = notSupported()
 

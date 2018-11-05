@@ -22,8 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util
 
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.function.ThrowingBiConsumer
+import org.neo4j.internal.kernel.api.PropertyCursor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{MapValue, VirtualNodeValue, VirtualRelationshipValue}
@@ -32,7 +34,7 @@ import scala.collection.immutable
 
 object IsMap extends MapSupport {
 
-  def unapply(x: AnyValue): Option[QueryContext => MapValue] = if (isMap(x)) {
+  def unapply(x: AnyValue): Option[QueryState => MapValue] = if (isMap(x)) {
     Some(castToMap(x))
   } else {
     None
@@ -43,19 +45,19 @@ trait MapSupport {
 
   def isMap(x: AnyValue): Boolean = castToMap.isDefinedAt(x)
 
-  def castToMap: PartialFunction[AnyValue, QueryContext => MapValue] = {
+  def castToMap: PartialFunction[AnyValue, QueryState => MapValue] = {
     case x: MapValue => _ => x
-    case x: VirtualNodeValue => ctx => new LazyMap(ctx, ctx.nodeOps, x.id())
-    case x: VirtualRelationshipValue => ctx => new LazyMap(ctx, ctx.relationshipOps, x.id())
+    case x: VirtualNodeValue => state => new LazyMap(state.query, state.query.nodeOps, state.cursors.nodeCursor, state.cursors.propertyCursor, x.id())
+    case x: VirtualRelationshipValue => state => new LazyMap(state.query, state.query.relationshipOps, state.cursors.relationshipScanCursor, state.cursors.propertyCursor, x.id())
   }
 }
 
-class LazyMap[T](ctx: QueryContext, ops: Operations[T], id: Long)
+class LazyMap[T, CURSOR](ctx: QueryContext, ops: Operations[T, CURSOR], cursor: CURSOR, propertyCursor: PropertyCursor, id: Long)
   extends MapValue {
 
  import scala.collection.JavaConverters._
 
-  private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id)
+  private lazy val allProps: util.Map[String, AnyValue] = ops.propertyKeyIds(id, cursor, propertyCursor)
     .map(propertyId => {
       val value: AnyValue = ops.getProperty(id, propertyId)
       ctx.getPropertyKeyName(propertyId) -> value

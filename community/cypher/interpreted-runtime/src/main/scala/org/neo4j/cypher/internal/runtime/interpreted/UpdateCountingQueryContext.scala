@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import java.util.concurrent.atomic.AtomicInteger
 
 import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
-import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics, _}
+import org.neo4j.internal.kernel.api.{IndexReference, NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
@@ -79,11 +79,11 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     inner.createNodeId(labels)
   }
 
-  override def nodeOps: Operations[NodeValue] =
-    new CountingOps[NodeValue](inner.nodeOps, nodesDeleted)
+  override def nodeOps: NodeOperations =
+    new CountingOps[NodeValue, NodeCursor](inner.nodeOps, nodesDeleted) with NodeOperations
 
-  override def relationshipOps: Operations[RelationshipValue] =
-    new CountingOps[RelationshipValue](inner.relationshipOps, relationshipsDeleted)
+  override def relationshipOps: RelationshipOperations =
+    new CountingOps[RelationshipValue, RelationshipScanCursor](inner.relationshipOps, relationshipsDeleted) with RelationshipOperations
 
   override def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
     val added = inner.setLabelsOnNode(node, labelIds)
@@ -157,7 +157,7 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     propertyExistenceConstraintsRemoved.increase()
   }
 
-  override def nodeGetDegree(node: Long, dir: SemanticDirection): Int = super.nodeGetDegree(node, dir)
+  override def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = super.nodeGetDegree(node, dir, nodeCursor)
 
   override def detachDeleteNode(node: Long): Int = {
     nodesDeleted.increase()
@@ -176,8 +176,8 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
     }
   }
 
-  private class CountingOps[T](inner: Operations[T], deletes: Counter)
-    extends DelegatingOperations[T](inner) {
+  private class CountingOps[T, CURSOR](inner: Operations[T, CURSOR], deletes: Counter)
+    extends DelegatingOperations[T, CURSOR](inner) {
 
     override def delete(id: Long) {
       deletes.increase()

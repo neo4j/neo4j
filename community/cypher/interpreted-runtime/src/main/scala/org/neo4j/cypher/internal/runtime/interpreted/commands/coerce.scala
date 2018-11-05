@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands
 
-import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{IsList, IsMap}
 import org.opencypher.v9_0.util.CypherTypeException
 import org.opencypher.v9_0.util.symbols._
@@ -31,7 +31,7 @@ import scala.collection.JavaConverters._
 
 object coerce {
 
-  def apply(value: AnyValue, typ: CypherType)(implicit context: QueryContext): AnyValue = {
+  def apply(value: AnyValue, state: QueryState, typ: CypherType): AnyValue = {
     val result = if (value == Values.NO_VALUE) Values.NO_VALUE else try {
       typ match {
         case CTAny => value
@@ -42,7 +42,7 @@ object coerce {
         case CTInteger => Values.longValue(value.asInstanceOf[NumberValue].longValue())
         case CTFloat => Values.doubleValue(value.asInstanceOf[NumberValue].doubleValue())
         case CTMap => value match {
-          case IsMap(m) => m(context)
+          case IsMap(m) => m(state)
           case _ => throw cantCoerce(value, typ)
         }
         case t: ListType => value match {
@@ -50,7 +50,7 @@ object coerce {
           case p: PathValue if t.innerType == CTRelationship => throw cantCoerce(value, typ)
           case p: PathValue => p.asList
           case IsList(coll) if t.innerType == CTAny => coll
-          case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, t.innerType)).toArray:_*)
+          case IsList(coll) => VirtualValues.list(coll.iterator().asScala.map(coerce(_, state, t.innerType)).toArray:_*)
           case _ => throw cantCoerce(value, typ)
         }
         case CTBoolean => value.asInstanceOf[BooleanValue]

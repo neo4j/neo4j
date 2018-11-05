@@ -44,7 +44,7 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
         case None => Values.NO_VALUE
         case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)
       }
-    case IsMap(mapFunc) => mapFunc(state.query).get(propertyKey.name)
+    case IsMap(mapFunc) => mapFunc(state).get(propertyKey.name)
     case t: TemporalValue[_,_] => t.get(propertyKey.name)
     case d: DurationValue => d.get(propertyKey.name)
     case p: PointValue => Try(p.get(propertyKey.name)) match {

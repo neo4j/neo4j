@@ -66,9 +66,9 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def resources: ResourceManager
 
-  def nodeOps: Operations[NodeValue]
+  def nodeOps: NodeOperations
 
-  def relationshipOps: Operations[RelationshipValue]
+  def relationshipOps: RelationshipOperations
 
   def createNode(labels: Array[Int]): NodeValue
 
@@ -156,10 +156,10 @@ trait QueryContext extends TokenContext with DbAccess {
    */
   def createNewQueryContext(): QueryContext
 
-  def nodeGetDegree(node: Long, dir: SemanticDirection): Int = dir match {
-    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node)
-    case SemanticDirection.INCOMING => nodeGetIncomingDegree(node)
-    case SemanticDirection.BOTH => nodeGetTotalDegree(node)
+  def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
+    case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, nodeCursor)
+    case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, nodeCursor)
+    case SemanticDirection.BOTH => nodeGetTotalDegree(node, nodeCursor)
   }
 
   def nodeGetDegree(node: Long, dir: SemanticDirection, relTypeId: Int, nodeCursor: NodeCursor): Int = dir match {
@@ -223,19 +223,21 @@ trait QueryContext extends TokenContext with DbAccess {
 
   override def nodeProperty(node: Long, property: Int): Value = nodeOps.getProperty(node, property)
 
-  override def nodePropertyIds(node: Long): Array[Int] = nodeOps.propertyKeyIds(node)
+  override def nodePropertyIds(node: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] =
+    nodeOps.propertyKeyIds(node, nodeCursor, propertyCursor)
 
   override def nodeHasProperty(node: Long, property: Int): Boolean = nodeOps.hasProperty(node, property)
 
   override def relationshipProperty(relationship: Long, property: Int): Value = relationshipOps.getProperty(relationship, property)
 
-  override def relationshipPropertyIds(relationship: Long): Array[Int] = relationshipOps.propertyKeyIds(relationship)
+  override def relationshipPropertyIds(relationship: Long, relationshipScanCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Array[Int] =
+    relationshipOps.propertyKeyIds(relationship, relationshipScanCursor, propertyCursor)
 
   override def relationshipHasProperty(relationship: Long, property: Int): Boolean =
     relationshipOps.hasProperty(relationship, property)
 }
 
-trait Operations[T] {
+trait Operations[T, CURSOR] {
   def delete(id: Long)
 
   def setProperty(obj: Long, propertyKeyId: Int, value: Value)
@@ -261,7 +263,7 @@ trait Operations[T] {
     */
   def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean
 
-  def propertyKeyIds(obj: Long): Array[Int]
+  def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int]
 
   def getById(id: Long): T
 
@@ -277,6 +279,10 @@ trait Operations[T] {
 
   def getByIdIfExists(id: Long): Option[T]
 }
+
+trait NodeOperations extends Operations[NodeValue, NodeCursor]
+
+trait RelationshipOperations extends Operations[RelationshipValue, RelationshipScanCursor]
 
 trait QueryTransactionalContext extends CloseableResource {
 

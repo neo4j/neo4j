@@ -115,12 +115,12 @@ trait CachingExpandInto {
 
   private def getDegree(node: NodeValue, relTypes: Option[Array[Int]], direction: SemanticDirection, state: QueryState) = {
     relTypes.map {
-      case rels if rels.isEmpty     => state.query.nodeGetDegree(node.id(), direction)
+      case rels if rels.isEmpty     => state.query.nodeGetDegree(node.id(), direction, state.cursors.nodeCursor)
       case rels if rels.length == 1 => state.query.nodeGetDegree(node.id(), direction, rels.head, state.cursors.nodeCursor)
       case rels                     => rels.foldLeft(0)(
         (acc, rel)                  => acc + state.query.nodeGetDegree(node.id(), direction, rel, state.cursors.nodeCursor)
       )
-    }.getOrElse(state.query.nodeGetDegree(node.id(), direction))
+    }.getOrElse(state.query.nodeGetDegree(node.id(), direction, state.cursors.nodeCursor))
   }
 
   @inline

@@ -198,15 +198,15 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def relationshipGetEndNode(relationship: RelationshipValue) = inner.relationshipGetEndNode(relationship)
 
 
-  override def nodeGetOutgoingDegree(node: Long): Int = singleDbHit(inner.nodeGetOutgoingDegree(node))
+  override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, nodeCursor))
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetOutgoingDegree(node, relationship, nodeCursor))
 
-  override def nodeGetIncomingDegree(node: Long): Int = singleDbHit(inner.nodeGetIncomingDegree(node))
+  override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetIncomingDegree(node, nodeCursor))
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetIncomingDegree(node, relationship, nodeCursor))
 
-  override def nodeGetTotalDegree(node: Long): Int = singleDbHit(inner.nodeGetTotalDegree(node))
+  override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetTotalDegree(node, nodeCursor))
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int = singleDbHit(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
 
@@ -289,7 +289,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     inner.getTxStateNodePropertyOrNull(nodeId, propertyKey)
 }
 
-class DelegatingOperations[T](protected val inner: Operations[T]) extends Operations[T] {
+class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]) extends Operations[T, CURSOR] {
 
   protected def singleDbHit[A](value: A): A = value
   protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
@@ -312,7 +312,8 @@ class DelegatingOperations[T](protected val inner: Operations[T]) extends Operat
   override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
     inner.hasTxStatePropertyForCachedNodeProperty(nodeId, propertyKeyId)
 
-  override def propertyKeyIds(obj: Long): Array[Int] = singleDbHit(inner.propertyKeyIds(obj))
+  override def propertyKeyIds(obj: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
+    singleDbHit(inner.propertyKeyIds(obj, cursor, propertyCursor))
 
   override def removeProperty(obj: Long, propertyKeyId: Int): Unit = singleDbHit(inner.removeProperty(obj, propertyKeyId))
 

@@ -23,7 +23,7 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.{NodeOperations, Operations, QueryContext, RelationshipOperations}
 import org.neo4j.internal.kernel.api.{NodeCursor, NodeValueIndexCursor}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
@@ -189,15 +189,15 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
     override def isClosed: Boolean = inner.isClosed
   }
 
-  class ProfilerOperations[T](inner: Operations[T]) extends DelegatingOperations[T](inner) {
+  class ProfilerOperations[T, CURSOR](inner: Operations[T, CURSOR]) extends DelegatingOperations[T, CURSOR](inner) {
     override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
     override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)
 
     override protected def manyDbHits[A](value: LongIterator): LongIterator = self.manyDbHits(value)
   }
 
-  override def nodeOps: Operations[NodeValue] = new ProfilerOperations(inner.nodeOps)
-  override def relationshipOps: Operations[RelationshipValue] = new ProfilerOperations(inner.relationshipOps)
+  override def nodeOps: NodeOperations = new ProfilerOperations(inner.nodeOps) with NodeOperations
+  override def relationshipOps: RelationshipOperations = new ProfilerOperations(inner.relationshipOps) with RelationshipOperations
 }
 
 class ProfilingIterator(inner: Iterator[ExecutionContext], startValue: Long, pipeId: Id,

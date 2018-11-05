@@ -22,15 +22,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.Operations
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.NumericHelper
+import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
-abstract class IdSeekIterator[T]
+abstract class IdSeekIterator[T, CURSOR]
   extends Iterator[ExecutionContext] with NumericHelper {
 
   private var cachedEntity: T = computeNextEntity()
 
-  protected def operations: Operations[T]
+  protected def operations: Operations[T, CURSOR]
   protected def entityIds: Iterator[AnyValue]
 
   protected def hasNextEntity = cachedEntity != null
@@ -61,9 +62,9 @@ abstract class IdSeekIterator[T]
 final class NodeIdSeekIterator(ident: String,
                                baseContext: ExecutionContext,
                                executionContextFactory: ExecutionContextFactory,
-                               protected val operations: Operations[NodeValue],
+                               protected val operations: Operations[NodeValue, NodeCursor],
                                protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[NodeValue] {
+  extends IdSeekIterator[NodeValue, NodeCursor] {
 
   def hasNext: Boolean = hasNextEntity
 
@@ -76,9 +77,9 @@ final class DirectedRelationshipIdSeekIterator(ident: String,
                                                toNode: String,
                                                baseContext: ExecutionContext,
                                                executionContextFactory: ExecutionContextFactory,
-                                               protected val operations: Operations[RelationshipValue],
+                                               protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[RelationshipValue] {
+  extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
 
   def hasNext: Boolean = hasNextEntity
 
@@ -94,9 +95,9 @@ final class UndirectedRelationshipIdSeekIterator(ident: String,
                                                  toNode: String,
                                                  baseContext: ExecutionContext,
                                                  executionContextFactory: ExecutionContextFactory,
-                                                 protected val operations: Operations[RelationshipValue],
+                                                 protected val operations: Operations[RelationshipValue, RelationshipScanCursor],
                                                  protected val entityIds: Iterator[AnyValue])
-  extends IdSeekIterator[RelationshipValue] {
+  extends IdSeekIterator[RelationshipValue, RelationshipScanCursor] {
 
   private var lastEntity: RelationshipValue = _
   private var lastStart: NodeValue = _

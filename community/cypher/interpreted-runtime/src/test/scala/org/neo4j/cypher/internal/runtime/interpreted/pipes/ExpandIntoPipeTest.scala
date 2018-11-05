@@ -28,6 +28,7 @@ import org.opencypher.v9_0.util.symbols._
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.virtual.RelationshipValue
 
@@ -243,7 +244,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
             def answer(invocation: InvocationOnMock) = rels.iterator.map(fromRelationshipProxy)
           })
 
-        when(query.nodeGetDegree(node.getId, direction)).thenReturn(rels.size)
+        when(query.nodeGetDegree(node.getId, direction, any[NodeCursor])).thenReturn(rels.size)
     }
   }
 

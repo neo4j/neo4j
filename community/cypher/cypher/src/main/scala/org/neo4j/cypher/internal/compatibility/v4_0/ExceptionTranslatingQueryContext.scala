@@ -71,11 +71,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getOrCreateLabelId(labelName: String): Int =
     translateException(inner.getOrCreateLabelId(labelName))
 
-  override def nodeOps: Operations[NodeValue] =
-    new ExceptionTranslatingOperations[NodeValue](inner.nodeOps)
+  override def nodeOps: NodeOperations =
+    new ExceptionTranslatingOperations[NodeValue, NodeCursor](inner.nodeOps) with NodeOperations
 
-  override def relationshipOps: Operations[RelationshipValue] =
-    new ExceptionTranslatingOperations[RelationshipValue](inner.relationshipOps)
+  override def relationshipOps: RelationshipOperations =
+    new ExceptionTranslatingOperations[RelationshipValue, RelationshipScanCursor](inner.relationshipOps) with RelationshipOperations
 
   override def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
     translateException(inner.removeLabelsFromNode(node, labelIds))
@@ -120,19 +120,19 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def relationshipAsMap(id: Long, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): MapValue =
     translateException(inner.relationshipAsMap(id, relationshipCursor, propertyCursor))
 
-  override def nodeGetOutgoingDegree(node: Long): Int =
-    translateException(inner.nodeGetOutgoingDegree(node))
+  override def nodeGetOutgoingDegree(node: Long, nodeCursor: NodeCursor): Int =
+    translateException(inner.nodeGetOutgoingDegree(node, nodeCursor))
 
   override def nodeGetOutgoingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(inner.nodeGetOutgoingDegree(node, relationship, nodeCursor))
 
-  override def nodeGetIncomingDegree(node: Long): Int =
-    translateException(inner.nodeGetIncomingDegree(node))
+  override def nodeGetIncomingDegree(node: Long, nodeCursor: NodeCursor): Int =
+    translateException(inner.nodeGetIncomingDegree(node, nodeCursor))
 
   override def nodeGetIncomingDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(inner.nodeGetIncomingDegree(node, relationship, nodeCursor))
 
-  override def nodeGetTotalDegree(node: Long): Int = translateException(inner.nodeGetTotalDegree(node))
+  override def nodeGetTotalDegree(node: Long, nodeCursor: NodeCursor): Int = translateException(inner.nodeGetTotalDegree(node, nodeCursor))
 
   override def nodeGetTotalDegree(node: Long, relationship: Int, nodeCursor: NodeCursor): Int =
     translateException(inner.nodeGetTotalDegree(node, relationship, nodeCursor))
@@ -296,8 +296,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
 
   override def assertSchemaWritesAllowed(): Unit = translateException(inner.assertSchemaWritesAllowed())
 
-  class ExceptionTranslatingOperations[T](inner: Operations[T])
-    extends DelegatingOperations[T](inner) {
+  class ExceptionTranslatingOperations[T, CURSOR](inner: Operations[T, CURSOR])
+    extends DelegatingOperations[T, CURSOR](inner) {
     override def delete(id: Long) =
       translateException(inner.delete(id))
 
@@ -313,8 +313,8 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
     override def hasProperty(id: Long, propertyKeyId: Int): Boolean =
       translateException(inner.hasProperty(id, propertyKeyId))
 
-    override def propertyKeyIds(id: Long): Array[Int] =
-      translateException(inner.propertyKeyIds(id))
+    override def propertyKeyIds(id: Long, cursor: CURSOR, propertyCursor: PropertyCursor): Array[Int] =
+      translateException(inner.propertyKeyIds(id, cursor, propertyCursor))
 
     override def removeProperty(id: Long, propertyKeyId: Int) =
       translateException(inner.removeProperty(id, propertyKeyId))

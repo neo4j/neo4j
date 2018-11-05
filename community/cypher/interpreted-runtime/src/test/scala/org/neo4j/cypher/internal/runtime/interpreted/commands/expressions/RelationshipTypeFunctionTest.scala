@@ -21,18 +21,18 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
-import org.opencypher.v9_0.util.ParameterWrongTypeException
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.neo4j.graphdb.{Relationship, RelationshipType}
+import org.neo4j.cypher.internal.runtime.{QueryContext, RelationshipOperations}
+import org.neo4j.graphdb.RelationshipType
 import org.neo4j.values.storable.Values.stringValue
+import org.opencypher.v9_0.util.ParameterWrongTypeException
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class RelationshipTypeFunctionTest extends CypherFunSuite with FakeEntityTestSupport {
 
   private val mockedContext = mock[QueryContext]
-  private val operations = mock[Operations[Relationship]]
+  private val operations = mock[RelationshipOperations]
   result(operations).when(mockedContext).relationshipOps
 
   private val state = QueryStateHelper.emptyWith(query = mockedContext)

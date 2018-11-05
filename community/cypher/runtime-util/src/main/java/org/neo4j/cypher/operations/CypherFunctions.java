@@ -849,16 +849,22 @@ public final class CypherFunctions
         }
     }
 
-    public static ListValue keys( AnyValue in, DbAccess access )
+    public static ListValue keys( AnyValue in,
+                                  DbAccess access,
+                                  NodeCursor nodeCursor,
+                                  RelationshipScanCursor relationshipScanCursor,
+                                  PropertyCursor propertyCursor )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof VirtualNodeValue )
         {
-            return extractKeys( access, access.nodePropertyIds( ((VirtualNodeValue) in).id() ) );
+            return extractKeys( access, access.nodePropertyIds( ((VirtualNodeValue) in).id(), nodeCursor, propertyCursor ) );
         }
         else if ( in instanceof VirtualRelationshipValue )
         {
-            return extractKeys( access, access.relationshipPropertyIds( ((VirtualRelationshipValue) in).id() ) );
+            return extractKeys( access, access.relationshipPropertyIds( ((VirtualRelationshipValue) in).id(),
+                                                                        relationshipScanCursor,
+                                                                        propertyCursor ) );
         }
         else if ( in instanceof MapValue )
         {

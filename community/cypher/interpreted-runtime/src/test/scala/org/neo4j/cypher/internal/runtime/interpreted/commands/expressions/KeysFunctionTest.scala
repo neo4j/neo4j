@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.QueryContext
@@ -39,7 +40,7 @@ class KeysFunctionTest extends CypherFunSuite {
 
     val queryContext = mock[QueryContext]
 
-    when(queryContext.nodePropertyIds(node.getId)).thenReturn(Array(11, 12, 13))
+    when(queryContext.nodePropertyIds(node.getId, any(), any())).thenReturn(Array(11, 12, 13))
 
     when(queryContext.getPropertyKeyName(11)).thenReturn("theProp1")
     when(queryContext.getPropertyKeyName(12)).thenReturn("OtherProp")
@@ -59,7 +60,7 @@ class KeysFunctionTest extends CypherFunSuite {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
-    when(queryContext.nodePropertyIds(node.getId)).thenReturn(Array.empty[Int])
+    when(queryContext.nodePropertyIds(node.getId, any(), any())).thenReturn(Array.empty[Int])
 
 
     val state = QueryStateHelper.emptyWith(query = queryContext)

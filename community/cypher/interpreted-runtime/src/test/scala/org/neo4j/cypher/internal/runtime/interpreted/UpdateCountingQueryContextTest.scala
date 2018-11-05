@@ -24,11 +24,10 @@ import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
+import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics, _}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class UpdateCountingQueryContextTest extends CypherFunSuite {
@@ -40,8 +39,8 @@ class UpdateCountingQueryContextTest extends CypherFunSuite {
   val rel = mock[Relationship]
   val relId = 42
 
-  val nodeOps = mock[Operations[NodeValue]]
-  val relOps = mock[Operations[RelationshipValue]]
+  val nodeOps = mock[NodeOperations]
+  val relOps = mock[RelationshipOperations]
 
   when(inner.nodeOps).thenReturn(nodeOps)
   when(inner.relationshipOps).thenReturn(relOps)
