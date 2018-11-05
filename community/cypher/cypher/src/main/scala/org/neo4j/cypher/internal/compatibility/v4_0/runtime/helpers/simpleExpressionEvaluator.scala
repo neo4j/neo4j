@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
@@ -30,24 +29,19 @@ import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
 
-case class simpleExpressionEvaluator(queryContext: QueryContext) extends ExpressionEvaluator {
+case object simpleExpressionEvaluator extends ExpressionEvaluator {
 
   // Returns Some(value) if the expression can be independently evaluated in an empty context/query state, otherwise None
   def evaluateExpression(expr: Expression): Option[Any] = {
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
-    val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
-    val emptyQueryState = new QueryState(queryContext, null, VirtualValues.EMPTY_MAP, cursors)
-
+    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null)
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))
     }
     catch {
       case e: InternalCypherException => None // Silently disregard expressions that cannot be evaluated in an empty context
-    }
-    finally {
-      cursors.close()
     }
   }
 }

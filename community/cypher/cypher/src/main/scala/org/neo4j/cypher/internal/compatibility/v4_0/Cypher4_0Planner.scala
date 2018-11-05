@@ -139,7 +139,7 @@ case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                                           maybeUpdateStrategy.getOrElse(defaultUpdateStrategy),
                                           clock,
                                           logicalPlanIdGen,
-                                          simpleExpressionEvaluator(PlanningQueryContext(transactionalContext)))
+                                          simpleExpressionEvaluator)
 
       // Prepare query for caching
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)

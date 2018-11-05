@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName}
 import org.opencypher.v9_0.util.DummyPosition
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
@@ -28,7 +27,7 @@ class simpleExpressionEvaluatorTest extends CypherFunSuite {
   private val pos = DummyPosition(-1)
 
   test("isNonDeterministic should not care about capitalization") {
-    val evaluator = simpleExpressionEvaluator(mock[QueryContext])
+    val evaluator = simpleExpressionEvaluator
     evaluator.isDeterministic(
       FunctionInvocation(FunctionName("ranD")(pos), distinct = false, IndexedSeq.empty)(pos)) shouldBe false
   }
