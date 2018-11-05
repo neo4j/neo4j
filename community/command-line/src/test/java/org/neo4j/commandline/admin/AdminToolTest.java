@@ -23,21 +23,16 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
 
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.NoSuchElementException;
 import javax.annotation.Nonnull;
 
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.helpers.collection.Iterables;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.neo4j.commandline.Util.neo4jVersion;
 import static org.neo4j.commandline.admin.AdminTool.STATUS_ERROR;
 import static org.neo4j.commandline.admin.AdminTool.STATUS_SUCCESS;
@@ -48,7 +43,7 @@ class AdminToolTest
     void shouldExecuteTheCommand() throws CommandFailed, IncorrectUsage
     {
         AdminCommand command = mock( AdminCommand.class );
-        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), new NullOutsideWorld(), false )
+        new AdminTool( cannedCommand( "command", command ), new NullOutsideWorld(), false )
                 .execute( null, null, "command", "the", "other", "args" );
         verify( command ).execute( new String[]{"the", "other", "args"} );
     }
@@ -57,7 +52,7 @@ class AdminToolTest
     void shouldExit0WhenEverythingWorks()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new CannedLocator( new NullCommandProvider() ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( new CannedLocator( new NullCommandProvider() ), outsideWorld, false )
                 .execute( null, null, "null" );
         verify( outsideWorld ).exit( STATUS_SUCCESS );
     }
@@ -66,7 +61,7 @@ class AdminToolTest
     void shouldAddTheHelpCommandToThoseProvidedByTheLocator()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new NullCommandLocator(), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( new NullCommandLocator(), outsideWorld, false )
                 .execute( null, null, "help" );
         verify( outsideWorld ).stdOutLine( "    help" );
     }
@@ -75,7 +70,7 @@ class AdminToolTest
     void shouldProvideFeedbackWhenNoCommandIsProvided()
     {
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        new AdminTool( new NullCommandLocator(), new NullBlockerLocator(), outsideWorld, false ).execute( null, null );
+        new AdminTool( new NullCommandLocator(), outsideWorld, false ).execute( null, null );
         verify( outsideWorld ).stdErrLine( "you must provide a command" );
         verify( outsideWorld ).stdErrLine( "usage: neo4j-admin <command>" );
         verify( outsideWorld ).exit( STATUS_ERROR );
@@ -89,7 +84,7 @@ class AdminToolTest
         {
             throw new RuntimeException( "the-exception-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "unexpected error: the-exception-message" );
         verify( outsideWorld ).exit( STATUS_ERROR );
@@ -104,7 +99,7 @@ class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, true )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
@@ -118,7 +113,7 @@ class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
@@ -131,7 +126,7 @@ class AdminToolTest
         {
             throw new CommandFailed( "the-failure-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).stdErrLine( "command failed: the-failure-message" );
         verify( outsideWorld ).exit( STATUS_ERROR );
@@ -146,7 +141,7 @@ class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, true )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, true )
                 .execute( null, null, "exception" );
         verify( outsideWorld ).printStacktrace( exception );
     }
@@ -160,7 +155,7 @@ class AdminToolTest
         {
             throw exception;
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
         verify( outsideWorld, never() ).printStacktrace( exception );
     }
@@ -173,75 +168,11 @@ class AdminToolTest
         {
             throw new IncorrectUsage( "the-usage-message" );
         };
-        new AdminTool( cannedCommand( "exception", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "exception", command ), outsideWorld, false )
                 .execute( null, null, "exception" );
         InOrder inOrder = inOrder( outsideWorld );
         inOrder.verify( outsideWorld ).stdErrLine( "the-usage-message" );
         verify( outsideWorld ).exit( STATUS_ERROR );
-    }
-
-    @Test
-    void shouldBlockDumpIfABlockerSaysSo()
-    {
-        OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        AdminCommand command = mock( AdminCommand.class );
-
-        AdminCommand.Blocker blocker = mock( AdminCommand.Blocker.class );
-        when( blocker.doesBlock( any(), any() ) ).thenReturn( true );
-        when( blocker.commands() ).thenReturn( Collections.singleton( "command" ) );
-        when( blocker.explanation() ).thenReturn( "the explanation" );
-
-        BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when( blockerLocator.findBlockers( "command" ) ).thenReturn( Collections.singletonList( blocker ) );
-
-        new AdminTool( cannedCommand( "command", command ), blockerLocator, outsideWorld, false )
-                .execute( null, null, "command" );
-
-        verify( outsideWorld ).stdErrLine( "command failed: the explanation" );
-        verify( outsideWorld ).exit( STATUS_ERROR );
-    }
-
-    @Test
-    void shouldBlockDumpIfOneBlockerOutOfManySaysSo()
-    {
-        OutsideWorld outsideWorld = mock( OutsideWorld.class );
-        AdminCommand command = mock( AdminCommand.class );
-
-        AdminCommand.Blocker trueBlocker = mock( AdminCommand.Blocker.class );
-        when( trueBlocker.doesBlock( any(), any() ) ).thenReturn( true );
-        when( trueBlocker.explanation() ).thenReturn( "trueBlocker explanation" );
-
-        AdminCommand.Blocker falseBlocker = mock( AdminCommand.Blocker.class );
-        when( falseBlocker.doesBlock( any(), any() ) ).thenReturn( false );
-        when( falseBlocker.explanation() ).thenReturn( "falseBlocker explanation" );
-
-        BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when( blockerLocator.findBlockers( "command" ) )
-                .thenReturn( Arrays.asList( falseBlocker, trueBlocker, falseBlocker ) );
-
-        new AdminTool( cannedCommand( "command", command ), blockerLocator, outsideWorld, false )
-                .execute( null, null, "command" );
-
-        verify( outsideWorld ).stdErrLine( "command failed: trueBlocker explanation" );
-        verify( outsideWorld ).exit( STATUS_ERROR );
-    }
-
-    @Test
-    void shouldNotBlockIfNoneOfTheBlockersBlock() throws CommandFailed, IncorrectUsage
-    {
-        AdminCommand command = mock( AdminCommand.class );
-
-        AdminCommand.Blocker falseBlocker = mock( AdminCommand.Blocker.class );
-        when( falseBlocker.doesBlock( any(), any() ) ).thenReturn( false );
-        when( falseBlocker.explanation() ).thenReturn( "falseBlocker explanation" );
-
-        BlockerLocator blockerLocator = mock( BlockerLocator.class );
-        when( blockerLocator.findBlockers( "command" ) )
-                .thenReturn( Arrays.asList( falseBlocker, falseBlocker, falseBlocker ) );
-
-        new AdminTool( cannedCommand( "command", command ), blockerLocator, new NullOutsideWorld(), false )
-                .execute( null, null, "command", "the", "other", "args" );
-        verify( command ).execute( new String[]{"the", "other", "args"} );
     }
 
     @Test
@@ -250,7 +181,7 @@ class AdminToolTest
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
 
-        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "command", command ), outsideWorld, false )
                 .execute( null, null, "--help" );
 
         verifyNoMoreInteractions( command );
@@ -265,7 +196,7 @@ class AdminToolTest
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
 
-        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "command", command ), outsideWorld, false )
                 .execute( null, null, "command", "--help" );
 
         verifyNoMoreInteractions( command );
@@ -280,7 +211,7 @@ class AdminToolTest
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
 
-        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "command", command ), outsideWorld, false )
                 .execute( null, null, "--version" );
 
         verifyNoMoreInteractions( command );
@@ -294,7 +225,7 @@ class AdminToolTest
         AdminCommand command = mock( AdminCommand.class );
         OutsideWorld outsideWorld = mock( OutsideWorld.class );
 
-        new AdminTool( cannedCommand( "command", command ), new NullBlockerLocator(), outsideWorld, false )
+        new AdminTool( cannedCommand( "command", command ), outsideWorld, false )
                 .execute( null, null, "command", "--version" );
 
         verifyNoMoreInteractions( command );
@@ -393,15 +324,6 @@ class AdminToolTest
         public AdminCommand create( Path homeDir, Path configDir, OutsideWorld outsideWorld )
         {
             return args -> { };
-        }
-    }
-
-    private static class NullBlockerLocator implements BlockerLocator
-    {
-        @Override
-        public Iterable<AdminCommand.Blocker> findBlockers( String name ) throws NoSuchElementException
-        {
-            return Collections.emptyList();
         }
     }
 }

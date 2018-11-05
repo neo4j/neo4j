@@ -26,7 +26,6 @@ import org.junit.Test;
 import java.io.File;
 
 import org.neo4j.commandline.admin.AdminTool;
-import org.neo4j.commandline.admin.BlockerLocator;
 import org.neo4j.commandline.admin.CommandLocator;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -67,7 +66,7 @@ public class SetInitialPasswordCommandIT
         homeDir = new File( graphDir, "home" );
         out = mock( OutsideWorld.class );
         resetOutsideWorldMock();
-        tool = new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), out, true );
+        tool = new AdminTool( CommandLocator.fromServiceLocator(), out, true );
     }
 
     @After

@@ -47,23 +47,20 @@ public class AdminTool
 
         try ( RealOutsideWorld outsideWorld = new RealOutsideWorld() )
         {
-            new AdminTool( CommandLocator.fromServiceLocator(), BlockerLocator.fromServiceLocator(), outsideWorld,
-                    debug ).execute( homeDir, configDir, args );
+            new AdminTool( CommandLocator.fromServiceLocator(), outsideWorld, debug ).execute( homeDir, configDir, args );
         }
     }
 
     public static final String scriptName = "neo4j-admin";
     private final CommandLocator commandLocator;
-    private final BlockerLocator blockerLocator;
     private final OutsideWorld outsideWorld;
     private final boolean debug;
     private final Usage usage;
 
-    public AdminTool( CommandLocator commandLocator, BlockerLocator blockerLocator, OutsideWorld outsideWorld,
+    public AdminTool( CommandLocator commandLocator, OutsideWorld outsideWorld,
             boolean debug )
     {
         this.commandLocator = CommandLocator.withAdditionalCommand( help(), commandLocator );
-        this.blockerLocator = blockerLocator;
         this.outsideWorld = outsideWorld;
         this.debug = debug;
         this.usage = new Usage( scriptName, this.commandLocator );
@@ -93,13 +90,6 @@ public class AdminTool
             try
             {
                 provider = commandLocator.findProvider( name );
-                for ( AdminCommand.Blocker blocker : blockerLocator.findBlockers( name ) )
-                {
-                    if ( blocker.doesBlock( homeDir, configDir ) )
-                    {
-                        commandFailed( new CommandFailed( blocker.explanation() ) );
-                    }
-                }
             }
             catch ( NoSuchElementException e )
             {
