@@ -64,7 +64,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.rules.RuleChain.outerRule;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
-import static org.neo4j.test.rule.PageCacheRule.config;
+import static org.neo4j.test.rule.PageCacheConfig.config;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
 
 public class GenericAccessorPointsTest
