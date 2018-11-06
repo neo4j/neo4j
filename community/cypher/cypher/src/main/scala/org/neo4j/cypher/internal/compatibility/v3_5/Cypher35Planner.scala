@@ -35,6 +35,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{CachedMetricsFac
 import org.neo4j.cypher.internal.planner.v3_5.spi.{CostBasedPlannerName, DPPlannerName, IDPPlannerName, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.helpers.collection.Pair
+import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -102,8 +103,9 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
         IDPQueryGraphSolver(singleComponentPlanner, cartesianProductsOrValueJoins, monitor)
     }
 
-  private def checkForSchemaChanges(planContext: PlanContext): Unit =
-    planContext.getOrCreateFromSchemaState(this, planCache.clear())
+  private val schemaStateKey = SchemaStateKey.newKey()
+  private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
+    tcw.getOrCreateFromSchemaState(schemaStateKey, planCache.clear())
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
@@ -116,9 +118,10 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       val syntacticQuery =
         getOrParse(preParsedQuery, new Parser3_5(planner, notificationLogger, preParsedQuery.offset, tracer))
 
+      val transactionalContextWrapper = TransactionalContextWrapper(transactionalContext)
       // Context used for db communication during planning
       val planContext = new ExceptionTranslatingPlanContext(TransactionBoundPlanContext(
-        TransactionalContextWrapper(transactionalContext), notificationLogger))
+        transactionalContextWrapper, notificationLogger))
 
       // Context used to create logical plans
       val logicalPlanIdGen = new SequentialIdGen()
@@ -141,7 +144,7 @@ case class Cypher35Planner(config: CypherPlannerConfiguration,
       val preparedQuery = planner.normalizeQuery(syntacticQuery, context)
       val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
 
-      checkForSchemaChanges(planContext)
+      checkForSchemaChanges(transactionalContextWrapper)
 
       // If the query is not cached we want to do the full planning
       def createPlan(): CacheableLogicalPlan = {

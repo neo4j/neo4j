@@ -160,9 +160,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
     map
   }
 
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
-    singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
-
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean =
     singleDbHit(inner.createNodeKeyConstraint(descriptor))
 

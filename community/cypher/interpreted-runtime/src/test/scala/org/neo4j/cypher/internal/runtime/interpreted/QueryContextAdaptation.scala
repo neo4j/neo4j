@@ -184,8 +184,6 @@ trait QueryContextAdaptation {
 
   override def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator = ???
 
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = ???
-
   override def removeLabelsFromNode(node: Long, labelIds: scala.Iterator[Int]): Int = ???
 
   override def createRelationship(start: Long, end: Long, relType: Int): RelationshipValue = ???

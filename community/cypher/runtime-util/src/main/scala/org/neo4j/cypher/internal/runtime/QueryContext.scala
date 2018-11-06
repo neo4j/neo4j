@@ -132,8 +132,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getNodesByLabelPrimitive(id: Int): LongIterator
 
-  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V
-
   /* return true if the constraint was created, false if preexisting, throws if failed */
   def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean
 

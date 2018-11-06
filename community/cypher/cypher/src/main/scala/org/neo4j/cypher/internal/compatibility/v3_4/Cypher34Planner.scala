@@ -47,6 +47,7 @@ import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Parameter}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy, CypherVersion}
 import org.neo4j.helpers.collection.Pair
+import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -111,8 +112,9 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
         idpV3_4.IDPQueryGraphSolver(singleComponentPlanner, idpV3_4.cartesianProductsOrValueJoins, monitor)
     }
 
-  private def checkForSchemaChanges(planContext: PlanContext): Unit =
-    planContext.getOrCreateFromSchemaState(this, planCache.clear())
+  private val schemaStateKey = SchemaStateKey.newKey()
+  private def checkForSchemaChanges(tcw: TransactionalContextWrapper): Unit =
+    tcw.getOrCreateFromSchemaState(schemaStateKey, planCache.clear())
 
   override def parseAndPlan(preParsedQuery: PreParsedQuery,
                             tracer: CompilationPhaseTracer,
@@ -192,7 +194,7 @@ case class Cypher34Planner(configv3_5: CypherPlannerConfiguration,
       // Prepare query for caching
       val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_4)
       val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
-      checkForSchemaChanges(planContextv3_5)
+      checkForSchemaChanges(tcv3_5)
 
       // If the query is not cached we do full planning + creating of executable plan
       def createPlan(): CacheableLogicalPlan = {

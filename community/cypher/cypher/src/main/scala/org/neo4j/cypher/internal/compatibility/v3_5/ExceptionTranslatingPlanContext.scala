@@ -63,9 +63,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def checkRelIndex(idxName: String): Unit =
     translateException(inner.checkRelIndex(idxName))
 
-  override def getOrCreateFromSchemaState[T](key: Any, f: => T): T =
-    translateException(inner.getOrCreateFromSchemaState(key, f))
-
   override def getOptRelTypeId(relType: String): Option[Int] =
     translateException(inner.getOptRelTypeId(relType))
 

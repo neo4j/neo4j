@@ -820,13 +820,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
   }
 
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = {
-    val javaCreator = new java.util.function.Function[K, V]() {
-      override def apply(key: K): V = creator
-    }
-    transactionalContext.schemaRead.schemaStateGetOrCreate(key, javaCreator)
-  }
-
   override def addIndexRule(descriptor: IndexDescriptor): IdempotentResult[IndexReference] = {
     val kernelDescriptor = cypherToKernelSchema(descriptor)
     try {

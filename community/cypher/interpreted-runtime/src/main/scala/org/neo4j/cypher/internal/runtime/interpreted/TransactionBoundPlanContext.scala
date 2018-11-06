@@ -162,13 +162,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  override def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
-    val javaCreator = new java.util.function.Function[Any, T]() {
-      def apply(key: Any) = f
-    }
-    tc.schemaRead.schemaStateGetOrCreate(key, javaCreator)
-  }
-
   override val statistics: GraphStatistics = graphStatistics
 
   override val txIdProvider = LastCommittedTxIdProvider(tc.graph)

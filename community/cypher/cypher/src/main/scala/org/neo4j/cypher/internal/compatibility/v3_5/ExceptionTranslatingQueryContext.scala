@@ -137,9 +137,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def nodeGetTotalDegree(node: Long, relationship: Int): Int =
     translateException(inner.nodeGetTotalDegree(node, relationship))
 
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V =
-    translateException(inner.getOrCreateFromSchemaState(key, creator))
-
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean =
     translateException(inner.createNodeKeyConstraint(descriptor))
 
