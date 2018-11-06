@@ -111,6 +111,21 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
         }
     }
 
+    // This is functionality which is only required for the hacky db.schema not to leak real data
+    @Test
+    public void shouldNotAccessNegativeReferences()
+    {
+        // given
+        try ( NodeCursor node = cursors.allocateNodeCursor() )
+        {
+            // when
+            read.singleNode( -2L, node  );
+
+            // then
+            assertFalse( "should not access negative reference node", node.next() );
+        }
+    }
+
     @Test
     public void shouldNotFindDeletedNode()
     {

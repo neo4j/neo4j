@@ -75,7 +75,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
         {
             pageCursor = relationshipPage( reference );
         }
-        this.next = reference;
+        this.next = reference >= 0 ? reference : NO_ID;
         this.filterType = -1;
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
