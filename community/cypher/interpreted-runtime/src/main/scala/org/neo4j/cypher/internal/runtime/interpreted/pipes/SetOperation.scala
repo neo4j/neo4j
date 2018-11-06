@@ -83,9 +83,14 @@ object SetOperation {
 
 abstract class AbstractSetPropertyOperation extends SetOperation {
 
-  protected def setProperty[T, CURSOR](context: ExecutionContext, state: QueryState, ops: Operations[T, CURSOR],
-                                                    itemId: Long, propertyKey: LazyPropertyKey,
-                                                    expression: Expression) = {
+  protected def setProperty[T, CURSOR](context: ExecutionContext,
+                                       state: QueryState,
+                                       cursor: CURSOR,
+                                       ops: Operations[T, CURSOR],
+                                       itemId: Long,
+                                       propertyKey: LazyPropertyKey,
+                                       expression: Expression): Unit = {
+
     val queryContext = state.query
     val maybePropertyKey = propertyKey.id(queryContext).map(_.id) // if the key was already looked up
     val propertyId = maybePropertyKey
@@ -94,25 +99,28 @@ abstract class AbstractSetPropertyOperation extends SetOperation {
     val value = makeValueNeoSafe(expression(context, state))
 
     if (value == Values.NO_VALUE) {
-      if (ops.hasProperty(itemId, propertyId)) ops.removeProperty(itemId, propertyId)
+      if (ops.hasProperty(itemId, propertyId, cursor, state.cursors.propertyCursor))
+        ops.removeProperty(itemId, propertyId)
     }
     else ops.setProperty(itemId, propertyId, value)
   }
 }
 
-abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String, propertyKey: LazyPropertyKey,
-                                                                  expression: Expression)
+abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
+                                                     propertyKey: LazyPropertyKey,
+                                                     expression: Expression)
   extends AbstractSetPropertyOperation {
 
-  override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val item = executionContext.get(itemName).get
+  override def set(executionContext: ExecutionContext, state: QueryState): Unit = {
+    val item = executionContext(itemName)
     if (item != Values.NO_VALUE) {
       val itemId = id(item)
       val ops = operations(state.query)
+      val cursor = entityCursor(state.cursors)
       if (needsExclusiveLock) ops.acquireExclusiveLock(itemId)
 
       try {
-        setProperty[T, CURSOR](executionContext, state, ops, itemId, propertyKey, expression)
+        setProperty[T, CURSOR](executionContext, state, cursor, ops, itemId, propertyKey, expression)
       } finally if (needsExclusiveLock) ops.releaseExclusiveLock(itemId)
     }
   }
@@ -120,6 +128,8 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String, propertyK
   protected def id(item: Any): Long
 
   protected def operations(qtx: QueryContext): Operations[T, CURSOR]
+
+  protected def entityCursor(cursors: ExpressionCursors): CURSOR
 }
 
 case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyKey,
@@ -131,6 +141,8 @@ case class SetNodePropertyOperation(nodeName: String, propertyKey: LazyPropertyK
   override protected def id(item: Any) = CastSupport.castOrFail[VirtualNodeValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.nodeOps
+
+  override protected def entityCursor(cursors: ExpressionCursors): NodeCursor = cursors.nodeCursor
 }
 
 case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPropertyKey,
@@ -142,6 +154,8 @@ case class SetRelationshipPropertyOperation(relName: String, propertyKey: LazyPr
   override protected def id(item: Any) = CastSupport.castOrFail[VirtualRelationshipValue](item).id()
 
   override protected def operations(qtx: QueryContext) = qtx.relationshipOps
+
+  override protected def entityCursor(cursors: ExpressionCursors): RelationshipScanCursor = cursors.relationshipScanCursor
 }
 
 case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropertyKey, expression: Expression)
@@ -152,18 +166,21 @@ case class SetPropertyOperation(entityExpr: Expression, propertyKey: LazyPropert
   override def set(executionContext: ExecutionContext, state: QueryState) = {
     val resolvedEntity = entityExpr(executionContext, state)
     if (resolvedEntity != Values.NO_VALUE) {
-      val (entityId, ops) = resolvedEntity match {
-        case node: VirtualNodeValue => (node.id(), state.query.nodeOps)
-        case rel: VirtualRelationshipValue => (rel.id(), state.query.relationshipOps)
+      def setIt[T, CURSOR](entityId: Long, ops: Operations[T, CURSOR], cursor: CURSOR): Unit = {
+        // better safe than sorry let's lock the entity
+        ops.acquireExclusiveLock(entityId)
+
+        try {
+          setProperty(executionContext, state, cursor, ops, entityId, propertyKey, expression)
+        } finally ops.releaseExclusiveLock(entityId)
+      }
+
+      resolvedEntity match {
+        case node: VirtualNodeValue => setIt(node.id(), state.query.nodeOps, state.cursors.nodeCursor)
+        case rel: VirtualRelationshipValue => setIt(rel.id(), state.query.relationshipOps, state.cursors.relationshipScanCursor)
         case _ => throw new InvalidArgumentException(
           s"The expression $entityExpr should have been a node or a relationship, but got $resolvedEntity")
       }
-      // better safe than sorry let's lock the entity
-      ops.acquireExclusiveLock(entityId)
-
-      try {
-        setProperty(executionContext, state, ops, entityId, propertyKey, expression)
-      } finally ops.releaseExclusiveLock(entityId)
     }
   }
 

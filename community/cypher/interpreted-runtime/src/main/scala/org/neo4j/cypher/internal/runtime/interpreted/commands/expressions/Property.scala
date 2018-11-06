@@ -37,12 +37,13 @@ case class Property(mapExpr: Expression, propertyKey: KeyToken)
     case n: VirtualNodeValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE
-        case Some(propId) => state.query.nodeOps.getProperty(n.id(), propId)
+        case Some(propId) => state.query.nodeOps.getProperty(n.id(), propId, state.cursors.nodeCursor, state.cursors.propertyCursor)
       }
     case r: VirtualRelationshipValue =>
       propertyKey.getOptId(state.query) match {
         case None => Values.NO_VALUE
-        case Some(propId) => state.query.relationshipOps.getProperty(r.id(), propId)
+        case Some(propId) =>
+          state.query.relationshipOps.getProperty(r.id(), propId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)
       }
     case IsMap(mapFunc) => mapFunc(state).get(propertyKey.name)
     case t: TemporalValue[_,_] => t.get(propertyKey.name)

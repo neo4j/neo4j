@@ -303,11 +303,13 @@ class DelegatingOperations[T, CURSOR](protected val inner: Operations[T, CURSOR]
 
   override def getById(id: Long): T = inner.getById(id)
 
-  override def getProperty(obj: Long, propertyKeyId: Int): Value = singleDbHit(inner.getProperty(obj, propertyKeyId))
+  override def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Value =
+    singleDbHit(inner.getProperty(obj, propertyKeyId, cursor, propertyCursor))
 
   override def getTxStateProperty(obj: Long, propertyKeyId: Int): Option[Value] = inner.getTxStateProperty(obj, propertyKeyId)
 
-  override def hasProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.hasProperty(obj, propertyKeyId))
+  override def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean =
+    singleDbHit(inner.hasProperty(obj, propertyKeyId, cursor, propertyCursor))
 
   override def hasTxStatePropertyForCachedNodeProperty(nodeId: Long, propertyKeyId: Int): Boolean =
     inner.hasTxStatePropertyForCachedNodeProperty(nodeId, propertyKeyId)

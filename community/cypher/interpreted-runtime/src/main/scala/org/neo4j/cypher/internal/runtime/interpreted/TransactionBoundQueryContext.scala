@@ -102,7 +102,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   private def allocateNodeCursor() = transactionalContext.cursors.allocateNodeCursor()
   private def allocateRelationshipScanCursor() = transactionalContext.cursors.allocateRelationshipScanCursor()
-  private def allocatePropertyCursor() = transactionalContext.cursors.allocatePropertyCursor()
 
   private def tokenRead = transactionalContext.kernelTransaction.tokenRead()
 
@@ -460,45 +459,33 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int): Value = {
-      val node = allocateNodeCursor()
-      val property = allocatePropertyCursor()
-      try {
-        reads().singleNode(id, node)
-        if (!node.next()) {
-          if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
-            s"Node with id $id has been deleted in this transaction")
-          else Values.NO_VALUE
-        } else {
-          node.properties(property)
-          while (property.next()) {
-            if (property.propertyKey() == propertyKeyId) return property.propertyValue()
-          }
-          Values.NO_VALUE
+    override def getProperty(id: Long, propertyKeyId: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Value = {
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) {
+        if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
+          s"Node with id $id has been deleted in this transaction")
+        else Values.NO_VALUE
+      } else {
+        nodeCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
         }
-      } finally {
-        IOUtils.closeAll(node, property)
+        Values.NO_VALUE
       }
     }
 
     override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] =
       Option(getTxStateNodePropertyOrNull(nodeId, propertyKeyId))
 
-    override def hasProperty(id: Long, propertyKey: Int): Boolean = {
-      val node = allocateNodeCursor()
-      val property = allocatePropertyCursor()
-      try {
-        reads().singleNode(id, node)
-        if (!node.next()) false
-        else {
-          node.properties(property)
-          while (property.next()) {
-            if (property.propertyKey() == propertyKey) return true
-          }
-          false
+    override def hasProperty(id: Long, propertyKey: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Boolean = {
+      reads().singleNode(id, nodeCursor)
+      if (!nodeCursor.next()) false
+      else {
+        nodeCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          if (propertyCursor.propertyKey() == propertyKey) return true
         }
-      } finally {
-        IOUtils.closeAll(node, property)
+        false
       }
     }
 
@@ -595,42 +582,30 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def getProperty(id: Long, propertyKeyId: Int): Value = {
-      val relationship = allocateRelationshipScanCursor()
-      val property = allocatePropertyCursor()
-      try {
-        reads().singleRelationship(id, relationship)
-        if (!relationship.next()) {
-          if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
-            s"Relationship with id $id has been deleted in this transaction")
-          else Values.NO_VALUE
-        } else {
-          relationship.properties(property)
-          while (property.next()) {
-            if (property.propertyKey() == propertyKeyId) return property.propertyValue()
-          }
-          Values.NO_VALUE
+    override def getProperty(id: Long, propertyKeyId: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Value = {
+      reads().singleRelationship(id, relationshipCursor)
+      if (!relationshipCursor.next()) {
+        if (isDeletedInThisTx(id)) throw new EntityNotFoundException(
+          s"Relationship with id $id has been deleted in this transaction")
+        else Values.NO_VALUE
+      } else {
+        relationshipCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          if (propertyCursor.propertyKey() == propertyKeyId) return propertyCursor.propertyValue()
         }
-      } finally {
-        IOUtils.closeAll(relationship, property)
+        Values.NO_VALUE
       }
     }
 
-    override def hasProperty(id: Long, propertyKey: Int): Boolean = {
-      val relationship = allocateRelationshipScanCursor()
-      val property = allocatePropertyCursor()
-      try {
-        reads().singleRelationship(id, relationship)
-        if (!relationship.next()) false
-        else {
-          relationship.properties(property)
-          while (property.next()) {
-            if (property.propertyKey() == propertyKey) return true
-          }
-          false
+    override def hasProperty(id: Long, propertyKey: Int, relationshipCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Boolean = {
+      reads().singleRelationship(id, relationshipCursor)
+      if (!relationshipCursor.next()) false
+      else {
+        relationshipCursor.properties(propertyCursor)
+        while (propertyCursor.next()) {
+          if (propertyCursor.propertyKey() == propertyKey) return true
         }
-      } finally {
-        IOUtils.closeAll(relationship, property)
+        false
       }
     }
 

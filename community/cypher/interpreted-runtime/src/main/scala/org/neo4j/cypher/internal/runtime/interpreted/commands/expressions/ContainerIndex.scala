@@ -34,7 +34,13 @@ with ListSupport {
     case NO_VALUE => NO_VALUE
     case value =>
       val idx = index(ctx, state)
-      if (idx eq NO_VALUE) NO_VALUE else CypherFunctions.containerIndex(value, idx, state.query)
+      if (idx eq NO_VALUE) NO_VALUE
+      else CypherFunctions.containerIndex(value,
+                                          idx,
+                                          state.query,
+                                          state.cursors.nodeCursor,
+                                          state.cursors.relationshipScanCursor,
+                                          state.cursors.propertyCursor)
   }
 
   def rewrite(f: (Expression) => Expression): Expression = f(ContainerIndex(expression.rewrite(f), index.rewrite(f)))

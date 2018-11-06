@@ -221,20 +221,31 @@ trait QueryContext extends TokenContext with DbAccess {
 
   override def relationshipType(name: String): Int = transactionalContext.tokenRead.relationshipType(name)
 
-  override def nodeProperty(node: Long, property: Int): Value = nodeOps.getProperty(node, property)
+  override def nodeProperty(node: Long, property: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Value =
+    nodeOps.getProperty(node, property, nodeCursor, propertyCursor)
 
   override def nodePropertyIds(node: Long, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Array[Int] =
     nodeOps.propertyKeyIds(node, nodeCursor, propertyCursor)
 
-  override def nodeHasProperty(node: Long, property: Int): Boolean = nodeOps.hasProperty(node, property)
+  override def nodeHasProperty(node: Long, property: Int, nodeCursor: NodeCursor, propertyCursor: PropertyCursor): Boolean =
+    nodeOps.hasProperty(node, property, nodeCursor, propertyCursor)
 
-  override def relationshipProperty(relationship: Long, property: Int): Value = relationshipOps.getProperty(relationship, property)
+  override def relationshipProperty(relationship: Long,
+                                    property: Int,
+                                    relationshipScanCursor: RelationshipScanCursor,
+                                    propertyCursor: PropertyCursor): Value =
+    relationshipOps.getProperty(relationship, property, relationshipScanCursor, propertyCursor)
 
-  override def relationshipPropertyIds(relationship: Long, relationshipScanCursor: RelationshipScanCursor, propertyCursor: PropertyCursor): Array[Int] =
+  override def relationshipPropertyIds(relationship: Long,
+                                       relationshipScanCursor: RelationshipScanCursor,
+                                       propertyCursor: PropertyCursor): Array[Int] =
     relationshipOps.propertyKeyIds(relationship, relationshipScanCursor, propertyCursor)
 
-  override def relationshipHasProperty(relationship: Long, property: Int): Boolean =
-    relationshipOps.hasProperty(relationship, property)
+  override def relationshipHasProperty(relationship: Long,
+                                       property: Int,
+                                       relationshipScanCursor: RelationshipScanCursor,
+                                       propertyCursor: PropertyCursor): Boolean =
+    relationshipOps.hasProperty(relationship, property, relationshipScanCursor, propertyCursor)
 }
 
 trait Operations[T, CURSOR] {
@@ -244,9 +255,9 @@ trait Operations[T, CURSOR] {
 
   def removeProperty(obj: Long, propertyKeyId: Int)
 
-  def getProperty(obj: Long, propertyKeyId: Int): Value
+  def getProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Value
 
-  def hasProperty(obj: Long, propertyKeyId: Int): Boolean
+  def hasProperty(obj: Long, propertyKeyId: Int, cursor: CURSOR, propertyCursor: PropertyCursor): Boolean
 
   /**
     * @return `None` if there are no changes.

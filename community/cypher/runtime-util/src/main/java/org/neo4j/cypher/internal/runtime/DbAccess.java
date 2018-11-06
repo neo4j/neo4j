@@ -37,7 +37,7 @@ public interface DbAccess
 
     RelationshipValue relationshipById( long id );
 
-    Value nodeProperty( long node, int property );
+    Value nodeProperty( long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor );
 
     int[] nodePropertyIds( long node, NodeCursor nodeCursor, PropertyCursor propertyCursor );
 
@@ -47,15 +47,21 @@ public interface DbAccess
 
     int relationshipType( String name );
 
-    boolean nodeHasProperty( long node, int property );
+    boolean nodeHasProperty( long node, int property, NodeCursor nodeCursor, PropertyCursor propertyCursor );
 
-    Value relationshipProperty( long node, int property );
+    Value relationshipProperty( long node,
+                                int property,
+                                RelationshipScanCursor relationshipScanCursor,
+                                PropertyCursor propertyCursor );
 
     int[] relationshipPropertyIds( long node,
                                    RelationshipScanCursor relationshipScanCursor,
                                    PropertyCursor propertyCursor );
 
-    boolean relationshipHasProperty( long node, int property );
+    boolean relationshipHasProperty( long node,
+                                     int property,
+                                     RelationshipScanCursor relationshipScanCursor,
+                                     PropertyCursor propertyCursor );
 
     int nodeGetOutgoingDegree( long node, NodeCursor nodeCursor );
 

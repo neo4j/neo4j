@@ -27,6 +27,7 @@ import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
+import org.neo4j.cypher.internal.runtime.ExpressionCursors;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -410,17 +411,24 @@ public final class CypherFunctions
         }
     }
 
-    public static BooleanValue propertyExists( String key, AnyValue container, DbAccess dbAccess )
+    public static BooleanValue propertyExists( String key,
+                                               AnyValue container,
+                                               DbAccess dbAccess,
+                                               NodeCursor nodeCursor,
+                                               RelationshipScanCursor relationshipScanCursor,
+                                               PropertyCursor propertyCursor )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ) ) ? TRUE : FALSE;
+            return dbAccess.nodeHasProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ),
+                                             nodeCursor, propertyCursor ) ? TRUE : FALSE;
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipHasProperty( ((VirtualRelationshipValue) container).id(),
-                    dbAccess.propertyKey( key ) ) ? TRUE : FALSE;
+                                                     dbAccess.propertyKey( key ), relationshipScanCursor,
+                                                     propertyCursor ) ? TRUE : FALSE;
         }
         else if ( container instanceof MapValue )
         {
@@ -432,17 +440,27 @@ public final class CypherFunctions
         }
     }
 
-    public static AnyValue propertyGet( String key, AnyValue container, DbAccess dbAccess )
+    public static AnyValue propertyGet( String key,
+                                        AnyValue container,
+                                        DbAccess dbAccess,
+                                        NodeCursor nodeCursor,
+                                        RelationshipScanCursor relationshipScanCursor,
+                                        PropertyCursor propertyCursor )
     {
         assert container != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( key ) );
+            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
+                                          dbAccess.propertyKey( key ),
+                                          nodeCursor,
+                                          propertyCursor );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
-            return dbAccess
-                    .relationshipProperty( ((VirtualRelationshipValue) container).id(), dbAccess.propertyKey( key ) );
+            return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
+                                                  dbAccess.propertyKey( key ),
+                                                  relationshipScanCursor,
+                                                  propertyCursor );
         }
         else if ( container instanceof MapValue )
         {
@@ -473,17 +491,27 @@ public final class CypherFunctions
         }
     }
 
-    public static AnyValue containerIndex( AnyValue container, AnyValue index, DbAccess dbAccess )
+    public static AnyValue containerIndex( AnyValue container,
+                                           AnyValue index,
+                                           DbAccess dbAccess,
+                                           NodeCursor nodeCursor,
+                                           RelationshipScanCursor relationshipScanCursor,
+                                           PropertyCursor propertyCursor )
     {
         assert container != NO_VALUE && index != NO_VALUE : "NO_VALUE checks need to happen outside this call" ;
         if ( container instanceof VirtualNodeValue )
         {
-            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(), dbAccess.propertyKey( asString( index ) ) );
+            return dbAccess.nodeProperty( ((VirtualNodeValue) container).id(),
+                                          dbAccess.propertyKey( asString( index ) ),
+                                          nodeCursor,
+                                          propertyCursor );
         }
         else if ( container instanceof VirtualRelationshipValue )
         {
             return dbAccess.relationshipProperty( ((VirtualRelationshipValue) container).id(),
-                    dbAccess.propertyKey( asString( index ) ) );
+                                                  dbAccess.propertyKey( asString( index ) ),
+                                                  relationshipScanCursor,
+                                                  propertyCursor );
         }
         if ( container instanceof MapValue )
         {
@@ -823,16 +851,16 @@ public final class CypherFunctions
         }
     }
 
-    public static Value point( AnyValue in, DbAccess access )
+    public static Value point( AnyValue in, DbAccess access, ExpressionCursors cursors )
     {
         assert in != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         if ( in instanceof VirtualNodeValue )
         {
-            return asPoint( access, (VirtualNodeValue) in );
+            return asPoint( access, (VirtualNodeValue) in, cursors.nodeCursor(), cursors.propertyCursor() );
         }
         else if ( in instanceof VirtualRelationshipValue )
         {
-            return asPoint( access, (VirtualRelationshipValue) in );
+            return asPoint( access, (VirtualRelationshipValue) in, cursors.relationshipScanCursor(), cursors.propertyCursor() );
         }
         else if ( in instanceof MapValue )
         {
@@ -1161,12 +1189,15 @@ public final class CypherFunctions
         return VirtualValues.fromArray( Values.stringArray( keysNames ) );
     }
 
-    private static Value asPoint( DbAccess access, VirtualNodeValue nodeValue )
+    private static Value asPoint( DbAccess access,
+                                  VirtualNodeValue nodeValue,
+                                  NodeCursor nodeCursor,
+                                  PropertyCursor propertyCursor )
     {
         MapValueBuilder builder = new MapValueBuilder();
         for ( String key : POINT_KEYS )
         {
-            Value value = access.nodeProperty( nodeValue.id(), access.propertyKey( key ) );
+            Value value = access.nodeProperty( nodeValue.id(), access.propertyKey( key ), nodeCursor, propertyCursor );
             if ( value == NO_VALUE )
             {
                 continue;
@@ -1177,12 +1208,18 @@ public final class CypherFunctions
         return PointValue.fromMap( builder.build() );
     }
 
-    private static Value asPoint( DbAccess access, VirtualRelationshipValue relationshipValue )
+    private static Value asPoint( DbAccess access,
+                                  VirtualRelationshipValue relationshipValue,
+                                  RelationshipScanCursor relationshipScanCursor,
+                                  PropertyCursor propertyCursor )
     {
         MapValueBuilder builder = new MapValueBuilder();
         for ( String key : POINT_KEYS )
         {
-            Value value = access.relationshipProperty( relationshipValue.id(), access.propertyKey( key ) );
+            Value value = access.relationshipProperty( relationshipValue.id(),
+                                                       access.propertyKey( key ),
+                                                       relationshipScanCursor,
+                                                       propertyCursor );
             if ( value == NO_VALUE )
             {
                 continue;

@@ -80,7 +80,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyOperation(entity1, LazyPropertyKey(propertyKey1), rhs, needsExclusiveLock))()
 
     val nodeOps = mock[NodeOperations]
-    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(10L, 1, any(), any())).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     needsExclusiveLock shouldBe true
@@ -101,7 +101,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val relOps = mock[RelationshipOperations]
     when(qtx.relationshipOps).thenReturn(relOps)
-    when(relOps.getProperty(anyLong(), anyInt())).thenReturn(Values.NO_VALUE)
+    when(relOps.getProperty(anyLong(), anyInt(), any(), any())).thenReturn(Values.NO_VALUE)
 
     needsExclusiveLock shouldBe true
 
@@ -120,7 +120,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
       SetNodePropertyOperation(entity1, LazyPropertyKey(propertyKey2), rhs, needsExclusiveLock))()
 
     val nodeOps = mock[NodeOperations]
-    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(10L, 1, any(), any())).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     needsExclusiveLock shouldBe false
@@ -142,7 +142,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val relOps = mock[RelationshipOperations]
     when(qtx.relationshipOps).thenReturn(relOps)
-    when(relOps.getProperty(anyLong(), anyInt())).thenReturn(Values.NO_VALUE)
+    when(relOps.getProperty(anyLong(), anyInt(), any(), any())).thenReturn(Values.NO_VALUE)
 
     needsExclusiveLock shouldBe false
 
@@ -161,7 +161,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
       SetNodePropertyOperation(entity2, LazyPropertyKey(propertyKey1), rhs, needsExclusiveLock))()
 
     val nodeOps = mock[NodeOperations]
-    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(10L, 1, any(), any())).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
 
     needsExclusiveLock shouldBe false
@@ -185,7 +185,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val relOps = mock[RelationshipOperations]
     when(qtx.relationshipOps).thenReturn(relOps)
-    when(relOps.getProperty(anyLong(), anyInt())).thenReturn(Values.NO_VALUE)
+    when(relOps.getProperty(anyLong(), anyInt(), any(), any())).thenReturn(Values.NO_VALUE)
 
     needsExclusiveLock shouldBe false
 
@@ -207,7 +207,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     val pipe = SetPipe(mockedSource, SetNodePropertyFromMapOperation(entity1, rhs, removeOtherProps = false, needsExclusiveLock))()
 
     val nodeOps = mock[NodeOperations]
-    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(10L, 1, any(), any())).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(nodeOps.propertyKeyIds(10, any(), any())).thenReturn(Array.empty[Int])
@@ -234,7 +234,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipOps).thenReturn(relOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(relOps.propertyKeyIds(10, any(), any())).thenReturn(Array.empty[Int])
-    when(relOps.getProperty(anyLong(), anyInt())).thenReturn(Values.NO_VALUE)
+    when(relOps.getProperty(anyLong(), anyInt(), any(), any())).thenReturn(Values.NO_VALUE)
 
     needsExclusiveLock shouldBe true
 
@@ -255,8 +255,8 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
       SetNodePropertyFromMapOperation(entity1, rhs, removeOtherProps = false, needsExclusiveLock))()
 
     val nodeOps = mock[NodeOperations]
-    when(nodeOps.getProperty(10L, 1)).thenReturn(longValue(13L))
-    when(nodeOps.getProperty(20L, 1)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(10L, 1, any(), any())).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(20L, 1, any(), any())).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(nodeOps.propertyKeyIds(10, any(), any())).thenReturn(Array.empty[Int])
@@ -286,7 +286,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipOps).thenReturn(relOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(relOps.propertyKeyIds(10, any(), any())).thenReturn(Array.empty[Int])
-    when(relOps.getProperty(anyLong(), anyInt())).thenReturn(Values.NO_VALUE)
+    when(relOps.getProperty(anyLong(), anyInt(), any(), any())).thenReturn(Values.NO_VALUE)
 
     needsExclusiveLock shouldBe false
 
@@ -310,7 +310,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
       SetNodePropertyFromMapOperation(entity1, rhs, removeOtherProps = false, needsExclusiveLock))()
 
     val nodeOps = mock[NodeOperations]
-    when(nodeOps.getProperty(10L, 2)).thenReturn(longValue(13L))
+    when(nodeOps.getProperty(10L, 2, any(), any())).thenReturn(longValue(13L))
     when(qtx.nodeOps).thenReturn(nodeOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(nodeOps.propertyKeyIds(10, any(), any())).thenReturn(Array.empty[Int])
@@ -338,7 +338,7 @@ class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
     when(qtx.relationshipOps).thenReturn(relOps)
     when(qtx.getOptPropertyKeyId(property1)).thenReturn(None)
     when(relOps.propertyKeyIds(10, any(), any())).thenReturn(Array.empty[Int])
-    when(relOps.getProperty(anyLong(), anyInt())).thenReturn(Values.NO_VALUE)
+    when(relOps.getProperty(anyLong(), anyInt(), any(), any())).thenReturn(Values.NO_VALUE)
 
     needsExclusiveLock shouldBe false
 

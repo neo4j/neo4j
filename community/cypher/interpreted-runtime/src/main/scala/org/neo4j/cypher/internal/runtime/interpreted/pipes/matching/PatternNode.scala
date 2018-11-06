@@ -108,7 +108,7 @@ class PatternNode(key: String, val labels: Seq[KeyToken] = Seq.empty, val proper
       val propertyId = token.getOptId(state.query)
       if (propertyId.isEmpty) false // The property doesn't exist in the graph
       else {
-        val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get)
+        val value = state.query.nodeOps.getProperty(graphNodeId, propertyId.get, state.cursors.nodeCursor, state.cursors.propertyCursor)
         val expectedValue = expression(execCtx, state)
         value == expectedValue
       }

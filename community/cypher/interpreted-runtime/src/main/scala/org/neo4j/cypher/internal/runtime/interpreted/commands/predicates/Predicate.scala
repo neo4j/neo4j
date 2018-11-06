@@ -164,10 +164,19 @@ case class True() extends Predicate {
 
 case class PropertyExists(variable: Expression, propertyKey: KeyToken) extends Predicate {
   def isMatch(m: ExecutionContext, state: QueryState): Option[Boolean] = variable(m, state) match {
-    case pc: VirtualNodeValue => Some(propertyKey.getOptId(state.query).exists(state.query.nodeOps.hasProperty(pc.id, _)))
-    case pc: VirtualRelationshipValue => Some(
-      propertyKey.getOptId(state.query).exists(state.query.relationshipOps.hasProperty(pc.id, _)))
-    case IsMap(map) => Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
+    case pc: VirtualNodeValue =>
+      Some(propertyKey.getOptId(state.query).exists(
+        (propertyKeyId: Int) =>
+          state.query.nodeOps.hasProperty(pc.id, propertyKeyId, state.cursors.nodeCursor, state.cursors.propertyCursor)))
+
+    case pc: VirtualRelationshipValue =>
+      Some(propertyKey.getOptId(state.query).exists(
+        (propertyKeyId: Int) =>
+          state.query.relationshipOps.hasProperty(pc.id, propertyKeyId, state.cursors.relationshipScanCursor, state.cursors.propertyCursor)))
+
+    case IsMap(map) =>
+      Some(map(state).get(propertyKey.name) != Values.NO_VALUE)
+
     case Values.NO_VALUE => None
     case _ => throw new CypherTypeException("Expected " + variable + " to be a property container.")
   }
