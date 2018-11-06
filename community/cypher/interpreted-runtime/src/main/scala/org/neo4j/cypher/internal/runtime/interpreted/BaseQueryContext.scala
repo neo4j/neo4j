@@ -115,11 +115,6 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getImportURL(url: URL): Either[String, URL] = notSupported()
 
-  /**
-    * This should not be used. We'll remove sooner (or later). Don't do it.
-    */
-  override def withAnyOpenQueryContext[T](work: QueryContext => T): T = notSupported()
-
   override def createNewQueryContext(): QueryContext = notSupported()
 
   override def nodeIsDense(node: Long): Boolean = notSupported()

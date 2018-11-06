@@ -153,11 +153,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getImportURL(url: URL): Either[String,URL]
 
-  /**
-   * This should not be used. We'll remove sooner (or later). Don't do it.
-   */
-  def withAnyOpenQueryContext[T](work: QueryContext => T): T
-
   /*
   This is an ugly hack to get multi threading to work
    */

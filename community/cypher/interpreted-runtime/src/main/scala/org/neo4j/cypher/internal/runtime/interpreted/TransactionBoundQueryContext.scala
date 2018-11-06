@@ -113,24 +113,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       override def reads(): Read = transactionalContext.dataRead
     }
 
-  override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = {
-    if (transactionalContext.isOpen) {
-      work(this)
-    } else {
-      val context = transactionalContext.getOrBeginNewIfClosed()
-      var success = false
-      try {
-        val newContext = new TransactionBoundQueryContext(context, resources)
-        val result = work(newContext)
-        success = true
-        result
-      } finally {
-        resources.close(success)
-        context.close(success)
-      }
-    }
-  }
-
   override def createNode(labels: Array[Int]): NodeValue = ValueUtils.fromNodeProxy(entityAccessor.newNodeProxy(writes().nodeCreateWithLabels(labels)))
 
   override def createNodeId(labels: Array[Int]): Long = writes().nodeCreateWithLabels(labels)

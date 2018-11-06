@@ -181,8 +181,6 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def dropRelationshipPropertyExistenceConstraint(relTypeId: Int, propertyKeyId: Int) =
     singleDbHit(inner.dropRelationshipPropertyExistenceConstraint(relTypeId, propertyKeyId))
 
-  override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
-
   override def lockingUniqueIndexSeek[RESULT](index: IndexReference,
                                               queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor =
     singleDbHit(inner.lockingUniqueIndexSeek(index, queries))

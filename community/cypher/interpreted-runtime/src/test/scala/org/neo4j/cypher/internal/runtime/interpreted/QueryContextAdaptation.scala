@@ -78,11 +78,6 @@ trait QueryContextAdaptation {
 
   override def relationshipGetEndNode(relationship: RelationshipValue): NodeValue = ???
 
-  /**
-    * This should not be used. We'll remove sooner (or later). Don't do it.
-    */
-  override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = ???
-
   // Legacy dependency between kernel and compiler
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]): scala.Iterator[Path] = ???
 

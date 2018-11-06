@@ -197,12 +197,6 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                  allowed: Array[String]): UserDefinedAggregator =
     translateException(inner.aggregateFunction(name, allowed))
 
-  override def withAnyOpenQueryContext[T](work: (QueryContext) => T): T =
-    inner.withAnyOpenQueryContext(qc =>
-      translateException(
-        work(new ExceptionTranslatingQueryContext(qc))
-      ))
-
   override def isLabelSetOnNode(label: Int, node: Long): Boolean =
     translateException(inner.isLabelSetOnNode(label, node))
 
