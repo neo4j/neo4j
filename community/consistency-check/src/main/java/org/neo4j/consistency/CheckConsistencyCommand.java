@@ -240,7 +240,7 @@ public class CheckConsistencyCommand implements AdminCommand
         }
         catch ( Exception e )
         {
-            throw new CommandFailed( "Failure when checking for recovery state: '%s', continuing as normal.%n" + e.getMessage(), e );
+            throw new CommandFailed( "Failure when checking for recovery state: '%s'." + e.getMessage(), e );
         }
     }
 

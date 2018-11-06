@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 public class ReachedThreshold extends AbstractCheckPointThreshold
 {
-    public ReachedThreshold( String description )
+    ReachedThreshold( String description )
     {
         super( description );
     }

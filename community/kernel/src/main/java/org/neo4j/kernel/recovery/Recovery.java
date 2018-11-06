@@ -236,7 +236,7 @@ public final class Recovery
 
         Dependencies recoveryDependencies = new Dependencies();
         RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                         scheduler, tokenNameLookup, LockService.NO_LOCK_SERVICE, indexProviderMap, monitors.newMonitor( IndexingService.Monitor.class ),
                         databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering,
                         new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), monitors, recoveryCleanupCollector,

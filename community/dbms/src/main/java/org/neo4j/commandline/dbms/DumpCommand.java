@@ -35,17 +35,10 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
-import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
 import org.neo4j.kernel.impl.util.Validators;
-import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.scheduler.JobScheduler;
 
 import static java.lang.String.format;
 import static org.neo4j.commandline.Util.canonicalPath;
@@ -53,7 +46,7 @@ import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
 import static org.neo4j.helpers.Strings.joinAsLines;
-import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
+import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class DumpCommand implements AdminCommand
 {
@@ -165,22 +158,19 @@ public class DumpCommand implements AdminCommand
 
     private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
     {
-        try ( FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-                JobScheduler jobScheduler = createInitialisedScheduler();
-                PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fileSystem, additionalConfiguration, jobScheduler ) )
+        if ( checkRecoveryState( databaseLayout, additionalConfiguration ) )
         {
-            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
-            {
-                throw new CommandFailed( joinAsLines(
-                        "Active logical log detected, this might be a source of inconsistencies.",
-                        "Please recover database before running the dump.",
-                        "To perform recovery please start database and perform clean shutdown." ) );
-            }
+            throw new CommandFailed( joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
+                    "Please recover database before running the dump.",
+                    "To perform recovery please start database and perform clean shutdown." ) );
         }
-        catch ( CommandFailed cf )
+    }
+
+    private static boolean checkRecoveryState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
+    {
+        try
         {
-            throw cf;
+            return isRecoveryRequired( databaseLayout, additionalConfiguration );
         }
         catch ( Exception e )
         {
