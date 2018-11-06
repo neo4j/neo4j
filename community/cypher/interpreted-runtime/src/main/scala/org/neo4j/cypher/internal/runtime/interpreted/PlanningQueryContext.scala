@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
 import org.opencypher.v9_0.util.InternalException

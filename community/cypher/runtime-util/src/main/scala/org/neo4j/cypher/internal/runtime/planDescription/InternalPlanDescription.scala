@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.runtime.planDescription
 import java.util
 
 import org.neo4j.cypher.exceptionHandler
-import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
+import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.v3_5.logical.plans.{QualifiedName, SeekableArgs}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
 import org.opencypher.v9_0.expressions.SemanticDirection

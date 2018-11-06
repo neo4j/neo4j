@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.ir.v3_5.ProvidedOrder
-import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
+import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
+import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.opencypher.v9_0.expressions.{SemanticDirection, LabelName => AstLabelName, _}
 import org.opencypher.v9_0.util._
 import org.opencypher.v9_0.util.attribution.{Id, IdGen, SequentialIdGen}
@@ -32,9 +32,9 @@ import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {
 
-  private val CYPHER_VERSION = Version("CYPHER 3.5")
-  private val RUNTIME_VERSION = RuntimeVersion("3.5")
-  private val PLANNER_VERSION = PlannerVersion("3.5")
+  private val CYPHER_VERSION = Version("CYPHER 4.0")
+  private val RUNTIME_VERSION = RuntimeVersion("4.0")
+  private val PLANNER_VERSION = PlannerVersion("4.0")
 
   test("tests") {
     implicit val idGen: IdGen = new SequentialIdGen()

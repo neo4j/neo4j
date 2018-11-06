@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.planDescription
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.v3_5.logical.plans
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v4_0.logical.plans
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.opencypher.v9_0.expressions.functions.Point
 import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
 import org.opencypher.v9_0.frontend.PlannerName
@@ -37,7 +37,7 @@ object LogicalPlan2PlanDescription {
                      providedOrders: ProvidedOrders): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders).create(input)
       .addArgument(Version("CYPHER "+plannerName.version))
-      .addArgument(RuntimeVersion("3.5"))
+      .addArgument(RuntimeVersion("4.0"))
       .addArgument(Planner(plannerName.toTextOutput))
       .addArgument(PlannerImpl(plannerName.name))
       .addArgument(PlannerVersion(plannerName.version))

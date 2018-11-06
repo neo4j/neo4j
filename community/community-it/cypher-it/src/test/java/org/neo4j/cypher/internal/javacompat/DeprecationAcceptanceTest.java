@@ -43,17 +43,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     // DEPRECATED PRE-PARSER OPTIONS
 
     @Test
-    public void deprecatedRulePlanner()
-    {
-        // when
-        Result result = db().execute( "EXPLAIN CYPHER planner=rule RETURN 1" );
-
-        // then
-        assertThat( result.getNotifications(), containsItem( deprecatedRulePlanner ) );
-        result.close();
-    }
-
-    @Test
     public void deprecatedCompiledRuntime()
     {
         // when
@@ -69,7 +58,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedToInt()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
+        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -77,7 +66,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedUpper()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
+        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -85,7 +74,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedLower()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
+        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -93,7 +82,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedRels()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" )
+        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -116,7 +105,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedProcedureCalls() throws Exception
     {
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.1", "CYPHER 4.0" ).forEach( version ->
                                                          {
                                                              assertNotifications( version + "explain CALL oldProc()",
                                                                                   containsItem( deprecatedProcedureWarning ) );
@@ -131,7 +120,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedProcedureResultField() throws Exception
     {
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 4.0" ).forEach(
                 version -> assertNotifications(
                         version + "explain CALL changedProc() YIELD oldField RETURN oldField",
                         containsItem( deprecatedProcedureReturnFieldWarning )
@@ -230,10 +219,10 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_5()
+    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs4_0()
     {
         // when
-        Result result = db().execute( "CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
+        Result result = db().execute( "CYPHER 4.0 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
         InputPosition position = new InputPosition( 36, 1, 37 );
 
         // then
@@ -255,22 +244,22 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
 
         for ( String query : deprecatedQueries )
         {
-            assertNotifications( "CYPHER 3.5 " + query, containsItem( deprecatedSeparatorWarning ) );
+            assertNotifications( "CYPHER 4.0 " + query, containsItem( deprecatedSeparatorWarning ) );
         }
 
         for ( String query : nonDeprecatedQueries )
         {
-            assertNotifications( "CYPHER 3.5 " + query, containsNoItem( deprecatedSeparatorWarning ) );
+            assertNotifications( "CYPHER 4.0 " + query, containsNoItem( deprecatedSeparatorWarning ) );
         }
     }
 
     @Test
     public void deprecatedBindingVariableLengthRelationship()
     {
-        assertNotifications( "CYPHER 3.5 explain MATCH ()-[rs*]-() RETURN rs", containsItem( deprecatedBindingWarning
+        assertNotifications( "CYPHER 4.0 explain MATCH ()-[rs*]-() RETURN rs", containsItem( deprecatedBindingWarning
         ) );
 
-        assertNotifications( "CYPHER 3.5 explain MATCH p = ()-[*]-() RETURN relationships(p) AS rs", containsNoItem(
+        assertNotifications( "CYPHER 4.0 explain MATCH p = ()-[*]-() RETURN relationships(p) AS rs", containsNoItem(
                 deprecatedBindingWarning ) );
     }
 

@@ -27,10 +27,6 @@ class PreParserTest extends CypherFunSuite {
   val preParser = new PreParser(CypherVersion.default, CypherPlannerOption.default, CypherRuntimeOption.default,
                                 CypherExpressionEngineOption.default,  0)
 
-  test("should not allow inconsistent planner options") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER planner=cost planner=rule RETURN 42"))
-  }
-
   test("should not allow inconsistent runtime options") {
     intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER runtime=compiled runtime=interpreted RETURN 42"))
   }

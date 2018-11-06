@@ -30,7 +30,6 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Caffeine cache
-  ConcurrentLinkedHashMap
   jPowerShell
   jProcesses
   Lucene codecs

@@ -51,25 +51,11 @@ import static org.neo4j.graphdb.impl.notification.NotificationDetail.Factory.ind
 
 public class NotificationAcceptanceTest extends NotificationTestSupport
 {
-    @Test
-    public void shouldNotifyWhenUsingCypher3_1ForTheRulePlannerWhenCypherVersionIsTheDefault()
-    {
-        // when
-        Result result = db().execute( "CYPHER planner=rule RETURN 1" );
-        InputPosition position = InputPosition.empty;
-
-        // then
-        assertThat( result.getNotifications(), containsItem( rulePlannerUnavailable ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        assertThat( arguments.get( "planner" ), equalTo( "RULE" ) );
-        result.close();
-    }
 
     @Test
     public void shouldWarnWhenRequestingCompiledRuntimeOnUnsupportedQuery()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotifyInStream( version, "EXPLAIN CYPHER runtime=compiled MATCH (a)-->(b), (c)-->(d) RETURN count(*)", InputPosition.empty,
                         RUNTIME_UNSUPPORTED ) );
     }
@@ -77,37 +63,8 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnWhenRequestingSlottedRuntimeOnUnsupportedQuery()
     {
-        Stream.of( "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotifyInStream( version, "explain cypher runtime=slotted merge (a)-[:X]->(b)", InputPosition.empty, RUNTIME_UNSUPPORTED ) );
-    }
-
-    @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault()
-    {
-        // when
-        Result result = db().execute( "EXPLAIN MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-        InputPosition position = new InputPosition( 33, 1, 34 );
-
-        // then
-        assertThat( result.getNotifications(),
-                containsNotification( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        result.close();
-    }
-
-    @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs3_5()
-    {
-        // when
-        Result result = db().execute( "EXPLAIN CYPHER 3.5 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-        InputPosition position = new InputPosition( 44, 1, 45 );
-
-        // then
-        assertThat( result.getNotifications(), containsNotification( CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification( position ) ) );
-        Map<String,Object> arguments = result.getExecutionPlanDescription().getArguments();
-        assertThat( arguments.get( "version" ), equalTo( "CYPHER 3.1" ) );
-        result.close();
     }
 
     @Test
@@ -124,7 +81,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnWhenUsingLengthOnNonPath()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             // pattern
             shouldNotifyInStream( version, "explain match (a) where a.name='Alice' return length((a)-->()-->())", new InputPosition( 63, 1, 64 ),
@@ -141,35 +98,35 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyWhenUsingLengthOnPath()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " explain match p=(a)-[*]->(b) return length(p)" ) );
     }
 
     @Test
     public void shouldNotNotifyWhenUsingSizeOnCollection()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, "explain return size([1, 2, 3])" ) );
     }
 
     @Test
     public void shouldNotNotifyWhenUsingSizeOnString()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " explain return size('a string')" ) );
     }
 
     @Test
     public void shouldNotNotifyForCostUnsupportedUpdateQueryIfPlannerNotExplicitlyRequested()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN MATCH (n:Movie) SET n.title = 'The Movie'" ) );
     }
 
     @Test
     public void shouldNotNotifyForCostSupportedUpdateQuery()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             shouldNotNotifyInStream( version, "EXPLAIN CYPHER planner=cost MATCH (n:Movie) SET n:Seen" );
             shouldNotNotifyInStream( version, "EXPLAIN CYPHER planner=idp MATCH (n:Movie) SET n:Seen" );
@@ -183,7 +140,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
         List<String> queries = Arrays.asList( "CYPHER planner=cost EXPLAIN MATCH (a)-->(b) USING JOIN ON b RETURN a, b",
                 "CYPHER planner=cost EXPLAIN MATCH (a)-->(x)<--(b) USING JOIN ON x RETURN a, b" );
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             for ( String query : queries )
             {
@@ -195,7 +152,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnPotentiallyCachedQueries()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             assertNotifications( version + "explain match (a)-->(b), (c)-->(d) return *", containsItem( cartesianProductWarning ) );
 
@@ -207,7 +164,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnceWhenSingleIndexHintCannotBeFulfilled()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotifyInStreamWithDetail( version, " EXPLAIN MATCH (n:Person) USING INDEX n:Person(name) WHERE n.name = 'John' RETURN n",
                         InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Person", "name" ) ) );
     }
@@ -218,7 +175,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
         String query = " EXPLAIN MATCH (n:Person), (m:Party), (k:Animal) " + "USING INDEX n:Person(name) " + "USING INDEX m:Party(city) " +
                 "USING INDEX k:Animal(species) " + "WHERE n.name = 'John' AND m.city = 'Reykjavik' AND k.species = 'Sloth' " + "RETURN n";
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             shouldNotifyInStreamWithDetail( version, query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Person", "name" ) );
             shouldNotifyInStreamWithDetail( version, query, InputPosition.empty, INDEX_HINT_UNFULFILLABLE, index( "Party", "city" ) );
@@ -229,14 +186,14 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnLiteralMaps()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " explain return { id: 42 } " ) );
     }
 
     @Test
     public void shouldNotNotifyOnNonExistingLabelUsingLoadCSV()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             // create node
             shouldNotNotifyInStream( version, " EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n:Category)" );
@@ -252,7 +209,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnNonExistingRelTypeUsingLoadCSV()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             // create rel
             shouldNotNotifyInStream( version, " EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE ()-[:T]->()" );
@@ -265,7 +222,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnNonExistingPropKeyIdUsingLoadCSV()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             // create node
             shouldNotNotifyInStream( version, " EXPLAIN LOAD CSV WITH HEADERS FROM 'file:///fake.csv' AS row CREATE (n) SET n.p = 'a'" );
@@ -278,14 +235,14 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnEagerBeforeLoadCSVDelete()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version -> shouldNotNotifyInStream( version,
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version -> shouldNotNotifyInStream( version,
                 "EXPLAIN MATCH (n) DELETE n WITH * LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE () RETURN line" ) );
     }
 
     @Test
     public void shouldNotNotifyOnEagerBeforeLoadCSVCreate()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
                 assertNotifications( version + "EXPLAIN MATCH (a), (b) CREATE (c) WITH c LOAD CSV FROM 'file:///ignore/ignore.csv' AS line RETURN *",
                         containsNoItem( eagerOperatorWarning ) ) );
     }
@@ -293,7 +250,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnEagerAfterLoadCSV()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version -> shouldNotifyInStream( version,
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version -> shouldNotifyInStream( version,
                 "EXPLAIN MATCH (n) LOAD CSV FROM 'file:///ignore/ignore.csv' AS line WITH * DELETE n MERGE () RETURN line", InputPosition.empty,
                 EAGER_LOAD_CSV ) );
     }
@@ -301,14 +258,14 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnLoadCSVWithoutEager()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (:A) CREATE (:B) RETURN line" ) );
     }
 
     @Test
     public void shouldNotNotifyOnEagerWithoutLoadCSV()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> assertNotifications( version + "EXPLAIN MATCH (a), (b) CREATE (c) RETURN *", containsNoItem( eagerOperatorWarning ) ) );
     }
 
@@ -323,7 +280,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
                 tx.success();
             }
         }
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> assertNotifications( version + "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *",
                         containsNoItem( largeLabelCSVWarning ) ) );
     }
@@ -339,7 +296,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
                 tx.success();
             }
         }
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> assertNotifications( version + "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *",
                         containsNoItem( largeLabelCSVWarning ) ) );
     }
@@ -352,7 +309,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
             db().createNode().addLabel( label( "A" ) );
             tx.success();
         }
-        Stream.of( "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             shouldNotNotifyInStream( version, "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MATCH (a:A) RETURN *" );
             shouldNotNotifyInStream( version, "EXPLAIN LOAD CSV FROM 'file:///ignore/ignore.csv' AS line MERGE (a:A) RETURN *" );
@@ -362,7 +319,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnUnboundedShortestPath()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotifyInStream( version, "EXPLAIN MATCH p = shortestPath((n)-[*]->(m)) RETURN m", new InputPosition( 44, 1, 45 ),
                         UNBOUNDED_SHORTEST_PATH ) );
     }
@@ -370,7 +327,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnDynamicPropertyLookupWithNoLabels()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
@@ -381,7 +338,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnDynamicPropertyLookupWithBothStaticAndDynamicProperties()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
@@ -393,7 +350,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnDynamicPropertyLookupWithLabelHavingNoIndex()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
@@ -436,7 +393,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
         // dynamic property lookup with a single label and IN
         queries.add( "EXPLAIN MATCH (n:Person) WHERE n['key-' + n.name] IN ['Foo', 'Bar'] RETURN n" );
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             for ( String query : queries )
             {
@@ -450,7 +407,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnDynamicPropertyLookupWithSingleLabelAndNegativePredicate()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
@@ -461,7 +418,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleLabels()
     {
-        Stream.of( "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE INDEX ON :Person(name)" );
             db().execute( "Call db.awaitIndexes()" );
@@ -474,7 +431,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldWarnOnUnfulfillableIndexSeekUsingDynamicPropertyAndMultipleIndexedLabels()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
 
             db().execute( "CREATE INDEX ON :Person(name)" );
@@ -502,7 +459,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyOnCartesianProductWithoutExplain()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " match (a)-->(b), (c)-->(d) return *" ) );
     }
 
@@ -521,19 +478,11 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
             tx.success();
         }
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             assertNotifications(version + "EXPLAIN MATCH (n:Preson) RETURN *", containsItem( unknownLabelWarning ) );
             shouldNotNotifyInStream( version, "EXPLAIN MATCH (n:Person) RETURN *" );
         });
-    }
-
-    @Test
-    public void shouldWarnOnMissingLabelWithCommentInBeginningWithOlderCypherVersions()
-    {
-        assertNotifications( "CYPHER 2.3 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( unknownLabelWarning ) );
-
-        assertNotifications( "CYPHER 3.1 EXPLAIN//TESTING \nMATCH (n:X) return n Limit 1", containsItem( unknownLabelWarning ) );
     }
 
     @Test
@@ -563,7 +512,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyForMissingLabelOnUpdate()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN CREATE (n:Person)" ) );
     }
 
@@ -582,7 +531,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
             tx.success();
         }
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE (n)-[r:R]->(m)");
             assertNotifications(version + "EXPLAIN MATCH ()-[r:r]->() RETURN *", containsItem( unknownRelationshipWarning ) );
@@ -607,7 +556,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     {
         db().execute("CREATE (n {prop : 42})");
 
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
         {
             db().execute( "CREATE (n)-[r:R]->(m)");
             assertNotifications(version + "EXPLAIN MATCH (n) WHERE n.propp = 43 RETURN n", containsItem( unknownPropertyKeyWarning ) );
@@ -624,7 +573,7 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     @Test
     public void shouldNotNotifyForMissingPropertiesOnUpdate()
     {
-        Stream.of( "CYPHER 2.3", "CYPHER 3.1", "CYPHER 3.5" ).forEach(
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach(
                 version -> shouldNotNotifyInStream( version, " EXPLAIN CREATE (n {prop: 42})" ) );
     }
 

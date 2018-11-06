@@ -28,7 +28,6 @@ case object CypherPlannerOption extends CypherOptionCompanion[CypherPlannerOptio
   case object greedy extends CypherPlannerOption("greedy")
   case object idp extends CypherPlannerOption("idp")
   case object dp extends CypherPlannerOption("dp")
-  case object rule extends CypherPlannerOption("rule")
 
-  val all: Set[CypherPlannerOption] = Set(cost, greedy, idp, dp, rule)
+  val all: Set[CypherPlannerOption] = Set(cost, greedy, idp, dp)
 }

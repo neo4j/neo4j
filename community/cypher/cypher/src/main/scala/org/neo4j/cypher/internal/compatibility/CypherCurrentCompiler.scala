@@ -21,18 +21,18 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.exceptionHandler.runSafely
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.v3_5.ExceptionTranslatingQueryContext
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => ExecutionPlan_v3_5}
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler.PlanDescriptionBuilder
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.{ExplainExecutionResult, RuntimeName}
-import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
+import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslatingQueryContext
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{StandardInternalExecutionResult, ExecutionPlan => ExecutionPlan_v4_0}
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.PlanDescriptionBuilder
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.{ExplainExecutionResult, RuntimeName}
+import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
+import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
-import org.neo4j.cypher.internal.v3_5.logical.plans._
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherExpressionEngineOption}
 import org.neo4j.graphdb.{Notification, Result}
 import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndexUsage}
@@ -91,20 +91,20 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                                queryType == READ_ONLY,
                                                preParsedQuery.useCompiledExpressions)
 
-    val executionPlan3_5: ExecutionPlan_v3_5 = runtime.compileToExecutable(planState, runtimeContext)
+    val executionPlan4_0: ExecutionPlan_v4_0 = runtime.compileToExecutable(planState, runtimeContext)
 
     new CypherExecutableQuery(
       logicalPlan,
       runtimeContext.readOnly,
       logicalPlanResult.logicalPlanState.planningAttributes.cardinalities,
       logicalPlanResult.logicalPlanState.planningAttributes.providedOrders,
-      executionPlan3_5,
+      executionPlan4_0,
       preParsingNotifications,
       logicalPlanResult.notifications,
       logicalPlanResult.reusability,
       logicalPlanResult.paramNames,
       logicalPlanResult.extractedParams,
-      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan3_5.runtimeName),
+      buildCompilerInfo(logicalPlan, planState.plannerName, executionPlan4_0.runtimeName),
       planState.plannerName,
       queryType,
       logicalPlanResult.shouldBeCached)
@@ -147,7 +147,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                         readOnly: Boolean,
                                         cardinalities: Cardinalities,
                                         providedOrders: ProvidedOrders,
-                                        executionPlan: ExecutionPlan_v3_5,
+                                        executionPlan: ExecutionPlan_v4_0,
                                         preParsingNotifications: Set[Notification],
                                         planningNotifications: Set[InternalNotification],
                                         reusabilityState: ReusabilityState,

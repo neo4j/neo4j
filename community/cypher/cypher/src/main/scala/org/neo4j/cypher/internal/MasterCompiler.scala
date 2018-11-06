@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers.InternalWrapping.asKernelNotification
-import org.neo4j.cypher.internal.compiler.v3_5.{StatsDivergenceCalculator, _}
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.InternalWrapping.asKernelNotification
+import org.neo4j.cypher.internal.compiler.v4_0.{StatsDivergenceCalculator, _}
 import org.neo4j.cypher.{InvalidArgumentException, _}
 import org.neo4j.graphdb.Notification
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -63,7 +63,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
   }
 
   /**
-    * Compile pre-parsed query into executable query.
+    * Compile pre-parsed query into executable query. TODO where is this used from?
     *
     * @param preParsedQuery          pre-parsed query to convert
     * @param tracer                  compilation tracer to which events of the compilation process are reported
@@ -93,60 +93,15 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
       }
     }
 
-    /**
-      * Compile query or recursively fallback to 3.1 in some cases.
-      *
-      * @param preParsedQuery the query to compile
-      * @return the compiled query
-      */
-    def innerCompile(preParsedQuery: PreParsedQuery, params: MapValue): ExecutableQuery = {
-
-      if ((preParsedQuery.version == CypherVersion.v3_4 || preParsedQuery.version == CypherVersion.v3_5) && preParsedQuery.planner == CypherPlannerOption.rule) {
-        logger.log(RulePlannerUnavailableFallbackNotification)
-        innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1), params)
-
-      } else if (preParsedQuery.version == CypherVersion.v3_5) {
-        val compiler3_5 = compilerLibrary.selectCompiler(preParsedQuery.version,
-                                                         preParsedQuery.planner,
-                                                         preParsedQuery.runtime,
-                                                         preParsedQuery.updateStrategy)
-
-        try {
-          compiler3_5.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
-        } catch {
-          case ex: SyntaxException if ex.getMessage.startsWith("CREATE UNIQUE") =>
-            val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
-            logger.log(CreateUniqueUnavailableFallback(ex3_5.pos.get))
-            logger.log(CreateUniqueDeprecated(ex3_5.pos.get))
-            assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
-            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
-
-          case ex: SyntaxException if ex.getMessage.startsWith("START is deprecated") =>
-            val ex3_5 = ex.getCause.asInstanceOf[InternalSyntaxException]
-            logger.log(StartUnavailableFallback)
-            logger.log(DeprecatedStartNotification(inputPosition, ex.getMessage))
-            assertSupportedRuntime(ex3_5, preParsedQuery.runtime)
-            innerCompile(preParsedQuery.copy(version = CypherVersion.v3_1, runtime = CypherRuntimeOption.interpreted), params)
-        }
-
-      } else {
-
-        val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
-                                                      preParsedQuery.planner,
-                                                      preParsedQuery.runtime,
-                                                      preParsedQuery.updateStrategy)
-
-        compiler.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
-      }
-    }
-
-    if (preParsedQuery.planner == CypherPlannerOption.rule)
-      logger.log(DeprecatedRulePlannerNotification)
-
     if (preParsedQuery.runtime == CypherRuntimeOption.compiled)
       logger.log(DeprecatedCompiledRuntimeNotification)
 
     // Do the compilation
-    innerCompile(preParsedQuery, params)
+    val compiler = compilerLibrary.selectCompiler(preParsedQuery.version,
+      preParsedQuery.planner,
+      preParsedQuery.runtime,
+      preParsedQuery.updateStrategy)
+
+    compiler.compile(preParsedQuery, tracer, notificationsSoFar(), transactionalContext, params)
   }
 }

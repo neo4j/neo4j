@@ -168,49 +168,4 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         Runnable changeConfig = work( 1, dropAndReCreateIndex( initialIndex, newDescriptor ) );
         raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
     }
-
-    @Test
-    public void labelledNodesCypher31() throws Throwable
-    {
-        Label label = Label.label( "LABEL" );
-        String[] entityTokens = {label.name()};
-        SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexReference initialIndex = createInitialIndex( descriptor );
-
-        Runnable aliceWork = work( nodesCreatedPerThread, () -> db.execute( "CYPHER 3.1 create (:LABEL {" + PROP + ": \"alice\"})" ).close() );
-        Runnable bobWork = work( nodesCreatedPerThread, () -> db.execute( "CYPHER 3.1 create (:LABEL {otherProp: \"bob\"})" ).close() );
-        Runnable changeConfig = work( 1, dropAndReCreateIndex( initialIndex, newDescriptor ) );
-        raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
-    }
-
-    @Test
-    public void labelledNodesCypher23() throws Throwable
-    {
-        Label label = Label.label( "LABEL" );
-        String[] entityTokens = {label.name()};
-        SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexReference initialIndex = createInitialIndex( descriptor );
-
-        Runnable aliceWork = work( nodesCreatedPerThread, () -> db.execute( "CYPHER 2.3 create (:LABEL {" + PROP + ": \"alice\"})" ).close() );
-        Runnable bobWork = work( nodesCreatedPerThread, () -> db.execute( "CYPHER 2.3 create (:LABEL {otherProp: \"bob\"})" ).close() );
-        Runnable changeConfig = work( 1, dropAndReCreateIndex( initialIndex, newDescriptor ) );
-        raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
-    }
-
-    @Test
-    public void labelledNodesCypherRule() throws Throwable
-    {
-        Label label = Label.label( "LABEL" );
-        String[] entityTokens = {label.name()};
-        SchemaDescriptor descriptor = getExistingDescriptor( entityTokens );
-        SchemaDescriptor newDescriptor = getNewDescriptor( entityTokens );
-        IndexReference initialIndex = createInitialIndex( descriptor );
-
-        Runnable aliceWork = work( nodesCreatedPerThread, () -> db.execute( "CYPHER planner=rule create (:LABEL {" + PROP + ": \"alice\"})" ).close() );
-        Runnable bobWork = work( nodesCreatedPerThread, () -> db.execute( "CYPHER planner=rule create (:LABEL {otherProp: \"bob\"})" ).close() );
-        Runnable changeConfig = work( 1, dropAndReCreateIndex( initialIndex, newDescriptor ) );
-        raceContestantsAndVerifyResults( newDescriptor, aliceWork, changeConfig, bobWork );
-    }
 }

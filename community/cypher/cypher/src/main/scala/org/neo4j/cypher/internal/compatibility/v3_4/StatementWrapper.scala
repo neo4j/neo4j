@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compatibility.v3_4
 
-import org.neo4j.cypher.internal.compatibility.v3_4.helpers.as3_5
+import org.neo4j.cypher.internal.compatibility.v3_4.helpers.as4_0
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.opencypher.v9_0.ast.semantics.SemanticCheck
 import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.{ast => astv3_5}
+import org.opencypher.v9_0.{ast => astv4_0}
 
-case class StatementWrapper(statement: astV3_4.Statement) extends astv3_5.Statement {
+case class StatementWrapper(statement: astV3_4.Statement) extends astv4_0.Statement {
   override def semanticCheck: SemanticCheck = ???
 
   override lazy val returnColumns: List[String] = statement.returnColumns
 
-  override lazy val position: InputPosition = as3_5(statement.position)
+  override lazy val position: InputPosition = as4_0(statement.position)
 }

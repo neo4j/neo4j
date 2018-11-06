@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v4_0._
+import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.spi.v3_5.TransactionBoundGraphStatistics
 import org.neo4j.kernel.impl.query.TransactionalContext
 

@@ -23,7 +23,7 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
+import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext, QueryStatistics}
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.IndexReference

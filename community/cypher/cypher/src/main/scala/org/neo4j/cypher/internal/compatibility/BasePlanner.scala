@@ -23,10 +23,10 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal._
-import org.neo4j.cypher.internal.compatibility.v3_5.{WrappedMonitors => WrappedMonitorsv3_5}
-import org.neo4j.cypher.internal.compiler.v3_5._
-import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
+import org.neo4j.cypher.internal.compatibility.v4_0.{WrappedMonitors => WrappedMonitorsv4_0}
+import org.neo4j.cypher.internal.compiler.v4_0._
+import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
+import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
@@ -47,9 +47,9 @@ abstract class BasePlanner[STATEMENT <: AnyRef, PARSED_STATE <: AnyRef](
                                                ) extends CachingPlanner[PARSED_STATE] {
 
   protected val logger: InfoLogger = new StringInfoLogger(log)
-  protected val monitors: Monitors = WrappedMonitorsv3_5(kernelMonitors)
+  protected val monitors: Monitors = WrappedMonitorsv4_0(kernelMonitors)
 
-  protected val cacheTracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[STATEMENT, ParameterTypeMap]]]("cypher3.5")
+  protected val cacheTracer: CacheTracer[Pair[STATEMENT, ParameterTypeMap]] = monitors.newMonitor[CacheTracer[Pair[STATEMENT, ParameterTypeMap]]]("cypher4.0")
 
   override def parserCacheSize: Int = config.queryCacheSize
 

@@ -100,7 +100,6 @@
         <include>org.apache.lucene:lucene-codecs</include>
         <include>org.scala-lang:*</include>
         <include>org.parboiled:*</include>
-        <include>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</include>
         <include>net.sf.opencsv:opencsv</include>
         <include>org.apache.commons:commons-lang3</include>
       </includes>
@@ -118,7 +117,6 @@
         <exclude>org.apache.lucene:*</exclude>
         <exclude>org.scala-lang:*</exclude>
         <exclude>org.parboiled:*</exclude>
-        <exclude>com.googlecode.concurrentlinkedhashmap:concurrentlinkedhashmap-lru</exclude>
         <exclude>net.sf.opencsv:opencsv</exclude>
         <exclude>org.apache.commons:commons-lang3</exclude>
         <exclude>org.ow2.asm:*</exclude>

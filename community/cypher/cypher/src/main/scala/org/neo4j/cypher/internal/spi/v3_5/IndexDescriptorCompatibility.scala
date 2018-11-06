@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.spi.v3_5
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
+import org.neo4j.cypher.internal.planner.v4_0.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundTokenContext
 import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
 import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}

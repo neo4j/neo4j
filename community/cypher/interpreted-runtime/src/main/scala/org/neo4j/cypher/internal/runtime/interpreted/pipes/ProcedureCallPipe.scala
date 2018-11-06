@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ValueCon
 import org.neo4j.cypher.internal.runtime.{ProcedureCallMode, QueryContext}
 import org.opencypher.v9_0.util.attribution.Id
 import org.opencypher.v9_0.util.symbols.CypherType
-import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
+import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {

@@ -37,7 +37,6 @@ Apache Software License, Version 2.0
   Apache HttpCore
   Caffeine cache
   Commons Lang
-  ConcurrentLinkedHashMap
   Data Mapper for Jackson
   fastinfoset
   Jackson

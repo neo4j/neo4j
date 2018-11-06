@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, LogicalPlans}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, LogicalPlans}
 
 trait PipeBuilder extends LogicalPlans.Mapper[Pipe] {
   override def onLeaf(plan: LogicalPlan): Pipe

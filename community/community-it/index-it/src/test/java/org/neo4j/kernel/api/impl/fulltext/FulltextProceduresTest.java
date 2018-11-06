@@ -1994,18 +1994,6 @@ public class FulltextProceduresTest
         {
             assertNoIndexSeeks( result );
         }
-        try ( Result result = db.execute( "cypher planner=rule profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
-        {
-            assertNoIndexSeeks( result );
-        }
-        try ( Result result = db.execute( "cypher 2.3 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
-        {
-            assertNoIndexSeeks( result );
-        }
-        try ( Result result = db.execute( "cypher 3.1 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
-        {
-            assertNoIndexSeeks( result );
-        }
         try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
             assertNoIndexSeeks( result );

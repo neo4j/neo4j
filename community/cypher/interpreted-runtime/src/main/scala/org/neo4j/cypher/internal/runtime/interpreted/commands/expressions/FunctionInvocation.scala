@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
-import org.neo4j.cypher.internal.v3_5.logical.plans.UserFunctionSignature
+import org.neo4j.cypher.internal.v4_0.logical.plans.UserFunctionSignature
 import org.neo4j.values._
 
 abstract class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])

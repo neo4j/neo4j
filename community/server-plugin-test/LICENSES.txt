@@ -12,7 +12,6 @@ Apache Software License, Version 2.0
   Caffeine cache
   Commons Lang
   Commons Logging
-  ConcurrentLinkedHashMap
   Data Mapper for Jackson
   fastinfoset
   Jackson
@@ -544,8 +543,8 @@ COMMON DEVELOPMENT AND DISTRIBUTION LICENSE (CDDL) Version 1.1
     liability incurred by the Initial Developer or such Contributor as a
     result of warranty, support, indemnity or liability terms You offer.
 
-    3.5. Distribution of Executable Versions.
 
+    3.5. Distribution of Executable Versions.
     You may distribute the Executable form of the Covered Software under
     the terms of this License or under the terms of a license of Your
     choice, which may contain terms different from this License,

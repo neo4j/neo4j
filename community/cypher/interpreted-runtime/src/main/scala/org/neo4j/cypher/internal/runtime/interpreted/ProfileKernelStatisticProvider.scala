@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider
+import org.neo4j.cypher.internal.planner.v4_0.spi.KernelStatisticProvider
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider
 
 class ProfileKernelStatisticProvider(statisticProvider: StatisticProvider) extends KernelStatisticProvider {

@@ -162,14 +162,6 @@ public class EagerResultIT
     }
 
     @Test
-    public void eagerResultHaveNotifications()
-    {
-        Result result = database.execute( " CYPHER planner=rule MATCH (n) RETURN n.c" );
-        assertEquals( 1, testCursorContext.getAdditionalAttempts() );
-        assertThat( Iterables.count( result.getNotifications() ), greaterThan( 0L ) );
-    }
-
-    @Test
     public void eagerResultToString()
     {
         Result result = database.execute( "MATCH (n) RETURN n.c, n.d" );

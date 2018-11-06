@@ -19,18 +19,18 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility.v2_3.helpers._
-import org.neo4j.cypher.internal.compatibility.v3_1.helpers._
-import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
-import org.neo4j.cypher.internal.compatibility.v3_5.Cypher35Planner
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
-import org.neo4j.cypher.{CypherPlannerOption, CypherRuntimeOption, CypherUpdateStrategy, CypherVersion}
-import org.neo4j.helpers.Clock
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
+import org.neo4j.cypher.internal.compatibility.v4_0.Cypher35Planner
+import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
+import org.neo4j.cypher.CypherPlannerOption
+import org.neo4j.cypher.CypherRuntimeOption
+import org.neo4j.cypher.CypherUpdateStrategy
+import org.neo4j.cypher.CypherVersion
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
-import org.neo4j.logging.{Log, LogProvider}
-import org.opencypher.v9_0.util.InvalidArgumentException
+import org.neo4j.logging.Log
+import org.neo4j.logging.LogProvider
 
 /**
   * Factory which creates cypher compilers.
@@ -51,23 +51,6 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                              ): Compiler = {
 
     (cypherVersion, cypherPlanner) match {
-
-        // 2.3
-      case (CypherVersion.v2_3, CypherPlannerOption.rule) =>
-        v2_3.Rule23Compiler(graph, as2_3(plannerConfig), Clock.SYSTEM_CLOCK, kernelMonitors)
-      case (CypherVersion.v2_3, _) =>
-        v2_3.Cost23Compiler(graph, as2_3(plannerConfig), Clock.SYSTEM_CLOCK, kernelMonitors, log, cypherPlanner, cypherRuntime)
-
-        // 3.1
-      case (CypherVersion.v3_1, CypherPlannerOption.rule) =>
-        v3_1.Rule31Compiler(graph, as3_1(plannerConfig), MasterCompiler.CLOCK, kernelMonitors)
-      case (CypherVersion.v3_1, _) =>
-        v3_1.Cost31Compiler(graph, as3_1(plannerConfig), MasterCompiler.CLOCK, kernelMonitors, log, cypherPlanner, cypherRuntime, cypherUpdateStrategy)
-
-        // 3.3 or 3.5 + rule
-      case (_, CypherPlannerOption.rule) =>
-        throw new InvalidArgumentException(s"The rule planner is no longer a valid planner option in Neo4j ${cypherVersion.name}. If you need to use it, please select compatibility mode Cypher 3.1")
-
         // 3.4
       case (CypherVersion.v3_4, _) =>
         CypherCurrentCompiler(
@@ -78,8 +61,8 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
           kernelMonitors
         )
 
-        // 3.5
-      case (CypherVersion.v3_5, _) =>
+        // 4.0
+      case (CypherVersion.`v4_0`, _) =>
         CypherCurrentCompiler(
           Cypher35Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
                           cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),

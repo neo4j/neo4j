@@ -65,21 +65,7 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
   private def extractPlanLabels(plan: ExecutableQuery, version: CypherVersion, tc: TransactionalContext): Seq[Long] = {
     import scala.collection.JavaConverters._
 
-    def planLabels = {
-      plan.compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
-    }
-
-    def allLabels: Seq[Long] = {
-      tc.kernelTransaction.tokenRead().labelsGetAllTokens().asScala.map(t => t.id().toLong).toSeq
-    }
-
-    version match {
-      // old cypher versions plans do not contain information about indexes used in query
-      // and since we do not know what labels are actually used by the query we assume that all of them are
-      case CypherVersion.v2_3 => allLabels
-      case CypherVersion.v3_1 => allLabels
-      case _ => planLabels
-    }
+    plan.compilerInfo.indexes().asScala.collect { case item: SchemaIndexUsage => item.getLabelId.toLong }
   }
 
   private def releasePlanLabels(tc: TransactionalContext, labelIds: Seq[Long]): Unit =

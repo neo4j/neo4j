@@ -63,13 +63,13 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-logical-plans-3.5</artifactId>
+      <artifactId>neo4j-cypher-logical-plans-4.0</artifactId>
       <version>${project.version}</version>
     </dependency>
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-spi-3.5</artifactId>
+      <artifactId>neo4j-cypher-planner-spi-4.0</artifactId>
       <version>${project.version}</version>
     </dependency>
 

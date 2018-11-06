@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v3_5.spi.IdempotentResult
-import org.neo4j.cypher.internal.planner.v3_5.spi.KernelStatisticProvider
-import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
+import org.neo4j.cypher.internal.planner.v4_0.spi.KernelStatisticProvider
+import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
+import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
+import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
 import org.neo4j.graphdb.Path
 import org.neo4j.graphdb.PropertyContainer
 import org.neo4j.internal.kernel.api._
