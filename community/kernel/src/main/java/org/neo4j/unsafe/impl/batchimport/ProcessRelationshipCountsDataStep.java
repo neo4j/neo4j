@@ -25,11 +25,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchSender;
 import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
+
+import static java.lang.Math.max;
+import static java.lang.Math.toIntExact;
 
 /**
  * Processes relationship records, feeding them to {@link RelationshipCountsProcessor} which keeps
@@ -50,13 +54,37 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
             CountsAccessor.Updater countsUpdater, NumberArrayFactory cacheFactory,
             ProgressReporter progressReporter )
     {
-        super( control, "COUNT", config, 0 );
+        super( control, "COUNT", config, numberOfProcessors( config, cache, highLabelId, highRelationshipTypeId ) );
         this.cache = cache;
         this.highLabelId = highLabelId;
         this.highRelationshipTypeId = highRelationshipTypeId;
         this.countsUpdater = countsUpdater;
         this.cacheFactory = cacheFactory;
         this.progressMonitor = progressReporter;
+    }
+
+    /**
+     * Keeping all counts for all combinations of label/reltype can require a lot of memory if there are lots of those tokens.
+     * Each processor will allocate such a data structure and so in extreme cases the number of processors will have to
+     * be limited to not surpass the available memory limits.
+     *
+     * @param config {@link Configuration} holding things like max number of processors and max memory.
+     * @param cache {@link NodeLabelsCache} which is the only other data structure occupying memory at this point.
+     * @param highLabelId high label id for this store.
+     * @param highRelationshipTypeId high relationship type id for this store.
+     * @return number of processors suitable for this step. In most cases this will be 0, which is the typical value used
+     * when just allowing the importer to grab up to {@link Configuration#maxNumberOfProcessors()}. The returned value
+     * will at least be 1.
+     */
+    private static int numberOfProcessors( Configuration config, NodeLabelsCache cache, int highLabelId, int highRelationshipTypeId )
+    {
+        GatheringMemoryStatsVisitor memVisitor = new GatheringMemoryStatsVisitor();
+        cache.acceptMemoryStatsVisitor( memVisitor );
+
+        long availableMem = config.maxMemoryUsage() - memVisitor.getTotalUsage();
+        long threadMem = RelationshipCountsProcessor.calculateMemoryUsage( highLabelId, highRelationshipTypeId );
+        int possibleThreads = toIntExact( availableMem / threadMem );
+        return possibleThreads >= config.maxNumberOfProcessors() ? 0 : max( 1, possibleThreads );
     }
 
     @Override
