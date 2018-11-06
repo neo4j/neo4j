@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndex
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
@@ -123,6 +124,10 @@ abstract class BaseQueryContext extends QueryContext {
   override def nodeIsDense(node: Long): Boolean = notSupported()
 
   override def asObject(value: AnyValue): AnyRef = notSupported()
+
+
+  override def getTxStateNodePropertyOrNull(nodeId: Long,
+                                            propertyKey: Int): Value = notSupported()
 
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int],
                                         maxHops: Option[Int],

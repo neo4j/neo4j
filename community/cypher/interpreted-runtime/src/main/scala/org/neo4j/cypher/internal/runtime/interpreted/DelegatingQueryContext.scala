@@ -285,6 +285,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def assertSchemaWritesAllowed(): Unit = inner.assertSchemaWritesAllowed()
 
   override def asObject(value: AnyValue): AnyRef = inner.asObject(value)
+
+  override def getTxStateNodePropertyOrNull(nodeId: Long,
+                                            propertyKey: Int): Value =
+    inner.getTxStateNodePropertyOrNull(nodeId, propertyKey)
 }
 
 class DelegatingOperations[T](protected val inner: Operations[T]) extends Operations[T] {

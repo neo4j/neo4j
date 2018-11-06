@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndex
 import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 
@@ -68,6 +69,10 @@ trait QueryContextAdaptation {
   override def singleShortestPath(left: Long, right: Long, depth: Int, expander: Expander, pathPredicate: KernelPredicate[Path], filters: Seq[KernelPredicate[PropertyContainer]]): Option[Path] = ???
 
   override def asObject(value: AnyValue): AnyRef = ???
+
+
+  override def getTxStateNodePropertyOrNull(nodeId: Long,
+                                            propertyKey: Int): Value = ???
 
   override def relationshipGetStartNode(relationship: RelationshipValue): NodeValue = ???
 

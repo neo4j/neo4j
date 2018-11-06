@@ -266,6 +266,11 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def asObject(value: AnyValue): AnyRef =
     translateException(inner.asObject(value))
 
+
+  override def getTxStateNodePropertyOrNull(nodeId: Long,
+                                            propertyKey: Int): Value =
+    translateException(inner.getTxStateNodePropertyOrNull(nodeId, propertyKey))
+
   override def variableLengthPathExpand(realNode: Long, minHops: Option[Int], maxHops: Option[Int], direction: SemanticDirection, relTypes: Seq[String]) =
     translateException(inner.variableLengthPathExpand(realNode, minHops, maxHops, direction, relTypes))
 

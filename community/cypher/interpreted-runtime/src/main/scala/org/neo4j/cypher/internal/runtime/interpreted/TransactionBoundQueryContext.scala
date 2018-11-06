@@ -505,6 +505,17 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
 
   override def asObject(value: AnyValue): AnyRef = value.map(valueMapper)
 
+  override def getTxStateNodePropertyOrNull(nodeId: Long,
+                                            propertyKey: Int): Value = {
+    val ops = reads()
+    if (ops.nodeDeletedInTransaction(nodeId)) {
+      throw new EntityNotFoundException(
+        s"Node with id $nodeId has been deleted in this transaction")
+    }
+
+   ops.nodePropertyChangeInTransactionOrNull(nodeId, propertyKey)
+  }
+
   class NodeOperations extends BaseOperations[NodeValue] {
 
     override def delete(id: Long) {
@@ -551,12 +562,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       }
     }
 
-    override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] = {
-      if (isDeletedInThisTx(nodeId)) throw new EntityNotFoundException(
-        s"Node with id $nodeId has been deleted in this transaction")
-      val nodePropertyInTx = reads().nodePropertyChangeInTransactionOrNull(nodeId, propertyKeyId)
-      Option(nodePropertyInTx)
-    }
+    override def getTxStateProperty(nodeId: Long, propertyKeyId: Int): Option[Value] =
+      Option(getTxStateNodePropertyOrNull(nodeId, propertyKeyId))
 
     override def hasProperty(id: Long, propertyKey: Int): Boolean = {
       val node = allocateNodeCursor()

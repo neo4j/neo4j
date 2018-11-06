@@ -78,4 +78,5 @@ public interface DbAccess
 
     MapValue relationshipAsMap( long id );
 
+    Value getTxStateNodePropertyOrNull( long nodeId, int propertyKey );
 }
