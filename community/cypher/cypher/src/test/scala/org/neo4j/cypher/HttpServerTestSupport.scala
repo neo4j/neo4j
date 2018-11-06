@@ -28,6 +28,7 @@ import scala.collection.mutable
 trait HttpServerTestSupport {
   def boundInfo: InetSocketAddress
   def start()
+  def restart()
   def stop()
 }
 
@@ -94,7 +95,7 @@ class HttpServerTestSupportBuilder {
 
     def boundInfo = optServer.get.getAddress
 
-    def start {
+    def start() {
       optServer = Some(provideServer)
       val server = optServer.get
 
@@ -119,6 +120,11 @@ class HttpServerTestSupportBuilder {
 
       server.setExecutor(Executors.newFixedThreadPool(1))
       server.start()
+    }
+
+    def restart(): Unit = {
+      stop()
+      start()
     }
 
     def stop() {
