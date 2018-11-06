@@ -61,7 +61,7 @@ public class NativeDistinctValuesProgressorTest
 
         // when
         NativeDistinctValuesProgressor<StringIndexKey,NativeIndexValue> progressor =
-                new NativeDistinctValuesProgressor<>( source, client, new ArrayList<>(), layout );
+                new NativeDistinctValuesProgressor<>( source, client, new ArrayList<>(), layout, layout::compareValue );
         Map<Value,MutableInt> expectedCounts = asDistinctCounts( strings );
 
         // then

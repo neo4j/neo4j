@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -115,10 +116,10 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
     {
         BridgingIndexProgressor bridgingIndexProgressor = new BridgingIndexProgressor( client, descriptor.schema().getPropertyIds() );
-        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor ) );
+        indexReaders.parallelStream().forEach( reader -> reader.distinctValues( bridgingIndexProgressor, propertyAccessor ) );
         client.initialize( descriptor, bridgingIndexProgressor, new IndexQuery[0], IndexOrder.NONE, client.needsValues() );
     }
 

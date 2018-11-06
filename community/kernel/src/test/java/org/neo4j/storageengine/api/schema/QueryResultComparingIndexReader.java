@@ -25,6 +25,7 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
@@ -171,9 +172,9 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
     {
-        actual.distinctValues( client );
+        actual.distinctValues( client, propertyAccessor );
     }
 
     @Override

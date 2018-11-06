@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.impl.index.partition.PartitionSearcher;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.verification.DuplicateCheckingCollector;
 import org.neo4j.kernel.api.impl.schema.verification.PartitionedUniquenessVerifier;
-import org.neo4j.kernel.api.index.NodePropertyAccessor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Values;
 
 import static org.mockito.ArgumentMatchers.any;

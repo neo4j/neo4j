@@ -25,6 +25,7 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 /**
@@ -78,8 +79,9 @@ public interface IndexReader extends Resource
      * regardless of the actual values.
      *
      * @param client {@link IndexProgressor.NodeValueClient} to get initialized with this progression.
+     * @param propertyAccessor used for distinguishing between lossy indexed values.
      */
-    void distinctValues( IndexProgressor.NodeValueClient client );
+    void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor );
 
     IndexReader EMPTY = new IndexReader()
     {
@@ -120,7 +122,7 @@ public interface IndexReader extends Resource
         }
 
         @Override
-        public void distinctValues( IndexProgressor.NodeValueClient client )
+        public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
         {
             // do nothing
         }

@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

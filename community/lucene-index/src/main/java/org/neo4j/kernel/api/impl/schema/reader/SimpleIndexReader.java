@@ -52,6 +52,7 @@ import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.AbstractIndexReader;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -204,9 +205,10 @@ public class SimpleIndexReader extends AbstractIndexReader
      * instances for those.
      *
      * @param client {@link IndexProgressor.NodeValueClient} to get initialized with this progression.
+     * @param propertyAccessor {@link NodePropertyAccessor} for reading property values.
      */
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client )
+    public void distinctValues( IndexProgressor.NodeValueClient client, NodePropertyAccessor propertyAccessor )
     {
         try
         {

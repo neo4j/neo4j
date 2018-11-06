@@ -35,6 +35,7 @@ import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.schema.GatheringNodeValueClient;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.IndexReader;
 import org.neo4j.test.rule.RandomRule;
@@ -46,6 +47,8 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.documentRepresentingProperties;
 import static org.neo4j.values.storable.Values.stringValue;
 
@@ -92,9 +95,10 @@ public class SimpleIndexReaderDistinctValuesTest
 
         // when/then
         GatheringNodeValueClient client = new GatheringNodeValueClient();
+        NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         try ( IndexReader reader = index.getIndexReader() )
         {
-            reader.distinctValues( client );
+            reader.distinctValues( client, propertyAccessor );
             while ( client.progressor.next() )
             {
                 Value value = client.values[0];
@@ -104,6 +108,7 @@ public class SimpleIndexReaderDistinctValuesTest
             }
             assertTrue( expectedCounts.isEmpty() );
         }
+        verifyNoMoreInteractions( propertyAccessor );
     }
 
     @Test
@@ -121,9 +126,10 @@ public class SimpleIndexReaderDistinctValuesTest
 
         // when/then
         GatheringNodeValueClient client = new GatheringNodeValueClient();
+        NodePropertyAccessor propertyAccessor = mock( NodePropertyAccessor.class );
         try ( IndexReader reader = index.getIndexReader() )
         {
-            reader.distinctValues( client );
+            reader.distinctValues( client, propertyAccessor );
             int actualCount = 0;
             while ( client.progressor.next() )
             {
@@ -131,5 +137,6 @@ public class SimpleIndexReaderDistinctValuesTest
             }
             assertEquals( expectedCount, actualCount );
         }
+        verifyNoMoreInteractions( propertyAccessor );
     }
 }

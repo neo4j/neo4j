@@ -28,6 +28,7 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
+import org.neo4j.storageengine.api.NodePropertyAccessor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexReader;
@@ -130,12 +131,12 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient cursor )
+    public void distinctValues( IndexProgressor.NodeValueClient cursor, NodePropertyAccessor propertyAccessor )
     {
         BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor,
                 descriptor.schema().getPropertyIds() );
         cursor.initialize( descriptor, multiProgressor, new IndexQuery[0], IndexOrder.NONE, cursor.needsValues() );
-        instanceSelector.forAll( reader -> reader.distinctValues( multiProgressor ) );
+        instanceSelector.forAll( reader -> reader.distinctValues( multiProgressor, propertyAccessor ) );
     }
 
     @Override
