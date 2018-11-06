@@ -33,6 +33,7 @@ import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -46,7 +47,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey<KEY>, VALUE e
     protected final SchemaIndexDescriptor descriptor;
     final Layout<KEY,VALUE> layout;
     final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
-    private final GBPTree<KEY,VALUE> tree;
+    final GBPTree<KEY,VALUE> tree;
     private final IndexSamplingConfig samplingConfig;
 
     NativeSchemaIndexReader( GBPTree<KEY,VALUE> tree, Layout<KEY,VALUE> layout,
@@ -152,7 +153,7 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey<KEY>, VALUE e
     public abstract boolean hasFullValuePrecision( IndexQuery... predicates );
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient client )
+    public void distinctValues( IndexProgressor.NodeValueClient client, PropertyAccessor propertyAccessor )
     {
         KEY lowest = layout.newKey();
         lowest.initialize( Long.MIN_VALUE );
@@ -163,7 +164,9 @@ abstract class NativeSchemaIndexReader<KEY extends NativeSchemaKey<KEY>, VALUE e
         try
         {
             RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( lowest, highest );
-            client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, openSeekers, (SchemaLayout<KEY>) layout ), new IndexQuery[0] );
+            SchemaLayout<KEY> schemaLayout = (SchemaLayout<KEY>) layout;
+            client.initialize( descriptor, new NativeDistinctValuesProgressor<>( seeker, client, openSeekers, schemaLayout, schemaLayout::compareValue ),
+                    new IndexQuery[0] );
         }
         catch ( IOException e )
         {

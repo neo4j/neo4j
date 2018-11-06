@@ -27,6 +27,7 @@ import org.junit.rules.ExpectedException;
 import org.neo4j.collection.primitive.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.values.storable.Value;
 
 public class DefaultIndexReaderTest
@@ -77,7 +78,7 @@ public class DefaultIndexReaderTest
             }
 
             @Override
-            public void distinctValues( IndexProgressor.NodeValueClient client )
+            public void distinctValues( IndexProgressor.NodeValueClient client, PropertyAccessor propertyAccessor )
             {
             }
 

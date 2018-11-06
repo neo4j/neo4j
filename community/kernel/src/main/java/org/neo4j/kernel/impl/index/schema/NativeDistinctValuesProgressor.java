@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.Collection;
+import java.util.Comparator;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -30,16 +31,19 @@ public class NativeDistinctValuesProgressor<KEY extends NativeSchemaKey<KEY>, VA
 {
     private final SchemaLayout<KEY> layout;
     private final KEY prev;
+    private final Comparator<KEY> comparator;
     private boolean first = true;
     private long countForCurrentValue;
     private boolean last;
 
     NativeDistinctValuesProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, NodeValueClient client,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose, SchemaLayout<KEY> layout )
+            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose, SchemaLayout<KEY> layout,
+            Comparator<KEY> comparator )
     {
         super( seeker, client, toRemoveFromOnClose );
         this.layout = layout;
         prev = layout.newKey();
+        this.comparator = comparator;
     }
 
     @Override
@@ -57,7 +61,7 @@ public class NativeDistinctValuesProgressor<KEY extends NativeSchemaKey<KEY>, VA
                         first = false;
                         countForCurrentValue = 1;
                     }
-                    else if ( layout.compareValue( prev, key ) == 0 )
+                    else if ( comparator.compare( prev, key ) == 0 )
                     {
                         // same as previous
                         countForCurrentValue++;

@@ -21,8 +21,10 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -35,10 +37,12 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
+import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueCategory;
 import org.neo4j.values.storable.Values;
 
+import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -1225,6 +1229,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         CapableIndexReference index = schemaRead.index( label, key );
         Map<Value,Set<Long>> expected = new HashMap<>();
         int expectedTotalCount = 100;
+        List<Long> createdNodes = new ArrayList<>();
         try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
         {
             ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -1236,6 +1241,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 Value value = Values.of( random.nextBoolean() ? String.valueOf( i % 10 ) : (i % 10) );
                 write.nodeSetProperty( nodeId, key, value );
                 expected.computeIfAbsent( value, v -> new HashSet<>() ).add( nodeId );
+                createdNodes.add( nodeId );
             }
             tx.success();
         }
@@ -1270,6 +1276,80 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 assertTrue( expected.toString(), expected.isEmpty() );
             }
             assertEquals( expectedTotalCount, totalCount );
+        }
+        // the tests in this class share and modify the very same graph, so restore it
+        deleteNodes( createdNodes );
+    }
+
+    @Test
+    public void shouldCountDistinctButSimilarPointValues() throws Exception
+    {
+        assumeTrue( distinctValuesSupport() );
+
+        // given
+        int label = token.nodeLabel( "Node" );
+        int key = token.propertyKey( "prop2" );
+        CapableIndexReference index = schemaRead.index( label, key );
+        Value p1 = PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" );
+        Value p2 = PointValue.parse( "{latitude: 40.7128, longitude: -74.006000001, crs: 'wgs-84'}" );
+        List<Long> createdNodes = new ArrayList<>();
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
+        {
+            Write write = tx.dataWrite();
+            // point 1
+            {
+                long node1 = write.nodeCreate();
+                write.nodeAddLabel( node1, label );
+                write.nodeSetProperty( node1, key, p1 );
+                createdNodes.add( node1 );
+            }
+            // point 2
+            {
+                long node2 = write.nodeCreate();
+                write.nodeAddLabel( node2, label );
+                write.nodeSetProperty( node2, key, p2 );
+                createdNodes.add( node2 );
+            }
+            // point 2
+            {
+                long node3 = write.nodeCreate();
+                write.nodeAddLabel( node3, label );
+                write.nodeSetProperty( node3, key, p2 );
+                createdNodes.add( node3 );
+            }
+            tx.success();
+        }
+
+        // when
+        Map<Value,Integer> expected = new HashMap<>();
+        expected.put( p1, 1 );
+        expected.put( p2, 2 );
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction();
+                NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
+        {
+            tx.dataRead().nodeIndexDistinctValues( index, node );
+
+            // then
+            while ( node.next() )
+            {
+                assertTrue( node.hasValue() );
+                assertTrue( expected.containsKey( node.propertyValue( 0 ) ) );
+                assertEquals( expected.remove( node.propertyValue( 0 ) ).intValue(), toIntExact( node.nodeReference() ) );
+            }
+            assertTrue( expected.isEmpty() );
+        }
+        deleteNodes( createdNodes );
+    }
+
+    private void deleteNodes( List<Long> createdNodes ) throws Exception
+    {
+        try ( org.neo4j.internal.kernel.api.Transaction tx = session.beginTransaction() )
+        {
+            for ( Long createdNode : createdNodes )
+            {
+                tx.dataWrite().nodeDelete( createdNode );
+            }
+            tx.success();
         }
     }
 

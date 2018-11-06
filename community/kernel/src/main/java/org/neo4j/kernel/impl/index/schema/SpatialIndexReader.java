@@ -25,6 +25,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.schema.index.SchemaIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.fusion.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
@@ -134,14 +135,14 @@ class SpatialIndexReader extends SpatialIndexCache<SpatialIndexPartReader<Native
     }
 
     @Override
-    public void distinctValues( IndexProgressor.NodeValueClient cursor )
+    public void distinctValues( IndexProgressor.NodeValueClient cursor, PropertyAccessor propertyAccessor )
     {
         loadAll();
         BridgingIndexProgressor multiProgressor = new BridgingIndexProgressor( cursor, descriptor.schema().getPropertyIds() );
         cursor.initialize( descriptor, multiProgressor, new IndexQuery[0] );
         for ( NativeSchemaIndexReader<?,NativeSchemaValue> reader : this )
         {
-            reader.distinctValues( multiProgressor );
+            reader.distinctValues( multiProgressor, propertyAccessor );
         }
     }
 
