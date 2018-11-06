@@ -25,10 +25,8 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -74,6 +72,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private static long[] nodesOfAllPropertyTypes;
     private static long whateverPoint;
 
+    private static final int STRING_AND_NUMBER_DISTINCT_VALUES = 100;
+    private static Map<Value,Set<Long>> stringAndNumberDistinctValues = new HashMap<>();
+
+    private static final PointValue POINT_1 =
+            PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" );
+    private static final PointValue POINT_2 =
+            PointValue.parse( "{latitude: 40.7128, longitude: -74.006000001, crs: 'wgs-84'}" );
+
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
     {
@@ -81,6 +87,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         {
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop" ).create();
             graphDb.schema().indexFor( label( "Node" ) ).on( "prop2" ).create();
+            graphDb.schema().indexFor( label( "Node" ) ).on( "prop3" ).create();
             tx.success();
         }
         try ( Transaction tx = graphDb.beginTx() )
@@ -158,6 +165,20 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             listOfIds.add(nodeWithWhatever( graphDb, new String[]{"first", "second", "third"} ));
 
             nodesOfAllPropertyTypes = listOfIds.toArray();
+
+            ThreadLocalRandom random = ThreadLocalRandom.current();
+            for ( int i = 0; i < STRING_AND_NUMBER_DISTINCT_VALUES; i++ )
+            {
+                Object value = random.nextBoolean() ? String.valueOf( i % 10 ) : (i % 10);
+                long nodeId = nodeWithProp( graphDb, "prop2", value );
+                stringAndNumberDistinctValues.computeIfAbsent( Values.of( value ), v -> new HashSet<>() ).add( nodeId );
+            }
+
+            assertSameDerivedValue( POINT_1, POINT_2 );
+            nodeWithProp( graphDb, "prop3", POINT_1.asObjectCopy() );
+            nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
+            nodeWithProp( graphDb, "prop3", POINT_2.asObjectCopy() );
+
             tx.success();
         }
     }
@@ -190,6 +211,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         return true;
     }
+    protected abstract void assertSameDerivedValue( PointValue p1, PointValue p2 );
 
     protected boolean indexProvidesSpatialValues()
     {
@@ -1446,24 +1468,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         int label = token.nodeLabel( "Node" );
         int key = token.propertyKey( "prop2" );
         IndexReference index = schemaRead.index( label, key );
-        Map<Value,Set<Long>> expected = new HashMap<>();
-        int expectedTotalCount = 100;
-        List<Long> createdNodes = new ArrayList<>();
-        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
-        {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-            Write write = tx.dataWrite();
-            for ( int i = 0; i < expectedTotalCount; i++ )
-            {
-                long nodeId = write.nodeCreate();
-                write.nodeAddLabel( nodeId, label );
-                Value value = Values.of( random.nextBoolean() ? String.valueOf( i % 10 ) : (i % 10) );
-                write.nodeSetProperty( nodeId, key, value );
-                expected.computeIfAbsent( value, v -> new HashSet<>() ).add( nodeId );
-                createdNodes.add( nodeId );
-            }
-            tx.success();
-        }
+        Map<Value,Set<Long>> expected = new HashMap<>( stringAndNumberDistinctValues );
 
         // then
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
@@ -1494,10 +1499,8 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             {
                 assertTrue( expected.toString(), expected.isEmpty() );
             }
-            assertEquals( expectedTotalCount, totalCount );
+            assertEquals( STRING_AND_NUMBER_DISTINCT_VALUES, totalCount );
         }
-        // the tests in this class share and modify the very same graph, so restore it
-        deleteNodes( createdNodes );
     }
 
     @Test
@@ -1505,42 +1508,13 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     {
         // given
         int label = token.nodeLabel( "Node" );
-        int key = token.propertyKey( "prop2" );
+        int key = token.propertyKey( "prop3" );
         IndexReference index = schemaRead.index( label, key );
-        Value p1 = PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" );
-        Value p2 = PointValue.parse( "{latitude: 40.7128, longitude: -74.006000001, crs: 'wgs-84'}" );
-        List<Long> createdNodes = new ArrayList<>();
-        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
-        {
-            Write write = tx.dataWrite();
-            // point 1
-            {
-                long node1 = write.nodeCreate();
-                write.nodeAddLabel( node1, label );
-                write.nodeSetProperty( node1, key, p1 );
-                createdNodes.add( node1 );
-            }
-            // point 2
-            {
-                long node2 = write.nodeCreate();
-                write.nodeAddLabel( node2, label );
-                write.nodeSetProperty( node2, key, p2 );
-                createdNodes.add( node2 );
-            }
-            // point 2
-            {
-                long node3 = write.nodeCreate();
-                write.nodeAddLabel( node3, label );
-                write.nodeSetProperty( node3, key, p2 );
-                createdNodes.add( node3 );
-            }
-            tx.success();
-        }
 
         // when
         Map<Value,Integer> expected = new HashMap<>();
-        expected.put( p1, 1 );
-        expected.put( p2, 2 );
+        expected.put( POINT_1, 1 );
+        expected.put( POINT_2, 2 );
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
                 NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
@@ -1555,25 +1529,17 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             }
             assertTrue( expected.isEmpty() );
         }
-        deleteNodes( createdNodes );
-    }
-
-    private void deleteNodes( List<Long> createdNodes ) throws Exception
-    {
-        try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction() )
-        {
-            for ( Long createdNode : createdNodes )
-            {
-                tx.dataWrite().nodeDelete( createdNode );
-            }
-            tx.success();
-        }
     }
 
     private long nodeWithProp( GraphDatabaseService graphDb, Object value )
     {
+        return nodeWithProp( graphDb, "prop", value );
+    }
+
+    private long nodeWithProp( GraphDatabaseService graphDb, String key, Object value )
+    {
         Node node = graphDb.createNode( label( "Node" ) );
-        node.setProperty( "prop", value );
+        node.setProperty( key, value );
         return node.getId();
     }
 
