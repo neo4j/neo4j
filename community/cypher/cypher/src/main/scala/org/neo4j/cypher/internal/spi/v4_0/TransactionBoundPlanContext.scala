@@ -159,8 +159,13 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     try {
       val labelId = getLabelId(labelName)
 
-      val constraints: util.Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabel(labelId)
-      constraints.asScala.map(_.schema().getPropertyId).map(id => tc.tokenRead.propertyKeyName(id))
+      val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabel(labelId).asScala
+
+      // We are only interested of existence and node key constraints, not unique constraints
+      // Handling of composite node key constraints are not yet supported
+      val existsConstraintsWithOneProp = constraints.filter(c => c.enforcesPropertyExistence() && c.schema().getPropertyIds.length == 1)
+
+      existsConstraintsWithOneProp.map(_.schema().getPropertyId).map(id => tc.tokenRead.propertyKeyName(id))
     } catch {
       case _: KernelException => Iterator.empty
     }
