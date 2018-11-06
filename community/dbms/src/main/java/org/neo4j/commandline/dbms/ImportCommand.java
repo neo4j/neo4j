@@ -258,31 +258,16 @@ public class ImportCommand implements AdminCommand
         return fileArgument.isPresent() ? parseFileArgumentList( fileArgument.get().toFile() ) : userSupplierArguments;
     }
 
-    private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
-        if ( additionalConfigFile.isPresent() )
-        {
-            try
-            {
-                return MapUtil.load( additionalConfigFile.get().toFile() );
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
-            }
-        }
-
-        return new HashMap<>();
+        return additionalConfigFile.map( path -> Config.fromFile( path ).withThrowOnFileLoadFailure().build() ).orElseGet( Config::defaults );
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
-            Map<String,String> additionalConfig )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )
     {
-        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
-                .withHome( homeDir )
-                .withSetting( GraphDatabaseSettings.active_database, databaseName )
-                .withSettings( additionalConfig )
-                .withConnectorsDisabled().build();
+        Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled().build();
+        config.augment( additionalConfig );
+        config.augment( GraphDatabaseSettings.active_database, databaseName );
+        return config;
     }
 }

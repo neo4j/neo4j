@@ -21,6 +21,7 @@ package org.neo4j.kernel.configuration;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -118,6 +119,7 @@ public class Config implements DiagnosticsProvider, Configuration
         private File configFile;
         private List<LoadableConfig> settingsClasses;
         private boolean connectorsDisabled;
+        private boolean throwOnFileLoadFailure;
 
         /**
          * Augment the configuration with the passed setting.
@@ -278,6 +280,16 @@ public class Config implements DiagnosticsProvider, Configuration
         }
 
         /**
+         * Cause the {@link #build()} method to throw an {@link UncheckedIOException} if the given {@code withFile} configuration file could not be loaded
+         * for some reason. The default behaviour is to log an error instead.
+         */
+        public Builder withThrowOnFileLoadFailure()
+        {
+            throwOnFileLoadFailure = true;
+            return this;
+        }
+
+        /**
          * @return The config reflecting the state of the builder.
          * @throws InvalidSettingException is thrown if an invalid setting is encountered and {@link
          * GraphDatabaseSettings#strict_config_validation} is true.
@@ -294,7 +306,7 @@ public class Config implements DiagnosticsProvider, Configuration
                 initialSettings.put( GraphDatabaseSettings.neo4j_home.name(), System.getProperty( "user.dir" ) );
             }
 
-            Config config = new Config( configFile, initialSettings, overriddenDefaults, validators, loadableConfigs );
+            Config config = new Config( configFile, throwOnFileLoadFailure, initialSettings, overriddenDefaults, validators, loadableConfigs );
 
             if ( connectorsDisabled )
             {
@@ -370,6 +382,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     private Config( File configFile,
+            boolean throwOnFileLoadFailure,
             Map<String,String> initialSettings,
             Map<String,String> overriddenDefaults,
             Collection<ConfigurationValidator> additionalValidators,
@@ -394,7 +407,7 @@ public class Config implements DiagnosticsProvider, Configuration
         boolean fromFile = configFile != null;
         if ( fromFile )
         {
-            loadFromFile( configFile, log ).forEach( initialSettings::putIfAbsent );
+            loadFromFile( configFile, log, throwOnFileLoadFailure ).forEach( initialSettings::putIfAbsent );
         }
 
         overriddenDefaults.forEach( initialSettings::putIfAbsent );
@@ -800,10 +813,14 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     @Nonnull
-    private static Map<String,String> loadFromFile( @Nonnull File file, @Nonnull Log log )
+    private static Map<String,String> loadFromFile( @Nonnull File file, @Nonnull Log log, boolean throwOnFileLoadFailure )
     {
         if ( !file.exists() )
         {
+            if ( throwOnFileLoadFailure )
+            {
+                throw new UncheckedIOException( new IOException( "Config file [" + file + "] does not exist." ) );
+            }
             log.warn( "Config file [%s] does not exist.", file );
             return new HashMap<>();
         }
@@ -813,6 +830,10 @@ public class Config implements DiagnosticsProvider, Configuration
         }
         catch ( IOException e )
         {
+            if ( throwOnFileLoadFailure )
+            {
+                throw new UncheckedIOException( "Unable to load config file [" + file + "].", e );
+            }
             log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
             return new HashMap<>();
         }

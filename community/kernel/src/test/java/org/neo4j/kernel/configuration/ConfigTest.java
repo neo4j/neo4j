@@ -25,6 +25,8 @@ import org.junit.rules.ExpectedException;
 import org.mockito.InOrder;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -53,6 +55,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -196,8 +199,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods()
-            throws Exception
+    public void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
     {
         // Given
         Log log = mock( Log.class );
@@ -220,8 +222,7 @@ public class ConfigTest
     }
 
     @Test
-    public void shouldLogDeprecationWarnings()
-            throws Exception
+    public void shouldLogDeprecationWarnings() throws Exception
     {
         // Given
         Log log = mock( Log.class );
@@ -243,6 +244,51 @@ public class ConfigTest
                 MySettingsWithDefaults.hello.name() );
         verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
         verifyNoMoreInteractions( log );
+    }
+
+    @Test
+    public void shouldLogIfConfigFileCouldNotBeFound()
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
+
+        Config config = Config.fromFile( confFile ).build();
+
+        config.setLogger( log );
+
+        verify( log ).warn( "Config file [%s] does not exist.", confFile );
+    }
+
+    @Test
+    public void shouldLogIfConfigFileCouldNotBeRead() throws IOException
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+        assumeTrue( confFile.setReadable( false ) );
+
+        Config config = Config.fromFile( confFile ).build();
+
+        config.setLogger( log );
+
+        verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
+    }
+
+    @Test( expected = UncheckedIOException.class )
+    public void mustThrowIfConfigFileCouldNotBeFound()
+    {
+        File confFile = testDirectory.file( "test.conf" );
+
+        Config.fromFile( confFile ).withThrowOnFileLoadFailure().build();
+    }
+
+    @Test( expected = UncheckedIOException.class )
+    public void mustThrowIfConfigFileCoutNotBeRead() throws IOException
+    {
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+        assumeTrue( confFile.setReadable( false ) );
+        Config.fromFile( confFile ).withThrowOnFileLoadFailure().build();
     }
 
     @Test

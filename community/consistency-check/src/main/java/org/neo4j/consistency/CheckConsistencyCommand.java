@@ -209,22 +209,22 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
         if ( additionalConfigFile.isPresent() )
         {
             try
             {
-                return MapUtil.load( additionalConfigFile.get().toFile() );
+                return Config.fromFile( additionalConfigFile.get() ).withThrowOnFileLoadFailure().build();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new IllegalArgumentException(
                         String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
             }
         }
 
-        return new HashMap<>();
+        return Config.defaults();
     }
 
     private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
@@ -254,13 +254,12 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
-            Map<String,String> additionalConfig )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )
     {
-        additionalConfig.put( GraphDatabaseSettings.active_database.name(), databaseName );
-
-        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled()
-                .withSettings( additionalConfig ).build();
+        Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled().build();
+        config.augment( additionalConfig );
+        config.augment( GraphDatabaseSettings.active_database, databaseName );
+        return config;
     }
 
     public static Arguments arguments()
