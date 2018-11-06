@@ -32,7 +32,7 @@ class PreParserTest extends CypherFunSuite {
   }
 
   test("should not allow multiple versions") {
-    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER 2.3 CYPHER 3.1 RETURN 42"))
+    intercept[InvalidArgumentException](preParser.preParseQuery("CYPHER 3.4 CYPHER 4.0 RETURN 42"))
   }
 
   test("should not allow both EXPLAIN and PROFILE") {
@@ -50,7 +50,7 @@ class PreParserTest extends CypherFunSuite {
         """USING
            PERIODIC
            COMMIT""",
-        "CYPHER 3.1 planner=cost debug=ofCourse  USING PERIODIC COMMIT",
+        "CYPHER 3.4 planner=cost debug=ofCourse  USING PERIODIC COMMIT",
         "using periodic commit",
         "UsING pERIOdIC COMmIT"
       )

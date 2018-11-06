@@ -343,42 +343,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    public void begin_and_execute_cypher_23_periodic_commit_that_returns_data_and_commit() throws Exception
-    {
-        // to get rid off the property key id creation in the actual test
-        try ( Transaction tx = graphdb().beginTx() )
-        {
-            Node node = graphdb().createNode();
-            node.setProperty( "id", 42 );
-        }
-
-        int nodes = 11;
-        int batch = 2;
-        ServerTestUtils.withCSVFile( nodes, url ->
-        {
-            long nodesInDatabaseBeforeTransaction = countNodes();
-            long txIdBefore = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
-
-            // begin and execute and commit
-            Response response = http.POST(
-                    "db/data/transaction/commit",
-                    quotedJson( "{ 'statements': [ { 'statement': 'CYPHER 2.3 USING PERIODIC COMMIT " + batch +
-                            " LOAD CSV FROM" + " \\\"" + url + "\\\" AS line CREATE (n {id: 23}) RETURN n' } ] }" )
-            );
-            long txIdAfter = resolveDependency( TransactionIdStore.class ).getLastClosedTransactionId();
-
-            assertThat( response.status(), equalTo( 200 ) );
-
-            assertThat( response, containsNoErrors() );
-
-            JsonNode columns = response.get( "results" ).get( 0 ).get( "columns" );
-            assertThat( columns.toString(), equalTo( "[\"n\"]" ) );
-            assertThat( countNodes(), equalTo( nodesInDatabaseBeforeTransaction + nodes ) );
-            assertThat( txIdAfter, equalTo( txIdBefore + ((nodes / batch) + 1) ) );
-        } );
-    }
-
-    @Test
     public void begin_and_execute_periodic_commit_followed_by_another_statement_and_commit() throws Exception
     {
         ServerTestUtils.withCSVFile( 1, url ->

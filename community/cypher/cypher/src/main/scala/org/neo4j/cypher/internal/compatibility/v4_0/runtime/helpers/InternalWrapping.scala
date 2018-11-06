@@ -29,22 +29,10 @@ import scala.collection.JavaConverters._
 object InternalWrapping {
 
   def asKernelNotification(offset: Option[InputPosition])(notification: InternalNotification) = notification match {
-    case StartUnavailableFallback =>
-      NotificationCode.START_UNAVAILABLE_FALLBACK.notification(graphdb.InputPosition.empty)
-    case CreateUniqueUnavailableFallback(pos) =>
-      NotificationCode.CREATE_UNIQUE_UNAVAILABLE_FALLBACK.notification(pos.withOffset(offset).asInputPosition)
-    case CreateUniqueDeprecated(pos) =>
-      NotificationCode.CREATE_UNIQUE_DEPRECATED.notification(pos.withOffset(offset).asInputPosition)
-    case RulePlannerUnavailableFallbackNotification =>
-      NotificationCode.RULE_PLANNER_UNAVAILABLE_FALLBACK.notification(graphdb.InputPosition.empty)
-    case DeprecatedStartNotification(pos, message) =>
-      NotificationCode.START_DEPRECATED.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.message("START", message))
     case CartesianProductNotification(pos, variables) =>
       NotificationCode.CARTESIAN_PRODUCT.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.cartesianProduct(variables.asJava))
     case LengthOnNonPathNotification(pos) =>
       NotificationCode.LENGTH_ON_NON_PATH.notification(pos.withOffset(offset).asInputPosition)
-    case PlannerUnsupportedNotification =>
-      NotificationCode.PLANNER_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case RuntimeUnsupportedNotification =>
       NotificationCode.RUNTIME_UNSUPPORTED.notification(graphdb.InputPosition.empty)
     case IndexHintUnfulfillableNotification(label, propertyKeys) =>
@@ -79,8 +67,6 @@ object InternalWrapping {
       NotificationCode.DEPRECATED_BINDING_VAR_LENGTH_RELATIONSHIP.notification(pos.withOffset(offset).asInputPosition, NotificationDetail.Factory.bindingVarLengthRelationship(variable))
     case DeprecatedRelTypeSeparatorNotification(pos) =>
       NotificationCode.DEPRECATED_RELATIONSHIP_TYPE_SEPARATOR.notification(pos.withOffset(offset).asInputPosition)
-    case DeprecatedRulePlannerNotification =>
-      NotificationCode.DEPRECATED_RULE_PLANNER.notification(graphdb.InputPosition.empty)
     case DeprecatedCompiledRuntimeNotification =>
       NotificationCode.DEPRECATED_COMPILED_RUNTIME.notification(graphdb.InputPosition.empty)
     case ProcedureWarningNotification(pos, name, warning) =>

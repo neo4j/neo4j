@@ -58,7 +58,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedToInt()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -66,7 +66,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedUpper()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -74,7 +74,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedLower()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -82,7 +82,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedRels()
     {
-        Stream.of( "CYPHER 3.1", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -105,7 +105,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedProcedureCalls() throws Exception
     {
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.1", "CYPHER 4.0" ).forEach( version ->
+        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
                                                          {
                                                              assertNotifications( version + "explain CALL oldProc()",
                                                                                   containsItem( deprecatedProcedureWarning ) );
@@ -125,109 +125,6 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
                         version + "explain CALL changedProc() YIELD oldField RETURN oldField",
                         containsItem( deprecatedProcedureReturnFieldWarning )
                 ) );
-    }
-
-    // DEPRECATED START
-
-    @Test
-    public void deprecatedStartAllNodeScan()
-    {
-        assertNotifications( "EXPLAIN START n=node(*) RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartNodeById()
-    {
-        assertNotifications( "EXPLAIN START n=node(1337) RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartNodeByIds()
-    {
-        assertNotifications( "EXPLAIN START n=node(42,1337) RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartNodeIndexSeek()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forNodes( "index" );
-        }
-        assertNotifications( "EXPLAIN START n=node:index(key = 'value') RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartNodeIndexSearch()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forNodes( "index" );
-        }
-        assertNotifications( "EXPLAIN START n=node:index('key:value*') RETURN n", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartAllRelScan()
-    {
-        assertNotifications( "EXPLAIN START r=relationship(*) RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartRelById()
-    {
-        assertNotifications( "EXPLAIN START r=relationship(1337) RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartRelByIds()
-    {
-        assertNotifications( "EXPLAIN START r=relationship(42,1337) RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartRelIndexSeek()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forRelationships( "index" );
-        }
-        assertNotifications( "EXPLAIN START r=relationship:index(key = 'value') RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    @Test
-    public void deprecatedStartRelIndexSearch()
-    {
-        try ( Transaction ignore = db().beginTx() )
-        {
-            db().index().forRelationships( "index" );
-        }
-        assertNotifications( "EXPLAIN START r=relationship:index('key:value*') RETURN r", containsItem( deprecatedStartWarning ) );
-    }
-
-    // DEPRECATED CREATE UNIQUE
-
-    @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIsDefault()
-    {
-        // when
-        Result result = db().execute( "MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-
-        // then
-        assertThat( result.getNotifications(), containsItem( deprecatedCreateUnique ) );
-        result.close();
-    }
-
-    @Test
-    public void shouldNotifyWhenUsingCreateUniqueWhenCypherVersionIs4_0()
-    {
-        // when
-        Result result = db().execute( "CYPHER 4.0 MATCH (b) WITH b LIMIT 1 CREATE UNIQUE (b)-[:REL]->()" );
-        InputPosition position = new InputPosition( 36, 1, 37 );
-
-        // then
-        assertThat( result.getNotifications(), containsItem( deprecatedCreateUnique ) );
-        result.close();
     }
 
     // DEPRECATED SYNTAX
@@ -296,20 +193,9 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     private Matcher<Notification> deprecatedFeatureWarning =
             deprecation( "The query used a deprecated function." );
 
-    private Matcher<Notification> deprecatedRulePlanner =
-            deprecation( "The rule planner, which was used to plan this query, is deprecated and will " +
-                         "be discontinued soon. If you did not explicitly choose the rule planner, " +
-                         "you should try to change your query so that the rule planner is not used" );
-
     private Matcher<Notification> deprecatedCompiledRuntime =
             deprecation( "The compiled runtime, which was requested to execute this query, is deprecated " +
                          "and will be removed in a future release." );
-
-    private Matcher<Notification> deprecatedStartWarning =
-            deprecation( "START has been deprecated and will be removed in a future version. " );
-
-    private Matcher<Notification> deprecatedCreateUnique =
-            deprecation( "CREATE UNIQUE is deprecated and will be removed in a future version." );
 
     private Matcher<Notification> deprecatedProcedureWarning =
             deprecation( "The query used a deprecated procedure." );

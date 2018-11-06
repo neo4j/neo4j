@@ -578,13 +578,6 @@ public class NotificationAcceptanceTest extends NotificationTestSupport
     }
 
     @Test
-    public void version2_3ShouldWarnAboutBareNodes()
-    {
-        Result res = db().execute("EXPLAIN CYPHER 2.3 MATCH n RETURN n");
-        assert res.getNotifications().iterator().hasNext();
-    }
-
-    @Test
     public void shouldGiveCorrectPositionWhetherFromCacheOrNot()
     {
         // Given

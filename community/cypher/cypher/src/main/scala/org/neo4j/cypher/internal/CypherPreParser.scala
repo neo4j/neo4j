@@ -46,7 +46,6 @@ case object CypherPreParser extends org.parboiled.scala.Parser with Base {
 
   def PlannerOption: Rule1[PreParserOption] = rule("planner option") (
       option("planner", "cost") ~ push(CostPlannerOption)
-    | option("planner", "rule") ~ push(RulePlannerOption)
     | option("planner", "greedy") ~ push(GreedyPlannerOption)
     | option("planner", "idp") ~ push(IDPPlannerOption)
     | option("planner", "dp") ~ push(DPPlannerOption)
