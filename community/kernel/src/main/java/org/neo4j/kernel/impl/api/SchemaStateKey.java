@@ -58,7 +58,7 @@ public class SchemaStateKey
     @Override
     public int hashCode()
     {
-        return Objects.hash( id );
+        return Long.hashCode( id );
     }
 
     @Override

@@ -32,14 +32,15 @@ class SchemaHelper(val queryCache: QueryCache[_,_,_]) {
 
   private val schemaToken = new AtomicLong()
   private val schemaStateKey = SchemaStateKey.newKey()
-
-  def readSchemaToken(tc: TransactionalContext): SchemaToken = {
-    val creator = new java.util.function.Function[SchemaStateKey, SchemaToken]() {
+  private val creator =
+    new java.util.function.Function[SchemaStateKey, SchemaToken]() {
       def apply(key: SchemaStateKey): SchemaToken = {
         queryCache.clear()
         SchemaToken(schemaToken.incrementAndGet())
       }
     }
+
+  def readSchemaToken(tc: TransactionalContext): SchemaToken = {
     tc.kernelTransaction().schemaRead().schemaStateGetOrCreate(schemaStateKey, creator)
   }
 
