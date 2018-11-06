@@ -30,8 +30,6 @@ import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryContext(inner) {
 
-  override def createNewQueryContext(): QueryContext = inner.createNewQueryContext()
-
   private val nodesCreated = new Counter
   private val relationshipsCreated = new Counter
   private val propertiesSet = new Counter

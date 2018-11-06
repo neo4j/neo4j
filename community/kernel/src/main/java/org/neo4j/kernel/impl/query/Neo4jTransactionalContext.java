@@ -317,15 +317,15 @@ public class Neo4jTransactionalContext implements TransactionalContext
         pageMisses += stats.pageFaults();
     }
 
-    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph,
-            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker,
-            InternalTransaction initialTransaction,
-            Statement initialStatement,
-            ExecutingQuery executingQuery )
-    {
-        return new Neo4jTransactionalContext( graph, txBridge, locker, initialTransaction,
-                initialStatement, executingQuery, kernel );
-    }
+//    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph,
+//            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker,
+//            InternalTransaction initialTransaction,
+//            Statement initialStatement,
+//            ExecutingQuery executingQuery )
+//    {
+//        return new Neo4jTransactionalContext( graph, txBridge, locker, initialTransaction,
+//                initialStatement, executingQuery, kernel );
+//    }
 
     interface Creator
     {

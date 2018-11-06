@@ -79,22 +79,6 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     case (count, labelId) => if (writes().nodeAddLabel(node, labelId)) count + 1 else count
   }
 
-  def createNewQueryContext(): QueryContext = {
-    val statementProvider: ThreadToStatementContextBridge = transactionalContext.
-      graph.
-      getDependencyResolver.
-      provideDependency(classOf[ThreadToStatementContextBridge]).
-      get
-    val locker = new PropertyContainerLocker
-    val query = transactionalContext.tc.executingQuery()
-
-    val context = transactionalContext.tc.asInstanceOf[Neo4jTransactionalContext]
-    val newTx = transactionalContext.graph.beginTransaction(context.transactionType, context.securityContext)
-    val neo4jTransactionalContext = context.copyFrom(context.graph, statementProvider, locker, newTx,
-      statementProvider.get(), query)
-    new TransactionBoundQueryContext(TransactionalContextWrapper(neo4jTransactionalContext))
-  }
-
   //We cannot assign to value because of periodic commit
   protected def reads(): Read = transactionalContext.dataRead
 

@@ -105,8 +105,6 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   extends DelegatingQueryContext(inner) with Counter {
   self =>
 
-  override def createNewQueryContext() = new ProfilingPipeQueryContext(inner.createNewQueryContext(), p)
-
   override protected def singleDbHit[A](value: A): A = {
     increment()
     value

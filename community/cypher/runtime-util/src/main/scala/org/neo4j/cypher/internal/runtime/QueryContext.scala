@@ -146,11 +146,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def getImportURL(url: URL): Either[String,URL]
 
-  /*
-  This is an ugly hack to get multi threading to work
-   */
-  def createNewQueryContext(): QueryContext
-
   def nodeGetDegree(node: Long, dir: SemanticDirection, nodeCursor: NodeCursor): Int = dir match {
     case SemanticDirection.OUTGOING => nodeGetOutgoingDegree(node, nodeCursor)
     case SemanticDirection.INCOMING => nodeGetIncomingDegree(node, nodeCursor)
