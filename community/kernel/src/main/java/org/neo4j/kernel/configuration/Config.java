@@ -46,6 +46,7 @@ import javax.annotation.Nullable;
 
 import org.neo4j.configuration.ConfigOptions;
 import org.neo4j.configuration.ConfigValue;
+import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.graphdb.config.BaseSetting;
 import org.neo4j.graphdb.config.Configuration;
@@ -837,7 +838,9 @@ public class Config implements DiagnosticsProvider, Configuration
                     String value = val.toString();
                     // We use the 'super' Hashtable as a set of all the settings we have logged warnings about.
                     // We only want to warn about each duplicate setting once.
-                    if ( into.putIfAbsent( setting, value ) != null && super.put( key, val ) == null )
+                    if ( into.putIfAbsent( setting, value ) != null &&
+                            super.put( key, val ) == null &&
+                            !key.equals( ExternalSettings.additionalJvm.name() ) )
                     {
                         log.warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.", setting );
                     }

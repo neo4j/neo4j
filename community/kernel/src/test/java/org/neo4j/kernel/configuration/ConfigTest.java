@@ -316,6 +316,23 @@ public class ConfigTest
     }
 
     @Test
+    public void mustNotWarnAboutDuplicateJvmAdditionalSettings() throws Exception
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                ExternalSettings.additionalJvm.name() + "=-Dsysprop=val",
+                ExternalSettings.additionalJvm.name() + "=-XX:+UseG1GC",
+                ExternalSettings.additionalJvm.name() + "=-XX:+AlwaysPreTouch" ) );
+
+        Config config = Config.fromFile( confFile ).build();
+        config.setLogger( log );
+
+        // The ExternalSettings.additionalJvm setting is allowed to be specified more than once.
+        verifyNoMoreInteractions( log );
+    }
+
+    @Test
     public void shouldSetInternalParameter()
     {
         // Given
