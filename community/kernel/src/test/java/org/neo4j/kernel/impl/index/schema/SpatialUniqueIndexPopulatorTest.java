@@ -59,4 +59,18 @@ public class SpatialUniqueIndexPopulatorTest extends NativeIndexPopulatorTests.U
     {
         return new SpatialLayout( crs, configuredSettings.forCRS( crs ).curve() );
     }
+
+    @Override
+    public void addShouldThrowOnDuplicateValues()
+    {   // Spatial can not throw on duplicate values during population because it
+        // might throw for points that are in fact unique. Instead, uniqueness will
+        // be verified by ConstraintIndexCreator when population is finished.
+    }
+
+    @Override
+    public void updaterShouldThrowOnDuplicateValues()
+    {   // Spatial can not throw on duplicate values during population because it
+        // might throw for points that are in fact unique. Instead, uniqueness will
+        // be verified by ConstraintIndexCreator when population is finished.
+    }
 }

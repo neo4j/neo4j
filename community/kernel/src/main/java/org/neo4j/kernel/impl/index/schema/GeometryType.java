@@ -103,8 +103,8 @@ class GeometryType extends Type
     int compareValue( GenericKey left, GenericKey right )
     {
         return compare(
-                left.long0, left.long1, left.long2,
-                right.long0, right.long1, right.long2 );
+                left.long0, left.long1, left.long2, left.long3, left.long1Array, 0,
+                right.long0, right.long1, right.long2, right.long3, right.long1Array, 0 );
     }
 
     @Override
@@ -123,26 +123,21 @@ class GeometryType extends Type
     @Override
     String toString( GenericKey state )
     {
-        return format( "Geometry[tableId:%d, code:%d, rawValue:%d]", state.long1, state.long2, state.long0 );
-    }
-
-    @Override
-    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
-    {
-        super.minimalSplitter( left, right, into );
-        // Set dimensions to 0 so that minimal splitters (i.e. point keys in internal nodes) doesn't have coordinate data,
-        // they don't need it since values aren't generated from internal keys anyway.
-        into.long3 = 0;
+        String asValueString = hasCoordinates( state ) ? asValue( state ).toString() : "NO_COORDINATES";
+        return format( "Geometry[tableId:%d, code:%d, rawValue:%d, value:%s", state.long1, state.long2, state.long0, asValueString );
     }
 
     /**
      * This method will compare along the curve, which is not a spatial comparison, but is correct
      * for comparison within the space filling index as long as the original spatial range has already
      * been decomposed into a collection of 1D curve ranges before calling down into the GPTree.
+     * If value on space filling curve is equal then raw comparison of serialized coordinates is done.
+     * This way points are only considered equal in index if they have the same coordinates and not if
+     * they only happen to occupy same value on space filling curve.
      */
     static int compare(
-            long this_long0, long this_long1, long this_long2,
-            long that_long0, long that_long1, long that_long2 )
+            long this_long0, long this_long1, long this_long2, long this_long3, long[] this_long1Array, int this_coordinates_offset,
+            long that_long0, long that_long1, long that_long2, long that_long3, long[] that_long1Array, int that_coordinates_offset )
     {
         int tableIdComparison = Integer.compare( (int) this_long1, (int) that_long1 );
         if ( tableIdComparison != 0 )
@@ -156,7 +151,26 @@ class GeometryType extends Type
             return codeComparison;
         }
 
-        return Long.compare( this_long0, that_long0 );
+        int derivedValueComparison = Long.compare( this_long0, that_long0 );
+        if ( derivedValueComparison != 0 )
+        {
+            return derivedValueComparison;
+        }
+
+        long dimensions = Math.min( this_long3, that_long3 );
+        for ( int i = 0; i < dimensions; i++ )
+        {
+            // It's ok to compare the coordinate value here without deserializing them
+            // because we are only defining SOME deterministic order so that we can
+            // correctly separate unique points from each other, even if they collide
+            // on the space filling curve.
+            int coordinateComparison = Long.compare( this_long1Array[this_coordinates_offset + i], that_long1Array[that_coordinates_offset + i] );
+            if ( coordinateComparison != 0 )
+            {
+                return coordinateComparison;
+            }
+        }
+        return 0;
     }
 
     static void putCrs( PageCursor cursor, long long1, long long2, long long3 )
@@ -196,10 +210,20 @@ class GeometryType extends Type
      */
     static void assertHasCoordinates( GenericKey state )
     {
-        if ( state.long3 == 0 || state.long1Array == null )
+        if ( !hasCoordinates( state ) )
         {
             throw new IllegalStateException( "This geometry key doesn't have coordinates and can therefore neither be persisted nor generate point value." );
         }
+    }
+
+    static boolean hasCoordinates( GenericKey state )
+    {
+        return state.long3 != 0 && state.long1Array != null;
+    }
+
+    static void setNoCoordinates( GenericKey state )
+    {
+        state.long3 = 0;
     }
 
     private static void put3BInt( PageCursor cursor, int value )

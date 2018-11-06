@@ -127,10 +127,15 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
         // true:  tree uniqueness is (value,entityId)
         // false: tree uniqueness is (value) <-- i.e. more strict
-        mainConflictDetector = new ConflictDetectingValueMerger<>( descriptor.type() == GENERAL );
+        mainConflictDetector = getMainConflictDetector();
         // for updates we have to have uniqueness on (value,entityId) to allow for intermediary violating updates.
         // there are added conflict checks after updates have been applied.
         updatesConflictDetector = new ConflictDetectingValueMerger<>( true );
+    }
+
+    ConflictDetectingValueMerger<KEY,VALUE> getMainConflictDetector()
+    {
+        return new ConflictDetectingValueMerger<>( descriptor.type() == GENERAL );
     }
 
     @Override
@@ -160,7 +165,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
     }
@@ -174,13 +179,18 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     IndexUpdater newPopulatingUpdater()
     {
         IndexUpdater updater = new CollectingIndexUpdater( updates -> processUpdates( updates, updatesConflictDetector ) );
-        if ( descriptor.type() == UNIQUE )
+        if ( descriptor.type() == UNIQUE && canCheckConflictsWithoutStoreAccess() )
         {
             // The index population detects conflicts on the fly, however for updates coming in we're in a position
             // where we cannot detect conflicts while applying, but instead afterwards.
             updater = new DeferredConflictCheckingIndexUpdater( updater, this::newReader, descriptor );
         }
         return updater;
+    }
+
+    boolean canCheckConflictsWithoutStoreAccess()
+    {
+        return true;
     }
 
     abstract NativeIndexReader<KEY,VALUE> newReader();
