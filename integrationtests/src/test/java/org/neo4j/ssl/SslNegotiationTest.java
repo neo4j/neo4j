@@ -44,7 +44,7 @@ import static org.neo4j.ssl.SslResourceBuilder.selfSignedKeyId;
 @RunWith( Parameterized.class )
 public class SslNegotiationTest
 {
-    private static final String OLD_CIPHER_A = "SSL_DHE_RSA_WITH_DES_CBC_SHA";
+    private static final String OLD_CIPHER_A = "SSL_RSA_WITH_NULL_SHA";
     private static final String OLD_CIPHER_B = "SSL_RSA_WITH_RC4_128_MD5";
     private static final String OLD_CIPHER_C = "SSL_RSA_WITH_3DES_EDE_CBC_SHA";
 
