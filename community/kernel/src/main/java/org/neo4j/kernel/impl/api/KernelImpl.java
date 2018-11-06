@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.storageengine.api.StorageReader;
+import org.neo4j.storageengine.api.StorageEngine;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeout;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
@@ -63,13 +63,13 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
     private final Config config;
-    private final StorageReader storageReader;
-    private final DefaultThreadSafeCursors cursors;
+    private final StorageEngine storageEngine;
+    private DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
     public KernelImpl( KernelTransactions transactionFactory, TransactionHooks hooks, DatabaseHealth health,
                        TransactionMonitor transactionMonitor,
-                       Procedures procedures, Config config, StorageReader storageReader )
+                       Procedures procedures, Config config, StorageEngine storageEngine )
     {
         this.transactions = transactionFactory;
         this.hooks = hooks;
@@ -77,9 +77,7 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        // question for kernel team: does this storage reader need to be closed?
-        this.storageReader = storageReader;
-        this.cursors = new DefaultThreadSafeCursors( storageReader );
+        this.storageEngine = storageEngine;
     }
 
     @Override
@@ -136,6 +134,7 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     @Override
     public void start()
     {
+        cursors = new DefaultThreadSafeCursors( storageEngine.newReader() );
         isRunning = true;
     }
 
@@ -144,14 +143,26 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     {
         if ( !isRunning )
         {
-            throw new IllegalStateException( "kernel is not running, so it is not possible to stop it" );
+            throw new IllegalStateException( "Kernel is not running, so it is not possible to stop it" );
         }
-        isRunning = false;
+
+        try
+        {
+            cursors.close();
+        }
+        finally
+        {
+            isRunning = false;
+        }
     }
 
     @Override
     public CursorFactory cursors()
     {
+        if ( !isRunning )
+        {
+            throw new IllegalStateException( "Kernel is not running, so it cannot provide cursors" );
+        }
         return cursors;
     }
 }

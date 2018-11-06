@@ -98,4 +98,9 @@ public class DefaultThreadSafeCursors implements CursorFactory
                 new DefaultRelationshipScanCursor( null, storageReader.allocateRelationshipScanCursor() ),
                 DefaultRelationshipExplicitIndexCursor::release );
     }
+
+    public void close()
+    {
+        storageReader.close();
+    }
 }

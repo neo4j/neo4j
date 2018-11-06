@@ -575,7 +575,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         buildTransactionMonitor( kernelTransactions, clock, config );
 
         final KernelImpl kernel = new KernelImpl( kernelTransactions, hooks, databaseHealth, transactionMonitor, procedures,
-                config, storageEngine.newReader() );
+                config, storageEngine );
 
         kernel.registerTransactionHook( transactionEventHandlers );
         life.add( kernel );
