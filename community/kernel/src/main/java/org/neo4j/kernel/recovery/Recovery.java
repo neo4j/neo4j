@@ -199,6 +199,18 @@ public final class Recovery
         performRecovery( fs, pageCache, recoveryConfig, databaseLayout, NullLogProvider.getInstance(), new Monitors(), loadExtensions(), Optional.empty() );
     }
 
+    /**
+     * Performs recovery of database described by provided layout.
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param config custom configuration
+     * @param databaseLayout database to recover layout.
+     * @param logProvider log provider
+     * @param globalMonitors global server monitors
+     * @param extensionFactories extension factories for extensions that should participate in recovery
+     * @param providedLogScanner log scanner
+     * @throws IOException
+     */
     public static void performRecovery( FileSystemAbstraction fs, PageCache pageCache, Config config, DatabaseLayout databaseLayout, LogProvider logProvider,
             Monitors globalMonitors, Iterable<KernelExtensionFactory<?>> extensionFactories, Optional<LogTailScanner> providedLogScanner )
             throws IOException
