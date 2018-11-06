@@ -37,6 +37,7 @@ import org.junit.runners.Parameterized;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -57,6 +58,7 @@ import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
+import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSets;
 import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -81,8 +83,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.internal.verification.VerificationModeFactory.times;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 import static org.neo4j.helpers.collection.Pair.of;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "unchecked" )
 @RunWith( Parameterized.class )
@@ -148,7 +155,7 @@ public class TxStateTest
     @Before
     public void before()
     {
-        collectionsFactory = collectionsFactorySupplier.create();
+        collectionsFactory = spy( collectionsFactorySupplier.create() );
         state = new TxState( collectionsFactory );
     }
 
@@ -300,9 +307,9 @@ public class TxStateTest
         UnmodifiableMap<ValueTuple,? extends LongDiffSets> diffSets = state.getIndexUpdates( indexOn_1_1.schema() );
 
         // THEN
-        assertEqualDiffSets( addedNodes( 42L ), diffSets.get( ValueTuple.of( Values.stringValue( "value42" ) ) ) );
-        assertEqualDiffSets( addedNodes( 43L ), diffSets.get( ValueTuple.of( Values.stringValue( "value43" ) ) ) );
-        assertEqualDiffSets( addedNodes( 41L ), diffSets.get( ValueTuple.of( Values.stringValue( "value41" ) ) ) );
+        assertEqualDiffSets( addedNodes( 42L ), diffSets.get( ValueTuple.of( stringValue( "value42" ) ) ) );
+        assertEqualDiffSets( addedNodes( 43L ), diffSets.get( ValueTuple.of( stringValue( "value43" ) ) ) );
+        assertEqualDiffSets( addedNodes( 41L ), diffSets.get( ValueTuple.of( stringValue( "value41" ) ) ) );
     }
 
     @Test
@@ -611,7 +618,7 @@ public class TxStateTest
     @Test
     public void doNotVisitNotModifiedLabelsOnModifiedNodes() throws ConstraintValidationException, CreateConstraintFailureException
     {
-        state.nodeDoAddProperty( 1, 2, Values.stringValue( "propertyValue" ) );
+        state.nodeDoAddProperty( 1, 2, stringValue( "propertyValue" ) );
         MutableBoolean propertiesChecked = new MutableBoolean();
         state.accept( new TxStateVisitor.Adapter()
         {
@@ -844,7 +851,58 @@ public class TxStateTest
         } );
     }
 
-    //endregion
+//    getOrCreateLabelStateNodeDiffSets
+
+    @Test
+    public void getOrCreateNodeState_props_useCollectionsFactory()
+    {
+        final NodeStateImpl nodeState = state.getOrCreateNodeState( 1 );
+
+        nodeState.addProperty( 2, stringValue( "foo" ) );
+        nodeState.removeProperty( 3 );
+        nodeState.changeProperty( 4, stringValue( "bar" ) );
+
+        verify( collectionsFactory, times( 2 ) ).newValuesMap();
+        verify( collectionsFactory, times( 1 ) ).newLongSet();
+        verifyNoMoreInteractions( collectionsFactory );
+    }
+
+    @Test
+    public void getOrCreateGraphState_useCollectionsFactory()
+    {
+        final GraphStateImpl graphState = state.getOrCreateGraphState();
+
+        graphState.addProperty( 2, stringValue( "foo" ) );
+        graphState.removeProperty( 3 );
+        graphState.changeProperty( 4, stringValue( "bar" ) );
+
+        verify( collectionsFactory, times( 2 ) ).newValuesMap();
+        verify( collectionsFactory, times( 1 ) ).newLongSet();
+
+        verifyNoMoreInteractions( collectionsFactory );
+    }
+
+    @Test
+    public void getOrCreateLabelStateNodeDiffSets_useCollectionsFactory()
+    {
+        final MutableLongDiffSets diffSets = state.getOrCreateLabelStateNodeDiffSets(1);
+
+        diffSets.add( 1 );
+        diffSets.remove( 2 );
+
+        verify( collectionsFactory, times( 2 ) ).newLongSet();
+        verifyNoMoreInteractions( collectionsFactory );
+    }
+
+    @Test
+    public void getOrCreateIndexUpdatesForSeek_useCollectionsFactory()
+    {
+        final MutableLongDiffSets diffSets = state.getOrCreateIndexUpdatesForSeek( new HashMap<>(), ValueTuple.of( stringValue( "test" ) ) );
+        diffSets.add( 1 );
+        diffSets.remove( 2 );
+        verify( collectionsFactory, times( 2 ) ).newLongSet();
+        verifyNoMoreInteractions( collectionsFactory );
+    }
 
     private LongDiffSets addedNodes( long... added )
     {
@@ -857,7 +915,7 @@ public class TxStateTest
         for ( long node : added )
         {
 
-            map.put( ValueTuple.of( Values.stringValue( "value" + node ) ), addedNodes( node ) );
+            map.put( ValueTuple.of( stringValue( "value" + node ) ), addedNodes( node ) );
         }
         return map;
     }
