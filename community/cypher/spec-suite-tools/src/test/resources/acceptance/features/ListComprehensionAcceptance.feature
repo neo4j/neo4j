@@ -21,9 +21,9 @@
 #encoding: utf-8
 
 Feature: ListComprehensionAcceptance
-  Background:
-    Given an empty graph
+
   Scenario: Should find all the variables in list comprehension
+    Given an empty graph
     When executing query:
       """
       RETURN
@@ -34,4 +34,90 @@ Feature: ListComprehensionAcceptance
     Then the result should be:
       | res1 | res2 | res3 |
       | [1]  | [1]  | [1]  |
+    And no side effects
+
+  Scenario: Should handle list comprehension with AND and one NOT
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:Company {nbr: 1, status: 'ACTIVE'})
+        CREATE (:Company {nbr: 2, status: 'INACTIVE'})
+        CREATE (:Company {nbr: 3, status: 'DELETED'})
+        CREATE (:Company {nbr: 4, status: 'X'})
+        """
+    When executing query:
+        """
+        MATCH (company :Company)
+        WHERE company.status IN ["ACTIVE", "INACTIVE"] AND NOT company.status IN ["INACTIVE", "DELETED"]
+        RETURN company.nbr AS nbr
+        """
+    Then the result should be:
+      | nbr |
+      | 1   |
+    And no side effects
+
+  Scenario: Should handle list comprehension with AND and two NOT
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:Company {nbr: 1, status: 'ACTIVE'})
+        CREATE (:Company {nbr: 2, status: 'INACTIVE'})
+        CREATE (:Company {nbr: 3, status: 'DELETED'})
+        CREATE (:Company {nbr: 4, status: 'X'})
+        """
+    When executing query:
+        """
+        MATCH (company :Company)
+        WHERE NOT company.status IN ["ACTIVE", "INACTIVE"] AND NOT company.status IN ["INACTIVE", "DELETED"]
+        RETURN company.nbr AS nbr
+        """
+    Then the result should be:
+      | nbr |
+      | 4   |
+    And no side effects
+
+  Scenario: Should handle list comprehension with OR and one NOT
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:Company {nbr: 1, status: 'ACTIVE'})
+        CREATE (:Company {nbr: 2, status: 'INACTIVE'})
+        CREATE (:Company {nbr: 3, status: 'DELETED'})
+        CREATE (:Company {nbr: 4, status: 'X'})
+        """
+    When executing query:
+        """
+        MATCH (company :Company)
+        WHERE company.status IN ["ACTIVE", "INACTIVE"] OR NOT company.status IN ["INACTIVE", "DELETED"]
+        WITH company.nbr AS nbr
+        RETURN nbr ORDER BY nbr
+        """
+    Then the result should be:
+      | nbr |
+      | 1   |
+      | 2   |
+      | 4   |
+    And no side effects
+
+  Scenario: Should handle list comprehension with OR and two NOT
+    Given an empty graph
+    And having executed:
+        """
+        CREATE (:Company {nbr: 1, status: 'ACTIVE'})
+        CREATE (:Company {nbr: 2, status: 'INACTIVE'})
+        CREATE (:Company {nbr: 3, status: 'DELETED'})
+        CREATE (:Company {nbr: 4, status: 'X'})
+        """
+    When executing query:
+        """
+        MATCH (company :Company)
+        WHERE NOT company.status IN ["ACTIVE", "INACTIVE"] OR NOT company.status IN ["INACTIVE", "DELETED"]
+        WITH company.nbr AS nbr
+        RETURN nbr ORDER BY nbr
+        """
+    Then the result should be:
+      | nbr |
+      | 1   |
+      | 3   |
+      | 4   |
     And no side effects
