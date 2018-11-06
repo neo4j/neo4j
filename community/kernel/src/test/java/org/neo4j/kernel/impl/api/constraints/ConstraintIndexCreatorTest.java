@@ -368,7 +368,7 @@ public class ConstraintIndexCreatorTest
         @Override
         public CursorFactory cursors()
         {
-            return null;
+            throw new UnsupportedOperationException( "not implemented" );
         }
     }
 
