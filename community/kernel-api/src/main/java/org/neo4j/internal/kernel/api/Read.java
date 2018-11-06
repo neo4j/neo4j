@@ -43,8 +43,16 @@ public interface Read
             throws KernelException;
 
     /**
-     * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]).
-     * For merely counting distinct values in an index, loop over and sum all counts.
+     * Access all distinct counts in an index. Entries fed to the {@code cursor} will be (count,Value[]),
+     * where the count (number of nodes having the particular value) will be accessed using {@link NodeValueIndexCursor#nodeReference()}
+     * and the value (if the index can provide it) using {@link NodeValueIndexCursor#propertyValue(int)}.
+     * Before accessing a property value the caller should check {@link NodeValueIndexCursor#hasValue()} to see
+     * whether or not the index could yield values.
+     *
+     * For merely counting distinct values in an index, loop over and sum iterations.
+     * For counting number of indexed nodes in an index, loop over and sum all counts.
+     *
+     * NOTE spatial values may not return 100% correctly in that some actually distinct points may be returned multiple times.
      *
      * @param index {@link IndexReference} referencing index.
      * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
