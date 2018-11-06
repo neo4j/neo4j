@@ -96,7 +96,7 @@ class WorkSyncedNativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALUE exte
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
         actual.verifyDeferredConstraints( nodePropertyAccessor );
     }

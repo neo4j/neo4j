@@ -1344,6 +1344,32 @@ public class RandomValues
     }
 
     /**
+     * @return the next random {@link PointArray}.
+     * @see RandomValues
+     */
+    public PointArray nextPointArray()
+    {
+        int nextInt = generator.nextInt( 4 );
+        switch ( nextInt )
+        {
+        case 0:
+            return nextCartesianPointArray();
+
+        case 1:
+            return nextCartesian3DPointArray();
+
+        case 2:
+            return nextGeographicPointArray();
+
+        case 3:
+            return nextGeographic3DPointArray();
+
+        default:
+            throw new IllegalStateException( nextInt + " not a valid point type" );
+        }
+    }
+
+    /**
      * @return the next {@link PointArray} containing two-dimensional cartesian {@link PointValue}.
      * @see RandomValues
      */

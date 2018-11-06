@@ -91,9 +91,12 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
     }
 
     @Override
-    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor )
+    public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
     {
-        // No-op, uniqueness is checked for each update in add(IndexEntryUpdate)
+        for ( IndexPopulator part : this )
+        {
+            part.verifyDeferredConstraints( nodePropertyAccessor );
+        }
     }
 
     @Override
@@ -151,6 +154,28 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
             super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
             this.settings = fileLayout.settings;
+        }
+
+        @Override
+        public void verifyDeferredConstraints( NodePropertyAccessor nodePropertyAccessor ) throws IndexEntryConflictException
+        {
+            SpatialVerifyDeferredConstraint.verify( nodePropertyAccessor, layout, tree, descriptor );
+            super.verifyDeferredConstraints( nodePropertyAccessor );
+        }
+
+        @Override
+        boolean canCheckConflictsWithoutStoreAccess()
+        {
+            return false;
+        }
+
+        @Override
+        ConflictDetectingValueMerger<SpatialIndexKey,NativeIndexValue> getMainConflictDetector()
+        {
+            // Because of lossy point representation in index we need to always compare on node id,
+            // even for unique indexes. If we don't we risk throwing constraint violation exception
+            // for points that are in fact unique.
+            return new ConflictDetectingValueMerger<>( true );
         }
 
         @Override

@@ -36,6 +36,7 @@ import static java.lang.String.format;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.assertHasCoordinates;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.dimensions;
+import static org.neo4j.kernel.impl.index.schema.GeometryType.hasCoordinates;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.putCrs;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.putPoint;
 import static org.neo4j.kernel.impl.index.schema.GeometryType.readCrs;
@@ -43,8 +44,8 @@ import static org.neo4j.kernel.impl.index.schema.GeometryType.readCrs;
 /**
  * Handles {@link PointValue[]}.
  *
- * Note about lazy initialization of {@link GenericKeyState} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
- * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link GenericKeyState} (via the logic in this class)
+ * Note about lazy initialization of {@link GenericKey} data structures: a point type is special in that it contains a {@link CoordinateReferenceSystem},
+ * which dictates how much space it will occupy. When serializing a {@link PointArray} into {@link GenericKey} (via the logic in this class)
  * the {@link CoordinateReferenceSystem} isn't known at initialization, where only the type and array length is known.
  * This is why some state is initialize lazily when observing the first point in the array.
  */
@@ -61,8 +62,8 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     {
         super( ValueGroup.GEOMETRY_ARRAY, typeId, ( o1, o2, i ) -> GeometryType.compare(
                         // intentional long1 and long2 - not the array versions
-                        o1.long0Array[i], o1.long1, o1.long2,
-                        o2.long0Array[i], o2.long1, o2.long2 ),
+                o1.long0Array[i], o1.long1, o1.long2, o1.long3, o1.long1Array, (int) o1.long3 * i,
+                o2.long0Array[i], o2.long1, o2.long2, o2.long3, o2.long1Array, (int) o2.long3 * i ),
                 null, null, null, null, null );
     }
 
@@ -137,17 +138,9 @@ class GeometryArrayType extends AbstractArrayType<PointValue>
     @Override
     String toString( GenericKey state )
     {
-        return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s]",
-                state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ) );
-    }
-
-    @Override
-    void minimalSplitter( GenericKey left, GenericKey right, GenericKey into )
-    {
-        super.minimalSplitter( left, right, into );
-        // Set dimensions to 0 so that minimal splitters (i.e. point keys in internal nodes) doesn't have coordinate data,
-        // they don't need it since values aren't generated from internal keys anyway.
-        into.long3 = 0;
+        String asValueString = hasCoordinates( state ) ? asValue( state ).toString() : "NO_COORDINATES";
+        return format( "GeometryArray[tableId:%d, code:%d, rawValues:%s, value:%s]",
+                state.long1, state.long2, Arrays.toString( Arrays.copyOf( state.long0Array, state.arrayLength ) ), asValueString );
     }
 
     private static boolean readGeometryArrayItem( PageCursor cursor, GenericKey into )
