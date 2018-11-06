@@ -218,21 +218,24 @@ public class BuiltInProcedures
     }
 
     @Admin
-    @Description( "Clears all query caches, triggers an index resample and waits for it to complete. After this " +
-                  "procedure has finished queries will be planned using the latest database statistics." )
+    @Description(
+            "Triggers an index resample and waits for it to complete, and after that clears query caches. After this " +
+            "procedure has finished queries will be planned using the latest database statistics." )
     @Procedure( name = "db.prepareForReplanning", mode = READ )
     public void prepareForReplanning( @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeOutSeconds )
             throws ProcedureException
     {
-        QueryExecutionEngine queryExecutionEngine = graphDatabaseAPI.getDependencyResolver()
-                .resolveDependency( QueryExecutionEngine.class, DependencyResolver.SelectionStrategy.FIRST );
-        queryExecutionEngine.clearQueryCaches();
-
+        //Resample indexes
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
             indexProcedures.resampleOutdatedIndexes();
             indexProcedures.awaitIndexResampling( timeOutSeconds );
         }
+
+        //now that index-stats are up-to-date, clear caches so that we are ready to re-plan
+        graphDatabaseAPI.getDependencyResolver()
+                .resolveDependency( QueryExecutionEngine.class, DependencyResolver.SelectionStrategy.FIRST )
+                .clearQueryCaches();
     }
 
     @Procedure( name = "db.schema.nodeTypeProperties", mode = Mode.READ )

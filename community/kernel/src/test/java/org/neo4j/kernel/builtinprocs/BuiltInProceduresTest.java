@@ -400,8 +400,9 @@ public class BuiltInProceduresTest
                                 "(for example: CALL db.createUniquePropertyConstraint(\":Person(name)\", \"lucene+native-2.0\")) - " +
                                 "YIELD index, providerName, status", "SCHEMA" ),
                 record( "db.prepareForReplanning", "db.prepareForReplanning(timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Clears all query caches, triggers an index resample and waits for it to complete. After this" +
-                        " procedure has finished queries will be planned using the latest database statistics.",
+                        "Triggers an index resample and waits for it to complete, and after that clears query caches." +
+                        " After this procedure has finished queries will be planned using the latest database " +
+                        "statistics.",
                         "READ" )
         ) );
     }

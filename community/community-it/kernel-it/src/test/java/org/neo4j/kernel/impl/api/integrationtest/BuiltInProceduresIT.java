@@ -246,8 +246,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "score :: FLOAT?)", "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " +
                         "score.", "READ" ),
                 proc( "db.prepareForReplanning", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Clears all query caches, triggers an index resample and waits for it to complete. After this" +
-                        " procedure has finished queries will be planned using the latest database statistics.",
+                        "Triggers an index resample and waits for it to complete, and after that clears query caches." +
+                        " After this procedure has finished queries will be planned using the latest database " +
+                        "statistics.",
                         "READ" )
         ) );
         commit();
