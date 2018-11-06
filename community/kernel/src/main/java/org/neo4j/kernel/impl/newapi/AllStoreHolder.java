@@ -1010,12 +1010,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public <K, V> V schemaStateGet( K key )
-    {
-        return schemaState.get( key );
-    }
-
-    @Override
     public void schemaStateFlush()
     {
         schemaState.clear();

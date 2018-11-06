@@ -98,8 +98,6 @@ abstract class BaseQueryContext extends QueryContext {
 
   override def getNodesByLabelPrimitive(id: Int): LongIterator = notSupported()
 
-  override def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = notSupported()
-
   override def createNodeKeyConstraint(descriptor: IndexDescriptor): Boolean = notSupported()
 
   override def dropNodeKeyConstraint(descriptor: IndexDescriptor): Unit = notSupported()

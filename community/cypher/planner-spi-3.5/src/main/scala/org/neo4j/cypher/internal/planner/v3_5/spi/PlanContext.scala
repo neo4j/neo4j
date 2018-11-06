@@ -62,8 +62,6 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
 
   def checkRelIndex(idxName: String)
 
-  def getOrCreateFromSchemaState[T](key: Any, f: => T): T
-
   def txIdProvider: () => Long
 
   def statistics: GraphStatistics
