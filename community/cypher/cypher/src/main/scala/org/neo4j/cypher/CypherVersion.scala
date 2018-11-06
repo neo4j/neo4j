@@ -26,6 +26,6 @@ case object CypherVersion extends CypherOptionCompanion[CypherVersion] {
   case object v3_4 extends CypherVersion("3.4")
   case object v4_0 extends CypherVersion("4.0")
 
-  val default = v4_0
+  val default: CypherVersion = v4_0
   val all: Set[CypherVersion] = Set(v3_4, v4_0)
 }

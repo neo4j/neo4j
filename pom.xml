@@ -99,7 +99,6 @@
     <junit.version>5.2.0</junit.version>
     <junit.platform.version>1.2.0</junit.platform.version>
     <currentYear>2018</currentYear>
-    <!--TODO -->
     <cypher.compatibility.34>3.4.9</cypher.compatibility.34>
     <opencypher.version>1.0.0-M12</opencypher.version>
     <caffeine.version>2.6.2</caffeine.version>
