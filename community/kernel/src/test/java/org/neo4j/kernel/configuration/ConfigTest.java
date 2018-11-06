@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -38,6 +39,7 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Dynamic;
+import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
@@ -289,6 +291,28 @@ public class ConfigTest
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
         Config.fromFile( confFile ).withThrowOnFileLoadFailure().build();
+    }
+
+    @Test
+    public void mustWarnIfFileContainsDuplicateSettings() throws Exception
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                ExternalSettings.initialHeapSize.name() + "=5g",
+                ExternalSettings.initialHeapSize.name() + "=4g",
+                ExternalSettings.initialHeapSize.name() + "=3g",
+                ExternalSettings.maxHeapSize.name() + "=10g",
+                ExternalSettings.maxHeapSize.name() + "=10g" ) );
+
+        Config config = Config.fromFile( confFile ).build();
+        config.setLogger( log );
+
+        // We should only log the warning once for each.
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.",
+                ExternalSettings.initialHeapSize.name() );
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.",
+                ExternalSettings.maxHeapSize.name() );
     }
 
     @Test

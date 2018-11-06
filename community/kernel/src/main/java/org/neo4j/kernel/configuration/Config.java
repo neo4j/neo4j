@@ -20,6 +20,7 @@
 package org.neo4j.kernel.configuration;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -30,6 +31,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,7 +53,6 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
@@ -407,7 +408,7 @@ public class Config implements DiagnosticsProvider, Configuration
         boolean fromFile = configFile != null;
         if ( fromFile )
         {
-            loadFromFile( configFile, log, throwOnFileLoadFailure ).forEach( initialSettings::putIfAbsent );
+            loadFromFile( configFile, log, throwOnFileLoadFailure, initialSettings );
         }
 
         overriddenDefaults.forEach( initialSettings::putIfAbsent );
@@ -813,7 +814,7 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     @Nonnull
-    private static Map<String,String> loadFromFile( @Nonnull File file, @Nonnull Log log, boolean throwOnFileLoadFailure )
+    private static void loadFromFile( @Nonnull File file, @Nonnull Log log, boolean throwOnFileLoadFailure, Map<String,String> into )
     {
         if ( !file.exists() )
         {
@@ -822,11 +823,31 @@ public class Config implements DiagnosticsProvider, Configuration
                 throw new UncheckedIOException( new IOException( "Config file [" + file + "] does not exist." ) );
             }
             log.warn( "Config file [%s] does not exist.", file );
-            return new HashMap<>();
+            return;
         }
         try
         {
-            return MapUtil.load( file );
+            @SuppressWarnings( "MismatchedQueryAndUpdateOfCollection" )
+            Properties loader = new Properties()
+            {
+                @Override
+                public Object put( Object key, Object val )
+                {
+                    String setting = key.toString();
+                    String value = val.toString();
+                    // We use the 'super' Hashtable as a set of all the settings we have logged warnings about.
+                    // We only want to warn about each duplicate setting once.
+                    if ( into.putIfAbsent( setting, value ) != null && super.put( key, val ) == null )
+                    {
+                        log.warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.", setting );
+                    }
+                    return null;
+                }
+            };
+            try ( FileInputStream stream = new FileInputStream( file ) )
+            {
+                loader.load( stream );
+            }
         }
         catch ( IOException e )
         {
@@ -835,7 +856,6 @@ public class Config implements DiagnosticsProvider, Configuration
                 throw new UncheckedIOException( "Unable to load config file [" + file + "].", e );
             }
             log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
-            return new HashMap<>();
         }
     }
 
