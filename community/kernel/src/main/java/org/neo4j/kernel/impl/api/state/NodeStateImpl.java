@@ -139,7 +139,7 @@ class NodeStateImpl extends PropertyContainerStateImpl implements NodeState
     {
         if ( labelDiffSets == null )
         {
-            labelDiffSets = new MutableLongDiffSetsImpl();
+            labelDiffSets = new MutableLongDiffSetsImpl( collectionsFactory );
         }
         return labelDiffSets;
     }
