@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.planner.v3_4.{spi => spiV3_4}
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, PlannerNameWithVersion, InstrumentedGraphStatistics => InstrumentedGraphStatisticsv4_0, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotv4_0}
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.spi.v3_4.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_4, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_4, TransactionBoundPlanContext => TransactionBoundPlanContextV3_4}
-import org.neo4j.cypher.internal.spi.v3_5.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV3_5, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV3_5, TransactionBoundPlanContext => TransactionBoundPlanContextV3_5}
+import org.neo4j.cypher.internal.spi.v4_0.{ExceptionTranslatingPlanContext => ExceptionTranslatingPlanContextV4_0, TransactionBoundGraphStatistics => TransactionBoundGraphStatisticsV4_0, TransactionBoundPlanContext => TransactionBoundPlanContextV4_0}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression, Parameter}
 import org.neo4j.cypher.{CypherPlannerOption, CypherUpdateStrategy, CypherVersion}
@@ -145,11 +145,11 @@ case class Cypher34Planner(configv4_0: CypherPlannerConfiguration,
                                             notificationLoggerV3_4, graphStatisticsV3_4))
 
       val graphStatisticsv4_0 = InstrumentedGraphStatisticsv4_0(
-        TransactionBoundGraphStatisticsV3_5(tcv4_0.dataRead, tcv4_0.schemaRead),
+        TransactionBoundGraphStatisticsV4_0(tcv4_0.dataRead, tcv4_0.schemaRead),
         graphStatisticsSnapshotv4_0)
 
-      val planContextv4_0 = new ExceptionTranslatingPlanContextv4_0(
-        new TransactionBoundPlanContext(tcv4_0, notificationLoggerv4_0, graphStatisticsv4_0))
+      val planContextv4_0 = new ExceptionTranslatingPlanContextV4_0(
+        new TransactionBoundPlanContextV4_0(tcv4_0, notificationLoggerv4_0, graphStatisticsv4_0))
 
       // Only used during planning
       def simpleExpressionEvaluatorV3_4 = new logicalV3_4.ExpressionEvaluator {
@@ -194,7 +194,7 @@ case class Cypher34Planner(configv4_0: CypherPlannerConfiguration,
       // Prepare query for caching
       val preparedQuery = compiler.normalizeQuery(syntacticQuery, contextV3_4)
       val queryParamNames: Seq[String] = preparedQuery.statement().findByAllClass[Parameter].map(x => x.name)
-      checkForSchemaChanges(planContextv4_0)
+      checkForSchemaChanges(tcv4_0)
 
       // If the query is not cached we do full planning + creating of executable plan
       def createPlan(): CacheableLogicalPlan = {

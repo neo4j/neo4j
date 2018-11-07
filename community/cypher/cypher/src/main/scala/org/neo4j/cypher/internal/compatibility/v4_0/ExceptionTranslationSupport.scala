@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException
 trait ExceptionTranslationSupport {
   inner: TokenContext =>
 
-  protected def translateException[A](f: => A) = try {
+  protected def translateException[A](f: => A): A = try {
     f
   } catch {
     case e: KernelException => throw new CypherExecutionException(e.getUserMessage(new TokenNameLookup {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_5
+package org.neo4j.cypher.internal.spi.v4_0
 
 import java.util.Optional
 
@@ -168,7 +168,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
 
   override val txIdProvider = LastCommittedTxIdProvider(tc.graph)
 
-  override def procedureSignature(name: QualifiedName) = {
+  override def procedureSignature(name: QualifiedName): ProcedureSignature = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
     val procedures = tc.kernelTransaction.procedures()
     val handle = procedures.procedureGet(kn)

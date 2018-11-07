@@ -205,7 +205,7 @@ object LogicalPlanConverter {
           )(ids.convertId(plan))
 
         case (plan: plansV3_4.ActiveRead, children: Seq[AnyRef]) =>
-          children(0).asInstanceOf[LogicalPlanv3_5] // This is a NOOP anyway
+          children(0).asInstanceOf[LogicalPlanv4_0] // This is a NOOP anyway
 
           // Fallthrough for all plans
         case (plan: plansV3_4.LogicalPlan, children: Seq[AnyRef]) =>

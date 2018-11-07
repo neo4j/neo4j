@@ -31,7 +31,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Equals
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TransactionBoundQueryContext, TransactionalContextWrapper}
-import org.neo4j.cypher.internal.spi.v3_5.TransactionBoundPlanContext
+import org.neo4j.cypher.internal.spi.v4_0.TransactionBoundPlanContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotGetValue, IndexOrderNone, IndexedProperty, SingleQueryExpression}
 import org.neo4j.graphdb._
 import org.neo4j.internal.kernel.api.Transaction.Type
