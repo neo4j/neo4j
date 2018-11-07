@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.util.function.Supplier;
-
-import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -37,7 +34,7 @@ public class LockingNodeUniqueIndexSeek
 {
     public static <CURSOR extends NodeValueIndexCursor> long apply( Locks.Client locks,
                                                                     LockTracer lockTracer,
-                                                                    Supplier<CURSOR> cursors,
+                                                                    CURSOR cursor,
                                                                     UniqueNodeIndexSeeker<CURSOR> nodeIndexSeeker,
                                                                     IndexReference index,
                                                                     IndexQuery.ExactPredicate... predicates )
@@ -53,24 +50,22 @@ public class LockingNodeUniqueIndexSeek
         //First try to find node under a shared lock
         //if not found upgrade to exclusive and try again
         locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
-        try ( CURSOR cursor = cursors.get() )
-        {
-            nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
-            if ( !cursor.next() )
-            {
-                locks.releaseShared( INDEX_ENTRY, indexEntryId );
-                locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
-                nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
-                if ( cursor.next() ) // we found it under the exclusive lock
-                {
-                    // downgrade to a shared lock
-                    locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
-                    locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
-                }
-            }
 
-            return cursor.nodeReference();
+        nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
+        if ( !cursor.next() )
+        {
+            locks.releaseShared( INDEX_ENTRY, indexEntryId );
+            locks.acquireExclusive( lockTracer, INDEX_ENTRY, indexEntryId );
+            nodeIndexSeeker.nodeIndexSeekWithFreshIndexReader( index, cursor, predicates );
+            if ( cursor.next() ) // we found it under the exclusive lock
+            {
+                // downgrade to a shared lock
+                locks.acquireShared( lockTracer, INDEX_ENTRY, indexEntryId );
+                locks.releaseExclusive( INDEX_ENTRY, indexEntryId );
+            }
         }
+
+        return cursor.nodeReference();
     }
 
     interface UniqueNodeIndexSeeker<CURSOR extends NodeValueIndexCursor>

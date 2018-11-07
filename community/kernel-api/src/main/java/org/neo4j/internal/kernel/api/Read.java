@@ -52,9 +52,12 @@ public interface Read
      *
      * @param index {@link IndexReference} referencing index to query.
      *              {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
+     * @param cursor cursor to use for performing the index seek
      * @param predicates Combination of {@link IndexQuery.ExactPredicate index queries} to run against referenced index.
      */
-    long lockingNodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
+    long lockingNodeUniqueIndexSeek( IndexReference index,
+                                     NodeValueIndexCursor cursor,
+                                     IndexQuery.ExactPredicate... predicates )
             throws KernelException;
 
     /**

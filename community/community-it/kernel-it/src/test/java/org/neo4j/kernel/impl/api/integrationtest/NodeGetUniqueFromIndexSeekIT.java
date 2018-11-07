@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
@@ -82,13 +83,17 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         long nodeId = createNodeWithValue( value );
 
         // when looking for it
-        Read read = newTransaction().dataRead();
+        Transaction transaction = newTransaction();
+        Read read = transaction.dataRead();
         int propertyId = index.properties()[0];
-        long foundId = read.lockingNodeUniqueIndexSeek( index, exact( propertyId, value ) );
-        commit();
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor()  )
+        {
+            long foundId = read.lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId, value ) );
 
-        // then
-        assertEquals( "Created node was not found", nodeId, foundId );
+            // then
+            assertEquals( "Created node was not found", nodeId, foundId );
+        }
+        commit();
     }
 
     @Test
@@ -101,11 +106,14 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         Transaction transaction = newTransaction();
-        long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index, exact( propertyId1, value ) );
-        commit();
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
+        {
+            long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
 
-        // then
-        assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+            // then
+            assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+        }
+        commit();
     }
 
     @Test
@@ -119,12 +127,15 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         Transaction transaction = newTransaction();
-        long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index,
-                exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
-        commit();
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
+        {
+            long foundId = transaction.dataRead().lockingNodeUniqueIndexSeek( index,
+                                                                              cursor, exact( propertyId1, value1 ), exact( propertyId2, value2 ) );
 
-        // then
-        assertEquals( "Created node was not found", nodeId, foundId );
+            // then
+            assertEquals( "Created node was not found", nodeId, foundId );
+        }
+        commit();
     }
 
     @Test
@@ -138,13 +149,16 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
 
         // when looking for it
         Transaction transaction = newTransaction();
-        long foundId =  transaction.dataRead().lockingNodeUniqueIndexSeek( index,
-                exact( propertyId1, value1 ),
-                                                                exact( propertyId2, value2 ) );
-        commit();
+        try ( NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor() )
+        {
+            long foundId =  transaction.dataRead().lockingNodeUniqueIndexSeek( index,
+                                                                               cursor, exact( propertyId1, value1 ),
+                                                                               exact( propertyId2, value2 ) );
 
-        // then
-        assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+            // then
+            assertTrue( "Non-matching created node was found", isNoSuchNode( foundId ) );
+        }
+        commit();
     }
 
     @Test( timeout = 10_000 )
@@ -180,9 +194,10 @@ public class NodeGetUniqueFromIndexSeekIT extends KernelIntegrationTest
         Runnable runnableForThread2 = () ->
         {
             latch.waitForAllToStart();
-            try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED ) )
+            try ( Transaction tx = kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
+                  NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {
-                tx.dataRead().lockingNodeUniqueIndexSeek( index, exact( propertyId1, value ) );
+                tx.dataRead().lockingNodeUniqueIndexSeek( index, cursor, exact( propertyId1, value ) );
                 tx.success();
             }
             catch ( KernelException e )

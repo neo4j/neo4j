@@ -147,7 +147,9 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public long lockingNodeUniqueIndexSeek( IndexReference index, IndexQuery.ExactPredicate... predicates )
+    public long lockingNodeUniqueIndexSeek( IndexReference index,
+                                            NodeValueIndexCursor cursor,
+                                            IndexQuery.ExactPredicate... predicates )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException, IndexBrokenKernelException
     {
         assertIndexOnline( index );
@@ -156,7 +158,7 @@ abstract class Read implements TxStateHolder,
         Locks.Client locks = ktx.statementLocks().optimistic();
         LockTracer lockTracer = ktx.lockTracer();
 
-        return LockingNodeUniqueIndexSeek.apply( locks, lockTracer, cursors::allocateNodeValueIndexCursor, this, index, predicates );
+        return LockingNodeUniqueIndexSeek.apply( locks, lockTracer, (DefaultNodeValueIndexCursor)cursor, this, index, predicates );
     }
 
     @Override // UniqueNodeIndexSeeker

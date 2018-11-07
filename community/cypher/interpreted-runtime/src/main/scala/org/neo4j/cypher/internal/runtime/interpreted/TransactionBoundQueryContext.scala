@@ -314,18 +314,23 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,
                                               queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = {
 
-    indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
-    if (queries.exists(q => q.value() == Values.NO_VALUE))
-      NodeValueHit.EMPTY
-    else {
-      val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
-      val resultNodeId = reads().lockingNodeUniqueIndexSeek(index, queries: _*)
-      if (StatementConstants.NO_SUCH_NODE == resultNodeId) {
+    val cursor = transactionalContext.cursors.allocateNodeValueIndexCursor()
+    try {
+      indexSearchMonitor.lockingUniqueIndexSeek(indexReference, queries)
+      if (queries.exists(q => q.value() == Values.NO_VALUE))
         NodeValueHit.EMPTY
-      } else {
-        val values = queries.map(_.value()).toArray
-        new NodeValueHit(resultNodeId, values)
+      else {
+        val index = transactionalContext.kernelTransaction.schemaRead().indexReferenceUnchecked(indexReference.schema())
+        val resultNodeId = reads().lockingNodeUniqueIndexSeek(index, cursor, queries: _*)
+        if (StatementConstants.NO_SUCH_NODE == resultNodeId) {
+          NodeValueHit.EMPTY
+        } else {
+          val values = queries.map(_.value()).toArray
+          new NodeValueHit(resultNodeId, values)
+        }
       }
+    } finally {
+      cursor.close()
     }
   }
 

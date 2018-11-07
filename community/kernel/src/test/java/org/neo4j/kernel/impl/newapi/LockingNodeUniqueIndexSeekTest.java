@@ -76,7 +76,7 @@ public class LockingNodeUniqueIndexSeekTest
         // when
         long nodeId = LockingNodeUniqueIndexSeek.apply( locks,
                                                         LockTracer.NONE,
-                                                        () -> cursor,
+                                                        cursor,
                                                         uniqueNodeIndexSeeker,
                                                         index,
                                                         predicate );
@@ -85,8 +85,6 @@ public class LockingNodeUniqueIndexSeekTest
         assertEquals( 42L, nodeId );
         verify( locks ).acquireShared( LockTracer.NONE, INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
-
-        verify( cursor ).close();
     }
 
     @Test
@@ -100,7 +98,7 @@ public class LockingNodeUniqueIndexSeekTest
         // when
         long nodeId = LockingNodeUniqueIndexSeek.apply( locks,
                                                         LockTracer.NONE,
-                                                        () -> cursor,
+                                                        cursor,
                                                         uniqueNodeIndexSeeker,
                                                         index,
                                                         predicate );
@@ -113,8 +111,6 @@ public class LockingNodeUniqueIndexSeekTest
         order.verify( locks ).acquireShared( LockTracer.NONE, INDEX_ENTRY, resourceId );
         order.verify( locks ).releaseExclusive( INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
-
-        verify( cursor ).close();
     }
 
     @Test
@@ -128,7 +124,7 @@ public class LockingNodeUniqueIndexSeekTest
         // when
         long nodeId = LockingNodeUniqueIndexSeek.apply( locks,
                                                         LockTracer.NONE,
-                                                        () -> cursor,
+                                                        cursor,
                                                         uniqueNodeIndexSeeker,
                                                         index,
                                                         predicate );
@@ -139,7 +135,5 @@ public class LockingNodeUniqueIndexSeekTest
         order.verify( locks ).releaseShared( INDEX_ENTRY, resourceId );
         order.verify( locks ).acquireExclusive( LockTracer.NONE, INDEX_ENTRY, resourceId );
         verifyNoMoreInteractions( locks );
-
-        verify( cursor ).close();
     }
 }
