@@ -126,12 +126,19 @@ public class BatchInsertIndexTest
         inserter.shutdown();
 
         GraphDatabaseService db = graphDatabaseService( config );
-        awaitIndexesOnline( db );
-        try ( Transaction tx = db.beginTx() )
+        try
         {
-            assertSingleCorrectHit( db, collidingPoints.first() );
-            assertSingleCorrectHit( db, collidingPoints.other() );
-            tx.success();
+            awaitIndexesOnline( db );
+            try ( Transaction tx = db.beginTx() )
+            {
+                assertSingleCorrectHit( db, collidingPoints.first() );
+                assertSingleCorrectHit( db, collidingPoints.other() );
+                tx.success();
+            }
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 
@@ -157,7 +164,10 @@ public class BatchInsertIndexTest
             assertFalse( indexes.hasNext() );
             tx.success();
         }
-
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private void assertSingleCorrectHit( GraphDatabaseService db, PointValue point )
