@@ -19,6 +19,7 @@
  */
 package org.neo4j.jmx.impl;
 
+import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -74,6 +76,7 @@ class StoreSizeBeanTest
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
     private StoreSize storeSizeBean;
     private LogFiles logFiles;
+    private ManagementData managementData;
 
     @BeforeEach
     void setUp() throws IOException
@@ -109,8 +112,12 @@ class StoreSizeBeanTest
 
         // Create bean
         KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.databaseDir(), config, dataSourceManager );
-        ManagementData data = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
-        storeSizeBean = (StoreSize) new StoreSizeBean().createMBean( data );
+        managementData = new ManagementData( new StoreSizeBean(), kernelData, ManagementSupport.load() );
+        storeSizeBean = StoreSizeBean.createBean( managementData, false, 0, mock( Clock.class ) );
+
+        when( indexProvider.directoryStructure() ).thenReturn( mock( IndexDirectoryStructure.class ) );
+        when( indexProvider2.directoryStructure() ).thenReturn( mock( IndexDirectoryStructure.class ) );
+        when( labelScanStore.getLabelScanStoreFile() ).thenReturn( testDirectory.databaseLayout().labelScanStore() );
     }
 
     private static IndexProvider mockedIndexProvider( String name )
@@ -122,7 +129,7 @@ class StoreSizeBeanTest
 
     private void createFakeStoreDirectory() throws IOException
     {
-        Map<File,Integer> dummyStore = new HashMap<>();
+        Map<File, Integer> dummyStore = new HashMap<>();
         DatabaseLayout layout = testDirectory.databaseLayout();
         dummyStore.put( layout.nodeStore(), 1 );
         dummyStore.put( layout.idNodeStore(), 2 );
@@ -155,7 +162,7 @@ class StoreSizeBeanTest
         dummyStore.put( layout.countStoreB(), 29 );
         // COUNTS_STORE_B is created in the test
 
-        for ( Map.Entry<File,Integer> fileEntry : dummyStore.entrySet() )
+        for ( Map.Entry<File, Integer> fileEntry : dummyStore.entrySet() )
         {
             createFileOfSize( fileEntry.getKey(), fileEntry.getValue() );
         }
@@ -165,7 +172,7 @@ class StoreSizeBeanTest
     void verifyGroupingOfNodeRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected(1, 4 ), storeSizeBean.getNodeStoreSize() );
+        assertEquals( getExpected( 1, 4 ), storeSizeBean.getNodeStoreSize() );
     }
 
     @Test
@@ -179,14 +186,14 @@ class StoreSizeBeanTest
     void verifyGroupingOfStringRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected(11, 12 ), storeSizeBean.getStringStoreSize() );
+        assertEquals( getExpected( 11, 12 ), storeSizeBean.getStringStoreSize() );
     }
 
     @Test
     void verifyGroupingOfArrayRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected(13, 14 ), storeSizeBean.getArrayStoreSize() );
+        assertEquals( getExpected( 13, 14 ), storeSizeBean.getArrayStoreSize() );
     }
 
     @Test
@@ -207,9 +214,9 @@ class StoreSizeBeanTest
     void verifyGroupingOfCountStoreRelatedFiles() throws Exception
     {
         createFakeStoreDirectory();
-        assertEquals( getExpected( 29, 29), storeSizeBean.getCountStoreSize() );
+        assertEquals( getExpected( 29, 29 ), storeSizeBean.getCountStoreSize() );
         createFileOfSize( testDirectory.databaseLayout().countStoreA(), 30 );
-        assertEquals( getExpected( 29, 30), storeSizeBean.getCountStoreSize() );
+        assertEquals( getExpected( 29, 30 ), storeSizeBean.getCountStoreSize() );
     }
 
     @Test
@@ -247,13 +254,13 @@ class StoreSizeBeanTest
         when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( iterable( indexImplementation ) );
 
         // Schema index files
-        File schemaIndex = testDirectory.databaseLayout().file("schemaIndex" );
+        File schemaIndex = testDirectory.databaseLayout().file( "schemaIndex" );
         createFileOfSize( schemaIndex, 2 );
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         when( directoryStructure.rootDirectory() ).thenReturn( schemaIndex );
         when( indexProvider.directoryStructure() ).thenReturn( directoryStructure );
 
-        File schemaIndex2 = testDirectory.databaseLayout().file("schemaIndex2" );
+        File schemaIndex2 = testDirectory.databaseLayout().file( "schemaIndex2" );
         createFileOfSize( schemaIndex2, 3 );
         IndexDirectoryStructure directoryStructure2 = mock( IndexDirectoryStructure.class );
         when( directoryStructure2.rootDirectory() ).thenReturn( schemaIndex2 );
@@ -266,6 +273,28 @@ class StoreSizeBeanTest
 
         // Count all files
         assertEquals( 10, storeSizeBean.getIndexStoreSize() );
+    }
+
+    @Test
+    void shouldCacheValues() throws IOException
+    {
+        final Clock clock = mock( Clock.class );
+        storeSizeBean = StoreSizeBean.createBean( managementData, false, 100, clock );
+        when( clock.millis() ).thenReturn( 100L );
+
+        createFileOfSize( logFiles.getLogFileForVersion( 0 ), 1 );
+        createFileOfSize( logFiles.getLogFileForVersion( 1 ), 2 );
+
+        Assert.assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
+
+        createFileOfSize( logFiles.getLogFileForVersion( 2 ), 3 );
+        createFileOfSize( logFiles.getLogFileForVersion( 3 ), 4 );
+
+        Assert.assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
+
+        when( clock.millis() ).thenReturn( 200L );
+
+        Assert.assertEquals( 10L, storeSizeBean.getTransactionLogsSize() );
     }
 
     private void createFileOfSize( File file, int size ) throws IOException
