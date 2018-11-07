@@ -67,14 +67,14 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       case predicate@HasLabels(expr@Variable(name), labels) =>
         val label = labels.head
         val labelName = label.name
-        val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName).toSeq
+        val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName)
 
-        val plans: Seq[LogicalPlan] = constrainedProps.flatMap(propWithIndex => {
+        val plans: Set[LogicalPlan] = constrainedProps.flatMap(propWithIndex => {
           val property = Property(expr, PropertyKeyName(propWithIndex)(predicate.position))(predicate.position)
           produceForConstraint(name, propWithIndex, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         })
 
-        maybeLeafPlans(name, plans.toSet)
+        maybeLeafPlans(name, plans)
 
       case _ =>
         None

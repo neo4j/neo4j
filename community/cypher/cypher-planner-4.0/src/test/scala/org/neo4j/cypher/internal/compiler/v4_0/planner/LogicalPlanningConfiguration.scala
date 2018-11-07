@@ -42,7 +42,7 @@ trait LogicalPlanningConfiguration {
   // A subset of indexes and uniqueIndexes
   def indexesWithValues: Set[(String, Seq[String])]
   def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability]
-  def constraints: Set[(String, String)]
+  def constraints: Set[(String, Set[String])]
   def procedureSignatures: Set[ProcedureSignature]
   def labelCardinality: Map[String, Cardinality]
   def knownLabels: Set[String]
@@ -62,7 +62,7 @@ class DelegatingLogicalPlanningConfiguration(val parent: LogicalPlanningConfigur
   override def uniqueIndexes = parent.uniqueIndexes
   override def indexesWithValues = parent.indexesWithValues
   override def indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = parent.indexesWithOrdering
-  override def constraints: Set[(String, String)] = parent.constraints
+  override def constraints: Set[(String, Set[String])] = parent.constraints
   override def labelCardinality = parent.labelCardinality
   override def knownLabels = parent.knownLabels
   override def labelsById = parent.labelsById

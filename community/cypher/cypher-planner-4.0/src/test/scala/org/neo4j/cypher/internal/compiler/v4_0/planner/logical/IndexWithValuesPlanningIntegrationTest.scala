@@ -735,7 +735,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan scan with GetValue when existence constraint on projected property") {
     val plan = new given {
       indexOn("Awesome", "prop").providesValues()
-      existenceOrNodeKeyConstraintOn("Awesome", "prop")
+      existenceOrNodeKeyConstraintOn("Awesome", Set("prop"))
     } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop"
 
     plan._2 should equal(
@@ -754,7 +754,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
   test("should plan scan with DoNotGetValue when existence constraint but the index does not provide values") {
     val plan = new given {
       indexOn("Awesome", "prop")
-      existenceOrNodeKeyConstraintOn("Awesome", "prop")
+      existenceOrNodeKeyConstraintOn("Awesome", Set("prop"))
     } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop"
 
     plan._2 should equal(
@@ -766,6 +766,44 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Set.empty,
           IndexOrderNone),
         Map(propertyProj("n", "prop"))
+      )
+    )
+  }
+
+  test("should plan scan with GetValue when composite existence constraint on projected property") {
+    val plan = new given {
+      indexOn("Awesome", "prop2").providesValues()
+      existenceOrNodeKeyConstraintOn("Awesome", Set("prop1", "prop2"))
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop2"
+
+    plan._2 should equal(
+      Projection(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(0)), GetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map(cachedNodePropertyProj("n", "prop2"))
+      )
+    )
+  }
+
+  test("should plan scan with DoNotGetValue when composite existence constraint but the index does not provide values") {
+    val plan = new given {
+      indexOn("Awesome", "prop2")
+      existenceOrNodeKeyConstraintOn("Awesome", Set("prop1", "prop2"))
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN n.prop2"
+
+    plan._2 should equal(
+      Projection(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop2") _, PropertyKeyId(0)), DoNotGetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map(propertyProj("n", "prop2"))
       )
     )
   }

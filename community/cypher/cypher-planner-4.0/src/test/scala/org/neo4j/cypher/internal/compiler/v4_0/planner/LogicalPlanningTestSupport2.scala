@@ -116,8 +116,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.uniqueIndexes.filter(p => p._1 == label).map(p => newIndexDescriptor(p._1, p._2)).iterator
       }
 
-      override def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String] = {
-        config.constraints.filter(p => p._1 == labelName).map(p => p._2).iterator
+      override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
+        config.constraints.filter(p => p._1 == labelName).flatMap(p => p._2)
       }
 
       private def newIndexDescriptor(labelName: String, propertyKeys: Seq[String]) = {

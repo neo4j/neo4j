@@ -155,19 +155,21 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
     }
   }
 
-  override def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String] = {
+  override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = {
     try {
       val labelId = getLabelId(labelName)
 
       val constraints: Iterator[ConstraintDescriptor] = tc.schemaRead.constraintsGetForLabel(labelId).asScala
 
       // We are only interested of existence and node key constraints, not unique constraints
-      // Handling of composite node key constraints are not yet supported
-      val existsConstraintsWithOneProp = constraints.filter(c => c.enforcesPropertyExistence() && c.schema().getPropertyIds.length == 1)
+      val existsConstraints = constraints.filter(c => c.enforcesPropertyExistence())
 
-      existsConstraintsWithOneProp.map(_.schema().getPropertyId).map(id => tc.tokenRead.propertyKeyName(id))
+      // Fetch the names of all unique properties that are part of at least one existence/node key constraint with the given label
+      // i.e. the name of all properties that a node with the given label must have
+      val distinctPropertyIds: Set[Int] = existsConstraints.flatMap(_.schema().getPropertyIds).toSet
+      distinctPropertyIds.map(id => tc.tokenRead.propertyKeyName(id))
     } catch {
-      case _: KernelException => Iterator.empty
+      case _: KernelException => Set.empty
     }
   }
 

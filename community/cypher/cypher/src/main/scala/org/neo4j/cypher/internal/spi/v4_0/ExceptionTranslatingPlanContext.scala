@@ -61,7 +61,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))
 
-  override def getPropertiesWithExistenceConstraint(labelName: String): Iterator[String] =
+  override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] =
     translateException(inner.getPropertiesWithExistenceConstraint(labelName))
 
   override def checkRelIndex(idxName: String): Unit =

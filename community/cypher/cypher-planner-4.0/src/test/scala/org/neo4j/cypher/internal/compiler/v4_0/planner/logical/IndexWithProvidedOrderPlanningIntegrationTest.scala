@@ -316,7 +316,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan) in case of existence constraint") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
-        existenceOrNodeKeyConstraintOn("Awesome", "prop")
+        existenceOrNodeKeyConstraintOn("Awesome", Set("prop"))
       } getLogicalPlanFor s"MATCH (n:Awesome) RETURN n.prop ORDER BY n.prop $cypherToken"
 
       plan._2 should equal(

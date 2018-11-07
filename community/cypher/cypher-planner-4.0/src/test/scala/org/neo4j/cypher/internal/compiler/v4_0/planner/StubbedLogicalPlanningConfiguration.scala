@@ -55,7 +55,7 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
 
   var indexesWithOrdering: Map[(String, Seq[String]), IndexOrderCapability] = Map.empty
 
-  var constraints: Set[(String, String)] = Set.empty
+  var constraints: Set[(String, Set[String])] = Set.empty
 
   var procedureSignatures: Set[ProcedureSignature] = Set.empty
 
@@ -82,8 +82,8 @@ class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfigurati
     IndexModifier(label, properties)
   }
 
-  def existenceOrNodeKeyConstraintOn(label: String, property: String): Unit = {
-    constraints = constraints + (label -> property)
+  def existenceOrNodeKeyConstraintOn(label: String, properties: Set[String]): Unit = {
+    constraints = constraints + (label -> properties)
   }
 
   def procedure(signature: ProcedureSignature): Unit = {
