@@ -256,6 +256,12 @@ object LogicalPlanConverter {
             children(3).asInstanceOf[expressionsv3_5.Expression]
           )(helpers.as3_5(item.position), item.outerScope.map(v => expressionsv3_5.Variable(v.name)(helpers.as3_5(v.position))))
 
+        case (item: expressionsv3_4.MapProjection, children: Seq[AnyRef]) =>
+          expressionsv3_5.MapProjection(
+            children(0).asInstanceOf[expressionsv3_5.Variable],
+            children(1).asInstanceOf[Seq[expressionsv3_5.MapProjectionElement]]
+          )(helpers.as3_5(item.position), item.definitionPos.map(helpers.as3_5))
+
         case (item: plansV3_4.ResolvedCall, children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children, helpers.as3_5(item.position), classOf[InputPosition])
 
