@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import java.net.URL
 
-import org.opencypher.v9_0.util.LoadExternalResourceException
 import org.neo4j.cypher.internal.ir.v4_0.{CSVFormat, HasHeaders, NoHeaders}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{ArrayBackedMap, QueryContext}
-import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values._
 import org.neo4j.values.storable.{TextValue, Value, Values}
 import org.neo4j.values.virtual.{MapValueBuilder, VirtualValues}
+import org.opencypher.v9_0.util.LoadExternalResourceException
+import org.opencypher.v9_0.util.attribution.Id
 
 case class LoadCSVPipe(source: Pipe,
                        format: CSVFormat,
@@ -59,8 +59,14 @@ case class LoadCSVPipe(source: Pipe,
     }
   }
 
+  private def copyWithLinenumber(filename: String, linenumber: Long, last: Boolean, row: ExecutionContext, key: String, value: AnyValue): ExecutionContext = {
+    val newCtx = executionContextFactory.copyWith(row, key, value)
+    newCtx.setLinenumber(filename, linenumber, last)
+    newCtx
+  }
+
   //Uses an ArrayBackedMap to store header-to-values mapping
-  private class IteratorWithHeaders(headers: Seq[Value], context: ExecutionContext, inner: Iterator[Array[Value]]) extends Iterator[ExecutionContext] {
+  private class IteratorWithHeaders(headers: Seq[Value], context: ExecutionContext, filename: String, inner: LoadCsvIterator) extends Iterator[ExecutionContext] {
     private val internalMap = new ArrayBackedMap[String, AnyValue](headers.map(a => if (a == Values.NO_VALUE) null else a.asInstanceOf[TextValue].stringValue()).zipWithIndex.toMap)
     private var nextContext: ExecutionContext = _
     private var needsUpdate = true
@@ -81,7 +87,7 @@ case class LoadCSVPipe(source: Pipe,
 
     private def computeNextRow() = {
       if (inner.hasNext) {
-        val row = inner.next()
+        val row = inner.next().map(s => Values.stringOrNoValue(s))
         internalMap.putValues(row.asInstanceOf[Array[AnyValue]])
         //we need to make a copy here since someone may hold on this
         //reference, e.g. EagerPipe
@@ -92,16 +98,25 @@ case class LoadCSVPipe(source: Pipe,
           val value = if (maybeNull == null) Values.NO_VALUE else maybeNull
           builder.add(key, value)
         }
-        executionContextFactory.copyWith(context, variable, builder.build())
+        copyWithLinenumber(filename, inner.lastProcessed, inner.readAll, context, variable, builder.build())
       } else null
     }
   }
 
-  private class IteratorWithoutHeaders(context: ExecutionContext, inner: Iterator[Array[Value]]) extends Iterator[ExecutionContext] {
+  private class IteratorWithoutHeaders(context: ExecutionContext, filename: String, inner: LoadCsvIterator) extends Iterator[ExecutionContext] {
     override def hasNext: Boolean = inner.hasNext
 
-    override def next(): ExecutionContext =
-      executionContextFactory.copyWith(context, variable, VirtualValues.list(inner.next():_*))
+    override def next(): ExecutionContext = {
+      // Make sure to pull on inner.next before calling inner.lastProcessed to get the right line number
+      val value = VirtualValues.list(inner.next().map(s => Values.stringOrNoValue(s)): _*)
+      copyWithLinenumber(filename, inner.lastProcessed, inner.readAll, context, variable, value)
+    }
+  }
+
+  private def getLoadCSVIterator(state: QueryState, url: URL, useHeaders: Boolean): LoadCsvIterator ={
+    state.resources.getCsvIterator(
+      url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, useHeaders
+    )
   }
 
   override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -111,14 +126,11 @@ case class LoadCSVPipe(source: Pipe,
 
       format match {
         case HasHeaders =>
-          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, headers = true)
-            .map(_.map(s => Values.stringOrNoValue(s)))
-          val headers = if (iterator.nonEmpty) iterator.next().toIndexedSeq else IndexedSeq.empty // First row is headers
-          new IteratorWithHeaders(headers, context, iterator)
+          val iterator = getLoadCSVIterator(state, url, useHeaders = true)
+          val headers = if (iterator.nonEmpty) iterator.next().map(s => Values.stringOrNoValue(s)).toIndexedSeq else IndexedSeq.empty // First row is headers
+          new IteratorWithHeaders(headers, context, url.getFile, iterator)
         case NoHeaders =>
-          val iterator: Iterator[Array[Value]] = state.resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, headers = false)
-            .map(_.map(s => Values.stringOrNoValue(s)))
-          new IteratorWithoutHeaders(context, iterator)
+          new IteratorWithoutHeaders(context, url.getFile, getLoadCSVIterator(state, url, useHeaders = false))
       }
     })
   }

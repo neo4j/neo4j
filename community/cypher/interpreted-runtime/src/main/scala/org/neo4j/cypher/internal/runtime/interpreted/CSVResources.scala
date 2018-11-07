@@ -26,10 +26,10 @@ import java.nio.file.Paths
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
-import org.opencypher.v9_0.util.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.cypher.internal.runtime.ResourceManager
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
+import org.opencypher.v9_0.util.LoadExternalResourceException
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer
@@ -62,7 +62,7 @@ case class CSVResource(url: URL, resource: AutoCloseable) extends AutoCloseable 
 class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource {
 
   def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                     headers: Boolean = false): Iterator[Array[String]] = {
+                     headers: Boolean = false): LoadCsvIterator = {
 
     val reader: CharReadable = getReader(url)
     val delimiter: Char = fieldTerminator.map(_.charAt(0)).getOrElse(CSVResources.DEFAULT_FIELD_TERMINATOR)
@@ -73,7 +73,10 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
     resourceManager.trace(CSVResource(url, seeker))
 
-    new Iterator[Array[String]] {
+    new LoadCsvIterator {
+      var lastProcessed = 0L
+      var readAll = false
+
       private def readNextRow: Array[String] = {
         val buffer = new ArrayBuffer[String]
 
@@ -97,12 +100,14 @@ class CSVResources(resourceManager: ResourceManager) extends ExternalCSVResource
 
       var nextRow: Array[String] = readNextRow
 
-      def hasNext: Boolean = nextRow != null
+      override def hasNext: Boolean = nextRow != null
 
-      def next(): Array[String] = {
+      override def next(): Array[String] = {
         if (!hasNext) Iterator.empty.next()
         val row = nextRow
         nextRow = readNextRow
+        lastProcessed += 1
+        readAll = !hasNext
         row
       }
     }

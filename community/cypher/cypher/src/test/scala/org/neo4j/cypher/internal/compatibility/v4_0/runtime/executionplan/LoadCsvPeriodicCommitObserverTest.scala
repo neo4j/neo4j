@@ -25,8 +25,8 @@ import org.mockito.ArgumentMatchers
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.neo4j.csv.reader.Configuration
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
@@ -39,9 +39,9 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("should not trigger tx restart until after first batch has been processed") {
     // Given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(Iterator(
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).thenReturn(getIterator(Iterator(
       Array("Row1"),
-      Array("Row2")))
+      Array("Row2"))))
 
     // When
     val iterator = resourceUnderTest.getCsvIterator(url, None, legacyCsvQuoteEscaping = false, DEFAULT_BUFFER_SIZE)
@@ -55,11 +55,11 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
 
   test("headers should not count") {
     // given
-    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), ArgumentMatchers.eq(true))).thenReturn(Iterator(
+    when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), ArgumentMatchers.eq(true))).thenReturn(getIterator(Iterator(
       Array("header"),
       Array("Row1"),
       Array("Row2"),
-      Array("Row3")))
+      Array("Row3"))))
 
     // when
     val iterator = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
@@ -82,8 +82,8 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
   test("multiple iterators are still handled correctly only commit when the first iterator advances") {
     // Given
     when(resource.getCsvIterator(ArgumentMatchers.eq(url), any(), anyBoolean(), anyInt(), anyBoolean())).
-      thenReturn(Iterator(Array("outer1"),Array("outer2"))).
-      thenReturn(Iterator(Array("inner1"),Array("inner2"),Array("inner3"),Array("inner4")))
+      thenReturn(getIterator(Iterator(Array("outer1"),Array("outer2")))).
+      thenReturn(getIterator(Iterator(Array("inner1"),Array("inner2"),Array("inner3"),Array("inner4"))))
     val iterator1 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
                                                      DEFAULT_BUFFER_SIZE)
     val iterator2 = resourceUnderTest.getCsvIterator(url, fieldTerminator = None, legacyCsvQuoteEscaping = false,
@@ -116,5 +116,21 @@ class LoadCsvPeriodicCommitObserverTest extends CypherFunSuite {
     when(queryContext.transactionalContext).thenReturn(transactionalContext)
     resource = mock[ExternalCSVResource]
     resourceUnderTest = new LoadCsvPeriodicCommitObserver(1, resource, queryContext)
+  }
+
+  private def getIterator(inner: Iterator[Array[String]]): LoadCsvIterator = {
+    new LoadCsvIterator{
+      var lastProcessed: Long = 0L
+      var readAll: Boolean = false
+
+      override def hasNext: Boolean = inner.hasNext
+
+      override def next(): Array[String] = {
+        val next = inner.next()
+        lastProcessed += 1
+        readAll = !hasNext
+        next
+      }
+    }
   }
 }

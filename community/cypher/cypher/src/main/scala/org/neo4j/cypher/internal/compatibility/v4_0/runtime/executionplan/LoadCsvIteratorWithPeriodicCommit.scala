@@ -19,35 +19,25 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 
-import java.net.URL
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 
-class LoadCsvIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit) extends Iterator[Array[String]] {
-  var lastProcessed = 0L
-  var lastCommitted = -1L
-  var readAll = false
+class LoadCsvIteratorWithPeriodicCommit(loadCsvIterator: LoadCsvIterator)(onNext: => Unit) extends LoadCsvIterator {
 
-  def next() = {
-    val row = inner.next()
+  var lastCommitted: Long = -1L
+
+  def lastProcessed: Long = loadCsvIterator.lastProcessed
+
+  def readAll: Boolean = loadCsvIterator.readAll
+
+  def next(): Array[String] = {
+    val row = loadCsvIterator.next()
     onNext
-    lastProcessed += 1
-    readAll = !hasNext
     row
   }
 
-  def hasNext = inner.hasNext
+  def hasNext: Boolean = loadCsvIterator.hasNext
 
   def notifyCommit() {
-    lastCommitted = lastProcessed
-  }
-
-  def msg = {
-    val committedAnything = lastCommitted >= 0
-    s"Failure when processing URL '$url' on line $lastProcessed" +
-      (if (readAll) " (which is the last row in the file). " else ". ") +
-      (if (committedAnything)
-        s"Possibly the last row committed during import is line $lastCommitted. "
-      else
-        "No rows seem to have been committed. ") +
-      "Note that this information might not be accurate."
+    lastCommitted = loadCsvIterator.lastProcessed - 1
   }
 }

@@ -23,10 +23,9 @@ import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.runtime._
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.cypher.internal.runtime.interpreted.{CSVResources, ExecutionContext}
-import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.util.CypherException
 
 abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  readOnly: Boolean,
@@ -35,35 +34,31 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
   abstract class BaseExecutionWorkflowBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
-    protected var pipeDecorator: PipeDecorator = NullPipeDecorator
-    protected var exceptionDecorator: CypherException => CypherException = identity
+    protected var pipeDecorator: PipeDecorator = if (logicalPlan.treeFind[LogicalPlan] {
+      case _: LoadCSV => true
+    }.isEmpty) NullPipeDecorator else new LinenumberPipeDecorator()
 
     protected def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState
 
     def queryContext: QueryContext
 
     def setLoadCsvPeriodicCommitObserver(batchRowCount: Long): Unit = {
-      val observer = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
-      externalResource = observer
-      exceptionDecorator = observer
+      externalResource = new LoadCsvPeriodicCommitObserver(batchRowCount, externalResource, queryContext)
     }
 
-    def setPipeDecorator(newDecorator: PipeDecorator): Unit =
-      pipeDecorator = newDecorator
+    def addProfileDecorator(profileDecorator: PipeDecorator): Unit = pipeDecorator match {
+      case decorator: LinenumberPipeDecorator => decorator.setInnerDecorator(profileDecorator)
+      case _ => pipeDecorator = profileDecorator
+    }
 
     override def build(params: MapValue,
                        readOnly: Boolean,
                        queryProfile: QueryProfile,
                        prePopulateResults: Boolean): RuntimeResult = {
       val state = createQueryState(params, prePopulateResults)
-      try {
-        val results = pipe.createResults(state)
-        val resultIterator = buildResultIterator(results, readOnly)
-        new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
-      } catch {
-        case e: CypherException =>
-          throw exceptionDecorator(e)
-      }
+      val results = pipe.createResults(state)
+      val resultIterator = buildResultIterator(results, readOnly)
+      new PipeExecutionResult(resultIterator, columns.toArray, state, queryProfile)
     }
 
     protected def buildResultIterator(results: Iterator[ExecutionContext], readOnly: Boolean): IteratorBasedResult

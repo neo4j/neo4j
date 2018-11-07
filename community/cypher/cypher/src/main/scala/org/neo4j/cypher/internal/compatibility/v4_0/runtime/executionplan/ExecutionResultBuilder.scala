@@ -26,7 +26,7 @@ import org.neo4j.values.virtual.MapValue
 
 trait ExecutionResultBuilder {
   def setLoadCsvPeriodicCommitObserver(batchRowCount: Long)
-  def setPipeDecorator(newDecorator: PipeDecorator)
+  def addProfileDecorator(profileDecorator: PipeDecorator)
   def build(params: MapValue,
             readOnly: Boolean,
             queryProfile: QueryProfile,

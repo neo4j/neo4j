@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.util.Eagerly
-import org.opencypher.v9_0.util.attribution.Id
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.VirtualValues
+import org.opencypher.v9_0.util.Eagerly
+import org.opencypher.v9_0.util.attribution.Id
 
 import scala.collection.mutable
 
@@ -40,7 +40,9 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     // Run the return item expressions, and replace the execution context's with their values
     val result = input.map(ctx => {
       val newMap = Eagerly.mutableMapValues(expressions, (expression: Expression) => expression(ctx, state))
-      executionContextFactory.newExecutionContext(newMap)
+      val newCtx = executionContextFactory.newExecutionContext(newMap)
+      newCtx.setLinenumber(ctx.getLinenumber)
+      newCtx
     })
 
     /*

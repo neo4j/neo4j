@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher
 
+import org.neo4j.values.utils._
+import org.opencypher.v9_0._
 import org.opencypher.v9_0.util.spi.MapToPublicExceptions
 import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
-import org.neo4j.values.utils._
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {
   override def syntaxException(message: String, query: String, offset: Option[Int], cause: Throwable) = new SyntaxException(message, query, offset, cause)
 
   override def arithmeticException(message: String, cause: Throwable) = new ArithmeticException(message, cause)
 
-  override def profilerStatisticsNotReadyException(cause: Throwable) = {
-    throw new ProfilerStatisticsNotReadyException(cause)
-  }
+  override def profilerStatisticsNotReadyException(cause: Throwable) = new ProfilerStatisticsNotReadyException(cause)
 
   override def incomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(details, lhs, rhs, cause)
 
@@ -44,44 +43,47 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def internalException(message: String, cause: Exception) = new InternalException(message, cause)
 
-  override def loadCsvStatusWrapCypherException(extraInfo: String, cause: InternalCypherException) =
-    new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandler))
+  override def loadCsvStatusWrapCypherException(extraInfo: String, cause: InternalCypherException) = cause match {
+    case e: util.ArithmeticException => exceptionHandler.arithmeticException(LoadCsvStatusWrapCypherException.message(extraInfo, e.getMessage), e.getCause)
+    case e: util.InvalidSemanticsException => exceptionHandler.invalidSemanticException(LoadCsvStatusWrapCypherException.message(extraInfo, e.getMessage), e.getCause)
+    case e: util.CypherTypeException => exceptionHandler.cypherTypeException(LoadCsvStatusWrapCypherException.message(extraInfo, e.getMessage), e.getCause)
+    case _ => new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandler))
+  }
 
-  override def loadExternalResourceException(message: String, cause: Throwable) = throw new LoadExternalResourceException(message, cause)
+  override def loadExternalResourceException(message: String, cause: Throwable) = new LoadExternalResourceException(message, cause)
 
-  override def parameterNotFoundException(message: String, cause: Throwable) = throw new ParameterNotFoundException(message, cause)
+  override def parameterNotFoundException(message: String, cause: Throwable) = new ParameterNotFoundException(message, cause)
 
-  override def uniquePathNotUniqueException(message: String, cause: Throwable) = throw new UniquePathNotUniqueException(message, cause)
+  override def uniquePathNotUniqueException(message: String, cause: Throwable) = new UniquePathNotUniqueException(message, cause)
 
-  override def entityNotFoundException(message: String, cause: Throwable) = throw new EntityNotFoundException(message, cause)
+  override def entityNotFoundException(message: String, cause: Throwable) = new EntityNotFoundException(message, cause)
 
+  override def cypherTypeException(message: String, cause: Throwable) = new CypherTypeException(message, cause)
 
-  override def cypherTypeException(message: String, cause: Throwable) = throw new CypherTypeException(message, cause)
-
-  override def cypherExecutionException(message: String, cause: Throwable) = throw new CypherExecutionException(message, cause)
+  override def cypherExecutionException(message: String, cause: Throwable) = new CypherExecutionException(message, cause)
 
   override def shortestPathFallbackDisableRuntimeException(message: String, cause: Throwable): CypherException =
-    throw new ExhaustiveShortestPathForbiddenException(message, cause)
+    new ExhaustiveShortestPathForbiddenException(message, cause)
 
   override def shortestPathCommonEndNodesForbiddenException(message: String, cause: Throwable): CypherException =
-    throw new ShortestPathCommonEndNodesForbiddenException(message, cause)
+    new ShortestPathCommonEndNodesForbiddenException(message, cause)
 
-  override def invalidSemanticException(message: String, cause: Throwable) = throw new InvalidSemanticsException(message, cause)
+  override def invalidSemanticException(message: String, cause: Throwable) = new InvalidSemanticsException(message, cause)
 
-  override def parameterWrongTypeException(message: String, cause: Throwable) = throw new ParameterWrongTypeException(message, cause)
+  override def parameterWrongTypeException(message: String, cause: Throwable) = new ParameterWrongTypeException(message, cause)
 
-  override def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = throw new NodeStillHasRelationshipsException(nodeId, cause)
+  override def nodeStillHasRelationshipsException(nodeId: Long, cause: Throwable) = new NodeStillHasRelationshipsException(nodeId, cause)
 
   def indexHintException(variable: String, label: String, properties: Seq[String], message: String, cause: Throwable) =
-    throw new IndexHintException(variable, label, properties, message, cause)
+    new IndexHintException(variable, label, properties, message, cause)
 
-  override def joinHintException(variable: String, message: String, cause: Throwable) = throw new JoinHintException(variable, message, cause)
+  override def joinHintException(variable: String, message: String, cause: Throwable) = new JoinHintException(variable, message, cause)
 
-  override def hintException(message: String, cause: Throwable): CypherException = throw new HintException(message, cause)
+  override def hintException(message: String, cause: Throwable): CypherException = new HintException(message, cause)
 
-  override def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
+  override def periodicCommitInOpenTransactionException(cause: Throwable) = new PeriodicCommitInOpenTransactionException(cause)
 
-  override def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, failureMessage, cause)
+  override def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): CypherException = new FailedIndexException(indexName, failureMessage, cause)
 
   object runSafely extends RunSafely {
     override def apply[T](body: => T)(implicit f: ExceptionHandler = ExceptionHandler.default): T = {

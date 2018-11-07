@@ -79,7 +79,7 @@ object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
       }
 
       if (doProfile)
-        builder.setPipeDecorator(new Profiler(queryContext.transactionalContext.databaseInfo, profileInformation))
+        builder.addProfileDecorator(new Profiler(queryContext.transactionalContext.databaseInfo, profileInformation))
 
       builder.build(params,
                     readOnly,

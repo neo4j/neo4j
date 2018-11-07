@@ -49,6 +49,19 @@ class QueryState(val query: QueryContext,
     }
   }
 
+  /**
+    * When running on the RHS of an Apply, this method will create an execution context with argument data
+    */
+  def newExecutionContextWithArgumentState(factory: ExecutionContextFactory, nLongs: Int, nRefs: Int): ExecutionContext = {
+    initialContext match {
+      case Some(init) =>
+        val ctx = factory.newExecutionContext()
+        ctx.copyFrom(init, nLongs, nRefs)
+        ctx
+      case None => factory.newExecutionContext()
+    }
+  }
+
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
@@ -70,16 +83,6 @@ class QueryState(val query: QueryContext,
   def withInitialContext(initialContext: ExecutionContext) =
     new QueryState(query, resources, params, cursors, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults)
-
-  /**
-    * When running on the RHS of an Apply, this method will fill an execution context with argument data
-    *
-    * @param ctx ExecutionContext to fill with data
-    */
-  def copyArgumentStateTo(ctx: ExecutionContext, nLongs: Int, nRefs: Int): Unit = initialContext
-    .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
-
-  def copyArgumentStateTo(ctx: ExecutionContext): Unit = initialContext.foreach(initData => initData.copyTo(ctx))
 
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, decorator, initialContext,
@@ -172,5 +175,4 @@ case class CommunityExecutionContextFactory() extends ExecutionContextFactory {
     case _ =>
       row.copyWith(key1, value1, key2, value2, key3, value3)
   }
-
 }

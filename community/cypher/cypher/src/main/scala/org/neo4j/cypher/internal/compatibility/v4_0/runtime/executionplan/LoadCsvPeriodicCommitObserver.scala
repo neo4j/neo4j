@@ -22,22 +22,21 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
-import org.opencypher.v9_0.util.{CypherException, LoadCsvStatusWrapCypherException}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
-  extends ExternalCSVResource with ((CypherException) => CypherException) {
+  extends ExternalCSVResource {
 
   val updateCounter = new UpdateCounter
-  var outerLoadCSVIterator: Option[LoadCsvIterator] = None
+  var outerLoadCSVIterator: Option[LoadCsvIteratorWithPeriodicCommit] = None
 
   override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                              headers: Boolean = false): Iterator[Array[String]] = {
+                              headers: Boolean = false): LoadCsvIterator = {
     val innerIterator = resources.getCsvIterator(url, fieldTerminator, legacyCsvQuoteEscaping, bufferSize, headers)
     if (outerLoadCSVIterator.isEmpty) {
       if (headers)
         updateCounter.offsetForHeaders()
-      val iterator = new LoadCsvIterator(url, innerIterator)(onNext())
+      val iterator = new LoadCsvIteratorWithPeriodicCommit(innerIterator)(onNext())
       outerLoadCSVIterator = Some(iterator)
       iterator
     } else {
@@ -53,10 +52,5 @@ class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVR
   private def commitAndRestartTx() {
     queryContext.transactionalContext.commitAndRestartTx()
     outerLoadCSVIterator.foreach(_.notifyCommit())
-  }
-
-  def apply(e: CypherException): CypherException = outerLoadCSVIterator match {
-    case Some(iterator) => new LoadCsvStatusWrapCypherException(iterator.msg, e)
-    case _ => e
   }
 }

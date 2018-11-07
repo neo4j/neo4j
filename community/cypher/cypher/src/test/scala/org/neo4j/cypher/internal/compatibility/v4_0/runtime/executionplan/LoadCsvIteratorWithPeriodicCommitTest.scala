@@ -21,30 +21,36 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 
 import java.net.URL
 
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
-class LoadCsvIteratorTest extends CypherFunSuite {
+class LoadCsvIteratorWithPeriodicCommitTest extends CypherFunSuite {
 
   val url = new URL("file://uselessinfo.csv")
   val inner = Seq(Array[String]("1"), Array[String]("2"))
+  var outer: Option[LoadCsvIteratorWithPeriodicCommit] = None
 
   test("should provide information about the current row") {
-    val it = new LoadCsvIterator(url, inner.iterator)(())
+    val it = getIterator(url, inner.iterator)(())
     it.lastProcessed should equal(0)
     it.next()
     it.lastProcessed should equal(1)
   }
 
   test("should provide information about the last committed row") {
-    val it = new LoadCsvIterator(url, inner.iterator)(())
+    val it = getIterator(url, inner.iterator)(notifyCommit())
+    outer = Some(it)
     it.lastCommitted should equal(-1)
     it.next()
-    it.notifyCommit()
-    it.lastCommitted should equal(1)
+    it.lastCommitted should equal(0)
+  }
+
+  private def notifyCommit(): Unit = {
+    outer.foreach(_.notifyCommit())
   }
 
   test("should provide information about if we have completed reading the file") {
-    val it = new LoadCsvIterator(url, inner.iterator)(())
+    val it = getIterator(url, inner.iterator)(())
     it.readAll should equal(false)
     it.next()
     it.next()
@@ -53,7 +59,7 @@ class LoadCsvIteratorTest extends CypherFunSuite {
 
   test("should call onNext when next is called") {
     var called = false
-    val it = new LoadCsvIterator(url, inner.iterator)({ called = true })
+    val it = getIterator(url, inner.iterator)({ called = true })
     called should equal(false)
     it.next()
     called should equal(true)
@@ -64,12 +70,12 @@ class LoadCsvIteratorTest extends CypherFunSuite {
     val inner = new Iterator[Array[String]] {
       def next() = Array("yea")
 
-      def hasNext =  {
+      def hasNext: Boolean =  {
         called = true
         true
       }
     }
-    val it = new LoadCsvIterator(url, inner)(())
+    val it = getIterator(url, inner)(())
     called should equal(false)
     it.hasNext
     called should equal(true)
@@ -78,17 +84,32 @@ class LoadCsvIteratorTest extends CypherFunSuite {
   test("should call the inner iterator when calling next") {
     var called = false
     val inner = new Iterator[Array[String]] {
-      def next() = {
+      def next(): Array[String] = {
         called = true
         Array("yea")
       }
 
       def hasNext = true
     }
-    val it = new LoadCsvIterator(url, inner)(())
+    val it = getIterator(url, inner)(())
     called should equal(false)
     it.next()
     called should equal(true)
   }
 
+  private def getIterator(url: URL, inner: Iterator[Array[String]])(onNext: => Unit): LoadCsvIteratorWithPeriodicCommit = {
+    new LoadCsvIteratorWithPeriodicCommit(new LoadCsvIterator{
+      var lastProcessed: Long = 0L
+      var readAll: Boolean = false
+
+      override def hasNext: Boolean = inner.hasNext
+
+      override def next(): Array[String] = {
+        val next = inner.next()
+        lastProcessed += 1
+        readAll = !hasNext
+        next
+      }
+    })(onNext)
+  }
 }

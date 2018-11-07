@@ -23,13 +23,27 @@ import java.net.URL
 
 trait ExternalCSVResource {
   def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                     headers: Boolean = false): Iterator[Array[String]]
+                     headers: Boolean = false): LoadCsvIterator
 }
 
 object ExternalCSVResource {
   def empty: ExternalCSVResource = new ExternalCSVResource {
     override def getCsvIterator(url: URL, fieldTerminator: Option[String], legacyCsvQuoteEscaping: Boolean, bufferSize: Int,
-                                headers: Boolean = false): Iterator[Array[String]] =
-      Iterator.empty
+                                headers: Boolean = false): LoadCsvIterator =
+      LoadCsvIterator.empty
+  }
+}
+
+trait LoadCsvIterator extends Iterator[Array[String]] {
+  def lastProcessed: Long
+  def readAll: Boolean
+}
+
+object LoadCsvIterator {
+  def empty: LoadCsvIterator = new LoadCsvIterator {
+    override def lastProcessed: Long = 0L
+    override def readAll: Boolean = false
+    override def hasNext: Boolean = false
+    def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
   }
 }

@@ -21,6 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.Status
+
 import scala.compat.Platform.EOL
 
 abstract class CypherException(message: String, cause: Throwable) extends RuntimeException(message, cause)
@@ -160,7 +161,11 @@ class LoadExternalResourceException(message: String, cause: Throwable) extends C
   val status = Status.Statement.ExternalResourceFailed
 }
 
-class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(s"${cause.getMessage} (${extraInfo})", cause) {
+object LoadCsvStatusWrapCypherException {
+  def message(extraInfo: String, message: String) = s"$message ($extraInfo)"
+}
+
+class LoadCsvStatusWrapCypherException(extraInfo: String, cause: CypherException) extends CypherException(LoadCsvStatusWrapCypherException.message(extraInfo, cause.getMessage), cause) {
   val status = cause.status
 }
 
