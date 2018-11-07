@@ -220,7 +220,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   test("should monitor cache flushes") {
     runQuery("return 42")
-    graph.createConstraint("Person", "id")
+    graph.createUniqueConstraint("Person", "id")
     runQuery("return 42")
 
     counter.counts should equal(CacheCounts(misses = 2, flushes = 2))

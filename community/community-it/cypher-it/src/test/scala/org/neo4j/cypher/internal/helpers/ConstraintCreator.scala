@@ -32,7 +32,7 @@ trait ConstraintCreator extends GraphIcing {
 
 object UniquenessConstraintCreator extends ConstraintCreator {
   def createConstraint(graph: GraphDatabaseCypherService, label: String, property: String) =
-    graph.createConstraint(label, property)
+    graph.createUniqueConstraint(label, property)
 
   override def toString = "Uniqueness Constraint"
 

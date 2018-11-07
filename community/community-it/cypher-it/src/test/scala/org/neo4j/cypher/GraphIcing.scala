@@ -80,7 +80,7 @@ trait GraphIcing {
       indexDefs.map(_.getPropertyKeys.asScala.toList)
     }
 
-    def createConstraint(label: String, property: String) = {
+    def createUniqueConstraint(label: String, property: String) = {
       inTx {
         graph.schema().constraintFor(Label.label(label)).assertPropertyIsUnique(property).create()
       }
@@ -90,8 +90,8 @@ trait GraphIcing {
       graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT exists(n.$property)")
     }
 
-    def createNodeKeyConstraint(label: String, property: String): Result = {
-      graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.$property) IS NODE KEY")
+    def createNodeKeyConstraint(label: String, properties: String*): Result = {
+      graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
     }
 
     def createIndex(label: String, properties: String*): Unit = {
