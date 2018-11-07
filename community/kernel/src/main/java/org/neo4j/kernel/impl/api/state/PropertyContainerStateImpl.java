@@ -41,12 +41,12 @@ import static java.util.Objects.requireNonNull;
 
 class PropertyContainerStateImpl implements PropertyContainerState
 {
-    private final CollectionsFactory collectionsFactory;
     private final long id;
-
     private MutableLongObjectMap<Value> addedProperties;
     private MutableLongObjectMap<Value> changedProperties;
     private MutableLongSet removedProperties;
+
+    protected final CollectionsFactory collectionsFactory;
 
     PropertyContainerStateImpl( long id, CollectionsFactory collectionsFactory )
     {

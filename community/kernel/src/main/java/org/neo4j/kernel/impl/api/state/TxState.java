@@ -57,9 +57,9 @@ import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
-import org.neo4j.values.storable.Values;
 
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.values.storable.Values.NO_VALUE;
@@ -208,7 +208,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return nodeStatesMap == null ? Iterables.empty() : Iterables.cast( nodeStatesMap.values() );
     }
 
-    private MutableLongDiffSets getOrCreateLabelStateNodeDiffSets( long labelId )
+    @VisibleForTesting
+    MutableLongDiffSets getOrCreateLabelStateNodeDiffSets( long labelId )
     {
         if ( labelStatesMap == null )
         {
@@ -489,7 +490,7 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
-    public GraphState getGraphState( )
+    public GraphState getGraphState()
     {
         return graphState;
     }
@@ -599,7 +600,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return relationshipStatesMap == null ? Iterables.empty() : Iterables.cast( relationshipStatesMap.values() );
     }
 
-    private NodeStateImpl getOrCreateNodeState( long nodeId )
+    @VisibleForTesting
+    NodeStateImpl getOrCreateNodeState( long nodeId )
     {
         if ( nodeStatesMap == null )
         {
@@ -617,7 +619,8 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         return relationshipStatesMap.getIfAbsentPut( relationshipId, () -> new RelationshipStateImpl( relationshipId, collectionsFactory ) );
     }
 
-    private GraphStateImpl getOrCreateGraphState()
+    @VisibleForTesting
+    GraphStateImpl getOrCreateGraphState()
     {
         if ( graphState == null )
         {
@@ -788,9 +791,10 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
         }
     }
 
-    private static MutableLongDiffSets getOrCreateIndexUpdatesForSeek( Map<ValueTuple, MutableLongDiffSets> updates, ValueTuple values )
+    @VisibleForTesting
+    MutableLongDiffSets getOrCreateIndexUpdatesForSeek( Map<ValueTuple, MutableLongDiffSets> updates, ValueTuple values )
     {
-        return updates.computeIfAbsent( values, value -> new MutableLongDiffSetsImpl() );
+        return updates.computeIfAbsent( values, value -> new MutableLongDiffSetsImpl( collectionsFactory ) );
     }
 
     private Map<ValueTuple, MutableLongDiffSets> getOrCreateIndexUpdatesByDescriptor( SchemaDescriptor schema )

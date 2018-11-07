@@ -27,7 +27,6 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
 
 /**
  * Primitive long version of collection that with given a sequence of add and removal operations, tracks
@@ -42,11 +41,6 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
     private final CollectionsFactory collectionsFactory;
     private MutableLongSet added;
     private MutableLongSet removed;
-
-    public MutableLongDiffSetsImpl()
-    {
-        this( NOT_INITIALIZED, NOT_INITIALIZED, OnHeapCollectionsFactory.INSTANCE );
-    }
 
     public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed, CollectionsFactory collectionsFactory )
     {
