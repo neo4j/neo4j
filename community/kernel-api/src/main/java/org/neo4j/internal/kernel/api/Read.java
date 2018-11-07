@@ -54,7 +54,8 @@ public interface Read
      * For merely counting distinct values in an index, loop over and sum iterations.
      * For counting number of indexed nodes in an index, loop over and sum all counts.
      *
-     * NOTE spatial values may not return 100% correctly in that some actually distinct points may be returned multiple times.
+     * NOTE distinct values may not be 100% accurate for point values that are very close to each other. In those cases they can be
+     * reported as a single distinct values with a higher count instead of several separate values.
      *
      * @param index {@link IndexReference} referencing index.
      * @param cursor {@link NodeValueIndexCursor} receiving distinct count data.
