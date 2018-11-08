@@ -44,7 +44,6 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -660,7 +659,7 @@ public class ImportTool
 
     private static Config loadDbConfig( File file )
     {
-        return Config.fromFile( file ).withThrowOnFileLoadFailure().build();
+        return Config.fromFile( file ).build();
     }
 
     static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,

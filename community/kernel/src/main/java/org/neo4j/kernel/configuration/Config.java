@@ -121,7 +121,7 @@ public class Config implements DiagnosticsProvider, Configuration
         private File configFile;
         private List<LoadableConfig> settingsClasses;
         private boolean connectorsDisabled;
-        private boolean throwOnFileLoadFailure;
+        private boolean throwOnFileLoadFailure = true;
 
         /**
          * Augment the configuration with the passed setting.
@@ -282,12 +282,12 @@ public class Config implements DiagnosticsProvider, Configuration
         }
 
         /**
-         * Cause the {@link #build()} method to throw an {@link UncheckedIOException} if the given {@code withFile} configuration file could not be loaded
-         * for some reason. The default behaviour is to log an error instead.
+         * Prevent the {@link #build()} method from throwing an {@link UncheckedIOException} if the given {@code withFile} configuration file could not be
+         * loaded for some reason. Instead, an error will be logged. The defualt behaviour is to throw the exception.
          */
-        public Builder withThrowOnFileLoadFailure()
+        public Builder withNoThrowOnFileLoadFailure()
         {
-            throwOnFileLoadFailure = true;
+            throwOnFileLoadFailure = false;
             return this;
         }
 

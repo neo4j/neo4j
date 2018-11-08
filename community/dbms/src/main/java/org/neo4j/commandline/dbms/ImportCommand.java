@@ -22,8 +22,6 @@ package org.neo4j.commandline.dbms;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -37,7 +35,6 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 
@@ -260,7 +257,7 @@ public class ImportCommand implements AdminCommand
 
     private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
-        return additionalConfigFile.map( path -> Config.fromFile( path ).withThrowOnFileLoadFailure().build() ).orElseGet( Config::defaults );
+        return additionalConfigFile.map( path -> Config.fromFile( path ).build() ).orElseGet( Config::defaults );
     }
 
     private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )

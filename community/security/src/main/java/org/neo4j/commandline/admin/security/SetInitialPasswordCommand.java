@@ -167,6 +167,7 @@ public class SetInitialPasswordCommand implements AdminCommand
     {
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ).toFile() )
                 .withHome( homeDir.toFile() )
+                .withNoThrowOnFileLoadFailure()
                 .withConnectorsDisabled().build();
     }
 }

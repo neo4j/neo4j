@@ -24,14 +24,12 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -186,7 +184,7 @@ public class ConsistencyCheckTool
             File configFile = new File( configFilePath );
             try
             {
-                return Config.fromFile( configFile ).withThrowOnFileLoadFailure().build();
+                return Config.fromFile( configFile ).build();
             }
             catch ( Exception e )
             {

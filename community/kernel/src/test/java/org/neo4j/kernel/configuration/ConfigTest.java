@@ -254,7 +254,7 @@ public class ConfigTest
         Log log = mock( Log.class );
         File confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
 
-        Config config = Config.fromFile( confFile ).build();
+        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
 
         config.setLogger( log );
 
@@ -269,7 +269,7 @@ public class ConfigTest
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
 
-        Config config = Config.fromFile( confFile ).build();
+        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
 
         config.setLogger( log );
 
@@ -281,7 +281,7 @@ public class ConfigTest
     {
         File confFile = testDirectory.file( "test.conf" );
 
-        Config.fromFile( confFile ).withThrowOnFileLoadFailure().build();
+        Config.fromFile( confFile ).build();
     }
 
     @Test( expected = UncheckedIOException.class )
@@ -290,7 +290,7 @@ public class ConfigTest
         File confFile = testDirectory.file( "test.conf" );
         assertTrue( confFile.createNewFile() );
         assumeTrue( confFile.setReadable( false ) );
-        Config.fromFile( confFile ).withThrowOnFileLoadFailure().build();
+        Config.fromFile( confFile ).build();
     }
 
     @Test
@@ -309,10 +309,12 @@ public class ConfigTest
         config.setLogger( log );
 
         // We should only log the warning once for each.
-        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.",
-                ExternalSettings.initialHeapSize.name() );
-        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.",
-                ExternalSettings.maxHeapSize.name() );
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+                        "The setting value that will be used is '%s'.",
+                ExternalSettings.initialHeapSize.name(), "5g" );
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+                        "The setting value that will be used is '%s'.",
+                ExternalSettings.maxHeapSize.name(), "10g" );
     }
 
     @Test

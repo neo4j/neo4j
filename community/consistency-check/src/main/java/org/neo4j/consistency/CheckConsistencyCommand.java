@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -37,7 +35,6 @@ import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Strings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -215,7 +212,7 @@ public class CheckConsistencyCommand implements AdminCommand
         {
             try
             {
-                return Config.fromFile( additionalConfigFile.get() ).withThrowOnFileLoadFailure().build();
+                return Config.fromFile( additionalConfigFile.get() ).build();
             }
             catch ( Exception e )
             {
