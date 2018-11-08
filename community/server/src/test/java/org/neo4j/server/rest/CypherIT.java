@@ -345,7 +345,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     public void send_queries_with_errors() throws Exception
     {
         data.get();
-        String script = "START x = node:node_auto_index(name={startName}) MATCH path = (x)-[r]-(friend) WHERE frien" +
+        String script = "MATCH (x) MATCH path = (x)-[r]-(friend) WHERE frien" +
                 ".name = {name} RETURN type(r)";
         String response =
                 cypherRestCall( script, Status.BAD_REQUEST, Pair.of( "startName", "I" ), Pair.of( "name", "you" ) );
