@@ -73,7 +73,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     private static long whateverPoint;
 
     private static final int STRING_AND_NUMBER_DISTINCT_VALUES = 100;
-    private static Map<Value,Set<Long>> stringAndNumberDistinctValues = new HashMap<>();
+    private Map<Value,Set<Long>> stringAndNumberDistinctValues = new HashMap<>();
 
     private static final PointValue POINT_1 =
             PointValue.parse( "{latitude: 40.7128, longitude: -74.0060, crs: 'wgs-84'}" );
