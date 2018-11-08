@@ -842,7 +842,8 @@ public class Config implements DiagnosticsProvider, Configuration
                             super.put( key, val ) == null &&
                             !key.equals( ExternalSettings.additionalJvm.name() ) )
                     {
-                        log.warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity.", setting );
+                        log.warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+                                "The setting value that will be used is '%s'.", setting, into.get( setting ) );
                     }
                     return null;
                 }
