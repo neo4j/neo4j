@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import java.util.Iterator;
 import java.util.function.Supplier;
 
-import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.FIRST;
+import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.SINGLE;
 
 /**
  * Find a dependency given a type.
@@ -30,15 +30,14 @@ import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.FIRST;
 public interface DependencyResolver
 {
     /**
-     * Tries to resolve a dependency that matches a given class. No specific
-     * {@link SelectionStrategy} is used, so the first encountered matching dependency will be returned.
+     * Tries to resolve a dependency that matches a given class. {@link SelectionStrategy#SINGLE Single} selection strategy is used to select dependencies
+     * among available candidates.
      *
      *
      * @param type the type of {@link Class} that the returned instance must implement.
      * @param <T> the type that the returned instance must implement
      * @return the resolved dependency for the given type.
      * @throws IllegalArgumentException if no matching dependency was found.
-     * @deprecated in next major version default selection strategy will be changed to more strict {@link DependencyResolver.SelectionStrategy#ONLY}
      */
     <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException;
 
@@ -106,7 +105,7 @@ public interface DependencyResolver
         /**
          * Returns the one and only dependency, or throws.
          */
-        SelectionStrategy ONLY = new SelectionStrategy()
+        SelectionStrategy SINGLE = new SelectionStrategy()
         {
             @Override
             public <T> T select( Class<T> type, Iterable<? extends T> candidates ) throws IllegalArgumentException
@@ -134,15 +133,13 @@ public interface DependencyResolver
     /**
      * Adapter for {@link DependencyResolver} which will select the first available candidate by default
      * for {@link #resolveDependency(Class)}.
-     *
-     * @deprecated in next major version default selection strategy will be changed to more strict {@link DependencyResolver.SelectionStrategy#ONLY}
      */
     abstract class Adapter implements DependencyResolver
     {
         @Override
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
-            return resolveDependency( type, FIRST );
+            return resolveDependency( type, SINGLE );
         }
 
         @Override

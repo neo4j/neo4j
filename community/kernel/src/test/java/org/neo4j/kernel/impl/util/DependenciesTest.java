@@ -19,24 +19,24 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DependenciesTest
+class DependenciesTest
 {
     @Test
-    public void givenSatisfiedTypeWhenResolveWithTypeThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithTypeThenInstanceReturned()
     {
         // Given
-        Dependencies dependencies = new Dependencies(  );
+        Dependencies dependencies = new Dependencies();
 
         String foo = "foo";
         dependencies.satisfyDependency( foo );
@@ -45,107 +45,110 @@ public class DependenciesTest
         String instance = dependencies.resolveDependency( String.class );
 
         // Then
-        assertThat(instance, equalTo(foo));
+        assertThat( instance, equalTo( foo ) );
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithSuperTypeThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithSuperTypeThenInstanceReturned()
     {
         // Given
-        Dependencies dependencies = new Dependencies(  );
+        Dependencies dependencies = new Dependencies();
 
-        AbstractList foo = new ArrayList( );
+        AbstractList foo = new ArrayList();
         dependencies.satisfyDependency( foo );
 
         // When
         AbstractList instance = dependencies.resolveDependency( AbstractList.class );
 
         // Then
-        assertThat(instance, equalTo(foo));
+        assertThat( instance, equalTo( foo ) );
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithInterfaceThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithInterfaceThenInstanceReturned()
     {
         // Given
-        Dependencies dependencies = new Dependencies(  );
+        Dependencies dependencies = new Dependencies();
 
-        List foo = new ArrayList( );
+        List foo = new ArrayList();
         dependencies.satisfyDependency( foo );
 
         // When
         List instance = dependencies.resolveDependency( List.class );
 
         // Then
-        assertThat(instance, equalTo(foo));
+        assertThat( instance, equalTo( foo ) );
     }
 
     @Test
-    public void givenSatisfiedTypeWhenResolveWithSubInterfaceThenInstanceReturned()
+    void givenSatisfiedTypeWhenResolveWithSubInterfaceThenInstanceReturned()
     {
         // Given
-        Dependencies dependencies = new Dependencies(  );
+        Dependencies dependencies = new Dependencies();
 
-        Collection foo = new ArrayList( );
+        Collection foo = new ArrayList();
         dependencies.satisfyDependency( foo );
 
         // When
         Collection instance = dependencies.resolveDependency( Collection.class );
 
         // Then
-        assertThat(instance, equalTo(foo));
+        assertThat( instance, equalTo( foo ) );
     }
 
     @Test
-    public void givenSatisfiedTypeInParentWhenResolveWithTypeInEmptyDependenciesThenInstanceReturned()
+    void givenSatisfiedTypeInParentWhenResolveWithTypeInEmptyDependenciesThenInstanceReturned()
     {
         // Given
-        Dependencies parent = new Dependencies(  );
+        Dependencies parent = new Dependencies();
         Dependencies dependencies = new Dependencies( parent );
 
-        Collection foo = new ArrayList( );
+        Collection foo = new ArrayList();
         dependencies.satisfyDependency( foo );
 
         // When
         Collection instance = dependencies.resolveDependency( Collection.class );
 
         // Then
-        assertThat(instance, equalTo(foo));
+        assertThat( instance, equalTo( foo ) );
     }
 
     @Test
-    public void givenSatisfiedTypeInParentAndDependenciesWhenResolveWithTypeInDependenciesThenInstanceReturned()
+    void givenSatisfiedTypeInParentAndDependenciesWhenResolveWithTypeInDependenciesThenInstanceReturned()
     {
         // Given
-        Dependencies parent = new Dependencies(  );
+        Dependencies parent = new Dependencies();
         Dependencies dependencies = new Dependencies( parent );
 
-        Collection foo = new ArrayList( );
+        Collection foo = new ArrayList();
         dependencies.satisfyDependency( foo );
-        parent.satisfyDependency( new ArrayList());
+        parent.satisfyDependency( new ArrayList() );
 
         // When
         Collection instance = dependencies.resolveDependency( Collection.class );
 
         // Then
-        assertThat(instance, equalTo(foo));
+        assertThat( instance, equalTo( foo ) );
     }
 
     @Test
-    public void givenEmptyDependenciesWhenResolveWithTypeThenException()
+    void givenEmptyDependenciesWhenResolveWithTypeThenException()
     {
-        // Given
-        Dependencies dependencies = new Dependencies( );
+        Dependencies dependencies = new Dependencies();
 
-        // When
-        try
-        {
-            dependencies.resolveDependency( Collection.class );
-            fail();
-        }
-        catch ( UnsatisfiedDependencyException e )
-        {
-            // Then
-        }
+        assertThrows( UnsatisfiedDependencyException.class, () -> dependencies.resolveDependency( Collection.class ) );
+    }
+
+    @Test
+    void failSelectFromMultipleAvailableOptions()
+    {
+        Dependencies dependencies = new Dependencies();
+
+        List foo = new ArrayList();
+        List bar = new ArrayList();
+        dependencies.satisfyDependency( foo );
+        dependencies.satisfyDependency( bar );
+
+        assertThrows( IllegalArgumentException.class, () -> dependencies.resolveDependency( List.class ) );
     }
 }

@@ -634,13 +634,13 @@ public class FulltextIndexConsistencyCheckIT
     private static IndexingService getIndexingService( GraphDatabaseService db )
     {
         DependencyResolver dependencyResolver = getDependencyResolver( db );
-        return dependencyResolver.resolveDependency( IndexingService.class, DependencyResolver.SelectionStrategy.ONLY );
+        return dependencyResolver.resolveDependency( IndexingService.class );
     }
 
     private static NeoStores getNeoStores( GraphDatabaseService db )
     {
         DependencyResolver dependencyResolver = getDependencyResolver( db );
-        return dependencyResolver.resolveDependency( RecordStorageEngine.class, DependencyResolver.SelectionStrategy.ONLY ).testAccessNeoStores();
+        return dependencyResolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
     }
 
     private static DependencyResolver getDependencyResolver( GraphDatabaseService db )

@@ -24,11 +24,15 @@ import org.eclipse.collections.api.list.MutableList;
 import org.eclipse.collections.api.multimap.list.MutableListMultimap;
 import org.eclipse.collections.impl.factory.Multimaps;
 
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
+
+import static org.apache.commons.lang3.ClassUtils.getAllInterfaces;
+import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
 
 @SuppressWarnings( "unchecked" )
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
@@ -94,19 +98,37 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     {
         // File this object under all its possible types
         Class<?> type = dependency.getClass();
-        do
-        {
-            typeDependencies.put( type, dependency );
+        typeDependencies.put( type, dependency );
 
-            // Add as all interfaces
-            Class<?>[] interfaces = type.getInterfaces();
-            addInterfaces(interfaces, dependency);
-
-            type = type.getSuperclass();
-        }
-        while ( type != null );
+        addSuperclasses( type, dependency );
+        addInterfaces( type, dependency );
 
         return dependency;
+    }
+
+    private <T> void addInterfaces( Class<?> type, T dependency )
+    {
+        List<Class<?>> interfaces = getAllInterfaces( type );
+        if ( interfaces != null )
+        {
+            interfaces.remove( type );
+            for ( Class<?> iType : interfaces )
+            {
+                typeDependencies.put( iType, dependency );
+            }
+        }
+    }
+
+    private <T> void addSuperclasses( Class<?> type, T dependency )
+    {
+        List<Class<?>> allSuperclasses = getAllSuperclasses( type );
+        if ( allSuperclasses != null )
+        {
+            for ( Class<?> aClass : allSuperclasses )
+            {
+                typeDependencies.put( aClass, dependency );
+            }
+        }
     }
 
     public void satisfyDependencies( Object... dependencies )
@@ -114,15 +136,6 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
         for ( Object dependency : dependencies )
         {
             satisfyDependency( dependency );
-        }
-    }
-
-    private <T> void addInterfaces( Class<?>[] interfaces, T dependency )
-    {
-        for ( Class<?> type : interfaces )
-        {
-            typeDependencies.put( type, dependency );
-            addInterfaces(type.getInterfaces(), dependency);
         }
     }
 }

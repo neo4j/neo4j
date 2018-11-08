@@ -22,7 +22,6 @@ package org.neo4j.cypher
 import java.io.File
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
-import org.neo4j.graphdb.DependencyResolver.SelectionStrategy
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
@@ -104,7 +103,7 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   }
 
   def assertWithKernelTx(f: KernelTransaction => Unit): Unit = {
-    val kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel], SelectionStrategy.ONLY)
+    val kernel = graph.getDependencyResolver.resolveDependency(classOf[Kernel])
     var ktx: KernelTransaction = null
     try {
       ktx = kernel.beginTransaction( KernelTransaction.Type.explicit, LoginContext.AUTH_DISABLED )
