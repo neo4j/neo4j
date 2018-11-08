@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
+import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
@@ -49,19 +50,6 @@ class QueryState(val query: QueryContext,
     }
   }
 
-  /**
-    * When running on the RHS of an Apply, this method will create an execution context with argument data
-    */
-  def newExecutionContextWithArgumentState(factory: ExecutionContextFactory, nLongs: Int, nRefs: Int): ExecutionContext = {
-    initialContext match {
-      case Some(init) =>
-        val ctx = factory.newExecutionContext()
-        ctx.copyFrom(init, nLongs, nRefs)
-        ctx
-      case None => factory.newExecutionContext()
-    }
-  }
-
   def clearPathValueBuilder: PathValueBuilder = {
     if (_pathValueBuilder == null) {
       _pathValueBuilder = new PathValueBuilder()
@@ -84,15 +72,23 @@ class QueryState(val query: QueryContext,
     new QueryState(query, resources, params, cursors, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
+  /**
+    * When running on the RHS of an Apply, this method will fill an execution context with argument data
+    *
+    * @param ctx ExecutionContext to fill with data
+    */
+  def copyArgumentStateTo(ctx: ExecutionContext, nLongs: Int, nRefs: Int): Unit = initialContext
+    .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
+
   def withQueryContext(query: QueryContext) =
     new QueryState(query, resources, params, cursors, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
-  def setExecutionContextFactory(exFactory: ExecutionContextFactory) = {
+  def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {
     _exFactory = exFactory
   }
 
-  def executionContextFactory = _exFactory
+  def executionContextFactory: ExecutionContextFactory = _exFactory
 
   override def close(): Unit = {
     cursors.close()
