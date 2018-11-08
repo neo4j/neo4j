@@ -30,23 +30,35 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
     // do not register this pipe as parent as it does not do anything except filtering of already fetched
     // key-value pairs and thus should not have any stats
 
-    input.map {
-      original =>
-        val m = MutableMaps.create[String, AnyValue](columns.size)
-        if (state.prePopulateResults)
-          columns.foreach(
-            name => {
-              val value = original(name)
-              ValuePopulation.populate(value)
-              m.put(name, value)
-            }
-          )
-         else
-          columns.foreach(
-            name => m.put(name, original(name))
-          )
+    if (state.prePopulateResults)
+      input.map {
+        original =>
+          produceAndPopulate(original)
+      }
+    else
+      input.map {
+        original =>
+          produce(original)
+      }
+  }
 
-        ExecutionContext(m)
-    }
+  private def produceAndPopulate(original: ExecutionContext) = {
+    val m = MutableMaps.create[String, AnyValue](columns.size)
+    columns.foreach(
+      name => {
+        val value = original(name)
+        ValuePopulation.populate(value)
+        m.put(name, value)
+      }
+    )
+    ExecutionContext(m)
+  }
+
+  private def produce(original: ExecutionContext) = {
+    val m = MutableMaps.create[String, AnyValue](columns.size)
+    columns.foreach(
+      name => m.put(name, original(name))
+    )
+    ExecutionContext(m)
   }
 }
