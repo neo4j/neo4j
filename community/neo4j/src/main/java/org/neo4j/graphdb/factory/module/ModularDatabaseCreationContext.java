@@ -66,8 +66,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -120,7 +120,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
     private final DatabaseAvailability databaseAvailability;
-    private final KernelEventHandlers eventHandlers;
+    private final DatabaseEventHandlers eventHandlers;
 
     ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
             Procedures procedures, GraphDatabaseFacade facade )
@@ -145,7 +145,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         this.fs = platformModule.fileSystem;
         this.transactionStats = editionContext.getTransactionMonitor();
-        this.eventHandlers = new KernelEventHandlers( logService.getInternalLog( KernelEventHandlers.class ) );
+        this.eventHandlers = new DatabaseEventHandlers( logService.getInternalLog( DatabaseEventHandlers.class ) );
         this.databaseHealth = new DatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ), logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
         this.commitProcessFactory = editionContext.getCommitProcessFactory();
@@ -437,7 +437,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public KernelEventHandlers getEventHandlers()
+    public DatabaseEventHandlers getEventHandlers()
     {
         return eventHandlers;
     }

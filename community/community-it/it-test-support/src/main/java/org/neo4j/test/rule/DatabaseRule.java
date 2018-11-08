@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -605,13 +605,13 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     @Override
-    public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
+    public DatabaseEventHandler registerKernelEventHandler( DatabaseEventHandler handler )
     {
         return database.registerKernelEventHandler( handler );
     }
 
     @Override
-    public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
+    public DatabaseEventHandler unregisterKernelEventHandler( DatabaseEventHandler handler )
     {
         return database.unregisterKernelEventHandler( handler );
     }

@@ -22,20 +22,20 @@ package org.neo4j.kernel.internal;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 
 /**
  * Handle the collection of kernel event handlers, and fire events as needed.
  */
-public class KernelEventHandlers extends LifecycleAdapter
+public class DatabaseEventHandlers extends LifecycleAdapter
 {
-    private final List<KernelEventHandler> kernelEventHandlers = new CopyOnWriteArrayList<>();
+    private final List<DatabaseEventHandler> databaseEventHandlers = new CopyOnWriteArrayList<>();
     private final Log log;
 
-    public KernelEventHandlers( Log log )
+    public DatabaseEventHandlers( Log log )
     {
         this.log = log;
     }
@@ -43,43 +43,43 @@ public class KernelEventHandlers extends LifecycleAdapter
     @Override
     public void shutdown()
     {
-        for ( KernelEventHandler kernelEventHandler : kernelEventHandlers )
+        for ( DatabaseEventHandler databaseEventHandler : databaseEventHandlers )
         {
-            kernelEventHandler.beforeShutdown();
+            databaseEventHandler.beforeShutdown();
         }
     }
 
-    public KernelEventHandler registerKernelEventHandler( KernelEventHandler handler )
+    public DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler )
     {
-        if ( this.kernelEventHandlers.contains( handler ) )
+        if ( this.databaseEventHandlers.contains( handler ) )
         {
             return handler;
         }
 
         // Some algo for putting it in the right place
-        for ( KernelEventHandler registeredHandler : this.kernelEventHandlers )
+        for ( DatabaseEventHandler registeredHandler : this.databaseEventHandlers )
         {
-            KernelEventHandler.ExecutionOrder order = handler.orderComparedTo( registeredHandler );
-            int index = this.kernelEventHandlers.indexOf( registeredHandler );
-            if ( order == KernelEventHandler.ExecutionOrder.BEFORE )
+            DatabaseEventHandler.ExecutionOrder order = handler.orderComparedTo( registeredHandler );
+            int index = this.databaseEventHandlers.indexOf( registeredHandler );
+            if ( order == DatabaseEventHandler.ExecutionOrder.BEFORE )
             {
-                this.kernelEventHandlers.add( index, handler );
+                this.databaseEventHandlers.add( index, handler );
                 return handler;
             }
-            else if ( order == KernelEventHandler.ExecutionOrder.AFTER )
+            else if ( order == DatabaseEventHandler.ExecutionOrder.AFTER )
             {
-                this.kernelEventHandlers.add( index + 1, handler );
+                this.databaseEventHandlers.add( index + 1, handler );
                 return handler;
             }
         }
 
-        this.kernelEventHandlers.add( handler );
+        this.databaseEventHandlers.add( handler );
         return handler;
     }
 
-    public KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler )
+    public DatabaseEventHandler unregisterDatabaseEventHandler( DatabaseEventHandler handler )
     {
-        if ( !kernelEventHandlers.remove( handler ) )
+        if ( !databaseEventHandlers.remove( handler ) )
         {
             throw new IllegalStateException( handler + " isn't registered" );
         }
@@ -88,11 +88,11 @@ public class KernelEventHandlers extends LifecycleAdapter
 
     public void kernelPanic( ErrorState error, Throwable cause )
     {
-        for ( KernelEventHandler handler : kernelEventHandlers )
+        for ( DatabaseEventHandler handler : databaseEventHandlers )
         {
             try
             {
-                handler.kernelPanic( error );
+                handler.panic( error );
             }
             catch ( Throwable e )
             {
@@ -100,7 +100,7 @@ public class KernelEventHandlers extends LifecycleAdapter
                 {
                     e.addSuppressed( cause );
                 }
-                log.error( "FATAL: Error while handling kernel panic.", e );
+                log.error( "FATAL: Error while handling database panic.", e );
             }
         }
     }

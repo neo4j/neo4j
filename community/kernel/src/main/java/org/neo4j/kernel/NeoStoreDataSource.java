@@ -132,8 +132,8 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -200,7 +200,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
     private final DatabaseAvailability databaseAvailability;
-    private final KernelEventHandlers eventHandlers;
+    private final DatabaseEventHandlers eventHandlers;
 
     private Dependencies dataSourceDependencies;
     private LifeSupport life;
@@ -800,7 +800,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return tokenHolders;
     }
 
-    public KernelEventHandlers getEventHandlers()
+    public DatabaseEventHandlers getEventHandlers()
     {
         return eventHandlers;
     }

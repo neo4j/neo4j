@@ -26,8 +26,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -55,30 +54,12 @@ public class TestShutdownSequence
     public void eventHandlersAreOnlyInvokedOnceDuringShutdown()
     {
         final AtomicInteger counter = new AtomicInteger();
-        graphDb.registerKernelEventHandler( new KernelEventHandler()
+        graphDb.registerKernelEventHandler( new DatabaseEventHandlerAdapter()
         {
             @Override
             public void beforeShutdown()
             {
                 counter.incrementAndGet();
-            }
-
-            @Override
-            public Object getResource()
-            {
-                return null;
-            }
-
-            @Override
-            public void kernelPanic( ErrorState error )
-            {
-                // do nothing
-            }
-
-            @Override
-            public ExecutionOrder orderComparedTo( KernelEventHandler other )
-            {
-                return ExecutionOrder.DOESNT_MATTER;
             }
         } );
         graphDb.shutdown();
@@ -99,30 +80,12 @@ public class TestShutdownSequence
     @Test
     public void canInvokeShutdownFromShutdownHandler()
     {
-        graphDb.registerKernelEventHandler( new KernelEventHandler()
+        graphDb.registerKernelEventHandler( new DatabaseEventHandlerAdapter()
         {
             @Override
             public void beforeShutdown()
             {
                 graphDb.shutdown();
-            }
-
-            @Override
-            public Object getResource()
-            {
-                return null;
-            }
-
-            @Override
-            public void kernelPanic( ErrorState error )
-            {
-                // do nothing
-            }
-
-            @Override
-            public ExecutionOrder orderComparedTo( KernelEventHandler other )
-            {
-                return ExecutionOrder.DOESNT_MATTER;
             }
         } );
         graphDb.shutdown();

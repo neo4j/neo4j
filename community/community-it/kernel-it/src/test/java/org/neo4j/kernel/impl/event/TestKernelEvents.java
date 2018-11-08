@@ -19,76 +19,58 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.DatabaseEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
 import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class TestKernelEvents
+@ExtendWith( TestDirectoryExtension.class )
+class TestKernelEvents
 {
-    private static final String PATH = "target/var/neodb";
-
+    @Inject
+    private TestDirectory testDirectory;
     private static final Object RESOURCE1 = new Object();
     private static final Object RESOURCE2 = new Object();
 
-    @BeforeClass
-    public static void doBefore()
-    {
-        deleteFileOrDirectory( PATH );
-    }
-
     @Test
-    public void testRegisterUnregisterHandlers()
+    void testRegisterUnregisterHandlers()
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        KernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
+        DatabaseEventHandler handler1 = new DummyDatabaseEventHandler( RESOURCE1 )
         {
             @Override
-            public ExecutionOrder orderComparedTo( KernelEventHandler other )
+            public ExecutionOrder orderComparedTo( DatabaseEventHandler other )
             {
                 return ExecutionOrder.DOESNT_MATTER;
             }
         };
-        KernelEventHandler handler2 = new DummyKernelEventHandler( RESOURCE2 )
+        DatabaseEventHandler handler2 = new DummyDatabaseEventHandler( RESOURCE2 )
         {
             @Override
-            public ExecutionOrder orderComparedTo( KernelEventHandler other )
+            public ExecutionOrder orderComparedTo( DatabaseEventHandler other )
             {
                 return ExecutionOrder.DOESNT_MATTER;
             }
         };
 
-        try
-        {
-            graphDb.unregisterKernelEventHandler( handler1 );
-            fail( "Shouldn't be able to do unregister on a "
-                  + "unregistered handler" );
-        }
-        catch ( IllegalStateException e )
-        { /* Good */
-        }
+        assertThrows( IllegalStateException.class, () -> graphDb.unregisterKernelEventHandler( handler1 ) );
 
         assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
         assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
         assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
 
-        try
-        {
-            graphDb.unregisterKernelEventHandler( handler1 );
-            fail( "Shouldn't be able to do unregister on a "
-                  + "unregistered handler" );
-        }
-        catch ( IllegalStateException e )
-        { /* Good */
-        }
+        assertThrows( IllegalStateException.class, () -> graphDb.unregisterKernelEventHandler( handler1 ) );
 
         assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
         assertSame( handler2, graphDb.registerKernelEventHandler( handler2 ) );
@@ -99,27 +81,27 @@ public class TestKernelEvents
     }
 
     @Test
-    public void testShutdownEvents()
+    void testShutdownEvents()
     {
         GraphDatabaseService graphDb = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        DummyKernelEventHandler handler1 = new DummyKernelEventHandler( RESOURCE1 )
+        DummyDatabaseEventHandler handler1 = new DummyDatabaseEventHandler( RESOURCE1 )
         {
             @Override
-            public ExecutionOrder orderComparedTo( KernelEventHandler other )
+            public ExecutionOrder orderComparedTo( DatabaseEventHandler other )
             {
-                if ( ((DummyKernelEventHandler) other).resource == RESOURCE2 )
+                if ( ((DummyDatabaseEventHandler) other).resource == RESOURCE2 )
                 {
                     return ExecutionOrder.AFTER;
                 }
                 return ExecutionOrder.DOESNT_MATTER;
             }
         };
-        DummyKernelEventHandler handler2 = new DummyKernelEventHandler( RESOURCE1 )
+        DummyDatabaseEventHandler handler2 = new DummyDatabaseEventHandler( RESOURCE1 )
         {
             @Override
-            public ExecutionOrder orderComparedTo( KernelEventHandler other )
+            public ExecutionOrder orderComparedTo( DatabaseEventHandler other )
             {
-                if ( ((DummyKernelEventHandler) other).resource == RESOURCE1 )
+                if ( ((DummyDatabaseEventHandler) other).resource == RESOURCE1 )
                 {
                     return ExecutionOrder.BEFORE;
                 }
@@ -131,18 +113,18 @@ public class TestKernelEvents
 
         graphDb.shutdown();
 
-        assertEquals( Integer.valueOf( 0 ), handler2.beforeShutdown );
-        assertEquals( Integer.valueOf( 1 ), handler1.beforeShutdown );
+        assertEquals( 0, handler2.beforeShutdown );
+        assertEquals( 1, handler1.beforeShutdown );
     }
 
-    private abstract static class DummyKernelEventHandler implements KernelEventHandler
+    private abstract static class DummyDatabaseEventHandler extends DatabaseEventHandlerAdapter
     {
         private static int counter;
-        private Integer beforeShutdown;
-        private Integer kernelPanic;
+        private int beforeShutdown;
+        private int kernelPanic;
         private final Object resource;
 
-        DummyKernelEventHandler( Object resource )
+        DummyDatabaseEventHandler( Object resource )
         {
             this.resource = resource;
         }
@@ -160,7 +142,7 @@ public class TestKernelEvents
         }
 
         @Override
-        public void kernelPanic( ErrorState error )
+        public void panic( ErrorState error )
         {
             kernelPanic = counter++;
         }

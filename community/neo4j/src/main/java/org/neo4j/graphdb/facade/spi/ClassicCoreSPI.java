@@ -23,7 +23,7 @@ import java.net.URL;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
@@ -103,15 +103,15 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public void registerKernelEventHandler( KernelEventHandler handler )
+    public void registerKernelEventHandler( DatabaseEventHandler handler )
     {
-        dataSource.neoStoreDataSource.getEventHandlers().registerKernelEventHandler( handler );
+        dataSource.neoStoreDataSource.getEventHandlers().registerDatabaseEventHandler( handler );
     }
 
     @Override
-    public void unregisterKernelEventHandler( KernelEventHandler handler )
+    public void unregisterKernelEventHandler( DatabaseEventHandler handler )
     {
-        dataSource.neoStoreDataSource.getEventHandlers().unregisterKernelEventHandler( handler );
+        dataSource.neoStoreDataSource.getEventHandlers().unregisterDatabaseEventHandler( handler );
     }
 
     @Override

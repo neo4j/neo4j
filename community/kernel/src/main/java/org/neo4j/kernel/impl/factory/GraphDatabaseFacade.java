@@ -45,7 +45,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.StringSearchMode;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
@@ -178,9 +178,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
 
         AutoIndexing autoIndexing();
 
-        void registerKernelEventHandler( KernelEventHandler handler );
+        void registerKernelEventHandler( DatabaseEventHandler handler );
 
-        void unregisterKernelEventHandler( KernelEventHandler handler );
+        void unregisterKernelEventHandler( DatabaseEventHandler handler );
 
         <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler );
 
@@ -553,8 +553,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public KernelEventHandler registerKernelEventHandler(
-            KernelEventHandler handler )
+    public DatabaseEventHandler registerKernelEventHandler(
+            DatabaseEventHandler handler )
     {
         spi.registerKernelEventHandler( handler );
         return handler;
@@ -569,8 +569,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public KernelEventHandler unregisterKernelEventHandler(
-            KernelEventHandler handler )
+    public DatabaseEventHandler unregisterKernelEventHandler(
+            DatabaseEventHandler handler )
     {
         spi.unregisterKernelEventHandler( handler );
         return handler;

@@ -44,8 +44,8 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
@@ -120,7 +120,7 @@ public class BatchingTransactionAppenderRotationIT
     private static DatabaseHealth getDatabaseHealth()
     {
         DatabasePanicEventGenerator databasePanicEventGenerator =
-                new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) );
+                new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) );
         return new DatabaseHealth( databasePanicEventGenerator, NullLog.getInstance() );
     }
 

@@ -22,10 +22,9 @@ package org.neo4j.graphdb.event;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 /**
- * Event handler interface for Neo4j Kernel life cycle events.
- *
+ * Event handler interface for Neo4j database life cycle events.
  */
-public interface KernelEventHandler
+public interface DatabaseEventHandler
 {
     /**
      * This method is invoked during the shutdown process of a Neo4j Graph
@@ -43,14 +42,14 @@ public interface KernelEventHandler
      * @param error an object describing the state that the
      *            {@link GraphDatabaseService} failed to recover from.
      */
-    void kernelPanic( ErrorState error );
+    void panic( ErrorState error );
 
     /**
      * Returns the resource associated with this event handler, or {@code null}
      * if no specific resource is associated with this handler or if it isn't
      * desirable to expose it. It can be used to aid in the decision process
      * of in which order to execute the handlers, see
-     * {@link #orderComparedTo(KernelEventHandler)}.
+     * {@link #orderComparedTo(DatabaseEventHandler)}.
      *
      * @return the resource associated to this event handler, or {@code null}.
      */
@@ -67,7 +66,7 @@ public interface KernelEventHandler
      * @param other the other event handler to compare to.
      * @return the execution order compared to {@code other}.
      */
-    ExecutionOrder orderComparedTo( KernelEventHandler other );
+    ExecutionOrder orderComparedTo( DatabaseEventHandler other );
 
     /**
      * Represents the order of execution between two event handlers, if one

@@ -55,8 +55,8 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
@@ -139,7 +139,7 @@ public class RecordStorageEngineRule extends ExternalResource
         private final FileSystemAbstraction fs;
         private final PageCache pageCache;
         private DatabaseHealth databaseHealth = new DatabaseHealth(
-                new DatabasePanicEventGenerator( new KernelEventHandlers( NullLog.getInstance() ) ),
+                new DatabasePanicEventGenerator( new DatabaseEventHandlers( NullLog.getInstance() ) ),
                 NullLog.getInstance() );
         private final DatabaseLayout databaseLayout;
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =

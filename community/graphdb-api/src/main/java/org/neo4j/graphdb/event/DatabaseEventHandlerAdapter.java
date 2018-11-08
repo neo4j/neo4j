@@ -17,22 +17,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.graphdb.event;
 
-import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.kernel.internal.DatabaseEventHandlers;
-
-public class DatabasePanicEventGenerator
+/**
+ * Adapter for event handler interface for Neo4j database life cycle events.
+ */
+public class DatabaseEventHandlerAdapter implements DatabaseEventHandler
 {
-    private final DatabaseEventHandlers databaseEventHandlers;
-
-    public DatabasePanicEventGenerator( DatabaseEventHandlers databaseEventHandlers )
+    @Override
+    public void beforeShutdown()
     {
-        this.databaseEventHandlers = databaseEventHandlers;
     }
 
-    public void generateEvent( final ErrorState error, final Throwable cause )
+    @Override
+    public void panic( ErrorState error )
     {
-        databaseEventHandlers.kernelPanic( error, cause );
+
+    }
+
+    @Override
+    public Object getResource()
+    {
+        return null;
+    }
+
+    @Override
+    public ExecutionOrder orderComparedTo( DatabaseEventHandler other )
+    {
+        return ExecutionOrder.DOESNT_MATTER;
     }
 }

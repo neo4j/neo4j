@@ -26,8 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.event.ErrorState;
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -72,7 +71,7 @@ class DatabaseShutdownTest
     void invokeKernelEventHandlersBeforeShutdown()
     {
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
-        ShutdownListenerKernelEventHandler shutdownHandler = new ShutdownListenerKernelEventHandler();
+        ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
         database.registerKernelEventHandler( shutdownHandler );
         database.shutdown();
 
@@ -123,7 +122,7 @@ class DatabaseShutdownTest
         }
     }
 
-    private static class ShutdownListenerKernelEventHandler implements KernelEventHandler
+    private static class ShutdownListenerDatabaseEventHandler extends DatabaseEventHandlerAdapter
     {
         private volatile boolean shutdownInvoked;
 
@@ -133,25 +132,7 @@ class DatabaseShutdownTest
             shutdownInvoked = true;
         }
 
-        @Override
-        public void kernelPanic( ErrorState error )
-        {
-
-        }
-
-        @Override
-        public Object getResource()
-        {
-            return null;
-        }
-
-        @Override
-        public ExecutionOrder orderComparedTo( KernelEventHandler other )
-        {
-            return null;
-        }
-
-        public boolean isShutdownInvoked()
+        boolean isShutdownInvoked()
         {
             return shutdownInvoked;
         }

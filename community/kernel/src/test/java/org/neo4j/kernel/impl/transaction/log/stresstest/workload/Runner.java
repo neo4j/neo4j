@@ -41,8 +41,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
@@ -107,8 +107,8 @@ public class Runner implements Callable<Long>
             TransactionMetadataCache transactionMetadataCache, LogFiles logFiles )
     {
         Log log = NullLog.getInstance();
-        KernelEventHandlers kernelEventHandlers = new KernelEventHandlers( log );
-        DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( kernelEventHandlers );
+        DatabaseEventHandlers databaseEventHandlers = new DatabaseEventHandlers( log );
+        DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( databaseEventHandlers );
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, log );
         LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFiles, databaseHealth );
         return new BatchingTransactionAppender( logFiles, logRotation,

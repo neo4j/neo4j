@@ -83,8 +83,8 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -230,7 +230,7 @@ public final class Recovery
 
         SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue();
 
-        DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( new KernelEventHandlers( recoveryLog ) );
+        DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( new DatabaseEventHandlers( recoveryLog ) );
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, recoveryLog );
 
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),

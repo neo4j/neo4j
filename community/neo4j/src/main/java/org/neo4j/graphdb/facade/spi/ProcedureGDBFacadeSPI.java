@@ -24,7 +24,7 @@ import java.net.URL;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
@@ -119,13 +119,13 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public void registerKernelEventHandler( KernelEventHandler handler )
+    public void registerKernelEventHandler( DatabaseEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void unregisterKernelEventHandler( KernelEventHandler handler )
+    public void unregisterKernelEventHandler( DatabaseEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }

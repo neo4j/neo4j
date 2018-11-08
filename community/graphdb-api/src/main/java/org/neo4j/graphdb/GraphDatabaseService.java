@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.graphdb.event.KernelEventHandler;
+import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
@@ -483,12 +483,12 @@ public interface GraphDatabaseService
      *                in the kernel lifecycle.
      * @return the handler passed in as the argument.
      */
-    KernelEventHandler registerKernelEventHandler( KernelEventHandler handler );
+    DatabaseEventHandler registerKernelEventHandler( DatabaseEventHandler handler );
 
     /**
      * Unregisters {@code handler} from the list of kernel event handlers.
      * If {@code handler} hasn't been registered with
-     * {@link #registerKernelEventHandler(KernelEventHandler)} prior to calling
+     * {@link #registerKernelEventHandler(DatabaseEventHandler)} prior to calling
      * this method an {@link IllegalStateException} will be thrown.
      * After a successful call to this method the {@code handler} will no
      * longer receive any kernel events.
@@ -499,7 +499,7 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if {@code handler} wasn't registered prior
      *                               to calling this method.
      */
-    KernelEventHandler unregisterKernelEventHandler( KernelEventHandler handler );
+    DatabaseEventHandler unregisterKernelEventHandler( DatabaseEventHandler handler );
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,
