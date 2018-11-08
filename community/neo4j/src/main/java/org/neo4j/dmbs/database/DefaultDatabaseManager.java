@@ -66,7 +66,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         DataSourceModule dataSource = new DataSourceModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
         ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, log, dataSource.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
         graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, dataSource.neoStoreDataSource.getTokenHolders() );
-        platform.dataSourceManager.register( dataSource.neoStoreDataSource );
+        platform.dataSourceManager.register( databaseName, dataSource.neoStoreDataSource );
         database = graphDatabaseFacade;
         return database;
     }

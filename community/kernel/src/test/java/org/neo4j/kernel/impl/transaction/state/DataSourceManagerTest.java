@@ -22,11 +22,13 @@ package org.neo4j.kernel.impl.transaction.state;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,9 +41,10 @@ import static org.mockito.Mockito.when;
 @ExtendWith( TestDirectoryExtension.class )
 class DataSourceManagerTest
 {
-
     @Inject
     private TestDirectory testDirectory;
+
+    private final String databaseName = GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
     @Test
     void shouldCallListenersOnStart()
@@ -49,7 +52,7 @@ class DataSourceManagerTest
         // given
         DataSourceManager manager = createDataSourceManager();
         DataSourceManager.Listener listener = mock( DataSourceManager.Listener.class );
-        manager.register( mock( NeoStoreDataSource.class ) );
+        manager.register( databaseName, mock( NeoStoreDataSource.class ) );
         manager.addListener( listener );
 
         // when
@@ -65,7 +68,7 @@ class DataSourceManagerTest
         // given
         DataSourceManager manager = createDataSourceManager();
         DataSourceManager.Listener listener = mock( DataSourceManager.Listener.class );
-        manager.register( mock( NeoStoreDataSource.class ) );
+        manager.register( databaseName, mock( NeoStoreDataSource.class ) );
         manager.start();
 
         // when
@@ -85,7 +88,7 @@ class DataSourceManagerTest
         manager.start();
 
         // when
-        manager.register( mock( NeoStoreDataSource.class ) );
+        manager.register( databaseName, mock( NeoStoreDataSource.class ) );
 
         // then
         verify( listener ).registered( any( NeoStoreDataSource.class ) );
@@ -97,7 +100,7 @@ class DataSourceManagerTest
         // given
         DataSourceManager manager = createDataSourceManager();
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        manager.register( dataSource );
+        manager.register( databaseName, dataSource );
         manager.init();
 
         // when
@@ -117,8 +120,8 @@ class DataSourceManagerTest
         NeoStoreDataSource dataSource2 = mock( NeoStoreDataSource.class );
         when( dataSource1.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
         when( dataSource2.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout( "somethingElse" ) );
-        manager.register( dataSource1 );
-        manager.register( dataSource2 );
+        manager.register( "graph.db", dataSource1 );
+        manager.register( "other.db", dataSource2 );
 
         assertEquals(dataSource1, manager.getDataSource() );
     }
@@ -132,6 +135,6 @@ class DataSourceManagerTest
 
     private static DataSourceManager createDataSourceManager()
     {
-        return new DataSourceManager( Config.defaults() );
+        return new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
     }
 }

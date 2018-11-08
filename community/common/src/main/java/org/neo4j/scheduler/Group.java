@@ -76,6 +76,7 @@ public enum Group
     AKKA_TOPOLOGY_WORKER( "AkkaTopologyWorkers", ExecutorServiceFactory.workStealing() ),
     MEMBERSHIP_WAITER( "MembershipWaiter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
+    CATCHUP( "Catchup" ),
 
     // HA.
     /** Push transactions from master to slaves */

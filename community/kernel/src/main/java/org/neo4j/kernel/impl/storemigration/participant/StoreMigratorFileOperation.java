@@ -29,7 +29,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.FileOperation;
 
-import static org.neo4j.stream.Streams.ofOptional;
+import static org.neo4j.helpers.collection.Streams.ofOptional;
 
 class StoreMigratorFileOperation
 {

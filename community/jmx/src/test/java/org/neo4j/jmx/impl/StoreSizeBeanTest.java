@@ -31,6 +31,7 @@ import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.io.fs.StoreChannel;
@@ -55,6 +56,7 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.logging.NullLogProvider;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -85,7 +87,7 @@ class StoreSizeBeanTest
 
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );
-        DataSourceManager dataSourceManager = new DataSourceManager( config );
+        DataSourceManager dataSourceManager = new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
         NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
 
@@ -107,7 +109,7 @@ class StoreSizeBeanTest
         when( dataSource.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
 
         // Start DataSourceManager
-        dataSourceManager.register( dataSource );
+        dataSourceManager.register( GraphDatabaseSettings.DEFAULT_DATABASE_NAME, dataSource );
         dataSourceManager.start();
 
         // Create bean

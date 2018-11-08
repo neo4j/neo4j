@@ -32,7 +32,7 @@ import static org.neo4j.internal.kernel.api.TokenRead.NO_TOKEN;
 
 public abstract class AbstractTokenHolderBase implements TokenHolder
 {
-    protected final TokenRegistry tokenRegistry;
+    final TokenRegistry tokenRegistry;
 
     public AbstractTokenHolderBase( TokenRegistry tokenRegistry )
     {

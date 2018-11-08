@@ -311,7 +311,7 @@ class DatabaseAvailabilityGuardTest
         databaseAvailabilityGuard.require( REQUIREMENT_2 );
 
         // Then
-        assertThat( databaseAvailabilityGuard.describeWhoIsBlocking(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
+        assertThat( databaseAvailabilityGuard.describe(), equalTo( "2 reasons for blocking: Requirement 1, Requirement 2." ) );
     }
 
     @Test

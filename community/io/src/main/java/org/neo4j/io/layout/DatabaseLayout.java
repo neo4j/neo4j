@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.stream.Streams;
+import org.neo4j.helpers.collection.Streams;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 

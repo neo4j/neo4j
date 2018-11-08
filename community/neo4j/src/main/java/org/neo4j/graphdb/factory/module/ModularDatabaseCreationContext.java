@@ -24,7 +24,7 @@ import java.util.function.Function;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -119,7 +119,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseLayout databaseLayout;
     private final DatabaseAvailability databaseAvailability;
 
-    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, DatabaseEditionContext editionContext,
+    ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
             Procedures procedures, GraphDatabaseFacade facade )
     {
         this.databaseName = databaseName;
@@ -131,17 +131,17 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.logService = platformModule.logging;
         this.scheduler = platformModule.jobScheduler;
         this.globalDependencies =  platformModule.dependencies;
-        this.tokenHolders = editionContext.createTokenHolders();
+        this.tokenHolders = editionContext.getTokenHolders();
         this.tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        this.locks = editionContext.createLocks();
-        this.statementLocksFactory = editionContext.createStatementLocksFactory();
+        this.locks = editionContext.getLocks();
+        this.statementLocksFactory = editionContext.getStatementLocksFactory();
         this.schemaWriteGuard = editionContext.getSchemaWriteGuard();
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
         this.monitors = new Monitors( platformModule.monitors );
         this.indexingServiceMonitor = monitors.newMonitor( IndexingService.Monitor.class );
         this.physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
         this.fs = platformModule.fileSystem;
-        this.transactionStats = editionContext.createTransactionMonitor();
+        this.transactionStats = editionContext.getTransactionMonitor();
         this.databaseHealth = new DatabaseHealth( platformModule.panicEventGenerator, logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
         this.commitProcessFactory = editionContext.getCommitProcessFactory();

@@ -91,4 +91,9 @@ public interface AvailabilityGuard
      * @param listener the listener to remove
      */
     void removeListener( AvailabilityListener listener );
+
+    /**
+     * @return a textual representation of what components, if any, are blocking
+     */
+    String describe();
 }

@@ -38,20 +38,20 @@ import static org.neo4j.kernel.recovery.RecoveryStartInformationProvider.NO_MONI
 /**
  * Utility that can determine if a given store will need recovery.
  */
-class RecoveryRequiredChecker
+public class RecoveryRequiredChecker
 {
     private final FileSystemAbstraction fs;
     private final PageCache pageCache;
     private final Config config;
 
-    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
+    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
     {
         this.fs = fs;
         this.pageCache = pageCache;
         this.config = config;
     }
 
-    boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
+    public boolean isRecoveryRequiredAt( DatabaseLayout databaseLayout ) throws IOException
     {
         LogTailScanner tailScanner = getLogTailScanner( databaseLayout );
         return isRecoveryRequiredAt( databaseLayout, tailScanner );

@@ -34,6 +34,7 @@ import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 import org.neo4j.ext.udc.UdcConstants;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.NeoStoreDataSource;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -73,7 +75,7 @@ class DefaultUdcInformationCollectorTest
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
 
-    private final DataSourceManager dataSourceManager = new DataSourceManager( Config.defaults() );
+    private final DataSourceManager dataSourceManager = new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
     private final NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
     private final DefaultFileSystemAbstraction fileSystem = mock( DefaultFileSystemAbstraction.class );
@@ -89,7 +91,7 @@ class DefaultUdcInformationCollectorTest
         when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
 
         dataSourceManager.start();
-        dataSourceManager.register( dataSource );
+        dataSourceManager.register( GraphDatabaseSettings.DEFAULT_DATABASE_NAME, dataSource );
     }
 
     @Test

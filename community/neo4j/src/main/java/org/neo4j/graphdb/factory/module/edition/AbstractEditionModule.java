@@ -29,7 +29,7 @@ import org.neo4j.dmbs.database.DefaultDatabaseManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
-import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
+import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.helpers.Service;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -83,7 +83,7 @@ public abstract class AbstractEditionModule
     protected AvailabilityGuard globalAvailabilityGuard;
     protected SecurityProvider securityProvider;
 
-    public abstract DatabaseEditionContext createDatabaseContext( String databaseName );
+    public abstract EditionDatabaseContext createDatabaseContext( String databaseName );
 
     protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
             LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )

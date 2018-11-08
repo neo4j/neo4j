@@ -142,7 +142,7 @@ public class PlatformModule
             GraphDatabaseFacadeFactory.Dependencies externalDependencies )
     {
         this.databaseInfo = databaseInfo;
-        this.dataSourceManager = new DataSourceManager( config );
+
         dependencies = new Dependencies();
         dependencies.satisfyDependency( databaseInfo );
 
@@ -173,6 +173,8 @@ public class PlatformModule
         logging = dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
 
         config.setLogger( logging.getInternalLog( Config.class ) );
+
+        this.dataSourceManager = new DataSourceManager( logging.getInternalLogProvider(), config );
 
         life.add( dependencies
                 .satisfyDependency( new StoreLockerLifecycleAdapter( createStoreLocker() ) ) );
