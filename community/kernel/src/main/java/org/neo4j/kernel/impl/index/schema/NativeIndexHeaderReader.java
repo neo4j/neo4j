@@ -59,8 +59,9 @@ class NativeIndexHeaderReader implements Header.Reader
         catch ( BufferUnderflowException e )
         {
             state = BYTE_FAILED;
-            failureMessage = format( "Initial state byte is missing. Index was never fully constructed and need to be recreated. Stacktrace:%n%s",
-                    ExceptionUtils.getStackTrace( e ) );
+            failureMessage =
+                    format( "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:%n%s",
+                            ExceptionUtils.getStackTrace( e ) );
         }
     }
 
