@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.Race;
@@ -60,7 +58,6 @@ class KernelAPIParallelStress
             for ( int i = 0; i < nThreads; i++ )
             {
                 final RESOURCE resource = resourceSupplier.apply( tx );
-                final RelationshipTraversalCursor traversalCursor = tx.cursors().allocateRelationshipTraversalCursor();
 
                 race.addContestant( runnable.apply( tx.dataRead(), resource ) );
 

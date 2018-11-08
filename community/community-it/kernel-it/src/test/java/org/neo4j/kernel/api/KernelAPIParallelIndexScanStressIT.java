@@ -38,7 +38,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 
@@ -74,7 +74,7 @@ public class KernelAPIParallelIndexScanStressIT
 
         try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
         {
-            db.schema().awaitIndexesOnline( 30, SECONDS );
+            db.schema().awaitIndexesOnline( 10, MINUTES );
             tx.success();
         }
 
