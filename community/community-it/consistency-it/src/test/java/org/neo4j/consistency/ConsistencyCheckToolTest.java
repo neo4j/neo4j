@@ -56,7 +56,6 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -208,7 +207,7 @@ public class ConsistencyCheckToolTest
         {
             // then
             assertThat( e.getMessage(), containsString( "Could not read configuration file" ) );
-            assertThat( e.getCause(), instanceOf( IOException.class ) );
+            assertThat( e.getCause().getMessage(), containsString( "does not exist" ) );
         }
 
         verifyZeroInteractions( service );
@@ -228,7 +227,7 @@ public class ConsistencyCheckToolTest
         File customConfigFile = testDirectory.file( "customConfig" );
         Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
         createGraphDbAndKillIt( customConfig );
-        MapUtil.store( customConfig.getRaw(), customConfigFile );
+        MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
         String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
         runConsistencyCheckToolWith( fs.get(), args );
