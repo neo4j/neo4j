@@ -717,7 +717,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-shade-plugin</artifactId>
-          <version>3.1.1</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -779,7 +779,7 @@
           <dependency>
             <groupId>com.puppycrawl.tools</groupId>
             <artifactId>checkstyle</artifactId>
-            <version>8.13</version>
+            <version>8.14</version>
           </dependency>
           <dependency>
             <groupId>org.neo4j.build</groupId>
@@ -1058,7 +1058,7 @@
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava-testlib</artifactId>
-        <version>26.0-jre</version>
+        <version>27.0-jre</version>
         <scope>test</scope>
       </dependency>
 
@@ -1275,12 +1275,12 @@
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
-        <version>3.8</version>
+        <version>3.8.1</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-text</artifactId>
-        <version>1.4</version>
+        <version>1.6</version>
       </dependency>
       <dependency>
         <groupId>org.apache.commons</groupId>
@@ -1418,7 +1418,7 @@
       <dependency>
         <groupId>org.jprocesses</groupId>
         <artifactId>jProcesses</artifactId>
-        <version>1.6.4</version>
+        <version>1.6.5</version>
       </dependency>
 
       <dependency>

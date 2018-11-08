@@ -139,7 +139,7 @@ the relevant Commercial Agreement.
         -->
         <groupId>org.pitest</groupId>
         <artifactId>pitest-maven</artifactId>
-        <version>1.0.0</version>
+        <version>1.4.3</version>
         <configuration>
           <targetTests>
             <param>org.neo4j.io.pagecache.*</param>
