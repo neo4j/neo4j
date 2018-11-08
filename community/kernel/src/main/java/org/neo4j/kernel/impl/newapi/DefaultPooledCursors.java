@@ -19,23 +19,15 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
-import org.neo4j.internal.kernel.api.AutoCloseablePlus;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.storageengine.api.StorageReader;
-
-import static java.lang.String.format;
-import static org.neo4j.util.FeatureToggles.flag;
 
 /**
  * Cursor factory which pools 1 cursor of each kind. Not thread-safe at all.
  */
-public class DefaultPooledCursors implements CursorFactory
+public class DefaultPooledCursors extends DefaultCursors implements CursorFactory
 {
     private final StorageReader storageReader;
     private DefaultNodeCursor nodeCursor;
@@ -48,11 +40,9 @@ public class DefaultPooledCursors implements CursorFactory
     private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
     private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
-    private static final boolean DEBUG_CLOSING = flag( DefaultPooledCursors.class, "trackCursors", false );
-    private List<CloseableStacktrace> closeables = new ArrayList<>();
-
     public DefaultPooledCursors( StorageReader storageReader )
     {
+        super( new ArrayList<>() );
         this.storageReader = storageReader;
     }
 
@@ -346,56 +336,6 @@ public class DefaultPooledCursors implements CursorFactory
         {
             relationshipExplicitIndexCursor.release();
             relationshipExplicitIndexCursor = null;
-        }
-    }
-
-    private <T extends AutoCloseablePlus> T trace( T closeable )
-    {
-        if ( DEBUG_CLOSING )
-        {
-            StackTraceElement[] stackTrace = Thread.currentThread().getStackTrace();
-            closeables.add( new CloseableStacktrace( closeable, Arrays.copyOfRange( stackTrace, 2, stackTrace.length ) ) );
-        }
-        return closeable;
-    }
-
-    void assertClosed()
-    {
-        if ( DEBUG_CLOSING )
-        {
-            for ( CloseableStacktrace c : closeables )
-            {
-                c.assertClosed();
-            }
-            closeables.clear();
-        }
-    }
-
-    static class CloseableStacktrace
-    {
-        private final AutoCloseablePlus c;
-        private final StackTraceElement[] stackTrace;
-
-        CloseableStacktrace( AutoCloseablePlus c, StackTraceElement[] stackTrace )
-        {
-            this.c = c;
-            this.stackTrace = stackTrace;
-        }
-
-        void assertClosed()
-        {
-            if ( !c.isClosed() )
-            {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                PrintStream printStream = new PrintStream( out );
-
-                for ( StackTraceElement traceElement : stackTrace )
-                {
-                    printStream.println( "\tat " + traceElement );
-                }
-                printStream.println();
-                throw new IllegalStateException( format( "Closeable %s was not closed!\n%s", c, out.toString() ) );
-            }
         }
     }
 }

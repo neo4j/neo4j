@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.internal.kernel.api.{CursorFactory, NodeCursor, PropertyCursor, RelationshipScanCursor}
+import org.neo4j.io.IOUtils
 
 /**
   * Cursors which are used during expression evaluation. These are expected to be used within one
@@ -33,8 +34,6 @@ class ExpressionCursors(cursorFactory: CursorFactory) extends AutoCloseable {
   val propertyCursor: PropertyCursor = cursorFactory.allocatePropertyCursor()
 
   override def close(): Unit = {
-    nodeCursor.close()
-    relationshipScanCursor.close()
-    propertyCursor.close()
+    IOUtils.closeAll(nodeCursor, relationshipScanCursor, propertyCursor)
   }
 }

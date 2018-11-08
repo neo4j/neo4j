@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import org.eclipse.collections.impl.factory.Lists;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
@@ -34,73 +38,83 @@ import org.neo4j.storageengine.api.StorageReader;
 /**
  * Cursor factory which simply creates new instances on allocation. As thread-safe as the underlying {@link StorageReader}.
  */
-public class DefaultThreadSafeCursors implements CursorFactory
+public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFactory
 {
     private final StorageReader storageReader;
 
     public DefaultThreadSafeCursors( StorageReader storageReader )
     {
+        super( new ConcurrentLinkedQueue<>() );
         this.storageReader = storageReader;
     }
 
     @Override
     public NodeCursor allocateNodeCursor()
     {
-        return new DefaultNodeCursor( DefaultNodeCursor::release, storageReader.allocateNodeCursor() );
+        return trace( new DefaultNodeCursor(
+                DefaultNodeCursor::release, storageReader.allocateNodeCursor() ) );
     }
 
     @Override
     public RelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new DefaultRelationshipScanCursor( DefaultRelationshipScanCursor::release, storageReader.allocateRelationshipScanCursor() );
+        return trace( new DefaultRelationshipScanCursor(
+                DefaultRelationshipScanCursor::release, storageReader.allocateRelationshipScanCursor() ) );
     }
 
     @Override
     public RelationshipTraversalCursor allocateRelationshipTraversalCursor()
     {
-        return new DefaultRelationshipTraversalCursor( DefaultRelationshipTraversalCursor::release, storageReader.allocateRelationshipTraversalCursor() );
+        return trace( new DefaultRelationshipTraversalCursor(
+                DefaultRelationshipTraversalCursor::release, storageReader.allocateRelationshipTraversalCursor() ) );
     }
 
     @Override
     public PropertyCursor allocatePropertyCursor()
     {
-        return new DefaultPropertyCursor( DefaultPropertyCursor::release, storageReader.allocatePropertyCursor() );
+        return trace( new DefaultPropertyCursor(
+                DefaultPropertyCursor::release, storageReader.allocatePropertyCursor() ) );
     }
 
     @Override
     public RelationshipGroupCursor allocateRelationshipGroupCursor()
     {
-        return new DefaultRelationshipGroupCursor( DefaultRelationshipGroupCursor::release, storageReader.allocateRelationshipGroupCursor() );
+        return trace( new DefaultRelationshipGroupCursor(
+                DefaultRelationshipGroupCursor::release, storageReader.allocateRelationshipGroupCursor() ) );
     }
 
     @Override
     public NodeValueIndexCursor allocateNodeValueIndexCursor()
     {
-        return new DefaultNodeValueIndexCursor( DefaultNodeValueIndexCursor::release );
+        return trace( new DefaultNodeValueIndexCursor(
+                DefaultNodeValueIndexCursor::release ) );
     }
 
     @Override
     public NodeLabelIndexCursor allocateNodeLabelIndexCursor()
     {
-        return new DefaultNodeLabelIndexCursor( DefaultNodeLabelIndexCursor::release );
+        return trace( new DefaultNodeLabelIndexCursor(
+                DefaultNodeLabelIndexCursor::release ) );
     }
 
     @Override
     public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
     {
-        return new DefaultNodeExplicitIndexCursor( DefaultNodeExplicitIndexCursor::release );
+        return trace( new DefaultNodeExplicitIndexCursor(
+                DefaultNodeExplicitIndexCursor::release ) );
     }
 
     @Override
     public RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
     {
-        return new DefaultRelationshipExplicitIndexCursor(
+        return trace( new DefaultRelationshipExplicitIndexCursor(
                 new DefaultRelationshipScanCursor( null, storageReader.allocateRelationshipScanCursor() ),
-                DefaultRelationshipExplicitIndexCursor::release );
+                DefaultRelationshipExplicitIndexCursor::release ) );
     }
 
     public void close()
     {
+        assertClosed();
         storageReader.close();
     }
 }
