@@ -45,7 +45,7 @@ class SecurityModuleDependenciesDependencies implements SecurityModule.Dependenc
     @Override
     public LogService logService()
     {
-        return platformModule.logging;
+        return platformModule.logService;
     }
 
     @Override

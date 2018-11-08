@@ -42,7 +42,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
-import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
@@ -61,7 +60,6 @@ import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.info.SystemDiagnostics;
-import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -99,7 +97,7 @@ public class PlatformModule
 
     public final org.neo4j.kernel.impl.util.Dependencies dependencies;
 
-    public final LogService logging;
+    public final LogService logService;
 
     public final LifeSupport life;
 
@@ -108,9 +106,6 @@ public class PlatformModule
     public final DatabaseInfo databaseInfo;
 
     public final DiagnosticsManager diagnosticsManager;
-
-    public final KernelEventHandlers eventHandlers;
-    public final DatabasePanicEventGenerator panicEventGenerator;
 
     public final Tracers tracers;
 
@@ -170,21 +165,21 @@ public class PlatformModule
 
         // If no logging was passed in from the outside then create logging and register
         // with this life
-        logging = dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
+        logService = dependencies.satisfyDependency( createLogService( externalDependencies.userLogProvider() ) );
 
-        config.setLogger( logging.getInternalLog( Config.class ) );
+        config.setLogger( logService.getInternalLog( Config.class ) );
 
-        this.dataSourceManager = new DataSourceManager( logging.getInternalLogProvider(), config );
+        this.dataSourceManager = new DataSourceManager( logService.getInternalLogProvider(), config );
 
         life.add( dependencies
                 .satisfyDependency( new StoreLockerLifecycleAdapter( createStoreLocker() ) ) );
 
-        new JvmChecker( logging.getInternalLog( JvmChecker.class ),
+        new JvmChecker( logService.getInternalLog( JvmChecker.class ),
                 new JvmMetadataRepository() ).checkJvmCompatibilityAndIssueWarning();
 
         String desiredImplementationName = config.get( GraphDatabaseSettings.tracer );
         tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName,
-                logging.getInternalLog( Tracers.class ), monitors, jobScheduler, clock ) );
+                logService.getInternalLog( Tracers.class ), monitors, jobScheduler, clock ) );
         dependencies.satisfyDependency( tracers.pageCacheTracer );
         dependencies.satisfyDependency( firstImplementor(
                 LogRotationMonitor.class, tracers.transactionTracer, LogRotationMonitor.NULL ) );
@@ -196,12 +191,12 @@ public class PlatformModule
         collectionsFactorySupplier = createCollectionsFactorySupplier( config, life );
 
         dependencies.satisfyDependency( versionContextSupplier );
-        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logging, tracers, versionContextSupplier, jobScheduler ) );
+        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logService, tracers, versionContextSupplier, jobScheduler ) );
 
         life.add( new PageCacheLifecycle( pageCache ) );
 
         diagnosticsManager = life.add( dependencies
-                .satisfyDependency( new DiagnosticsManager( logging.getInternalLog( DiagnosticsManager.class ) ) ) );
+                .satisfyDependency( new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) ) ) );
         SystemDiagnostics.registerWith( diagnosticsManager );
 
         dependencies.satisfyDependency( dataSourceManager );
@@ -216,9 +211,6 @@ public class PlatformModule
 
         connectorPortRegister = new ConnectorPortRegister();
         dependencies.satisfyDependency( connectorPortRegister );
-
-        eventHandlers = new KernelEventHandlers( logging.getInternalLog( KernelEventHandlers.class ) );
-        panicEventGenerator = new DatabasePanicEventGenerator( eventHandlers );
 
         publishPlatformInfo( dependencies.resolveDependency( UsageData.class ) );
     }

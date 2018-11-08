@@ -82,7 +82,7 @@ public class CommunityEditionModule extends DefaultEditionModule
     {
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;
-        LogService logging = platformModule.logging;
+        LogService logging = platformModule.logService;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
         DataSourceManager dataSourceManager = platformModule.dataSourceManager;
@@ -230,7 +230,7 @@ public class CommunityEditionModule extends DefaultEditionModule
         if ( platformModule.config.get( GraphDatabaseSettings.auth_enabled ) )
         {
             SecurityModule securityModule = setupSecurityModule( platformModule, this,
-                    platformModule.logging.getUserLog( getClass() ),
+                    platformModule.logService.getUserLog( getClass() ),
                     procedures, COMMUNITY_SECURITY_MODULE_ID );
             platformModule.life.add( securityModule );
             this.securityProvider = securityModule;

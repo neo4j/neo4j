@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.kernel.internal.KernelEventHandlers;
 
@@ -36,8 +33,6 @@ public class DatabasePanicEventGenerator
 
     public void generateEvent( final ErrorState error, final Throwable cause )
     {
-        ExecutorService executor = Executors.newSingleThreadExecutor(  );
-        executor.execute( () -> kernelEventHandlers.kernelPanic( error, cause ) );
-        executor.shutdown();
+        kernelEventHandlers.kernelPanic( error, cause );
     }
 }

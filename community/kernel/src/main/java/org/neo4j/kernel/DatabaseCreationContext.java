@@ -58,6 +58,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -152,4 +153,6 @@ public interface DatabaseCreationContext
     Iterable<QueryEngineProvider> getEngineProviders();
 
     DatabaseAvailability getDatabaseAvailability();
+
+    KernelEventHandlers getEventHandlers();
 }

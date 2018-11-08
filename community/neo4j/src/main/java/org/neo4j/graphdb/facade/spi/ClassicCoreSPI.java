@@ -105,13 +105,13 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public void registerKernelEventHandler( KernelEventHandler handler )
     {
-        platform.eventHandlers.registerKernelEventHandler( handler );
+        dataSource.neoStoreDataSource.getEventHandlers().registerKernelEventHandler( handler );
     }
 
     @Override
     public void unregisterKernelEventHandler( KernelEventHandler handler )
     {
-        platform.eventHandlers.unregisterKernelEventHandler( handler );
+        dataSource.neoStoreDataSource.getEventHandlers().unregisterKernelEventHandler( handler );
     }
 
     @Override

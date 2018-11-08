@@ -81,6 +81,7 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -243,6 +244,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
         private final Iterable<QueryEngineProvider> engineProviders;
         private final DatabaseAvailability databaseAvailability;
         private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
+        private final KernelEventHandlers eventHandlers;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
@@ -299,6 +301,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
             this.engineProviders = engineProviders;
             this.databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, mock( TransactionCounters.class ), clock, 0 );
             this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, 0 );
+            this.eventHandlers = mock( KernelEventHandlers.class );
         }
 
         @Override
@@ -561,6 +564,12 @@ public class NeoStoreDataSourceRule extends ExternalResource
         public DatabaseAvailability getDatabaseAvailability()
         {
             return databaseAvailability;
+        }
+
+        @Override
+        public KernelEventHandlers getEventHandlers()
+        {
+            return eventHandlers;
         }
     }
 

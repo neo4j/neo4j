@@ -133,6 +133,7 @@ import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.KernelEventHandlers;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -199,6 +200,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Locks locks;
     private final DatabaseAvailability databaseAvailability;
+    private final KernelEventHandlers eventHandlers;
 
     private Dependencies dataSourceDependencies;
     private LifeSupport life;
@@ -256,6 +258,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
         this.clock = context.getClock();
         this.accessCapability = context.getAccessCapability();
+        this.eventHandlers = context.getEventHandlers();
 
         this.readOnly = context.getConfig().get( GraphDatabaseSettings.read_only );
         this.idController = context.getIdController();
@@ -650,6 +653,12 @@ public class NeoStoreDataSource extends LifecycleAdapter
         life.shutdown();
     }
 
+    @Override
+    public synchronized void shutdown()
+    {
+        eventHandlers.shutdown();
+    }
+
     private void awaitAllClosingTransactions()
     {
         KernelTransactions kernelTransactions = kernelModule.kernelTransactions();
@@ -789,6 +798,11 @@ public class NeoStoreDataSource extends LifecycleAdapter
     public TokenHolders getTokenHolders()
     {
         return tokenHolders;
+    }
+
+    public KernelEventHandlers getEventHandlers()
+    {
+        return eventHandlers;
     }
 
     public TransactionEventHandlers getTransactionEventHandlers()

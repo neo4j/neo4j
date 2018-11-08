@@ -26,6 +26,8 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.event.ErrorState;
+import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
@@ -50,6 +52,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class, } )
 class DatabaseShutdownTest
@@ -63,6 +66,17 @@ class DatabaseShutdownTest
         TestGraphDatabaseFactoryWithFailingPageCacheFlush factory = new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
         assertThrows(LifecycleException.class, () -> factory.newEmbeddedDatabase( testDirectory.storeDir() ).shutdown() );
         assertEquals( LifecycleStatus.SHUTDOWN, factory.getNeoStoreDataSourceStatus() );
+    }
+
+    @Test
+    void invokeKernelEventHandlersBeforeShutdown()
+    {
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
+        ShutdownListenerKernelEventHandler shutdownHandler = new ShutdownListenerKernelEventHandler();
+        database.registerKernelEventHandler( shutdownHandler );
+        database.shutdown();
+
+        assertTrue( shutdownHandler.isShutdownInvoked() );
     }
 
     private static class TestGraphDatabaseFactoryWithFailingPageCacheFlush extends TestGraphDatabaseFactory
@@ -106,6 +120,40 @@ class DatabaseShutdownTest
         LifecycleStatus getNeoStoreDataSourceStatus()
         {
             return life.getStatus();
+        }
+    }
+
+    private static class ShutdownListenerKernelEventHandler implements KernelEventHandler
+    {
+        private volatile boolean shutdownInvoked;
+
+        @Override
+        public void beforeShutdown()
+        {
+            shutdownInvoked = true;
+        }
+
+        @Override
+        public void kernelPanic( ErrorState error )
+        {
+
+        }
+
+        @Override
+        public Object getResource()
+        {
+            return null;
+        }
+
+        @Override
+        public ExecutionOrder orderComparedTo( KernelEventHandler other )
+        {
+            return null;
+        }
+
+        public boolean isShutdownInvoked()
+        {
+            return shutdownInvoked;
         }
     }
 }

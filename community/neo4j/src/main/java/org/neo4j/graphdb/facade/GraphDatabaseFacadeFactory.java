@@ -166,12 +166,12 @@ public class GraphDatabaseFacadeFactory
         PlatformModule platform = createPlatform( storeDir, config, dependencies );
         AbstractEditionModule edition = editionFactory.apply( platform );
 
-        platform.life.add( new VmPauseMonitorComponent( config, platform.logging.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
+        platform.life.add( new VmPauseMonitorComponent( config, platform.logService.getInternalLog( VmPauseMonitorComponent.class ), platform.jobScheduler ) );
 
         Procedures procedures = setupProcedures( platform, edition, graphDatabaseFacade );
         platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
 
-        Logger msgLog = platform.logging.getInternalLog( getClass() ).infoLogger();
+        Logger msgLog = platform.logService.getInternalLog( getClass() ).infoLogger();
         DatabaseManager databaseManager = edition.createDatabaseManager( graphDatabaseFacade, platform, edition, procedures, msgLog );
         platform.life.add( databaseManager );
         platform.dependencies.satisfyDependency( databaseManager );
@@ -186,10 +186,9 @@ public class GraphDatabaseFacadeFactory
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
         platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
         platform.life.add(
-                new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logging, platform.config ),
+                new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logService, platform.config ),
                         edition.getTransactionStartTimeout() ) );
         platform.dependencies.satisfyDependency( edition.getSchemaWriteGuard() );
-        platform.life.setLast( platform.eventHandlers );
 
         edition.createDatabases( databaseManager, config );
 
@@ -242,7 +241,7 @@ public class GraphDatabaseFacadeFactory
     private static Procedures setupProcedures( PlatformModule platform, AbstractEditionModule editionModule, GraphDatabaseFacade facade )
     {
         File pluginDir = platform.config.get( GraphDatabaseSettings.plugin_dir );
-        Log internalLog = platform.logging.getInternalLog( Procedures.class );
+        Log internalLog = platform.logService.getInternalLog( Procedures.class );
 
         ProcedureConfig procedureConfig = new ProcedureConfig( platform.config );
         Procedures procedures =
@@ -258,7 +257,7 @@ public class GraphDatabaseFacadeFactory
         procedures.registerType( Point.class, NTPoint );
 
         // Register injected public API components
-        Log proceduresLog = platform.logging.getUserLog( Procedures.class );
+        Log proceduresLog = platform.logService.getUserLog( Procedures.class );
         procedures.registerComponent( Log.class, ctx -> proceduresLog, true );
 
         procedures.registerComponent( ProcedureTransaction.class, new ProcedureTransactionProvider(), true );
@@ -295,6 +294,6 @@ public class GraphDatabaseFacadeFactory
     {
         return new BoltServer( databaseManager, platform.jobScheduler,
                 platform.connectorPortRegister, edition.getConnectionTracker(), platform.usageData, platform.config, platform.clock, platform.monitors,
-                platform.logging, platform.dependencies );
+                platform.logService, platform.dependencies );
     }
 }
