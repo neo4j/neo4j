@@ -56,13 +56,13 @@ import org.opencypher.v9_0.frontend.PlannerName
 import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger, InternalNotificationLogger => InternalNotificationLoggerv4_0}
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
-case class Cypher34Planner(configv4_0: CypherPlannerConfiguration,
-                           clock: Clock,
-                           kernelMonitors: KernelMonitors,
-                           log: Log,
-                           plannerOption: CypherPlannerOption,
-                           updateStrategy: CypherUpdateStrategy,
-                           txIdProvider: () => Long)
+case class Cypher3_4Planner(configv4_0: CypherPlannerConfiguration,
+                            clock: Clock,
+                            kernelMonitors: KernelMonitors,
+                            log: Log,
+                            plannerOption: CypherPlannerOption,
+                            updateStrategy: CypherUpdateStrategy,
+                            txIdProvider: () => Long)
   extends BasePlanner[StatementV3_4, BaseState](configv4_0, clock, kernelMonitors, log, txIdProvider) with CypherPlanner {
 
   val monitorsV3_4: MonitorsV3_4 = WrappedMonitors(kernelMonitors)

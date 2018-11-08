@@ -24,7 +24,7 @@ import java.time.{Clock, Instant, ZoneOffset}
 import org.neo4j.cypher
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher3_4Planner
 import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, CypherPlanner, RuntimeContext}
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
@@ -64,7 +64,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   private def createCompiler(config: CypherPlannerConfiguration, clock: Clock = Clock.systemUTC(),
                              log: Log = NullLog.getInstance): CypherCurrentCompiler[RuntimeContext] = {
-    val planner = Cypher35Planner(config,
+    val planner = Cypher4_0Planner(config,
       clock,
       kernelMonitors,
       log,
@@ -123,7 +123,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     compiler = createCompiler(plannerConfig())
 
     val config3_4 = plannerConfig()
-    val planner3_4 = Cypher34Planner(config3_4,
+    val planner3_4 = Cypher3_4Planner(config3_4,
       Clock.systemUTC(),
       kernelMonitors,
       NullLog.getInstance,

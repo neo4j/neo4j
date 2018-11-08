@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v3_4.Cypher34Planner
-import org.neo4j.cypher.internal.compatibility.v4_0.Cypher35Planner
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher3_4Planner
+import org.neo4j.cypher.internal.compatibility.v4_0.Cypher4_0Planner
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
@@ -54,7 +54,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         // 3.4
       case (CypherVersion.v3_4, _) =>
         CypherCurrentCompiler(
-          Cypher34Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
+          Cypher3_4Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
             cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
           CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
           CommunityRuntimeContextCreator(plannerConfig),
@@ -62,9 +62,9 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
         )
 
         // 4.0
-      case (CypherVersion.`v4_0`, _) =>
+      case (CypherVersion.v4_0, _) =>
         CypherCurrentCompiler(
-          Cypher35Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
+          Cypher4_0Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
                           cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
           CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
           CommunityRuntimeContextCreator(plannerConfig),

@@ -65,7 +65,8 @@
               <rules combine.children="append">
                   <requireFilesDontExist>
                       <files>
-                          <file>cypher-compiler-3.6</file>
+                          <file>cypher-planner-3.6</file>
+                          <file>cypher-planner-3.5</file>
                           <file>cypher-compiler-3.4</file>
                           <file>cypher-compiler-3.3</file>
                           <file>cypher-compiler-3.2</file>

@@ -50,13 +50,13 @@ import org.opencypher.v9_0.rewriting.RewriterStepSequencer
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.util.attribution.SequentialIdGen
 
-case class Cypher35Planner(config: CypherPlannerConfiguration,
-                           clock: Clock,
-                           kernelMonitors: KernelMonitors,
-                           log: Log,
-                           plannerOption: CypherPlannerOption,
-                           updateStrategy: CypherUpdateStrategy,
-                           txIdProvider: () => Long)
+case class Cypher4_0Planner(config: CypherPlannerConfiguration,
+                            clock: Clock,
+                            kernelMonitors: KernelMonitors,
+                            log: Log,
+                            plannerOption: CypherPlannerOption,
+                            updateStrategy: CypherUpdateStrategy,
+                            txIdProvider: () => Long)
   extends BasePlanner[Statement, BaseState](config, clock, kernelMonitors, log, txIdProvider) with CypherPlanner {
 
   monitors.addMonitorListener(logStalePlanRemovalMonitor(logger), "cypher4.0")
