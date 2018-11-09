@@ -30,6 +30,7 @@ import java.util.function.Predicate;
 import org.neo4j.collection.RawIterator;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
@@ -38,6 +39,7 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.NoBoundIndexException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -61,7 +63,7 @@ import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.api.CountsRecordState;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
+import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -104,7 +106,7 @@ public class AllStoreHolder extends Read
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final Dependencies dataSourceDependencies;
-    private final IndexReaderFactory indexReaderFactory;
+    private final IndexReaderCache indexReaderCache;
     private LabelScanReader labelScanReader;
 
     public AllStoreHolder( StorageReader storageReader,
@@ -122,7 +124,7 @@ public class AllStoreHolder extends Read
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
-        this.indexReaderFactory = new IndexReaderFactory.Caching( indexingService );
+        this.indexReaderCache = new IndexReaderCache( indexingService );
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.dataSourceDependencies = dataSourceDependencies;
@@ -262,8 +264,35 @@ public class AllStoreHolder extends Read
     public IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        return fresh ? indexReaderFactory.newUnCachedReader( index )
-                     : indexReaderFactory.newReader( index );
+        return fresh ? indexReaderCache.newUnCachedReader( index )
+                     : indexReaderCache.getOrCreate( index );
+    }
+
+    @Override
+    public IndexReadSession getOrCreateIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        assertValidIndex( index );
+        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ) );
+    }
+
+    @Override
+    public IndexReadSession getIndexReadSession( IndexReference index ) throws NoBoundIndexException, IndexNotFoundKernelException
+    {
+        assertValidIndex( index );
+        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ) );
+    }
+
+    @Override
+    public void prepareIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
+    {
+        assertValidIndex( index );
+        indexReaderCache.getOrCreate( index );
+    }
+
+    @Override
+    public void prepareForLabelScans()
+    {
+        labelScanReader();
     }
 
     @Override
@@ -625,7 +654,7 @@ public class AllStoreHolder extends Read
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        IndexReader reader = indexReaderFactory.newReader( index );
+        IndexReader reader = indexReaderCache.getOrCreate( index );
         return reader.countIndexedNodes( nodeId, new int[] {propertyKeyId}, value );
     }
 
@@ -1172,7 +1201,7 @@ public class AllStoreHolder extends Read
 
     void release()
     {
-        indexReaderFactory.close();
+        indexReaderCache.close();
         if ( labelScanReader != null )
         {
             labelScanReader.close();

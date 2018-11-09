@@ -20,6 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.internal.kernel.api.exceptions.schema.NoBoundIndexException;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -30,6 +32,36 @@ public interface Read
 {
     int ANY_LABEL = -1;
     int ANY_RELATIONSHIP_TYPE = -1;
+
+    /**
+     * If an IndexReadSession for the given index exists for this transaction, return it. Otherwise, bind a new
+     * IndexReadSession to this transaction and return it. Not Thread-safe.
+     *
+     * @param index the index to read from
+     * @return the IndexReadSession
+     */
+    IndexReadSession getOrCreateIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Get the IndexReadSession for the given index bound to this transaction, return it. Thread-safe.
+     *
+     * @param index the index to read from
+     * @return the IndexReadSession
+     */
+    IndexReadSession getIndexReadSession( IndexReference index )
+            throws IndexNotFoundKernelException, NoBoundIndexException;
+
+    /**
+     * If no IndexReadSession for the given index is bound to this transaction, bind a new IndexReadSession to this transaction. Not Thread-safe.
+     *
+     * @param index the index to read from
+     */
+    void prepareIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException;
+
+    /**
+     * Ensure this transaction is prepared for node label scans. This avoids concurrency issues. Not Thread-safe.
+     */
+    void prepareForLabelScans();
 
     /**
      * Seek all nodes matching the provided index query in an index.

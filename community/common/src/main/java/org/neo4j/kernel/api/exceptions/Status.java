@@ -346,6 +346,8 @@ public interface Status
                 "The request referred to a schema rule that does not exist." ),
         SchemaRuleDuplicateFound( DatabaseError,
                 "The request referred to a schema rule that is defined multiple times." ),
+        NoBoundIndexResource( DatabaseError,
+                "There was no open index resource when trying to access a index." ),
 
         // transient errors
         SchemaModifiedConcurrently( TransientError,
