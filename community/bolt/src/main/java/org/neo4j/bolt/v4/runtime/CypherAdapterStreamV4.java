@@ -27,6 +27,9 @@ import org.neo4j.bolt.v3.runtime.CypherAdapterStreamV3;
 import org.neo4j.cypher.result.QueryResult;
 import org.neo4j.values.AnyValue;
 
+/**
+ * This is a minimal effort of work to adopt the cypher result visitor API to the new PULL_N pattern.
+ */
 public class CypherAdapterStreamV4 extends CypherAdapterStreamV3
 {
     private final Queue<QueryResult.Record> allRecords;

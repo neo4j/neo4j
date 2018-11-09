@@ -52,6 +52,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
 
     private class BoltResultHandleV4 extends BoltResultHandleV1
     {
+
         BoltResultHandleV4( String statement, MapValue params, TransactionalContext transactionalContext )
         {
             super( statement, params, transactionalContext );
@@ -60,7 +61,7 @@ public class TransactionStateMachineV4SPI extends TransactionStateMachineV1SPI
         @Override
         protected BoltResult newBoltResult( QueryResultProvider result, Clock clock )
         {
-            return new BufferedCypherAdapterStreamV4( result.queryResult(), clock );
+            return new CypherAdapterStreamV4( result.queryResult(), clock );
         }
     }
 }

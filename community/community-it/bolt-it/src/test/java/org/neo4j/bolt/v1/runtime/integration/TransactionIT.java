@@ -41,7 +41,6 @@ import org.neo4j.bolt.v1.messaging.request.AckFailureMessage;
 import org.neo4j.bolt.v1.messaging.request.DiscardAllMessage;
 import org.neo4j.bolt.v1.messaging.request.InitMessage;
 import org.neo4j.bolt.v1.messaging.request.PullAllMessage;
-import org.neo4j.bolt.v1.messaging.request.ResetMessage;
 import org.neo4j.bolt.v1.messaging.request.RunMessage;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -59,7 +58,6 @@ import static java.util.Collections.singletonMap;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.neo4j.bolt.testing.BoltMatchers.containsRecord;
 import static org.neo4j.bolt.testing.BoltMatchers.failedWithStatus;
 import static org.neo4j.bolt.testing.BoltMatchers.succeeded;
@@ -249,78 +247,6 @@ public class TransactionIT
         }
 
         thread.join();
-    }
-
-    @Test
-    public void shouldTerminateQueriesEvenIfUsingPeriodicCommit() throws Exception
-    {
-        // Spawns a throttled HTTP server, runs a PERIODIC COMMIT that fetches data from this server,
-        // and checks that the query able to be terminated
-
-        // We start with 3, because that is how many actors we have -
-        // 1. the http server
-        // 2. the running query
-        // 3. the one terminating 2
-        final DoubleLatch latch = new DoubleLatch( 3, true );
-
-        // This is used to block the http server between the first and second batch
-        final Barrier.Control barrier = new Barrier.Control();
-
-        // Serve CSV via local web server, let Jetty find a random port for us
-        Server server = createHttpServer( latch, barrier, 20, 30 );
-        server.start();
-        int localPort = getLocalPort( server );
-
-        final BoltStateMachine[] machine = {null};
-
-        Thread thread = new Thread( () -> {
-            try ( BoltStateMachine stateMachine = env.newMachine( BOLT_CHANNEL ) )
-            {
-                machine[0] = stateMachine;
-                stateMachine.process( new InitMessage( USER_AGENT, emptyMap() ), nullResponseHandler() );
-                String query = format( "USING PERIODIC COMMIT 10 LOAD CSV FROM 'http://localhost:%d' AS line " +
-                                       "CREATE (n:A {id: line[0], square: line[1]}) " +
-                                       "WITH count(*) as number " +
-                                       "CREATE (n:ShouldNotExist)",
-                                       localPort );
-                try
-                {
-                    latch.start();
-                    stateMachine.process( new RunMessage( query, EMPTY_MAP ), nullResponseHandler() );
-                    stateMachine.process( PullAllMessage.INSTANCE, nullResponseHandler() );
-                }
-                finally
-                {
-                    latch.finish();
-                }
-            }
-            catch ( BoltConnectionFatality connectionFatality )
-            {
-                throw new RuntimeException( connectionFatality );
-            }
-        } );
-        thread.setName( "query runner" );
-        thread.start();
-
-        // We block this thread here, waiting for the http server to spin up and the running query to get started
-        latch.startAndWaitForAllToStart();
-        Thread.sleep( 1000 );
-
-        // This is the call that RESETs the Bolt connection and will terminate the running query
-        machine[0].process( ResetMessage.INSTANCE, nullResponseHandler() );
-
-        barrier.release();
-
-        // We block again here, waiting for the running query to have been terminated, and for the server to have
-        // wrapped up and finished streaming http results
-        latch.finishAndWaitForAllToFinish();
-
-        // And now we check that the last node did not get created
-        try ( Transaction ignored = env.graph().beginTx() )
-        {
-            assertFalse( "Query was not terminated in time - nodes were created!",
-                         env.graph().findNodes( Label.label( "ShouldNotExist" ) ).hasNext() );
-        }
     }
 
     @Test

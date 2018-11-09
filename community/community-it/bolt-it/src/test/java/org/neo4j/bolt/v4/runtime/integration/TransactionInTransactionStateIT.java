@@ -39,7 +39,7 @@ import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
 import org.neo4j.bolt.v3.runtime.FailedState;
 import org.neo4j.bolt.v3.runtime.InterruptedState;
-import org.neo4j.bolt.v3.runtime.TransactionReadyState;
+import org.neo4j.bolt.v3.runtime.ReadyState;
 import org.neo4j.bolt.v4.BoltStateMachineV4;
 import org.neo4j.bolt.v4.messaging.PullNMessage;
 import org.neo4j.bolt.v4.runtime.InTransactionState;
@@ -67,13 +67,47 @@ import static org.neo4j.bolt.v3.messaging.request.CommitMessage.COMMIT_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.GoodbyeMessage.GOODBYE_MESSAGE;
 import static org.neo4j.bolt.v3.messaging.request.RollbackMessage.ROLLBACK_MESSAGE;
 
-class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
+class TransactionInTransactionStateIT extends BoltStateMachineV4StateTestBase
 {
     @Test
-    void shouldMoveFromTxStreamingToTxReadyOnDiscardAll_succ() throws Throwable
+    void shouldMoveFromInTxToReadyOnCommit_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( COMMIT_MESSAGE, recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, succeeded() );
+        assertTrue( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+    }
+
+    @Test
+    void shouldMoveFromInTxToReadyOnRollback_succ() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( ROLLBACK_MESSAGE, recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, succeeded() );
+        assertFalse( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( ReadyState.class ) );
+    }
+
+    @Test
+    void shouldStayInTxOnDiscardAll_succ() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -83,14 +117,14 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
         RecordedBoltResponse response = recorder.nextResponse();
         assertThat( response, succeeded() );
         assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
     @Test
-    void shouldMoveFromTxStreamingToTxReadyOnPullN_succ() throws Throwable
+    void shouldStayInTxOnPullN_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -102,14 +136,14 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
     @Test
-    void shouldMoveFromStreamingToTXReadyOnPullN_succ_hasMore() throws Throwable
+    void shouldStayInTxOnPullN_succ_hasMore() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInTxStreamingState( "Unwind [1, 2, 3] as n return n" );
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState( "Unwind [1, 2, 3] as n return n" );
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -126,14 +160,45 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
         assertTrue( response.hasMetadata( "type" ) );
         assertTrue( response.hasMetadata( "t_last" ) );
         assertFalse( response.hasMetadata( "bookmark" ) );
-        assertThat( machine.state(), instanceOf( TransactionReadyState.class ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
     }
 
     @Test
-    void shouldMoveFromTxStreamingToInterruptedOnInterrupt() throws Throwable
+    void shouldStayInTxOnAnotherRun_succ() throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( new RunMessage( "MATCH (n) RETURN n LIMIT 1" ), recorder );
+
+        // Then
+        RecordedBoltResponse response = recorder.nextResponse();
+        assertThat( response, succeeded() );
+        assertFalse( response.hasMetadata( "bookmark" ) );
+        assertThat( machine.state(), instanceOf( InTransactionState.class ) );
+    }
+
+    @Test
+    void shouldMoveFromInTxToFailedOnAnotherRun_fail() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
+
+        // When
+        BoltResponseRecorder recorder = new BoltResponseRecorder();
+        machine.process( new RunMessage( "any string" ), recorder );
+
+        // Then
+        assertThat( machine.state(), instanceOf( FailedState.class ) );
+    }
+
+    @Test
+    void shouldMoveFromInTxToInterruptedOnInterrupt() throws Throwable
+    {
+        // Given
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
         BoltResponseRecorder recorder = new BoltResponseRecorder();
@@ -145,10 +210,10 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
 
     @ParameterizedTest
     @MethodSource( "pullAllDiscardAllMessages" )
-    void shouldMoveFromTxStreamingStateToFailedStateOnPullNOrDiscardAll_fail( RequestMessage message ) throws Throwable
+    void shouldMoveFromInTxStateToFailedStateOnfail( RequestMessage message ) throws Throwable
     {
         // Given
-        BoltStateMachineV4 machine = getBoltStateMachineInTxStreamingState();
+        BoltStateMachineV4 machine = getBoltStateMachineInTxState();
 
         // When
 
@@ -189,7 +254,10 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
 
     private static Stream<RequestMessage> illegalV4Messages() throws BoltIOException
     {
-        return Stream.of( newHelloMessage(), new RunMessage( "any string" ), new BeginMessage(), ROLLBACK_MESSAGE, COMMIT_MESSAGE, ResetMessage.INSTANCE,
+        return Stream.of(
+                newHelloMessage(),
+                new BeginMessage(),
+                ResetMessage.INSTANCE,
                 GOODBYE_MESSAGE );
     }
 
@@ -198,12 +266,12 @@ class TransactionStreamingStateIT extends BoltStateMachineV4StateTestBase
         return Stream.of( newPullNMessage( 100L ), DiscardAllMessage.INSTANCE );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInTxStreamingState() throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInTxState() throws BoltConnectionFatality, BoltIOException
     {
-        return getBoltStateMachineInTxStreamingState( "CREATE (n {k:'k'}) RETURN n.k" );
+        return getBoltStateMachineInTxState( "CREATE (n {k:'k'}) RETURN n.k" );
     }
 
-    private BoltStateMachineV4 getBoltStateMachineInTxStreamingState( String query ) throws BoltConnectionFatality, BoltIOException
+    private BoltStateMachineV4 getBoltStateMachineInTxState( String query ) throws BoltConnectionFatality, BoltIOException
     {
         BoltStateMachineV4 machine = newStateMachine();
         machine.process( newHelloMessage(), nullResponseHandler() );
