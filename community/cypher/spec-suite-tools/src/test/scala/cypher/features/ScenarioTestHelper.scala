@@ -104,7 +104,7 @@ object ScenarioTestHelper {
     val uri = new URI("/blacklists/" + blacklistFile)
     val url = getClass.getResource(uri.getPath)
     if (url == null) throw new FileNotFoundException(s"Blacklist file not found at: $blacklistFile")
-    val lines = Source.fromFile(url.getPath, StandardCharsets.UTF_8.name()).getLines()
+    val lines = Source.fromFile(url.toURI, StandardCharsets.UTF_8.name()).getLines()
     val scenarios = lines.filterNot(line => line.startsWith("//") || line.isEmpty).toList // comments in blacklist are being ignored
     scenarios.foreach(validate)
     scenarios.map(BlacklistEntry(_))
