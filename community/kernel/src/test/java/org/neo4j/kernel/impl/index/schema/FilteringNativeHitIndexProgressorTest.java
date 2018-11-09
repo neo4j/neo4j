@@ -69,25 +69,27 @@ public class FilteringNativeHitIndexProgressorTest
         IndexQuery[] predicates = new IndexQuery[]{mock( IndexQuery.class )};
         Predicate<String> filter = string -> string.contains( "a" );
         when( predicates[0].acceptsValue( any( Value.class ) ) ).then( invocation -> filter.test( ((TextValue)invocation.getArgument( 0 )).stringValue() ) );
-        FilteringNativeHitIndexProgressor<StringIndexKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
-                new ArrayList<>(), predicates );
-        valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, IndexOrder.NONE, valueClient.needsValues(), false );
-        List<Long> result = new ArrayList<>();
-
-        // when
-        while ( valueClient.hasNext() )
+        try ( FilteringNativeHitIndexProgressor<StringIndexKey,NativeIndexValue> progressor = new FilteringNativeHitIndexProgressor<>( cursor, valueClient,
+                predicates ) )
         {
-            result.add( valueClient.next() );
-        }
+            valueClient.initialize( TestIndexDescriptorFactory.forLabel( 0, 0 ), progressor, predicates, IndexOrder.NONE, valueClient.needsValues(), false );
+            List<Long> result = new ArrayList<>();
 
-        // then
-        for ( int i = 0; i < keys.size(); i++ )
-        {
-            if ( filter.test( keys.get( i ) ) )
+            // when
+            while ( valueClient.hasNext() )
             {
-                assertTrue( result.remove( (long) i ) );
+                result.add( valueClient.next() );
             }
+
+            // then
+            for ( int i = 0; i < keys.size(); i++ )
+            {
+                if ( filter.test( keys.get( i ) ) )
+                {
+                    assertTrue( result.remove( (long) i ) );
+                }
+            }
+            assertTrue( result.isEmpty() );
         }
-        assertTrue( result.isEmpty() );
     }
 }

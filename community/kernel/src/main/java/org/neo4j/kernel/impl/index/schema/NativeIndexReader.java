@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
@@ -31,7 +29,6 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
@@ -46,7 +43,6 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
 {
     protected final IndexDescriptor descriptor;
     final IndexLayout<KEY,VALUE> layout;
-    final Set<RawCursor<Hit<KEY,VALUE>,IOException>> openSeekers;
     private final GBPTree<KEY,VALUE> tree;
 
     NativeIndexReader( GBPTree<KEY,VALUE> tree, IndexLayout<KEY,VALUE> layout, IndexDescriptor descriptor )
@@ -54,13 +50,11 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         this.tree = tree;
         this.layout = layout;
         this.descriptor = descriptor;
-        this.openSeekers = new HashSet<>();
     }
 
     @Override
     public void close()
     {
-        ensureOpenSeekersClosed();
     }
 
     @Override
@@ -173,33 +167,18 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
             treeKeyFrom = treeKeyTo;
             treeKeyTo = tmpKey;
         }
-        RawCursor<Hit<KEY,VALUE>,IOException> seeker = tree.seek( treeKeyFrom, treeKeyTo );
-        openSeekers.add( seeker );
-        return seeker;
+        return tree.seek( treeKeyFrom, treeKeyTo );
     }
 
     private IndexProgressor getIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, IndexProgressor.EntityValueClient client, boolean needFilter,
             IndexQuery[] query )
     {
-        return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, openSeekers, query )
-                          : new NativeHitIndexProgressor<>( seeker, client, openSeekers );
+        return needFilter ? new FilteringNativeHitIndexProgressor<>( seeker, client, query )
+                          : new NativeHitIndexProgressor<>( seeker, client );
     }
 
     private boolean isEmptyRange( KEY treeKeyFrom, KEY treeKeyTo )
     {
         return layout.compare( treeKeyFrom, treeKeyTo ) > 0;
-    }
-
-    private void ensureOpenSeekersClosed()
-    {
-        try
-        {
-            IOUtils.closeAll( openSeekers );
-            openSeekers.clear();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
     }
 }

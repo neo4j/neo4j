@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.index.schema;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.values.storable.Value;
 
@@ -32,15 +32,12 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
 {
     private final RawCursor<Hit<KEY,VALUE>,IOException> seeker;
     private final EntityValueClient client;
-    private final Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose;
     private boolean closed;
 
-    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client,
-            Collection<RawCursor<Hit<KEY,VALUE>,IOException>> toRemoveFromOnClose )
+    NativeHitIndexProgressor( RawCursor<Hit<KEY,VALUE>,IOException> seeker, EntityValueClient client )
     {
         this.seeker = seeker;
         this.client = client;
-        this.toRemoveFromOnClose = toRemoveFromOnClose;
     }
 
     @Override
@@ -81,15 +78,7 @@ public class NativeHitIndexProgressor<KEY extends NativeIndexKey<KEY>, VALUE ext
         if ( !closed )
         {
             closed = true;
-            try
-            {
-                seeker.close();
-                toRemoveFromOnClose.remove( seeker );
-            }
-            catch ( IOException e )
-            {
-                throw new UncheckedIOException( e );
-            }
+            IOUtils.closeAllUnchecked( seeker );
         }
     }
 }
