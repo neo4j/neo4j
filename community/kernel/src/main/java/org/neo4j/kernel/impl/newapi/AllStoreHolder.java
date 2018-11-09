@@ -272,14 +272,14 @@ public class AllStoreHolder extends Read
     public IndexReadSession getOrCreateIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ) );
+        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ), index );
     }
 
     @Override
     public IndexReadSession getIndexReadSession( IndexReference index ) throws NoBoundIndexException, IndexNotFoundKernelException
     {
         assertValidIndex( index );
-        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ) );
+        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ), index );
     }
 
     @Override

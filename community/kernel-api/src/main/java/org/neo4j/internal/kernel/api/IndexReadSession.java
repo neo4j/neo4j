@@ -20,10 +20,10 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Token which represents a read session towards a specific index.
+ * Token which represents a read session towards a specific index. The life-span of this session is tied to
+ * the transaction. It might be created at any time in an open transaction, and will be closed automatically
+ * on transaction close.
  */
-public interface IndexReadSession extends AutoCloseable
+public interface IndexReadSession
 {
-    @Override
-    void close();
 }

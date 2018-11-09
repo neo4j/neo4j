@@ -294,7 +294,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder): NodeValueIndexCursor = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    reads().nodeIndexScan(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValues)
+    val indexSession = reads().getOrCreateIndexReadSession(index)
+    reads().nodeIndexScan(indexSession, nodeCursor, asKernelIndexOrder(indexOrder), needsValues)
     nodeCursor
   }
 

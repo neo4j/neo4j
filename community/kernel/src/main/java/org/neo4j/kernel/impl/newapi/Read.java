@@ -24,6 +24,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
@@ -224,24 +225,25 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexScan( IndexReference index,
+    public final void nodeIndexScan( IndexReadSession index,
                                      NodeValueIndexCursor cursor,
                                      IndexOrder indexOrder,
                                      boolean needsValues ) throws KernelException
     {
         ktx.assertOpen();
-        if ( hasForbiddenProperties( index ) )
+        DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+        if ( hasForbiddenProperties( indexSession.reference ) )
         {
             cursor.close();
             return;
         }
 
         // for a scan, we simply query for existence of the first property, which covers all entries in an index
-        int firstProperty = index.properties()[0];
+        int firstProperty = indexSession.reference.properties()[0];
 
         DefaultNodeValueIndexCursor cursorImpl = (DefaultNodeValueIndexCursor) cursor;
         cursorImpl.setRead( this, null );
-        indexReader( index, false ).query( this, cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
+        indexSession.reader.query( this, cursorImpl, indexOrder, needsValues, IndexQuery.exists( firstProperty ) );
     }
 
     private boolean hasForbiddenProperties( IndexReference index )

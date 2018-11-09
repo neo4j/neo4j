@@ -21,20 +21,16 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.internal.kernel.api.IndexReference;
 
 class DefaultIndexReadSession implements IndexReadSession
 {
     final IndexReader reader;
+    final IndexReference reference;
 
-    DefaultIndexReadSession( IndexReader reader )
+    DefaultIndexReadSession( IndexReader reader, IndexReference reference )
     {
         this.reader = reader;
-    }
-
-    @Override
-    public void close()
-    {
-        // TODO: do we really need this?
-        reader.close();
+        this.reference = reference;
     }
 }

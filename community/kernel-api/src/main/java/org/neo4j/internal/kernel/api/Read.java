@@ -96,6 +96,9 @@ public interface Read
      * order to facilitate unique creation of nodes. If a node is found; a shared lock for the index entry will be
      * held whereas if no node is found we will hold onto an exclusive lock until the close of the transaction.
      *
+     * Note: This method does not take an IndexReadSession, as it has to acquire a new index session internally to
+     * ensure node uniqueness.
+     *
      * @param index {@link IndexReference} referencing index to query.
      *              {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
      * @param cursor cursor to use for performing the index seek
@@ -109,13 +112,13 @@ public interface Read
     /**
      * Scan all values in an index.
      *
-     * @param index {@link IndexReference} referencing index to query.
+     * @param index {@link IndexReadSession} index read session to query.
      * @param cursor the cursor to use for consuming the results.
      * @param indexOrder requested {@link IndexOrder} of result. Must be among the capabilities of
      * {@link IndexReference referenced index}, or {@link IndexOrder#NONE}.
      * @param needsValues if the index should fetch property values together with node ids for index queries
      */
-    void nodeIndexScan( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues ) throws KernelException;
+    void nodeIndexScan( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues ) throws KernelException;
 
     void nodeLabelScan( int label, NodeLabelIndexCursor cursor );
 

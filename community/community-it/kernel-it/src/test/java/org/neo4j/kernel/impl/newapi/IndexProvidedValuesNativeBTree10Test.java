@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestBase;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.test.rule.RandomRule;
@@ -107,7 +107,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
-        IndexReference index = schemaRead.index( label, prop );
+        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.index( label, prop ) );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexScan( index, node, IndexOrder.NONE, true );
@@ -132,7 +132,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         int prip = token.propertyKey( "prip" );
-        IndexReference index = schemaRead.index( label, prop, prip );
+        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.index( label, prop, prip ) );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexScan( index, node, IndexOrder.NONE, true );

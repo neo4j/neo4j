@@ -622,10 +622,11 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         IndexValueCapability wildcardCapability = index.valueCapability( ValueCategory.UNKNOWN );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            read.nodeIndexScan( index, node, IndexOrder.NONE, indexProvidesAllValues() );
+            read.nodeIndexScan( indexSession, node, IndexOrder.NONE, indexProvidesAllValues() );
 
             // then
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
@@ -978,16 +979,17 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         try ( org.neo4j.internal.kernel.api.Transaction tx = beginTransaction();
               NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
+            IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
             MutableLongSet uniqueIds = new LongHashSet();
 
             // when
-            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
+            tx.dataRead().nodeIndexScan( indexSession, node, IndexOrder.NONE, needsValues );
             assertThat( node.numberOfProperties(), equalTo( 1 ) );
             assertFoundNodesAndValue( node, TOTAL_NODE_COUNT, uniqueIds, wildcardCapability, needsValues );
 
             // then
             tx.dataWrite().nodeDelete( strOne );
-            tx.dataRead().nodeIndexScan( index, node, IndexOrder.NONE, needsValues );
+            tx.dataRead().nodeIndexScan( indexSession, node, IndexOrder.NONE, needsValues );
             assertFoundNodesAndValue( node, TOTAL_NODE_COUNT - 1, uniqueIds, wildcardCapability, needsValues );
         }
     }
