@@ -24,18 +24,19 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.EventExecutorGroup;
 
 import org.neo4j.bolt.runtime.BoltConnection;
-import org.neo4j.kernel.impl.logging.LogService;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.logging.Log;
 
 public class HouseKeeper extends ChannelInboundHandlerAdapter
 {
     private final BoltConnection connection;
-    private final LogService logging;
+    private final Log log;
     private boolean failed;
 
-    public HouseKeeper( BoltConnection connection, LogService logging )
+    public HouseKeeper( BoltConnection connection, Log log )
     {
         this.connection = connection;
-        this.logging = logging;
+        this.log = log;
     }
 
     @Override
@@ -51,11 +52,28 @@ public class HouseKeeper extends ChannelInboundHandlerAdapter
         {
             return;
         }
-        failed = true; // log only the first exception to not polute the log
+        failed = true; // log only the first exception to not pollute the log
 
-        logging.getInternalLog( getClass() ).error( "Fatal error occurred when handling a client connection: " + ctx.channel(), cause );
-
-        ctx.close();
+        try
+        {
+            // Netty throws a NativeIoException on connection reset - directly importing that class
+            // caused a host of linking errors, because it depends on JNI to work. Hence, we just
+            // test on the message we know we'll get.
+            if ( Exceptions.contains( cause, e -> e.getMessage().contains( "Connection reset by peer" ) ) )
+            {
+                log.warn( "Fatal error occurred when handling a client connection, " +
+                        "remote peer unexpectedly closed connection: %s", ctx.channel() );
+            }
+            else
+            {
+                log.error( "Fatal error occurred when handling a client connection: " + ctx.channel(),
+                        cause );
+            }
+        }
+        finally
+        {
+            ctx.close();
+        }
     }
 
     private static boolean isShuttingDown( ChannelHandlerContext ctx )
