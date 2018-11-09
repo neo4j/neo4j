@@ -22,252 +22,102 @@ package org.neo4j.test.extension;
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.ExtensionContext.Namespace;
 import org.junit.platform.commons.JUnitException;
 
+import java.io.File;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.PriorityQueue;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.LockSupport;
-import java.util.function.Consumer;
 
-import org.neo4j.graphdb.Resource;
-import org.neo4j.io.IOUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.resources.Profiler;
+import org.neo4j.test.rule.TestDirectory;
 
-import static java.lang.String.format;
-
-class ProfilerExtension implements BeforeEachCallback, AfterEachCallback, Profiler
+/**
+ * A sampling profiler extension for JUnit 5. This extension profiles a given set of threads that run in a unit test, and if the test fails, prints a profile
+ * of where the time was spent. This is particularly useful for tests that has a tendency to fail with a timeout, and this extension can be used to diagnose
+ * such flaky tests.
+ * <p>
+ * The profile output is printed to a {@code profiler-output.txt} file in the test directory by default.
+ * <p>
+ * Here is an example of how to use it:
+ *
+ * <pre><code>
+ *     {@literal @}ExtendWith( {TestDirectoryExtension.class, PorfilerExtension.class} )
+ *     public class MyTest
+ *     {
+ *         {@literal @}Inject
+ *         public Profiler profiler;
+ *
+ *         {@literal @}Test
+ *         void testSomeStuff()
+ *         {
+ *             profiler.profile();
+ *             // ... do some stuff in this thread.
+ *         }
+ *     }
+ * </code></pre>
+ *
+ * @see Profiler The Profiler interface, for more information on how to use the injected profiler instance.
+ */
+public class ProfilerExtension extends StatefullFieldExtension<Profiler> implements BeforeEachCallback, AfterEachCallback
 {
-    private static final long DEFAULT_SAMPLE_INTERVAL_NANOS = TimeUnit.MILLISECONDS.toNanos( 10 );
+    static final String PROFILER_KEY = "profiler";
+    static final Namespace PROFILER_NAMESPACE = Namespace.create( PROFILER_KEY );
 
-    private final ArrayList<Thread> samplerThreads = new ArrayList<>();
-    private final AtomicBoolean stopped = new AtomicBoolean();
-    private final ConcurrentHashMap<Thread,Sample> samples = new ConcurrentHashMap<>();
-    private final ArrayList<Consumer<ProfilerConfig>> delayedConfiguration = new ArrayList<>();
-    private long sampleIntervalNanos = DEFAULT_SAMPLE_INTERVAL_NANOS;
-    private boolean enableOutputOnSuccess;
-    private boolean closeOutputWhenDone;
-    private PrintStream out = System.err;
-    private AtomicLong underSampling = new AtomicLong();
+    @Override
+    protected String getFieldKey()
+    {
+        return PROFILER_KEY;
+    }
+
+    @Override
+    protected Class<Profiler> getFieldType()
+    {
+        return Profiler.class;
+    }
+
+    @Override
+    protected Profiler createField( ExtensionContext extensionContext )
+    {
+        return Profiler.profiler();
+    }
+
+    @Override
+    protected Namespace getNameSpace()
+    {
+        return PROFILER_NAMESPACE;
+    }
 
     @Override
     public void beforeEach( ExtensionContext context )
     {
-        synchronized ( this )
-        {
-            stopped.set( false );
-            samples.clear();
-            underSampling.set( 0 );
-        }
-        if ( !delayedConfiguration.isEmpty() )
-        {
-            ArrayList<Consumer<ProfilerConfig>> list = new ArrayList<>( delayedConfiguration );
-            delayedConfiguration.clear();
-            Configurator configurator = new Configurator();
-            for ( Consumer<ProfilerConfig> consumer : list )
-            {
-                consumer.accept( configurator );
-            }
-        }
+        getStoredValue( context ).reset();
     }
 
     @Override
     public void afterEach( ExtensionContext context )
     {
+        Profiler profiler = getStoredValue( context );
         try
         {
-            stop();
-            if ( enableOutputOnSuccess || context.getExecutionException().isPresent() )
+            profiler.finish();
+            if ( context.getExecutionException().isPresent() )
             {
-                printProfile( out, context );
-            }
-            if ( closeOutputWhenDone )
-            {
-                IOUtils.closeAllSilently( out );
+                ExtensionContext.Store testDirStore = getStore( context, TestDirectoryExtension.TEST_DIRECTORY_NAMESPACE );
+                TestDirectory testDir = (TestDirectory) testDirStore.get( TestDirectoryExtension.TEST_DIRECTORY );
+                File profileOutputFile = testDir.createFile( "profiler-output.txt" );
+                FileSystemAbstraction fs = testDir.getFileSystem();
+
+                try ( PrintStream out = new PrintStream( fs.openAsOutputStream( profileOutputFile, false ) ) )
+                {
+                    String displayName = context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
+                    profiler.printProfile( out, displayName );
+                }
             }
         }
         catch ( Exception e )
         {
-            throw new JUnitException( format( "Fail to stop profiler for %s test.", context.getDisplayName() ), e );
-        }
-    }
-
-    @Override
-    public Resource profile( Thread threadToProfile, long initialDelayNanos )
-    {
-        long baseline = System.nanoTime();
-        Thread samplerThread = new Thread( () ->
-        {
-            long nextSleepBaseline = baseline;//sleep( baseline, initialDelayNanos );
-            Sample root = samples.computeIfAbsent( threadToProfile, k -> new Sample( null ) );
-            while ( !stopped.get() && !Thread.currentThread().isInterrupted() && threadToProfile.isAlive() )
-            {
-                nextSleepBaseline = sleep( nextSleepBaseline, sampleIntervalNanos );
-                StackTraceElement[] frames = threadToProfile.getStackTrace();
-                record( root, frames );
-            }
-        } );
-        samplerThreads.add( samplerThread );
-        samplerThread.setName( "Sampler for " + threadToProfile.getName() );
-        samplerThread.setPriority( Thread.NORM_PRIORITY + 1 );
-        samplerThread.setDaemon( true );
-        samplerThread.start();
-        return samplerThread::interrupt;
-    }
-
-    private long sleep( long baselineNanos, long delayNanoes )
-    {
-        long nextBaseline = System.nanoTime();
-        long sleepNanos = delayNanoes - (nextBaseline - baselineNanos);
-        if ( sleepNanos > 0 )
-        {
-            LockSupport.parkNanos( this, sleepNanos );
-        }
-        else
-        {
-            underSampling.getAndIncrement();
-            Thread.yield(); // The sampler thread runs with slightly elevated priority, so we yield to give the profiled thread a chance to run.
-        }
-        return nextBaseline + delayNanoes;
-    }
-
-    private synchronized void record( Sample root, StackTraceElement[] frames )
-    {
-        root.count++;
-        HashMap<StackTraceElement,Sample> level = root.children;
-        // Iterate sample in reverse, since index 0 is top of the stack (most recent method invocation) and we record bottom-to-top.
-        for ( int i = frames.length - 1; i >= 0 ; i-- )
-        {
-            StackTraceElement frame = frames[i];
-            Sample sample = level.computeIfAbsent( frame, Sample::new );
-            sample.count++;
-            level = sample.children;
-        }
-    }
-
-    private void stop() throws InterruptedException
-    {
-        stopped.set( true );
-        for ( Thread thread : samplerThreads )
-        {
-            thread.interrupt();
-            thread.join();
-        }
-        samplerThreads.clear();
-    }
-
-    private synchronized void printProfile( PrintStream out, ExtensionContext context )
-    {
-        String displayName = context.getTestClass().map( Class::getSimpleName ).orElse( "class" ) + "." + context.getDisplayName();
-        out.println( "### Profiler output for " + displayName );
-        if ( underSampling.get() > 0 )
-        {
-            long allSamplesTotal = samples.reduceToLong( Long.MAX_VALUE, ( thread, sample ) -> sample.count, 0, ( a, b ) -> a + b );
-            out.println( "Info: Did not achieve target sampling frequency. " + underSampling + " of " + allSamplesTotal + " samples were delayed." );
-        }
-        for ( Map.Entry<Thread,Sample> entry : samples.entrySet() )
-        {
-            Thread thread = entry.getKey();
-            Sample rootSample = entry.getValue();
-            rootSample.intoOrdered();
-            out.println( "Profile (" + rootSample.count + " samples) " + thread.getName() );
-            double total = rootSample.count;
-            printSampleTree( out, total, rootSample.orderedChildren, 2 );
-        }
-    }
-
-    private void printSampleTree( PrintStream out, double total, PriorityQueue<Sample> children, int indent )
-    {
-        Sample child;
-        while ( (child = children.poll()) != null )
-        {
-            for ( int i = 0; i < indent; i++ )
-            {
-                out.print( ' ' );
-            }
-            out.printf( "%.2f%%: %s%n", child.count / total * 100.0, child.stackTraceElement );
-            printSampleTree( out, total, child.orderedChildren, indent + 2 );
-        }
-    }
-
-    private static final class Sample implements Comparable<Sample>
-    {
-        private final StackTraceElement stackTraceElement;
-        private HashMap<StackTraceElement, Sample> children;
-        private PriorityQueue<Sample> orderedChildren;
-        private long count;
-
-        private Sample( StackTraceElement stackTraceElement )
-        {
-            this.stackTraceElement = stackTraceElement;
-            children = new HashMap<>();
-        }
-
-        @Override
-        public int compareTo( Sample o )
-        {
-            // Higher count orders first.
-            return Long.compare( o.count, this.count );
-        }
-
-        void intoOrdered()
-        {
-            orderedChildren = new PriorityQueue<>();
-            orderedChildren.addAll( children.values() );
-            children.clear();
-            for ( Sample child : orderedChildren )
-            {
-                child.intoOrdered();
-            }
-        }
-    }
-
-    class Configurator implements ProfilerConfig
-    {
-        @Override
-        public ProfilerConfig enableOutputOnSuccess( boolean enabled )
-        {
-            ProfilerExtension.this.enableOutputOnSuccess = enabled;
-            return this;
-        }
-
-        @Override
-        public ProfilerConfig outputTo( PrintStream out )
-        {
-            ProfilerExtension.this.out = out;
-            return this;
-        }
-
-        @Override
-        public ProfilerConfig closeOutputWhenDone( boolean closeOutputWhenDone )
-        {
-            ProfilerExtension.this.closeOutputWhenDone = closeOutputWhenDone;
-            return this;
-        }
-
-        @Override
-        public ProfilerConfig sampleIntervalNanos( long sampleIntervalNanos )
-        {
-            ProfilerExtension.this.sampleIntervalNanos = sampleIntervalNanos;
-            return this;
-        }
-
-        @Override
-        public ProfilerConfig delayedConfig( Consumer<ProfilerConfig> delayedConfigChange )
-        {
-            ProfilerExtension.this.delayedConfiguration.add( delayedConfigChange );
-            return this;
-        }
-
-        @Override
-        public Profiler profiler()
-        {
-            return ProfilerExtension.this;
+            throw new JUnitException( "Failed to finish profiling and/or produce profiling output.", e );
         }
     }
 }

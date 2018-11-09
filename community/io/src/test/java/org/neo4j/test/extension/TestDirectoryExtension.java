@@ -34,8 +34,8 @@ import static org.neo4j.test.rule.TestDirectory.testDirectory;
 
 public class TestDirectoryExtension extends StatefullFieldExtension<TestDirectory> implements BeforeEachCallback, AfterEachCallback, AfterAllCallback
 {
-    private static final String TEST_DIRECTORY = "testDirectory";
-    private static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create( TEST_DIRECTORY );
+    static final String TEST_DIRECTORY = "testDirectory";
+    static final Namespace TEST_DIRECTORY_NAMESPACE = Namespace.create( TEST_DIRECTORY );
 
     @Override
     public void beforeEach( ExtensionContext context ) throws Exception
@@ -45,7 +45,7 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
     }
 
     @Override
-    public void afterEach( ExtensionContext context ) throws Exception
+    public void afterEach( ExtensionContext context )
     {
         TestDirectory testDirectory = getStoredValue( context );
         try
@@ -73,8 +73,8 @@ public class TestDirectoryExtension extends StatefullFieldExtension<TestDirector
     @Override
     protected TestDirectory createField( ExtensionContext extensionContext )
     {
-        ExtensionContext.Store fileSystemStore = getStore( extensionContext, DefaultFileSystemExtension.FILE_SYSTEM_NAMESPACE );
-        FileSystemAbstraction fileSystemAbstraction = fileSystemStore.get( DefaultFileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
+        ExtensionContext.Store fileSystemStore = getStore( extensionContext, FileSystemExtension.FILE_SYSTEM_NAMESPACE );
+        FileSystemAbstraction fileSystemAbstraction = fileSystemStore.get( FileSystemExtension.FILE_SYSTEM, FileSystemAbstraction.class );
         return fileSystemAbstraction != null ? testDirectory(fileSystemAbstraction) : testDirectory();
     }
 

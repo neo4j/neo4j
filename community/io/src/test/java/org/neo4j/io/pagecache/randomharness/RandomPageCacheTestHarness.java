@@ -53,10 +53,10 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
+import org.neo4j.resources.Profiler;
 import org.neo4j.scheduler.DaemonThreadFactory;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.test.extension.Profiler;
 import org.neo4j.test.rule.TestDirectory;
 
 /**
@@ -119,7 +119,7 @@ public class RandomPageCacheTestHarness implements Closeable
         fs = new EphemeralFileSystemAbstraction();
         useAdversarialIO = true;
         recordFormat = new StandardRecordFormat();
-        profiler = Profiler.NULL;
+        profiler = Profiler.nullProfiler();
     }
 
     /**

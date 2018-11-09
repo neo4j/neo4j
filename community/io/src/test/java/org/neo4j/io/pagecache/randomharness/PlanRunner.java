@@ -22,8 +22,7 @@ package org.neo4j.io.pagecache.randomharness;
 import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.neo4j.graphdb.Resource;
-import org.neo4j.test.extension.Profiler;
+import org.neo4j.resources.Profiler;
 
 class PlanRunner implements Callable<Void>
 {
@@ -41,7 +40,7 @@ class PlanRunner implements Callable<Void>
     @Override
     public Void call() throws Exception
     {
-        try ( Resource profilingRun = profiler.profile() )
+        try ( Profiler.ProfiledInterval profilingRun = profiler.profile() )
         {
             Action action = plan.next();
             while ( action != null && !stopSignal.get() )
