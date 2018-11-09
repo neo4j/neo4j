@@ -74,10 +74,17 @@ public class RelationshipProxyWrappingValue extends RelationshipValue
 
     public void populate()
     {
-        type();
-        properties();
-        startNode();
-        endNode();
+        try
+        {
+            type();
+            properties();
+            startNode();
+            endNode();
+        }
+        catch ( NotFoundException e )
+        {
+            // best effort, cannot do more
+        }
     }
 
     public boolean isPopulated()

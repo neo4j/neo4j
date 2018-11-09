@@ -52,6 +52,7 @@ import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyCollectionOf;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -201,7 +202,7 @@ public class TransactionHandleTest
         Result executionResult = mock( Result.class );
         TransactionalContext transactionalContext = prepareKernelWithQuerySession( kernel );
         when( executionEngine.isPeriodicCommit( queryText) ).thenReturn( true );
-        when( executionEngine.executeQuery( eq( queryText ), eq( NO_PARAMS ), eq( transactionalContext ), false ) )
+        when( executionEngine.executeQuery( eq( queryText ), eq( NO_PARAMS ), eq( transactionalContext ), anyBoolean() ) )
                 .thenReturn( executionResult );
 
         TransactionRegistry registry = mock( TransactionRegistry.class );
@@ -435,7 +436,7 @@ public class TransactionHandleTest
     {
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( executionEngine.executeQuery( eq( "match (n) return n" ), eq( NO_PARAMS ), any( TransactionalContext.class ), false ) )
+        when( executionEngine.executeQuery( eq( "match (n) return n" ), eq( NO_PARAMS ), any( TransactionalContext.class ), anyBoolean() ) )
                 .thenAnswer( invocationOnMock ->
                 {
                     throw new Exception( "BOO" );
@@ -491,7 +492,7 @@ public class TransactionHandleTest
     {
         // given
         QueryExecutionEngine executionEngine = mock( QueryExecutionEngine.class );
-        when( executionEngine.executeQuery( anyString(), any( MapValue.class ), isNull(), false ) )
+        when( executionEngine.executeQuery( anyString(), any( MapValue.class ), isNull(), anyBoolean() ) )
                 .thenThrow( new DeadlockDetectedException( "deadlock" ) );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );

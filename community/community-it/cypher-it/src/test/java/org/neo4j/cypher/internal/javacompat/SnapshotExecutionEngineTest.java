@@ -41,6 +41,7 @@ import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -76,7 +77,7 @@ public class SnapshotExecutionEngineTest
         Result result = mock( Result.class );
         QueryStatistics statistics = mock( QueryStatistics.class );
         when( result.getQueryStatistics() ).thenReturn( statistics );
-        when( executor.execute( any(), anyMap(), any(), any() ) ).thenReturn( result );
+        when( executor.execute( any(), anyMap(), any(), anyBoolean() ) ).thenReturn( result );
     }
 
     @Test
@@ -84,7 +85,7 @@ public class SnapshotExecutionEngineTest
     {
         executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
 
-        verify( executor, times( 1 ) ).execute( any(), anyMap(), any(), any() );
+        verify( executor, times( 1 ) ).execute( any(), anyMap(), any(), anyBoolean() );
         verify( versionContext, times( 1 ) ).initRead();
     }
 
@@ -95,7 +96,7 @@ public class SnapshotExecutionEngineTest
 
         executionEngine.executeWithRetries( "query", Collections.emptyMap(), transactionalContext, executor, false );
 
-        verify( executor, times( 3 ) ).execute( any(), anyMap(), any(), any() );
+        verify( executor, times( 3 ) ).execute( any(), anyMap(), any(), anyBoolean() );
         verify( versionContext, times( 3 ) ).initRead();
     }
 
@@ -113,7 +114,7 @@ public class SnapshotExecutionEngineTest
             assertEquals( "Unable to get clean data snapshot for query 'query' after 5 attempts.", e.getMessage() );
         }
 
-        verify( executor, times( 5 ) ).execute( any(), anyMap(), any(), any() );
+        verify( executor, times( 5 ) ).execute( any(), anyMap(), any(), anyBoolean() );
         verify( versionContext, times( 5 ) ).initRead();
     }
 
