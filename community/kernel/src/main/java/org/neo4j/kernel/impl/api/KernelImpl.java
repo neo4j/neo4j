@@ -64,7 +64,6 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     private final TransactionMonitor transactionMonitor;
     private final Procedures procedures;
     private final Config config;
-    private final StorageEngine storageEngine;
     private DefaultThreadSafeCursors cursors;
     private volatile boolean isRunning;
 
@@ -78,7 +77,7 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
         this.transactionMonitor = transactionMonitor;
         this.procedures = procedures;
         this.config = config;
-        this.storageEngine = storageEngine;
+        this.cursors = new DefaultThreadSafeCursors( storageEngine.newReader() );
     }
 
     @Override
@@ -130,12 +129,6 @@ public class KernelImpl extends LifecycleAdapter implements InwardKernel
     public void registerUserAggregationFunction( CallableUserAggregationFunction function ) throws ProcedureException
     {
         procedures.register( function );
-    }
-
-    @Override
-    public void init()
-    {
-        cursors = new DefaultThreadSafeCursors( storageEngine.newReader() );
     }
 
     @Override
