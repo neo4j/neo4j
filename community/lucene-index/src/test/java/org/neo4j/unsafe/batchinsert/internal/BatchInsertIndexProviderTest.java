@@ -28,18 +28,26 @@ import org.junit.runners.Parameterized;
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Map;
+import java.util.Iterator;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.schema.IndexDefinition;
+import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.kernel.api.CapableIndexReference;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.impl.index.schema.config.SpatialIndexValueTestUtil;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
@@ -48,7 +56,12 @@ import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
+import org.neo4j.values.storable.CoordinateReferenceSystem;
+import org.neo4j.values.storable.PointValue;
+import org.neo4j.values.storable.Values;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -82,11 +95,12 @@ public class BatchInsertIndexProviderTest
     @Test
     public void batchInserterShouldUseConfiguredIndexProvider() throws Exception
     {
-        Map<String,String> config = stringMap( default_schema_provider.name(), schemaIndex.providerName() );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
         BatchInserter inserter = newBatchInserter( config );
         inserter.createDeferredSchemaIndex( TestLabels.LABEL_ONE ).on( "key" ).create();
         inserter.shutdown();
         GraphDatabaseService db = graphDatabaseService( inserter.getStoreDir(), config );
+        awaitIndexesOnline( db );
         try ( Transaction tx = db.beginTx() )
         {
             DependencyResolver dependencyResolver = ((GraphDatabaseAPI) db).getDependencyResolver();
@@ -107,27 +121,94 @@ public class BatchInsertIndexProviderTest
         }
     }
 
-    private BatchInserter newBatchInserter( Map<String,String> config ) throws Exception
+    @Test
+    public void shouldPopulateIndexWithUniquePointsThatCollideOnSpaceFillingCurve() throws Exception
     {
-        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), config );
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
+        BatchInserter inserter = newBatchInserter( config );
+        Pair<PointValue,PointValue> collidingPoints = SpatialIndexValueTestUtil.pointsWithSameValueOnSpaceFillingCurve( config );
+        inserter.createNode( MapUtil.map( "prop", collidingPoints.first() ), TestLabels.LABEL_ONE );
+        inserter.createNode( MapUtil.map( "prop", collidingPoints.other() ), TestLabels.LABEL_ONE );
+        inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
+        inserter.shutdown();
+
+        GraphDatabaseService db = graphDatabaseService( inserter.getStoreDir(), config );
+        try
+        {
+            awaitIndexesOnline( db );
+            try ( Transaction tx = db.beginTx() )
+            {
+                assertSingleCorrectHit( db, collidingPoints.first() );
+                assertSingleCorrectHit( db, collidingPoints.other() );
+                tx.success();
+            }
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
-    private GraphDatabaseService graphDatabaseService( String storeDir, Map<String, String> config )
+    @Test
+    public void shouldThrowWhenPopulatingWithNonUniquePoints() throws Exception
+    {
+        Config config = Config.defaults( stringMap( default_schema_provider.name(), schemaIndex.providerName() ) );
+        BatchInserter inserter = newBatchInserter( config );
+        PointValue point = Values.pointValue( CoordinateReferenceSystem.WGS84, 0.0, 0.0 );
+        inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
+        inserter.createNode( MapUtil.map( "prop", point ), TestLabels.LABEL_ONE );
+        inserter.createDeferredConstraint( TestLabels.LABEL_ONE ).assertPropertyIsUnique( "prop" ).create();
+        inserter.shutdown();
+
+        GraphDatabaseService db = graphDatabaseService( inserter.getStoreDir(), config );
+        try ( Transaction tx = db.beginTx() )
+        {
+            Iterator<IndexDefinition> indexes = db.schema().getIndexes().iterator();
+            assertTrue( indexes.hasNext() );
+            IndexDefinition index = indexes.next();
+            Schema.IndexState indexState = db.schema().getIndexState( index );
+            assertEquals( Schema.IndexState.FAILED, indexState );
+            assertFalse( indexes.hasNext() );
+            tx.success();
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    private void assertSingleCorrectHit( GraphDatabaseService db, PointValue point )
+    {
+        ResourceIterator<Node> nodes = db.findNodes( TestLabels.LABEL_ONE, "prop", point );
+        assertTrue( nodes.hasNext() );
+        Node node = nodes.next();
+        Object prop = node.getProperty( "prop" );
+        assertEquals( point, prop );
+        assertFalse( nodes.hasNext() );
+    }
+
+    private BatchInserter newBatchInserter( Config config ) throws Exception
+    {
+        return BatchInserters.inserter( storeDir.absolutePath(), fileSystemRule.get(), config.getRaw() );
+    }
+
+    private GraphDatabaseService graphDatabaseService( String storeDir, Config config )
     {
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fileSystemRule.get() );
-        GraphDatabaseService db = factory.newImpermanentDatabaseBuilder( new File( storeDir ) )
+        return factory.newImpermanentDatabaseBuilder( new File( storeDir ) )
                 // Shouldn't be necessary to set dense node threshold since it's a stick config
-                .setConfig( config )
+                .setConfig( config.getRaw() )
                 .newGraphDatabase();
+    }
 
+    private void awaitIndexesOnline( GraphDatabaseService db )
+    {
         try ( Transaction tx = db.beginTx() )
         {
             db.schema().awaitIndexesOnline( 10, TimeUnit.SECONDS );
             tx.success();
         }
-
-        return db;
     }
 
     private String unexpectedIndexProviderMessage( CapableIndexReference index )
