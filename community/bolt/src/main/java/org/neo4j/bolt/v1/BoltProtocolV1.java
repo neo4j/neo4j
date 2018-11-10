@@ -75,7 +75,7 @@ public class BoltProtocolV1 implements BoltProtocol
         pipeline.addLast( new ChunkDecoder() );
         pipeline.addLast( new MessageAccumulator() );
         pipeline.addLast( new MessageDecoder( neo4jPack, messageReader, logging ) );
-        pipeline.addLast( new HouseKeeper( connection, logging ) );
+        pipeline.addLast( new HouseKeeper( connection, logging.getInternalLog( HouseKeeper.class ) ) );
     }
 
     protected Neo4jPack createPack()
