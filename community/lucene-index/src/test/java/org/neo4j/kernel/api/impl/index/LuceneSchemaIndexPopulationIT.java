@@ -29,6 +29,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -42,6 +43,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -54,6 +56,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class LuceneSchemaIndexPopulationIT
@@ -100,9 +103,11 @@ class LuceneSchemaIndexPopulationIT
                 // now index is online and should contain updates data
                 assertTrue( uniqueIndex.isOnline() );
 
-                try ( IndexReader indexReader = indexAccessor.newReader() )
+                try ( IndexReader indexReader = indexAccessor.newReader();
+                      NodeValueIterator results = new NodeValueIterator() )
                 {
-                    long[] nodes = PrimitiveLongCollections.asArray( indexReader.query( IndexQuery.exists( 1 ) ) );
+                    indexReader.query( NULL_CONTEXT, results, IndexOrder.NONE, false, IndexQuery.exists( 1 ) );
+                    long[] nodes = PrimitiveLongCollections.asArray( results );
                     assertEquals( affectedNodes, nodes.length );
 
                     IndexSampler indexSampler = indexReader.createSampler();

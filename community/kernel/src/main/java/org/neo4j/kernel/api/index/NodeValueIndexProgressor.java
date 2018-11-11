@@ -22,12 +22,12 @@ package org.neo4j.kernel.api.index;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.values.storable.Value;
 
-class NodeValueIndexProgressor implements IndexProgressor
+public class NodeValueIndexProgressor implements IndexProgressor
 {
     private final PrimitiveLongResourceIterator ids;
     private final EntityValueClient client;
 
-    NodeValueIndexProgressor( PrimitiveLongResourceIterator ids, EntityValueClient client )
+    public NodeValueIndexProgressor( PrimitiveLongResourceIterator ids, EntityValueClient client )
     {
         this.ids = ids;
         this.client = client;

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 
 import java.util.Arrays;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.collection.PrimitiveLongResourceCollections.concat;
 
 class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexReader
 {
@@ -64,15 +62,6 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     public IndexSampler createSampler()
     {
         return new FusionIndexSampler( instanceSelector.transform( IndexReader::createSampler ) );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
-    {
-        IndexSlot slot = slotSelector.selectSlot( predicates, IndexQuery::valueGroup );
-        return slot != null
-               ? instanceSelector.select( slot ).query( predicates )
-               : concat( instanceSelector.transform( reader -> reader.query( predicates ) ) );
     }
 
     @Override

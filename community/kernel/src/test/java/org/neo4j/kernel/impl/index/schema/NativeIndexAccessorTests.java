@@ -309,10 +309,11 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader, IndexQuery.exists( 0 ) );
-
-        // then
-        assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
+        try ( NodeValueIterator result = query( reader, IndexQuery.exists( 0 ) ) )
+        {
+            // then
+            assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
+        }
     }
 
     @Test
@@ -320,11 +321,13 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
     {
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader, IndexQuery.exists( 0 ) );
-
-        // then
-        long[] actual = PrimitiveLongCollections.asArray( result );
-        assertEquals( 0, actual.length );
+        long[] actual;
+        try ( NodeValueIterator result = query( reader, IndexQuery.exists( 0 ) ) )
+        {
+            // then
+            actual = PrimitiveLongCollections.asArray( result );
+            assertEquals( 0, actual.length );
+        }
     }
 
     @Test
@@ -339,8 +342,10 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         for ( IndexEntryUpdate<IndexDescriptor> update : updates )
         {
             Value value = update.values()[0];
-            LongIterator result = query( reader, IndexQuery.exact( 0, value ) );
-            assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
+            try ( NodeValueIterator result = query( reader, IndexQuery.exact( 0, value ) ) )
+            {
+                assertEntityIdHits( extractEntityIds( updates, in( value ) ), result );
+            }
         }
     }
 
@@ -354,8 +359,10 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         // when
         IndexReader reader = accessor.newReader();
         Object value = generateUniqueValue( updates );
-        LongIterator result = query( reader, IndexQuery.exact( 0, value ) );
-        assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+        try ( NodeValueIterator result = query( reader, IndexQuery.exact( 0, value ) ) )
+        {
+            assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+        }
     }
 
     @Test
@@ -368,9 +375,11 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), false ) );
-        assertEntityIdHits( extractEntityIds( Arrays.copyOf( updates, updates.length - 1 ), alwaysTrue() ), result );
+        try ( NodeValueIterator result = query( reader,
+                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), false ) ) )
+        {
+            assertEntityIdHits( extractEntityIds( Arrays.copyOf( updates, updates.length - 1 ), alwaysTrue() ), result );
+        }
     }
 
     @Test
@@ -389,9 +398,11 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), true ) );
-        assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
+        try ( NodeValueIterator result = query( reader,
+                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[updates.length - 1] ), true ) ) )
+        {
+            assertEntityIdHits( extractEntityIds( updates, alwaysTrue() ), result );
+        }
     }
 
     @Test
@@ -404,9 +415,11 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), false ) );
-        assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length - 1 ), alwaysTrue() ), result );
+        try ( NodeValueIterator result = query( reader,
+                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), false ) ) )
+        {
+            assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length - 1 ), alwaysTrue() ), result );
+        }
     }
 
     @Test
@@ -419,9 +432,11 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), true ) );
-        assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length ), alwaysTrue() ), result );
+        try ( NodeValueIterator result = query( reader,
+                valueCreatorUtil.rangeQuery( valueOf( updates[0] ), false, valueOf( updates[updates.length - 1] ), true ) ) )
+        {
+            assertEntityIdHits( extractEntityIds( Arrays.copyOfRange( updates, 1, updates.length ), alwaysTrue() ), result );
+        }
     }
 
     @Test
@@ -434,9 +449,11 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
 
         // when
         IndexReader reader = accessor.newReader();
-        LongIterator result = query( reader,
-                valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[updates.length - 3] ), true ) );
-        assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+        try ( NodeValueIterator result = query( reader,
+                valueCreatorUtil.rangeQuery( valueOf( updates[2] ), true, valueOf( updates[updates.length - 3] ), true ) ) )
+        {
+            assertEntityIdHits( EMPTY_LONG_ARRAY, result );
+        }
     }
 
     @Test( timeout = 10_000L )
@@ -461,13 +478,18 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         long[] expectedOuter = new long[]{entityIdOf( updates[2] ), entityIdOf( updates[3] )};
         long[] expectedInner = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
-        LongIterator outerIter = query( reader, outerQuery );
-        Collection<Long> outerResult = new ArrayList<>();
-        while ( outerIter.hasNext() )
+        Collection<Long> outerResult;
+        try ( NodeValueIterator outerIter = query( reader, outerQuery ) )
         {
-            outerResult.add( outerIter.next() );
-            LongIterator innerIter = query( reader, innerQuery );
-            assertEntityIdHits( expectedInner, innerIter );
+            outerResult = new ArrayList<>();
+            while ( outerIter.hasNext() )
+            {
+                outerResult.add( outerIter.next() );
+                try ( NodeValueIterator innerIter = query( reader, innerQuery ) )
+                {
+                    assertEntityIdHits( expectedInner, innerIter );
+                }
+            }
         }
         assertEntityIdHits( expectedOuter, outerResult );
     }
@@ -498,26 +520,32 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         long[] expected3 = new long[]{entityIdOf( updates[0] ), entityIdOf( updates[1] )};
 
         Collection<Long> result1 = new ArrayList<>();
-        LongIterator iter1 = query( reader, query1 );
-        while ( iter1.hasNext() )
+        try ( NodeValueIterator iter1 = query( reader, query1 ) )
         {
-            result1.add( iter1.next() );
-
-            Collection<Long> result2 = new ArrayList<>();
-            LongIterator iter2 = query( reader, query2 );
-            while ( iter2.hasNext() )
+            while ( iter1.hasNext() )
             {
-                result2.add( iter2.next() );
+                result1.add( iter1.next() );
 
-                Collection<Long> result3 = new ArrayList<>();
-                LongIterator iter3 = query( reader, query3 );
-                while ( iter3.hasNext() )
+                Collection<Long> result2 = new ArrayList<>();
+                try ( NodeValueIterator iter2 = query( reader, query2 ) )
                 {
-                    result3.add( iter3.next() );
+                    while ( iter2.hasNext() )
+                    {
+                        result2.add( iter2.next() );
+
+                        Collection<Long> result3 = new ArrayList<>();
+                        try ( NodeValueIterator iter3 = query( reader, query3 ) )
+                        {
+                            while ( iter3.hasNext() )
+                            {
+                                result3.add( iter3.next() );
+                            }
+                        }
+                        assertEntityIdHits( expected3, result3 );
+                    }
                 }
-                assertEntityIdHits( expected3, result3 );
+                assertEntityIdHits( expected2, result2 );
             }
-            assertEntityIdHits( expected2, result2 );
         }
         assertEntityIdHits( expected1, result1 );
     }
@@ -726,16 +754,18 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         IndexReader reader = accessor.newReader();
 
         // when
-        NodeValueIterator iter = new NodeValueIterator();
-        IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1]) );
-        IndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
-        IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
-        reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, rangeQuery );
+        try ( NodeValueIterator iter = new NodeValueIterator() )
+        {
+            IndexQuery.ExactPredicate filter = IndexQuery.exact( 0, valueOf( updates[1] ) );
+            IndexQuery rangeQuery = valueCreatorUtil.rangeQuery( valueOf( updates[0] ), true, valueOf( updates[2] ), true );
+            IndexProgressor.EntityValueClient filterClient = filterClient( iter, filter );
+            reader.query( NULL_CONTEXT, filterClient, IndexOrder.NONE, false, rangeQuery );
 
-        // then
-        assertTrue( iter.hasNext() );
-        assertEquals( entityIdOf( updates[1] ), iter.next() );
-        assertFalse( iter.hasNext() );
+            // then
+            assertTrue( iter.hasNext() );
+            assertEquals( entityIdOf( updates[1] ), iter.next() );
+            assertFalse( iter.hasNext() );
+        }
     }
 
     // <READER ordering>
@@ -935,7 +965,7 @@ public abstract class NativeIndexAccessorTests<KEY extends NativeIndexKey<KEY>, 
         };
     }
 
-    private LongIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
+    private NodeValueIterator query( IndexReader reader, IndexQuery query ) throws IndexNotApplicableKernelException
     {
         NodeValueIterator client = new NodeValueIterator();
         reader.query( NULL_CONTEXT, client, IndexOrder.NONE, false, query );

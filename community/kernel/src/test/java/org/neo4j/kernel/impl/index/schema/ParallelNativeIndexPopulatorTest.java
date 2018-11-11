@@ -248,8 +248,8 @@ class ParallelNativeIndexPopulatorTest
                     method.accept( populator );
 
                     // then
-                    NodeValueIterator results = new NodeValueIterator();
-                    try ( NativeIndexReader<GenericKey,NativeIndexValue> reader = populator.newReader() )
+                    try ( NativeIndexReader<GenericKey,NativeIndexValue> reader = populator.newReader();
+                          NodeValueIterator results = new NodeValueIterator() )
                     {
                         reader.query( NULL_CONTEXT, results, IndexOrder.NONE, true, IndexQuery.exists( 1 ) );
                         long nextExpectedId = 0;

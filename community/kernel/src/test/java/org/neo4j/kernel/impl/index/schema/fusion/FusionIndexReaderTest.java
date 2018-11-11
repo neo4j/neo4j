@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema.fusion;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,16 +29,19 @@ import java.util.EnumMap;
 import java.util.function.Function;
 
 import org.neo4j.collection.PrimitiveLongCollections;
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.RangePredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringContainsPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringPrefixPredicate;
 import org.neo4j.internal.kernel.api.IndexQuery.StringSuffixPredicate;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -48,12 +50,17 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
+import static org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer.getIndexQueryArgument;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexTestHelp.fill;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v00;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionVersion.v10;
@@ -63,6 +70,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.NUMBER;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
+import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.forSchema;
 
 @RunWith( Parameterized.class )
 public class FusionIndexReaderTest
@@ -72,6 +80,7 @@ public class FusionIndexReaderTest
     private FusionIndexReader fusionIndexReader;
     private static final int PROP_KEY = 1;
     private static final int LABEL_KEY = 11;
+    private static final IndexDescriptor DESCRIPTOR = forSchema( forLabel( LABEL_KEY, PROP_KEY ) );
 
     @Parameterized.Parameters( name = "{0}" )
     public static FusionVersion[] versions()
@@ -86,12 +95,12 @@ public class FusionIndexReaderTest
     public static FusionVersion fusionVersion;
 
     @Before
-    public void setup()
+    public void setup() throws IndexNotApplicableKernelException
     {
         initiateMocks();
     }
 
-    private void initiateMocks()
+    private void initiateMocks() throws IndexNotApplicableKernelException
     {
         IndexSlot[] activeSlots = fusionVersion.aliveSlots();
         readers = new EnumMap<>( IndexSlot.class );
@@ -100,6 +109,7 @@ public class FusionIndexReaderTest
         for ( int i = 0; i < activeSlots.length; i++ )
         {
             IndexReader mock = mock( IndexReader.class );
+            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR ) ).when( mock ).query( any(), any(), any(), anyBoolean(), any() );
             aliveReaders[i] = mock;
             switch ( activeSlots[i] )
             {
@@ -155,21 +165,31 @@ public class FusionIndexReaderTest
     public void closeIteratorMustCloseAll() throws Exception
     {
         // given
-        PrimitiveLongResourceIterator[] iterators = new PrimitiveLongResourceIterator[aliveReaders.length];
+        IndexProgressor[] progressors = new IndexProgressor[aliveReaders.length];
         for ( int i = 0; i < aliveReaders.length; i++ )
         {
-            PrimitiveLongResourceIterator iterator = mock( PrimitiveLongResourceIterator.class );
-            when( aliveReaders[i].query( any( IndexQuery.class ) ) ).thenReturn( iterator );
-            iterators[i] = iterator;
+            int slot = i;
+            doAnswer( invocation ->
+            {
+                IndexProgressor.EntityValueClient client = invocation.getArgument( 1 );
+                IndexProgressor progressor = mock( IndexProgressor.class );
+                client.initialize( DESCRIPTOR, progressor, getIndexQueryArgument( invocation ), invocation.getArgument( 2 ),
+                        invocation.getArgument( 3 ), false );
+                progressors[slot] = progressor;
+                return null;
+            } ).when( aliveReaders[i] ).query( any(), any(), any(), anyBoolean(), any() );
         }
 
         // when
-        fusionIndexReader.query( IndexQuery.exists( PROP_KEY ) ).close();
+        try ( NodeValueIterator iterator = new NodeValueIterator() )
+        {
+            fusionIndexReader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, IndexQuery.exists( PROP_KEY ) );
+        }
 
         // then
-        for ( PrimitiveLongResourceIterator iterator : iterators )
+        for ( IndexProgressor progressor : progressors )
         {
-            verify( iterator, times( 1 ) ).close();
+            verify( progressor, times( 1 ) ).close();
         }
     }
 
@@ -219,7 +239,7 @@ public class FusionIndexReaderTest
     public void mustSelectLuceneForCompositePredicate() throws Exception
     {
         // then
-        verifyQueryWithCorrectReader( readers.get( LUCENE ), any( IndexQuery.class ), any( IndexQuery.class ) );
+        verifyQueryWithCorrectReader( readers.get( LUCENE ), IndexQuery.exists( 0 ), IndexQuery.exists( 1 ) );
     }
 
     @Test
@@ -360,18 +380,22 @@ public class FusionIndexReaderTest
         long lastId = 0;
         for ( IndexReader aliveReader : aliveReaders )
         {
-            when( aliveReader.query( exists ) ).thenReturn( PrimitiveLongResourceCollections.iterator( null, lastId++, lastId++ ) );
+            doAnswer( new NodeIdsIndexReaderQueryAnswer( DESCRIPTOR, lastId++, lastId++ ) ).when( aliveReader ).query(
+                    any(), any(), any(), anyBoolean(), any() );
         }
 
         // when
-        LongIterator result = fusionIndexReader.query( exists );
-
-        // then
-
-        LongSet resultSet = PrimitiveLongCollections.asSet( result );
-        for ( long i = 0L; i < lastId; i++ )
+        LongSet resultSet;
+        try ( NodeValueIterator result = new NodeValueIterator() )
         {
-            assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
+            fusionIndexReader.query( NULL_CONTEXT, result, IndexOrder.NONE, false, exists );
+
+            // then
+            resultSet = PrimitiveLongCollections.asSet( result );
+            for ( long i = 0L; i < lastId; i++ )
+            {
+                assertTrue( "Expected to contain " + i + ", but was " + resultSet, resultSet.contains( i ) );
+            }
         }
     }
 
@@ -386,7 +410,10 @@ public class FusionIndexReaderTest
             {
                 // when
                 Value value = values.get( i )[0];
-                fusionIndexReader.query( IndexQuery.exact( 0, value ) );
+                try ( NodeValueIterator cursor = new NodeValueIterator() )
+                {
+                    fusionIndexReader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, false, IndexQuery.exact( 0, value ) );
+                }
                 for ( IndexSlot j : IndexSlot.values() )
                 {
                     // then
@@ -394,7 +421,7 @@ public class FusionIndexReaderTest
                     {
                         if ( i == j )
                         {
-                            verify( readers.get( i ) ).query( any( IndexQuery.class ) );
+                            verify( readers.get( i ) ).query( any(), any(), any(), anyBoolean(), any() );
                         }
                         else
                         {
@@ -412,10 +439,21 @@ public class FusionIndexReaderTest
             throws IndexNotApplicableKernelException
     {
         // when
-        fusionIndexReader.query( indexQuery );
+        try ( NodeValueIterator cursor = new NodeValueIterator() )
+        {
+            fusionIndexReader.query( NULL_CONTEXT, cursor, IndexOrder.NONE, false, indexQuery );
+        }
 
         // then
-        verify( expectedReader, times( 1 ) ).query( indexQuery );
+        // Strange mockito inconsistency regarding varargs
+        if ( indexQuery.length == 1 )
+        {
+            verify( expectedReader, times( 1 ) ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ) );
+        }
+        else
+        {
+            verify( expectedReader, times( 1 ) ).query( any(), any(), any(), anyBoolean(), eq( indexQuery[0] ), eq( indexQuery[1] ) );
+        }
         for ( IndexReader reader : aliveReaders )
         {
             if ( reader != expectedReader )

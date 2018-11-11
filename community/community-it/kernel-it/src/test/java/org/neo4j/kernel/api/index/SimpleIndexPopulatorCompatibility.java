@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -40,7 +39,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.QueryResultComparingIndexReader;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -138,10 +136,11 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
         // THEN
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
-            try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
+            try ( IndexReader reader = accessor.newReader();
+                  NodeValueIterator nodes = new NodeValueIterator() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
-                LongIterator nodes = reader.query( IndexQuery.exact( propertyKeyId, propertyValue ) );
+                reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, propertyValue ) );
                 assertEquals( asSet( 1L ), PrimitiveLongCollections.toSet( nodes ) );
             }
         }
@@ -195,15 +194,17 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             }
 
             // THEN
-            try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
+            try ( IndexReader reader = accessor.newReader() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue entry : Iterables.concat( valueSet1, valueSet2 ) )
                 {
-                    NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false , IndexQuery.exact( propertyKeyId, entry.value ) );
-                    assertEquals( entry.nodeId, nodes.next() );
-                    assertFalse( nodes.hasNext() );
+                    try ( NodeValueIterator nodes = new NodeValueIterator() )
+                    {
+                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        assertEquals( entry.nodeId, nodes.next() );
+                        assertFalse( nodes.hasNext() );
+                    }
                 }
             }
         }
@@ -225,15 +226,17 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
     {
         try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
         {
-            try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
+            try ( IndexReader reader = accessor.newReader() )
             {
                 int propertyKeyId = descriptor.schema().getPropertyId();
                 for ( NodeAndValue entry : values )
                 {
-                    NodeValueIterator nodes = new NodeValueIterator();
-                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
-                    assertEquals( entry.nodeId, nodes.next() );
-                    assertFalse( nodes.hasNext() );
+                    try ( NodeValueIterator nodes = new NodeValueIterator() )
+                    {
+                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                        assertEquals( entry.nodeId, nodes.next() );
+                        assertFalse( nodes.hasNext() );
+                    }
                 }
             }
         }
@@ -261,14 +264,16 @@ public class SimpleIndexPopulatorCompatibility extends IndexProviderCompatibilit
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
             {
-                try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
+                try ( IndexReader reader = accessor.newReader() )
                 {
                     int propertyKeyId = descriptor.schema().getPropertyId();
                     for ( NodeAndValue entry : valueSet1 )
                     {
-                        NodeValueIterator nodes = new NodeValueIterator();
-                        reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
-                        assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
+                        try ( NodeValueIterator nodes = new NodeValueIterator() )
+                        {
+                            reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId, entry.value ) );
+                            assertEquals( entry.value.toString(), asSet( entry.nodeId, entry.nodeId + offset ), PrimitiveLongCollections.toSet( nodes ) );
+                        }
                     }
                 }
             }

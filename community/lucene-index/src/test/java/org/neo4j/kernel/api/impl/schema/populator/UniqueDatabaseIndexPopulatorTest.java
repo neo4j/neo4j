@@ -20,7 +20,6 @@
 package org.neo4j.kernel.api.impl.schema.populator;
 
 import org.apache.lucene.store.Directory;
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,6 +33,7 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -49,6 +49,7 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
@@ -68,6 +69,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.change;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.remove;
@@ -538,9 +540,10 @@ public class UniqueDatabaseIndexPopulatorTest
         populator.add( updates );
 
         index.maybeRefreshBlocking();
-        try ( IndexReader reader = index.getIndexReader() )
+        try ( IndexReader reader = index.getIndexReader();
+              NodeValueIterator allEntities = new NodeValueIterator() )
         {
-            LongIterator allEntities = reader.query( IndexQuery.exists( 1 ) );
+            reader.query( NULL_CONTEXT, allEntities, IndexOrder.NONE, false, IndexQuery.exists( 1 ) );
             assertArrayEquals( new long[]{1, 2, 3}, PrimitiveLongCollections.asArray( allEntities ) );
         }
     }

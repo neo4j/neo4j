@@ -19,20 +19,20 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.QueryResultComparingIndexReader;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 import org.neo4j.values.storable.Values;
@@ -40,6 +40,7 @@ import org.neo4j.values.storable.Values;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterators.asSet;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexQueryHelper.add;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
@@ -74,9 +75,10 @@ public class CompositeIndexPopulatorCompatibility extends IndexProviderCompatibi
             // then
             try ( IndexAccessor accessor = indexProvider.getOnlineAccessor( descriptor, indexSamplingConfig ) )
             {
-                try ( IndexReader reader = new QueryResultComparingIndexReader( accessor.newReader() ) )
+                try ( IndexReader reader = accessor.newReader();
+                      NodeValueIterator nodes = new NodeValueIterator() )
                 {
-                    LongIterator nodes = reader.query( IndexQuery.exact( 1, "v1" ), IndexQuery.exact( 1, "v2" ) );
+                    reader.query( NULL_CONTEXT, nodes, IndexOrder.NONE, false, IndexQuery.exact( 1, "v1" ), IndexQuery.exact( 1, "v2" ) );
                     assertEquals( asSet( 1L, 2L ), PrimitiveLongCollections.toSet( nodes ) );
                 }
             }

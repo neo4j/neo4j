@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -31,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -70,6 +71,7 @@ import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
@@ -229,9 +231,12 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
                     Value propertyValue = propertyValue( id, base + i );
                     IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyId(), propertyValue );
-                    LongIterator hits = reader.query( query );
-                    assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue, visitor.nodeId, hits.next() );
-                    assertFalse( hits.hasNext() );
+                    try ( NodeValueIterator hits = new NodeValueIterator() )
+                    {
+                        reader.query( NULL_CONTEXT, hits, IndexOrder.NONE, false, query );
+                        assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue, visitor.nodeId, hits.next() );
+                        assertFalse( hits.hasNext() );
+                    }
                     tx = tx.next();
                 }
             }

@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.sampler.AggregatingIndexSampler;
 import org.neo4j.kernel.api.index.AbstractIndexReader;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
@@ -72,19 +71,6 @@ public class PartitionedIndexReader extends AbstractIndexReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
-    {
-        try
-        {
-            return partitionedOperation( reader -> innerQuery( reader, predicates ) );
-        }
-        catch ( InnerException e )
-        {
-            throw e.getCause();
-        }
-    }
-
-    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
@@ -114,18 +100,6 @@ public class PartitionedIndexReader extends AbstractIndexReader
     public boolean hasFullValuePrecision( IndexQuery... predicates )
     {
         return false;
-    }
-
-    private PrimitiveLongResourceIterator innerQuery( IndexReader reader, IndexQuery[] predicates )
-    {
-        try
-        {
-            return reader.query( predicates );
-        }
-        catch ( IndexNotApplicableKernelException e )
-        {
-            throw new InnerException( e );
-        }
     }
 
     private static final class InnerException extends RuntimeException

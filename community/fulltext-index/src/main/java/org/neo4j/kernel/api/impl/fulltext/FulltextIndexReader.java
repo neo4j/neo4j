@@ -31,7 +31,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.QueryContext;
@@ -102,13 +101,6 @@ public class FulltextIndexReader implements IndexReader
         return IndexSampler.EMPTY;
     }
 
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
-    {
-        throw new IndexNotApplicableKernelException( "Fulltext indexes does not support IndexQuery queries" );
-    }
-
-    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... queries )
             throws IndexNotApplicableKernelException
     {

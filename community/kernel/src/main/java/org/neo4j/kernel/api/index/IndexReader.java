@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -46,16 +44,6 @@ public interface IndexReader extends Resource
 
     /**
      * Queries the index for the given {@link IndexQuery} predicates.
-     *
-     * @param predicates the predicates to query for.
-     * @return the matching entity IDs.
-     */
-    PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException;
-
-    /**
-     * Queries the index for the given {@link IndexQuery} predicates.
-     *
-     * @param context the transactional context of the index query.
      * @param client the client which will control the progression though query results.
      * @param needsValues if the index should fetch property values together with node ids for index queries
      * @param query the query so serve.
@@ -65,8 +53,10 @@ public interface IndexReader extends Resource
 
     /**
      * @param predicates query to determine whether or not index has full value precision for.
-     * @return whether or not this reader will only return 100% matching results from {@link #query(IndexQuery...)}.
-     * If {@code false} is returned this means that the caller of {@link #query(IndexQuery...)} will have to
+     * @return whether or not this reader will only return 100% matching results from
+     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexOrder, boolean, IndexQuery...)}.
+     * If {@code false} is returned this means that the caller of
+     * {@link #query(QueryContext, IndexProgressor.EntityValueClient, IndexOrder, boolean, IndexQuery...)} will have to
      * do additional filtering, double-checking of actual property values, externally.
      */
     boolean hasFullValuePrecision( IndexQuery... predicates );
@@ -84,12 +74,6 @@ public interface IndexReader extends Resource
         public IndexSampler createSampler()
         {
             return IndexSampler.EMPTY;
-        }
-
-        @Override
-        public PrimitiveLongResourceIterator query( IndexQuery[] predicates )
-        {
-            return PrimitiveLongResourceCollections.emptyIterator();
         }
 
         @Override

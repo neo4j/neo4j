@@ -38,12 +38,13 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyVararg;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-import static org.neo4j.collection.PrimitiveLongCollections.iterator;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
@@ -60,7 +61,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
         IndexReader reader = mock( IndexReader.class );
-        when( reader.query( anyVararg() ) ).thenAnswer( invocation -> iterator( 0 ) );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 0 ) ).when( reader ).query( any(), any(), any(), anyBoolean(), any() );
         long nodeId = 0;
         List<IndexEntryUpdate<IndexDescriptor>> updates = new ArrayList<>();
         updates.add( add( nodeId++, descriptor, tuple( 10, 11 ) ) );
@@ -89,7 +90,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
                 {
                     query[i] = IndexQuery.exact( propertyKeyIds[i], tuple[i] );
                 }
-                verify( reader ).query( query );
+                verify( reader ).query( any(), any(), any(), anyBoolean(), eq( query[0] ), eq( query[1] ) );
             }
         }
         verify( reader ).close();
@@ -102,7 +103,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
         // given
         IndexUpdater actual = mock( IndexUpdater.class );
         IndexReader reader = mock( IndexReader.class );
-        when( reader.query( anyVararg() ) ).thenAnswer( invocation -> iterator( 101, 202 ) );
+        doAnswer( new NodeIdsIndexReaderQueryAnswer( descriptor, 101, 202 ) ).when( reader ).query( any(), any(), any(), anyBoolean(), any() );
         DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor );
 
         // when

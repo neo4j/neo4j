@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -72,14 +71,6 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
             samplers.add( partReader.createSampler() );
         }
         return new FusionIndexSampler( samplers );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
-    {
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( NULL_CONTEXT, nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
-        return nodeValueIterator;
     }
 
     @Override

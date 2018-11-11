@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 
 public abstract class AbstractIndexReader implements IndexReader
@@ -32,22 +28,5 @@ public abstract class AbstractIndexReader implements IndexReader
     protected AbstractIndexReader( IndexDescriptor descriptor )
     {
         this.descriptor = descriptor;
-    }
-
-    @Override
-    public void query(
-            QueryContext context,
-            IndexProgressor.EntityValueClient client,
-            IndexOrder indexOrder,
-            boolean needsValues,
-            IndexQuery... query ) throws IndexNotApplicableKernelException
-    {
-        if ( indexOrder != IndexOrder.NONE )
-        {
-            throw new UnsupportedOperationException(
-                    String.format( "This reader only have support for index order %s. Provided index order was %s.",
-                            IndexOrder.NONE, indexOrder ) );
-        }
-        client.initialize( descriptor, new NodeValueIndexProgressor( query( query ), client ), query, indexOrder, needsValues, false );
     }
 }

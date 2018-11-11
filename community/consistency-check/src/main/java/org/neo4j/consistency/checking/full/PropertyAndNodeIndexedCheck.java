@@ -30,6 +30,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.collection.PrimitiveLongResourceCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
@@ -38,10 +40,12 @@ import org.neo4j.consistency.checking.cache.CacheAccess;
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.RecordAccess;
+import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.LookupFilter;
+import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -52,6 +56,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 /**
  * Checks nodes and how they're indexed in one go. Reports any found inconsistencies.
@@ -140,24 +145,25 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
     {
         IndexQuery[] query = seek( indexRule.schema(), propertyValues );
 
-        final LongIterator indexedNodeIds = queryIndexOrEmpty( reader, query );
-
-        long count = 0;
-        while ( indexedNodeIds.hasNext() )
+        try ( PrimitiveLongResourceIterator indexedNodeIds = queryIndexOrEmpty( reader, query ) )
         {
-            long indexedNodeId = indexedNodeIds.next();
+            long count = 0;
+            while ( indexedNodeIds.hasNext() )
+            {
+                long indexedNodeId = indexedNodeIds.next();
 
-            if ( nodeId == indexedNodeId )
-            {
-                count++;
+                if ( nodeId == indexedNodeId )
+                {
+                    count++;
+                }
+                else
+                {
+                    engine.report().uniqueIndexNotUnique( indexRule, Values.asObjects( propertyValues ), indexedNodeId );
+                }
             }
-            else
-            {
-                engine.report().uniqueIndexNotUnique( indexRule, Values.asObjects( propertyValues ), indexedNodeId );
-            }
+
+            reportIncorrectIndexCount( propertyValues, engine, indexRule, count );
         }
-
-        reportIncorrectIndexCount( propertyValues, engine, indexRule, count );
     }
 
     private void reportIncorrectIndexCount( Value[] propertyValues,
@@ -241,12 +247,14 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
         return query;
     }
 
-    private LongIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
+    private PrimitiveLongResourceIterator queryIndexOrEmpty( IndexReader reader, IndexQuery[] query )
     {
-        final LongIterator indexedNodeIds;
+        final PrimitiveLongResourceIterator indexedNodeIds;
         try
         {
-            indexedNodeIds = reader.query( query );
+            NodeValueIterator iterator = new NodeValueIterator();
+            reader.query( NULL_CONTEXT, iterator, IndexOrder.NONE, false, query );
+            indexedNodeIds = iterator;
         }
         catch ( IndexNotApplicableKernelException e )
         {
@@ -255,8 +263,19 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     Arrays.toString( query ) ), e );
         }
 
-        return reader.hasFullValuePrecision( query )
-                ? indexedNodeIds : LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
+        if ( reader.hasFullValuePrecision( query ) )
+        {
+            return indexedNodeIds;
+        }
+        LongIterator filtered = LookupFilter.exactIndexMatches( propertyReader, indexedNodeIds, query );
+        return new PrimitiveLongResourceCollections.PrimitiveLongBaseResourceIterator( indexedNodeIds )
+        {
+            @Override
+            protected boolean fetchNext()
+            {
+                return filtered.hasNext() && next( filtered.next() );
+            }
+        };
     }
 
     static boolean entityIntersectsSchema( IntObjectMap<PropertyBlock> entityPropertyMap, SchemaDescriptor schema )

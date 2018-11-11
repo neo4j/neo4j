@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.index.schema;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -99,15 +98,6 @@ abstract class NativeIndexReader<KEY extends NativeIndexKey<KEY>, VALUE extends 
         {
             throw new UncheckedIOException( e );
         }
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates )
-    {
-        // This method isn't called from main product code anymore so it can might as well delegate to the "real" method
-        NodeValueIterator nodeValueIterator = new NodeValueIterator();
-        query( NULL_CONTEXT, nodeValueIterator, IndexOrder.NONE, nodeValueIterator.needsValues(), predicates );
-        return nodeValueIterator;
     }
 
     @Override

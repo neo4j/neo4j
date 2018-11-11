@@ -29,7 +29,6 @@ import org.apache.lucene.search.TotalHitCountCollector;
 import java.io.IOException;
 import java.util.Arrays;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskControl;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -98,13 +97,6 @@ public class SimpleIndexReader extends AbstractIndexReader
     {
         Query query = toLuceneQuery( predicates );
         client.initialize( descriptor, search( query ).getIndexProgressor( NODE_ID_KEY, client ), predicates, indexOrder, needsValues, false );
-    }
-
-    @Override
-    public PrimitiveLongResourceIterator query( IndexQuery... predicates ) throws IndexNotApplicableKernelException
-    {
-        Query query = toLuceneQuery( predicates );
-        return search( query ).getValuesIterator( NODE_ID_KEY );
     }
 
     private DocValuesCollector search( Query query )
