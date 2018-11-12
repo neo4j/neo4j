@@ -115,7 +115,6 @@ public class FulltextIndexReader implements IndexReader
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... queries )
             throws IndexNotApplicableKernelException
     {
-        QueryBuilder queryFactory = new QueryBuilder( getDescriptor().analyzer() );
         BooleanQuery.Builder queryBuilder = new BooleanQuery.Builder();
         for ( IndexQuery indexQuery : queries )
         {
@@ -130,45 +129,9 @@ public class FulltextIndexReader implements IndexReader
                 {
                     throw new RuntimeException( "Could not parse the given fulltext search query: '" + fulltextSearch.query() + "'.", e );
                 }
-                continue;
             }
-            String propertyKeyName;
-            String searchTerm;
-            try
+            else
             {
-                propertyKeyName = getPropertyKeyName( indexQuery.propertyKeyId() );
-            }
-            catch ( TokenNotFoundException e )
-            {
-                throw new IndexNotApplicableKernelException( "No property key name found for property key token: " + indexQuery.propertyKeyId() );
-            }
-
-            switch ( indexQuery.type() )
-            {
-            case exact:
-                IndexQuery.ExactPredicate predicate = (IndexQuery.ExactPredicate) indexQuery;
-                if ( predicate.valueGroup() != ValueGroup.TEXT )
-                {
-                    throw new IndexNotApplicableKernelException( "A fulltext schema index cannot be used to search for exact matches of non-string typed " +
-                            "values, but the given value was in type-group " + predicate.valueGroup() + "." );
-                }
-                String stringValue = predicate.value().asObject().toString();
-                searchTerm = QueryParser.escape( stringValue );
-                queryBuilder.add( queryFactory.createBooleanQuery( propertyKeyName, searchTerm ), BooleanClause.Occur.SHOULD );
-                break;
-            case stringContains:
-                searchTerm = QueryParser.escape( ((IndexQuery.StringContainsPredicate) indexQuery).contains() );
-                queryBuilder.add( queryFactory.createBooleanQuery( propertyKeyName, "*" + searchTerm + "*" ), BooleanClause.Occur.SHOULD );
-                break;
-            case stringPrefix:
-                searchTerm = QueryParser.escape( ((IndexQuery.StringPrefixPredicate) indexQuery).prefix() );
-                queryBuilder.add( queryFactory.createBooleanQuery( propertyKeyName, searchTerm + "*" ), BooleanClause.Occur.SHOULD );
-                break;
-            case stringSuffix:
-                searchTerm = QueryParser.escape( ((IndexQuery.StringSuffixPredicate) indexQuery).suffix() );
-                queryBuilder.add( queryFactory.createBooleanQuery( propertyKeyName, "*" + searchTerm ), BooleanClause.Occur.SHOULD );
-                break;
-            default:
                 throw new IndexNotApplicableKernelException( "A fulltext schema index cannot answer " + indexQuery.type() + " queries." );
             }
         }

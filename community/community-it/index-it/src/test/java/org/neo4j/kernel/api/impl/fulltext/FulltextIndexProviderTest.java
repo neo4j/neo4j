@@ -405,35 +405,17 @@ public class FulltextIndexProviderTest
                     return true;
                 }
             };
-            int propertyKey = ktx.tokenRead().propertyKey( "hej" );
             Read read = ktx.dataRead();
-
+            read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
+            int counter = 0;
+            while ( cursor.next() )
             {
-                read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKey, "villa" ) );
-                int counter = 0;
-                while ( cursor.next() )
-                {
-                    assertThat( cursor.nodeReference(), is( nodeId ) );
-                    counter++;
-                }
-                assertThat( counter, is( 1 ) );
-                assertThat( acceptedEntities.size(), is( 1 ) );
-                System.out.println(acceptedEntities);
-                acceptedEntities.clear();
+                assertThat( cursor.nodeReference(), is( nodeId ) );
+                counter++;
             }
-
-            {
-                read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
-                int counter = 0;
-                while ( cursor.next() )
-                {
-                    assertThat( cursor.nodeReference(), is( nodeId ) );
-                    counter++;
-                }
-                assertThat( counter, is( 1 ) );
-                assertThat( acceptedEntities.size(), is( 1 ) );
-                acceptedEntities.clear();
-            }
+            assertThat( counter, is( 1 ) );
+            assertThat( acceptedEntities.size(), is( 1 ) );
+            acceptedEntities.clear();
         }
     }
 
