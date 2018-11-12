@@ -103,6 +103,7 @@ public abstract class ServerBootstrapper implements Bootstrapper
                     .withSettings( configOverrides )
                     .withHome(homeDir)
                     .withValidators( configurationValidators() )
+                    .withNoThrowOnFileLoadFailure() // TODO 4.0: Remove this, and require a neo4j.conf file to be present?
                     .withServerDefaults().build();
 
             LogProvider userLogProvider = setupLogging( config );

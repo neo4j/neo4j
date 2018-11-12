@@ -102,6 +102,7 @@ public class LoadCommand implements AdminCommand
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
                 .withConnectorsDisabled()
+                .withNoThrowOnFileLoadFailure()
                 .withSetting( GraphDatabaseSettings.active_database, databaseName )
                 .build();
     }

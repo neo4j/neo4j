@@ -821,7 +821,7 @@ public class Config implements DiagnosticsProvider, Configuration
         {
             if ( throwOnFileLoadFailure )
             {
-                throw new UncheckedIOException( new IOException( "Config file [" + file + "] does not exist." ) );
+                throw new ConfigLoadIOException( new IOException( "Config file [" + file + "] does not exist." ) );
             }
             log.warn( "Config file [%s] does not exist.", file );
             return;
@@ -857,7 +857,7 @@ public class Config implements DiagnosticsProvider, Configuration
         {
             if ( throwOnFileLoadFailure )
             {
-                throw new UncheckedIOException( "Unable to load config file [" + file + "].", e );
+                throw new ConfigLoadIOException( "Unable to load config file [" + file + "].", e );
             }
             log.error( "Unable to load config file [%s]: %s", file, e.getMessage() );
         }

@@ -276,7 +276,7 @@ public class ConfigTest
         verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
     }
 
-    @Test( expected = UncheckedIOException.class )
+    @Test( expected = ConfigLoadIOException.class )
     public void mustThrowIfConfigFileCouldNotBeFound()
     {
         File confFile = testDirectory.file( "test.conf" );
@@ -284,7 +284,7 @@ public class ConfigTest
         Config.fromFile( confFile ).build();
     }
 
-    @Test( expected = UncheckedIOException.class )
+    @Test( expected = ConfigLoadIOException.class )
     public void mustThrowIfConfigFileCoutNotBeRead() throws IOException
     {
         File confFile = testDirectory.file( "test.conf" );
