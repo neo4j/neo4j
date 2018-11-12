@@ -33,12 +33,6 @@ public abstract class AbstractIndexReader implements IndexReader
     }
 
     @Override
-    public boolean indexIncludesTransactionState()
-    {
-        return false;
-    }
-
-    @Override
     public void query(
             QueryContext context,
             IndexProgressor.EntityValueClient client,

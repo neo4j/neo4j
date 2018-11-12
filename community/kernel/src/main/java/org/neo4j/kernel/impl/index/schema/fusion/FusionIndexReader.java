@@ -76,12 +76,6 @@ class FusionIndexReader extends FusionIndexBase<IndexReader> implements IndexRea
     }
 
     @Override
-    public boolean indexIncludesTransactionState()
-    {
-        return false;
-    }
-
-    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
             throws IndexNotApplicableKernelException
     {

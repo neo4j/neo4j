@@ -83,12 +83,6 @@ class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>>
     }
 
     @Override
-    public boolean indexIncludesTransactionState()
-    {
-        return false;
-    }
-
-    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... predicates )
     {
         if ( predicates.length != 1 )

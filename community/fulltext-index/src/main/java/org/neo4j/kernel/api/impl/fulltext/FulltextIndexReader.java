@@ -112,12 +112,6 @@ public class FulltextIndexReader implements IndexReader
     }
 
     @Override
-    public boolean indexIncludesTransactionState()
-    {
-        return true;
-    }
-
-    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... queries )
             throws IndexNotApplicableKernelException
     {

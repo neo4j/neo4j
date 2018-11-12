@@ -100,12 +100,6 @@ public class QueryResultComparingIndexReader implements IndexReader
     }
 
     @Override
-    public boolean indexIncludesTransactionState()
-    {
-        return actual.indexIncludesTransactionState();
-    }
-
-    @Override
     public void query( QueryContext context, IndexProgressor.EntityValueClient client, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException
     {
