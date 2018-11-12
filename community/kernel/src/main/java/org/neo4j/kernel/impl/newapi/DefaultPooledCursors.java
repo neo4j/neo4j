@@ -242,7 +242,7 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     {
         if ( relationshipIndexCursor == null )
         {
-            return trace( new DefaultRelationshipIndexCursor( this ) );
+            return trace( new DefaultRelationshipIndexCursor( this::accept ) );
         }
 
         try

@@ -34,13 +34,13 @@ import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> implements RelationshipIndexCursor, EntityIndexSeekClient
 {
-    private final DefaultCursors pool;
+    private final CursorPool<DefaultRelationshipIndexCursor> pool;
     private Read read;
     private Resource resource;
     private long relationship;
     private float score;
 
-    DefaultRelationshipIndexCursor( DefaultCursors pool )
+    DefaultRelationshipIndexCursor( CursorPool<DefaultRelationshipIndexCursor> pool )
     {
         this.pool = pool;
         relationship = NO_ID;

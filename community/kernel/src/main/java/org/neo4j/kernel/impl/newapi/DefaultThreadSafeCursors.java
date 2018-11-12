@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
+import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -95,6 +96,12 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     {
         return trace( new DefaultNodeLabelIndexCursor(
                 DefaultNodeLabelIndexCursor::release ) );
+    }
+
+    @Override
+    public RelationshipIndexCursor allocateRelationshipIndexCursor()
+    {
+        return new DefaultRelationshipIndexCursor( DefaultRelationshipIndexCursor::release );
     }
 
     @Override
