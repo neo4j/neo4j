@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.opencypher.v9_0.util.CypherTypeException;
-import org.opencypher.v9_0.util.InvalidArgumentException;
-import org.opencypher.v9_0.util.ParameterWrongTypeException;
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException;
+import org.neo4j.cypher.internal.v3_5.util.InvalidArgumentException;
+import org.neo4j.cypher.internal.v3_5.util.ParameterWrongTypeException;
 
 import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;

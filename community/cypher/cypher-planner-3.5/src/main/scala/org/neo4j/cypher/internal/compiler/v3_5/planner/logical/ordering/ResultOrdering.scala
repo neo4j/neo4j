@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ordering
 
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexOrderCapability
-import org.opencypher.v9_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 /**
   * This object provides some utility methods around RequiredOrder and ProvidedOrder.

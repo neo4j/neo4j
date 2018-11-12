@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.graphdb.{Node, PropertyContainer, Result}
 import org.neo4j.kernel.api.exceptions.Status
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._

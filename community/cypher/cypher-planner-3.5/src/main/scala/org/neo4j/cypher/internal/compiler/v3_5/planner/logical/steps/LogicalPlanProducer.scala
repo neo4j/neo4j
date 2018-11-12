@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v3_5.logical.plans
 import org.neo4j.cypher.internal.v3_5.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.AssertionRunner.Thunk
-import org.opencypher.v9_0.util.Foldable.FoldableAny
-import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
-import org.opencypher.v9_0.util.{AssertionRunner, ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.v3_5.ast
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.AssertionRunner.Thunk
+import org.neo4j.cypher.internal.v3_5.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Attributes, IdGen}
+import org.neo4j.cypher.internal.v3_5.util.{AssertionRunner, ExhaustiveShortestPathForbiddenException, InternalException}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.

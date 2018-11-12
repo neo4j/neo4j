@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4, semantics => sem
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilV3_4}
 import org.neo4j.cypher.internal.v3_4.expressions.{Expression => ExpressionV3_4}
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable => SemanticTablev3_5}
-import org.opencypher.v9_0.expressions.{Expression => Expressionv3_5}
-import org.opencypher.v9_0.{ast => astv3_5, expressions => expressionsv3_5, util => utilv3_5}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable => SemanticTablev3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression => Expressionv3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astv3_5, expressions => expressionsv3_5, util => utilv3_5}
 
 import scala.collection.mutable
 

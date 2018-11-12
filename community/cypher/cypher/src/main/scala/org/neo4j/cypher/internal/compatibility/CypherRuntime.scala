@@ -32,8 +32,8 @@ import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.{InternalNotificationLogger, RecordingNotificationLogger}
-import org.opencypher.v9_0.util.InternalNotification
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{InternalNotificationLogger, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.v3_5.util.InternalNotification
 
 import scala.concurrent.duration.Duration
 import scala.util.Try

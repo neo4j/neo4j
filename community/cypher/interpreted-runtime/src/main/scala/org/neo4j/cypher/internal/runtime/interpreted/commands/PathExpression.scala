@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.PatternGraphBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
-import org.opencypher.v9_0.util.UnNamedNameGenerator.isNamed
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.ir.v3_5.{InterestingOrder, QueryGraph, Selections}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions.PartialPredicate.PartialPredicateWrapper
-import org.opencypher.v9_0.expressions.{Expression, Ors}
-import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
+import org.neo4j.cypher.internal.v3_5.expressions.PartialPredicate.PartialPredicateWrapper
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression, Ors}
+import org.neo4j.cypher.internal.v3_5.frontend.helpers.SeqCombiner.combine
 
 case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanner {
 

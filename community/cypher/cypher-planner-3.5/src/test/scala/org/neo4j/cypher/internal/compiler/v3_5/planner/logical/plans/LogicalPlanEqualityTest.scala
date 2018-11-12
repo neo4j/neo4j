@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.opencypher.v9_0.util.attribution.SequentialIdGen
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 class LogicalPlanEqualityTest extends CypherFunSuite with LogicalPlanningTestSupport  {

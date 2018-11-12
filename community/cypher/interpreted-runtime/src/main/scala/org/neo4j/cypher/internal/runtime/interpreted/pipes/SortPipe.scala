@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import java.util.Comparator
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.values.{AnyValue, AnyValues}
 
 case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])

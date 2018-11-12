@@ -129,17 +129,17 @@
     <!-- test dependencies -->
 
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>util-9.0</artifactId>
-      <version>${openCypher.frontend.version}</version>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-util-3.5</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
 
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>expressions-9.0</artifactId>
-      <version>${openCypher.frontend.version}</version>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-expressions-3.5</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

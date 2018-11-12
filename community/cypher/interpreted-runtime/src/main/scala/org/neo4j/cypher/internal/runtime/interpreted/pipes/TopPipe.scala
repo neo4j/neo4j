@@ -24,7 +24,7 @@ import java.util.Comparator
 import org.neo4j.cypher.internal.DefaultComparatorTopTable
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.values.storable.NumberValue
 
 import scala.collection.JavaConverters._

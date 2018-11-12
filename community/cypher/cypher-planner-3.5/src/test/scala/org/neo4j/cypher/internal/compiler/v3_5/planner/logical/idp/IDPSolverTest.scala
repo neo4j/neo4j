@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
 import org.mockito.Mockito.{spy, verify, verifyNoMoreInteractions}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.ProjectingSelector
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 

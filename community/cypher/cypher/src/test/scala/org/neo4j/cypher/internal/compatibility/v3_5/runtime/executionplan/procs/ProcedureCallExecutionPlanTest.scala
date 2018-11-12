@@ -31,11 +31,11 @@ import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.internal.kernel.api.Procedures
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.DummyPosition
-import org.opencypher.v9_0.util.attribution.SequentialIdGen
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.DummyPosition
+import org.neo4j.cypher.internal.v3_5.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.collection.JavaConverters._
 

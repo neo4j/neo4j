@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.attribution.{IdGen, SameId}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.attribution.{IdGen, SameId}
 
 /**
   * This operator does a full scan of an index, producing one row per entry.

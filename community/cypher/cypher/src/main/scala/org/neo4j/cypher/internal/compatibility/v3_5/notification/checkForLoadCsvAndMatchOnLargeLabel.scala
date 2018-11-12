@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.notification
 import org.neo4j.cypher.internal.compiler.v3_5.LargeLabelWithLoadCsvNotification
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LoadCSV, LogicalPlan, NodeByLabelScan}
-import org.opencypher.v9_0.util._
+import org.neo4j.cypher.internal.v3_5.util._
 
 case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
                                                nonIndexedLabelWarningThreshold: Long
@@ -31,7 +31,7 @@ case class checkForLoadCsvAndMatchOnLargeLabel(planContext: PlanContext,
   private val threshold = Cardinality(nonIndexedLabelWarningThreshold)
 
   def apply(plan: LogicalPlan): Seq[InternalNotification] = {
-    import org.opencypher.v9_0.util.Foldable._
+    import org.neo4j.cypher.internal.v3_5.util.Foldable._
 
     sealed trait SearchState
     case object NoneFound extends SearchState

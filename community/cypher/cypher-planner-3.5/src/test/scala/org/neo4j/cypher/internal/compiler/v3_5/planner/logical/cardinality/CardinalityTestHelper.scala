@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphProduce
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.Variable
-import org.opencypher.v9_0.util.Cardinality.NumericCardinality
-import org.opencypher.v9_0.util._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions.Variable
+import org.neo4j.cypher.internal.v3_5.util.Cardinality.NumericCardinality
+import org.neo4j.cypher.internal.v3_5.util._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.MatchResult
 import org.scalatest.matchers.Matcher
 

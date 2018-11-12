@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.v3_5.logical.plans.{QualifiedName, SeekableArgs}
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.graphdb.ExecutionPlanDescription.ProfilerStatistics
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.symbols.CypherType
-import org.opencypher.v9_0.{expressions => ast}
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.{expressions => ast}
 
 import scala.collection.mutable
 import scala.collection.mutable.ArrayBuffer

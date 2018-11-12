@@ -23,7 +23,7 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v3_5.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v3_5.frontend.phases.InternalNotificationLogger
 
 /**
   * The regular community runtime context.

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{IsList, IsMap}
-import org.opencypher.v9_0.util.CypherTypeException
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
+import org.neo4j.cypher.internal.v3_5.util.symbols._
 import org.neo4j.values._
 import org.neo4j.values.storable._
 import org.neo4j.values.virtual._

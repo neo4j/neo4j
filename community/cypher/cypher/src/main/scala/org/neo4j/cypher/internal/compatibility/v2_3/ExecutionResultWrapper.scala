@@ -41,8 +41,8 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.impl.notification.{NotificationCode, NotificationDetail}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 
 import scala.collection.JavaConverters._
 

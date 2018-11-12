@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v3_5
 
 import java.time.Clock
 
-import org.opencypher.v9_0.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, MetricsFactory, QueryGraphSolver}
-import org.opencypher.v9_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 trait ContextCreator[Context <: BaseContext] {
   def create(tracer: CompilationPhaseTracer,

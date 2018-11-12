@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v3_5.phases
 
 import java.time.Clock
 
-import org.opencypher.v9_0.util.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.v3_5.util.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
-import org.opencypher.v9_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
-import org.opencypher.v9_0.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherException,
                      val tracer: CompilationPhaseTracer,

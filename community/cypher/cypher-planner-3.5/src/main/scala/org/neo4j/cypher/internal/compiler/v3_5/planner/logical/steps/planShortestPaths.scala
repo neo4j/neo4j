@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp.expandSolverStep
 import org.neo4j.cypher.internal.ir.v3_5.{Predicate, ShortestPathPattern, _}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Ascending, DoNotIncludeTies, IncludeTies, LogicalPlan}
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Length, Nodes}
-import org.opencypher.v9_0.rewriting.rewriters.projectNamedPaths
-import org.opencypher.v9_0.util.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.functions.{Length, Nodes}
+import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.projectNamedPaths
+import org.neo4j.cypher.internal.v3_5.util.{ExhaustiveShortestPathForbiddenException, FreshIdNameGenerator, InternalException}
 
 case object planShortestPaths {
 

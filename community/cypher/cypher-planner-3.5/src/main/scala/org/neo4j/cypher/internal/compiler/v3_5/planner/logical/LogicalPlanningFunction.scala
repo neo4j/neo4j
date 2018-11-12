@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
 
 // TODO: Return Iterator
 trait CandidateGenerator[T] extends {

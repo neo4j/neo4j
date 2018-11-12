@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.expressions._
 
 object extractPredicates {
 

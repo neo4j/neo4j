@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{Cardinal
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.ExpressionSelectivityCalculator
 import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.util.Cardinality
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.util.Cardinality
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
   def newCardinalityEstimator(queryGraphCardinalityModel: QueryGraphCardinalityModel, evaluator: ExpressionEvaluator): CardinalityModel = {

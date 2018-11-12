@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.ast.{AstConstructionTestSupport, SortItem}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.{AstConstructionTestSupport, SortItem}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.opencypher.v9_0.expressions.UnsignedDecimalIntegerLiteral
+import org.neo4j.cypher.internal.v3_5.expressions.UnsignedDecimalIntegerLiteral
 
 class PlannerQueryTest extends CypherFunSuite with AstConstructionTestSupport {
   test("pair map") {

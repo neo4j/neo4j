@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{Expand, ExpandAll, ExpandInto, LogicalPlan}
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 
 class ExpandSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {

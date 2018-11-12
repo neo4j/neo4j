@@ -30,10 +30,10 @@ import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.{InternalNotification, InvalidArgumentException}
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.util.{InternalNotification, InvalidArgumentException}
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 /**
   * Execution plan for calling procedures

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast
 
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticState}
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CallClauseTest extends CypherFunSuite with AstConstructionTestSupport {

@@ -23,7 +23,7 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues.list

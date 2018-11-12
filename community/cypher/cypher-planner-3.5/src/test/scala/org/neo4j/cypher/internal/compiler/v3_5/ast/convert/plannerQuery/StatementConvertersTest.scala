@@ -26,15 +26,15 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.FieldSignature
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureReadOnlyAccess
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
-import org.opencypher.v9_0.ast.Hint
-import org.opencypher.v9_0.ast.UsingIndexHint
-import org.opencypher.v9_0.expressions.SemanticDirection.BOTH
-import org.opencypher.v9_0.expressions.SemanticDirection.INCOMING
-import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.helpers.StringHelper._
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.Hint
+import org.neo4j.cypher.internal.v3_5.ast.UsingIndexHint
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.INCOMING
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.helpers.StringHelper._
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

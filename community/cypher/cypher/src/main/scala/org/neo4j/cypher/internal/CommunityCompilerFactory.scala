@@ -31,7 +31,7 @@ import org.neo4j.helpers.Clock
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.{Log, LogProvider}
-import org.opencypher.v9_0.util.InvalidArgumentException
+import org.neo4j.cypher.internal.v3_5.util.InvalidArgumentException
 
 /**
   * Factory which creates cypher compilers.

@@ -39,16 +39,16 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.opencypher.v9_0.expressions.PathExpression
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.util.attribution.{SequentialIdGen => SequentialIdGenv3_5}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.NonEmptyList
-import org.opencypher.v9_0.util.{symbols => symbolsv3_5}
-import org.opencypher.v9_0.{ast => astv3_5}
-import org.opencypher.v9_0.{util => utilv3_5}
-import org.opencypher.v9_0.{expressions => expressionsv3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.PathExpression
+import  org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.attribution.{SequentialIdGen => SequentialIdGenv3_5}
+import  org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
+import  org.neo4j.cypher.internal.v3_5.util.NonEmptyList
+import  org.neo4j.cypher.internal.v3_5.util.{symbols => symbolsv3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astv3_5}
+import  org.neo4j.cypher.internal.v3_5.{util => utilv3_5}
+import  org.neo4j.cypher.internal.v3_5.{expressions => expressionsv3_5}
 import org.reflections.Reflections
 
 import scala.collection.JavaConverters._

@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer}
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 // =============================================== /
 // RUNTIME INTERFACES, implemented by each runtime /

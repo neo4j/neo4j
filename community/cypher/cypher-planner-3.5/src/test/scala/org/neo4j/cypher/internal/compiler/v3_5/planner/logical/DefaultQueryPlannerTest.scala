@@ -28,13 +28,13 @@ import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.opencypher.v9_0.ast.{ASTAnnotationMap, Hint}
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.frontend.phases.devNullLogger
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.v3_5.ast.{ASTAnnotationMap, Hint}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class DefaultQueryPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

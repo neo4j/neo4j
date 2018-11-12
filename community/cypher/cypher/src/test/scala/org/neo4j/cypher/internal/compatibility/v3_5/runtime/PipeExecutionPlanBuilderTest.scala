@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.opencypher.v9_0.util.attribution.{Id, SameId}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, SameId}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {

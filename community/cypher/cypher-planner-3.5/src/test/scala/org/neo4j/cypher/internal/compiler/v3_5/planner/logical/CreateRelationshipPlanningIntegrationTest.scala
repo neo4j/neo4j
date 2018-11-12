@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, CreateRelationship}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.{RelTypeName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{RelTypeName, SemanticDirection, Variable}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
 
 class CreateRelationshipPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

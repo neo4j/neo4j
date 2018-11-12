@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * Change the reads of all source plans to target the active tx-state instead of the stable. This is used for MERGE

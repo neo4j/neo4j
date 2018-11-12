@@ -23,7 +23,7 @@ import org.mockito.Mockito
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.values.virtual.NodeValue
 
 class AllNodesScanPipeTest extends CypherFunSuite {

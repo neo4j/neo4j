@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.DurationValue
 import org.neo4j.values.storable.Values.{NO_VALUE, doubleValue, intValue, longValue}
-import org.opencypher.v9_0.util.CypherTypeException
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
 
 class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)

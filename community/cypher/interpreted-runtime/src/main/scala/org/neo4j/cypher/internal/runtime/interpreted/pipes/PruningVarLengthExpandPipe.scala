@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{RelationshipValue, VirtualNodeValue}
 

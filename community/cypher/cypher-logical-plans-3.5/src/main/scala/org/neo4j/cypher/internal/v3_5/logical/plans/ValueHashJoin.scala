@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.Equals
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.Equals
 
 /**
   * The definition of a value join is an equality predicate between two expressions that

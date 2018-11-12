@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.Transaction
 import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.security.AnonymousContext
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.BeforeAndAfterAll
 
 class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAll {

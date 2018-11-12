@@ -41,10 +41,10 @@ import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.opencypher.v9_0.expressions.{LabelToken, PropertyKeyToken, SemanticDirection}
-import org.opencypher.v9_0.frontend.phases.devNullLogger
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelToken, PropertyKeyToken, SemanticDirection}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId}
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer

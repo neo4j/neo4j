@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 
 class Profiler(databaseInfo: DatabaseInfo,
                stats: InterpretedProfileInformation) extends PipeDecorator {

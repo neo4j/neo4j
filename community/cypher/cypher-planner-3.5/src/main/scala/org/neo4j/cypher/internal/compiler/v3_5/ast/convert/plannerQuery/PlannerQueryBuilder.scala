@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v3_5.helpers.ListSupport
-import org.opencypher.v9_0.ast.RelationshipStartItem
-import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.ast.RelationshipStartItem
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.opencypher.v9_0.util.UnNamedNameGenerator
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.UnNamedNameGenerator
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 
 import scala.collection.mutable
 
@@ -138,7 +138,7 @@ case class PlannerQueryBuilder(private val q: PlannerQuery, semanticTable: Seman
     }
 
     def groupInequalities(plannerQuery: PlannerQuery): PlannerQuery = {
-      import org.opencypher.v9_0.util.NonEmptyList._
+      import org.neo4j.cypher.internal.v3_5.util.NonEmptyList._
 
       plannerQuery
         .amendQueryGraph(_.mapSelections {

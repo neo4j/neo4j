@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.planner.v3_5.spi
 
-import org.opencypher.v9_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
 
 sealed abstract class CostBasedPlannerName extends PlannerName {
   val toTextOutput = "COST"

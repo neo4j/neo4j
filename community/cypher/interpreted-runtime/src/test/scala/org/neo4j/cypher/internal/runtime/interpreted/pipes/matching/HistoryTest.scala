@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.CommunityExecutionContextFactory
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.graphdb.{Relationship, RelationshipType}
 import org.neo4j.values.storable.Values.{stringArray, stringValue}
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_MAP, relationshipValue, nodeValue}

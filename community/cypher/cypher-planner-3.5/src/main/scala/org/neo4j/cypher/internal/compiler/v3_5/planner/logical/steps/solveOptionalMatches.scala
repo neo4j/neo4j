@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter.unnestOptional
 import org.neo4j.cypher.internal.ir.v3_5.{InterestingOrder, QueryGraph}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.ast.UsingJoinHint
+import org.neo4j.cypher.internal.v3_5.ast.UsingJoinHint
 
 trait OptionalSolver {
   def apply(qg: QueryGraph, lp: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan]

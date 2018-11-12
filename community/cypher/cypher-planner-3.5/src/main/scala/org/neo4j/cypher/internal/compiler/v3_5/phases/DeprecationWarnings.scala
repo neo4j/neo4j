@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
 import org.neo4j.cypher.internal.compiler.v3_5.{DeprecatedFieldNotification, DeprecatedProcedureNotification, ProcedureWarningNotification}
-import org.opencypher.v9_0.ast.{ProcedureResultItem, Statement, UnresolvedCall}
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
-import org.opencypher.v9_0.frontend.phases.{BaseContext, BaseState, VisitorPhase}
-import org.opencypher.v9_0.util._
+import org.neo4j.cypher.internal.v3_5.ast.{ProcedureResultItem, Statement, UnresolvedCall}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.DEPRECATION_WARNINGS
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, BaseState, VisitorPhase}
+import org.neo4j.cypher.internal.v3_5.util._
 import org.neo4j.cypher.internal.v3_5.logical.plans.{FieldSignature, ProcedureSignature, ResolvedCall}
 
 object ProcedureDeprecationWarnings extends VisitorPhase[BaseContext, BaseState] {

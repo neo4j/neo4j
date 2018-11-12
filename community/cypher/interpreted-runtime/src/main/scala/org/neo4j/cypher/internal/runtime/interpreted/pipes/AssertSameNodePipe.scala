@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.opencypher.v9_0.util.MergeConstraintConflictException
+import org.neo4j.cypher.internal.v3_5.util.MergeConstraintConflictException
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.CastSupport
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 import org.neo4j.values.virtual.VirtualNodeValue
 
 case class AssertSameNodePipe(source: Pipe, inner: Pipe, node: String)

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.PatternLength
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.RelTypeName
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.RelTypeName
 
 /**
   * For every source row, consider the path described by the relationships in 'rel'

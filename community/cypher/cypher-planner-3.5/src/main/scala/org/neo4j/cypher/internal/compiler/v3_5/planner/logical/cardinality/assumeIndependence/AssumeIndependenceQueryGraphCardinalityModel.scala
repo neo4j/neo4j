@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.assu
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.{QueryGraphCardinalityModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.{ExpressionSelectivityCalculator, SelectivityCombiner}
-import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, _}
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
-import org.opencypher.v9_0.util.{Cardinality, Selectivity}
-import org.opencypher.v9_0.expressions.LabelName
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Selectivity}
+import org.neo4j.cypher.internal.v3_5.expressions.LabelName
 
 case class AssumeIndependenceQueryGraphCardinalityModel(stats: GraphStatistics, combiner: SelectivityCombiner)
   extends QueryGraphCardinalityModel {

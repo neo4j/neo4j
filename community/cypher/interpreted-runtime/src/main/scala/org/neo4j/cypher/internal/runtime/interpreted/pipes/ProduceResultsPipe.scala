@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
 import org.neo4j.values.AnyValue
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 
 case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {

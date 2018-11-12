@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
-import org.opencypher.v9_0.frontend.phases._
+import org.neo4j.cypher.internal.v3_5.frontend.phases._
 
 /**
   * Base planner.

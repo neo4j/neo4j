@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecu
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryStatistics}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.util.ParameterNotFoundException
+import org.neo4j.cypher.internal.v3_5.util.ParameterNotFoundException
 
 import scala.collection.mutable
 

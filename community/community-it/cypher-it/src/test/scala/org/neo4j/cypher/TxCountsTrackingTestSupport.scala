@@ -20,7 +20,7 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.RewindableExecutionResult
-import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 trait TxCountsTrackingTestSupport extends CypherTestSupport {
   self: CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport =>

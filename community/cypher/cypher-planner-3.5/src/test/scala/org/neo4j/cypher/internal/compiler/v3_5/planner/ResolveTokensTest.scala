@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.ast.{Match, Query, SingleQuery, Where, _}
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.ast.{Match, Query, SingleQuery, Where, _}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId, RelTypeId}
 
 class ResolveTokensTest extends CypherFunSuite {
 
-  import org.opencypher.v9_0.parser.ParserFixture._
+  import org.neo4j.cypher.internal.v3_5.parser.ParserFixture._
 
   parseTest("match (n) where n.name = 'Resolved' return *") { query =>
     implicit val semanticTable = SemanticTable()

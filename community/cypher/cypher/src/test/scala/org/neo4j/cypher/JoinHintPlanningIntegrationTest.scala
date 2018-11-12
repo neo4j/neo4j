@@ -22,8 +22,8 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.QueryGraphSolver
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.idp._
-import org.opencypher.v9_0.util.Foldable.FoldableAny
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v3_5.RegularPlannerQuery
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.scalacheck.Gen

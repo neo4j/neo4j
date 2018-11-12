@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{LazyTypes, QueryState}
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.graphdb.Path
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.virtual.{RelationshipValue, NodeValue}

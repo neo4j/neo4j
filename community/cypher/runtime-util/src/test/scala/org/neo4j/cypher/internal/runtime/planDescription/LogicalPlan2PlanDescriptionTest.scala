@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders}
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions.{SemanticDirection, LabelName => AstLabelName, _}
-import org.opencypher.v9_0.util._
-import org.opencypher.v9_0.util.attribution.{Id, IdGen, SequentialIdGen}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{SemanticDirection, LabelName => AstLabelName, _}
+import org.neo4j.cypher.internal.v3_5.util._
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.{TableDrivenPropertyChecks, TableFor2}
 
 class LogicalPlan2PlanDescriptionTest extends CypherFunSuite with TableDrivenPropertyChecks {

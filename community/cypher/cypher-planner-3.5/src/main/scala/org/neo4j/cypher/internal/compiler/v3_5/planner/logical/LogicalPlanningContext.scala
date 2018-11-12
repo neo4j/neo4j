@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps.{CostCompar
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.Variable
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.Cardinality
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions.Variable
+import org.neo4j.cypher.internal.v3_5.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v3_5.util.Cardinality
 
 case class LogicalPlanningContext(planContext: PlanContext,
                                   logicalPlanProducer: LogicalPlanProducer,

@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.opencypher.v9_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 import org.neo4j.internal.kernel.api.{Kernel, Transaction => KernelTransaction}
 

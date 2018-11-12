@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.opencypher.v9_0.util.InternalException
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.helpers.collection.PrefetchingIterator
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.NO_VALUE

@@ -26,8 +26,8 @@ import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 
 /**
   * Extends PipeWithSource with methods for setting properties and labels on entities.

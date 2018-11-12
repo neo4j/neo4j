@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderC
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
-import org.opencypher.v9_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v3_5.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {

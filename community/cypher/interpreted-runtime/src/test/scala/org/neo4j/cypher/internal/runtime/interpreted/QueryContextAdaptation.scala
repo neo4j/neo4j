@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 
 trait QueryContextAdaptation {
   self: QueryContext =>

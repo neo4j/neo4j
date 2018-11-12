@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality
 
-import org.opencypher.v9_0.util.{InternalException, LabelId, NameId, RelTypeId}
+import org.neo4j.cypher.internal.v3_5.util.{InternalException, LabelId, NameId, RelTypeId}
 
 sealed trait TokenSpec[+ID <: NameId] {
   def id: Option[ID]

@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListL
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class CoercedPredicateTest extends CypherFunSuite {
 

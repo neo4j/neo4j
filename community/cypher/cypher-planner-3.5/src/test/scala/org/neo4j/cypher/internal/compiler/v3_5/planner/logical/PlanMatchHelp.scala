@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
-import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v3_5.expressions._
 
 trait PlanMatchHelp extends AstConstructionTestSupport {
 

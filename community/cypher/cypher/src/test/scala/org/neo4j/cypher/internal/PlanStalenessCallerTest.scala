@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, GraphStatisticsSnapshot, NodesWithLabelCardinality}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.time.{Clocks, FakeClock}
-import org.opencypher.v9_0.util.LabelId
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.LabelId
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class PlanStalenessCallerTest extends CypherFunSuite {
 

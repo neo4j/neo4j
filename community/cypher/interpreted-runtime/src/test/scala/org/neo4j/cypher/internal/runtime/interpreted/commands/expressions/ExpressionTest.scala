@@ -24,8 +24,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.ReturnItem
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Not, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.collection.Map
 

@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /*
  * Only produce the first 'count' rows from source.

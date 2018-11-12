@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions.Property
-import org.opencypher.v9_0.expressions.PropertyKeyName
-import org.opencypher.v9_0.expressions.PropertyKeyToken
-import org.opencypher.v9_0.expressions.Variable
-import org.opencypher.v9_0.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.expressions.Property
+import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyToken
+import org.neo4j.cypher.internal.v3_5.expressions.Variable
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
 
 case class IndexedProperty(propertyKeyToken: PropertyKeyToken, getValueFromIndex: GetValueFromIndexBehavior) {
   def shouldGetValue: Boolean = getValueFromIndex == GetValue

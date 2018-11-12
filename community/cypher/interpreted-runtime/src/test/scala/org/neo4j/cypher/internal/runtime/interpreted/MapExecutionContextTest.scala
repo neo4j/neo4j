@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.v3_5.logical.plans.CachedNodeProperty
 import org.neo4j.values.storable.BooleanValue
-import org.opencypher.v9_0.expressions.PropertyKeyName
-import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class MapExecutionContextTest extends CypherFunSuite {
   test("create clone") {

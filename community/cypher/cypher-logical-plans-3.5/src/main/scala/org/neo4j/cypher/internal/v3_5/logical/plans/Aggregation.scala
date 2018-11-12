@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.expressions.Property
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.expressions.Property
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * Aggregation is a more advanced version of Distinct, where source rows are grouped by the

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.attribution.{Id, IdGen, SameId}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{InputPosition, LabelId, NonEmptyList, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition, LabelId, NonEmptyList, PropertyKeyId}
 
 class IndexSeekTest extends CypherFunSuite {
 

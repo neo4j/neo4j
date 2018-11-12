@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{LogicalPlanningC
 import org.neo4j.cypher.internal.ir.v3_5.{AggregatingQueryProjection, PlannerQuery}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, NodeCountFromCountStore, RelationshipCountFromCountStore}
-import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.expressions.{FunctionInvocation, FunctionName, Variable}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, Variable}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 class countStorePlannerTest extends CypherFunSuite with LogicalPlanningTestSupport with QueryGraphProducer with AstConstructionTestSupport {

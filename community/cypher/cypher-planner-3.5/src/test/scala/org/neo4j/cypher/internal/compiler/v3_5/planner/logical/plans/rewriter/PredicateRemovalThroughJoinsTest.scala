@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v3_5.logical.plans.{NodeHashJoin, Selection}
-import org.opencypher.v9_0.expressions.{Equals, Expression, SignedDecimalIntegerLiteral}
-import org.opencypher.v9_0.util.Cardinality
-import org.opencypher.v9_0.util.attribution.Attributes
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{Equals, Expression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v3_5.util.Cardinality
+import org.neo4j.cypher.internal.v3_5.util.attribution.Attributes
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class PredicateRemovalThroughJoinsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aHasLabel = identHasLabel("a", "LABEL")

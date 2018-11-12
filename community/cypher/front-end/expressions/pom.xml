@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>neo4j-front-end-parent-3.5</artifactId>
+    <version>3.5.1-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>neo4j-expressions-3.5</artifactId>
+  <packaging>jar</packaging>
+  <version>3.5.1-SNAPSHOT</version>
+  <name>openCypher Expressions</name>
+
+  <description>Cypher expressions</description>
+
+  <scm>
+    <connection>scm:git:git://github.com/openCypher/front-end.git</connection>
+    <developerConnection>scm:git:git@github.com:openCypher/front-end.git</developerConnection>
+    <url>https://github.com/openCypher/front-end</url>
+  </scm>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.2</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+
+  <dependencies>
+
+    <!-- shared versions are defined in the parent pom -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-util-3.5</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-util-3.5</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- scala -->
+
+  </dependencies>
+
+</project>

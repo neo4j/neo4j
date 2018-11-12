@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class CounterTest extends CypherFunSuite {
 

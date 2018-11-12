@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v3_5.runtime.profiler
 
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 
 import scala.collection.mutable
 

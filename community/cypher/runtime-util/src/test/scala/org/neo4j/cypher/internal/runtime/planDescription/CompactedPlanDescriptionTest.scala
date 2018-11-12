@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.planDescription
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, Rows, Time}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 
 class CompactedPlanDescriptionTest extends CypherFunSuite with MockitoSugar {

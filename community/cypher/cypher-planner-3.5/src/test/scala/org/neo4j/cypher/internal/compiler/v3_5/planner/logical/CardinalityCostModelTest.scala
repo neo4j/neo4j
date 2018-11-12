@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.ir.v3_5.LazyMode
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions.{Ands, HasLabels, LabelName, SemanticDirection}
-import org.opencypher.v9_0.util.Cost
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{Ands, HasLabels, LabelName, SemanticDirection}
+import org.neo4j.cypher.internal.v3_5.util.Cost
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class CardinalityCostModelTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

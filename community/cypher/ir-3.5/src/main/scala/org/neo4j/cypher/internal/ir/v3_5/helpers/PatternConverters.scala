@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.ir.v3_5.helpers
 
 import org.neo4j.cypher.internal.ir.v3_5.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.v3_5.{PatternRelationship, ShortestPathPattern}
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.{FreshIdNameGenerator, InternalException}
 
 object PatternConverters {
 

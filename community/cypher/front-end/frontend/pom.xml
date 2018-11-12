@@ -1,0 +1,163 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.neo4j</groupId>
+    <artifactId>neo4j-front-end-parent-3.5</artifactId>
+    <version>3.5.1-SNAPSHOT</version>
+    <relativePath>../</relativePath>
+  </parent>
+
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>neo4j-front-end-3.5</artifactId>
+  <packaging>jar</packaging>
+  <version>3.5.1-SNAPSHOT</version>
+  <name>openCypher Front End</name>
+
+  <description>
+    Scala implementation of
+      - parser
+      - abstract syntax tree (AST)
+      - semantic analysis
+      - typing
+      - scoping
+
+    for openCypher queries, resulting in a normalised AST representation of the query string.
+
+    See https://www.opencypher.org for more information on the openCypher project and query language.
+  </description>
+
+  <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
+
+  <scm>
+    <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
+    <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
+    <url>https://github.com/neo4j/neo4j</url>
+  </scm>
+
+  <properties>
+    <moduleName>org.neo4j.cypher.internal.frontend.v3_5</moduleName>
+  </properties>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <dependencies>
+
+    <!-- shared versions are defined in the parent pom -->
+
+    <!-- neo4j -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-util-3.5</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-expressions-3.5</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-rewriting-3.5</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-rewriting-3.5</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-parser-3.5</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <!-- neo4j testing -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-util-3.5</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-expressions-3.5</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-ast-3.5</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-parser-3.5</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- scala -->
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.11.12</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-reflect</artifactId>
+      <version>2.11.12</version>
+    </dependency>
+
+    <!-- scala test dependencies -->
+
+    <dependency>
+      <groupId>org.scalatest</groupId>
+      <artifactId>scalatest_2.11</artifactId>
+      <version>2.2.5</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scalacheck</groupId>
+      <artifactId>scalacheck_2.11</artifactId>
+      <version>1.12.5</version>
+    </dependency>
+
+    <!-- other -->
+
+    <dependency>
+      <groupId>org.parboiled</groupId>
+      <artifactId>parboiled-scala_2.11</artifactId>
+      <version>1.1.7</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>3.7</version>
+    </dependency>
+
+  </dependencies>
+
+</project>

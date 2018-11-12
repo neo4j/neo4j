@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.{KeyToken, UnresolvedProperty}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{RelatedTo, SingleNode}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 import org.neo4j.values.virtual.NodeValue
 
 import scala.collection.Map

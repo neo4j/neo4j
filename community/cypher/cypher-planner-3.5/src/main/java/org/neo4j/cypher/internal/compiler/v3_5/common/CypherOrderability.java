@@ -28,8 +28,8 @@ import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 
-import org.opencypher.v9_0.util.IncomparableValuesException;
-import org.opencypher.v9_0.util.UnorderableValueException;
+import org.neo4j.cypher.internal.v3_5.util.IncomparableValuesException;
+import org.neo4j.cypher.internal.v3_5.util.UnorderableValueException;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.helpers.MathUtil;

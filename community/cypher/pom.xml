@@ -42,6 +42,7 @@
         <module>planner-spi-3.5</module>
         <module>cypher</module>
         <module>cypher-logical-plans-3.5</module>
+        <module>front-end</module>
         <module>runtime-util</module>
         <module>interpreted-runtime</module>
         <module>acceptance-spec-suite</module>

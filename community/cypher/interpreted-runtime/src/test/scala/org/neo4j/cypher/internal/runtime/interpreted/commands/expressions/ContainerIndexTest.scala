@@ -26,8 +26,8 @@ import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{CypherTypeException, InvalidArgumentException}
 
 import scala.collection.JavaConverters._
 

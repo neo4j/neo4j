@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.opencypher.v9_0.util.spi.MapToPublicExceptions
-import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.v3_5.util.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.v3_5.util.{CypherException => InternalCypherException}
 import org.neo4j.values.utils._
 
 object exceptionHandler extends MapToPublicExceptions[CypherException] {

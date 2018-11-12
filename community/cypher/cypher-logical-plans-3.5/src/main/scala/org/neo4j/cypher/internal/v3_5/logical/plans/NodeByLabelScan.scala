@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.LabelName
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.LabelName
 
 /**
   * Produce one row for every node in the graph labelled 'label'. This row contains the node (assigned to 'idName')
