@@ -189,7 +189,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "Set this to specify the default parser (language version)." )
     public static final Setting<String> cypher_parser_version = setting(
             "cypher.default_language_version",
-            optionsObeyCase( "2.3", "3.1", "3.3","3.5", DEFAULT ), DEFAULT );
+            optionsObeyCase( "2.3", "3.1", "3.4","3.5", DEFAULT ), DEFAULT );
 
     @Description( "Set this to specify the default planner for the default language version." )
     public static final Setting<String> cypher_planner = setting(
