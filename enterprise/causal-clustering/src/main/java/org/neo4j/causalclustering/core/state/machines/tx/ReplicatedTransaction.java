@@ -80,4 +80,10 @@ public class ReplicatedTransaction implements CoreReplicatedContent
     {
         return Arrays.hashCode( txBytes );
     }
+
+    @Override
+    public String toString()
+    {
+        return "ReplicatedTransaction{txBytes.length=" + txBytes.length + "}";
+    }
 }
