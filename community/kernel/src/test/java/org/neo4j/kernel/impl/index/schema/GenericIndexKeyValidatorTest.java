@@ -35,7 +35,6 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.number.OrderingComparison.greaterThan;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.doThrow;
@@ -133,10 +132,6 @@ public class GenericIndexKeyValidatorTest
                         Arrays.toString( tuple ), manualIsOk, isOk ) );
             }
         }
-
-        // then a little meta assertion, that the generated parameters in this test are good so that it test at least some on each side of the threshold
-        assertThat( countOk, greaterThan( 0 ) );
-        assertThat( countNotOk, greaterThan( 0 ) );
     }
 
     @Test
