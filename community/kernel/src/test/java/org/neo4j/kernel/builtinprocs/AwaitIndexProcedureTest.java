@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaRead;
@@ -38,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
@@ -136,6 +138,7 @@ public class AwaitIndexProcedureTest
         when( tokenRead.propertyKey( anyString() ) ).thenReturn( 0 );
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( FAILED );
+        when( schemaRead.indexGetFailure( any( IndexReference.class ) ) ).thenReturn( Exceptions.stringify( new Exception( "Kilroy was here" ) ) );
 
         try
         {
@@ -145,6 +148,7 @@ public class AwaitIndexProcedureTest
         catch ( ProcedureException e )
         {
             assertThat( e.status(), is( Status.Schema.IndexCreationFailed ) );
+            assertThat( e.getMessage(), containsString( "Kilroy was here" ) );
         }
     }
 
