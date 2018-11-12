@@ -117,6 +117,10 @@ class RecoveryIT
         {
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
         }
+        finally
+        {
+            recoveredDatabase.shutdown();
+        }
     }
 
     @Test
@@ -147,6 +151,10 @@ class RecoveryIT
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllNodes() ) );
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
+        }
+        finally
+        {
+            recoveredDatabase.shutdown();
         }
     }
 
@@ -181,6 +189,10 @@ class RecoveryIT
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
             assertEquals( numberOfNodes, count( recoveredDatabase.getAllPropertyKeys() ) );
+        }
+        finally
+        {
+            recoveredDatabase.shutdown();
         }
     }
 
@@ -233,6 +245,10 @@ class RecoveryIT
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationships() ) );
             assertEquals( numberOfRelationships, count( recoveredDatabase.getAllRelationshipTypesInUse() ) );
             assertEquals( 2, count( recoveredDatabase.getAllPropertyKeys() ) );
+        }
+        finally
+        {
+            recoveredDatabase.shutdown();
         }
     }
 
