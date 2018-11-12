@@ -61,6 +61,11 @@ public class DefaultPropertyCursor implements PropertyCursor
             this.propertiesState = read.txState().getNodeState( nodeReference );
             this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
         }
+        else
+        {
+            this.propertiesState = null;
+            this.txStateChangedProperties = null;
+        }
     }
 
     void initRelationship( long relationshipReference, long reference, Read read, AssertOpen assertOpen )
@@ -74,6 +79,11 @@ public class DefaultPropertyCursor implements PropertyCursor
         {
             this.propertiesState = read.txState().getRelationshipState( relationshipReference );
             this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
+        }
+        else
+        {
+            this.propertiesState = null;
+            this.txStateChangedProperties = null;
         }
     }
 
@@ -89,6 +99,15 @@ public class DefaultPropertyCursor implements PropertyCursor
             {
                 this.txStateChangedProperties = this.propertiesState.addedAndChangedProperties();
             }
+            else
+            {
+                this.txStateChangedProperties = null;
+            }
+        }
+        else
+        {
+            this.txStateChangedProperties = null;
+            this.propertiesState = null;
         }
     }
 
