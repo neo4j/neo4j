@@ -151,18 +151,8 @@ public abstract class PageCacheNumberArray<N extends NumberArray<N>> implements 
         {
             return;
         }
-        try
-        {
-            pagedFile.close();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        finally
-        {
-            closed = true;
-        }
+        pagedFile.close();
+        closed = true;
     }
 
     @Override

@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.util.function.Function;
 
+import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
@@ -152,7 +153,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
         this.indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         this.explicitIndexProvider = new DefaultExplicitIndexProvider();
-        this.pageCache = platformModule.pageCache;
+        this.pageCache = new DatabasePageCache( platformModule.pageCache );
         this.constraintSemantics = editionContext.getConstraintSemantics();
         this.tracers = platformModule.tracers;
         this.procedures = procedures;

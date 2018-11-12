@@ -919,7 +919,7 @@ class GBPTreeTest
                 return new DelegatingPagedFile( super.map( file, pageSize, openOptions ) )
                 {
                     @Override
-                    public void close() throws IOException
+                    public void close()
                     {
                         if ( enabled.get() )
                         {

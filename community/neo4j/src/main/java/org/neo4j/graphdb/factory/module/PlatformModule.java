@@ -191,7 +191,8 @@ public class PlatformModule
         collectionsFactorySupplier = createCollectionsFactorySupplier( config, life );
 
         dependencies.satisfyDependency( versionContextSupplier );
-        pageCache = dependencies.satisfyDependency( createPageCache( fileSystem, config, logService, tracers, versionContextSupplier, jobScheduler ) );
+
+        pageCache = createPageCache( fileSystem, config, logService, tracers, versionContextSupplier, jobScheduler );
 
         life.add( new PageCacheLifecycle( pageCache ) );
 

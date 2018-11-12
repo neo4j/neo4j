@@ -101,9 +101,9 @@ public class AdversarialPagedFile implements PagedFile
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
-        adversary.injectFailure( FileNotFoundException.class, IOException.class, SecurityException.class );
+        adversary.injectFailure( FileNotFoundException.class, SecurityException.class );
         delegate.close();
     }
 }

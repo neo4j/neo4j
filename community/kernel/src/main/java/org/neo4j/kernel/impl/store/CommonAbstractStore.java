@@ -101,7 +101,6 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
      * throws IOException if the unable to open the storage or if the
      * <CODE>initStorage</CODE> method fails
      *
-     * @param databaseName database name
      * @param idType The Id used to index into this store
      */
     public CommonAbstractStore(

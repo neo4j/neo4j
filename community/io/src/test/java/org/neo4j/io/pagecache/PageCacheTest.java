@@ -31,7 +31,6 @@ import java.io.OutputStream;
 import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.io.UncheckedIOException;
 import java.nio.ByteBuffer;
 import java.nio.ReadOnlyBufferException;
 import java.nio.file.NoSuchFileException;
@@ -476,17 +475,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 map( pageCache, b, filePageSize ).close();
                 // We should be able to get and list existing mappings.
                 pageCache.listExistingMappings();
-                pageCache.getExistingMapping( a ).ifPresent( pf ->
-                {
-                    try
-                    {
-                        pf.close();
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UncheckedIOException( e );
-                    }
-                } );
+                pageCache.getExistingMapping( a ).ifPresent( PagedFile::close );
 
                 limiterBlockLatch.release();
                 flusher.get();

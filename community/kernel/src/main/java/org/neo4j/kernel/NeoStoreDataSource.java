@@ -283,6 +283,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
         dataSourceDependencies = new Dependencies( dependencyResolver );
         dataSourceDependencies.satisfyDependency( this );
         dataSourceDependencies.satisfyDependency( monitors );
+        dataSourceDependencies.satisfyDependency( pageCache );
         dataSourceDependencies.satisfyDependency( tokenHolders );
         dataSourceDependencies.satisfyDependency( facade );
         dataSourceDependencies.satisfyDependency( indexConfigStore );

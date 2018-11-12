@@ -68,7 +68,7 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
-    public void close() throws IOException
+    public void close()
     {
         delegate.close();
     }

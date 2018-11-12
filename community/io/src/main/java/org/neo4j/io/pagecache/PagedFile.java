@@ -182,10 +182,9 @@ public interface PagedFile extends AutoCloseable
      * Note that this operation assumes that there are no write page cursors open on the paged file. If there are, then
      * their writes may be lost, as they might miss the last flush that can happen on their data.
      *
-     * @throws IOException instead of the Exception superclass as defined in AutoCloseable, if .
      * @see AutoCloseable#close()
      */
     @Override
-    void close() throws IOException;
+    void close();
 
 }

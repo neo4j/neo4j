@@ -338,17 +338,7 @@ public abstract class PageCacheTestSupport<T extends PageCache>
 
     protected Runnable closePageFile( final PagedFile file )
     {
-        return () ->
-        {
-            try
-            {
-                file.close();
-            }
-            catch ( IOException e )
-            {
-                throw new AssertionError( e );
-            }
-        };
+        return file::close;
     }
 
     public abstract static class Fixture<T extends PageCache>
