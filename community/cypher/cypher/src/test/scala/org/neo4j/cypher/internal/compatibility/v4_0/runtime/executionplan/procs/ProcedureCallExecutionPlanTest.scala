@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.procs
 
 import org.mockito.ArgumentMatchers.{any, anyInt}
+import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
@@ -28,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{Community
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext, ResourceManager}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.Procedures
+import org.neo4j.internal.kernel.api.{CursorFactory, Procedures}
 import org.neo4j.values.storable.LongValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.opencypher.v9_0.expressions._
@@ -110,7 +111,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     res.asIterator().asScala.map(_.asScala.toMap).toList
 
   private val pos = DummyPosition(-1)
-  val ctx = mock[QueryContext]
+  val ctx = mock[QueryContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
   when(ctx.resources).thenReturn(mock[ResourceManager])
   var iteratorExhausted = false
 
@@ -129,7 +130,9 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
   }
 
   val procs = mock[Procedures]
-  when(ctx.transactionalContext).thenReturn(mock[QueryTransactionalContext])
+  private val transactionalContext: QueryTransactionalContext = mock[QueryTransactionalContext]
+  when(ctx.transactionalContext).thenReturn(transactionalContext)
+  when(transactionalContext.cursors).thenReturn(mock[CursorFactory])
   when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)

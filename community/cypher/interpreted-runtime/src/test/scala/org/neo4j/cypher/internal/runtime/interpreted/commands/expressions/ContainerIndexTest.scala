@@ -88,8 +88,8 @@ class ContainerIndexTest extends CypherFunSuite {
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
 
-    when(qtx.nodeProperty(0, 42, any(), any())).thenReturn(longValue(1))
-    when(qtx.nodeProperty(0, 43, any(), any())).thenReturn(Values.NO_VALUE)
+    when(qtx.nodeProperty(0, 42, null, null)).thenReturn(longValue(1))
+    when(qtx.nodeProperty(0, 43, null, null)).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }
@@ -101,8 +101,8 @@ class ContainerIndexTest extends CypherFunSuite {
 
     when(qtx.propertyKey("v")).thenReturn(42)
     when(qtx.propertyKey("c")).thenReturn(43)
-    when(qtx.relationshipProperty(0, 42, any(), any())).thenReturn(longValue(1))
-    when(qtx.relationshipProperty(0, 43, any(), any())).thenReturn(Values.NO_VALUE)
+    when(qtx.relationshipProperty(0, 42, null, null)).thenReturn(longValue(1))
+    when(qtx.relationshipProperty(0, 43, null, null)).thenReturn(Values.NO_VALUE)
     idx("v") should equal(longValue(1))
     idx("c") should equal(expectedNull)
   }

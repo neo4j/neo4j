@@ -244,7 +244,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
             def answer(invocation: InvocationOnMock) = rels.iterator.map(fromRelationshipProxy)
           })
 
-        when(query.nodeGetDegree(node.getId, direction, any[NodeCursor])).thenReturn(rels.size)
+        when(query.nodeGetDegree(node.getId, direction, null)).thenReturn(rels.size)
     }
   }
 

@@ -65,7 +65,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val node = mock[Node]
     when(node.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.nodeAsMap(0, any[NodeCursor], any[PropertyCursor])).thenReturn(value)
+    when(query.nodeAsMap(0, null, null)).thenReturn(value)
 
     properties(node) should equal(value)
   }
@@ -74,7 +74,7 @@ class PropertiesFunctionTest extends CypherFunSuite {
     val rel = mock[Relationship]
     when(rel.getId).thenReturn(0)
     val value = map(Array("a", "b"), Array(stringValue("x"), stringValue("y")))
-    when(query.relationshipAsMap(0, any[RelationshipScanCursor], any[PropertyCursor])).thenReturn(value)
+    when(query.relationshipAsMap(0, null, null)).thenReturn(value)
 
     properties(rel) should equal(value)
   }

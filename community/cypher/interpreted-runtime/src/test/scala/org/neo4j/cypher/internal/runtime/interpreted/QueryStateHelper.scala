@@ -48,11 +48,11 @@ object QueryStateHelper extends MockitoSugar {
                 query: QueryContext = null,
                 resources: ExternalCSVResource = null,
                 params: MapValue = EMPTY_MAP,
-                queryCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
+                expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, queryCursors, decorator, initialContext = initialContext)
+    new QueryState(query, resources, params, expressionCursors, decorator, initialContext = initialContext)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 
@@ -64,7 +64,10 @@ object QueryStateHelper extends MockitoSugar {
     val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
-    emptyWith(db = db, query = queryContext, params = params)
+    emptyWith(db = db,
+              query = queryContext,
+              params = params,
+              expressionCursors = new ExpressionCursors(transactionalContext.cursors))
   }
 
   def withQueryState[T](db: GraphDatabaseQueryService, tx: InternalTransaction, params: MapValue = EMPTY_MAP, f: (QueryState) => T)  = {
