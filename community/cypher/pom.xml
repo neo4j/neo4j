@@ -37,11 +37,11 @@
         </property>
       </activation>
       <modules>
-        <module>ir-4.0</module>
-        <module>cypher-planner-4.0</module>
-        <module>planner-spi-4.0</module>
+        <module>ir</module>
+        <module>cypher-planner</module>
+        <module>planner-spi</module>
         <module>cypher</module>
-        <module>cypher-logical-plans-4.0</module>
+        <module>cypher-logical-plans</module>
         <module>runtime-util</module>
         <module>interpreted-runtime</module>
         <module>acceptance-spec-suite</module>
