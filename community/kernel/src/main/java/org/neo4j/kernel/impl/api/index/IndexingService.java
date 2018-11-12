@@ -420,8 +420,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             case ONLINE:
                 return;
             case FAILED:
-                throw new IllegalStateException(
-                        "Index entered " + FAILED + " state while recovery waited for it to be fully populated" );
+                IndexPopulationFailure populationFailure = proxy.getPopulationFailure();
+                String causeOfFailure = populationFailure.asString();
+                throw new IllegalStateException( String.format(
+                        "Index entered %s state while recovery waited for it to be fully populated. Actual failure:%n" +
+                                "==================%n%s%n==================", FAILED, causeOfFailure ) );
             case POPULATING:
                 // Sleep a short while and look at state again the next loop iteration
                 try
