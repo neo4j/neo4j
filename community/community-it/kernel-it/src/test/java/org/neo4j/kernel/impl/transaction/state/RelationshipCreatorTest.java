@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipGroupG
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
+import org.neo4j.kernel.impl.store.record.DirectRecordAccessSet;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -54,7 +55,6 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
-import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccessSet;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

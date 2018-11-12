@@ -93,6 +93,11 @@ the relevant Commercial Agreement.
             <artifactId>neo4j-consistency-check</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-batch-inserter</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- For the tests specified by this package -->
         <dependency>

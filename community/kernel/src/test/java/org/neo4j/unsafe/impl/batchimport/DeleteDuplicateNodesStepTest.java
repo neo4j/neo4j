@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
+import org.neo4j.kernel.impl.store.record.DirectRecordAccess;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -50,7 +51,6 @@ import org.neo4j.test.rule.NeoStoresRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.RepeatRule.Repeat;
-import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 import org.neo4j.unsafe.impl.batchimport.staging.SimpleStageControl;
 import org.neo4j.values.storable.RandomValues;
 

@@ -28,6 +28,7 @@ import java.util.function.ToIntFunction;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.store.TokenStore;
+import org.neo4j.kernel.impl.store.record.DirectRecordAccess;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
 import org.neo4j.kernel.impl.store.record.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
@@ -35,7 +36,6 @@ import org.neo4j.kernel.impl.store.record.TokenRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
-import org.neo4j.unsafe.batchinsert.internal.DirectRecordAccess;
 
 import static java.lang.Math.max;
 import static java.lang.Math.toIntExact;

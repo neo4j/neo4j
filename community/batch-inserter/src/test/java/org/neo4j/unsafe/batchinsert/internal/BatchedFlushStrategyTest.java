@@ -22,6 +22,8 @@ package org.neo4j.unsafe.batchinsert.internal;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import org.neo4j.kernel.impl.store.record.DirectRecordAccessSet;
+
 public class BatchedFlushStrategyTest
 {
 

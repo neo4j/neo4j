@@ -42,6 +42,7 @@
   </properties>
 
   <modules>
+    <module>batch-inserter</module>
     <module>common</module>
     <module>configuration</module>
     <module>resource</module>
