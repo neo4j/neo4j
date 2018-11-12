@@ -67,6 +67,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -398,6 +399,8 @@ public class FulltextIndexProviderTest
                 public boolean acceptEntity( long reference, float score, Value... values )
                 {
                     this.nodeReference = reference;
+                    assertTrue( "score should not be NaN", !Float.isNaN( score ) );
+                    assertThat( "score must be positive", score, greaterThan( 0.0f ) );
                     acceptedEntities.add( "reference = " + reference + ", score = " + score + ", " + Arrays.toString( values ) );
                     return true;
                 }
@@ -415,6 +418,7 @@ public class FulltextIndexProviderTest
                 }
                 assertThat( counter, is( 1 ) );
                 assertThat( acceptedEntities.size(), is( 1 ) );
+                System.out.println(acceptedEntities);
                 acceptedEntities.clear();
             }
 
