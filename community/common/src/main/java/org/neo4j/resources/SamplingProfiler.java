@@ -88,17 +88,21 @@ class SamplingProfiler implements Profiler
     @Override
     public ProfiledInterval profile( Thread threadToProfile, long initialDelayNanos )
     {
-        long baseline = System.nanoTime();
         long capturedSampleIntervalNanos = sampleIntervalNanos.get();
+        long baseline = System.nanoTime();
         Thread samplerThread = new Thread( () ->
         {
-            long nextSleepBaseline = baseline;
+            long nextSleepBaseline = initialDelayNanos > 0 ? sleep( baseline, initialDelayNanos ) : baseline;
             Sample root = samples.computeIfAbsent( threadToProfile, k -> new Sample( null ) );
-            while ( !stopped.get() && !Thread.currentThread().isInterrupted() && threadToProfile.isAlive() )
+            while ( !stopped.get() && threadToProfile.isAlive() )
             {
-                nextSleepBaseline = sleep( nextSleepBaseline, capturedSampleIntervalNanos );
                 StackTraceElement[] frames = threadToProfile.getStackTrace();
+                if ( Thread.currentThread().isInterrupted() ) // Avoid recording samples that overlap with the end of the profiling interval.
+                {
+                    break;
+                }
                 record( root, frames );
+                nextSleepBaseline = sleep( nextSleepBaseline, capturedSampleIntervalNanos );
             }
         } );
         samplerThreads.add( samplerThread );
