@@ -30,7 +30,6 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Function;
 
 public abstract class StatefullFieldExtension<T> implements TestInstancePostProcessor, AfterAllCallback
 {
@@ -56,8 +55,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         List<Field> declaredFields = getAllFields( clazz );
         for ( Field declaredField : declaredFields )
         {
-            if ( declaredField.isAnnotationPresent( Inject.class ) &&
-                    declaredField.getType().isAssignableFrom( getFieldType() ) )
+            if ( declaredField.isAnnotationPresent( Inject.class ) && declaredField.getType().isAssignableFrom( getFieldType() ) )
             {
                 declaredField.setAccessible( true );
                 declaredField.set( testInstance, instance );
@@ -70,14 +68,14 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         return getLocalStore( context ).get( getFieldKey(), getFieldType() );
     }
 
-    protected void removeStoredValue( ExtensionContext context )
+    protected T removeStoredValue( ExtensionContext context )
     {
-        getLocalStore( context ).remove( getFieldKey(), getFieldType() );
+        return getLocalStore( context ).remove( getFieldKey(), getFieldType() );
     }
 
     protected static Store getStore( ExtensionContext extensionContext, Namespace namespace )
     {
-        return extensionContext.getRoot().getStore( namespace );
+        return extensionContext.getStore( namespace );
     }
 
     private Store getLocalStore( ExtensionContext extensionContext )
@@ -87,8 +85,13 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
 
     private Object createInstance( ExtensionContext extensionContext )
     {
-        Store store = getLocalStore( extensionContext );
-        return store.getOrComputeIfAbsent( getFieldKey(), (Function<String,Object>) s -> createField( extensionContext ) );
+        Object value = getStoredValue( extensionContext );
+        if ( value == null )
+        {
+            value = createField( extensionContext );
+            getLocalStore( extensionContext ).put( getFieldKey(), value );
+        }
+        return value;
     }
 
     private static List<Field> getAllFields( Class<?> baseClazz )
