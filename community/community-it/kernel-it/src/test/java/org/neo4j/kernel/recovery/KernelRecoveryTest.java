@@ -33,7 +33,8 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCountsCommand;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -69,12 +70,12 @@ class KernelRecoveryTest
         {
             db.shutdown();
             db = newDB( crashedFs );
-
+            LogFiles logFiles = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( LogFiles.class );
+            File logFile = logFiles.getHighestLogFile();
             long node2 = createNode( db );
             db.shutdown();
 
             // Then the logical log should be in sync
-            File logFile = testDirectory.databaseLayout().file( TransactionLogFiles.DEFAULT_NAME + ".0" );
             assertThat( logEntries( crashedFs, logFile ), containsExactly(
                     // Tx before recovery
                     startEntry( -1, -1 ), commandEntry( node1, NodeCommand.class ),

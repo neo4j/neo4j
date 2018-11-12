@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -41,7 +42,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.kernel.configuration.LayoutConfig.of;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.activeFilesBuilder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.builder;
 import static org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder.logFilesBasedOnlyBuilder;
@@ -123,30 +125,28 @@ class LogFilesBuilderTest
     void buildContextWithCustomLogFilesLocations() throws Throwable
     {
         String customLogLocation = "customLogLocation";
-        Config customLogLocationConfig = Config.defaults( logical_logs_location, customLogLocation );
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        LogFiles logFiles = builder( databaseLayout, fileSystem ).withConfig( customLogLocationConfig )
-                .withLogVersionRepository( new SimpleLogVersionRepository() )
-                .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
-        logFiles.init();
-        logFiles.start();
+        assertThrows( InvalidSettingException.class, () ->
+        {
+            Config customLogLocationConfig = Config.defaults( transaction_logs_root_path, customLogLocation );
+            DatabaseLayout databaseLayout = testDirectory.databaseLayout( of( customLogLocationConfig ) );
+            builder( databaseLayout, fileSystem ).withConfig( customLogLocationConfig ).withLogVersionRepository(
+                    new SimpleLogVersionRepository() ).withTransactionIdStore( new SimpleTransactionIdStore() ).build();
 
-        assertEquals( databaseLayout.file( customLogLocation ), logFiles.getHighestLogFile().getParentFile() );
-        logFiles.shutdown();
+        } );
     }
 
     @Test
     void buildContextWithCustomAbsoluteLogFilesLocations() throws Throwable
     {
         File customLogDirectory = testDirectory.directory( "absoluteCustomLogDirectory" );
-        Config customLogLocationConfig = Config.defaults( logical_logs_location, customLogDirectory.getAbsolutePath() );
-        LogFiles logFiles = builder( testDirectory.databaseLayout(), fileSystem ).withConfig( customLogLocationConfig )
+        Config customLogLocationConfig = Config.defaults( transaction_logs_root_path, customLogDirectory.getAbsolutePath() );
+        LogFiles logFiles = builder( testDirectory.databaseLayout( of( customLogLocationConfig ) ), fileSystem )
                 .withLogVersionRepository( new SimpleLogVersionRepository() )
                 .withTransactionIdStore( new SimpleTransactionIdStore() ).build();
         logFiles.init();
         logFiles.start();
 
-        assertEquals( customLogDirectory, logFiles.getHighestLogFile().getParentFile() );
+        assertEquals( new File( customLogDirectory, testDirectory.databaseLayout().getDatabaseName() ), logFiles.getHighestLogFile().getParentFile() );
         logFiles.shutdown();
     }
 

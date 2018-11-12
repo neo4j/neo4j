@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.LogEntryCursor;
@@ -49,38 +50,39 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.LogVersionRepository.INITIAL_LOG_VERSION;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 
-public class CheckPointerIntegrationTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class CheckPointerIntegrationTest
 {
-    @Rule
-    public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     private GraphDatabaseBuilder builder;
-    private FileSystemAbstraction fs;
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        fs = fsRule.get();
         File storeDir = testDirectory.databaseDir();
         builder = new TestGraphDatabaseFactory().setFileSystem( new UncloseableDelegatingFileSystemAbstraction( fs ) )
                 .newImpermanentDatabaseBuilder( storeDir );
     }
 
     @Test
-    public void databaseShutdownDuringConstantCheckPointing() throws
+    void databaseShutdownDuringConstantCheckPointing() throws
             InterruptedException
     {
         GraphDatabaseService db = builder
@@ -98,7 +100,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldCheckPointBasedOnTime() throws Throwable
+    void shouldCheckPointBasedOnTime() throws Throwable
     {
         // given
         long millis = 200;
@@ -121,7 +123,7 @@ public class CheckPointerIntegrationTest
         while ( !checkPointInTxLog( db ) )
         {
             Thread.sleep( millis );
-            assertTrue( "Took too long to produce a checkpoint", currentTimeMillis() < endTime );
+            assertTrue( currentTimeMillis() < endTime, "Took too long to produce a checkpoint" );
         }
 
         db.shutdown();
@@ -129,8 +131,8 @@ public class CheckPointerIntegrationTest
         // then - 2 check points have been written in the log
         List<CheckPoint> checkPoints = new CheckPointCollector( testDirectory.databaseDir(), fs ).find( 0 );
 
-        assertTrue( "Expected at least two (at least one for time interval and one for shutdown), was " +
-                checkPoints.toString(), checkPoints.size() >= 2 );
+        assertTrue( checkPoints.size() >= 2, "Expected at least two (at least one for time interval and one for shutdown), was " +
+                checkPoints.toString() );
     }
 
     private static boolean checkPointInTxLog( GraphDatabaseService db ) throws IOException
@@ -153,7 +155,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldCheckPointBasedOnTxCount() throws Throwable
+    void shouldCheckPointBasedOnTxCount() throws Throwable
     {
         // given
         GraphDatabaseService db = builder
@@ -183,7 +185,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldNotCheckPointWhenThereAreNoCommits() throws Throwable
+    void shouldNotCheckPointWhenThereAreNoCommits() throws Throwable
     {
         // given
         GraphDatabaseService db = builder
@@ -208,7 +210,7 @@ public class CheckPointerIntegrationTest
     }
 
     @Test
-    public void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
+    void shouldBeAbleToStartAndShutdownMultipleTimesTheDBWithoutCommittingTransactions() throws Throwable
     {
         // given
         GraphDatabaseBuilder graphDatabaseBuilder = builder.setConfig( GraphDatabaseSettings

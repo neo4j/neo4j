@@ -69,7 +69,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class ConsistencyCheckToolTest
@@ -172,7 +172,7 @@ class ConsistencyCheckToolTest
     }
 
     @Test
-    void exitWithFailureIndicatingCorrectUsageIfNoArgumentsSupplied() throws Exception
+    void exitWithFailureIndicatingCorrectUsageIfNoArgumentsSupplied()
     {
         // given
         ConsistencyCheckService service = mock( ConsistencyCheckService.class );
@@ -183,7 +183,7 @@ class ConsistencyCheckToolTest
     }
 
     @Test
-    void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist() throws Exception
+    void exitWithFailureIfConfigSpecifiedButConfigFileDoesNotExist()
     {
         // given
         File configFile = testDirectory.file( "nonexistent_file" );
@@ -198,7 +198,7 @@ class ConsistencyCheckToolTest
     }
 
     @Test
-    void failWhenStoreWasNonCleanlyShutdown() throws Exception
+    void failWhenStoreWasNonCleanlyShutdown()
     {
         assertThrows( ToolFailureException.class, () -> {
             createGraphDbAndKillIt( Config.defaults() );
@@ -207,28 +207,13 @@ class ConsistencyCheckToolTest
     }
 
     @Test
-    void failOnNotCleanlyShutdownStoreWithLogsInCustomRelativeLocation() throws Exception
-    {
-        assertThrows( ToolFailureException.class, () ->
-        {
-            File customConfigFile = testDirectory.file( "customConfig" );
-            Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
-            createGraphDbAndKillIt( customConfig );
-            MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
-            String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
-
-            runConsistencyCheckToolWith( fs, args );
-        } );
-    }
-
-    @Test
-    void failOnNotCleanlyShutdownStoreWithLogsInCustomAbsoluteLocation() throws Exception
+    void failOnNotCleanlyShutdownStoreWithLogsInCustomAbsoluteLocation()
     {
         assertThrows( ToolFailureException.class, () ->
         {
             File customConfigFile = testDirectory.file( "customConfig" );
             File otherLocation = testDirectory.directory( "otherLocation" );
-            Config customConfig = Config.defaults( logical_logs_location, otherLocation.getAbsolutePath() );
+            Config customConfig = Config.defaults( transaction_logs_root_path, otherLocation.getAbsolutePath() );
             createGraphDbAndKillIt( customConfig );
             MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
             String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};

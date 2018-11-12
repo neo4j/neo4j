@@ -21,13 +21,11 @@ package org.neo4j.kernel.impl.transaction.log.files;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -38,10 +36,8 @@ import org.neo4j.kernel.impl.transaction.log.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.Dependencies;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
@@ -192,33 +188,7 @@ public class LogFilesBuilder
         {
             return logsDirectory;
         }
-        // try to use absolute position only for default database. For other databases use database directory
-        if ( tryConfigureDefaultDatabaseLogsDirectory() )
-        {
-            File neo4jHome = config.get( GraphDatabaseSettings.neo4j_home );
-            File databasePath = config.get( database_path );
-            File logicalLogsLocation = config.get( GraphDatabaseSettings.logical_logs_location );
-            if ( databaseLayout.getStoreLayout().storeDirectory().equals( neo4jHome ) && databasePath.equals( logicalLogsLocation ) )
-            {
-                return databaseLayout.databaseDirectory();
-            }
-            if ( logicalLogsLocation.isAbsolute() )
-            {
-                return logicalLogsLocation;
-            }
-            if ( neo4jHome == null || !databaseLayout.databaseDirectory().equals( databasePath ) )
-            {
-                Path relativeLogicalLogPath = databasePath.toPath().relativize( logicalLogsLocation.toPath() );
-                return databaseLayout.file( relativeLogicalLogPath.toString() );
-            }
-            return logicalLogsLocation;
-        }
-        return databaseLayout.databaseDirectory();
-    }
-
-    private boolean tryConfigureDefaultDatabaseLogsDirectory()
-    {
-        return config != null && config.get( GraphDatabaseSettings.active_database ).equals( databaseLayout.getDatabaseName() );
+        return databaseLayout.getTransactionLogsDirectory();
     }
 
     TransactionLogFilesContext buildContext() throws IOException
@@ -230,6 +200,10 @@ public class LogFilesBuilder
         if ( logFileCreationMonitor == null )
         {
             logFileCreationMonitor = LogFileCreationMonitor.NO_MONITOR;
+        }
+        if ( config == null )
+        {
+            config = Config.defaults();
         }
         requireNonNull( fileSystem );
         Supplier<LogVersionRepository> logVersionRepositorySupplier = getLogVersionRepositorySupplier();
@@ -252,10 +226,6 @@ public class LogFilesBuilder
         if ( readOnly )
         {
             return new AtomicLong( Long.MAX_VALUE );
-        }
-        if ( config == null )
-        {
-            config = Config.defaults();
         }
         AtomicLong configThreshold = new AtomicLong( config.get( logical_log_rotation_threshold ) );
         config.registerDynamicUpdateListener( logical_log_rotation_threshold, ( prev, update ) -> configThreshold.set( update ) );

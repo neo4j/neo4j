@@ -24,7 +24,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
@@ -33,8 +32,8 @@ import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 
 import static java.nio.ByteBuffer.allocate;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
 
 @ExtendWith( EphemeralFileSystemExtension.class )
@@ -121,7 +120,7 @@ class TestEphemeralFileChannel
         channel.readAll( ByteBuffer.wrap( readBytes ) );
 
         // THEN
-        assertTrue( Arrays.equals( bytes, readBytes ) );
+        assertArrayEquals( bytes, readBytes );
     }
 
     @Test

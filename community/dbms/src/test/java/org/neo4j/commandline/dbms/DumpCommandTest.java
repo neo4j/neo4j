@@ -44,12 +44,12 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.dbms.archive.Dumper;
 import org.neo4j.graphdb.config.Setting;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.LayoutConfig;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.internal.locker.StoreLocker;
 import org.neo4j.test.extension.Inject;
@@ -73,8 +73,9 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.dbms.archive.TestUtils.withPermissions;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DumpCommandTest
@@ -104,34 +105,35 @@ class DumpCommandTest
     {
         execute( "foo.db" );
         verify( dumper ).dump( eq( homeDir.resolve( "data/databases/foo.db" ) ),
-                eq( homeDir.resolve( "data/databases/foo.db" ) ), eq( archive ), any() );
+                eq( homeDir.resolve( "data/tx-logs/foo.db" ) ), eq( archive ), any() );
     }
 
     @Test
     void shouldCalculateTheDatabaseDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
+        Path txLogsDir = dataDir.resolve( "tx-logs/foo.db" );
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
-        verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
+        verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
     }
 
     @Test
     void shouldCalculateTheTxLogDirectoryFromConfig() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path txLogsDir = testDirectory.directory( "txLogsPath" ).toPath();
+        Path txlogsRoot = testDirectory.directory( "txLogsPath" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
-                        formatProperty( logical_logs_location, txLogsDir ) ) );
+                        formatProperty( transaction_logs_root_path, txlogsRoot ) ) );
 
         execute( "foo.db" );
-        verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
+        verify( dumper ).dump( eq( databaseDir ), eq( txlogsRoot.resolve( "foo.db" ) ), any(), any() );
     }
 
     @Test
@@ -143,6 +145,7 @@ class DumpCommandTest
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path txLogsDir = dataDir.resolve( "tx-logs/foo.db" );
 
         putStoreInDirectory( realDatabaseDir );
         Files.createDirectories( dataDir.resolve( "databases" ) );
@@ -152,7 +155,7 @@ class DumpCommandTest
                 singletonList( format( "%s=%s", data_directory.name(), dataDir.toString().replace( '\\', '/' ) ) ) );
 
         execute( "foo.db" );
-        verify( dumper ).dump( eq( realDatabaseDir ), eq( realDatabaseDir ), any(), any() );
+        verify( dumper ).dump( eq( realDatabaseDir ), eq( txLogsDir ), any(), any() );
     }
 
     @Test
@@ -199,7 +202,11 @@ class DumpCommandTest
     @Test
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
-        File logFile = new File( databaseDirectory.toFile(), TransactionLogFiles.DEFAULT_NAME + ".0" );
+        Config config = Config.builder().withHome( homeDir ).build();
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( LayoutConfig.of( config ), "foo.db" );
+        testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
+        File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFiles.DEFAULT_NAME + ".0" );
+
         try ( FileWriter fileWriter = new FileWriter( logFile ) )
         {
             fileWriter.write( "brb" );
@@ -276,12 +283,13 @@ class DumpCommandTest
     void shouldDefaultToGraphDB() throws Exception
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
-        Path databaseDir = dataDir.resolve( "databases/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        Path txLogsDir = dataDir.resolve( "tx-logs/" + DEFAULT_DATABASE_NAME );
+        Path databaseDir = dataDir.resolve( "databases/" + DEFAULT_DATABASE_NAME );
         putStoreInDirectory( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         new DumpCommand( homeDir, configDir, dumper ).execute( new String[]{"--to=" + archive} );
-        verify( dumper ).dump( eq( databaseDir ), eq( databaseDir ), any(), any() );
+        verify( dumper ).dump( eq( databaseDir ), eq( txLogsDir ), any(), any() );
     }
 
     @Test
@@ -350,7 +358,7 @@ class DumpCommandTest
                             "that is mounted in a running Neo4j server.%n" +
                             "%n" +
                             "options:%n" +
-                            "  --database=<name>         Name of database. [default:" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME + "]%n" +
+                            "  --database=<name>         Name of database. [default:" + DEFAULT_DATABASE_NAME + "]%n" +
                             "  --to=<destination-path>   Destination (file or folder) of database dump.%n" ),
                     baos.toString() );
         }

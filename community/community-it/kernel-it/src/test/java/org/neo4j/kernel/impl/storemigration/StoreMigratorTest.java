@@ -35,6 +35,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.LayoutConfig;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
@@ -42,6 +43,8 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
@@ -57,9 +60,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.mock;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_CHECKSUM;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.LAST_TRANSACTION_ID;
@@ -153,19 +155,10 @@ class StoreMigratorTest
     }
 
     @Test
-    void extractTransactionInformationFromLogsInCustomRelativeLocation() throws Exception
-    {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File customLogLocation = databaseLayout.file( "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getName(), customLogLocation, databaseLayout, testDirectory.databaseDir() );
-    }
-
-    @Test
     void extractTransactionInformationFromLogsInCustomAbsoluteLocation() throws Exception
     {
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout();
-        File customLogLocation = databaseLayout.file( "customLogLocation" );
-        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath(), customLogLocation, databaseLayout, testDirectory.databaseDir() );
+        File customLogLocation = testDirectory.directory( "customLogLocation" );
+        extractTransactionalInformationFromLogs( customLogLocation.getAbsolutePath() );
     }
 
     @Test
@@ -239,13 +232,15 @@ class StoreMigratorTest
         assertFalse( progressReporter.started );
     }
 
-    private void extractTransactionalInformationFromLogs( String path, File customLogLocation, DatabaseLayout databaseLayout, File storeDir ) throws IOException
+    private void extractTransactionalInformationFromLogs( String customLogsLocation ) throws IOException
     {
+        Config config = Config.builder().withSetting( transaction_logs_root_path, customLogsLocation ).build();
         LogService logService = new SimpleLogService( NullLogProvider.getInstance(), NullLogProvider.getInstance() );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( LayoutConfig.of( config ) );
         File neoStore = databaseLayout.metadataStore();
 
-        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                .setConfig( logical_logs_location, path ).newGraphDatabase();
+        GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseLayout.databaseDirectory() )
+                .setConfig( transaction_logs_root_path, customLogsLocation ).newGraphDatabase();
         for ( int i = 0; i < 10; i++ )
         {
             try ( Transaction transaction = database.beginTx() )
@@ -258,14 +253,12 @@ class StoreMigratorTest
 
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.LAST_CLOSED_TRANSACTION_LOG_VERSION,
                 MetaDataRecordFormat.FIELD_NOT_PRESENT );
-        Config config = Config.defaults( logical_logs_location, path );
         StoreMigrator migrator = new StoreMigrator( fileSystem, pageCache, config, logService, jobScheduler );
         LogPosition logPosition = migrator.extractTransactionLogPosition( neoStore, databaseLayout, 100 );
 
-        File[] logFiles = customLogLocation.listFiles();
-        assertNotNull( logFiles );
+        LogFiles logFiles = LogFilesBuilder.activeFilesBuilder( databaseLayout, fileSystem, pageCache ).withConfig( config ).build();
         assertEquals( 0, logPosition.getLogVersion() );
-        assertEquals( logFiles[0].length(), logPosition.getByteOffset() );
+        assertEquals( logFiles.getHighestLogFile().length(), logPosition.getByteOffset() );
     }
 
     private StoreMigrator newStoreMigrator()

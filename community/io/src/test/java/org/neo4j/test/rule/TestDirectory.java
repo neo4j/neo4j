@@ -36,6 +36,7 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.layout.StoreLayout;
+import org.neo4j.io.layout.StoreLayoutConfig;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
@@ -193,6 +194,16 @@ public class TestDirectory extends ExternalResource
     {
         createDirectory( defaultDatabaseLayout.databaseDirectory() );
         return defaultDatabaseLayout;
+    }
+
+    public DatabaseLayout databaseLayout( StoreLayoutConfig storeLayoutConfig )
+    {
+        return databaseLayout( storeLayoutConfig, DEFAULT_DATABASE_DIRECTORY );
+    }
+
+    public DatabaseLayout databaseLayout( StoreLayoutConfig storeLayoutConfig, String databaseName )
+    {
+        return StoreLayout.of( testDirectory, storeLayoutConfig ).databaseLayout( databaseName );
     }
 
     public DatabaseLayout databaseLayout( File storeDir )

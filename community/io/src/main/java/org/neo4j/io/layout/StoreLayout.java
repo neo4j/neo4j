@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Objects;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
+import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
 
 /**
  * File layout representation of neo4j store that provides the ability to reference any store
@@ -56,15 +57,22 @@ public class StoreLayout
     private static final String STORE_LOCK_FILENAME = "store_lock";
 
     private final File storeDirectory;
+    private final StoreLayoutConfig layoutConfig;
+
+    public static StoreLayout of( File storeDirectory, StoreLayoutConfig config )
+    {
+        return new StoreLayout( getCanonicalFile( storeDirectory ), config );
+    }
 
     public static StoreLayout of( File storeDirectory )
     {
-        return new StoreLayout( getCanonicalFile( storeDirectory ) );
+        return new StoreLayout( getCanonicalFile( storeDirectory ), NOT_CONFIGURED  );
     }
 
-    private StoreLayout( File rootStoreDirectory )
+    private StoreLayout( File rootStoreDirectory, StoreLayoutConfig layoutConfig )
     {
         this.storeDirectory = rootStoreDirectory;
+        this.layoutConfig = layoutConfig;
     }
 
     /**
@@ -76,7 +84,7 @@ public class StoreLayout
      */
     public DatabaseLayout databaseLayout( String databaseName )
     {
-        return DatabaseLayout.of( storeDirectory, databaseName );
+        return DatabaseLayout.of( this, databaseName );
     }
 
     /**
@@ -86,6 +94,15 @@ public class StoreLayout
     public File storeDirectory()
     {
         return storeDirectory;
+    }
+
+    /**
+     * Configuration of store layout
+     * @return layout config
+     */
+    public StoreLayoutConfig getLayoutConfig()
+    {
+        return layoutConfig;
     }
 
     public File storeLockFile()

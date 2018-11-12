@@ -44,7 +44,8 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.kernel.configuration.LayoutConfig.of;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class RecoveryRequiredCheckerTest
@@ -109,18 +110,11 @@ class RecoveryRequiredCheckerTest
     }
 
     @Test
-    void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateRelativeLocation() throws Exception
-    {
-        File customTransactionLogsLocation = new File( storeDir, "tx-logs" );
-        Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getName() );
-        recoverBrokenStoreWithConfig( config );
-    }
-
-    @Test
     void shouldBeAbleToRecoverBrokenStoreWithLogsInSeparateAbsoluteLocation() throws Exception
     {
         File customTransactionLogsLocation = testDirectory.directory( "tx-logs" );
-        Config config = Config.defaults( logical_logs_location, customTransactionLogsLocation.getAbsolutePath() );
+        Config config = Config.builder().withSetting( transaction_logs_root_path,
+                customTransactionLogsLocation.getAbsolutePath() ).build();
         recoverBrokenStoreWithConfig( config );
     }
 
@@ -130,9 +124,9 @@ class RecoveryRequiredCheckerTest
         {
             PageCache pageCache = pageCacheExtension.getPageCache( fileSystemAbstraction );
 
-            RecoveryRequiredChecker recoverer = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
+            RecoveryRequiredChecker recoveryChecker = getRecoveryChecker( fileSystemAbstraction, pageCache, config );
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( true ) );
+            assertThat( recoveryChecker.isRecoveryRequiredAt( testDirectory.databaseLayout( of( config ) ) ), is( true ) );
 
             new TestGraphDatabaseFactory()
                     .setFileSystem( fileSystemAbstraction )
@@ -141,7 +135,7 @@ class RecoveryRequiredCheckerTest
                     .newGraphDatabase()
                     .shutdown();
 
-            assertThat( recoverer.isRecoveryRequiredAt( databaseLayout ), is( false ) );
+            assertThat( recoveryChecker.isRecoveryRequiredAt( databaseLayout ), is( false ) );
         }
     }
 

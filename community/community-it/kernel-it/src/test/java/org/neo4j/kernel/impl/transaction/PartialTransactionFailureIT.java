@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.Iterator;
@@ -47,32 +47,34 @@ import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
  * Here we are verifying that even if we get an exception from the storage layer during commit,
  * we should still be able to recover to a consistent state.
  */
-public class PartialTransactionFailureIT
+@ExtendWith( TestDirectoryExtension.class )
+class PartialTransactionFailureIT
 {
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction()
-            throws Exception
+    void concurrentlyCommittingTransactionsMustNotRotateOutLoggedCommandsOfFailingTransaction() throws Exception
     {
         final ClassGuardedAdversary adversary = new ClassGuardedAdversary(
                 new CountingAdversary( 1, false ),
                 Command.RelationshipCommand.class );
         adversary.disable();
 
-        File storeDir = dir.storeDir();
+        File storeDir = testDirectory.storeDir();
         final Map<String,String> params = stringMap( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         final EmbeddedGraphDatabase db = new TestEmbeddedGraphDatabase( storeDir, params )
         {

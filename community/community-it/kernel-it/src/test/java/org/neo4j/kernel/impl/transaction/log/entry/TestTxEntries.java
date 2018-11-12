@@ -19,74 +19,69 @@
  */
 package org.neo4j.kernel.impl.transaction.log.entry;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.RuleChain;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 
+import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
-public class TestTxEntries
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class TestTxEntries
 {
-    private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final RuleChain ruleChain = RuleChain.outerRule( fs ).around( testDirectory );
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
-    /*
-     * Starts a JVM, executes a tx that fails on prepare and rollbacks,
-     * triggering a bug where an extra start entry for that tx is written
-     * in the xa log.
-     */
     @Test
-    public void testStartEntryWrittenOnceOnRollback() throws Exception
+    void testStartEntryWrittenOnceOnRollback()
     {
         File storeDir = testDirectory.databaseDir();
-        final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
+        final GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( storeDir );
         createSomeTransactions( db );
-        EphemeralFileSystemAbstraction snapshot = fs.snapshot( db::shutdown );
+        EphemeralFileSystemAbstraction snapshot = fs.snapshot();
+        db.shutdown();
 
         new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir ).shutdown();
     }
 
     private void createSomeTransactions( GraphDatabaseService db )
     {
-        Transaction tx = db.beginTx();
-        Node node1 = db.createNode();
-        Node node2 = db.createNode();
-        node1.createRelationshipTo( node2,
-                RelationshipType.withName( "relType1" ) );
-        tx.success();
-        tx.close();
+        Node node1;
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1 = db.createNode();
+            Node node2 = db.createNode();
+            node1.createRelationshipTo( node2, RelationshipType.withName( "relType1" ) );
+            tx.success();
+        }
 
-        tx = db.beginTx();
-        node1.delete();
-        tx.success();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
+            node1.delete();
+            tx.success();
             // Will throw exception, causing the tx to be rolledback.
-            tx.close();
-        }
-        catch ( Exception nothingToSeeHereMoveAlong )
-        {
             // InvalidRecordException coming, node1 has rels
+            assertThrows( ConstraintViolationException.class, tx::close );
         }
-        /*
-         *  The damage has already been done. The following just makes sure
-         *  the corrupting tx is flushed to disk, since we will exit
-         *  uncleanly.
-         */
-        tx = db.beginTx();
-        node1.setProperty( "foo", "bar" );
-        tx.success();
-        tx.close();
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            node1.setProperty( "foo", "bar" );
+            tx.success();
+        }
     }
 }

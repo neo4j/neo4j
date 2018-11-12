@@ -32,6 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.collection.Streams;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
+import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
 
 /**
  * File layout representation of the particular database. Facade for any kind of file lookup for a particular database storage implementation.
@@ -56,13 +57,23 @@ public class DatabaseLayout
 
     public static DatabaseLayout of( File databaseDirectory )
     {
+        return of( databaseDirectory, NOT_CONFIGURED );
+    }
+
+    public static DatabaseLayout of( File databaseDirectory, StoreLayoutConfig config )
+    {
         File canonicalFile = getCanonicalFile( databaseDirectory );
-        return of( canonicalFile.getParentFile(), canonicalFile.getName() );
+        return of( canonicalFile.getParentFile(), config, canonicalFile.getName() );
     }
 
     public static DatabaseLayout of( File rootDirectory, String databaseName )
     {
-        return new DatabaseLayout( StoreLayout.of( rootDirectory ), databaseName );
+        return of(rootDirectory, NOT_CONFIGURED, databaseName );
+    }
+
+    public static DatabaseLayout of( File rootDirectory, StoreLayoutConfig config, String databaseName )
+    {
+        return new DatabaseLayout( StoreLayout.of( rootDirectory, config ), databaseName );
     }
 
     private DatabaseLayout( StoreLayout storeLayout, String databaseName )
@@ -70,6 +81,13 @@ public class DatabaseLayout
         this.storeLayout = storeLayout;
         this.databaseDirectory = new File( storeLayout.storeDirectory(), databaseName );
         this.databaseName = databaseName;
+    }
+
+    public File getTransactionLogsDirectory()
+    {
+        return storeLayout.getLayoutConfig().getTransactionLogsRootDirectory()
+                .map( root -> new File( root, getDatabaseName() ) )
+                .orElse( databaseDirectory() );
     }
 
     public String getDatabaseName()

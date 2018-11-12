@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -28,34 +28,35 @@ import java.util.Map;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.extension.EphemeralFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PropertyKeyTest
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
+class PropertyKeyTest
 {
-    @Rule
-    public final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void lazyLoadWithinWriteTransaction() throws Exception
+    void lazyLoadWithinWriteTransaction() throws Exception
     {
-        // Given
-        FileSystemAbstraction fileSystem = fs.get();
-        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fileSystem );
+        BatchInserter inserter = BatchInserters.inserter( testDirectory.databaseDir(), fs );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( testDirectory.databaseDir() );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs ).newImpermanentDatabase( testDirectory.databaseDir() );
 
         // When
         try ( Transaction tx = db.beginTx() )

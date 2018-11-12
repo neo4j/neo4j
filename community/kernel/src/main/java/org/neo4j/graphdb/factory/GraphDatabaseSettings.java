@@ -117,6 +117,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<File> databases_root_path = derivedSetting( "unsupported.dbms.directories.databases.root",
             data_directory,  data -> new File( data, "databases" ), PATH );
 
+    @Description( "Root location where Neo4j will store transaction logs for configured databases." )
+    public static final Setting<File> transaction_logs_root_path = derivedSetting( "dbms.directories.transaction.logs.root",
+            neo4j_home, data_directory, ( home, data ) -> home == null ? null : new File( data, "tx-logs" ), PATH );
+
     @Internal
     public static final Setting<File> database_path = derivedSetting( "unsupported.dbms.directories.database",
             databases_root_path, active_database, ( parent, child ) -> new File( parent, child ), PATH );
@@ -648,9 +652,10 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
     public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerName() );
 
+    // TODO: remove this setting? or keep only for migration
+    @Deprecated
     @Description( "Location where Neo4j keeps the logical transaction logs." )
-    public static final Setting<File> logical_logs_location =
-            pathSetting( "dbms.directories.tx_log", "", database_path );
+    public static final Setting<File> logical_logs_location = pathSetting( "dbms.directories.tx_log", "", database_path );
 
     // Store settings
     @Description( "Make Neo4j keep the logical transaction logs for being able to backup the database. " +

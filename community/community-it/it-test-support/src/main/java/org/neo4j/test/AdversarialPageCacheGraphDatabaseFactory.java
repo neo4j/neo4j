@@ -64,6 +64,10 @@ public class AdversarialPageCacheGraphDatabaseFactory
                         File databasesRoot = absoluteStoreDir.getParentFile();
                         config.augment( GraphDatabaseSettings.active_database, absoluteStoreDir.getName() );
                         config.augment( GraphDatabaseSettings.databases_root_path, databasesRoot.getAbsolutePath() );
+                        if ( !config.isConfigured( GraphDatabaseSettings.transaction_logs_root_path ) )
+                        {
+                            config.augment( GraphDatabaseSettings.transaction_logs_root_path, databasesRoot.getAbsolutePath() );
+                        }
                         return new PlatformModule( databasesRoot, config, databaseInfo, dependencies )
                         {
                             @Override

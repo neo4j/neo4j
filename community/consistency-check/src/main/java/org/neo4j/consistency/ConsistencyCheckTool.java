@@ -34,14 +34,13 @@ import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.LayoutConfig;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.helpers.Args.jarUsage;
 import static org.neo4j.helpers.Strings.joinAsLines;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckTool
@@ -109,7 +108,7 @@ public class ConsistencyCheckTool
         Config tuningConfiguration = readConfiguration( arguments, storeDir );
         boolean verbose = isVerbose( arguments );
 
-        DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir, LayoutConfig.of( tuningConfiguration ) );
         checkDbState( databaseLayout, tuningConfiguration );
 
         ZoneId logTimeZone = tuningConfiguration.get( GraphDatabaseSettings.db_timezone ).getZoneId();

@@ -128,7 +128,7 @@ public final class Recovery
 
     /**
      * Check if recovery is required for a store described by provided layout.
-     * Custom transaction logs location can be provided using {@link GraphDatabaseSettings#logical_logs_location} config setting value.
+     * Custom root location for transaction logs can be provided using {@link GraphDatabaseSettings#transaction_logs_root_path} config setting value.
      * @param databaseLayout layout of database to check for recovery
      * @param config custom configuration
      * @return true if recovery is required, false otherwise.
@@ -146,7 +146,7 @@ public final class Recovery
 
     /**
      * Check if recovery is required for a store described by provided layout.
-     * Custom transaction logs location can be provided using {@link GraphDatabaseSettings#logical_logs_location} config setting value.
+     * Custom root location for transaction logs can be provided using {@link GraphDatabaseSettings#transaction_logs_root_path} config setting value.
      * @param fs database filesystem
      * @param databaseLayout layout of database to check for recovery
      * @param config custom configuration

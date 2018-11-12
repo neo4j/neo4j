@@ -86,6 +86,7 @@ import org.neo4j.udc.UsageDataKeys;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_internal_log_path;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_off_heap_block_cache_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.tx_state_off_heap_max_cacheable_block_size;
+import static org.neo4j.kernel.configuration.LayoutConfig.of;
 import static org.neo4j.kernel.lifecycle.LifecycleAdapter.onShutdown;
 
 /**
@@ -147,7 +148,7 @@ public class PlatformModule
         clock = dependencies.satisfyDependency( createClock() );
         life = createLife();
 
-        this.storeLayout = StoreLayout.of( providedStoreDir );
+        this.storeLayout = StoreLayout.of( providedStoreDir, of( config ) );
 
         config.augmentDefaults( GraphDatabaseSettings.neo4j_home, storeLayout.storeDirectory().getPath() );
         this.config = dependencies.satisfyDependency( config );

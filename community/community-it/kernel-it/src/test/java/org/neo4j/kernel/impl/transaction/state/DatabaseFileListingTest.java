@@ -159,13 +159,6 @@ public class DatabaseFileListingTest
     }
 
     @Test
-    public void shouldListTransactionLogsFromCustomLocationWhenConfigured() throws IOException
-    {
-        String logFilesPath = "customTxFolder";
-        verifyLogFilesWithCustomPathListing( logFilesPath );
-    }
-
-    @Test
     public void shouldListTransactionLogsFromCustomAbsoluteLocationWhenConfigured() throws IOException
     {
         File customLogLocation = testDirectory.directory( "customLogLocation" );
@@ -217,13 +210,13 @@ public class DatabaseFileListingTest
     {
         GraphDatabaseAPI graphDatabase = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( testDirectory.databaseDir( "customDb" ) )
-                .setConfig( GraphDatabaseSettings.logical_logs_location, path )
+                .setConfig( GraphDatabaseSettings.transaction_logs_root_path, path )
                 .newGraphDatabase();
-        Database dataSource = graphDatabase.getDependencyResolver().resolveDependency( Database.class );
+        Database database = graphDatabase.getDependencyResolver().resolveDependency( Database.class );
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
-        assertTrue( dataSource.listStoreFiles( true ).stream()
+        assertTrue( database.listStoreFiles( true ).stream()
                 .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );
-        assertEquals( Paths.get( path ).getFileName().toString(), logFiles.logFilesDirectory().getName() );
+        assertEquals( Paths.get( path ).getFileName().toString(), logFiles.logFilesDirectory().getParentFile().getName() );
         graphDatabase.shutdown();
     }
 

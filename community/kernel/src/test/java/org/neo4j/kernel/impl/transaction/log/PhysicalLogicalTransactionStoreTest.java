@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -31,6 +31,7 @@ import java.util.Collection;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
@@ -54,37 +55,40 @@ import org.neo4j.kernel.recovery.RecoveryStartInformation;
 import org.neo4j.kernel.recovery.TransactionLogsRecovery;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
 
-public class PhysicalLogicalTransactionStoreTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class PhysicalLogicalTransactionStoreTest
 {
     private static final DatabaseHealth DATABASE_HEALTH = mock( DatabaseHealth.class );
 
-    @Rule
-    public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
-    @Rule
-    public final TestDirectory dir = TestDirectory.testDirectory();
+    @Inject
+    private DefaultFileSystemAbstraction fileSystem;
+    @Inject
+    private TestDirectory directory;
     private File databaseDirectory;
     private Monitors monitors = new Monitors();
 
-    @Before
-    public void setup()
+    @BeforeEach
+    void setup()
     {
-        databaseDirectory = dir.databaseDir();
+        databaseDirectory = directory.databaseDir();
     }
 
     @Test
-    public void extractTransactionFromLogFilesSkippingLastLogFileWithoutHeader() throws IOException
+    void extractTransactionFromLogFilesSkippingLastLogFileWithoutHeader() throws IOException
     {
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
@@ -95,7 +99,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                                                  .withTransactionIdStore( transactionIdStore )
                                                  .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
@@ -111,7 +115,7 @@ public class PhysicalLogicalTransactionStoreTest
         }
 
         // create empty transaction log file and clear transaction cache to force re-read
-        fileSystemRule.get().create( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
+        fileSystem.create( logFiles.getLogFileForVersion( logFiles.getHighestLogVersion() + 1 ) ).close();
         positionCache.clear();
 
         final LogicalTransactionStore store = new PhysicalLogicalTransactionStore( logFiles, positionCache,
@@ -121,14 +125,14 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldOpenCleanStore() throws Exception
+    void shouldOpenCleanStore() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
         TransactionMetadataCache positionCache = new TransactionMetadataCache();
 
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
@@ -147,7 +151,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldOpenAndRecoverExistingData() throws Exception
+    void shouldOpenAndRecoverExistingData() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -159,7 +163,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
 
@@ -186,7 +190,7 @@ public class PhysicalLogicalTransactionStoreTest
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
                 transactionIdStore, DATABASE_HEALTH ) );
-        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystemRule.get() );
+        CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystem );
         life.add( new TransactionLogsRecovery( new RecoveryService()
         {
             @Override
@@ -242,7 +246,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldExtractMetadataFromExistingTransaction() throws Exception
+    void shouldExtractMetadataFromExistingTransaction() throws Exception
     {
         // GIVEN
         TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
@@ -254,7 +258,7 @@ public class PhysicalLogicalTransactionStoreTest
         long latestCommittedTxWhenStarted = 4545;
         long timeCommitted = timeStarted + 10;
         LifeSupport life = new LifeSupport();
-        final LogFiles logFiles = LogFilesBuilder.builder( dir.databaseLayout(), fileSystemRule.get() )
+        final LogFiles logFiles = LogFilesBuilder.builder( directory.databaseLayout(), fileSystem )
                 .withTransactionIdStore( transactionIdStore )
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.start();
@@ -288,7 +292,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
+    void shouldThrowNoSuchTransactionExceptionIfMetadataNotFound() throws Exception
     {
         // GIVEN
         LogFiles logFiles = mock( LogFiles.class );
@@ -302,15 +306,7 @@ public class PhysicalLogicalTransactionStoreTest
         try
         {
             life.start();
-            // WHEN
-            try
-            {
-                txStore.getMetadataFor( 10 );
-                fail( "Should have thrown" );
-            }
-            catch ( NoSuchTransactionException e )
-            {   // THEN Good
-            }
+            assertThrows( NoSuchTransactionException.class, () -> txStore.getMetadataFor( 10 ) );
         }
         finally
         {
@@ -319,7 +315,7 @@ public class PhysicalLogicalTransactionStoreTest
     }
 
     @Test
-    public void shouldThrowNoSuchTransactionExceptionIfLogFileIsMissing() throws Exception
+    void shouldThrowNoSuchTransactionExceptionIfLogFileIsMissing() throws Exception
     {
         // GIVEN
         LogFile logFile = mock( LogFile.class );
@@ -342,16 +338,7 @@ public class PhysicalLogicalTransactionStoreTest
 
             // WHEN
             // we ask for that transaction and forward
-            try
-            {
-                txStore.getTransactions( 10 );
-                fail();
-            }
-            catch ( NoSuchTransactionException e )
-            {
-                // THEN
-                // We don't get a FileNotFoundException but a NoSuchTransactionException instead
-            }
+            assertThrows( NoSuchTransactionException.class, () -> txStore.getTransactions( 10 ) );
         }
         finally
         {
