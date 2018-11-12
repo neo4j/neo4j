@@ -75,14 +75,10 @@ class FulltextIndexTransactionState implements Closeable
         txStateVisitor = new FulltextIndexTransactionStateVisitor( descriptor, modifiedEntityIdsInThisTransaction, writer );
     }
 
-    public void maybeUpdate( QueryContext context )
+    void maybeUpdate( QueryContext context )
     {
         if ( currentSearcher == null || lastUpdateRevision != context.getTransactionStateOrNull().getDataRevision() )
         {
-            if ( currentSearcher != null )
-            {
-                toCloseLater.add( currentSearcher );
-            }
             try
             {
                 updateSearcher( context );
@@ -109,13 +105,13 @@ class FulltextIndexTransactionState implements Closeable
             state.accept( txStateVisitor.init( read, nodeCursor, relationshipCursor, propertyCursor ) );
         }
         currentSearcher = writer.getNearRealTimeSearcher();
+        toCloseLater.add( currentSearcher );
         lastUpdateRevision = state.getDataRevision();
     }
 
     @Override
     public void close() throws IOException
     {
-        toCloseLater.add( currentSearcher );
         toCloseLater.add( writer );
         IOUtils.closeAll( toCloseLater );
     }
