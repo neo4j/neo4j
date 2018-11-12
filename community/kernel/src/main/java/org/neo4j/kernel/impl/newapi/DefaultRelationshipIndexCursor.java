@@ -156,16 +156,11 @@ final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> 
     {
         if ( !isClosed() )
         {
-            super.close();
             this.relationship = NO_ID;
             this.score = Float.NaN;
-            try
+            try ( Resource ignore = resource )
             {
-                if ( resource != null )
-                {
-                    resource.close();
-                    resource = null;
-                }
+                super.close();
             }
             finally
             {
