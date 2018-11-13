@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -145,7 +146,7 @@ class DependenciesTest
         Dependencies dependencies = new Dependencies();
 
         List foo = new ArrayList();
-        List bar = new ArrayList();
+        List bar = singletonList( "a" );
         dependencies.satisfyDependency( foo );
         dependencies.satisfyDependency( bar );
 

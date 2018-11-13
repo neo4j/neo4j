@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.util;
 
 import org.eclipse.collections.api.RichIterable;
-import org.eclipse.collections.api.list.MutableList;
-import org.eclipse.collections.api.multimap.list.MutableListMultimap;
+import org.eclipse.collections.api.multimap.set.MutableSetMultimap;
+import org.eclipse.collections.api.set.MutableSet;
 import org.eclipse.collections.impl.factory.Multimaps;
 
 import java.util.List;
@@ -38,7 +38,7 @@ import static org.apache.commons.lang3.ClassUtils.getAllSuperclasses;
 public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
     private final DependencyResolver parent;
-    private final MutableListMultimap<Class, Object> typeDependencies = Multimaps.mutable.list.empty();
+    private final MutableSetMultimap<Class, Object> typeDependencies = Multimaps.mutable.set.empty();
 
     public Dependencies()
     {
@@ -73,7 +73,7 @@ public class Dependencies extends DependencyResolver.Adapter implements Dependen
     @Override
     public <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type )
     {
-        MutableList<T> options = (MutableList<T>) typeDependencies.get( type );
+        MutableSet<T> options = (MutableSet<T>) typeDependencies.get( type );
         if ( parent != null )
         {
             return Iterables.concat( options, parent.resolveTypeDependencies( type ) );

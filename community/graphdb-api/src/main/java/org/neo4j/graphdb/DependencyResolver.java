@@ -59,7 +59,7 @@ public interface DependencyResolver
      *
      * @param type the type of {@link Class} that the returned instances must implement.
      * @param <T> the type that the returned instance must implement
-     * @return the list of resolved dependencies for the given type.
+     * @return the iterables with resolved dependencies for the given type.
      */
     default <T> Iterable<? extends T> resolveTypeDependencies( Class<T> type )
     {
