@@ -33,7 +33,6 @@ import java.util.regex.Pattern;
 
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
@@ -46,7 +45,6 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
-import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DATABASE_MODE;
 import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
@@ -143,7 +141,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, USER_AGENTS, toCommaString( usageData.get( UsageDataKeys.clientNames ) ) );
 
         add( udcFields, TAGS, determineTags( jarNamesForTags, classPath ) );
-        add( udcFields, CLUSTER_HASH, determineClusterNameHash() );
 
         add( udcFields, MAC, determineMacAddress() );
         add( udcFields, DISTRIBUTION, determineOsDistribution() );
@@ -209,21 +206,6 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
             // ignore
         }
         return UNKNOWN_DIST;
-    }
-
-    private Integer determineClusterNameHash()
-    {
-        try
-        {
-            Class<?> settings = Class.forName( "org.neo4j.cluster.ClusterSettings" );
-            Setting setting = (Setting) settings.getField( "cluster_name" ).get( null );
-            Object name = config.get( setting );
-            return name != null ? Math.abs( name.hashCode() % Integer.MAX_VALUE ) : null;
-        }
-        catch ( Exception e )
-        {
-            return null;
-        }
     }
 
     private static String determineTags( Map<String,String> jarNamesForTags, String classPath )

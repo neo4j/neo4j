@@ -23,7 +23,6 @@ public class UdcConstants
 {
     public static final String ID = "id";
     public static final String TAGS = "tags";
-    public static final String CLUSTER_HASH = "cluster";
     public static final String REGISTRATION = "reg";
     public static final String PING = "p";
     public static final String DISTRIBUTION = "dist";
