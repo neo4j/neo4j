@@ -156,7 +156,7 @@ public class StoreUpgraderTest
             newUpgrader( upgradableDatabase, deniedMigrationConfig, pageCache ).migrateIfNeeded( databaseLayout );
             fail( "Should throw exception" );
         }
-        catch ( UpgradeNotAllowedByConfigurationException e )
+        catch ( UpgradeNotAllowedException e )
         {
             // expected
         }

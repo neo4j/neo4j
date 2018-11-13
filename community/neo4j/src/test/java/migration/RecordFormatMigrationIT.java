@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -75,7 +75,7 @@ class RecordFormatMigrationIT
         }
         database.shutdown();
         Throwable throwable = assertThrows( Throwable.class, () -> startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME ) );
-        assertSame( UpgradeNotAllowedByConfigurationException.class, Exceptions.rootCause( throwable ).getClass() );
+        assertSame( UpgradeNotAllowedException.class, Exceptions.rootCause( throwable ).getClass() );
     }
 
     @Test
@@ -146,7 +146,7 @@ class RecordFormatMigrationIT
         database.shutdown();
 
         Throwable exception = assertThrows( Throwable.class, () -> startDatabaseWithFormatUnspecifiedUpgrade( storeDir, Standard.LATEST_NAME ) );
-        assertSame( UpgradeNotAllowedByConfigurationException.class, Exceptions.rootCause( exception ).getClass() );
+        assertSame( UpgradeNotAllowedException.class, Exceptions.rootCause( exception ).getClass() );
     }
 
     private static GraphDatabaseService startDatabaseWithFormatUnspecifiedUpgrade( File storeDir, String formatName )

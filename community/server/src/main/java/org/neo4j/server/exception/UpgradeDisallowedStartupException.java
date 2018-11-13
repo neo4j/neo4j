@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.exception;
 
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.logging.Log;
 import org.neo4j.server.ServerStartupException;
 
 public class UpgradeDisallowedStartupException extends ServerStartupException
 {
-    public UpgradeDisallowedStartupException( UpgradeNotAllowedException cause )
+    UpgradeDisallowedStartupException( UpgradeNotAllowedException cause )
     {
         super( cause.getMessage(), cause );
     }
@@ -35,13 +34,6 @@ public class UpgradeDisallowedStartupException extends ServerStartupException
     public void describeTo( Log log )
     {
         Throwable cause = getCause();
-        if ( cause instanceof UpgradeNotAllowedByConfigurationException )
-        {
-            log.error( cause.getMessage() );
-        }
-        else
-        {
-            super.describeTo( log );
-        }
+        log.error( cause.getMessage() );
     }
 }

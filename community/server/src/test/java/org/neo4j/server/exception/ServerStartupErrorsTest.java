@@ -22,7 +22,7 @@ package org.neo4j.server.exception;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 
@@ -42,7 +42,7 @@ public class ServerStartupErrorsTest
                 new RuntimeException( "Error starting org.neo4j.kernel.ha.factory.EnterpriseFacadeFactory",
                         new LifecycleException( new Object(), STARTING, STARTED,
                                 new LifecycleException( new Object(), STARTING, STARTED,
-                                        new UpgradeNotAllowedByConfigurationException() ) ) ) );
+                                        new UpgradeNotAllowedException() ) ) ) );
 
         // when
         translateToServerStartupError( error ).describeTo( logging.getLog( "console" ) );

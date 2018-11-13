@@ -28,7 +28,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionLongToString;
 
@@ -122,7 +122,7 @@ public class IndexProviderStore
             else if ( !allowUpgrade )
             {
                 // We try to run with a newer version than the store is but isn't allowed to upgrade.
-                throw new UpgradeNotAllowedByConfigurationException();
+                throw new UpgradeNotAllowedException();
             }
         }
         return versionDiffers;
@@ -135,7 +135,7 @@ public class IndexProviderStore
         int wholeRecordsRead = bytesRead / RECORD_SIZE;
         if ( wholeRecordsRead < RECORD_COUNT && !allowUpgrade )
         {
-            throw new UpgradeNotAllowedByConfigurationException( "Index version (managed by " + file + ") has changed and needs to be upgraded" );
+            throw new UpgradeNotAllowedException( "Index version (managed by " + file + ") has changed and needs to be upgraded" );
         }
 
         buf.flip();

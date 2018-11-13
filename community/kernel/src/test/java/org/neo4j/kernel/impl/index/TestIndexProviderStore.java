@@ -34,7 +34,7 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NotCurrentStoreVersionException;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -92,7 +92,7 @@ public class TestIndexProviderStore
             new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), false );
             fail( "Shouldn't be able to upgrade there" );
         }
-        catch ( UpgradeNotAllowedByConfigurationException e )
+        catch ( UpgradeNotAllowedException e )
         {   // Good
         }
         store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( "3.5" ), true );
@@ -152,7 +152,7 @@ public class TestIndexProviderStore
             store = new IndexProviderStore( file, fileSystem, 0, false );
             fail( "Should have thrown upgrade exception" );
         }
-        catch ( UpgradeNotAllowedByConfigurationException e )
+        catch ( UpgradeNotAllowedException e )
         {   // Good
         }
 

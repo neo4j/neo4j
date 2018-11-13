@@ -19,12 +19,22 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.store.StoreFailureException;
 
-public abstract class UpgradeNotAllowedException extends StoreFailureException
+public class UpgradeNotAllowedException extends StoreFailureException
 {
+    private static final String BASE_MSG = String.format(
+        "Neo4j cannot be started because the database files require upgrading and upgrades are disabled "
+            + "in the configuration. Please set '%s' to 'true' in your configuration file and try again.", GraphDatabaseSettings.allow_upgrade.name() );
+
     public UpgradeNotAllowedException( String msg )
     {
-        super( msg );
+        super( String.format( "%s Detailed description: %s", BASE_MSG, msg ) );
+    }
+
+    public UpgradeNotAllowedException()
+    {
+        super( BASE_MSG );
     }
 }

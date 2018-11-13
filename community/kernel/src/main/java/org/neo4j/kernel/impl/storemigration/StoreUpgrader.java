@@ -123,7 +123,7 @@ public class StoreUpgrader
         }
         else if ( !RecordFormatSelector.isStoreAndConfigFormatsCompatible( config, layout, fileSystem, pageCache, logProvider ) )
         {
-            throw new UpgradeNotAllowedByConfigurationException();
+            throw new UpgradeNotAllowedException();
         }
     }
 

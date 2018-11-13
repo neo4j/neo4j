@@ -25,7 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
+import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner;
 
@@ -52,7 +52,7 @@ public class LogVersionUpgradeCheckerTest
     {
         when( tailScanner.getTailInformation() ).thenReturn( new OnlyVersionTailInformation( LogEntryVersion.V2_3 ) );
 
-        expect.expect( UpgradeNotAllowedByConfigurationException.class );
+        expect.expect( UpgradeNotAllowedException.class );
 
         LogVersionUpgradeChecker.check( tailScanner, Config.defaults( GraphDatabaseSettings.allow_upgrade, "false") );
     }
