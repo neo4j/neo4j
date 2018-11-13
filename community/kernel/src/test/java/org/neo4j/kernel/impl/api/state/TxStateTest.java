@@ -846,99 +846,128 @@ public class TxStateTest
     public void dataRevisionMustChangeOnDataChange()
     {
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
         LongHashSet observedRevisions = new LongHashSet();
         observedRevisions.add( 0L );
 
         state.nodeDoCreate( 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.nodeDoAddLabel( 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.nodeDoRemoveLabel( 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.nodeDoAddProperty( 0, 0, Values.booleanValue( true ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.nodeDoChangeProperty( 0, 0, Values.booleanValue( false ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.nodeDoRemoveProperty( 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.nodeDoDelete( 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.relationshipDoCreate( 0, 0, 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.relationshipDoReplaceProperty( 0, 0, Values.NO_VALUE, Values.booleanValue( true ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.relationshipDoReplaceProperty( 0, 0, Values.booleanValue( true ), Values.booleanValue( false ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.relationshipDoRemoveProperty( 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.relationshipDoDeleteAddedInThisTx( 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.relationshipDoDelete( 1, 0, 0, 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.graphDoReplaceProperty( 0, Values.NO_VALUE, Values.booleanValue( true ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.graphDoReplaceProperty( 0, Values.booleanValue( true ), Values.booleanValue( false ) );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
 
         state.graphDoRemoveProperty( 0 );
         assertTrue( observedRevisions.add( state.getDataRevision() ) );
+        assertTrue( state.hasDataChanges() );
     }
 
     @Test
     public void dataRevisionMustNotChangeOnSchemaChanges()
     {
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.indexDoAdd( indexOn_1_1 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.indexDoDrop( indexOn_1_1 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.indexDoUnRemove( indexOn_1_1 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         UniquenessConstraintDescriptor constraint1 = ConstraintDescriptorFactory.uniqueForLabel( 1, 17 );
         state.constraintDoAdd( constraint1 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.constraintDoDrop( constraint1 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.constraintDoUnRemove( constraint1 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         IndexBackedConstraintDescriptor constraint2 = ConstraintDescriptorFactory.nodeKeyForLabel( 0, 0 );
         state.constraintDoAdd( constraint2, 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.labelDoCreateForName( "Label", 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.relationshipTypeDoCreateForName( "REL", 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         state.propertyKeyDoCreateForName( "prop", 0 );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
 
         // This is not strictly a schema-change, but it is a "non-data" change in that these will not transform into store updates.
         // Or schema updates for that matter. We only do these to speed up the transaction state filtering of schema index query results.
         state.indexDoUpdateEntry( indexOn_1_1.schema(), 0, ValueTuple.of( Values.booleanValue( true ) ), ValueTuple.of( Values.booleanValue( false ) ) );
         assertThat( state.getDataRevision(), is( 0L ) );
+        assertFalse( state.hasDataChanges() );
     }
 
     //    getOrCreateLabelStateNodeDiffSets

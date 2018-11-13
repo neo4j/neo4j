@@ -203,6 +203,12 @@ public class TxState implements TransactionState, RelationshipVisitor.Home
     }
 
     @Override
+    public boolean hasDataChanges()
+    {
+        return getDataRevision() != 0;
+    }
+
+    @Override
     public Iterable<NodeState> modifiedNodes()
     {
         return nodeStatesMap == null ? Iterables.empty() : Iterables.cast( nodeStatesMap.values() );

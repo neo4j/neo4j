@@ -116,7 +116,7 @@ public class IndexTxStateUpdater
 
     private boolean noSchemaChangedInTx()
     {
-        return !(read.txState().hasChanges() && read.txState().getDataRevision() == 0);
+        return !(read.txState().hasChanges() && !read.txState().hasDataChanges());
     }
 
     //PROPERTY CHANGES

@@ -553,7 +553,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasDataChanges()
     {
-        return hasTxStateWithChanges() && txState.getDataRevision() != 0;
+        return hasTxStateWithChanges() && txState.hasDataChanges();
     }
 
     @Override

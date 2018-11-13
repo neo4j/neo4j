@@ -156,4 +156,9 @@ public interface ReadableTransactionState
      * @return The opaque data revision for this transaction, or zero if there has been no data changes in this transaction.
      */
     long getDataRevision();
+
+    /**
+     * @return {@code true} if there are any <em>data</em> changes in the transaction.
+     */
+    boolean hasDataChanges();
 }
