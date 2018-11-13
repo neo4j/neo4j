@@ -21,8 +21,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, LogicalPlans}
 
-trait PipeBuilder extends LogicalPlans.Mapper[Pipe] {
+/**
+  * Maps single logical plan operators to their respective pipes. Does not recurse.
+  */
+trait PipeMapper extends LogicalPlans.Mapper[Pipe] {
   override def onLeaf(plan: LogicalPlan): Pipe
   override def onOneChildPlan(plan: LogicalPlan, source: Pipe): Pipe
   override def onTwoChildPlan(plan: LogicalPlan, lhs: Pipe, rhs: Pipe): Pipe
+}
+
+case class PipeTreeBuilder(pipeMapper: PipeMapper) {
+  def build(logicalPlan: LogicalPlan): Pipe =
+    LogicalPlans.map(logicalPlan, pipeMapper)
 }

@@ -24,25 +24,22 @@ import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.{InterpretedProfileInformation, Profiler}
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeExecutionBuilderContext
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{PipeTreeBuilder, NestedPipeExpressions}
+import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeMapper, UpdateCountingQueryContext}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
 import org.opencypher.v9_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {
-    val cardinalities = state.planningAttributes.cardinalities
     val logicalPlan = state.logicalPlan
     val converters = new ExpressionConverters(CommunityExpressionConverter(context.tokenContext))
-    val executionPlanBuilder = new PipeExecutionPlanBuilder(
-      expressionConverters = converters,
-      pipeBuilderFactory = InterpretedPipeBuilderFactory)
-    val pipeBuildContext = PipeExecutionBuilderContext(state.semanticTable(), context.readOnly)
-    val pipe = executionPlanBuilder.build(logicalPlan)(pipeBuildContext, context.tokenContext)
+    val pipeMapper = InterpretedPipeMapper(context.readOnly, converters, context.tokenContext)(state.semanticTable)
+    val pipeTreeBuilder = PipeTreeBuilder(pipeMapper)
+    val logicalPlanWithConvertedNestedPlans = NestedPipeExpressions.build(pipeTreeBuilder, logicalPlan)
+    val pipe = pipeTreeBuilder.build(logicalPlanWithConvertedNestedPlans)
     val periodicCommitInfo = state.periodicCommit.map(x => PeriodicCommitInfo(x.batchSize))
     val columns = state.statement().returnColumns
     val resultBuilderFactory = InterpretedExecutionResultBuilderFactory(pipe,

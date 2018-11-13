@@ -19,26 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NestedPlanExpression}
-import org.opencypher.v9_0.{expressions => frontEndAst}
+import org.opencypher.v9_0.util.{Rewriter, bottomUp}
 
-trait PipeBuilderFactory {
+object NestedPipeExpressions {
 
-  def apply(recurse: LogicalPlan => Pipe,
-            readOnly: Boolean,
-            expressionConverters: ExpressionConverters)
-           (implicit context: PipeExecutionBuilderContext, tokenContext: TokenContext): PipeBuilder
-
-  protected def recursePipes(recurse: LogicalPlan => Pipe)
-                            (in: frontEndAst.Expression): frontEndAst.Expression = {
-
-    val buildPipeExpressions = new Rewriter {
+  def build(pipeBuilder: PipeTreeBuilder, in: LogicalPlan): LogicalPlan = {
+    val buildPipeExpressions: Rewriter = new Rewriter {
       private val instance = bottomUp(Rewriter.lift {
         case expr@NestedPlanExpression(patternPlan, expression) =>
-          val pipe = recurse(patternPlan)
+          val pipe = pipeBuilder.build(patternPlan)
           val result = NestedPipeExpression(pipe, expression)(expr.position)
           result
       })
@@ -46,7 +36,5 @@ trait PipeBuilderFactory {
       override def apply(that: AnyRef): AnyRef = instance.apply(that)
     }
     in.endoRewrite(buildPipeExpressions)
-
   }
-
 }

@@ -23,7 +23,7 @@ import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, TokenContext}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
@@ -39,22 +39,22 @@ import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 
 import scala.collection.mutable
 
-class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val pipeBuildContext = pipeExecutionPlanBuilderContext
   val planContext: PlanContext = newMockedPlanContext
+  val semanticTable = new SemanticTable(resolvedRelTypeNames =
+    mutable.Map("existing1" -> RelTypeId(1),
+      "existing2" -> RelTypeId(2),
+      "existing3" -> RelTypeId(3)))
 
   val patternRel = PatternRelationship("r", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
 
-  private val planBuilder = {
-    val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
-    new PipeExecutionPlanBuilder(expressionConverters = converters, pipeBuilderFactory = InterpretedPipeBuilderFactory)
-  }
+  private val pipeMapper =
+    InterpretedPipeMapper(readOnly = true, converters, planContext)(semanticTable)
 
-  private def build(logicalPlan: LogicalPlan): Pipe = {
-    planBuilder.build(logicalPlan)(pipeBuildContext, planContext)
-  }
+  private def build(logicalPlan: LogicalPlan): Pipe =
+    PipeTreeBuilder(pipeMapper).build(logicalPlan)
 
   test("projection only query") {
     val logicalPlan = Projection(
@@ -198,13 +198,5 @@ class PipeExecutionPlanBuilderIT extends CypherFunSuite with LogicalPlanningTest
         AllNodesScanPipe("n")(),
         Map("n.prop" -> legacy.Property(legacy.Variable("n"),
           Resolved("prop", token, TokenType.PropertyKey))))())
-  }
-
-  def pipeExecutionPlanBuilderContext: PipeExecutionBuilderContext = {
-    val semanticTable = new SemanticTable(resolvedRelTypeNames =
-                                            mutable.Map("existing1" -> RelTypeId(1),
-                                                        "existing2" -> RelTypeId(2),
-                                                        "existing3" -> RelTypeId(3)))
-    PipeExecutionBuilderContext(semanticTable, readOnly = true)
   }
 }
