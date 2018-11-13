@@ -78,10 +78,12 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
   private var linenumber: Option[ResourceLinenumber] = None
 
   def setLinenumber(file: String, line: Long, last: Boolean = false): Unit = {
+    // sets the linenumber for the first time, overwrite since it would mean we have a LoadCsv in a LoadCsv
     linenumber = Some(ResourceLinenumber(file, line, last))
   }
 
   def setLinenumber(line: Option[ResourceLinenumber]): Unit = linenumber match {
+    // used to copy the linenumber when copying the ExecutionContext, don't want to overwrite it
     case None => linenumber = line
     case _ =>
   }
