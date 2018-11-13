@@ -32,7 +32,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
                                                  columns: List[String],
                                                  logicalPlan: LogicalPlan) extends ExecutionResultBuilderFactory {
 
-  abstract class BaseExecutionWorkflowBuilder() extends ExecutionResultBuilder {
+  abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
     protected var pipeDecorator: PipeDecorator = if (logicalPlan.treeFind[LogicalPlan] {
       case _: LoadCSV => true
@@ -73,10 +73,9 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                                                     lenientCreateRelationship: Boolean)
   extends BaseExecutionResultBuilderFactory(pipe, readOnly, columns, logicalPlan) {
 
-  override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionWorkflowBuilder(queryContext: QueryContext)
+  override def create(queryContext: QueryContext): ExecutionResultBuilder = InterpretedExecutionResultBuilder(queryContext: QueryContext)
 
-  case class InterpretedExecutionWorkflowBuilder(queryContext: QueryContext) extends BaseExecutionWorkflowBuilder {
-
+  case class InterpretedExecutionResultBuilder(queryContext: QueryContext) extends BaseExecutionResultBuilder {
     override def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState = {
       val cursors = new ExpressionCursors(queryContext.transactionalContext.cursors)
 
