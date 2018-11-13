@@ -251,7 +251,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
                                                      value: String): NodeValueIndexCursor =
     translateException(inner.indexSeekByEndsWith(index, needsValues, indexOrder, value))
 
-  override def indexScan[RESULT <: AnyRef](index: IndexReference,
+  override def indexScan[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder): NodeValueIndexCursor =
     translateException(inner.indexScan(index, needsValues, indexOrder))

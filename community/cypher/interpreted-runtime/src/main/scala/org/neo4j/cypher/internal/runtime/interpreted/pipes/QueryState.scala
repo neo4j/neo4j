@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathVa
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
 import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext, QueryStatistics}
+import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.util.ParameterNotFoundException
@@ -34,6 +35,7 @@ class QueryState(val query: QueryContext,
                  val resources: ExternalCSVResource,
                  val params: MapValue,
                  val cursors: ExpressionCursors,
+                 val queryIndexes: Array[IndexReadSession],
                  val decorator: PipeDecorator = NullPipeDecorator,
                  val initialContext: Option[ExecutionContext] = None,
                  val cachedIn: SingleThreadedLRUCache[Any, InCheckContainer] = new SingleThreadedLRUCache(maxSize = 16),
@@ -65,11 +67,11 @@ class QueryState(val query: QueryContext,
   def getStatistics: QueryStatistics = query.getOptStatistics.getOrElse(QueryState.defaultStatistics)
 
   def withDecorator(decorator: PipeDecorator) =
-    new QueryState(query, resources, params, cursors, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def withInitialContext(initialContext: ExecutionContext) =
-    new QueryState(query, resources, params, cursors, decorator, Some(initialContext),
+    new QueryState(query, resources, params, cursors, queryIndexes, decorator, Some(initialContext),
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
   /**
@@ -81,7 +83,7 @@ class QueryState(val query: QueryContext,
     .foreach(initData => ctx.copyFrom(initData, nLongs, nRefs))
 
   def withQueryContext(query: QueryContext) =
-    new QueryState(query, resources, params, cursors, decorator, initialContext,
+    new QueryState(query, resources, params, cursors, queryIndexes, decorator, initialContext,
                    cachedIn, lenientCreateRelationship, prePopulateResults)
 
   def setExecutionContextFactory(exFactory: ExecutionContextFactory): Unit = {

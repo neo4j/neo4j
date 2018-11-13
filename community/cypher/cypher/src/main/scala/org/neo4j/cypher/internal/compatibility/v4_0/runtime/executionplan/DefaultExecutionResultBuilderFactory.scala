@@ -67,6 +67,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 }
 
 case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
+                                                    queryIndexes: QueryIndexes,
                                                     readOnly: Boolean,
                                                     columns: List[String],
                                                     logicalPlan: LogicalPlan,
@@ -83,6 +84,7 @@ case class InterpretedExecutionResultBuilderFactory(pipe: Pipe,
                      externalResource,
                      params,
                      cursors,
+                     queryIndexes.indexes.map(index => queryContext.transactionalContext.dataRead.getOrCreateIndexReadSession(index)),
                      pipeDecorator,
                      lenientCreateRelationship = lenientCreateRelationship,
                      prePopulateResults = prePopulateResults)

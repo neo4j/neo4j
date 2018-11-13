@@ -290,12 +290,11 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
       nodeCursor
   }
 
-  override def indexScan[RESULT <: AnyRef](index: IndexReference,
+  override def indexScan[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder): NodeValueIndexCursor = {
     val nodeCursor = allocateAndTraceNodeValueIndexCursor()
-    val indexSession = reads().getOrCreateIndexReadSession(index)
-    reads().nodeIndexScan(indexSession, nodeCursor, asKernelIndexOrder(indexOrder), needsValues)
+    reads().nodeIndexScan(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValues)
     nodeCursor
   }
 

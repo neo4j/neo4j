@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.{CachedNodeProperty, IndexOrder, IndexedProperty}
-import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
@@ -40,17 +38,9 @@ case class NodeIndexScanPipe(ident: String,
   override val indexCachedNodeProperties: Array[CachedNodeProperty] =
     if (needsValues) Array(property.asCachedNodeProperty(ident)) else Array.empty
 
-  private var reference: IndexReference = IndexReference.NO_INDEX
-
-  private def reference(context: QueryContext): IndexReference = {
-    if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, property.propertyKeyToken.nameId.id)
-    }
-    reference
-  }
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     val baseContext = state.newExecutionContext(executionContextFactory)
-    val cursor = state.query.indexScan(reference(state.query), needsValues, indexOrder)
+    val cursor = state.query.indexScan(state.queryIndexes(queryIndexId), needsValues, indexOrder)
     new IndexIterator(state.query, baseContext, cursor)
   }
 }

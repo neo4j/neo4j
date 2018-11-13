@@ -52,7 +52,7 @@ object QueryStateHelper extends MockitoSugar {
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, decorator, initialContext = initialContext)
+    new QueryState(query, resources, params, expressionCursors, Array(null), decorator, initialContext = initialContext)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 

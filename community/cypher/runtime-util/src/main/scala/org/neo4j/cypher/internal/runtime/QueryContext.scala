@@ -112,7 +112,7 @@ trait QueryContext extends TokenContext with DbAccess {
                                             indexOrder: IndexOrder,
                                             value: String): NodeValueIndexCursor
 
-  def indexScan[RESULT <: AnyRef](index: IndexReference,
+  def indexScan[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder): NodeValueIndexCursor
 

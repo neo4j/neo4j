@@ -36,7 +36,8 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
-    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null)
+    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null, Array())
+    
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))
     }
