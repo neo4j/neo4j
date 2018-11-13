@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.fulltext;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.queryparser.flexible.standard.QueryParserUtil;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -87,6 +88,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -2070,6 +2072,54 @@ public class FulltextProceduresTest
         try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
             assertNoIndexSeeks( result );
+        }
+    }
+
+    @Test
+    public void nodeOutputMustBeOrderedByScoreDescending()
+    {
+        // According to CIP2016-06-14, NaN comes between positive infinity and the largest float/double value.
+        FulltextProcedures.NodeOutput a = new FulltextProcedures.NodeOutput( null, Float.NaN );
+        FulltextProcedures.NodeOutput b = new FulltextProcedures.NodeOutput( null, Float.POSITIVE_INFINITY );
+        FulltextProcedures.NodeOutput c = new FulltextProcedures.NodeOutput( null, Float.MAX_VALUE );
+        FulltextProcedures.NodeOutput d = new FulltextProcedures.NodeOutput( null, 1.0f );
+        FulltextProcedures.NodeOutput e = new FulltextProcedures.NodeOutput( null, Float.MIN_NORMAL );
+        FulltextProcedures.NodeOutput f = new FulltextProcedures.NodeOutput( null, Float.MIN_VALUE );
+        FulltextProcedures.NodeOutput g = new FulltextProcedures.NodeOutput( null, 0.0f );
+        FulltextProcedures.NodeOutput h = new FulltextProcedures.NodeOutput( null, -1.0f );
+        FulltextProcedures.NodeOutput i = new FulltextProcedures.NodeOutput( null, Float.NEGATIVE_INFINITY );
+        FulltextProcedures.NodeOutput[] expectedOrder = new FulltextProcedures.NodeOutput[] {a, b, c, d, e, f, g, h, i};
+        FulltextProcedures.NodeOutput[] array = expectedOrder.clone();
+
+        for ( int counter = 0; counter < 10; counter++ )
+        {
+            ArrayUtils.shuffle( array );
+            Arrays.sort( array );
+            assertArrayEquals( expectedOrder, array );
+        }
+    }
+
+    @Test
+    public void relationshipOutputMustBeOrderedByScoreDescending()
+    {
+        // According to CIP2016-06-14, NaN comes between positive infinity and the largest float/double value.
+        FulltextProcedures.RelationshipOutput a = new FulltextProcedures.RelationshipOutput( null, Float.NaN );
+        FulltextProcedures.RelationshipOutput b = new FulltextProcedures.RelationshipOutput( null, Float.POSITIVE_INFINITY );
+        FulltextProcedures.RelationshipOutput c = new FulltextProcedures.RelationshipOutput( null, Float.MAX_VALUE );
+        FulltextProcedures.RelationshipOutput d = new FulltextProcedures.RelationshipOutput( null, 1.0f );
+        FulltextProcedures.RelationshipOutput e = new FulltextProcedures.RelationshipOutput( null, Float.MIN_NORMAL );
+        FulltextProcedures.RelationshipOutput f = new FulltextProcedures.RelationshipOutput( null, Float.MIN_VALUE );
+        FulltextProcedures.RelationshipOutput g = new FulltextProcedures.RelationshipOutput( null, 0.0f );
+        FulltextProcedures.RelationshipOutput h = new FulltextProcedures.RelationshipOutput( null, -1.0f );
+        FulltextProcedures.RelationshipOutput i = new FulltextProcedures.RelationshipOutput( null, Float.NEGATIVE_INFINITY );
+        FulltextProcedures.RelationshipOutput[] expectedOrder = new FulltextProcedures.RelationshipOutput[] {a, b, c, d, e, f, g, h, i};
+        FulltextProcedures.RelationshipOutput[] array = expectedOrder.clone();
+
+        for ( int counter = 0; counter < 10; counter++ )
+        {
+            ArrayUtils.shuffle( array );
+            Arrays.sort( array );
+            assertArrayEquals( expectedOrder, array );
         }
     }
 

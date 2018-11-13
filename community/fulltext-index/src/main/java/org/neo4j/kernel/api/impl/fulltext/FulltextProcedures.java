@@ -304,7 +304,13 @@ public class FulltextProcedures
         @Override
         public int compareTo( NodeOutput that )
         {
-            return Double.compare( this.score, that.score );
+            return Double.compare( that.score, this.score );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ScoredNode(" + node + ", score=" + score + ')';
         }
     }
 
@@ -335,7 +341,13 @@ public class FulltextProcedures
         @Override
         public int compareTo( RelationshipOutput that )
         {
-            return Double.compare( this.score, that.score );
+            return Double.compare( that.score, this.score );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "ScoredRelationship(" + relationship + ", score=" + score + ')';
         }
     }
 

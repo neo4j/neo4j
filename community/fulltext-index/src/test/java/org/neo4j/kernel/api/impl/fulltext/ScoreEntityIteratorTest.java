@@ -52,6 +52,32 @@ public class ScoreEntityIteratorTest
     }
 
     @Test
+    public void mergeShouldCorrectlyOrderSpecialValues()
+    {
+        // According to CIP2016-06-14, NaN comes between positive infinity and the largest float/double value.
+        StubValuesIterator one = new StubValuesIterator().add( 2, Float.POSITIVE_INFINITY ).add( 4, 1.0f ).add( 6, Float.MIN_VALUE ).add( 8, -1.0f );
+        StubValuesIterator two = new StubValuesIterator().add( 1, Float.NaN ).add( 3, Float.MAX_VALUE ).add( 5, Float.MIN_NORMAL ).add( 7, 0.0f )
+                .add( 9, Float.NEGATIVE_INFINITY );
+
+        ValuesIterator concat = ScoreEntityIterator.mergeIterators( Arrays.asList( one, two ) );
+
+        assertTrue( concat.hasNext() );
+        assertEquals( 1, concat.next() );
+        assertTrue( Double.isNaN( concat.currentScore() ) );
+        assertEquals( 2, concat.next() );
+        assertTrue( Double.isInfinite( concat.currentScore() ) );
+        assertTrue( concat.currentScore() > 0.0f );
+        assertEquals( 3, concat.next() );
+        assertEquals( 4, concat.next() );
+        assertEquals( 5, concat.next() );
+        assertEquals( 6, concat.next() );
+        assertEquals( 7, concat.next() );
+        assertEquals( 8, concat.next() );
+        assertEquals( 9, concat.next() );
+        assertFalse( concat.hasNext() );
+    }
+
+    @Test
     public void mergeShouldHandleEmptyIterators()
     {
         StubValuesIterator one = new StubValuesIterator();
