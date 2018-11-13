@@ -26,8 +26,9 @@ import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotConfiguration
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.stringValue
+import org.neo4j.cypher.internal.util.v3_4.symbols._
 
-class PrimitiveExecutionContextTest extends CypherFunSuite {
+class SlottedExecutionContextTest extends CypherFunSuite {
 
   private def slots(longs: Int, refs: Int) = SlotConfiguration(Map.empty, longs, refs)
 
@@ -58,5 +59,19 @@ class PrimitiveExecutionContextTest extends CypherFunSuite {
     val result = SlottedExecutionContext(slots(0, 2))
 
     intercept[InternalException](result.copyFrom(input, 0, 4))
+  }
+
+  test("can merge nullable RefSlots which are null") {
+    val leftSlots = slots(0, 0).newReference("a", nullable = true, CTAny)
+    SlottedPipeBuilder.generateSlotAccessorFunctions(leftSlots)
+    val rightSlots = slots(0, 0).newReference("a", nullable = true, CTAny)
+    SlottedExecutionContext(leftSlots).mergeWith(SlottedExecutionContext(rightSlots)) // should not fail
+  }
+
+  test("cannot merge non-nullable RefSlots which are null") {
+    val leftSlots = slots(0, 0).newReference("a", nullable = false, CTAny)
+    SlottedPipeBuilder.generateSlotAccessorFunctions(leftSlots)
+    val rightSlots = slots(0, 0).newReference("a", nullable = false, CTAny)
+    intercept[InternalException](SlottedExecutionContext(leftSlots).mergeWith(SlottedExecutionContext(rightSlots)))
   }
 }

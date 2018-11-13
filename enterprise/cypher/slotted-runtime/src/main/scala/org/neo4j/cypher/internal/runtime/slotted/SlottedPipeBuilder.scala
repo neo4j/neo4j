@@ -22,8 +22,6 @@
  */
 package org.neo4j.cypher.internal.runtime.slotted
 
-import java.util.Comparator
-
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.SlotAllocation.PhysicalPlan
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime._
 import org.neo4j.cypher.internal.compatibility.v3_4.runtime.executionplan.builders.prepare.KeyTokenResolver
@@ -34,17 +32,22 @@ import org.neo4j.cypher.internal.ir.v3_4.VarPatternLength
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
+import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandExpressions}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _, _}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ColumnOrder => _}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.runtime.slotted.SlottedPipeBuilder.generateSlotAccessorFunctions
 import org.neo4j.cypher.internal.runtime.slotted.helpers.SlottedPipeBuilderUtils
 import org.neo4j.cypher.internal.runtime.slotted.pipes._
 import org.neo4j.cypher.internal.runtime.slotted.{expressions => slottedExpressions}
 import org.neo4j.cypher.internal.util.v3_4.AssertionUtils._
 import org.neo4j.cypher.internal.util.v3_4.InternalException
 import org.neo4j.cypher.internal.util.v3_4.symbols._
-import org.neo4j.cypher.internal.v3_4.expressions.{Equals, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v3_4.expressions.Equals
+import org.neo4j.cypher.internal.v3_4.expressions.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.v3_4.logical.plans
 import org.neo4j.cypher.internal.v3_4.logical.plans._
 import org.neo4j.cypher.internal.v3_4.{expressions => frontEndAst}
@@ -97,26 +100,6 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
     }
     pipe.setExecutionContextFactory(SlottedExecutionContextFactory(slots))
     pipe
-  }
-
-  private def generateSlotAccessorFunctions(slots: SlotConfiguration): Unit = {
-    slots.foreachSlot {
-      case (key, slot) =>
-        val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
-        val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
-        val primitiveNodeSetter =
-          if (slot.typ.isAssignableFrom(CTNode))
-            Some(SlottedPipeBuilderUtils.makeSetPrimitiveNodeInSlotFunctionFor(slot))
-          else
-            None
-        val primitiveRelationshipSetter =
-          if (slot.typ.isAssignableFrom(CTRelationship))
-            Some(SlottedPipeBuilderUtils.makeSetPrimitiveRelationshipInSlotFunctionFor(slot))
-          else
-            None
-
-       slots.updateAccessorFunctions(key, getter, setter, primitiveNodeSetter, primitiveRelationshipSetter)
-    }
   }
 
   override def build(plan: LogicalPlan, source: Pipe): Pipe = {
@@ -530,6 +513,26 @@ class SlottedPipeBuilder(fallback: PipeBuilder,
 }
 
 object SlottedPipeBuilder {
+
+  private[slotted] def generateSlotAccessorFunctions(slots: SlotConfiguration): Unit = {
+    slots.foreachSlot {
+      case (key, slot) =>
+        val getter = SlottedPipeBuilderUtils.makeGetValueFromSlotFunctionFor(slot)
+        val setter = SlottedPipeBuilderUtils.makeSetValueInSlotFunctionFor(slot)
+        val primitiveNodeSetter =
+          if (slot.typ.isAssignableFrom(CTNode))
+            Some(SlottedPipeBuilderUtils.makeSetPrimitiveNodeInSlotFunctionFor(slot))
+          else
+            None
+        val primitiveRelationshipSetter =
+          if (slot.typ.isAssignableFrom(CTRelationship))
+            Some(SlottedPipeBuilderUtils.makeSetPrimitiveRelationshipInSlotFunctionFor(slot))
+          else
+            None
+
+        slots.updateAccessorFunctions(key, getter, setter, primitiveNodeSetter, primitiveRelationshipSetter)
+    }
+  }
 
   case class Factory(physicalPlan: PhysicalPlan)
     extends PipeBuilderFactory {
