@@ -31,6 +31,7 @@ import scala.collection.Iterator
 case class NodeIndexScanPipe(ident: String,
                              label: LabelToken,
                              property: IndexedProperty,
+                             queryIndexId: Int,
                              indexOrder: IndexOrder)
                             (val id: Id = Id.INVALID_ID) extends Pipe with IndexPipeWithValues {
 

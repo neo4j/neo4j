@@ -23,6 +23,7 @@ import org.mockito.Mockito.{atLeastOnce, verify, when}
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanContext, TokenContext}
+import org.neo4j.cypher.internal.runtime.QueryIndexes
 import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
@@ -51,7 +52,7 @@ class InterpretedPipeMapperIT extends CypherFunSuite with LogicalPlanningTestSup
   val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
 
   private val pipeMapper =
-    InterpretedPipeMapper(readOnly = true, converters, planContext)(semanticTable)
+    InterpretedPipeMapper(readOnly = true, converters, planContext, mock[QueryIndexes])(semanticTable)
 
   private def build(logicalPlan: LogicalPlan): Pipe =
     PipeTreeBuilder(pipeMapper).build(logicalPlan)

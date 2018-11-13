@@ -21,13 +21,13 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.ProcedureCallMode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.KeyTokenResolver
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.PatternConverters._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{ExpressionConverters, InterpretedCommandProjection}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{AggregationExpression, Expression, Literal, ShortestPathExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.runtime.{ProcedureCallMode, QueryIndexes}
 import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ColumnOrder, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.values.AnyValue
@@ -43,7 +43,8 @@ import org.opencypher.v9_0.util.{Eagerly, InternalException}
  */
 case class InterpretedPipeMapper(readOnly: Boolean,
                                  expressionConverters: ExpressionConverters,
-                                 tokenContext: TokenContext)
+                                 tokenContext: TokenContext,
+                                 queryIndexes: QueryIndexes)
                                 (implicit semanticTable: SemanticTable) extends PipeMapper {
 
   private def getBuildExpression(id: Id): ASTExpression => Expression =
@@ -88,7 +89,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
         NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeIndexScan(ident, label, property, _, indexOrder) =>
-        NodeIndexScanPipe(ident, label, property, indexOrder)(id = id)
+        NodeIndexScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property), indexOrder)(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder) =>
         NodeIndexContainsScanPipe(ident, label,property, buildExpression(valueExpr), indexOrder)(id = id)

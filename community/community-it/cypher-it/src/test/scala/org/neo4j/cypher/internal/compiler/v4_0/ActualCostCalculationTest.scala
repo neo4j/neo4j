@@ -329,7 +329,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val propertyKeyToken = PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
       // We are calculating the cost excluding deserialization of values from the index
 
-      NodeIndexScanPipe(LABEL.name(), labelToken, IndexedProperty(propertyKeyToken, DoNotGetValue), IndexOrderNone)()
+      NodeIndexScanPipe(LABEL.name(), labelToken, IndexedProperty(propertyKeyToken, DoNotGetValue), 0, IndexOrderNone)()
     }
   }
 

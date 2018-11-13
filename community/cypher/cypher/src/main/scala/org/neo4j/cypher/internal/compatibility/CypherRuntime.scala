@@ -21,18 +21,14 @@ package org.neo4j.cypher.internal.compatibility
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.RuntimeName
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.{DelegatingExecutionPlan, ExecutionPlan}
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.planDescription.Argument
-import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
-import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.{InternalNotificationLogger, RecordingNotificationLogger}
+import org.neo4j.internal.kernel.api.SchemaRead
+import org.opencypher.v9_0.frontend.phases.RecordingNotificationLogger
 import org.opencypher.v9_0.util.InternalNotification
 
 import scala.concurrent.duration.Duration
@@ -61,6 +57,7 @@ trait CypherRuntime[-CONTEXT <: RuntimeContext] {
   */
 abstract class RuntimeContext {
   def tokenContext: TokenContext
+  def schemaRead: SchemaRead
   def readOnly: Boolean
   def config: CypherPlannerConfiguration
   def compileExpressions: Boolean
@@ -73,6 +70,7 @@ abstract class RuntimeContext {
   */
 trait RuntimeContextCreator[CONTEXT <: RuntimeContext] {
   def create(tokenContext: TokenContext,
+             schemaRead: SchemaRead,
              clock: Clock,
              debugOptions: Set[String],
              readOnly: Boolean,

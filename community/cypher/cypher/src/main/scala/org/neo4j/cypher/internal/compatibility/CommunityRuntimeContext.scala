@@ -23,12 +23,13 @@ import java.time.Clock
 
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.internal.kernel.api.SchemaRead
 
 /**
   * The regular community runtime context.
   */
 case class CommunityRuntimeContext(tokenContext: TokenContext,
+                                   schemaRead: SchemaRead,
                                    readOnly: Boolean,
                                    config: CypherPlannerConfiguration) extends RuntimeContext {
 
@@ -37,10 +38,11 @@ case class CommunityRuntimeContext(tokenContext: TokenContext,
 
 case class CommunityRuntimeContextCreator(config: CypherPlannerConfiguration) extends RuntimeContextCreator[RuntimeContext] {
   override def create(tokenContext: TokenContext,
+                      schemaRead: SchemaRead,
                       clock: Clock,
                       debugOptions: Set[String],
                       readOnly: Boolean,
                       ignore: Boolean
                      ): RuntimeContext =
-    CommunityRuntimeContext(tokenContext, readOnly, config)
+    CommunityRuntimeContext(tokenContext, schemaRead, readOnly, config)
 }

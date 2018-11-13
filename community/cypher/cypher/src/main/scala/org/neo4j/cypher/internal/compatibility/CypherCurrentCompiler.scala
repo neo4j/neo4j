@@ -86,6 +86,7 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     val queryType = getQueryType(planState)
 
     val runtimeContext = contextCreator.create(logicalPlanResult.plannerContext.planContext,
+                                               transactionalContext.kernelTransaction().schemaRead(),
                                                logicalPlanResult.plannerContext.clock,
                                                logicalPlanResult.plannerContext.debugOptions,
                                                queryType == READ_ONLY,
