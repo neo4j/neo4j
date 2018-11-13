@@ -1288,22 +1288,10 @@
         <version>1.18</version>
       </dependency>
 
-      <!-- Netty is used by three components: Com, Cluster and Bolt Socket Transport.
-           Netty 4 is a significant improvement over Netty 3, in that it introduces
-           buffer pooling (among lots of other improvements), and thus we want to move
-           to Netty 4 to reduce GC overhead. Netty 4 (io.netty:netty-all) can co-exist
-           with Netty 3 (io.netty:netty) because they have different modules and different
-           package structure. As such, the two netty dependencies represents the in-between
-           state while we move all remaining Netty 3 uses over to Netty 4 -->
-      <dependency>
-        <groupId>io.netty</groupId>
-        <artifactId>netty</artifactId>
-        <version>3.9.9.Final</version>
-      </dependency>
       <dependency>
         <groupId>io.netty</groupId>
         <artifactId>netty-all</artifactId>
-        <version>4.1.30.Final</version>
+        <version>4.1.31.Final</version>
       </dependency>
 
       <dependency>
