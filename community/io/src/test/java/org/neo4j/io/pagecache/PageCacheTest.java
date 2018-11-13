@@ -98,6 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -237,7 +238,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustReadExistingData()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -261,7 +262,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustScanInTheMiddleOfTheFile()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -287,7 +288,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writesFlushedFromPageFileMustBeExternallyObservable()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -388,7 +389,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writesFlushedFromPageFileMustBeObservableEvenWhenRacingWithEviction()
     {
-        assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
             getPageCache( fs, 20, PageCacheTracer.NULL, PageCursorTracerSupplier.NULL );
 
@@ -437,7 +438,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void flushAndForceMustNotLockPageCacheForWholeDuration()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             maxPages = 5000;
             configureStandardPageCache();
@@ -546,7 +547,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writesFlushedFromPageCacheMustBeExternallyObservable()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -569,7 +570,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writesToPagesMustNotBleedIntoAdjacentPages()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -688,7 +689,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void firstNextCallMustReturnFalseWhenTheFileIsEmptyAndNoGrowIsSpecified()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -703,7 +704,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextMustReturnTrueThenFalseWhenThereIsOnlyOnePageInTheFileAndNoGrowIsSpecified()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -723,7 +724,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void closingWithoutCallingNextMustLeavePageUnpinnedAndUntouched()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -795,7 +796,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void rewindMustStartScanningOverFromTheBeginning()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -826,7 +827,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustCloseFileChannelWhenTheLastHandleIsUnmapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             assumeTrue( fs.getClass() == EphemeralFileSystemAbstraction.class, "This depends on EphemeralFSA specific features" );
 
@@ -842,7 +843,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void dirtyPagesMustBeFlushedWhenTheCacheIsClosed()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -870,7 +871,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void dirtyPagesMustBeFlushedWhenThePagedFileIsClosed()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -893,7 +894,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @RepeatedTest( 100 )
     void flushingDuringPagedFileCloseMustRetryUntilItSucceeds()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
@@ -940,7 +941,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFilesInClosedCacheMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             pageCache.close();
@@ -951,7 +952,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void flushingClosedCacheMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             pageCache.close();
@@ -962,7 +963,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithPageSizeGreaterThanCachePageSizeMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             assertThrows( IllegalArgumentException.class, () -> map( file( "a" ), pageCachePageSize + 1 ) ); // this must throw;
@@ -972,7 +973,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             // Because otherwise we cannot ensure that our branch-free bounds checking always lands within a page boundary.
             configureStandardPageCache();
@@ -983,7 +984,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithPageSizeSmallerThanLongSizeBytesMustThrowEvenWithAnyPageSizeOpenOptionAndNoExistingMapping()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             // Because otherwise we cannot ensure that our branch-free bounds checking always lands within a page boundary.
             configureStandardPageCache();
@@ -995,7 +996,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithPageZeroPageSizeMustThrowEvenWithExistingMapping()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             File file = file( "a" );
@@ -1010,7 +1011,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithPageZeroPageSizeAndAnyPageSizeOpenOptionMustNotThrowGivenExistingMapping()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             File file = file( "a" );
@@ -1026,7 +1027,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithPageSizeEqualToCachePageSizeMustNotThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             PagedFile pagedFile = map( file( "a" ), pageCachePageSize );// this must NOT throw
@@ -1037,7 +1038,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void notSpecifyingAnyPfFlagsMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
@@ -1050,7 +1051,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void notSpecifyingAnyPfLockFlagsMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
@@ -1063,7 +1064,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void specifyingBothReadAndWriteLocksMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pagedFile = map( file( "a" ), filePageSize ) )
@@ -1076,7 +1077,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustNotPinPagesAfterNextReturnsFalse()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final CountDownLatch startLatch = new CountDownLatch( 1 );
             final CountDownLatch unpinLatch = new CountDownLatch( 1 );
@@ -1123,7 +1124,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextMustResetTheCursorOffset()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -1163,7 +1164,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextMustAdvanceCurrentPageId()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1181,7 +1182,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextToSpecificPageIdMustAdvanceFromThatPointOn()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1201,7 +1202,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void currentPageIdIsUnboundBeforeFirstNextAndAfterRewind()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1220,7 +1221,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void pageCursorMustKnowCurrentFilePageSize()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1239,7 +1240,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void pageCursorMustKnowCurrentFile()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1258,67 +1259,67 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void readingFromUnboundReadCursorMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkUnboundReadCursorAccess ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkUnboundReadCursorAccess ) );
     }
 
     @Test
     void readingFromUnboundWriteCursorMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkUnboundWriteCursorAccess ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkUnboundWriteCursorAccess ) );
     }
 
     @Test
     void readingFromPreviouslyBoundCursorMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundWriteCursorAccess ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundWriteCursorAccess ) );
     }
 
     @Test
     void writingToUnboundCursorMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkUnboundWriteCursorAccess ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkUnboundWriteCursorAccess ) );
     }
 
     @Test
     void writingToPreviouslyBoundCursorMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAccess ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAccess ) );
     }
 
     @Test
     void readFromReadCursorAfterNextReturnsFalseMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkReadCursorAfterFailedNext ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkReadCursorAfterFailedNext ) );
     }
 
     @Test
     void readFromPreviouslyBoundReadCursorAfterNextReturnsFalseMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundReadCursorAfterFailedNext ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundReadCursorAfterFailedNext ) );
     }
 
     @Test
     void readFromWriteCursorAfterNextReturnsFalseMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkWriteCursorAfterFailedNext ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkWriteCursorAfterFailedNext ) );
     }
 
     @Test
     void readFromPreviouslyBoundWriteCursorAfterNextReturnsFalseMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnReadCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
     }
 
     @Test
     void writeAfterNextReturnsFalseMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkWriteCursorAfterFailedNext ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkWriteCursorAfterFailedNext ) );
     }
 
     @Test
     void writeToPreviouslyBoundCursorAfterNextReturnsFalseMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyOnWriteCursor( this::checkPreviouslyBoundWriteCursorAfterFailedNext ) );
     }
 
     private void verifyOnReadCursor( ThrowingConsumer<PageCursorAction,IOException> testTemplate ) throws IOException
@@ -1524,7 +1525,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void lastPageMustBeAccessibleWithNoGrowSpecified()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1584,7 +1585,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void lastPageMustBeAccessibleWithNoGrowSpecifiedEvenIfLessThanFilePageSize()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1643,7 +1644,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void firstPageMustBeAccessibleWithNoGrowSpecifiedIfItIsTheOnlyPage()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1679,7 +1680,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void firstPageMustBeAccessibleEvenIfTheFileIsNonEmptyButSmallerThanFilePageSize()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             generateFileWithRecords( file( "a" ), 1, recordSize );
 
@@ -1715,7 +1716,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void firstPageMustNotBeAccessibleIfFileIsEmptyAndNoGrowSpecified()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1749,7 +1750,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void newlyWrittenPagesMustBeAccessibleWithNoGrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1796,7 +1797,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void readLockImpliesNoGrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1893,7 +1894,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextWithPageIdMustAllowTraversingInReverse()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             generateFileWithRecords( file( "a" ), recordCount, recordSize );
@@ -1915,7 +1916,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextWithPageIdMustReturnFalseIfPageIdIsBeyondFilePageRangeAndNoGrowSpecified()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -1941,7 +1942,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void pagesAddedWithNextWithPageIdMustBeAccessibleWithNoGrowSpecified()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             PagedFile pagedFile = map( file( "a" ), filePageSize );
@@ -1978,7 +1979,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writesOfDifferentUnitsMustHaveCorrectEndianness()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pagedFile = map( file( "a" ), 23 ) )
@@ -2052,7 +2053,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileSecondTimeWithLesserPageSizeMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile ignore = map( file( "a" ), filePageSize ) )
@@ -2065,7 +2066,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileSecondTimeWithGreaterPageSizeMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile ignore = map( file( "a" ), filePageSize ) )
@@ -2078,7 +2079,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void allowOpeningMultipleReadAndWriteCursorsPerThread()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2114,7 +2115,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustNotLiveLockIfWeRunOutOfEvictablePages()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2148,7 +2149,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeLocksMustNotBeExclusive()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2172,7 +2173,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeLockMustInvalidateInnerReadLock()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2197,7 +2198,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeLockMustInvalidateExistingReadLock()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2234,7 +2235,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeUnlockMustInvalidateReadLocks()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2270,7 +2271,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustNotFlushCleanPagesWhenEvicting()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final AtomicBoolean observedWrite = new AtomicBoolean();
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -2336,7 +2337,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void evictionMustFlushPagesToTheRightFiles()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2427,7 +2428,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void tracerMustBeNotifiedAboutPinUnpinFaultAndEvictEventsWhenReading()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
             DefaultPageCursorTracerSupplier cursorTracerSupplier = getCursorTracerSupplier( tracer );
@@ -2488,7 +2489,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void tracerMustBeNotifiedAboutPinUnpinFaultFlushAndEvictionEventsWhenWriting()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             long pagesToGenerate = 142;
             DefaultPageCacheTracer tracer = new DefaultPageCacheTracer();
@@ -2972,7 +2973,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void closeOnPageCacheMustThrowIfFilesAreStillMapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -2986,7 +2987,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void pagedFileIoMustThrowIfFileIsUnmapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3011,7 +3012,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeLockedPageCursorNextMustThrowIfFileIsUnmapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3029,7 +3030,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeLockedPageCursorNextWithIdMustThrowIfFileIsUnmapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3044,7 +3045,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void readLockedPageCursorNextMustThrowIfFileIsUnmapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3061,7 +3062,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void readLockedPageCursorNextWithIdMustThrowIfFileIsUnmapped()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3078,7 +3079,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void writeLockedPageMustBlockFileUnmapping()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3097,7 +3098,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void optimisticReadLockedPageMustNotBlockFileUnmapping()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             generateFileWithRecords( file( "a" ), 1, recordSize );
 
@@ -3116,7 +3117,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void advancingPessimisticReadLockingCursorAfterUnmappingMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3135,7 +3136,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void advancingOptimisticReadLockingCursorAfterUnmappingMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3156,7 +3157,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void readingAndRetryingOnPageWithOptimisticReadLockingAfterUnmappingMustNotThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3387,55 +3388,55 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void getByteBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getByte ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getByte ) );
     }
 
     @Test
     void putByteBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putByte( (byte) 42 ) ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putByte( (byte) 42 ) ) );
     }
 
     @Test
     void getShortBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getShort ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getShort ) );
     }
 
     @Test
     void putShortBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putShort( (short) 42 ) ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putShort( (short) 42 ) ) );
     }
 
     @Test
     void getIntBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getInt ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getInt ) );
     }
 
     @Test
     void putIntBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putInt( 42 ) ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putInt( 42 ) ) );
     }
 
     @Test
     void putLongBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putLong( 42 ) ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putLong( 42 ) ) );
     }
 
     @Test
     void getLongBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getLong ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( PageCursor::getLong ) );
     }
 
     @Test
     void putBytesBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final byte[] bytes = new byte[]{1, 2, 3};
             verifyPageBounds( cursor -> cursor.putBytes( bytes ) );
@@ -3445,13 +3446,13 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void putBytesRepeatedByteBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putBytes( 3, (byte) 1 ) ) );
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () -> verifyPageBounds( cursor -> cursor.putBytes( 3, (byte) 1 ) ) );
     }
 
     @Test
     void getBytesBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final byte[] bytes = new byte[3];
             verifyPageBounds( cursor -> cursor.getBytes( bytes ) );
@@ -3461,7 +3462,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void putBytesWithOffsetAndLengthBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final byte[] bytes = new byte[]{1, 2, 3};
             verifyPageBounds( cursor -> cursor.putBytes( bytes, 1, 1 ) );
@@ -3471,7 +3472,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void getBytesWithOffsetAndLengthBeyondPageEndMustThrow()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final byte[] bytes = new byte[3];
             verifyPageBounds( cursor -> cursor.getBytes( bytes, 1, 1 ) );
@@ -3505,7 +3506,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void shouldRetryMustClearBoundsFlagWhenReturningTrue()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3529,7 +3530,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void shouldRetryMustNotClearBoundsFlagWhenReturningFalse()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3553,7 +3554,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextThatReturnsTrueMustNotClearBoundsFlagOnReadCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3577,7 +3578,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextThatReturnsTrueMustNotClearBoundsFlagOnWriteCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3596,7 +3597,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextThatReturnsFalseMustNotClearBoundsFlagOnReadCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3620,7 +3621,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextThatReturnsFalseMustNotClearBoundsFlagOnWriteCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             File file = file( "a" );
@@ -3641,7 +3642,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextWithPageIdThatReturnsTrueMustNotClearBoundsFlagOnReadCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3665,7 +3666,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void nextWithPageIdMustNotClearBoundsFlagOnWriteCursor()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -3684,7 +3685,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void settingOutOfBoundsCursorOffsetMustRaiseBoundsFlag()
     {
-        assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
 
@@ -4298,7 +4299,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustReadZerosFromBeyondEndOfFile()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             StandardRecordFormat recordFormat = new StandardRecordFormat();
             File[] files = {file( "1" ), file( "2" ), file( "3" ), file( "4" ), file( "5" ), file( "6" ), file( "7" ), file( "8" ), file( "9" ), file( "0" ),
@@ -4387,7 +4388,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mustSyncDeviceWhenFlushAndForcingPagedFile()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             AtomicInteger syncDeviceCounter = new AtomicInteger();
             AtomicInteger expectedCountInForce = new AtomicInteger();
@@ -4535,7 +4536,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void mappingFileWithTruncateOptionMustTruncateFile()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             configureStandardPageCache();
             try ( PagedFile pf = map( file( "a" ), filePageSize );

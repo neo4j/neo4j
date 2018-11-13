@@ -64,7 +64,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class DatabaseIndexIntegrationTest
@@ -109,7 +109,7 @@ class DatabaseIndexIntegrationTest
     @RepeatedTest( 2 )
     void testSaveCallCommitAndCloseFromMultipleThreads()
     {
-        assertTimeout( ofSeconds( 60 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 60 ), () ->
         {
             generateInitialData();
             Supplier<Runnable> closeTaskSupplier = () -> createConcurrentCloseTask( raceSignal );
@@ -127,7 +127,7 @@ class DatabaseIndexIntegrationTest
     @RepeatedTest( 2 )
     void saveCallCloseAndDropFromMultipleThreads()
     {
-        assertTimeout( ofSeconds( 60 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 60 ), () ->
         {
             generateInitialData();
             Supplier<Runnable> dropTaskSupplier = () -> createConcurrentDropTask( raceSignal );

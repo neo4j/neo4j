@@ -38,7 +38,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.test.ThreadTestUtils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.Mockito.mock;
 
 class PooledConcurrentMergeSchedulerTest
@@ -98,7 +98,7 @@ class PooledConcurrentMergeSchedulerTest
     @Test
     void writerCloseWaitForMergesInMergeQueue()
     {
-        assertTimeout( Duration.ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( Duration.ofSeconds( 10 ), () ->
         {
             indexWriter = mock( IndexWriter.class );
             SegmentCommitInfo segmentCommitInfo = getSegmentCommitInfo();

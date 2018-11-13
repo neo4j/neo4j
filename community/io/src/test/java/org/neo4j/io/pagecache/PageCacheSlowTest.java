@@ -53,7 +53,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
@@ -117,7 +117,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     @RepeatedTest( 50 )
     void mustNotLoseUpdates()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             // Another test that tries to squeeze out data race bugs. The idea is
             // the following:
@@ -280,7 +280,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     @RepeatedTest( 100 )
     void mustNotLoseUpdatesWhenOpeningMultiplePageCursorsPerThread()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             // Similar to the test above, except the threads will have multiple page cursors opened at a time.
 
@@ -374,7 +374,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     @RepeatedTest( 50 )
     void writeLockingCursorMustThrowWhenLockingPageRacesWithUnmapping()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             // Even if we block in pin, waiting to grab a lock on a page that is
             // already locked, and the PagedFile is concurrently closed, then we
@@ -488,7 +488,7 @@ public abstract class PageCacheSlowTest<T extends PageCache> extends PageCacheTe
     @RepeatedTest( 20 )
     void pageCacheMustRemainInternallyConsistentWhenGettingRandomFailures()
     {
-        assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
             // NOTE: This test is inherently non-deterministic. This means that every failure must be
             // thoroughly investigated, since they have a good chance of being a real issue.

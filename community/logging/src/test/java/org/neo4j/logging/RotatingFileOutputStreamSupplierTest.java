@@ -70,7 +70,7 @@ import static org.hamcrest.core.Is.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -187,7 +187,7 @@ class RotatingFileOutputStreamSupplierTest
     @Test
     void rotationShouldNotDeadlockOnListener()
     {
-        assertTimeout( ofMillis( TEST_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( TEST_TIMEOUT_MILLIS ), () ->
         {
             String logContent = "Output file created";
             final AtomicReference<Exception> listenerException = new AtomicReference<>( null );

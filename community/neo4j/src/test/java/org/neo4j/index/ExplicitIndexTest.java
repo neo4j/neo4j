@@ -39,7 +39,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static java.time.Duration.ofMillis;
 import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphabetic;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -53,7 +53,7 @@ class ExplicitIndexTest
     @Test
     void explicitIndexPopulationWithBunchOfFields()
     {
-        assertTimeout( ofMillis( TEST_TIMEOUT ), () ->
+        assertTimeoutPreemptively( ofMillis( TEST_TIMEOUT ), () ->
         {
             BatchInserter batchNode = BatchInserters.inserter( directory.databaseDir() );
             LuceneBatchInserterIndexProvider provider = new LuceneBatchInserterIndexProvider( batchNode );

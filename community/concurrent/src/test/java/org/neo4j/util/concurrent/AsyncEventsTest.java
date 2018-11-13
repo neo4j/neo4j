@@ -39,7 +39,7 @@ import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.nullValue;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 
 class AsyncEventsTest
 {
@@ -120,7 +120,7 @@ class AsyncEventsTest
     @Test
     void mustProcessEventsDirectlyWhenShutDown()
     {
-        assertTimeout( ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
         {
             EventConsumer consumer = new EventConsumer();
 
@@ -146,7 +146,7 @@ class AsyncEventsTest
     @Test
     void concurrentlyPublishedEventsMustAllBeProcessed()
     {
-        assertTimeout( ofSeconds( 10 ), () ->
+        assertTimeoutPreemptively( ofSeconds( 10 ), () ->
         {
             EventConsumer consumer = new EventConsumer();
             final CountDownLatch startLatch = new CountDownLatch( 1 );

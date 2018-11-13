@@ -63,7 +63,7 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
@@ -532,7 +532,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void mustUnblockPageFaultersWhenEvictionGetsException()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             writeInitialDataTo( file( "a" ) );
 
@@ -587,7 +587,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void pageCacheFlushAndForceMustClearBackgroundEvictionException()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             MutableBoolean throwException = new MutableBoolean( true );
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
@@ -643,7 +643,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void mustThrowIfMappingFileWouldOverflowReferenceCount()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             File file = file( "a" );
             writeInitialDataTo( file );
@@ -686,7 +686,7 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     @Test
     void unlimitedShouldFlushInParallel()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             List<File> mappedFiles = new ArrayList<>();
             mappedFiles.add( existingFile( "a" ) );

@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.jupiter.api.Assertions.assertTimeout;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_READ_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_WRITE_LOCK;
 import static org.neo4j.io.pagecache.randomharness.Command.FlushCache;
@@ -56,7 +56,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     @RepeatedTest( 10 )
     void readsAndWritesMustBeMutuallyConsistent()
     {
-        assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
         {
             int filePageCount = 100;
             try ( RandomPageCacheTestHarness harness = new RandomPageCacheTestHarness() )
@@ -76,7 +76,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void concurrentPageFaultingMustNotPutInterleavedDataIntoPages()
     {
-        assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
             final int filePageCount = 11;
             final RecordFormat recordFormat = new PageCountRecordFormat();
@@ -113,7 +113,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void concurrentFlushingMustNotPutInterleavedDataIntoFile()
     {
-        assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
             final RecordFormat recordFormat = new StandardRecordFormat();
             final int filePageCount = 2_000;
@@ -137,7 +137,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void concurrentFlushingWithMischiefMustNotPutInterleavedDataIntoFile()
     {
-        assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
             final RecordFormat recordFormat = new StandardRecordFormat();
             final int filePageCount = 2_000;
@@ -164,7 +164,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
     @Test
     void concurrentFlushingWithFailuresMustNotPutInterleavedDataIntoFile()
     {
-        assertTimeout( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
+        assertTimeoutPreemptively( ofMillis( LONG_TIMEOUT_MILLIS ), () ->
         {
             final RecordFormat recordFormat = new StandardRecordFormat();
             final int filePageCount = 2_000;
