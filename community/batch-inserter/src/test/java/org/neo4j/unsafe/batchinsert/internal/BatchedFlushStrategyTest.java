@@ -19,24 +19,28 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import org.neo4j.kernel.impl.store.record.DirectRecordAccessSet;
 
-public class BatchedFlushStrategyTest
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.verifyZeroInteractions;
+
+class BatchedFlushStrategyTest
 {
-
     @Test
-    public void testFlush()
+    void testFlush()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
         flushStrategy.flush();
-        Mockito.verifyZeroInteractions( recordAccessSet );
+        verifyZeroInteractions( recordAccessSet );
         flushStrategy.flush();
-        Mockito.verify( recordAccessSet ).commit();
-        Mockito.reset( recordAccessSet );
+        verify( recordAccessSet ).commit();
+        reset( recordAccessSet );
 
         flushStrategy.flush();
         flushStrategy.flush();
@@ -46,44 +50,43 @@ public class BatchedFlushStrategyTest
         flushStrategy.flush();
         flushStrategy.flush();
 
-        Mockito.verify( recordAccessSet, Mockito.times( 3 ) ).commit();
+        verify( recordAccessSet, Mockito.times( 3 ) ).commit();
     }
 
     @Test
-    public void testForceFlush()
+    void testForceFlush()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 2 );
 
         flushStrategy.forceFlush();
         flushStrategy.forceFlush();
-        Mockito.verify( recordAccessSet, Mockito.times( 2 ) ).commit();
+        verify( recordAccessSet, Mockito.times( 2 ) ).commit();
 
         flushStrategy.flush();
         flushStrategy.forceFlush();
-        Mockito.verify( recordAccessSet, Mockito.times( 3 ) ).commit();
+        verify( recordAccessSet, Mockito.times( 3 ) ).commit();
     }
 
     @Test
-    public void testResetBatchCounterOnForce()
+    void testResetBatchCounterOnForce()
     {
         DirectRecordAccessSet recordAccessSet = Mockito.mock( DirectRecordAccessSet.class );
         BatchInserterImpl.BatchedFlushStrategy flushStrategy = createFlushStrategy( recordAccessSet, 3 );
 
         flushStrategy.flush();
         flushStrategy.flush();
-        Mockito.verifyZeroInteractions( recordAccessSet );
+        verifyZeroInteractions( recordAccessSet );
 
         flushStrategy.forceFlush();
-        Mockito.verify( recordAccessSet ).commit();
-        Mockito.verifyNoMoreInteractions( recordAccessSet );
+        verify( recordAccessSet ).commit();
+        verifyNoMoreInteractions( recordAccessSet );
 
         flushStrategy.flush();
         flushStrategy.flush();
     }
 
-    private BatchInserterImpl.BatchedFlushStrategy createFlushStrategy( DirectRecordAccessSet recordAccessSet, int
-            batchSize )
+    private BatchInserterImpl.BatchedFlushStrategy createFlushStrategy( DirectRecordAccessSet recordAccessSet, int batchSize )
     {
         return new BatchInserterImpl.BatchedFlushStrategy( recordAccessSet, batchSize );
     }
