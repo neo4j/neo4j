@@ -332,6 +332,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
         requestLog = new AsyncRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
+                dependencyResolver.resolveDependency( JobScheduler.class ),
                 config.get( db_timezone ).getZoneId(),
                 config.get( http_log_path ).toString(),
                 config.get( http_logging_rotation_size ),
