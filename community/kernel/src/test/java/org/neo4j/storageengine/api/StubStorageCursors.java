@@ -485,12 +485,6 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void setCurrent( long nodeReference )
-        {
-            throw new UnsupportedOperationException( "Not implemented yet" );
-        }
-
-        @Override
         public void close()
         {
             iterator = null;

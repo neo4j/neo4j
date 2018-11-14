@@ -178,13 +178,6 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     }
 
     @Override
-    public void setCurrent( long nodeReference )
-    {
-        setId( nodeReference );
-        setInUse( true );
-    }
-
-    @Override
     public void close()
     {
         if ( open )

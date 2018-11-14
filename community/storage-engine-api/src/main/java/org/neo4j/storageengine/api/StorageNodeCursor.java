@@ -48,15 +48,6 @@ public interface StorageNodeCursor extends StorageEntityScanCursor
     long allRelationshipsReference();
 
     /**
-     * A means of simplifying higher-level cursors which takes into consideration transaction-state.
-     * This basically tells this cursor to be placed at nodeReference, even if it doesn't exist, such that
-     * {@link #entityReference()} will return this reference on the next call.
-     *
-     * @param nodeReference the reference to be returned on the next {@link #entityReference()} call.
-     */
-    void setCurrent( long nodeReference );
-
-    /**
      * NOTE the fact that this method is here means physical details about underlying storage leaks into this API.
      * However this method has to exist as long as the kernel API also exposes this. This needs to change at some point.
      *

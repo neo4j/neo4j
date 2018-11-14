@@ -42,6 +42,7 @@ class DefaultNodeCursor implements NodeCursor
     private HasChanges hasChanges = HasChanges.MAYBE;
     private LongIterator addedNodes;
     private StorageNodeCursor storeCursor;
+    private long currentAddedInTx;
     private long single;
 
     private final CursorPool<DefaultNodeCursor> pool;
@@ -57,6 +58,7 @@ class DefaultNodeCursor implements NodeCursor
         storeCursor.scan();
         this.read = read;
         this.single = NO_ID;
+        this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -66,6 +68,7 @@ class DefaultNodeCursor implements NodeCursor
         storeCursor.single( reference );
         this.read = read;
         this.single = reference;
+        this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
@@ -73,33 +76,37 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public long nodeReference()
     {
+        if ( currentAddedInTx != NO_ID )
+        {
+            // Special case where the most recent next() call selected a node that exists only in tx-state.
+            // Internal methods getting data about this node will also check tx-state and get the data from there.
+            return currentAddedInTx;
+        }
         return storeCursor.entityReference();
     }
 
     @Override
     public LabelSet labels()
     {
-        if ( hasChanges() )
+        if ( currentAddedInTx != NO_ID )
         {
+            //Node added in tx-state, no reason to go down to store and check
             TransactionState txState = read.txState();
-            if ( txState.nodeIsAddedInThisTx( storeCursor.entityReference() ) )
+            return Labels.from( txState.nodeStateLabelDiffSets( currentAddedInTx ).getAdded() );
+        }
+        else if ( hasChanges() )
+        {
+            //Get labels from store and put in intSet, unfortunately we get longs back
+            TransactionState txState = read.txState();
+            long[] longs = storeCursor.labels();
+            final MutableLongSet labels = new LongHashSet();
+            for ( long labelToken : longs )
             {
-                //Node just added, no reason to go down to store and check
-                return Labels.from( txState.nodeStateLabelDiffSets( storeCursor.entityReference() ).getAdded() );
+                labels.add( labelToken );
             }
-            else
-            {
-                //Get labels from store and put in intSet, unfortunately we get longs back
-                long[] longs = storeCursor.labels();
-                final MutableLongSet labels = new LongHashSet();
-                for ( long labelToken : longs )
-                {
-                    labels.add( labelToken );
-                }
 
-                //Augment what was found in store with what we have in tx state
-                return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ) );
-            }
+            //Augment what was found in store with what we have in tx state
+            return Labels.from( txState.augmentLabels( labels, txState.getNodeState( storeCursor.entityReference() ) ) );
         }
         else
         {
@@ -114,7 +121,7 @@ class DefaultNodeCursor implements NodeCursor
         if ( hasChanges() )
         {
             TransactionState txState = read.txState();
-            LongDiffSets diffSets = txState.nodeStateLabelDiffSets( storeCursor.entityReference() );
+            LongDiffSets diffSets = txState.nodeStateLabelDiffSets( nodeReference() );
             if ( diffSets.getAdded().contains( label ) )
             {
                 return true;
@@ -150,25 +157,25 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public long relationshipGroupReference()
     {
-        return storeCursor.relationshipGroupReference();
+        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.relationshipGroupReference();
     }
 
     @Override
     public long allRelationshipsReference()
     {
-        return storeCursor.allRelationshipsReference();
+        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.allRelationshipsReference();
     }
 
     @Override
     public long propertiesReference()
     {
-        return storeCursor.propertiesReference();
+        return currentAddedInTx != NO_ID ? NO_ID : storeCursor.propertiesReference();
     }
 
     @Override
     public boolean isDense()
     {
-        return storeCursor.isDense();
+        return currentAddedInTx != NO_ID ? false : storeCursor.isDense();
     }
 
     @Override
@@ -177,10 +184,17 @@ class DefaultNodeCursor implements NodeCursor
         // Check tx state
         boolean hasChanges = hasChanges();
 
-        if ( hasChanges && addedNodes.hasNext() )
+        if ( hasChanges )
         {
-            storeCursor.setCurrent( addedNodes.next() );
-            return true;
+            if ( addedNodes.hasNext() )
+            {
+                currentAddedInTx = addedNodes.next();
+                return true;
+            }
+            else
+            {
+                currentAddedInTx = NO_ID;
+            }
         }
 
         while ( storeCursor.next() )
