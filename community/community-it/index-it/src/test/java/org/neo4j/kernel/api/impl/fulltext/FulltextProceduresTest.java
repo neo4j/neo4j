@@ -2078,7 +2078,6 @@ public class FulltextProceduresTest
     @Test
     public void nodeOutputMustBeOrderedByScoreDescending()
     {
-        // According to CIP2016-06-14, NaN comes between positive infinity and the largest float/double value.
         FulltextProcedures.NodeOutput a = new FulltextProcedures.NodeOutput( null, Float.NaN );
         FulltextProcedures.NodeOutput b = new FulltextProcedures.NodeOutput( null, Float.POSITIVE_INFINITY );
         FulltextProcedures.NodeOutput c = new FulltextProcedures.NodeOutput( null, Float.MAX_VALUE );
@@ -2102,7 +2101,6 @@ public class FulltextProceduresTest
     @Test
     public void relationshipOutputMustBeOrderedByScoreDescending()
     {
-        // According to CIP2016-06-14, NaN comes between positive infinity and the largest float/double value.
         FulltextProcedures.RelationshipOutput a = new FulltextProcedures.RelationshipOutput( null, Float.NaN );
         FulltextProcedures.RelationshipOutput b = new FulltextProcedures.RelationshipOutput( null, Float.POSITIVE_INFINITY );
         FulltextProcedures.RelationshipOutput c = new FulltextProcedures.RelationshipOutput( null, Float.MAX_VALUE );
