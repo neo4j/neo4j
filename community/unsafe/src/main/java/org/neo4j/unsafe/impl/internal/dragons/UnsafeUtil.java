@@ -1137,6 +1137,21 @@ public final class UnsafeUtil
         UnsafeUtil.putByte( p + 7, (byte) (value >> 56) );
     }
 
+    /**
+     * Define a class but do not make it known to the class loader or system dictionary.
+     * @param host the host class
+     * @param byteBuffer the code to load
+     * @return the defined class
+     */
+    public static Class<?> defineAnonymousClass( Class<?> host, ByteBuffer byteBuffer )
+    {
+        //Move data into a byte[]
+        byte[] bytes = new byte[byteBuffer.remaining()];
+        byteBuffer.get(bytes);
+
+        return unsafe.defineAnonymousClass( host, bytes, null );
+    }
+
     private static final class Allocation
     {
         private final long pointer;
