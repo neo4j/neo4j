@@ -17,18 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.harness;
+package org.neo4j.resources;
 
-import org.neo4j.io.fs.DefaultFileSystemAbstraction;
-import org.neo4j.io.pagecache.impl.muninn.MuninnPageCache;
+import java.io.PrintStream;
 
-class MuninnPageCacheHarnessWithRealFileSystemIT extends MuninnPageCacheHarnessTest
+class NullProfiler implements Profiler
 {
     @Override
-    protected Fixture<MuninnPageCache> createFixture()
+    public void reset()
     {
-        return super.createFixture()
-                .withFileSystemAbstraction( DefaultFileSystemAbstraction::new )
-                .withFileConstructor( directory::file );
+    }
+
+    @Override
+    public void setSampleIntervalNanos( long nanos )
+    {
+    }
+
+    @Override
+    public void finish()
+    {
+    }
+
+    @Override
+    public void printProfile( PrintStream out, String profileTitle )
+    {
+    }
+
+    @Override
+    public ProfiledInterval profile( Thread threadToProfile, long initialDelayNanos )
+    {
+        return null; // try-with-resources clauses are fine with 'null' values.
     }
 }
