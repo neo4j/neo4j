@@ -19,17 +19,17 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class MonitorsTest
+class MonitorsTest
 {
     interface MyMonitor
     {
@@ -38,7 +38,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldProvideNoOpDelegate()
+    void shouldProvideNoOpDelegate()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -52,7 +52,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldRegister()
+    void shouldRegister()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -72,7 +72,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldUnregister()
+    void shouldUnregister()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -93,7 +93,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldRespectTags()
+    void shouldRespectTags()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -114,7 +114,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void shouldTellIfMonitorHasListeners()
+    void shouldTellIfMonitorHasListeners()
     {
         // Given
         Monitors monitors = new Monitors();
@@ -140,7 +140,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void multipleListenersRegistration()
+    void multipleListenersRegistration()
     {
         Monitors monitors = new Monitors();
         MyMonitor listener1 = mock( MyMonitor.class );
@@ -160,7 +160,7 @@ public class MonitorsTest
     }
 
     @Test
-    public void eventShouldBubbleUp()
+    void eventShouldBubbleUp()
     {
         Monitors parent = new Monitors();
         MyMonitor parentListener = mock( MyMonitor.class );

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.List;
@@ -29,24 +29,27 @@ import java.util.Map;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.ssl.ClientAuth;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class SslPolicyConfigTest
+@ExtendWith( TestDirectoryExtension.class )
+class SslPolicyConfigTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     @Test
-    public void shouldFindPolicyDefaults()
+    void shouldFindPolicyDefaults()
     {
         // given
         Map<String,String> params = stringMap();
@@ -92,7 +95,7 @@ public class SslPolicyConfigTest
     }
 
     @Test
-    public void shouldFindPolicyOverrides()
+    void shouldFindPolicyOverrides()
     {
         // given
         Map<String,String> params = stringMap();
@@ -153,7 +156,7 @@ public class SslPolicyConfigTest
     }
 
     @Test
-    public void shouldFailWithIncompletePathOverrides()
+    void shouldFailWithIncompletePathOverrides()
     {
         // given
         Map<String,String> params = stringMap();
@@ -171,25 +174,7 @@ public class SslPolicyConfigTest
 
         Config config = Config.defaults( params );
 
-        // when/then
-        try
-        {
-            config.get( policyConfig.private_key );
-            fail();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
-
-        try
-        {
-            config.get( policyConfig.public_certificate );
-            fail();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
+        assertThrows( IllegalArgumentException.class, () -> config.get( policyConfig.private_key ) );
+        assertThrows( IllegalArgumentException.class, () -> config.get( policyConfig.public_certificate ) );
     }
 }

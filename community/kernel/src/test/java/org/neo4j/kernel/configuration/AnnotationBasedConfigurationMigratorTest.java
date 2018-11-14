@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -29,15 +29,15 @@ import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.logging.Log;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 
-public class AnnotationBasedConfigurationMigratorTest
+class AnnotationBasedConfigurationMigratorTest
 {
 
     private static final AtomicBoolean wasCalled = new AtomicBoolean( false );
 
-    static class SomeSettings implements LoadableConfig
+    private static class SomeSettings implements LoadableConfig
     {
         @SuppressWarnings( "unused" )
         @Migrator
@@ -49,9 +49,8 @@ public class AnnotationBasedConfigurationMigratorTest
     }
 
     @Test
-    public void migratorShouldGetPickedUp()
+    void migratorShouldGetPickedUp()
     {
-
         // Given
         AnnotationBasedConfigurationMigrator migrator =
                 new AnnotationBasedConfigurationMigrator( Collections.singleton( new SomeSettings() ) );
@@ -61,7 +60,6 @@ public class AnnotationBasedConfigurationMigratorTest
 
         // Then
         assertThat( wasCalled.get(), is( true ) );
-
     }
 
 }

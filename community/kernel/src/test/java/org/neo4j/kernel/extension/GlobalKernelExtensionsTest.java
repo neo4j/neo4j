@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -35,10 +35,10 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 
-public class GlobalKernelExtensionsTest
+class GlobalKernelExtensionsTest
 {
     @Test
-    public void shouldConsultUnsatisfiedDependencyHandler()
+    void shouldConsultUnsatisfiedDependencyHandler()
     {
         // GIVEN
         KernelContext context = mock( KernelContext.class );

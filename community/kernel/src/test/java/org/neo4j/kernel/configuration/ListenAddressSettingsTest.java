@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.ListenSocketAddress;
 
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.legacyFallback;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 
-public class ListenAddressSettingsTest
+class ListenAddressSettingsTest
 {
     private static Setting<ListenSocketAddress> legacy_address_setting = listenAddress( "address", 1234 );
     private static Setting<ListenSocketAddress> listen_address_setting =
             legacyFallback( legacy_address_setting, listenAddress( "listen_address", 1234 ) );
 
     @Test
-    public void shouldParseExplicitSettingValueWhenProvided()
+    void shouldParseExplicitSettingValueWhenProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -56,7 +55,7 @@ public class ListenAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided()
+    void shouldCombineDefaultHostnameWithSettingSpecificPortWhenNoValueProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -71,7 +70,7 @@ public class ListenAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
+    void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
     {
         // given
         Map<String,String> config = stringMap(

@@ -19,29 +19,28 @@
  */
 package org.neo4j.kernel.configuration;
 
-import java.util.Map;
+import org.junit.jupiter.api.Test;
 
-import org.junit.Test;
+import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 
-import static org.junit.Assert.assertEquals;
-
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.advertisedAddress;
 import static org.neo4j.kernel.configuration.Settings.listenAddress;
 
-public class AdvertisedAddressSettingsTest
+class AdvertisedAddressSettingsTest
 {
     private static Setting<ListenSocketAddress> listen_address_setting = listenAddress( "listen_address", 1234 );
     private static Setting<AdvertisedSocketAddress> advertised_address_setting =
             advertisedAddress( "advertised_address", listen_address_setting );
 
     @Test
-    public void shouldParseExplicitSettingValueWhenProvided()
+    void shouldParseExplicitSettingValueWhenProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -57,7 +56,7 @@ public class AdvertisedAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithPortFromListenAddressSettingWhenNoValueProvided()
+    void shouldCombineDefaultHostnameWithPortFromListenAddressSettingWhenNoValueProvided()
     {
         // given
         Map<String,String> config = stringMap(
@@ -72,7 +71,7 @@ public class AdvertisedAddressSettingsTest
     }
 
     @Test
-    public void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
+    void shouldCombineDefaultHostnameWithExplicitPortWhenOnlyAPortProvided()
     {
         // given
         Map<String,String> config = stringMap(

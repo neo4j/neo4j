@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.io.File;
@@ -31,10 +31,10 @@ import org.neo4j.logging.AssertableLogProvider;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class KernelDiagnosticsTest
+class KernelDiagnosticsTest
 {
     @Test
-    public void shouldPrintDiskUsage()
+    void shouldPrintDiskUsage()
     {
         File databaseDir = Mockito.mock( File.class );
         DatabaseLayout layout = mock( DatabaseLayout.class );
@@ -50,7 +50,7 @@ public class KernelDiagnosticsTest
     }
 
     @Test
-    public void shouldCountFileSizeRecursively() throws IOException
+    void shouldCountFileSizeRecursively() throws IOException
     {
         File indexFile = Mockito.mock( File.class );
         when( indexFile.isDirectory() ).thenReturn( false );

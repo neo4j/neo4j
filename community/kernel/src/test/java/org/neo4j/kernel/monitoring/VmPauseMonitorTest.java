@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.monitoring;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.function.Consumer;
 
 import org.neo4j.kernel.monitoring.VmPauseMonitor.VmPauseInfo;
 import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.JobHandle;
+import org.neo4j.scheduler.JobScheduler;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
@@ -42,7 +41,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-public class VmPauseMonitorTest
+class VmPauseMonitorTest
 {
     @SuppressWarnings( "unchecked" )
     private final Consumer<VmPauseInfo> listener = mock( Consumer.class );
@@ -50,31 +49,31 @@ public class VmPauseMonitorTest
     private final JobScheduler jobScheduler = mock( JobScheduler.class );
     private final VmPauseMonitor monitor = spy( new VmPauseMonitor( ofMillis( 1 ), ofMillis( 0 ), NullLog.getInstance(), jobScheduler, listener ) );
 
-    @Before
-    public void setUp()
+    @BeforeEach
+    void setUp()
     {
         doReturn( jobHandle ).when( jobScheduler ).schedule( any( Group.class ), any( Runnable.class ) );
     }
 
     @Test
-    public void testCtorParametersValidation()
+    void testCtorParametersValidation()
     {
-        assertThatFails( NullPointerException.class,
+        assertThrows( NullPointerException.class,
                 () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), null, jobScheduler, listener ) );
-        assertThatFails( NullPointerException.class,
+        assertThrows( NullPointerException.class,
                 () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), NullLog.getInstance(), null, listener ) );
-        assertThatFails( NullPointerException.class,
+        assertThrows( NullPointerException.class,
                 () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( 1 ), NullLog.getInstance(), jobScheduler, null ) );
-        assertThatFails( IllegalArgumentException.class,
+        assertThrows( IllegalArgumentException.class,
                 () -> new VmPauseMonitor( ofSeconds( 0 ), ofSeconds( 1 ), NullLog.getInstance(), jobScheduler, listener ) );
-        assertThatFails( IllegalArgumentException.class,
+        assertThrows( IllegalArgumentException.class,
                 () -> new VmPauseMonitor( ofSeconds( 1 ), ofSeconds( -1 ), NullLog.getInstance(), jobScheduler, listener ) );
-        assertThatFails( IllegalArgumentException.class,
+        assertThrows( IllegalArgumentException.class,
                 () -> new VmPauseMonitor( ofSeconds( -1 ), ofSeconds( 1 ), NullLog.getInstance(), jobScheduler, listener ) );
     }
 
     @Test
-    public void testStartAndStop()
+    void testStartAndStop()
     {
         monitor.start();
         monitor.stop();
@@ -84,7 +83,7 @@ public class VmPauseMonitorTest
     }
 
     @Test
-    public void testRestart()
+    void testRestart()
     {
         monitor.start();
         monitor.stop();
@@ -94,45 +93,38 @@ public class VmPauseMonitorTest
         verify( jobHandle ).cancel( eq( true ) );
     }
 
-    @Test( expected = IllegalStateException.class )
-    public void testFailStopWithoutStart()
+    @Test
+    void testFailStopWithoutStart()
     {
-        monitor.stop();
-    }
-
-    @Test( expected = IllegalStateException.class )
-    public void testFailOnDoubleStart()
-    {
-        monitor.start();
-        monitor.start();
-    }
-
-    @Test( expected = IllegalStateException.class )
-    public void testFailOnDoubleStop()
-    {
-        monitor.start();
-        monitor.stop();
-        monitor.stop();
+        assertThrows( IllegalStateException.class, monitor::stop );
     }
 
     @Test
-    public void testNotifyListener() throws Exception
+    void testFailOnDoubleStart()
+    {
+        assertThrows( IllegalStateException.class, () ->
+        {
+            monitor.start();
+            monitor.start();
+        } );
+    }
+
+    @Test
+    void testFailOnDoubleStop()
+    {
+        assertThrows( IllegalStateException.class, () ->
+        {
+            monitor.start();
+            monitor.stop();
+            monitor.stop();
+        } );
+    }
+
+    @Test
+    void testNotifyListener() throws Exception
     {
         doReturn( false, true ).when( monitor ).isStopped();
         monitor.monitor();
         verify( listener ).accept( any(VmPauseInfo.class) );
-    }
-
-    private static void assertThatFails( Class<? extends Exception> exceptionClass, Runnable action )
-    {
-        try
-        {
-            action.run();
-            fail( "Expected exception was not thrown: " + exceptionClass.getName() );
-        }
-        catch ( Exception e )
-        {
-            assertSame( exceptionClass, e.getClass() );
-        }
     }
 }

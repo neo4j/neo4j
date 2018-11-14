@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -32,26 +32,30 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.ssl.PkiUtils;
 import org.neo4j.ssl.SslPolicy;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class SslPolicyLoaderTest
+@ExtendWith( TestDirectoryExtension.class )
+class SslPolicyLoaderTest
 {
-    @Rule
-    public TestDirectory testDirectory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory testDirectory;
 
     private File home;
     private File publicCertificateFile;
     private File privateKeyFile;
 
-    @Before
-    public void setup() throws Exception
+    @BeforeEach
+    void setup() throws Exception
     {
         home = testDirectory.directory( "home" );
         File baseDir = new File( home, "certificates/default" );
@@ -68,7 +72,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldLoadBaseCryptographicObjects() throws Exception
+    void shouldLoadBaseCryptographicObjects() throws Exception
     {
         // given
         Map<String,String> params = stringMap();
@@ -92,13 +96,13 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldComplainIfMissingPrivateKey()
+    void shouldComplainIfMissingPrivateKey()
     {
         shouldComplainIfMissingFile( privateKeyFile );
     }
 
     @Test
-    public void shouldComplainIfMissingPublicCertificate()
+    void shouldComplainIfMissingPublicCertificate()
     {
         shouldComplainIfMissingFile( publicCertificateFile );
     }
@@ -118,19 +122,12 @@ public class SslPolicyLoaderTest
         Config config = Config.defaults( params );
 
         // when
-        try
-        {
-            SslPolicyLoader.create( config, NullLogProvider.getInstance() );
-            fail();
-        }
-        catch ( Exception e )
-        {
-            assertTrue( e.getCause() instanceof FileNotFoundException );
-        }
+        Exception exception = assertThrows( Exception.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
+        assertThat( exception.getCause(), instanceOf( FileNotFoundException.class ) );
     }
 
     @Test
-    public void shouldThrowIfPolicyNameDoesNotExist()
+    void shouldThrowIfPolicyNameDoesNotExist()
     {
         // given
         Map<String,String> params = stringMap();
@@ -144,19 +141,11 @@ public class SslPolicyLoaderTest
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( config, NullLogProvider.getInstance() );
 
         // when
-        try
-        {
-            sslPolicyLoader.getPolicy( "unknown" );
-            fail();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
+        assertThrows( IllegalArgumentException.class, () -> sslPolicyLoader.getPolicy( "unknown" ) );
     }
 
     @Test
-    public void shouldReturnNullPolicyIfNullRequested()
+    void shouldReturnNullPolicyIfNullRequested()
     {
         // given
         SslPolicyLoader sslPolicyLoader = SslPolicyLoader.create( Config.defaults(), NullLogProvider.getInstance() );
@@ -169,7 +158,7 @@ public class SslPolicyLoaderTest
     }
 
     @Test
-    public void shouldNotAllowLegacyPolicyToBeConfigured()
+    void shouldNotAllowLegacyPolicyToBeConfigured()
     {
         // given
         Map<String,String> params = stringMap();
@@ -180,15 +169,6 @@ public class SslPolicyLoaderTest
         params.put( policyConfig.base_directory.name(), "certificates/default" );
         Config config = Config.defaults( params );
 
-        try
-        {
-            // when
-            SslPolicyLoader.create( config, NullLogProvider.getInstance() );
-            fail();
-        }
-        catch ( IllegalArgumentException e )
-        {
-            // expected
-        }
+        assertThrows( IllegalArgumentException.class, () -> SslPolicyLoader.create( config, NullLogProvider.getInstance() ) );
     }
 }

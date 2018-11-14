@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.internal;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-public class VersionTest
+class VersionTest
 {
     @Test
-    public void shouldExposeCleanAndDetailedVersions()
+    void shouldExposeCleanAndDetailedVersions()
     {
         assertThat( version( "1.2.3-M01,abcdef012345" ).getReleaseVersion(), equalTo( "1.2.3-M01" ));
         assertThat( version( "1.2.3-M01,abcdef012345" ).getVersion(),        equalTo( "1.2.3-M01,abcdef012345" ));

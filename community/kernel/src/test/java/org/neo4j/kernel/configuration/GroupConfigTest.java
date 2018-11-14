@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.config.Setting;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.neo4j.kernel.configuration.Settings.BOOLEAN;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.STRING;
 import static org.neo4j.kernel.configuration.Settings.setting;
 
-public class GroupConfigTest
+class GroupConfigTest
 {
     @Test
-    public void shouldProvideNiceSetMechanism()
+    void shouldProvideNiceSetMechanism()
     {
         assertThat( connector(0).enabled.name(), equalTo( "dbms.connector.0.enabled" ) );
     }

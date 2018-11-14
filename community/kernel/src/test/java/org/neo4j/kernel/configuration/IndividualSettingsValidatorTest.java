@@ -19,10 +19,7 @@
  */
 package org.neo4j.kernel.configuration;
 
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
 import java.util.Map;
@@ -30,7 +27,10 @@ import java.util.Map;
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.logging.Log;
 
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -40,20 +40,12 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 
-public class IndividualSettingsValidatorTest
+class IndividualSettingsValidatorTest
 {
-    @Rule
-    public ExpectedException expected = ExpectedException.none();
-    private Log log;
-
-    @Before
-    public void setup()
-    {
-        log = mock( Log.class );
-    }
+    private final Log log = mock( Log.class );
 
     @Test
-    public void nonStrictRetainsSettings()
+    void nonStrictRetainsSettings()
     {
         IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
@@ -70,7 +62,7 @@ public class IndividualSettingsValidatorTest
     }
 
     @Test
-    public void strictErrorsOnUnknownSettingsInOurNamespace()
+    void strictErrorsOnUnknownSettingsInOurNamespace()
     {
         IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 
@@ -80,15 +72,13 @@ public class IndividualSettingsValidatorTest
 
         Config config = mockConfig( rawConfig );
 
-        expected.expect( InvalidSettingException.class );
-        expected.expectMessage( String.format( "Unknown config option 'dbms.jibber.jabber'. To resolve either remove" +
-                " it from your configuration or set '%s' to false.", strict_config_validation.name() ) );
-
-        iv.validate( config, log );
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> iv.validate( config, log ) );
+        assertEquals( format( "Unknown config option 'dbms.jibber.jabber'. To resolve either remove" + " it from your configuration or set '%s' to false.",
+                        strict_config_validation.name() ), exception.getMessage() );
     }
 
     @Test
-    public void strictAllowsStuffOutsideOurNamespace()
+    void strictAllowsStuffOutsideOurNamespace()
     {
         IndividualSettingsValidator iv = new IndividualSettingsValidator( singletonList( strict_config_validation ), true );
 

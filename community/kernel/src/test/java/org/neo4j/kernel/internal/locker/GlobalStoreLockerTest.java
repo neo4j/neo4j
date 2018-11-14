@@ -19,75 +19,74 @@
  */
 package org.neo4j.kernel.internal.locker;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.StoreLayout;
 import org.neo4j.kernel.StoreLockException;
+import org.neo4j.test.extension.DefaultFileSystemExtension;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.fs.DefaultFileSystemRule;
-import org.neo4j.test.rule.fs.FileSystemRule;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class GlobalStoreLockerTest
+@ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
+class GlobalStoreLockerTest
 {
-    @Rule
-    public final TestDirectory testDirectory = TestDirectory.testDirectory();
-    @Rule
-    public final FileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    @Inject
+    private TestDirectory testDirectory;
+    @Inject
+    private FileSystemAbstraction fileSystem;
 
     @Test
-    public void failToLockSameFolderAcrossIndependentLockers() throws Exception
+    void failToLockSameFolderAcrossIndependentLockers() throws Exception
     {
         StoreLayout storeLayout = testDirectory.storeLayout();
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
 
-            try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
+            assertThrows( StoreLockException.class, () ->
             {
-                locker.checkLock();
-                fail("directory should be locked");
-            }
-            catch ( StoreLockException expected )
-            {
-                // expected
-            }
+                try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystem, storeLayout ) )
+                {
+                    locker.checkLock();
+                }
+            } );
 
-            try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
+            assertThrows( StoreLockException.class, () ->
             {
-                locker.checkLock();
-                fail("directory should be locked");
-            }
-            catch ( StoreLockException expected )
-            {
-                // expected
-            }
+                try ( GlobalStoreLocker locker = new GlobalStoreLocker( fileSystem, storeLayout ) )
+                {
+                    locker.checkLock();
+                }
+            } );
         }
     }
 
     @Test
-    public void allowToLockSameDirectoryIfItWasUnlocked() throws IOException
+    void allowToLockSameDirectoryIfItWasUnlocked() throws IOException
     {
         StoreLayout storeLayout = testDirectory.storeLayout();
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
         }
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
         }
     }
 
     @Test
-    public void allowMultipleCallstoActuallyStoreLocker() throws IOException
+    void allowMultipleCallstoActuallyStoreLocker() throws IOException
     {
         StoreLayout storeLayout = testDirectory.storeLayout();
-        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystemRule.get(), storeLayout ) )
+        try ( GlobalStoreLocker storeLocker = new GlobalStoreLocker( fileSystem, storeLayout ) )
         {
             storeLocker.checkLock();
             storeLocker.checkLock();

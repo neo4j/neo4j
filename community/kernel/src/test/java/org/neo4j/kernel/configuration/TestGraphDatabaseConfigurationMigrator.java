@@ -20,7 +20,6 @@
 package org.neo4j.kernel.configuration;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,17 +41,10 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
  */
 public class TestGraphDatabaseConfigurationMigrator
 {
-
-    private ConfigurationMigrator migrator;
+    private final ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator();
 
     @Rule
-    public AssertableLogProvider logProvider = new AssertableLogProvider( true );
-
-    @Before
-    public void setUp()
-    {
-        migrator = new GraphDatabaseConfigurationMigrator();
-    }
+    public final AssertableLogProvider logProvider = new AssertableLogProvider( true );
 
     @Test
     public void testNoMigration()

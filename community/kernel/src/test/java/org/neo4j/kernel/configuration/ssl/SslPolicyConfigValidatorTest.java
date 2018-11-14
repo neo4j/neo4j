@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.configuration.ssl;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 import java.util.function.Consumer;
@@ -27,19 +27,20 @@ import java.util.function.Consumer;
 import org.neo4j.graphdb.config.InvalidSettingException;
 
 import static java.util.Collections.unmodifiableMap;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public class SslPolicyConfigValidatorTest
+class SslPolicyConfigValidatorTest
 {
-    @SuppressWarnings( "unchecked" )
-    private Consumer<String> warnings = mock( Consumer.class );
+    private final Consumer<String> warnings = mock( Consumer.class );
 
     @Test
-    public void shouldAcceptAllValidPolicyKeys()
+    void shouldAcceptAllValidPolicyKeys()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -65,45 +66,31 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldThrowOnUnknownPolicySetting()
+    void shouldThrowOnUnknownPolicySetting()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params( "dbms.ssl.policy.default.color", "blue" );
 
         // when
-        try
-        {
-            validator.validate( originalParams, warnings );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            assertTrue( e.getMessage().contains( "Invalid setting name" ) );
-        }
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
-    public void shouldThrowOnDirectPolicySetting()
+    void shouldThrowOnDirectPolicySetting()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
         Map<String,String> originalParams = params( "dbms.ssl.policy.base_directory", "path" );
 
         // when
-        try
-        {
-            validator.validate( originalParams, warnings );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            assertTrue( e.getMessage().contains( "Invalid setting name" ) );
-        }
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Invalid setting name" ) );
     }
 
     @Test
-    public void shouldIgnoreUnknownNonPolicySettings()
+    void shouldIgnoreUnknownNonPolicySettings()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -121,7 +108,7 @@ public class SslPolicyConfigValidatorTest
     }
 
     @Test
-    public void shouldComplainWhenMissingMandatoryBaseDirectory()
+    void shouldComplainWhenMissingMandatoryBaseDirectory()
     {
         // given
         SslPolicyConfigValidator validator = new SslPolicyConfigValidator();
@@ -131,15 +118,8 @@ public class SslPolicyConfigValidatorTest
         );
 
         // when
-        try
-        {
-            validator.validate( originalParams, warnings );
-            fail();
-        }
-        catch ( InvalidSettingException e )
-        {
-            assertTrue( e.getMessage().contains( "Missing mandatory setting" ) );
-        }
+        InvalidSettingException exception = assertThrows( InvalidSettingException.class, () -> validator.validate( originalParams, warnings ) );
+        assertThat( exception.getMessage(), containsString( "Missing mandatory setting" ) );
     }
 
     private static Map<String,String> params( String... params )
