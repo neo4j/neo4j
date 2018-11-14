@@ -22,6 +22,8 @@ package org.neo4j.codegen;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.unsafe.impl.internal.dragons.UnsafeUtil;
+
 class CodeLoader extends ClassLoader
 {
     private final Map<String/*class name*/,ByteCodes> bytecodes = new HashMap<>();
@@ -55,4 +57,16 @@ class CodeLoader extends ClassLoader
         }
         return defineClass( name, codes.bytes(), null );
     }
+
+    protected synchronized Class<?> defineAnonymousClass( String name ) throws ClassNotFoundException
+    {
+        ByteCodes codes = bytecodes.remove( name );
+        if ( codes == null )
+        {
+            throw new ClassNotFoundException( name );
+        }
+        return UnsafeUtil.defineAnonymousClass( CodeLoader.class, codes.bytes() );
+    }
 }
+
+

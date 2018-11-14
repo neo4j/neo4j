@@ -57,6 +57,11 @@ public class ClassHandle extends TypeReference
         return generator.loadClass( fullName(), generation );
     }
 
+    public Class<?> loadAnonymousClass() throws CompilationFailureException
+    {
+        return generator.loadAnonymousClass( fullName(), generation );
+    }
+
     public TypeReference parent()
     {
         return parent;
