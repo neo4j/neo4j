@@ -266,7 +266,6 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-
     private void triggerSampling( IndexReference index ) throws IndexNotFoundKernelException
     {
         indexingService.triggerIndexSampling( index.schema(), IndexSamplingMode.TRIGGER_REBUILD_ALL );
