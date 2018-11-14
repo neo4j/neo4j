@@ -68,5 +68,3 @@ class CodeLoader extends ClassLoader
         return UnsafeUtil.defineAnonymousClass( CodeLoader.class, codes.bytes() );
     }
 }
-
-
