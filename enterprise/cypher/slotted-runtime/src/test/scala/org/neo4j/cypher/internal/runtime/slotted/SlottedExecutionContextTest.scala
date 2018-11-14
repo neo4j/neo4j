@@ -67,11 +67,4 @@ class SlottedExecutionContextTest extends CypherFunSuite {
     val rightSlots = slots(0, 0).newReference("a", nullable = true, CTAny)
     SlottedExecutionContext(leftSlots).mergeWith(SlottedExecutionContext(rightSlots)) // should not fail
   }
-
-  test("cannot merge non-nullable RefSlots which are null") {
-    val leftSlots = slots(0, 0).newReference("a", nullable = false, CTAny)
-    SlottedPipeBuilder.generateSlotAccessorFunctions(leftSlots)
-    val rightSlots = slots(0, 0).newReference("a", nullable = false, CTAny)
-    intercept[InternalException](SlottedExecutionContext(leftSlots).mergeWith(SlottedExecutionContext(rightSlots)))
-  }
 }
