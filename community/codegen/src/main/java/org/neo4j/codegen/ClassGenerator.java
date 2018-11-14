@@ -71,17 +71,27 @@ public class ClassGenerator implements AutoCloseable
         return emitField( Modifier.PUBLIC, type, name, null );
     }
 
-    public FieldReference staticField( Class<?> type, String name, Expression value )
+    public FieldReference privateStaticFinalField( Class<?> type, String name, Expression value )
     {
-        return staticField( typeReference( type ), name, value );
+        return privateStaticFinalField( typeReference( type ), name, value );
     }
 
-    public FieldReference staticField( TypeReference type, String name )
+    public FieldReference publicStaticField( TypeReference type, String name )
     {
         return emitField( Modifier.PUBLIC | Modifier.STATIC, type, name, null );
     }
 
-    public FieldReference staticField( TypeReference type, String name, Expression value )
+    public FieldReference privateStaticField( Class<?> type, String name, Expression value )
+    {
+        return privateStaticField( typeReference( type ), name, value );
+    }
+
+    public FieldReference privateStaticField( TypeReference type, String name, Expression value )
+    {
+        return emitField( Modifier.PRIVATE | Modifier.STATIC, type, name, value );
+    }
+
+    public FieldReference privateStaticFinalField( TypeReference type, String name, Expression value )
     {
         return emitField( Modifier.PRIVATE | Modifier.STATIC | Modifier.FINAL, type, name, Objects.requireNonNull( value ) );
     }

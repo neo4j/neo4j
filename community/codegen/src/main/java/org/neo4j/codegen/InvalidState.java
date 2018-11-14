@@ -53,6 +53,12 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
+    public boolean isStatic()
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
     public void done()
     {
         throw new IllegalStateException( reason );
@@ -66,6 +72,12 @@ class InvalidState implements MethodEmitter
 
     @Override
     public void put( Expression target, FieldReference field, Expression value )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
+    public void putStatic( FieldReference field, Expression value )
     {
         throw new IllegalStateException( reason );
     }

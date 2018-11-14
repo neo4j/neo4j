@@ -23,11 +23,15 @@ import java.util.function.Consumer;
 
 public interface MethodEmitter
 {
+    boolean isStatic();
+
     void done();
 
     void expression( Expression expression );
 
     void put( Expression target, FieldReference field, Expression value );
+
+    void putStatic( FieldReference field, Expression value );
 
     void returns();
 

@@ -284,7 +284,7 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            FieldReference foo = simple.staticField( int.class, "FOO", constant( 42 ) );
+            FieldReference foo = simple.privateStaticFinalField( int.class, "FOO", constant( 42 ) );
             try ( CodeBlock get = simple.generateMethod( int.class, "get" ) )
             {
                 get.returns( Expression.getStatic( foo ) );
@@ -306,7 +306,7 @@ public class CodeGenerationTest
         ClassHandle handle;
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
-            FieldReference foo = simple.staticField( String.class, "FOO", constant( "42" ) );
+            FieldReference foo = simple.privateStaticFinalField( String.class, "FOO", constant( "42" ) );
             try ( CodeBlock get = simple.generateMethod( String.class, "get" ) )
             {
                 get.returns( Expression.getStatic( foo ) );
@@ -329,7 +329,7 @@ public class CodeGenerationTest
         try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
         {
             TypeReference stringList = TypeReference.parameterizedType( List.class, String.class );
-            FieldReference foo = simple.staticField( stringList, "FOO", Expression.invoke(
+            FieldReference foo = simple.privateStaticFinalField( stringList, "FOO", Expression.invoke(
                     methodReference( Arrays.class, stringList, "asList", Object[].class ),
                     newArray( typeReference( String.class ),
                             constant( "FOO" ), constant( "BAR" ), constant( "BAZ" ) ) ) );
@@ -1869,6 +1869,29 @@ public class CodeGenerationTest
         // then
         assertTrue( (Boolean) isString.invoke( "this is surely a string" ) );
         assertFalse( (Boolean) isString.invoke( "this is surely a string".length() ) );
+    }
+
+    @Test
+    public void shouldUpdateStaticField() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            FieldReference foo = simple.privateStaticField( int.class, "FOO", constant( 42 ) );
+            try ( CodeBlock get = simple.generateMethod( int.class, "get" ) )
+            {
+                get.putStatic( foo,  constant( 84 ) );
+                get.returns( Expression.getStatic( foo ) );
+            }
+            handle = simple.handle();
+        }
+
+        // when
+        Object foo = instanceMethod( handle.newInstance(), "get" ).invoke();
+
+        // then
+        assertEquals( 84, foo );
     }
 
     private Supplier<Double> generateDoubleMethod( double toBeReturned ) throws Throwable

@@ -34,9 +34,9 @@ public class CodeBlock implements AutoCloseable
     private final CodeBlock parent;
     private boolean done;
 
-    protected LocalVariables localVariables = new LocalVariables();
+    private LocalVariables localVariables = new LocalVariables();
 
-    CodeBlock( CodeBlock parent )
+    private CodeBlock( CodeBlock parent )
     {
         this.clazz = parent.clazz;
         this.emitter = parent.emitter;
@@ -51,7 +51,10 @@ public class CodeBlock implements AutoCloseable
         this.clazz = clazz;
         this.emitter = emitter;
         this.parent = null;
-        localVariables.createNew( clazz.handle(), "this" );
+        if ( !emitter.isStatic() )
+        {
+            localVariables.createNew( clazz.handle(), "this" );
+        }
         for ( Parameter parameter : parameters )
         {
             localVariables.createNew( parameter.type(), parameter.name() );
@@ -83,7 +86,7 @@ public class CodeBlock implements AutoCloseable
         this.emitter = InvalidState.BLOCK_CLOSED;
     }
 
-    protected void endBlock()
+    private void endBlock()
     {
         if ( !done )
         {
@@ -128,6 +131,11 @@ public class CodeBlock implements AutoCloseable
     public void put( Expression target, FieldReference field, Expression value )
     {
         emitter.put( target, field, value );
+    }
+
+    public void putStatic( FieldReference field, Expression value )
+    {
+        emitter.putStatic( field, value );
     }
 
     public Expression self()

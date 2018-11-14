@@ -656,13 +656,13 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         }
     }
 
-    private void compareIntOrReferenceType( Expression lhs, Expression rhs, int opcode )
+    private void compareIntOrReferenceType( Expression lhs, Expression rhs, int inverseOpcode )
     {
         lhs.accept( this );
         rhs.accept( this );
 
         Label l0 = new Label();
-        methodVisitor.visitJumpInsn( opcode, l0 );
+        methodVisitor.visitJumpInsn( inverseOpcode, l0 );
         methodVisitor.visitInsn( ICONST_1 );
         Label l1 = new Label();
         methodVisitor.visitJumpInsn( GOTO, l1 );
@@ -671,12 +671,12 @@ class ByteCodeExpressionVisitor implements ExpressionVisitor
         methodVisitor.visitLabel( l1 );
     }
 
-    private void compareLongOrFloatType( Expression lhs, Expression rhs, int opcode, int compare )
+    private void compareLongOrFloatType( Expression lhs, Expression rhs, int inverseOpcode, int compare )
     {
         lhs.accept( this );
         rhs.accept( this );
 
-        methodVisitor.visitInsn( opcode );
+        methodVisitor.visitInsn( inverseOpcode );
         Label l0 = new Label();
         methodVisitor.visitJumpInsn( compare, l0 );
         methodVisitor.visitInsn( ICONST_1 );

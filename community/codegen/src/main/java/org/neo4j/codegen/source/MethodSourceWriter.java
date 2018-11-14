@@ -40,12 +40,14 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     private static final String INDENTATION = "    ";
     private final StringBuilder target;
     private final ClassSourceWriter classSourceWriter;
+    private final boolean isStatic;
     private final Deque<Runnable> levels = new LinkedList<>();
 
-    MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter )
+    MethodSourceWriter( StringBuilder target, ClassSourceWriter classSourceWriter, boolean isStatic )
     {
         this.target = target;
         this.classSourceWriter = classSourceWriter;
+        this.isStatic = isStatic;
         this.levels.push( BOTTOM );
         this.levels.push( LEVEL );
     }
@@ -62,6 +64,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     private StringBuilder append( CharSequence text )
     {
         return target.append( text );
+    }
+
+    @Override
+    public boolean isStatic()
+    {
+        return isStatic;
     }
 
     @Override
@@ -87,6 +95,18 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     {
         indent();
         target.accept( this );
+        append( "." );
+        append( field.name() );
+        append( " = " );
+        value.accept( this );
+        append( ";\n" );
+    }
+
+    @Override
+    public void putStatic( FieldReference field, Expression value )
+    {
+        indent();
+        append( field.owner().fullName() );
         append( "." );
         append( field.name() );
         append( " = " );
