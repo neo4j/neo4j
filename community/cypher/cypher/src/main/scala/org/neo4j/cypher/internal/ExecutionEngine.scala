@@ -25,12 +25,12 @@ import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
 import org.neo4j.cypher.internal.tracing.CompilationTracer
 import org.neo4j.cypher.internal.tracing.CompilationTracer.QueryCompilationEvent
-import org.neo4j.cypher.{CypherExpressionEngineOption, ParameterNotFoundException, exceptionHandler}
+import org.neo4j.cypher.{ParameterNotFoundException, exceptionHandler}
 import org.neo4j.graphdb.Result
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.internal.kernel.api.security.AccessMode
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.query.{QueryExecution, ResultBuffer, TransactionalContext}
+import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
@@ -118,25 +118,28 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def compilers(preParsedQuery: PreParsedQuery,
                         tracer: QueryCompilationEvent,
                         transactionalContext: TransactionalContext,
-                        params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = preParsedQuery.expressionEngine match {
+                        params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = {
     //check if we need to jit compiling of queries
-    case CypherExpressionEngineOption.onlyWhenHot if config.recompilationLimit > 0 =>
+    if (preParsedQuery.compileWhenHot && config.recompilationLimit > 0) {
       val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery,
-                                                 tracer, transactionalContext, params)
-      val secondary: (Int) => Option[ExecutableQuery] =
+                                                                        tracer, transactionalContext, params)
+      val secondary: Int => Option[ExecutableQuery] =
         count => {
-          if (count > config.recompilationLimit) Some(masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
-                                                                             tracer, transactionalContext, params))
+          if (count > config.recompilationLimit) Some(
+            masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
+                                   tracer, transactionalContext, params))
           else None
         }
 
       (primary, secondary)
-    //We have recompilationLimit == 0, go to compiled directly
-    case CypherExpressionEngineOption.onlyWhenHot =>
+    } else if (preParsedQuery.compileWhenHot) {
+      //We have recompilationLimit == 0, go to compiled directly
       (() => masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
-                                    tracer, transactionalContext, params), (_) => None)
-    //In the other cases we have no recompilation step
-    case _ =>  (() => masterCompiler.compile(preParsedQuery, tracer, transactionalContext, params), (_) => None)
+                                    tracer, transactionalContext, params), _ => None)
+    } else {
+      //In the other cases we have no recompilation step
+     (() => masterCompiler.compile(preParsedQuery, tracer, transactionalContext, params), (_) => None)
+    }
   }
 
   private def getOrCompile(context: TransactionalContext,

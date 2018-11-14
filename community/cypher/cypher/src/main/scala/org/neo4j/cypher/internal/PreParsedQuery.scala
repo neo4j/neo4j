@@ -62,6 +62,6 @@ case class PreParsedQuery(statement: String,
     s"CYPHER ${version.name} $plannerInfo $runtimeInfo $updateStrategyInfo $expressionEngineInfo $debugFlags $statement"
   }
 
-  def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled ||
-    (expressionEngine == CypherExpressionEngineOption.onlyWhenHot && recompilationLimitReached)
+  def compileWhenHot: Boolean = expressionEngine == CypherExpressionEngineOption.onlyWhenHot || expressionEngine == CypherExpressionEngineOption.default
+  def useCompiledExpressions: Boolean = expressionEngine == CypherExpressionEngineOption.compiled || (compileWhenHot && recompilationLimitReached)
 }
