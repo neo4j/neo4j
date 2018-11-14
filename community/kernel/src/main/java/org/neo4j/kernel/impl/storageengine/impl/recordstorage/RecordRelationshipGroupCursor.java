@@ -161,15 +161,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         return true;
     }
 
-    @Override
-    public void setCurrent( int groupReference, int firstOut, int firstIn, int firstLoop )
-    {
-        setType( groupReference );
-        setFirstOut( firstOut );
-        setFirstIn( firstIn );
-        setFirstLoop( firstLoop );
-    }
-
     private void loadFromBuffer()
     {
         setType( bufferedGroup.label );

@@ -45,6 +45,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     private boolean hasCheckedTxState;
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
+    private int currentTypeAddedInTx = NO_ID;
 
     DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor )
     {
@@ -57,6 +58,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         storeCursor.init( nodeReference, reference );
         this.txTypes.clear();
         this.txTypeIterator = null;
+        this.currentTypeAddedInTx = NO_ID;
         this.hasCheckedTxState = false;
         this.read = read;
     }
@@ -103,10 +105,17 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
             //here it may be tempting to do txTypes.clear()
             //however that will also clear the iterator
         }
-        if ( txTypeIterator != null && txTypeIterator.hasNext() )
+        if ( txTypeIterator != null )
         {
-            storeCursor.setCurrent( txTypeIterator.next(), NO_ID, NO_ID, NO_ID );
-            return true;
+            if ( txTypeIterator.hasNext() )
+            {
+                currentTypeAddedInTx = txTypeIterator.next();
+                return true;
+            }
+            else
+            {
+                currentTypeAddedInTx = NO_ID;
+            }
         }
         return false;
     }
@@ -155,34 +164,34 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     @Override
     public int type()
     {
-        return storeCursor.type();
+        return currentTypeAddedInTx != NO_ID ? currentTypeAddedInTx : storeCursor.type();
     }
 
     @Override
     public int outgoingCount()
     {
-        int count = storeCursor.outgoingCount();
+        int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.outgoingCount();
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
-                       .augmentDegree( RelationshipDirection.OUTGOING, count, storeCursor.type() ) : count;
+                       .augmentDegree( RelationshipDirection.OUTGOING, count, type() ) : count;
     }
 
     @Override
     public int incomingCount()
     {
-        int count = storeCursor.incomingCount();
+        int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.incomingCount();
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
-                       .augmentDegree( RelationshipDirection.INCOMING, count, storeCursor.type() ) : count;
+                       .augmentDegree( RelationshipDirection.INCOMING, count, type() ) : count;
     }
 
     @Override
     public int loopCount()
     {
-        int count = storeCursor.loopCount();
+        int count = currentTypeAddedInTx != NO_ID ? 0 : storeCursor.loopCount();
         return read.hasTxStateWithChanges()
                ? read.txState().getNodeState( storeCursor.getOwningNode() )
-                       .augmentDegree( RelationshipDirection.LOOP, count, storeCursor.type() ) : count;
+                       .augmentDegree( RelationshipDirection.LOOP, count, type() ) : count;
 
     }
 
@@ -207,22 +216,22 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     @Override
     public long outgoingReference()
     {
-        long reference = storeCursor.outgoingReference();
-        return reference == NO_ID ? encodeNoOutgoingRels( storeCursor.type() ) : reference;
+        long reference = currentTypeAddedInTx != NO_ID ? NO_ID : storeCursor.outgoingReference();
+        return reference == NO_ID ? encodeNoOutgoingRels( type() ) : reference;
     }
 
     @Override
     public long incomingReference()
     {
-        long reference = storeCursor.incomingReference();
-        return reference == NO_ID ? encodeNoIncomingRels( storeCursor.type() ) : reference;
+        long reference = currentTypeAddedInTx != NO_ID ? NO_ID : storeCursor.incomingReference();
+        return reference == NO_ID ? encodeNoIncomingRels( type() ) : reference;
     }
 
     @Override
     public long loopsReference()
     {
-        long reference = storeCursor.loopsReference();
-        return reference == NO_ID ? encodeNoLoopRels( storeCursor.type() ) : reference;
+        long reference = currentTypeAddedInTx != NO_ID ? NO_ID : storeCursor.loopsReference();
+        return reference == NO_ID ? encodeNoLoopRels( type() ) : reference;
     }
 
     @Override
