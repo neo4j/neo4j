@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.OpenOption;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.DatabaseEventHandlerAdapter;
@@ -32,8 +33,10 @@ import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.DelegatingPageCache;
+import org.neo4j.io.pagecache.DelegatingPagedFile;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -63,7 +66,11 @@ class DatabaseShutdownTest
     void shouldShutdownCorrectlyWhenCheckPointingOnShutdownFails()
     {
         TestGraphDatabaseFactoryWithFailingPageCacheFlush factory = new TestGraphDatabaseFactoryWithFailingPageCacheFlush();
-        assertThrows(LifecycleException.class, () -> factory.newEmbeddedDatabase( testDirectory.storeDir() ).shutdown() );
+        assertThrows( LifecycleException.class, () -> {
+            GraphDatabaseService databaseService = factory.newEmbeddedDatabase( testDirectory.storeDir() );
+            factory.setFailFlush( true );
+            databaseService.shutdown();
+        } );
         assertEquals( LifecycleStatus.SHUTDOWN, factory.getNeoStoreDataSourceStatus() );
     }
 
@@ -81,6 +88,7 @@ class DatabaseShutdownTest
     private static class TestGraphDatabaseFactoryWithFailingPageCacheFlush extends TestGraphDatabaseFactory
     {
         private LifeSupport life;
+        private volatile boolean failFlush;
 
         @Override
         protected GraphDatabaseService newEmbeddedDatabase( File storeDir, Config config,
@@ -102,10 +110,22 @@ class DatabaseShutdownTest
                             return new DelegatingPageCache( pageCache )
                             {
                                 @Override
-                                public void flushAndForce( IOLimiter ioLimiter ) throws IOException
+                                public PagedFile map( File file, int pageSize, OpenOption... openOptions ) throws IOException
                                 {
-                                    // this is simulating a failing check pointing on shutdown
-                                    throw new IOException( "Boom!" );
+                                    PagedFile pagedFile = super.map( file, pageSize, openOptions );
+                                    return new DelegatingPagedFile( pagedFile )
+                                    {
+                                        @Override
+                                        public void flushAndForce( IOLimiter limiter ) throws IOException
+                                        {
+                                            if ( failFlush )
+                                            {
+                                                // this is simulating a failing check pointing on shutdown
+                                                throw new IOException( "Boom!" );
+                                            }
+                                            super.flushAndForce( limiter );
+                                        }
+                                    };
                                 }
                             };
                         }
@@ -119,6 +139,11 @@ class DatabaseShutdownTest
         LifecycleStatus getNeoStoreDataSourceStatus()
         {
             return life.getStatus();
+        }
+
+        public void setFailFlush( boolean failFlush )
+        {
+            this.failFlush = failFlush;
         }
     }
 
