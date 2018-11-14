@@ -340,12 +340,6 @@ public class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
-            {
-                rel = rel( relationshipId, startNodeId, endNodeId, typeId );
-            }
-
-            @Override
             public boolean hasProperties()
             {
                 throw new UnsupportedOperationException( "not implemented" );

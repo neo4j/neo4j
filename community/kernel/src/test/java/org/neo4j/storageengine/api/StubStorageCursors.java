@@ -566,12 +566,6 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
-        public void visit( long relationshipId, int typeId, long startNodeId, long endNodeId )
-        {
-            throw new UnsupportedOperationException( "Not implemented yet" );
-        }
-
-        @Override
         public boolean next()
         {
             if ( iterator != null )

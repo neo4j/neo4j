@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 /**
  * Shared interface between the two {@link StorageRelationshipScanCursor} and {@link StorageRelationshipTraversalCursor}.
  */
-public interface StorageRelationshipCursor extends RelationshipVisitor<RuntimeException>, StorageEntityCursor
+public interface StorageRelationshipCursor extends StorageEntityCursor
 {
     /**
      * @return relationship type of the relationship this cursor is placed at.
@@ -38,10 +38,4 @@ public interface StorageRelationshipCursor extends RelationshipVisitor<RuntimeEx
      * @return target node of the relationship this cursor is placed at.
      */
     long targetNodeReference();
-
-    /**
-     * Used to visit transaction state, for simplifying implementation of higher-level cursor that consider transaction-state.
-     */
-    @Override
-    void visit( long relationshipId, int typeId, long startNodeId, long endNodeId );
 }

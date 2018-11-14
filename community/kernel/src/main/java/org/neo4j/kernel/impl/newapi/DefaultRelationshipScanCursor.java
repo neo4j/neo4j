@@ -65,10 +65,17 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         // Check tx state
         boolean hasChanges = hasChanges();
 
-        if ( hasChanges && addedRelationships.hasNext() )
+        if ( hasChanges )
         {
-            read.txState().relationshipVisit( addedRelationships.next(), storeCursor );
-            return true;
+            if ( addedRelationships.hasNext() )
+            {
+                read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
+                return true;
+            }
+            else
+            {
+                currentAddedInTx = NO_ID;
+            }
         }
 
         while ( storeCursor.next() )

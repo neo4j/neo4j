@@ -233,12 +233,32 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
     @Override
     public long neighbourNodeReference()
     {
+        if ( currentAddedInTx != NO_ID )
+        {
+            // Here we compare the source/target nodes from tx-state to the origin node and decide the neighbour node from it
+            long originNodeReference = originNodeReference();
+            if ( txStateSourceNodeReference == originNodeReference )
+            {
+                return txStateTargetNodeReference;
+            }
+            else if ( txStateTargetNodeReference == originNodeReference )
+            {
+                return txStateSourceNodeReference;
+            }
+            else
+            {
+                throw new IllegalStateException( format(
+                        "Relationship[%d] which was added in tx has an origin node [%d] which is neither source [%d] nor target [%d]",
+                        currentAddedInTx, originNodeReference, txStateSourceNodeReference, txStateTargetNodeReference ) );
+            }
+        }
         return storeCursor.neighbourNodeReference();
     }
 
     @Override
     public long originNodeReference()
     {
+        // This will be correct regardless of currentAddedInTx set or not
         return storeCursor.originNodeReference();
     }
 
@@ -268,10 +288,17 @@ class DefaultRelationshipTraversalCursor extends DefaultRelationshipCursor<Stora
         }
 
         // tx-state relationships
-        if ( hasChanges && addedRelationships.hasNext() )
+        if ( hasChanges )
         {
-            read.txState().relationshipVisit( addedRelationships.next(), storeCursor );
-            return true;
+            if ( addedRelationships.hasNext() )
+            {
+                read.txState().relationshipVisit( addedRelationships.next(), relationshipTxStateDataVisitor );
+                return true;
+            }
+            else
+            {
+                currentAddedInTx = NO_ID;
+            }
         }
 
         while ( storeCursor.next() )
