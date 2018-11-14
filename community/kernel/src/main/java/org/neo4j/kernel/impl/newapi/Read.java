@@ -50,6 +50,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.IndexProgressor;
@@ -95,6 +96,10 @@ abstract class Read implements TxStateHolder,
             cursor.close();
             return;
         }
+        if ( index.schema().entityType() != EntityType.NODE )
+        {
+            throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " + index );
+        }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
         IndexReader reader = indexReader( index, false );
@@ -112,6 +117,10 @@ abstract class Read implements TxStateHolder,
         {
             cursor.close();
             return;
+        }
+        if ( index.schema().entityType() != EntityType.RELATIONSHIP )
+        {
+            throw new IndexNotApplicableKernelException( "Relationship index seek can only be performed on node indexes: " + index );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;

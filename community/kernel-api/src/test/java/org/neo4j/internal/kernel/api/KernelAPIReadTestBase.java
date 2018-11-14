@@ -54,6 +54,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected SchemaRead schemaRead;
     protected Token token;
     protected ManagedTestCursors cursors;
+
     @Rule
     public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( () -> cursors );
 
@@ -109,7 +110,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected Transaction beginTransaction() throws TransactionFailureException
     {
         Kernel kernel = testSupport.kernelToTest();
-        return KernelAPIReadTestBase.this.beginTransaction( kernel );
+        return beginTransaction( kernel );
     }
 
     private static Transaction beginTransaction( Kernel kernel ) throws TransactionFailureException
