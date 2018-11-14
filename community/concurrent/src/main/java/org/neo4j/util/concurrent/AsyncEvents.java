@@ -25,16 +25,16 @@ import java.util.function.Consumer;
 
 /**
  * {@code AsyncEvents} is a mechanism for queueing up events to be processed asynchronously in a background thread.
- *
+ * <p>
  * The {@code AsyncEvents} object implements {@link Runnable}, so it can be passed to a thread pool, or given to a
  * dedicated thread. The runnable will then occupy a thread and dedicate it to background processing of events, until
  * the {@code AsyncEvents} is {@link AsyncEvents#shutdown()}.
- *
+ * <p>
  * If events are sent to an {@code AsyncEvents} that has been shut down, then those events will be processed in the
  * foreground as a fall-back.
- *
+ * <p>
  * Note, however, that no events are processed until the background thread is started.
- *
+ * <p>
  * The {@code AsyncEvents} is given a {@link Consumer} of the specified event type upon construction, and will use it
  * for doing the actual processing of events once they have been collected.
  *
@@ -46,7 +46,9 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
     {
         void eventCount( long count );
 
-        Monitor NONE = count -> {};
+        Monitor NONE = count ->
+        {
+        };
     }
 
     // TODO use VarHandles in Java 9
@@ -165,7 +167,7 @@ public class AsyncEvents<T extends AsyncEvent> implements AsyncEventSender<T>, R
 
     /**
      * Initiate the shut down process of this {@code AsyncEvents} instance.
-     *
+     * <p>
      * This call does not block or otherwise wait for the background thread to terminate.
      */
     public void shutdown()

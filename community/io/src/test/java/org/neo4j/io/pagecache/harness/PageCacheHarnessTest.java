@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.harness;
 
 import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.util.concurrent.TimeUnit;
@@ -36,6 +37,11 @@ import org.neo4j.io.pagecache.randomharness.Phase;
 import org.neo4j.io.pagecache.randomharness.RandomPageCacheTestHarness;
 import org.neo4j.io.pagecache.randomharness.RecordFormat;
 import org.neo4j.io.pagecache.randomharness.StandardRecordFormat;
+import org.neo4j.resources.Profiler;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.ProfilerExtension;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 
 import static java.time.Duration.ofMillis;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -51,8 +57,15 @@ import static org.neo4j.io.pagecache.randomharness.Command.UnmapFile;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteMulti;
 import static org.neo4j.io.pagecache.randomharness.Command.WriteRecord;
 
+@ExtendWith( {TestDirectoryExtension.class, ProfilerExtension.class} )
 abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSupport<T>
 {
+    @Inject
+    public TestDirectory directory;
+
+    @Inject
+    public Profiler profiler;
+
     @RepeatedTest( 10 )
     void readsAndWritesMustBeMutuallyConsistent()
     {
@@ -90,12 +103,13 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
                 harness.setCommandCount( 10000 );
                 harness.setRecordFormat( recordFormat );
                 harness.setFileSystem( fs );
+                harness.useProfiler( profiler );
                 harness.disableCommands( FlushCache, FlushFile, MapFile, UnmapFile, WriteRecord, WriteMulti );
                 harness.setPreparation( ( cache, fs, filesTouched ) ->
                 {
                     File file = filesTouched.iterator().next();
                     try ( PagedFile pf = cache.map( file, cache.pageSize() );
-                            PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
+                          PageCursor cursor = pf.io( 0, PF_SHARED_WRITE_LOCK ) )
                     {
                         for ( int pageId = 0; pageId < filePageCount; pageId++ )
                         {
@@ -195,7 +209,7 @@ abstract class PageCacheHarnessTest<T extends PageCache> extends PageCacheTestSu
             for ( File file : filesTouched )
             {
                 try ( PagedFile pf = cache.map( file, cache.pageSize() );
-                        PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
+                      PageCursor cursor = pf.io( 0, PF_SHARED_READ_LOCK ) )
                 {
                     for ( int pageId = 0; pageId < filePageCount && cursor.next(); pageId++ )
                     {

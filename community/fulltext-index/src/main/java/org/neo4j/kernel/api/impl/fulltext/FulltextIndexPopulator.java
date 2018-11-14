@@ -31,10 +31,14 @@ import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
+import org.neo4j.logging.Log;
+import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.schema.IndexSample;
 
 public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<FulltextIndexReader>>
 {
+    static Log TRACE_LOG = NullLog.getInstance();
+
     private final FulltextIndexDescriptor descriptor;
     private final ThrowingAction<IOException> descriptorCreateAction;
 
@@ -67,6 +71,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         {
             for ( IndexEntryUpdate<?> update : updates )
             {
+                TRACE_LOG.debug( "populator add: %s", update );
                 writer.updateDocument( LuceneFulltextDocumentStructure.newTermForChangeOrRemove( update.getEntityId() ), updateAsDocument( update ) );
             }
         }
@@ -110,6 +115,7 @@ public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<F
         @Override
         public void process( IndexEntryUpdate<?> update )
         {
+            TRACE_LOG.debug( "populating updater process: %s", update );
             assert update.indexKey().schema().equals( descriptor.schema() );
             try
             {
