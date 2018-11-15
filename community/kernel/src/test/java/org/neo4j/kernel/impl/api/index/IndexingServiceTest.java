@@ -1070,7 +1070,7 @@ public class IndexingServiceTest
                 ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
     }
 
-    @Test
+    @Test( timeout = 60_000L )
     public void shouldReportCauseOfPopulationFailureIfPopulationFailsDuringRecovery() throws IOException, IndexNotFoundKernelException, InterruptedException
     {
         // given
