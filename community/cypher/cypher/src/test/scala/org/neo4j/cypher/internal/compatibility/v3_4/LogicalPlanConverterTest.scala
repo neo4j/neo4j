@@ -25,26 +25,38 @@ import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.Expre
 import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.frontend.{v3_4 => frontendV3_4}
 import org.neo4j.cypher.internal.ir.{v3_4 => irV3_4}
-import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_4, Solveds => SolvedsV3_4}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_5, Solveds => SolvedsV3_5}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_4}
+import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Solveds => SolvedsV3_4}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_5}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Solveds => SolvedsV3_5}
 import org.neo4j.cypher.internal.util.v3_4.attribution.{SequentialIdGen => SequentialIdGenv3_4}
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4, symbols => symbolsV3_4}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4}
+import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilv3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.logical.plans.{ErrorPlan, IndexOrderNone, ProcedureCall}
+import org.neo4j.cypher.internal.v3_5.logical.plans.ErrorPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans.IndexOrderNone
+import org.neo4j.cypher.internal.v3_5.logical.plans.ProcedureCall
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.opencypher.v9_0.expressions.{PathExpression, SemanticDirection}
+import org.opencypher.v9_0.expressions.PathExpression
+import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.util.attribution.{SequentialIdGen => SequentialIdGenv3_5}
-import org.opencypher.v9_0.util.{InputPosition, NonEmptyList, symbols => symbolsv3_5}
-import org.opencypher.v9_0.{ast => astv3_5, expressions => expressionsv3_5, util => utilv3_5}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.NonEmptyList
+import org.opencypher.v9_0.util.{symbols => symbolsv3_5}
+import org.opencypher.v9_0.{ast => astv3_5}
+import org.opencypher.v9_0.{util => utilv3_5}
+import org.opencypher.v9_0.{expressions => expressionsv3_5}
 import org.reflections.Reflections
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
-class LogicalPlanConverterTest extends FunSuite with Matchers {
+class LogicalPlanConverterTest extends CypherFunSuite {
 
   private implicit val idGen3_4 = new SequentialIdGenv3_4()
   private implicit val idGen3_5 = new SequentialIdGenv3_5()
