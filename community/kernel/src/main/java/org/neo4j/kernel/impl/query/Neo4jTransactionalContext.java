@@ -19,11 +19,8 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
@@ -33,23 +30,18 @@ import org.neo4j.kernel.api.ResourceTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 
 public class Neo4jTransactionalContext implements TransactionalContext
 {
     private final GraphDatabaseQueryService graph;
     private final ThreadToStatementContextBridge txBridge;
-    private final PropertyContainerLocker locker;
 
     public final KernelTransaction.Type transactionType;
     public final SecurityContext securityContext;
     private final ExecutingQuery executingQuery;
-    private final Kernel kernel;
     private final ClientConnectionInfo clientInfo;
 
     /**
@@ -67,16 +59,13 @@ public class Neo4jTransactionalContext implements TransactionalContext
     public Neo4jTransactionalContext(
             GraphDatabaseQueryService graph,
             ThreadToStatementContextBridge txBridge,
-            PropertyContainerLocker locker,
             InternalTransaction initialTransaction,
             Statement initialStatement,
-            ExecutingQuery executingQuery,
-            Kernel kernel
+            ExecutingQuery executingQuery
     )
     {
         this.graph = graph;
         this.txBridge = txBridge;
-        this.locker = locker;
         this.transactionType = initialTransaction.transactionType();
         this.securityContext = initialTransaction.securityContext();
         this.clientInfo = initialTransaction.clientInfo();
@@ -85,7 +74,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
         this.transaction = initialTransaction;
         this.kernelTransaction = txBridge.getKernelTransactionBoundToThisThread( true );
         this.statement = initialStatement;
-        this.kernel = kernel;
     }
 
     @Override
@@ -273,18 +261,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
     }
 
     @Override
-    public TxStateHolder stateView()
-    {
-        return (KernelTransactionImplementation) kernelTransaction();
-    }
-
-    @Override
-    public Lock acquireWriteLock( PropertyContainer p )
-    {
-        return locker.exclusiveLock( kernelTransaction(), p );
-    }
-
-    @Override
     public KernelTransaction.Revertable restrictCurrentTransaction( SecurityContext context )
     {
         return transaction.overrideWith( context );
@@ -316,16 +292,6 @@ public class Neo4jTransactionalContext implements TransactionalContext
         pageHits += stats.pageHits();
         pageMisses += stats.pageFaults();
     }
-
-//    public Neo4jTransactionalContext copyFrom( GraphDatabaseQueryService graph,
-//            ThreadToStatementContextBridge txBridge, PropertyContainerLocker locker,
-//            InternalTransaction initialTransaction,
-//            Statement initialStatement,
-//            ExecutingQuery executingQuery )
-//    {
-//        return new Neo4jTransactionalContext( graph, txBridge, locker, initialTransaction,
-//                initialStatement, executingQuery, kernel );
-//    }
 
     interface Creator
     {

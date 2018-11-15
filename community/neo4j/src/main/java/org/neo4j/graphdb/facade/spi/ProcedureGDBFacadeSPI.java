@@ -28,7 +28,6 @@ import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
-import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
@@ -145,12 +144,6 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     public GraphDatabaseQueryService queryService()
     {
         return resolver.resolveDependency( GraphDatabaseQueryService.class );
-    }
-
-    @Override
-    public Kernel kernel()
-    {
-        return resolver.resolveDependency( Kernel.class );
     }
 
     @Override

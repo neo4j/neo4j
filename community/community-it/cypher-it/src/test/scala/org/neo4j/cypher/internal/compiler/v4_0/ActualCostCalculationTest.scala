@@ -37,7 +37,7 @@ import org.neo4j.graphdb._
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
@@ -230,7 +230,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
     runSimulation(graph, Seq(pipe))
 
   private def transactionContext(graph: GraphDatabaseQueryService, tx: InternalTransaction) = {
-    val contextFactory = Neo4jTransactionalContextFactory.create(graph, new PropertyContainerLocker)
+    val contextFactory = Neo4jTransactionalContextFactory.create(graph)
     contextFactory.newContext( tx, "X", EMPTY_MAP)
   }
 

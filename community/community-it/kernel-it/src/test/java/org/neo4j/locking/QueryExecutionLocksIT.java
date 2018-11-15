@@ -32,9 +32,7 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -64,12 +62,10 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.dbms.DbmsOperations;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.ClockContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -201,8 +197,7 @@ public class QueryExecutionLocksIT
 
     private static TransactionalContext createTransactionContext( GraphDatabaseQueryService graph, InternalTransaction tx, String query )
     {
-        PropertyContainerLocker locker = new PropertyContainerLocker();
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( graph, locker );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( graph );
         return contextFactory.newContext( tx, query, EMPTY_MAP );
     }
 
@@ -314,18 +309,6 @@ public class QueryExecutionLocksIT
         public void check()
         {
             delegate.check();
-        }
-
-        @Override
-        public TxStateHolder stateView()
-        {
-            return delegate.stateView();
-        }
-
-        @Override
-        public Lock acquireWriteLock( PropertyContainer p )
-        {
-            return delegate.acquireWriteLock( p );
         }
 
         @Override

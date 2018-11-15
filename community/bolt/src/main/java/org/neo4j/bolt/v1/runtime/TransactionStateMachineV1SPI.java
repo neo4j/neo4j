@@ -43,7 +43,6 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -59,8 +58,6 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 
 public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
-    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-
     private final BoltChannel boltChannel;
     private final ThreadToStatementContextBridge txBridge;
     private final QueryExecutionEngine queryExecutionEngine;
@@ -163,7 +160,7 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private static TransactionalContextFactory newTransactionalContextFactory( DatabaseContext databaseContext )
     {
         GraphDatabaseQueryService queryService = resolveDependency( databaseContext, GraphDatabaseQueryService.class );
-        return Neo4jTransactionalContextFactory.create( queryService, locker );
+        return Neo4jTransactionalContextFactory.create( queryService );
     }
 
     private static <T> T resolveDependency( DatabaseContext databaseContext, Class<T> clazz )

@@ -28,7 +28,6 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -38,8 +37,6 @@ import org.neo4j.server.rest.web.HttpConnectionInfoFactory;
 
 public class TransitionalPeriodTransactionMessContainer
 {
-    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
-
     private final GraphDatabaseFacade db;
     private final ThreadToStatementContextBridge txBridge;
 
@@ -68,7 +65,7 @@ public class TransitionalPeriodTransactionMessContainer
             String query,
             Map<String, Object> queryParameters )
     {
-        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service, locker );
+        TransactionalContextFactory contextFactory = Neo4jTransactionalContextFactory.create( service );
         ClientConnectionInfo clientConnection = HttpConnectionInfoFactory.create( request );
         InternalTransaction transaction = service.beginTransaction( type, loginContext, clientConnection );
         return contextFactory.newContext( transaction, query, ValueUtils.asMapValue( queryParameters ) );

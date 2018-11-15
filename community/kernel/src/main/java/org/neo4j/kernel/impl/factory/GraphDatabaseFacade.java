@@ -177,8 +177,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         URL validateURLAccess( URL url ) throws URLAccessValidationError;
 
         GraphDatabaseQueryService queryService();
-
-        Kernel kernel();
     }
 
     public GraphDatabaseFacade()
@@ -195,7 +193,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.tokenHolders = tokenHolders;
-        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge, locker );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge );
     }
 
     @Override

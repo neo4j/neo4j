@@ -28,7 +28,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.TransactionalContext;
@@ -48,8 +47,6 @@ public class CypherExecutor extends LifecycleAdapter
     private final Log log;
     private ExecutionEngine executionEngine;
     private TransactionalContextFactory contextFactory;
-
-    private static final PropertyContainerLocker locker = new PropertyContainerLocker();
     private GraphDatabaseQueryService service;
 
     public CypherExecutor( Database database, LogProvider logProvider )
@@ -69,7 +66,7 @@ public class CypherExecutor extends LifecycleAdapter
         DependencyResolver resolver = database.getGraph().getDependencyResolver();
         this.executionEngine = (ExecutionEngine) resolver.resolveDependency( QueryExecutionEngine.class );
         this.service = resolver.resolveDependency( GraphDatabaseQueryService.class );
-        this.contextFactory = Neo4jTransactionalContextFactory.create( this.service, locker );
+        this.contextFactory = Neo4jTransactionalContextFactory.create( this.service );
     }
 
     @Override

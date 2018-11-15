@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.mockito.{ArgumentMatchers, Mockito}
-import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext}
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
+import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext}
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
 import org.neo4j.kernel.GraphDatabaseQueryService
-import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
+import org.neo4j.kernel.impl.coreapi.InternalTransaction
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.kernel.impl.util.BaseToObjectValueWriter
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
@@ -38,8 +38,6 @@ import org.neo4j.values.storable.CoordinateReferenceSystem
 import org.neo4j.values.virtual.MapValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.scalatest.mock.MockitoSugar
-
-import scala.collection.mutable
 
 object QueryStateHelper extends MockitoSugar {
   def empty: QueryState = emptyWith()
@@ -55,14 +53,12 @@ object QueryStateHelper extends MockitoSugar {
                ):QueryState =
     new QueryState(query, resources, params, expressionCursors, queryIndexes, decorator, initialContext = initialContext)
 
-  private val locker: PropertyContainerLocker = new PropertyContainerLocker
-
   def queryStateFrom(db: GraphDatabaseQueryService,
                      tx: InternalTransaction,
                      params: MapValue = EMPTY_MAP
                     ): QueryState = {
     val searchMonitor = new KernelMonitors().newMonitor(classOf[IndexSearchMonitor])
-    val contextFactory = Neo4jTransactionalContextFactory.create(db, locker)
+    val contextFactory = Neo4jTransactionalContextFactory.create(db)
     val transactionalContext = TransactionalContextWrapper(contextFactory.newContext(tx, "X", EMPTY_MAP))
     val queryContext = new TransactionBoundQueryContext(transactionalContext)(searchMonitor)
     emptyWith(db = db,
