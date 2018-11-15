@@ -78,11 +78,11 @@ import static org.neo4j.function.Predicates.alwaysTrue;
 import static org.neo4j.function.Predicates.in;
 import static org.neo4j.helpers.collection.Iterables.asUniqueSet;
 import static org.neo4j.helpers.collection.Iterators.filter;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.impl.api.index.IndexUpdateMode.ONLINE;
 import static org.neo4j.kernel.impl.index.schema.ValueCreatorUtil.countUniqueValues;
-import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.of;
 
 /**

@@ -34,6 +34,7 @@ import java.util.List;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -45,7 +46,6 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.values.storable.Value;
 

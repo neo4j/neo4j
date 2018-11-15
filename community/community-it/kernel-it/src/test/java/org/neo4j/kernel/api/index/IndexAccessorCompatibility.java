@@ -49,7 +49,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 public abstract class IndexAccessorCompatibility extends IndexProviderCompatibilityTestSuite.Compatibility
 {

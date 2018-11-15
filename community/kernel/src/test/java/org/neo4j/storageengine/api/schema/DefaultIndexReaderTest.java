@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 
 class DefaultIndexReaderTest
 {

@@ -74,6 +74,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier.EMPTY;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
@@ -81,7 +82,6 @@ import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.forSchema;
-import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 import static org.neo4j.values.storable.Values.longValue;
 
 @ExtendWith( TestDirectoryExtension.class )

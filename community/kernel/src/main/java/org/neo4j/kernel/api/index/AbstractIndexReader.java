@@ -21,9 +21,9 @@ package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.QueryContext;
 
 public abstract class AbstractIndexReader implements IndexReader
 {

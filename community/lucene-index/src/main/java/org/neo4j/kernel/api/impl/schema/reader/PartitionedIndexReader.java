@@ -29,6 +29,7 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
@@ -40,7 +41,6 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 
 /**

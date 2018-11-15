@@ -72,6 +72,7 @@ import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
 import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
@@ -81,7 +82,6 @@ import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.forSchema;
-import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 import static org.neo4j.test.Race.throwing;
 
 @RunWith( Parameterized.class )

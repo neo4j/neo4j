@@ -27,18 +27,18 @@ import org.neo4j.graphdb.Resource;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexQuery.ExistsPredicate;
+import org.neo4j.internal.kernel.api.QueryContext;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.schema.BridgingIndexProgressor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.IndexSampler;
-import org.neo4j.storageengine.api.schema.QueryContext;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
+import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
-import static org.neo4j.storageengine.api.schema.QueryContext.NULL_CONTEXT;
 
 class TemporalIndexReader extends TemporalIndexCache<TemporalIndexPartReader<?>> implements IndexReader
 {
