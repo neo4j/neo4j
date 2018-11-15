@@ -74,6 +74,7 @@ import org.neo4j.kernel.api.schema.constraints.NodeExistenceConstraintDescriptor
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 import org.neo4j.storageengine.api.schema.SchemaRule;
@@ -201,7 +202,9 @@ public class SchemaImpl implements Schema
             case ONLINE:
                 return;
             case FAILED:
-                throw new IllegalStateException( "Index entered a FAILED state. Please see database logs." );
+                String cause = getIndexFailure( index );
+                String message = IndexPopulationFailure.appendCauseOfFailure( "Index entered a FAILED state. Please see database logs.", cause );
+                throw new IllegalStateException( message );
             default:
                 try
                 {
