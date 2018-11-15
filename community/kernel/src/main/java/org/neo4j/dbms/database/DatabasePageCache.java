@@ -35,6 +35,12 @@ import org.neo4j.io.pagecache.PagedFile;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Wrapper around global page cache for an individual database. Abstracts the knowledge that database can have about other databases mapped files
+ * by restricting access to files that mapped by other databases.
+ * Any lookup or attempts to flush/close page file or cache itself will influence only files that were mapped by particular database over this wrapper.
+ * Database specific page cache lifecycle tight to a individual database and it will be closed as soon as the particular database will be closed.
+ */
 public class DatabasePageCache implements PageCache
 {
     private final PageCache globalPageCache;
