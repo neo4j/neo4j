@@ -22,7 +22,6 @@ package org.neo4j.io.pagecache.impl.muninn;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.channels.ClosedChannelException;
 import java.nio.file.OpenOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
@@ -653,19 +652,6 @@ public class MuninnPageCache implements PageCache
         {
             FlushEventOpportunity flushOpportunity = fileFlush.flushEventOpportunity();
             muninnPagedFile.flushAndForceInternal( flushOpportunity, false, limiter );
-        }
-        catch ( ClosedChannelException e )
-        {
-            if ( muninnPagedFile.getRefCount() > 0 )
-            {
-                // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
-                // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
-                // this failure.
-                throw e;
-            }
-            // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
-            // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
-            // really matter how that happened. We'll ignore this exception.
         }
     }
 

@@ -353,8 +353,17 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         }
         catch ( ClosedChannelException e )
         {
-            e.addSuppressed( closeStackTrace );
-            throw e;
+            if ( getRefCount() > 0 )
+            {
+                // The file is not supposed to be closed, since we have a positive ref-count, yet we got a
+                // ClosedChannelException anyway? It's an odd situation, so let's tell the outside world about
+                // this failure.
+                e.addSuppressed( closeStackTrace );
+                throw e;
+            }
+            // Otherwise: The file was closed while we were trying to flush it. Since unmapping implies a flush
+            // anyway, we can safely assume that this is not a problem. The file was flushed, and it doesn't
+            // really matter how that happened. We'll ignore this exception.
         }
     }
 
