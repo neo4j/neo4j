@@ -40,7 +40,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 class FulltextIndexSettings
 {
@@ -49,7 +49,7 @@ class FulltextIndexSettings
     static final String INDEX_CONFIG_EVENTUALLY_CONSISTENT = "eventually_consistent";
     private static final String INDEX_CONFIG_PROPERTY_NAMES = "propertyNames";
 
-    static FulltextIndexDescriptor readOrInitialiseDescriptor( StoreIndexDescriptor descriptor, String defaultAnalyzerName,
+    static FulltextIndexDescriptor readOrInitialiseDescriptor( StorageIndexReference descriptor, String defaultAnalyzerName,
             TokenHolder propertyKeyTokenHolder, PartitionedIndexStorage indexStorage, FileSystemAbstraction fileSystem )
     {
         Properties indexConfiguration = new Properties();
@@ -116,7 +116,7 @@ class FulltextIndexSettings
         settings.getProperty( INDEX_CONFIG_EVENTUALLY_CONSISTENT, Boolean.toString( descriptor.isEventuallyConsistent() ) );
         settings.setProperty( INDEX_CONFIG_ANALYZER, descriptor.analyzerName() );
         settings.setProperty( INDEX_CONFIG_PROPERTY_NAMES, Arrays.stream( descriptor.propertyNames() ).collect( Collectors.joining( ", ", "[", "]" )) );
-        settings.setProperty( "_propertyIds", Arrays.toString( descriptor.properties() ) );
+        settings.setProperty( "_propertyIds", Arrays.toString( descriptor.schema().getPropertyIds() ) );
         settings.setProperty( "_name", descriptor.name() );
         settings.setProperty( "_schema_entityType", descriptor.schema().entityType().name() );
         settings.setProperty( "_schema_entityTokenIds", Arrays.toString( descriptor.schema().getEntityTokenIds() ) );

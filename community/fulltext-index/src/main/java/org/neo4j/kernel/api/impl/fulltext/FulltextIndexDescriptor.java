@@ -21,18 +21,21 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.apache.lucene.analysis.Analyzer;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-class FulltextIndexDescriptor extends StoreIndexDescriptor
+class FulltextIndexDescriptor implements StorageIndexReference
 {
+    private final StorageIndexReference descriptor;
     private final String[] propertyNames;
     private final Analyzer analyzer;
     private final String analyzerName;
     private final boolean eventuallyConsistent;
 
-    FulltextIndexDescriptor( StoreIndexDescriptor descriptor, String[] propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
+    FulltextIndexDescriptor( StorageIndexReference descriptor, String[] propertyNames, Analyzer analyzer, String analyzerName, boolean eventuallyConsistent )
     {
-        super( descriptor );
+        this.descriptor = descriptor;
         this.propertyNames = propertyNames;
         this.analyzer = analyzer;
         this.analyzerName = analyzerName;
@@ -61,8 +64,38 @@ class FulltextIndexDescriptor extends StoreIndexDescriptor
     }
 
     @Override
+    public boolean isUnique()
+    {
+        return false;
+    }
+
+    @Override
+    public String name()
+    {
+        return descriptor.name();
+    }
+
+    @Override
+    public String userDescription( TokenNameLookup tokenNameLookup )
+    {
+        return descriptor.userDescription( tokenNameLookup );
+    }
+
+    @Override
     public boolean isFulltextIndex()
     {
         return true;
+    }
+
+    @Override
+    public long indexReference()
+    {
+        return descriptor.indexReference();
+    }
+
+    @Override
+    public SchemaDescriptor schema()
+    {
+        return descriptor.schema();
     }
 }

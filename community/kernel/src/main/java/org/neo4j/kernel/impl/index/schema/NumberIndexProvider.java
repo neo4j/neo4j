@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
@@ -52,34 +52,26 @@ public class NumberIndexProvider extends NativeIndexProvider<NumberIndexKey,Nati
     }
 
     @Override
-    NumberLayout layout( StoreIndexDescriptor descriptor, File storeFile )
+    NumberLayout layout( StorageIndexReference descriptor, File storeFile )
     {
         // split like this due to legacy reasons, there are old stores out there with these different identifiers
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            return new NumberLayoutNonUnique();
-        case UNIQUE:
-            return new NumberLayoutUnique();
-        default:
-            throw new IllegalArgumentException( "Unknown index type " + descriptor.type() );
-        }
+        return descriptor.isUnique() ? new NumberLayoutUnique() : new NumberLayoutNonUnique();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, NumberLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexPopulator newIndexPopulator( File storeFile, NumberLayout layout, StorageIndexReference descriptor )
     {
         return new WorkSyncedNativeIndexPopulator<>( new NumberIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor ) );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, NumberLayout layout, StoreIndexDescriptor descriptor ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, NumberLayout layout, StorageIndexReference descriptor ) throws IOException
     {
         return new NumberIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         return CAPABILITY;
     }

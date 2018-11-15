@@ -38,4 +38,8 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
      * @return a user friendly description of what this index indexes.
      */
     String userDescription( TokenNameLookup tokenNameLookup );
+
+    boolean isFulltextIndex();
+
+    boolean isEventuallyConsistent();
 }

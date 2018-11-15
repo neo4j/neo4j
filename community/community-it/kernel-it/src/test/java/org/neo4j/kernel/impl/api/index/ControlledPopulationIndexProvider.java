@@ -32,10 +32,10 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.DoubleLatch;
 
 import static org.mockito.Mockito.mock;
@@ -89,14 +89,14 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         populatorCallCount.incrementAndGet();
         return mockedPopulator;
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor indexConfig, IndexSamplingConfig samplingConfig )
+    public IndexAccessor getOnlineAccessor( StorageIndexReference indexConfig, IndexSamplingConfig samplingConfig )
     {
         writerCallCount.incrementAndGet();
         writerLatch.countDown();
@@ -104,13 +104,13 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StorageIndexReference descriptor )
     {
         return initialIndexState;
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         return IndexCapability.NO_CAPABILITY;
     }
@@ -121,7 +121,7 @@ public class ControlledPopulationIndexProvider extends IndexProvider
     }
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
         throw new IllegalStateException();
     }

@@ -41,8 +41,8 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
@@ -52,7 +52,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
 {
     private final IndexDescriptor descriptor;
 
-    TemporalIndexAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, PageCache pageCache, FileSystemAbstraction fs,
+    TemporalIndexAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, PageCache pageCache, FileSystemAbstraction fs,
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, TemporalIndexFiles temporalIndexFiles ) throws IOException
     {
         super( new PartFactory( pageCache, fs, recoveryCleanupWorkCollector, monitor, descriptor, samplingConfig, temporalIndexFiles ) );
@@ -171,7 +171,7 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final IndexDescriptor descriptor;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, TemporalIndexFiles.FileLayout<KEY> fileLayout,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor )
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor )
         {
             super( pageCache, fs, fileLayout.indexFile, fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.layout = fileLayout.layout;
@@ -193,12 +193,12 @@ class TemporalIndexAccessor extends TemporalIndexCache<TemporalIndexAccessor.Par
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
-        private final StoreIndexDescriptor descriptor;
+        private final StorageIndexReference descriptor;
         private final IndexSamplingConfig samplingConfig;
         private final TemporalIndexFiles temporalIndexFiles;
 
         PartFactory( PageCache pageCache, FileSystemAbstraction fs, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor,
-                StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles )
+                StorageIndexReference descriptor, IndexSamplingConfig samplingConfig, TemporalIndexFiles temporalIndexFiles )
         {
             this.pageCache = pageCache;
             this.fs = fs;

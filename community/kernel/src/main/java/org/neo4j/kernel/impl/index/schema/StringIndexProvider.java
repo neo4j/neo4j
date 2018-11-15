@@ -34,7 +34,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
@@ -54,25 +54,25 @@ public class StringIndexProvider extends NativeIndexProvider<StringIndexKey,Nati
     }
 
     @Override
-    StringLayout layout( StoreIndexDescriptor descriptor, File storeFile )
+    StringLayout layout( StorageIndexReference descriptor, File storeFile )
     {
         return new StringLayout();
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexPopulator newIndexPopulator( File storeFile, StringLayout layout, StorageIndexReference descriptor )
     {
         return new WorkSyncedNativeIndexPopulator<>( new StringIndexPopulator( pageCache, fs, storeFile, layout, monitor, descriptor ) );
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, StringLayout layout, StoreIndexDescriptor descriptor ) throws IOException
+    protected IndexAccessor newIndexAccessor( File storeFile, StringLayout layout, StorageIndexReference descriptor ) throws IOException
     {
         return new StringIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor );
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         return CAPABILITY;
     }

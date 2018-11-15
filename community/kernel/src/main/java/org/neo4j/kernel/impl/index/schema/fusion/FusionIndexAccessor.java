@@ -33,19 +33,19 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.Value;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
 
 class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements IndexAccessor
 {
-    private final StoreIndexDescriptor descriptor;
+    private final StorageIndexReference descriptor;
     private final DropAction dropAction;
 
     FusionIndexAccessor( SlotSelector slotSelector,
             InstanceSelector<IndexAccessor> instanceSelector,
-            StoreIndexDescriptor descriptor,
+            StorageIndexReference descriptor,
             DropAction dropAction )
     {
         super( slotSelector, instanceSelector );
@@ -57,7 +57,7 @@ class FusionIndexAccessor extends FusionIndexBase<IndexAccessor> implements Inde
     public void drop()
     {
         instanceSelector.forAll( IndexAccessor::drop );
-        dropAction.drop( descriptor.getId() );
+        dropAction.drop( descriptor.indexReference() );
     }
 
     @Override

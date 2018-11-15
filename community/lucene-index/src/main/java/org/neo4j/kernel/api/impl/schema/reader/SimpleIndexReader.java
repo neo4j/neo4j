@@ -43,15 +43,14 @@ import org.neo4j.kernel.api.impl.schema.sampler.NonUniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.impl.schema.sampler.UniqueLuceneIndexSampler;
 import org.neo4j.kernel.api.index.AbstractIndexReader;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.api.index.IndexSampler;
+import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.IndexQuery.IndexQueryType.exact;
 import static org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure.NODE_ID_KEY;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type.UNIQUE;
 
 /**
  * Schema index reader that is able to read/sample a single partition of a partitioned Lucene index.
@@ -81,7 +80,7 @@ public class SimpleIndexReader extends AbstractIndexReader
     public IndexSampler createSampler()
     {
         TaskControl taskControl = taskCoordinator.newInstance();
-        if ( descriptor.type() == UNIQUE )
+        if ( descriptor.isUnique() )
         {
             return new UniqueLuceneIndexSampler( getIndexSearcher(), taskControl );
         }

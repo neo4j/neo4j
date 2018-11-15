@@ -84,7 +84,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceType;
@@ -455,7 +454,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     {
         try ( DefaultNodeValueIndexCursor valueCursor = cursors.allocateNodeValueIndexCursor() )
         {
-            IndexDescriptor schemaIndexDescriptor = constraint.ownedIndexDescriptor();
+            IndexReference schemaIndexDescriptor = constraint.ownedIndexDescriptor();
             assertIndexOnline( schemaIndexDescriptor );
             int labelId = schemaIndexDescriptor.schema().keyId();
 
@@ -479,7 +478,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private void assertIndexOnline( IndexDescriptor descriptor )
+    private void assertIndexOnline( IndexReference descriptor )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         if ( allStoreHolder.indexGetState( descriptor ) != InternalIndexState.ONLINE )
@@ -931,16 +930,16 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
+        IndexReference index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
         ktx.txState().indexDoAdd( index );
         return index;
     }
 
     // Note: this will be sneakily executed by an internal transaction, so no additional locking is required.
-    public IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider )
+    public IndexReference indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexDescriptor index =
+        IndexReference index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
                         Optional.empty(),
                         providerDescriptor );

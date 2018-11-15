@@ -30,12 +30,11 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.LuceneIndexValueValidator;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 public class LuceneIndexAccessor extends AbstractLuceneIndexAccessor<IndexReader,SchemaIndex>
 {
-
     public LuceneIndexAccessor( SchemaIndex luceneIndex, IndexDescriptor descriptor )
     {
         super( luceneIndex, descriptor );

@@ -34,7 +34,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_READER;
 
@@ -44,14 +44,14 @@ abstract class NativeIndex<KEY extends NativeIndexKey<KEY>, VALUE extends Native
     final File storeFile;
     final IndexLayout<KEY,VALUE> layout;
     final FileSystemAbstraction fileSystem;
-    final StoreIndexDescriptor descriptor;
+    final StorageIndexReference descriptor;
     private final IndexProvider.Monitor monitor;
     private final OpenOption[] openOptions;
 
     protected GBPTree<KEY,VALUE> tree;
 
     NativeIndex( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, OpenOption... openOptions )
+            StorageIndexReference descriptor, OpenOption... openOptions )
     {
         this.pageCache = pageCache;
         this.storeFile = storeFile;

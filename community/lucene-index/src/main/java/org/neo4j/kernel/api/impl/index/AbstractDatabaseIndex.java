@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 /**
  * This class collects the common features of {@link ReadOnlyAbstractDatabaseIndex} and {@link WritableAbstractDatabaseIndex}.

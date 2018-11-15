@@ -33,11 +33,11 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Value;
@@ -48,7 +48,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combi
 
 class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopulator<SpatialIndexKey,NativeIndexValue>> implements IndexPopulator
 {
-    SpatialIndexPopulator( StoreIndexDescriptor descriptor, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
+    SpatialIndexPopulator( StorageIndexReference descriptor, SpatialIndexFiles spatialIndexFiles, PageCache pageCache,
             FileSystemAbstraction fs, IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
     {
         super( new PartFactory( pageCache, fs, spatialIndexFiles, descriptor, monitor, configuration ) );
@@ -149,7 +149,7 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         private final SpaceFillingCurveSettings settings;
 
         PartPopulator( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout, IndexProvider.Monitor monitor,
-                StoreIndexDescriptor descriptor, SpaceFillingCurveConfiguration configuration )
+                StorageIndexReference descriptor, SpaceFillingCurveConfiguration configuration )
         {
             super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
             this.configuration = configuration;
@@ -202,11 +202,11 @@ class SpatialIndexPopulator extends SpatialIndexCache<WorkSyncedNativeIndexPopul
         private final PageCache pageCache;
         private final FileSystemAbstraction fs;
         private final SpatialIndexFiles spatialIndexFiles;
-        private final StoreIndexDescriptor descriptor;
+        private final StorageIndexReference descriptor;
         private final IndexProvider.Monitor monitor;
         private final SpaceFillingCurveConfiguration configuration;
 
-        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, StoreIndexDescriptor descriptor,
+        PartFactory( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles spatialIndexFiles, StorageIndexReference descriptor,
                 IndexProvider.Monitor monitor, SpaceFillingCurveConfiguration configuration )
         {
             this.pageCache = pageCache;

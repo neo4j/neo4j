@@ -21,13 +21,11 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
 import static java.lang.String.format;
-import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 /**
@@ -62,18 +60,6 @@ public class IndexEntryConflictException extends Exception
         this.existingNodeId = existingNodeId;
         this.addedNodeId = addedNodeId;
         this.propertyValues = propertyValues;
-    }
-
-    /**
-     * Use this method in cases where {@link org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException}
-     * was caught but it should not have been allowed to be thrown in the first place.
-     * Typically where the index we performed an operation on is not a unique index.
-     */
-    public RuntimeException notAllowed( IndexDescriptor descriptor )
-    {
-        return new IllegalStateException( String.format(
-                "Index for (%s) should not require unique values.",
-                descriptor.userDescription( idTokenNameLookup ) ), this );
     }
 
     public String evidenceMessage( TokenNameLookup tokenNameLookup, SchemaDescriptor schema )

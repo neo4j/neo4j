@@ -35,8 +35,8 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueCategory;
 
 public class TemporalIndexProvider extends IndexProvider
@@ -64,7 +64,7 @@ public class TemporalIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
@@ -75,14 +75,14 @@ public class TemporalIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         TemporalIndexFiles files = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
         return new TemporalIndexAccessor( descriptor, samplingConfig, pageCache, fs, recoveryCleanupWorkCollector, monitor, files );
     }
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
 
@@ -101,11 +101,11 @@ public class TemporalIndexProvider extends IndexProvider
         {
             throw new RuntimeException( e );
         }
-        throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
+        throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
     }
 
     @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StorageIndexReference descriptor )
     {
         TemporalIndexFiles temporalIndexFiles = new TemporalIndexFiles( directoryStructure(), descriptor, fs );
 
@@ -134,7 +134,7 @@ public class TemporalIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         return CAPABILITY;
     }

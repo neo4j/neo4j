@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSett
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettings;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsReader;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.ValueCategory;
@@ -133,11 +133,11 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    GenericLayout layout( StoreIndexDescriptor descriptor, File storeFile )
+    GenericLayout layout( StorageIndexReference descriptor, File storeFile )
     {
         try
         {
-            int numberOfSlots = descriptor.properties().length;
+            int numberOfSlots = descriptor.schema().getPropertyIds().length;
             Map<CoordinateReferenceSystem,SpaceFillingCurveSettings> settings = new HashMap<>();
             if ( storeFile != null && fs.fileExists( storeFile ) )
             {
@@ -153,7 +153,7 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexPopulator newIndexPopulator( File storeFile, GenericLayout layout, StorageIndexReference descriptor )
     {
         if ( parallelPopulation )
         {
@@ -170,14 +170,14 @@ public class GenericNativeIndexProvider extends NativeIndexProvider<GenericKey,N
     }
 
     @Override
-    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StoreIndexDescriptor descriptor )
+    protected IndexAccessor newIndexAccessor( File storeFile, GenericLayout layout, StorageIndexReference descriptor )
     {
         return new GenericNativeIndexAccessor( pageCache, fs, storeFile, layout, recoveryCleanupWorkCollector, monitor, descriptor,
                 layout.getSpaceFillingCurveSettings(), directoryStructure(), configuration );
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         return CAPABILITY;
     }

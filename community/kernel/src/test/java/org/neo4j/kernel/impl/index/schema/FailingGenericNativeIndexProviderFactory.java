@@ -33,16 +33,16 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.extension.ExtensionType;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static java.util.Arrays.copyOfRange;
 
@@ -97,7 +97,7 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
         return new IndexProvider( actualProvider.getProviderDescriptor(), IndexDirectoryStructure.given( actualProvider.directoryStructure() ) )
         {
             @Override
-            public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+            public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
             {
                 IndexPopulator actualPopulator = actualProvider.getPopulator( descriptor, samplingConfig );
                 if ( failureTypes.contains( FailureType.POPULATION ) )
@@ -163,25 +163,25 @@ public class FailingGenericNativeIndexProviderFactory extends KernelExtensionFac
             }
 
             @Override
-            public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+            public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
             {
                 return actualProvider.getOnlineAccessor( descriptor, samplingConfig );
             }
 
             @Override
-            public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+            public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? INITIAL_STATE_FAILURE_MESSAGE : actualProvider.getPopulationFailure( descriptor );
             }
 
             @Override
-            public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+            public InternalIndexState getInitialState( StorageIndexReference descriptor )
             {
                 return failureTypes.contains( FailureType.INITIAL_STATE ) ? InternalIndexState.FAILED : actualProvider.getInitialState( descriptor );
             }
 
             @Override
-            public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+            public IndexCapability getCapability( StorageIndexReference descriptor )
             {
                 return actualProvider.getCapability( descriptor );
             }

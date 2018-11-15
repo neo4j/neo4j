@@ -24,9 +24,8 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import java.io.File;
 import java.util.StringJoiner;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.helpers.Format.duration;
 
@@ -40,29 +39,29 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void failedToOpenIndex( StoreIndexDescriptor descriptor, String action, Exception cause )
+    public void failedToOpenIndex( StorageIndexReference descriptor, String action, Exception cause )
     {
-        log.error( "Failed to open index:" + descriptor.getId() + ". " + action, cause );
+        log.error( "Failed to open index:" + descriptor.indexReference() + ". " + action, cause );
     }
 
     @Override
-    public void recoveryCleanupRegistered( File indexFile, IndexDescriptor indexDescriptor )
+    public void recoveryCleanupRegistered( File indexFile, StorageIndexReference index )
     {
-        log.info( "Schema index cleanup job registered: " + indexDescription( indexFile, indexDescriptor ) );
+        log.info( "Schema index cleanup job registered: " + indexDescription( indexFile, index ) );
     }
 
     @Override
-    public void recoveryCleanupStarted( File indexFile, IndexDescriptor indexDescriptor )
+    public void recoveryCleanupStarted( File indexFile, StorageIndexReference index )
     {
-        log.info( "Schema index cleanup job started: " + indexDescription( indexFile, indexDescriptor ) );
+        log.info( "Schema index cleanup job started: " + indexDescription( indexFile, index ) );
     }
 
     @Override
-    public void recoveryCleanupFinished( File indexFile, IndexDescriptor indexDescriptor,
+    public void recoveryCleanupFinished( File indexFile, StorageIndexReference index,
             long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
     {
         StringJoiner joiner =
-                new StringJoiner( ", ", "Schema index cleanup job finished: " + indexDescription( indexFile, indexDescriptor ) + " ", "" );
+                new StringJoiner( ", ", "Schema index cleanup job finished: " + indexDescription( indexFile, index ) + " ", "" );
         joiner.add( "Number of pages visited: " + numberOfPagesVisited );
         joiner.add( "Number of cleaned crashed pointers: " + numberOfCleanedCrashPointers );
         joiner.add( "Time spent: " + duration( durationMillis ) );
@@ -70,19 +69,19 @@ public class LoggingMonitor implements IndexProvider.Monitor
     }
 
     @Override
-    public void recoveryCleanupClosed( File indexFile, IndexDescriptor indexDescriptor )
+    public void recoveryCleanupClosed( File indexFile, StorageIndexReference index )
     {
-        log.info( "Schema index cleanup job closed: " + indexDescription( indexFile, indexDescriptor ) );
+        log.info( "Schema index cleanup job closed: " + indexDescription( indexFile, index ) );
     }
 
     @Override
-    public void recoveryCleanupFailed( File indexFile, IndexDescriptor indexDescriptor, Throwable throwable )
+    public void recoveryCleanupFailed( File indexFile, StorageIndexReference index, Throwable throwable )
     {
         log.info( String.format( "Schema index cleanup job failed: %s.%nCaused by: %s",
-                indexDescription( indexFile, indexDescriptor ), ExceptionUtils.getStackTrace( throwable ) ) );
+                indexDescription( indexFile, index ), ExceptionUtils.getStackTrace( throwable ) ) );
     }
 
-    private static String indexDescription( File indexFile, IndexDescriptor indexDescriptor )
+    private static String indexDescription( File indexFile, StorageIndexReference indexDescriptor )
     {
         return "descriptor=" + indexDescriptor.toString() + ", indexFile=" + indexFile.getAbsolutePath();
     }

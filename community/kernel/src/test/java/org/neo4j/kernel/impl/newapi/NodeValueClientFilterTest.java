@@ -37,7 +37,7 @@ import org.neo4j.internal.kernel.api.helpers.StubPropertyCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.EntityValueClient;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Value;
 

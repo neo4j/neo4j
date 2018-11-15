@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.index;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 public abstract class AbstractIndexReader implements IndexReader
 {

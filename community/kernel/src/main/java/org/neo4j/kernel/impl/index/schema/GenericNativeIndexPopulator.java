@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsWriter;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.kernel.impl.index.schema.NativeIndexes.deleteIndex;
 
@@ -45,7 +45,7 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
     private final boolean temporary;
 
     GenericNativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<GenericKey,NativeIndexValue> layout,
-            IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
+            IndexProvider.Monitor monitor, StorageIndexReference descriptor, IndexSpecificSpaceFillingCurveSettingsCache spatialSettings,
             IndexDirectoryStructure directoryStructure, SpaceFillingCurveConfiguration configuration, boolean archiveFailedIndex, boolean temporary )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, new SpaceFillingCurveSettingsWriter( spatialSettings ),
@@ -66,7 +66,7 @@ class GenericNativeIndexPopulator extends NativeIndexPopulator<GenericKey,Native
             // native index populator lives under a fusion umbrella and the archive function sits on the top-level fusion folder, not every single sub-folder.
             if ( !temporary )
             {
-                deleteIndex( fileSystem, directoryStructure, descriptor.getId(), archiveFailedIndex );
+                deleteIndex( fileSystem, directoryStructure, descriptor.indexReference(), archiveFailedIndex );
             }
 
             // Now move on to do the actual creation.

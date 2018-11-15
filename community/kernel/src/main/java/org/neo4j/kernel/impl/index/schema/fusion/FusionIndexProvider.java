@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.newapi.UnionIndexCapability;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueCategory;
 
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
@@ -96,21 +96,21 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         EnumMap<IndexSlot,IndexPopulator> populators = providers.map( provider -> provider.getPopulator( descriptor, samplingConfig ) );
-        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.getId(), dropAction, archiveFailedIndex );
+        return new FusionIndexPopulator( slotSelector, new InstanceSelector<>( populators ), descriptor.indexReference(), dropAction, archiveFailedIndex );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
         EnumMap<IndexSlot,IndexAccessor> accessors = providers.map( provider -> provider.getOnlineAccessor( descriptor, samplingConfig ) );
         return new FusionIndexAccessor( slotSelector, new InstanceSelector<>( accessors ), descriptor, dropAction );
     }
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
         StringBuilder builder = new StringBuilder();
         providers.forAll( p -> writeFailure( p.getClass().getSimpleName(), builder, p, descriptor ) );
@@ -122,7 +122,7 @@ public class FusionIndexProvider extends IndexProvider
         throw new IllegalStateException( "None of the indexes were in a failed state" );
     }
 
-    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, StoreIndexDescriptor descriptor )
+    private void writeFailure( String indexName, StringBuilder builder, IndexProvider provider, StorageIndexReference descriptor )
     {
         try
         {
@@ -138,7 +138,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StorageIndexReference descriptor )
     {
         Iterable<InternalIndexState> statesIterable = providers.transform( p -> p.getInitialState( descriptor ) );
         List<InternalIndexState> states = Iterables.asList( statesIterable );
@@ -157,7 +157,7 @@ public class FusionIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         Iterable<IndexCapability> capabilities = providers.transform( indexProvider -> indexProvider.getCapability( descriptor ) );
         return new UnionIndexCapability( capabilities )

@@ -39,8 +39,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueCategory;
 
 public class SpatialIndexProvider extends IndexProvider
@@ -77,27 +77,27 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.indexReference(), fs, configuredSettings );
         return new SpatialIndexPopulator( descriptor, files, pageCache, fs, monitor, configuration );
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
+        SpatialIndexFiles files = new SpatialIndexFiles( directoryStructure(), descriptor.indexReference(), fs, configuredSettings );
         return new SpatialIndexAccessor( descriptor, pageCache, fs, recoveryCleanupWorkCollector, monitor, files, configuration );
     }
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.indexReference(), fs, configuredSettings );
 
         try
         {
@@ -114,13 +114,13 @@ public class SpatialIndexProvider extends IndexProvider
         {
             throw new RuntimeException( e );
         }
-        throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
+        throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
     }
 
     @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StorageIndexReference descriptor )
     {
-        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.getId(), fs, configuredSettings );
+        SpatialIndexFiles spatialIndexFiles = new SpatialIndexFiles( directoryStructure(), descriptor.indexReference(), fs, configuredSettings );
 
         final Iterable<SpatialIndexFiles.SpatialFile> existing = spatialIndexFiles.existing();
         InternalIndexState state = InternalIndexState.ONLINE;
@@ -147,7 +147,7 @@ public class SpatialIndexProvider extends IndexProvider
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         return CAPABILITY;
     }

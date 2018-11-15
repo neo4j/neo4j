@@ -26,7 +26,7 @@ import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueGroup;
 
 class TemporalIndexFiles
@@ -39,10 +39,10 @@ class TemporalIndexFiles
     private FileLayout<ZonedTimeIndexKey> zonedTime;
     private FileLayout<DurationIndexKey> duration;
 
-    TemporalIndexFiles( IndexDirectoryStructure directoryStructure, StoreIndexDescriptor descriptor, FileSystemAbstraction fs )
+    TemporalIndexFiles( IndexDirectoryStructure directoryStructure, StorageIndexReference descriptor, FileSystemAbstraction fs )
     {
         this.fs = fs;
-        File indexDirectory = directoryStructure.directoryForIndex( descriptor.getId() );
+        File indexDirectory = directoryStructure.directoryForIndex( descriptor.indexReference() );
         this.date = new FileLayout<>( new File( indexDirectory, "date" ), new DateLayout(), ValueGroup.DATE );
         this.localTime = new FileLayout<>( new File( indexDirectory, "localTime" ), new LocalTimeLayout(), ValueGroup.LOCAL_TIME );
         this.zonedTime = new FileLayout<>( new File( indexDirectory, "zonedTime" ), new ZonedTimeLayout(), ValueGroup.ZONED_TIME );

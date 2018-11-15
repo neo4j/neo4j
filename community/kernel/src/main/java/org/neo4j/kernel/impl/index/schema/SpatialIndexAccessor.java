@@ -42,7 +42,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.neo4j.helpers.collection.Iterators.concatResourceIterators;
@@ -51,9 +51,9 @@ import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexBase.forAll;
 
 class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAccessor> implements IndexAccessor
 {
-    private final StoreIndexDescriptor descriptor;
+    private final StorageIndexReference descriptor;
 
-    SpatialIndexAccessor( StoreIndexDescriptor descriptor,
+    SpatialIndexAccessor( StorageIndexReference descriptor,
                           PageCache pageCache,
                           FileSystemAbstraction fs,
                           RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
@@ -182,11 +182,11 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
     static class PartAccessor extends NativeIndexAccessor<SpatialIndexKey,NativeIndexValue>
     {
         private final IndexLayout<SpatialIndexKey,NativeIndexValue> layout;
-        private final StoreIndexDescriptor descriptor;
+        private final StorageIndexReference descriptor;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
         PartAccessor( PageCache pageCache, FileSystemAbstraction fs, SpatialIndexFiles.SpatialFileLayout fileLayout,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StoreIndexDescriptor descriptor,
+                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, IndexProvider.Monitor monitor, StorageIndexReference descriptor,
                 SpaceFillingCurveConfiguration searchConfiguration )
         {
             super( pageCache, fs, fileLayout.getIndexFile(), fileLayout.layout, monitor, descriptor, NO_HEADER_WRITER );
@@ -217,7 +217,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
         private final FileSystemAbstraction fs;
         private final RecoveryCleanupWorkCollector recoveryCleanupWorkCollector;
         private final IndexProvider.Monitor monitor;
-        private final StoreIndexDescriptor descriptor;
+        private final StorageIndexReference descriptor;
         private final SpatialIndexFiles spatialIndexFiles;
         private final SpaceFillingCurveConfiguration searchConfiguration;
 
@@ -225,7 +225,7 @@ class SpatialIndexAccessor extends SpatialIndexCache<SpatialIndexAccessor.PartAc
                      FileSystemAbstraction fs,
                      RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
                      IndexProvider.Monitor monitor,
-                     StoreIndexDescriptor descriptor,
+                     StorageIndexReference descriptor,
                      SpatialIndexFiles spatialIndexFiles,
                      SpaceFillingCurveConfiguration searchConfiguration )
         {

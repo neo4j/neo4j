@@ -33,14 +33,14 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
 class SpatialVerifyDeferredConstraint
 {
     static void verify( NodePropertyAccessor nodePropertyAccessor, IndexLayout<SpatialIndexKey,NativeIndexValue> layout,
-            GBPTree<SpatialIndexKey,NativeIndexValue> tree, StoreIndexDescriptor descriptor ) throws IndexEntryConflictException
+            GBPTree<SpatialIndexKey,NativeIndexValue> tree, IndexDescriptor descriptor ) throws IndexEntryConflictException
     {
         SpatialIndexKey from = layout.newKey();
         SpatialIndexKey to = layout.newKey();
@@ -55,7 +55,7 @@ class SpatialVerifyDeferredConstraint
         }
     }
 
-    private static void scanAndVerifyDuplicates( NodePropertyAccessor nodePropertyAccessor, StoreIndexDescriptor descriptor,
+    private static void scanAndVerifyDuplicates( NodePropertyAccessor nodePropertyAccessor, IndexDescriptor descriptor,
             RawCursor<Hit<SpatialIndexKey,NativeIndexValue>,IOException> seek ) throws IOException, IndexEntryConflictException
     {
         LongArrayList nodesWithCollidingPoints = new LongArrayList();
@@ -94,7 +94,7 @@ class SpatialVerifyDeferredConstraint
         }
     }
 
-    private static void verifyConstraintOn( LongArrayList nodeIds, NodePropertyAccessor nodePropertyAccessor, StoreIndexDescriptor descriptor )
+    private static void verifyConstraintOn( LongArrayList nodeIds, NodePropertyAccessor nodePropertyAccessor, IndexDescriptor descriptor )
             throws IndexEntryConflictException
     {
         MutableMap<Value,Long> points = Maps.mutable.empty();

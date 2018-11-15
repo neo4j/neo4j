@@ -43,15 +43,13 @@ import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.UniqueIndexSampler;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 import static org.neo4j.index.internal.gbptree.GBPTree.NO_HEADER_WRITER;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type.UNIQUE;
 
 /**
  * {@link IndexPopulator} backed by a {@link GBPTree}.
@@ -79,23 +77,13 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     private boolean closed;
 
     NativeIndexPopulator( PageCache pageCache, FileSystemAbstraction fs, File storeFile, IndexLayout<KEY,VALUE> layout, IndexProvider.Monitor monitor,
-            StoreIndexDescriptor descriptor, Consumer<PageCursor> additionalHeaderWriter, OpenOption... openOptions )
+            StorageIndexReference descriptor, Consumer<PageCursor> additionalHeaderWriter, OpenOption... openOptions )
     {
         super( pageCache, fs, storeFile, layout, monitor, descriptor, withNoStriping( openOptions ) );
         this.treeKey = layout.newKey();
         this.treeValue = layout.newValue();
         this.additionalHeaderWriter = additionalHeaderWriter;
-        switch ( descriptor.type() )
-        {
-        case GENERAL:
-            uniqueSampler = null;
-            break;
-        case UNIQUE:
-            uniqueSampler = new UniqueIndexSampler();
-            break;
-        default:
-            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
-        }
+        this.uniqueSampler = descriptor.isUnique() ? new UniqueIndexSampler() : null;
     }
 
     /**
@@ -135,7 +123,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
 
     ConflictDetectingValueMerger<KEY,VALUE> getMainConflictDetector()
     {
-        return new ConflictDetectingValueMerger<>( descriptor.type() == GENERAL );
+        return new ConflictDetectingValueMerger<>( !descriptor.isUnique() );
     }
 
     @Override
@@ -179,7 +167,7 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     IndexUpdater newPopulatingUpdater()
     {
         IndexUpdater updater = new CollectingIndexUpdater( updates -> processUpdates( updates, updatesConflictDetector ) );
-        if ( descriptor.type() == UNIQUE && canCheckConflictsWithoutStoreAccess() )
+        if ( descriptor.isUnique() && canCheckConflictsWithoutStoreAccess() )
         {
             // The index population detects conflicts on the fly, however for updates coming in we're in a position
             // where we cannot detect conflicts while applying, but instead afterwards.
@@ -295,17 +283,11 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     @Override
     public void includeSample( IndexEntryUpdate<?> update )
     {
-        switch ( descriptor.type() )
+        if ( descriptor.isUnique() )
         {
-        case GENERAL:
-            // Don't do anything here, we'll do a scan in the end instead
-            break;
-        case UNIQUE:
             updateUniqueSample( update );
-            break;
-        default:
-            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
         }
+        // else don't do anything here, we'll do a scan in the end instead
     }
 
     private void updateUniqueSample( IndexEntryUpdate<?> update )
@@ -328,15 +310,11 @@ public abstract class NativeIndexPopulator<KEY extends NativeIndexKey<KEY>, VALU
     @Override
     public IndexSample sampleResult()
     {
-        switch ( descriptor.type() )
+        if ( descriptor.isUnique() )
         {
-        case GENERAL:
-            return new FullScanNonUniqueIndexSampler<>( tree, layout ).result();
-        case UNIQUE:
             return uniqueSampler.result();
-        default:
-            throw new IllegalArgumentException( "Unexpected index type " + descriptor.type() );
         }
+        return new FullScanNonUniqueIndexSampler<>( tree, layout ).result();
     }
 
     private static void deleteFileIfPresent( FileSystemAbstraction fs, File storeFile )

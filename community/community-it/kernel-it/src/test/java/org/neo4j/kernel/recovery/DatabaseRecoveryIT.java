@@ -81,7 +81,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
@@ -103,6 +102,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
@@ -838,33 +838,33 @@ class DatabaseRecoveryIT
         }
 
         @Override
-        public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
         {
             return actual.getPopulator( descriptor, samplingConfig );
         }
 
         @Override
-        public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+        public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
                 throws IOException
         {
             IndexAccessor actualAccessor = actual.getOnlineAccessor( descriptor, samplingConfig );
-            return indexes.computeIfAbsent( descriptor.getId(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
+            return indexes.computeIfAbsent( descriptor.indexReference(), id -> new UpdateCapturingIndexAccessor( actualAccessor, initialUpdates.get( id ) ) );
         }
 
         @Override
-        public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+        public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
         {
             return actual.getPopulationFailure( descriptor );
         }
 
         @Override
-        public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+        public InternalIndexState getInitialState( StorageIndexReference descriptor )
         {
             return actual.getInitialState( descriptor );
         }
 
         @Override
-        public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+        public IndexCapability getCapability( StorageIndexReference descriptor )
         {
             return actual.getCapability( descriptor );
         }

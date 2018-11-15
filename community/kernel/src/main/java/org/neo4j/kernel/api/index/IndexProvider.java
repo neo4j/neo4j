@@ -28,10 +28,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * Contract for implementing an index in Neo4j.
@@ -43,7 +42,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  *
  * When an index rule is added, the {@link IndexingService} is notified. It will, in turn, ask
  * your {@link IndexProvider} for a
- * {@link #getPopulator(StoreIndexDescriptor, IndexSamplingConfig) batch index writer}.
+ * {@link #getPopulator(StorageIndexReference, IndexSamplingConfig) batch index writer}.
  *
  * A background index job is triggered, and all existing data that applies to the new rule, as well as new data
  * from the "outside", will be inserted using the writer. You are guaranteed that usage of this writer,
@@ -88,7 +87,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  * <h3>Online operation</h3>
  *
  * Once the index is online, the database will move to using the
- * {@link #getOnlineAccessor(StoreIndexDescriptor, IndexSamplingConfig) online accessor} to
+ * {@link #getOnlineAccessor(StorageIndexReference, IndexSamplingConfig) online accessor} to
  * write to the index.
  */
 public abstract class IndexProvider extends LifecycleAdapter
@@ -100,49 +99,49 @@ public abstract class IndexProvider extends LifecycleAdapter
         class Adaptor implements Monitor
         {
             @Override
-            public void failedToOpenIndex( StoreIndexDescriptor schemaIndexDescriptor, String action, Exception cause )
+            public void failedToOpenIndex( StorageIndexReference index, String action, Exception cause )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupRegistered( File indexFile, IndexDescriptor indexDescriptor )
+            public void recoveryCleanupRegistered( File indexFile, StorageIndexReference index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupStarted( File indexFile, IndexDescriptor indexDescriptor )
+            public void recoveryCleanupStarted( File indexFile, StorageIndexReference index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupFinished( File indexFile, IndexDescriptor indexDescriptor,
+            public void recoveryCleanupFinished( File indexFile, StorageIndexReference index,
                     long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupClosed( File indexFile, IndexDescriptor indexDescriptor )
+            public void recoveryCleanupClosed( File indexFile, StorageIndexReference index )
             {   // no-op
             }
 
             @Override
-            public void recoveryCleanupFailed( File indexFile, IndexDescriptor indexDescriptor, Throwable throwable )
+            public void recoveryCleanupFailed( File indexFile, StorageIndexReference index, Throwable throwable )
             {   // no-op
             }
         }
 
-        void failedToOpenIndex( StoreIndexDescriptor schemaIndexDescriptor, String action, Exception cause );
+        void failedToOpenIndex( StorageIndexReference index, String action, Exception cause );
 
-        void recoveryCleanupRegistered( File indexFile, IndexDescriptor indexDescriptor );
+        void recoveryCleanupRegistered( File indexFile, StorageIndexReference index );
 
-        void recoveryCleanupStarted( File indexFile, IndexDescriptor indexDescriptor );
+        void recoveryCleanupStarted( File indexFile, StorageIndexReference index );
 
-        void recoveryCleanupFinished( File indexFile, IndexDescriptor indexDescriptor,
+        void recoveryCleanupFinished( File indexFile, StorageIndexReference index,
                 long numberOfPagesVisited, long numberOfCleanedCrashPointers, long durationMillis );
 
-        void recoveryCleanupClosed( File indexFile, IndexDescriptor indexDescriptor );
+        void recoveryCleanupClosed( File indexFile, StorageIndexReference index );
 
-        void recoveryCleanupFailed( File indexFile, IndexDescriptor indexDescriptor, Throwable throwable );
+        void recoveryCleanupFailed( File indexFile, StorageIndexReference index, Throwable throwable );
     }
 
     public static final IndexProvider EMPTY =
@@ -152,25 +151,25 @@ public abstract class IndexProvider extends LifecycleAdapter
                 private final IndexPopulator singlePopulator = IndexPopulator.EMPTY;
 
                 @Override
-                public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singleWriter;
                 }
 
                 @Override
-                public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+                public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
                 {
                     return singlePopulator;
                 }
 
                 @Override
-                public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+                public InternalIndexState getInitialState( StorageIndexReference descriptor )
                 {
                     return InternalIndexState.ONLINE;
                 }
 
                 @Override
-                public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+                public IndexCapability getCapability( StorageIndexReference descriptor )
                 {
                     return IndexCapability.NO_CAPABILITY;
                 }
@@ -183,7 +182,7 @@ public abstract class IndexProvider extends LifecycleAdapter
                 }
 
                 @Override
-                public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+                public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
                 {
                     throw new IllegalStateException();
                 }
@@ -209,37 +208,38 @@ public abstract class IndexProvider extends LifecycleAdapter
     /**
      * Used for initially populating a created index, using batch insertion.
      */
-    public abstract IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig );
+    public abstract IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig );
 
     /**
      * Used for updating an index once initial population has completed.
      */
-    public abstract IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
+    public abstract IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException;
 
     /**
      * Returns a failure previously gotten from {@link IndexPopulator#markAsFailed(String)}
      *
      * Implementations are expected to persist this failure
-     * @param descriptor {@link StoreIndexDescriptor} of the index.
+     * @param descriptor {@link StorageIndexReference} of the index.
      * @return failure, in the form of a stack trace, that happened during population.
      * @throws IllegalStateException If there was no failure during population.
      */
-    public abstract String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException;
+    public abstract String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException;
 
     /**
      * Called during startup to find out which state an index is in. If {@link InternalIndexState#FAILED}
-     * is returned then a further call to {@link #getPopulationFailure(StoreIndexDescriptor)} is expected and should return
+     * is returned then a further call to {@link #getPopulationFailure(StorageIndexReference)} is expected and should return
      * the failure accepted by any call to {@link IndexPopulator#markAsFailed(String)} call at the time
      * of failure.
+     * @param descriptor to get initial state for.
      */
-    public abstract InternalIndexState getInitialState( StoreIndexDescriptor descriptor );
+    public abstract InternalIndexState getInitialState( StorageIndexReference descriptor );
 
     /**
      * Return {@link IndexCapability} for this index provider.
      *
-     * @param descriptor The specific {@link StoreIndexDescriptor} to get the capabilities for, in case it matters.
+     * @param descriptor The specific {@link StorageIndexReference} to get the capabilities for, in case it matters.
      */
-    public abstract IndexCapability getCapability( StoreIndexDescriptor descriptor );
+    public abstract IndexCapability getCapability( StorageIndexReference descriptor );
 
     /**
      * @return a description of this index provider

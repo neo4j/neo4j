@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * Base class for native indexes on top of {@link GBPTree}.
@@ -73,40 +74,40 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
      * If {@code null} it means that nothing must be read from the file before or while instantiating the layout.
      * @return the correct {@link Layout} for the index.
      */
-    abstract LAYOUT layout( StoreIndexDescriptor descriptor, File storeFile );
+    abstract LAYOUT layout( StorageIndexReference descriptor, File storeFile );
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
         if ( readOnly )
         {
             throw new UnsupportedOperationException( "Can't create populator for read only index" );
         }
 
-        File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
+        File storeFile = nativeIndexFileFromIndexId( descriptor.indexReference() );
         return newIndexPopulator( storeFile, layout( descriptor, null /*meaning don't read from this file since we're recreating it anyway*/ ), descriptor );
     }
 
-    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor );
+    protected abstract IndexPopulator newIndexPopulator( File storeFile, LAYOUT layout, StorageIndexReference descriptor );
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        File storeFile = nativeIndexFileFromIndexId( descriptor.getId() );
+        File storeFile = nativeIndexFileFromIndexId( descriptor.indexReference() );
         return newIndexAccessor( storeFile, layout( descriptor, storeFile ), descriptor );
     }
 
-    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StoreIndexDescriptor descriptor ) throws IOException;
+    protected abstract IndexAccessor newIndexAccessor( File storeFile, LAYOUT layout, StorageIndexReference descriptor ) throws IOException;
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
         try
         {
-            String failureMessage = NativeIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
+            String failureMessage = NativeIndexes.readFailureMessage( pageCache, nativeIndexFileFromIndexId( descriptor.indexReference() ) );
             if ( failureMessage == null )
             {
-                throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
+                throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
             }
             return failureMessage;
         }
@@ -117,11 +118,11 @@ abstract class NativeIndexProvider<KEY extends NativeIndexKey<KEY>,VALUE extends
     }
 
     @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StorageIndexReference descriptor )
     {
         try
         {
-            return NativeIndexes.readState( pageCache, nativeIndexFileFromIndexId( descriptor.getId() ) );
+            return NativeIndexes.readState( pageCache, nativeIndexFileFromIndexId( descriptor.indexReference() ) );
         }
         catch ( MetadataMismatchException | IOException e )
         {

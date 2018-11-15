@@ -49,11 +49,11 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;
@@ -68,7 +68,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     private final String defaultEventuallyConsistentSetting;
     private final Log log;
     private final IndexUpdateSink indexUpdateSink;
-    private final ConcurrentMap<StoreIndexDescriptor,FulltextIndexAccessor> openOnlineAccessors;
+    private final ConcurrentMap<StorageIndexReference,FulltextIndexAccessor> openOnlineAccessors;
     private final IndexStorageFactory indexStorageFactory;
 
     FulltextIndexProvider( IndexProviderDescriptor descriptor, IndexDirectoryStructure.Factory directoryStructureFactory,
@@ -94,7 +94,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return new IndexStorageFactory( directoryFactory, fileSystem, directoryStructure() );
     }
 
-    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, StoreIndexDescriptor descriptor ) throws IOException
+    private boolean indexIsOnline( PartitionedIndexStorage indexStorage, StorageIndexReference descriptor ) throws IOException
     {
         try ( SchemaIndex index = LuceneSchemaIndexBuilder.create( descriptor, config ).withIndexStorage( indexStorage ).build() )
         {
@@ -121,7 +121,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexCapability getCapability( StoreIndexDescriptor descriptor )
+    public IndexCapability getCapability( StorageIndexReference descriptor )
     {
         FulltextIndexDescriptor fulltextIndexDescriptor;
         if ( descriptor instanceof FulltextIndexDescriptor )
@@ -150,26 +150,27 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         }
         // All of the above has failed, so we need to load the settings in from the storage directory of the index.
         // This situation happens during recovery.
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-        fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
+        fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(),
+                indexStorage, fileSystem );
         return new FulltextIndexCapability( fulltextIndexDescriptor.isEventuallyConsistent() );
     }
 
     @Override
-    public String getPopulationFailure( StoreIndexDescriptor descriptor ) throws IllegalStateException
+    public String getPopulationFailure( StorageIndexReference descriptor ) throws IllegalStateException
     {
-        String failure = getIndexStorage( descriptor.getId() ).getStoredIndexFailure();
+        String failure = getIndexStorage( descriptor.indexReference() ).getStoredIndexFailure();
         if ( failure == null )
         {
-            throw new IllegalStateException( "Index " + descriptor.getId() + " isn't failed" );
+            throw new IllegalStateException( "Index " + descriptor.isUnique() + " isn't failed" );
         }
         return failure;
     }
 
     @Override
-    public InternalIndexState getInitialState( StoreIndexDescriptor descriptor )
+    public InternalIndexState getInitialState( StorageIndexReference descriptor )
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
         String failure = indexStorage.getStoredIndexFailure();
         if ( failure != null )
         {
@@ -186,11 +187,11 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexPopulator getPopulator( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig )
+    public IndexPopulator getPopulator( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig )
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
-        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(
-                descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
+        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor,
+                defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
         DatabaseIndex<FulltextIndexReader> fulltextIndex = FulltextIndexBuilder
                 .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
                 .withFileSystem( fileSystem )
@@ -208,12 +209,12 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
     }
 
     @Override
-    public IndexAccessor getOnlineAccessor( StoreIndexDescriptor descriptor, IndexSamplingConfig samplingConfig ) throws IOException
+    public IndexAccessor getOnlineAccessor( StorageIndexReference descriptor, IndexSamplingConfig samplingConfig ) throws IOException
     {
-        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.getId() );
+        PartitionedIndexStorage indexStorage = getIndexStorage( descriptor.indexReference() );
 
-        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor(
-                descriptor, defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
+        FulltextIndexDescriptor fulltextIndexDescriptor = readOrInitialiseDescriptor( descriptor,
+                defaultAnalyzerName, tokenHolders.propertyKeyTokens(), indexStorage, fileSystem );
         FulltextIndexBuilder fulltextIndexBuilder = FulltextIndexBuilder
                 .create( fulltextIndexDescriptor, config, tokenHolders.propertyKeyTokens() )
                 .withFileSystem( fileSystem )
@@ -234,7 +235,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         return accessor;
     }
 
-    private FulltextIndexAccessor getOpenOnlineAccessor( StoreIndexDescriptor descriptor )
+    private FulltextIndexAccessor getOpenOnlineAccessor( StorageIndexReference descriptor )
     {
         return openOnlineAccessors.get( descriptor );
     }
