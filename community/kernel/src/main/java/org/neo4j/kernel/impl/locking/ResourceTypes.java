@@ -44,7 +44,7 @@ public enum ResourceTypes implements ResourceType
     RELATIONSHIP_TYPE( 7, LockWaitStrategies.INCREMENTAL_BACKOFF );
 
     private static final boolean useStrongHashing =
-            FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", false );
+            FeatureToggles.flag( ResourceTypes.class, "useStrongHashing", true );
 
     private static final MutableIntObjectMap<ResourceType> idToType = new IntObjectHashMap<>();
     private static final HashFunction indexEntryHash_2_2_0 = HashFunction.xorShift32();
@@ -91,10 +91,7 @@ public enum ResourceTypes implements ResourceType
     /**
      * This is the schema index entry hashing method used since 2.2.0 and onwards.
      * <p>
-     * Use the {@link ResourceTypes#useStrongHashing} feature toggle to use a stronger hash function, which will become
-     * the default in a future release. <strong>Note</strong> that changing this hash function is effectively a
-     * clustering protocol change in HA setups. Causal cluster setups are unaffected because followers do not take any
-     * locks on the cluster leader.
+     * Use the {@link ResourceTypes#useStrongHashing} feature toggle to use a stronger hash function.
      */
     public static long indexEntryResourceId( long labelId, IndexQuery.ExactPredicate... predicates )
     {
@@ -162,9 +159,7 @@ public enum ResourceTypes implements ResourceType
     }
 
     /**
-     * This is a stronger, full 64-bit hashing method for schema index entries that we should use by default in a
-     * future release, where we will also upgrade the HA protocol version. Currently this is indicated by the "4_x"
-     * name suffix, but any version where the HA protocol version changes anyway would be just as good an opportunity.
+     * This is a stronger, full 64-bit hashing method for schema index entries.
      *
      * @see HashFunction#incrementalXXH64()
      */

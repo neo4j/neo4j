@@ -565,7 +565,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
         // LAST_TRANSACTION_CHECKSUM and UPGRADE_TRANSACTION_CHECKSUM. Initially the last transaction and the
         // upgrade transaction will be the same, but imagine this scenario:
         //  - legacy store is migrated on instance A at transaction T
-        //  - upgraded store is copied, via backup or HA or whatever to instance B
+        //  - upgraded store is copied, via backup or whatever to instance B
         //  - instance A performs a transaction
         //  - instance B would like to communicate with A where B's last transaction checksum
         //    is verified on A. A, at this point not having logs from pre-migration era, will need to

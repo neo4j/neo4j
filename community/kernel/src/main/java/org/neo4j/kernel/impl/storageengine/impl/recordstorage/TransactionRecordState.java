@@ -225,7 +225,7 @@ public class TransactionRecordState implements RecordState
                      *    command that appears in the tx as not in use. Depending on the final order of operations, this
                      *    can end up using an id that is higher than the highest id seen so far. This may not be a problem
                      *    for a single instance, but it can result in errors in cases where transactions are applied
-                     *    externally, such as backup or HA.
+                     *    externally, such as backup.
                      *
                      * The way we deal with this issue here is by not issuing a command for that offending record. This is
                      * safe, since the record is not in use and never was, so the high id is not necessary to change and

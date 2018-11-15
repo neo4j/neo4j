@@ -40,7 +40,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class IndividualSettingsValidator implements ConfigurationValidator
 {
     private static final List<String> reservedPrefixes =
-            Arrays.asList( "dbms.", "metrics.", "ha.", "causal_clustering.", "browser.", "tools.", "unsupported." );
+            Arrays.asList( "dbms.", "metrics.", "causal_clustering.", "browser.", "tools.", "unsupported." );
 
     private final Collection<SettingValidator> settingValidators;
     private final boolean warnOnUnknownSettings;

@@ -163,7 +163,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             BOOLEAN, FALSE );
 
     @Description( "A strict configuration validation will prevent the database from starting up if unknown " +
-            "configuration options are specified in the neo4j settings namespace (such as dbms., ha., cypher., etc). " +
+            "configuration options are specified in the neo4j settings namespace (such as dbms., cypher., etc). " +
             "This is currently false by default but will be true by default in 4.0." )
     public static final Setting<Boolean> strict_config_validation =
             setting( "dbms.config.strict_validation", BOOLEAN, FALSE );

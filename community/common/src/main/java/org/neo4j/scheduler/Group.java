@@ -78,14 +78,9 @@ public enum Group
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
     CATCHUP( "Catchup" ),
 
-    // HA.
-    /** Push transactions from master to slaves */
-    MASTER_TRANSACTION_PUSHING( "TransactionPushing" ),
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
-    /** Aborts idle slave lock sessions on the master. */
-    SLAVE_LOCKS_TIMEOUT( "SlaveLocksTimeout" ),
-    /** Pulls updates from the master. */
+    /** Pulls updates from the leader. */
     PULL_UPDATES( "PullUpdates" ),
 
     // MISC.

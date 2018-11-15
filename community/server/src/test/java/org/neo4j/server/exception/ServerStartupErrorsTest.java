@@ -39,7 +39,7 @@ public class ServerStartupErrorsTest
         // given
         AssertableLogProvider logging = new AssertableLogProvider();
         LifecycleException error = new LifecycleException( new Object(), STARTING, STARTED,
-                new RuntimeException( "Error starting org.neo4j.kernel.ha.factory.EnterpriseFacadeFactory",
+                new RuntimeException( "Error starting org.neo4j.kernel.factory.EnterpriseFacadeFactory",
                         new LifecycleException( new Object(), STARTING, STARTED,
                                 new LifecycleException( new Object(), STARTING, STARTED,
                                         new UpgradeNotAllowedException() ) ) ) );

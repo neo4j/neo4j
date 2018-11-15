@@ -120,7 +120,7 @@ public class LuceneDataSourceTest
         stopDataSource();
 
         Config readOnlyConfig = Config.defaults( readOnlyConfig() );
-        dataSource = life.add( getLuceneDataSource( readOnlyConfig, OperationalMode.ha ) );
+        dataSource = life.add( getLuceneDataSource( readOnlyConfig, OperationalMode.unknown ) );
 
         IndexReference indexSearcher = dataSource.getIndexSearcher( indexIdentifier );
         assertTrue( "Writable index reference should be used in read only mode in ha mode.",

@@ -747,36 +747,6 @@ public class NeoStoreDataSource extends LifecycleAdapter
         return new StatementOperationParts( queryRegistrationOperations );
     }
 
-    /**
-     * Hook that must be called before there is an HA mode switch (eg master/slave switch),
-     * i.e. after state has changed to pending and before state is about to change to the new target state.
-     * This must only be called when the database is otherwise inaccessible.
-     */
-    public void beforeModeSwitch()
-    {
-        clearTransactions();
-    }
-
-    private void clearTransactions()
-    {
-        // We don't want to have buffered ids carry over to the new role
-        storageEngine.clearBufferedIds();
-
-        // Get rid of all pooled transactions, as they will otherwise reference
-        // components that have been swapped out during the mode switch.
-        kernelModule.kernelTransactions().disposeAll();
-    }
-
-    /**
-     * Hook that must be called after an HA mode switch (eg master/slave switch) have completed.
-     * This must only be called when the database is otherwise inaccessible.
-     */
-    public void afterModeSwitch()
-    {
-        storageEngine.loadSchemaCache();
-        clearTransactions();
-    }
-
     public StoreCopyCheckPointMutex getStoreCopyCheckPointMutex()
     {
         return storeCopyCheckPointMutex;

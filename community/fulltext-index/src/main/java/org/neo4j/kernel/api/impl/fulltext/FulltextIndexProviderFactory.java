@@ -109,7 +109,7 @@ public class FulltextIndexProviderFactory extends KernelExtensionFactory<Fulltex
         catch ( KernelException e )
         {
             String message = procedureRegistrationFailureMessage + e.getUserMessage( new NonTransactionalTokenNameLookup( tokenHolders ) );
-            // We use the 'warn' logger in this case, because it can occur due to multi-database shenanigans, or due to internal restarts in HA.
+            // We use the 'warn' logger in this case, because it can occur due to multi-database shenanigans.
             // These scenarios are less serious, and will _probably_ not prevent FTS from working. Hence we only warn about this.
             logDependencyException( context, log.debugLogger(), log.warnLogger(), message );
         }

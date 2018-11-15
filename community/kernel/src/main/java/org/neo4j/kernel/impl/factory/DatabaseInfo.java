@@ -25,7 +25,6 @@ public class DatabaseInfo
     public static final DatabaseInfo TOOL = new DatabaseInfo( Edition.unknown, OperationalMode.single );
     public static final DatabaseInfo COMMUNITY = new DatabaseInfo( Edition.community, OperationalMode.single );
     public static final DatabaseInfo ENTERPRISE = new DatabaseInfo( Edition.enterprise, OperationalMode.single );
-    public static final DatabaseInfo HA = new DatabaseInfo( Edition.enterprise, OperationalMode.ha );
     public static final DatabaseInfo CORE = new DatabaseInfo( Edition.enterprise, OperationalMode.core );
     public static final DatabaseInfo READ_REPLICA = new DatabaseInfo( Edition.enterprise, OperationalMode.read_replica );
 

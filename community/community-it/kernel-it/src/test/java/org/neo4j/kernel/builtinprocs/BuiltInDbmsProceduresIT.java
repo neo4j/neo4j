@@ -76,7 +76,7 @@ public class BuiltInDbmsProceduresIT extends KernelIntegrationTest
         assertEquals( 1, config.size() );
         assertArrayEquals( new Object[]{ "dbms.config.strict_validation",
                 "A strict configuration validation will prevent the database from starting up if unknown " +
-                        "configuration options are specified in the neo4j settings namespace (such as dbms., ha., " +
+                        "configuration options are specified in the neo4j settings namespace (such as dbms., " +
                         "cypher., etc). This is currently false by default but will be true by default in 4.0.",
                 "false", false }, config.get( 0 ) );
     }

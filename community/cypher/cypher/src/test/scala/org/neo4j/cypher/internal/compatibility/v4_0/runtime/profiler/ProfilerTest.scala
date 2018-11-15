@@ -167,7 +167,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.HA, profile)
+    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,

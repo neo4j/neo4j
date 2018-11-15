@@ -974,10 +974,8 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     /**
      * Called from the part of the code that starts the {@link MetaDataStore} and friends, together with any
-     * existing transaction log, seeing that there are transactions to recover. Now, this shouldn't be
-     * needed because the state of the id generator _should_ reflect this fact, but turns out that,
-     * given HA and the nature of the .id files being like orphans to the rest of the store, we just
-     * can't trust that to be true. If we happen to have id generators open during recovery we delegate
+     * existing transaction log, seeing that there are transactions to recover.
+     * If we happen to have id generators open during recovery we delegate
      * {@link #freeId(long)} calls to {@link IdGenerator#freeId(long)} and since the id generator is most likely
      * out of date w/ regards to high id, it may very well blow up.
      *
