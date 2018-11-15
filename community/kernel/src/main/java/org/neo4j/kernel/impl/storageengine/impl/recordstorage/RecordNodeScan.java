@@ -17,18 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+
+import java.util.concurrent.atomic.AtomicLong;
+
+import org.neo4j.storageengine.api.AllNodeScan;
 
 /**
- * Cursor over relationships.
+ * Maintains state when performing batched all-node scans, potentially from multiple threads.
+ * <p>
+ * Will break up the scan in ranges depending on the provided size hint.
  */
-public interface StorageRelationshipScanCursor extends StorageRelationshipCursor, StorageEntityScanCursor<AllRelationshipsScan>
+final class RecordNodeScan implements AllNodeScan
 {
-    /**
-     * Initializes this cursor so that it will scan over existing relationships. Each call to {@link #next()} will
-     * advance the cursor so that the next node is read.
-     *
-     * @param type relationship type to scan over, or -1 for all relationships regardless of type.
-     */
-    void scan( int type );
+    private final AtomicLong nextStart = new AtomicLong( 0 );
+
+    boolean scanBatch( int sizeHint, RecordNodeCursor cursor )
+    {
+        long start = nextStart.getAndAdd( sizeHint );
+        long stopInclusive = start + sizeHint - 1;
+        return cursor.scanRange( start, stopInclusive );
+    }
 }

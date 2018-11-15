@@ -55,6 +55,7 @@ import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
@@ -84,11 +85,14 @@ abstract class Read implements TxStateHolder,
 {
     static final int NO_ID = -1;
 
+    private final StorageReader storageReader;
     private final DefaultPooledCursors cursors;
     final KernelTransactionImplementation ktx;
 
-    Read( DefaultPooledCursors cursors, KernelTransactionImplementation ktx )
+    Read( StorageReader storageReader, DefaultPooledCursors cursors,
+            KernelTransactionImplementation ktx )
     {
+        this.storageReader = storageReader;
         this.cursors = cursors;
         this.ktx = ktx;
     }
@@ -316,7 +320,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeCursor> allNodesScan()
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException( "not implemented" );
+        return new NodeCursorScan( storageReader.allNodeScan(), this );
     }
 
     @Override
@@ -734,4 +738,5 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
     }
+
 }

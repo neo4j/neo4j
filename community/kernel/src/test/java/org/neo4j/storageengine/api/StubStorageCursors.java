@@ -291,6 +291,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public AllNodeScan allNodeScan()
+    {
+        throw new UnsupportedOperationException( "not implemented yet" );
+    }
+
+    @Override
     public StorageNodeCursor allocateNodeCursor()
     {
         return new StubStorageNodeCursor();
@@ -423,6 +429,12 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
+        public boolean scanBatch( AllNodeScan scan, int sizeHint )
+        {
+            throw new UnsupportedOperationException(  );
+        }
+
+        @Override
         public long entityReference()
         {
             return current.id;
@@ -543,6 +555,12 @@ public class StubStorageCursors implements StorageReader
         {
             iterator = null;
             next = reference;
+        }
+
+        @Override
+        public boolean scanBatch( AllRelationshipsScan scan, int sizeHint )
+        {
+            throw new UnsupportedOperationException(  );
         }
 
         @Override

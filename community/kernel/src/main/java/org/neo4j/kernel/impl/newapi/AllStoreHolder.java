@@ -118,7 +118,7 @@ public class AllStoreHolder extends Read
                            LabelScanStore labelScanStore,
                            Dependencies dataSourceDependencies )
     {
-        super( cursors, ktx );
+        super( storageReader, cursors, ktx );
         this.storageReader = storageReader;
         this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;

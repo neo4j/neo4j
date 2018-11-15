@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
+import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
@@ -34,7 +35,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private long next;
     private long highMark;
     private long nextStoreReference;
-    private boolean open;
+    private boolean open, batched;
 
     RecordNodeCursor( NodeStore read )
     {
@@ -57,6 +58,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         this.highMark = nodeHighMark();
         this.nextStoreReference = NO_ID;
         this.open = true;
+        this.batched = false;
     }
 
     @Override
@@ -75,6 +77,43 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
         this.open = true;
+        this.batched = false;
+    }
+
+    @Override
+    public boolean scanBatch( AllNodeScan scan, int sizeHint )
+    {
+        if ( getId() != NO_ID )
+        {
+            reset();
+        }
+        this.batched = true;
+        this.open = true;
+        this.nextStoreReference = NO_ID;
+
+        return ((RecordNodeScan) scan).scanBatch( sizeHint , this);
+    }
+
+    boolean scanRange( long start, long stop )
+    {
+        long max = nodeHighMark();
+        if ( start > max )
+        {
+            reset();
+            return false;
+        }
+        if ( start > stop )
+        {
+            reset();
+            return true;
+        }
+        if ( pageCursor == null )
+        {
+            pageCursor = nodePage( start );
+        }
+        RecordNodeCursor.this.next = start;
+        RecordNodeCursor.this.highMark = Math.min( stop, max );
+        return true;
     }
 
     @Override
@@ -160,7 +199,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 
             if ( next > highMark )
             {
-                if ( isSingle() )
+                if ( isSingle() || batched )
                 {
                     //we are a "single cursor"
                     next = NO_ID;

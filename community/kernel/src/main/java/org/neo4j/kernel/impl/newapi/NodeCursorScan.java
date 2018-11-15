@@ -17,18 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel.impl.newapi;
 
-/**
- * Cursor over relationships.
- */
-public interface StorageRelationshipScanCursor extends StorageRelationshipCursor, StorageEntityScanCursor<AllRelationshipsScan>
+import org.neo4j.internal.kernel.api.NodeCursor;
+import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.storageengine.api.AllNodeScan;
+
+final class NodeCursorScan implements Scan<NodeCursor>
 {
-    /**
-     * Initializes this cursor so that it will scan over existing relationships. Each call to {@link #next()} will
-     * advance the cursor so that the next node is read.
-     *
-     * @param type relationship type to scan over, or -1 for all relationships regardless of type.
-     */
-    void scan( int type );
+    private final AllNodeScan allNodeScan;
+    private final Read read;
+
+    NodeCursorScan( AllNodeScan internalScan, Read read )
+    {
+        this.allNodeScan = internalScan;
+        this.read = read;
+    }
+
+    @Override
+    public boolean reserveBatch( NodeCursor cursor, int sizeHint )
+    {
+        return ((DefaultNodeCursor) cursor).scanBatch( read, allNodeScan, sizeHint );
+    }
 }

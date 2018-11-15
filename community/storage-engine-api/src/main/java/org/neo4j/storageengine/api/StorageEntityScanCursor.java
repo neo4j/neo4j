@@ -19,13 +19,26 @@
  */
 package org.neo4j.storageengine.api;
 
-public interface StorageEntityScanCursor extends StorageEntityCursor
+public interface StorageEntityScanCursor<SCAN extends Scan> extends StorageEntityCursor
 {
     /**
      * Initializes this cursor so that it will scan over all existing entities. Each call to {@link #next()} will
      * advance the cursor so that the next entity is read.
      */
     void scan();
+
+    /**
+     * Initializes this cursor to perform batched scan.
+     *
+     * The upper bound of the number of found entities, is given by the provided size hint. The provided
+     * <code>SCAN</code> can be shared among worker-threads where each thread has a separate cursor. The role of
+     * <code>scan</code> is to make sure we don't get overlapping ranges.
+     *
+     * @param scan scan maintains state across threads so that we get exclusive ranges for each batch.
+     * @param sizeHint the batch will try to read this number of entities.
+     * @return <code>true</code> if there are entities to be found, otherwise <code>false</code>
+     */
+    boolean scanBatch( SCAN scan, int sizeHint );
 
     /**
      * Initializes this cursor so that the next call to {@link #next()} will place this cursor at that entity.

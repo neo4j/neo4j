@@ -22,7 +22,7 @@ package org.neo4j.storageengine.api;
 /**
  * Cursor over nodes and its data.
  */
-public interface StorageNodeCursor extends StorageEntityScanCursor
+public interface StorageNodeCursor extends StorageEntityScanCursor<AllNodeScan>
 {
     /**
      * @return label ids of the node this cursor currently is placed at.

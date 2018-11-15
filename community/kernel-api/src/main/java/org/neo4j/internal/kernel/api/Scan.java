@@ -27,5 +27,37 @@ package org.neo4j.internal.kernel.api;
  */
 public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
 {
-    void initialize( Cursor cursor );
+    /**
+     * Will attempt to reserve a batch to scan.
+     * <p>
+     * A <code>Scan</code> instance can be shared among threads and guarantees that each call to
+     * <code>reserveBatch</code> will
+     * reserve exclusive ranges for the scan. The basic usage pattern is that a single <code>Scan</code> scan instance
+     * is shared among several threads but where each thread maintains separate cursors. Each thread can call
+     * <code>reserveBatch</code> multiple times and then proceed to iterate the cursor as usual.
+     * <p>
+     * Example:
+     * <pre>
+     * {@code
+     *   try ( NodeCursor cursor = cursors.allocateCursor() )
+     *   {
+     *     while ( scan.reserveBatch( cursor, 42 ) )
+     *     {
+     *       while ( cursor.next() )
+     *       {
+     *         //do thins with the node
+     *       }
+     *     }
+     *   }
+     * }
+     * </pre>
+     * <p>
+     * Using it this way will guarantee that each scan - regardless of the calling thread - will see different parts of
+     * the underlying data.
+     *
+     * @param cursor The cursor to be used for reading.
+     * @param sizeHint The approximate size the batch, it is guaranteed to not exceed this value.
+     * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
+     */
+    boolean reserveBatch( Cursor cursor, int sizeHint );
 }

@@ -31,6 +31,7 @@ import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.kernel.api.txstate.TransactionState;
+import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
@@ -62,6 +63,15 @@ class DefaultNodeCursor implements NodeCursor
         this.currentAddedInTx = NO_ID;
         this.hasChanges = HasChanges.MAYBE;
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    boolean scanBatch( Read read, AllNodeScan scan, int sizeHint )
+    {
+        this.read = read;
+        this.single = NO_ID;
+        this.hasChanges = HasChanges.MAYBE;
+        this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
+        return storeCursor.scanBatch( scan, sizeHint );
     }
 
     void single( long reference, Read read )

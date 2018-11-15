@@ -203,6 +203,12 @@ public interface StorageReader extends AutoCloseable
     <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader, T> factory );
 
     /**
+     * Batched all node scan
+     * @return a new AllNodeScan maintaining the state of the batched all-node scan
+     */
+    AllNodeScan allNodeScan();
+
+    /**
      * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
      */
     StorageNodeCursor allocateNodeCursor();

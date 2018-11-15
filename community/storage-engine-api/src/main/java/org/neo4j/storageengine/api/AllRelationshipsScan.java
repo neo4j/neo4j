@@ -20,15 +20,9 @@
 package org.neo4j.storageengine.api;
 
 /**
- * Cursor over relationships.
+ * Marker interface for maintaining state for batched all-relationship scans
  */
-public interface StorageRelationshipScanCursor extends StorageRelationshipCursor, StorageEntityScanCursor<AllRelationshipsScan>
+public interface AllRelationshipsScan extends Scan
 {
-    /**
-     * Initializes this cursor so that it will scan over existing relationships. Each call to {@link #next()} will
-     * advance the cursor so that the next node is read.
-     *
-     * @param type relationship type to scan over, or -1 for all relationships regardless of type.
-     */
-    void scan( int type );
+
 }

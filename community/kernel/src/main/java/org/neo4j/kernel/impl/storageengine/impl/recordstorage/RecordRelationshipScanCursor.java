@@ -24,6 +24,7 @@ import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
@@ -80,6 +81,12 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
         this.highMark = NO_ID;
         this.nextStoreReference = NO_ID;
         this.open = true;
+    }
+
+    @Override
+    public boolean scanBatch( AllRelationshipsScan scan, int sizeHint )
+    {
+        throw new UnsupportedOperationException(  );
     }
 
     @Override
