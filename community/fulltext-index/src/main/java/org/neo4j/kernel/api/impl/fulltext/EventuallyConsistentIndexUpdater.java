@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.storageengine.api.schema.IndexReader;
 
 class EventuallyConsistentIndexUpdater implements IndexUpdater
 {

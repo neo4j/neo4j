@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compatibility.v4_0
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.{ConstraintValidationException, CypherExecutionException}
 import org.neo4j.graphdb.{ConstraintViolationException => KernelConstraintViolationException}
-import org.neo4j.internal.kernel.api.TokenNameLookup
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.ResourceCloseFailureException
+import org.neo4j.storageengine.api.TokenNameLookup
 
 trait ExceptionTranslationSupport {
   inner: TokenContext =>

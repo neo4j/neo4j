@@ -21,18 +21,17 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import org.junit.jupiter.api.Test;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.storageengine.api.TokenNameLookup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 class IndexPopulationFailedKernelExceptionTest
 {
-
-    private static final TokenNameLookup TOKEN_NAME_LOOKUP = SchemaUtil.idTokenNameLookup;
+    private static final TokenNameLookup TOKEN_NAME_LOOKUP = idTokenNameLookup;
 
     @Test
     void shouldHandleMultiplePropertiesInConstructor1()

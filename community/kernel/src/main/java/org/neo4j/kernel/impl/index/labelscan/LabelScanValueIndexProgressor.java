@@ -26,7 +26,7 @@ import java.util.Collection;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
  * {@link IndexProgressor} which steps over multiple {@link LabelScanValue} and for each

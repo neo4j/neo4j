@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api.schema.constraints;
 
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaComputer;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaComputer;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class ConstraintDescriptorFactory
 {
@@ -99,9 +99,10 @@ public class ConstraintDescriptorFactory
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create existence constraint for schema '%s' of type %s",
-                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.userDescription( idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
-                            ) );                }
+                            ) );
+                }
             };
 
     private static SchemaComputer<UniquenessConstraintDescriptor> convertToUniquenessConstraint =
@@ -118,7 +119,7 @@ public class ConstraintDescriptorFactory
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create uniqueness constraint for schema '%s' of type %s",
-                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.userDescription( idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
                             ) );
                 }
@@ -128,7 +129,7 @@ public class ConstraintDescriptorFactory
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create uniqueness constraint for schema '%s' of type %s",
-                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.userDescription( idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
                             ) );                }
             };
@@ -147,7 +148,7 @@ public class ConstraintDescriptorFactory
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create node key constraint for schema '%s' of type %s",
-                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.userDescription( idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
                             ) );
                 }
@@ -157,7 +158,7 @@ public class ConstraintDescriptorFactory
                 {
                     throw new UnsupportedOperationException(
                             format( "Cannot create node key constraint for schema '%s' of type %s",
-                                    schema.userDescription( SchemaUtil.idTokenNameLookup ),
+                                    schema.userDescription( idTokenNameLookup ),
                                     schema.getClass().getSimpleName()
                             ) );                }
             };

@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.kernel.api.ExplicitIndexHits;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 public class ExplicitIndexProgressor implements IndexProgressor
 {

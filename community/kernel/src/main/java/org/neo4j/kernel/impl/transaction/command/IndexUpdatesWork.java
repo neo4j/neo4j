@@ -27,7 +27,6 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.collection.NestingIterator;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
@@ -35,6 +34,7 @@ import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.util.concurrent.Work;
 
 /**

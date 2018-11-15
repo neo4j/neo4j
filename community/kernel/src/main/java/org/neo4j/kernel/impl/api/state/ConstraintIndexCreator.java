@@ -32,7 +32,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
@@ -51,6 +50,7 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
@@ -128,7 +128,7 @@ public class ConstraintIndexCreator
             // has been created. Now it's just the population left, which can take a long time
             locks.releaseExclusive( descriptor.keyType(), descriptor.keyId() );
 
-            awaitConstrainIndexPopulation( constraint, proxy );
+            awaitConstraintIndexPopulation( constraint, proxy );
             log.info( "Constraint %s populated, starting verification.", constraint.ownedIndexDescriptor() );
 
             // Index population was successful, but at this point we don't know if the uniqueness constraint holds.
@@ -172,7 +172,7 @@ public class ConstraintIndexCreator
 
                 if ( indexStillExists( schemaRead, descriptor, index ) )
                 {
-                    dropUniquenessConstraintIndex( (IndexDescriptor) index );
+                    dropUniquenessConstraintIndex( index );
                 }
             }
         }
@@ -187,18 +187,18 @@ public class ConstraintIndexCreator
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
+    public void dropUniquenessConstraintIndex( IndexDescriptor index )
             throws TransactionFailureException
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
-            ((KernelTransactionImplementation) transaction).txState().indexDoDrop( descriptor );
+            ((KernelTransactionImplementation) transaction).txState().indexDoDrop( index );
             transaction.success();
         }
     }
 
-    private void awaitConstrainIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy )
+    private void awaitConstraintIndexPopulation( UniquenessConstraintDescriptor constraint, IndexProxy proxy )
             throws InterruptedException, UniquePropertyValueValidationException
     {
         try
@@ -248,11 +248,11 @@ public class ConstraintIndexCreator
         return indexProxy.getDescriptor();
     }
 
-    public IndexDescriptor createConstraintIndex( final SchemaDescriptor schema, String provider )
+    public IndexReference createConstraintIndex( final SchemaDescriptor schema, String provider )
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED ) )
         {
-            IndexDescriptor index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
+            IndexReference index = ((KernelTransaction) transaction).indexUniqueCreate( schema, provider );
             transaction.success();
             return index;
         }

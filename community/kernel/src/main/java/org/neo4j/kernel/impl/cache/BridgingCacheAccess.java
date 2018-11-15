@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {

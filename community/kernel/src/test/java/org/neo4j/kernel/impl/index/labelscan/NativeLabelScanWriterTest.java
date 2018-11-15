@@ -44,10 +44,10 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.kernel.api.labelscan.LabelScanReader.NO_ID;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.flipRandom;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.getLabels;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreIT.nodesWithLabel;
-import static org.neo4j.storageengine.api.schema.LabelScanReader.NO_ID;
 
 public class NativeLabelScanWriterTest
 {

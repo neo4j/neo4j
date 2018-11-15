@@ -23,14 +23,16 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Reference to a specific index together with it's capabilities. This reference is valid until the schema of the database changes
  * (that is a create/drop of an index or constraint occurs).
  */
-public interface IndexReference extends IndexCapability
+public interface IndexReference extends IndexCapability, IndexDescriptor
 {
     String UNNAMED_INDEX = "Unnamed index";
 
@@ -91,13 +93,13 @@ public interface IndexReference extends IndexCapability
         @Override
         public IndexOrder[] orderCapability( ValueCategory... valueCategories )
         {
-            return NO_CAPABILITY.orderCapability( valueCategories );
+            return IndexCapability.NO_CAPABILITY.orderCapability( valueCategories );
         }
 
         @Override
         public IndexValueCapability valueCapability( ValueCategory... valueCategories )
         {
-            return NO_CAPABILITY.valueCapability( valueCategories );
+            return IndexCapability.NO_CAPABILITY.valueCapability( valueCategories );
         }
 
         @Override

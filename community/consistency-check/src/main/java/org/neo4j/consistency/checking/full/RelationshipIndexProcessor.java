@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.neo4j.consistency.checking.index.IndexAccessors;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 
 public class RelationshipIndexProcessor extends RecordProcessor.Adapter<RelationshipRecord>
 {

@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;

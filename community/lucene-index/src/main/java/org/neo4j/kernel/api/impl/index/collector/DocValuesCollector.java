@@ -54,8 +54,8 @@ import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.index.impl.lucene.explicit.EmptyIndexHits;
+import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 

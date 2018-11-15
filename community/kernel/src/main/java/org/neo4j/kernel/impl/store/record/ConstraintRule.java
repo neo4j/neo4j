@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.store.record;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-import static org.neo4j.internal.kernel.api.schema.SchemaUtil.idTokenNameLookup;
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 {

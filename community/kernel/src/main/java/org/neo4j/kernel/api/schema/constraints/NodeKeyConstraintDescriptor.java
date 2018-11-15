@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.api.schema.constraints;
 
-
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
+import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 
 public class NodeKeyConstraintDescriptor extends IndexBackedConstraintDescriptor
 {

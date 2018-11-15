@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class RepeatedPropertyInCompositeSchemaException extends SchemaKernelException
 {
@@ -32,8 +33,7 @@ public class RepeatedPropertyInCompositeSchemaException extends SchemaKernelExce
 
     public RepeatedPropertyInCompositeSchemaException( SchemaDescriptor schema, OperationContext context )
     {
-        super( Status.Schema.RepeatedPropertyInCompositeSchema, format(
-                schema, context, SchemaUtil.idTokenNameLookup ) );
+        super( Status.Schema.RepeatedPropertyInCompositeSchema, format( schema, context, idTokenNameLookup ) );
         this.schema = schema;
         this.context = context;
     }

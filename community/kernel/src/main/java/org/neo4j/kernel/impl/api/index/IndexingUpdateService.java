@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.io.IOException;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 public interface IndexingUpdateService
 {

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.schema.constraints;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
+import org.neo4j.storageengine.api.TokenNameLookup;
 
 import static java.lang.String.format;
 
@@ -27,7 +27,7 @@ import static java.lang.String.format;
  * Internal representation of a graph constraint, including the schema unit it targets (eg. label-property combination)
  * and the how that schema unit is constrained (eg. "has to exist", or "must be unique").
  */
-public abstract class ConstraintDescriptor implements org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor
+public abstract class ConstraintDescriptor implements org.neo4j.storageengine.api.schema.ConstraintDescriptor
 {
 
     private final ConstraintDescriptor.Type type;

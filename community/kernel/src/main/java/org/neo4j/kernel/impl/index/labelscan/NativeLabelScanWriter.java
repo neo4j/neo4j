@@ -26,9 +26,9 @@ import java.util.Comparator;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.Writer;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 
 import static java.lang.Long.min;
 import static java.lang.Math.toIntExact;

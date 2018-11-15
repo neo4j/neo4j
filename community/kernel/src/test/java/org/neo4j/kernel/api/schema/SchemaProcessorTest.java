@@ -25,8 +25,10 @@ import org.junit.jupiter.api.Test;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
+import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaProcessor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -42,19 +44,19 @@ class SchemaProcessorTest
         SchemaProcessor processor = new SchemaProcessor()
         {
             @Override
-            public void processSpecific( org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor schema )
+            public void processSpecific( LabelSchemaDescriptor schema )
             {
                 callHistory.add( "LabelSchemaDescriptor" );
             }
 
             @Override
-            public void processSpecific( org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor schema )
+            public void processSpecific( RelationTypeSchemaDescriptor schema )
             {
                 callHistory.add( "RelationTypeSchemaDescriptor" );
             }
 
             @Override
-            public void processSpecific( org.neo4j.internal.kernel.api.schema.SchemaDescriptor schemaDescriptor )
+            public void processSpecific( SchemaDescriptor schemaDescriptor )
             {
                 callHistory.add( "SchemaDescriptor" );
             }

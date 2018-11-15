@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.schema.SchemaRule;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
+import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 /**
  * Represent something gone wrong related to SchemaRules
@@ -45,7 +45,7 @@ class SchemaRuleException extends SchemaKernelException
             SchemaDescriptor descriptor )
     {
         super( status, format( messageTemplate, kind.userString().toLowerCase(),
-                descriptor.userDescription( SchemaUtil.idTokenNameLookup ) ) );
+                descriptor.userDescription( idTokenNameLookup ) ) );
         this.descriptor = descriptor;
         this.messageTemplate = messageTemplate;
         this.kind = kind;

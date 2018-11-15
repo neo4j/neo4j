@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.kernel.api.index.AbstractIndexReader;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.values.storable.Value;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

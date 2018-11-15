@@ -22,11 +22,8 @@ package org.neo4j.cypher.internal.runtime
 import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
-import org.neo4j.cypher.internal.planner.v4_0.spi.IdempotentResult
-import org.neo4j.cypher.internal.planner.v4_0.spi.KernelStatisticProvider
-import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
-import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.planner.v4_0.spi.{IdempotentResult, KernelStatisticProvider, TokenContext}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor

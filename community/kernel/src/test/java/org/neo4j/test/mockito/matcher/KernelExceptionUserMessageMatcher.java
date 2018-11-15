@@ -22,8 +22,8 @@ package org.neo4j.test.mockito.matcher;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
+import org.neo4j.storageengine.api.TokenNameLookup;
 
 public class KernelExceptionUserMessageMatcher<T extends SchemaKernelException> extends BaseMatcher<T>
 {

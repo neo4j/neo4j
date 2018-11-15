@@ -30,9 +30,9 @@ import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
 
+import static org.neo4j.kernel.api.labelscan.LabelScanReader.NO_ID;
 import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanWriter.rangeOf;
-import static org.neo4j.storageengine.api.schema.LabelScanReader.NO_ID;
 
 /**
  * {@link LongIterator} which iterate over multiple {@link LabelScanValue} and for each

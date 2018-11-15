@@ -22,8 +22,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.util.Properties;
 import java.util.stream.Stream;
 
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 public interface FulltextAdapter
 {

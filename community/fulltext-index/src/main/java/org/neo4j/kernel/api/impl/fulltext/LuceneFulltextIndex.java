@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.impl.index.AbstractLuceneIndex;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.partition.AbstractIndexPartition;
@@ -35,6 +34,8 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.storageengine.api.EntityType;
+
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader> implements Closeable
 {
@@ -80,7 +81,7 @@ public class LuceneFulltextIndex extends AbstractLuceneIndex<FulltextIndexReader
                ", identifier='" + identifier + '\'' +
                ", type=" + type +
                ", properties=" + Arrays.toString( descriptor.propertyNames() ) +
-               ", descriptor=" + descriptor.userDescription( SchemaUtil.idTokenNameLookup ) +
+               ", descriptor=" + descriptor.userDescription( idTokenNameLookup ) +
                '}';
     }
 

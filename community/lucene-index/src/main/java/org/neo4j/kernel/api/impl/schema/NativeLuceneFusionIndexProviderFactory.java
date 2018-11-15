@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.schema;
 
 import java.io.File;
 
-import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.AbstractIndexProviderFactory;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 

@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-
-import static java.lang.String.format;
+import org.neo4j.storageengine.api.TokenNameLookup;
 
 public class SchemaUtil
 {
@@ -56,26 +54,4 @@ public class SchemaUtil
         }
         return properties.toString();
     }
-
-    public static final TokenNameLookup idTokenNameLookup = new TokenNameLookup()
-    {
-
-        @Override
-        public String labelGetName( int labelId )
-        {
-            return format( "label[%d]", labelId );
-        }
-
-        @Override
-        public String relationshipTypeGetName( int relationshipTypeId )
-        {
-            return format( "relType[%d]", relationshipTypeId );
-        }
-
-        @Override
-        public String propertyKeyGetName( int propertyKeyId )
-        {
-            return format( "property[%d]", propertyKeyId );
-        }
-    };
 }

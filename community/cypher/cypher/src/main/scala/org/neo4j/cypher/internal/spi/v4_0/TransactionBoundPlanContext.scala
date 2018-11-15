@@ -28,10 +28,10 @@ import org.neo4j.cypher.internal.planner.v4_0.spi._
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.internal.kernel.api
+import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
 import org.neo4j.values.storable.ValueCategory
@@ -94,7 +94,7 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val orderCapability: OrderCapability = tps => {
            reference.orderCapability(tps.map(typeToValueCategory): _*) match {
             case Array() => IndexOrderCapability.NONE
-            case Array(api.IndexOrder.ASCENDING, api.IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
+            case Array(IndexOrder.ASCENDING, IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
             case Array(api.IndexOrder.DESCENDING, api.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
             case Array(api.IndexOrder.ASCENDING) => IndexOrderCapability.ASC
             case Array(api.IndexOrder.DESCENDING) => IndexOrderCapability.DESC
@@ -104,8 +104,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
         val valueCapability: ValueCapability = tps => {
           reference.valueCapability(tps.map(typeToValueCategory): _*) match {
               // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
-            case api.IndexValueCapability.YES => tps.map(_ => CanGetValue)
-            case api.IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
+            case IndexValueCapability.YES => tps.map(_ => CanGetValue)
+            case IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
             case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
           }
         }

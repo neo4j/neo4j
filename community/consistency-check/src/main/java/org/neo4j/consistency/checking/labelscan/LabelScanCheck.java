@@ -27,7 +27,7 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.consistency.store.synthetic.LabelScanDocument;
 import org.neo4j.kernel.api.labelscan.NodeLabelRange;
 
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 public class LabelScanCheck implements RecordCheck<LabelScanDocument, ConsistencyReport.LabelScanConsistencyReport>
 {

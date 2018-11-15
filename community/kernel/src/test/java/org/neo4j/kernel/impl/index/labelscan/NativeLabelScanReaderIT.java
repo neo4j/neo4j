@@ -27,10 +27,10 @@ import java.util.BitSet;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 

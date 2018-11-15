@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.spi.v3_4
 
 import org.neo4j.cypher.internal.planner.v3_4.spi.{IndexLimitation, SlowContains, IndexDescriptor => CypherIndexDescriptor}
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
+import org.neo4j.internal.kernel
 import org.neo4j.internal.kernel.api.{IndexLimitation => KernelIndexLimitation}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.storageengine.api.schema.IndexDescriptor
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor
+import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor
 
 trait IndexDescriptorCompatibility {
   def kernelToCypher(index: IndexDescriptor): CypherIndexDescriptor =
     CypherIndexDescriptor(index.schema().keyId, index.schema().getPropertyIds)
 
-  def kernelToCypher(limitation: KernelIndexLimitation): IndexLimitation = {
+  def kernelToCypher(limitation: kernel.api.IndexLimitation): IndexLimitation = {
     limitation match {
       case KernelIndexLimitation.SLOW_CONTAINS => SlowContains
       case _ => throw new IllegalStateException("Missing kernel to cypher mapping for limitation: " + limitation)

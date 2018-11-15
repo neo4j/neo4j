@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 
 public class TestIndexProviderDescriptor
 {

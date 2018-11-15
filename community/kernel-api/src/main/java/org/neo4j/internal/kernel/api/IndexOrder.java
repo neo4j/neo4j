@@ -20,12 +20,8 @@
 package org.neo4j.internal.kernel.api;
 
 /**
- * Enum used for two purposes:
- * 1. As return value for {@link IndexCapability#orderCapability(org.neo4j.values.storable.ValueCategory...)}.
- * Only {@link #ASCENDING} and {@link #DESCENDING} is valid for this.
- * 2. As parameter for {@link Read#nodeIndexScan(IndexReference, NodeValueIndexCursor, IndexOrder, boolean)} and
- * {@link Read#nodeIndexSeek(IndexReference, NodeValueIndexCursor, IndexOrder, boolean, IndexQuery...)}. Where {@link #NONE} is used when
- * no ordering is available or required.
+ * Used to specify ordering of index query results, if index is capable of providing that order.
+ * {@link #NONE} is used when no ordering is available or required.
  */
 public enum IndexOrder
 {

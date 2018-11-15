@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.IndexQuery.ExactPredicate
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections.{allCursor, incomingCursor, outgoingCursor}
 import org.neo4j.internal.kernel.api.helpers._
 import org.neo4j.internal.kernel.api.{IndexOrder => KernelIndexOrder, _}
-import org.neo4j.io.IOUtils
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, AlreadyIndexedException}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
@@ -53,8 +52,7 @@ import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.kernel.impl.util.{DefaultValueMapper, ValueUtils}
-import org.neo4j.storageengine.api.schema.IndexProgressor
-import org.neo4j.storageengine.api.{RelationshipVisitor, schema}
+import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
@@ -974,7 +972,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     cursor
   }
 
-  private def asKernelIndexOrder(indexOrder: IndexOrder): KernelIndexOrder = indexOrder match {
+  private def asKernelIndexOrder(indexOrder: IndexOrder): api.IndexOrder = indexOrder match {
     case IndexOrderAscending => KernelIndexOrder.ASCENDING
     case IndexOrderDescending => KernelIndexOrder.DESCENDING
     case IndexOrderNone => KernelIndexOrder.NONE

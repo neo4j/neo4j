@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class DropIndexFailureException extends SchemaKernelException
 {
@@ -35,7 +35,7 @@ public class DropIndexFailureException extends SchemaKernelException
 
     public DropIndexFailureException( SchemaDescriptor descriptor, SchemaKernelException cause )
     {
-        super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( SchemaUtil.idTokenNameLookup ),
+        super( Status.Schema.IndexDropFailed, format( message, descriptor.userDescription( idTokenNameLookup ),
                         cause.getMessage() ), cause );
         this.descriptor = descriptor;
     }

@@ -23,16 +23,16 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaComputer;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.schema.SchemaComputer;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaProcessor;
 
-public class RelationTypeSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor
+public class RelationTypeSchemaDescriptor implements org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor
 {
     private final int relTypeId;
     private final int[] propertyIds;

@@ -54,11 +54,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureEx
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
-import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.RelationTypeSchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
@@ -74,6 +69,7 @@ import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaE
 import org.neo4j.kernel.api.exceptions.schema.UnableToValidateConstraintException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
@@ -87,11 +83,15 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.IndexDescriptorFactory;
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -99,7 +99,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VALIDATION;
 import static org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException.OperationContext.CONSTRAINT_CREATION;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
@@ -108,9 +107,8 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.INDEX_ENTRY;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.indexEntryResourceId;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.ADDED_LABEL;
 import static org.neo4j.kernel.impl.newapi.IndexTxStateUpdater.LabelChangeType.REMOVED_LABEL;
-import static org.neo4j.storageengine.api.schema.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptor.schemaTokenLockingIds;
 import static org.neo4j.values.storable.Values.NO_VALUE;
-
 
 /**
  * Collects all Kernel API operations and guards them from being used outside of transaction.
@@ -467,8 +465,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
                     indexEntryResourceId( labelId, propertyValues )
             );
 
-            allStoreHolder.nodeIndexSeekWithFreshIndexReader(
-                    allStoreHolder.indexGetCapability( schemaIndexDescriptor ), valueCursor, propertyValues );
+            allStoreHolder.nodeIndexSeekWithFreshIndexReader( schemaIndexDescriptor, valueCursor, propertyValues );
             if ( valueCursor.next() && valueCursor.nodeReference() != modifiedNode )
             {
                 throw new UniquePropertyValueValidationException( constraint, VALIDATION,
@@ -874,6 +871,8 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         cursors.assertClosed();
         cursors.release();
+
+        allStoreHolder.release();
     }
 
     public Token token()
@@ -955,21 +954,20 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     public void indexDrop( IndexReference indexReference ) throws SchemaKernelException
     {
         assertValidIndex( indexReference );
-        IndexDescriptor index = (IndexDescriptor) indexReference;
-        SchemaDescriptor schema = index.schema();
+        SchemaDescriptor schema = indexReference.schema();
 
         exclusiveSchemaLock( schema );
         ktx.assertOpen();
         try
         {
-            IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( schema );
+            IndexReference existingIndex = allStoreHolder.indexGetForSchema( schema );
 
             if ( existingIndex == null )
             {
                 throw new NoSuchIndexException( schema );
             }
 
-            if ( existingIndex.type() == UNIQUE )
+            if ( existingIndex.isUnique() )
             {
                 if ( allStoreHolder.indexGetOwningUniquenessConstraintId( existingIndex ) != null )
                 {
@@ -981,7 +979,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         {
             throw new DropIndexFailureException( schema, e );
         }
-        ktx.txState().indexDoDrop( index );
+        ktx.txState().indexDoDrop( indexReference );
     }
 
     @Override
@@ -1134,13 +1132,13 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
     private void assertIndexDoesNotExist( SchemaKernelException.OperationContext context, SchemaDescriptor descriptor, Optional<String> name )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        IndexDescriptor existingIndex = allStoreHolder.indexGetForSchema( descriptor );
+        IndexReference existingIndex = allStoreHolder.indexGetForSchema( descriptor );
         if ( existingIndex == null && name.isPresent() )
         {
             IndexReference indexReference = allStoreHolder.indexGetForName( name.get() );
             if ( indexReference != IndexReference.NO_INDEX )
             {
-                existingIndex = (IndexDescriptor) indexReference;
+                existingIndex = indexReference;
             }
         }
         if ( existingIndex != null )
@@ -1148,7 +1146,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
             // OK so we found a matching constraint index. We check whether or not it has an owner
             // because this may have been a left-over constraint index from a previously failed
             // constraint creation, due to crash or similar, hence the missing owner.
-            if ( existingIndex.type() == UNIQUE )
+            if ( existingIndex.isUnique() )
             {
                 if ( context != CONSTRAINT_CREATION || constraintIndexHasOwner( existingIndex ) )
                 {
@@ -1222,9 +1220,9 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
         }
     }
 
-    private boolean constraintIndexHasOwner( IndexDescriptor descriptor )
+    private boolean constraintIndexHasOwner( IndexReference index )
     {
-        return allStoreHolder.indexGetOwningUniquenessConstraintId( descriptor ) != null;
+        return allStoreHolder.indexGetOwningUniquenessConstraintId( index ) != null;
     }
 
     private void assertConstraintDoesNotExist( ConstraintDescriptor constraint )

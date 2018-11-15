@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.api.ExplicitBatchIndexApplier;
 import org.neo4j.kernel.impl.api.ExplicitIndexApplierLookup;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
-import org.neo4j.kernel.impl.api.IndexReaderFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
@@ -106,9 +104,9 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
-import org.neo4j.storageengine.api.schema.SchemaRule;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.util.VisibleForTesting;
@@ -231,9 +229,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public StorageReader newReader()
     {
-        Supplier<IndexReaderFactory> indexReaderFactory = () -> new IndexReaderFactory.Caching( indexingService );
-        return new RecordStorageReader( tokenHolders, schemaStorage, neoStores, indexingService,
-                schemaCache, indexReaderFactory, labelScanStore::newReader, allocateCommandCreationContext() );
+        return new RecordStorageReader( tokenHolders, neoStores, indexingService, schemaCache, allocateCommandCreationContext() );
     }
 
     @Override

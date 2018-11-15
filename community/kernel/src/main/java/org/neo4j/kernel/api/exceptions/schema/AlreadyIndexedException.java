@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class AlreadyIndexedException extends SchemaKernelException
 {
@@ -38,7 +39,7 @@ public class AlreadyIndexedException extends SchemaKernelException
 
     public AlreadyIndexedException( SchemaDescriptor descriptor, OperationContext context )
     {
-        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, SchemaUtil.idTokenNameLookup, descriptor ) );
+        super( Status.Schema.IndexAlreadyExists, constructUserMessage( context, idTokenNameLookup, descriptor ) );
 
         this.descriptor = descriptor;
         this.context = context;

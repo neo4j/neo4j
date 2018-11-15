@@ -21,13 +21,13 @@ package org.neo4j.kernel.api.index;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.schema.LabelSchemaSupplier;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
-import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.api.index.UpdateMode;
+import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 /**
  * Subclasses of this represent events related to property changes due to property or label addition, deletion or
@@ -133,7 +133,7 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
     public String toString()
     {
         return format( "IndexEntryUpdate[id=%d, mode=%s, %s, beforeValues=%s, values=%s]", entityId, updateMode,
-                indexKey().schema().userDescription( SchemaUtil.idTokenNameLookup ),
+                indexKey().schema().userDescription( idTokenNameLookup ),
                 Arrays.toString( before ), Arrays.toString( values ) );
     }
 

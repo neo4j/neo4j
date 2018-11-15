@@ -23,8 +23,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import org.neo4j.internal.kernel.api.schema.IndexProviderDescriptor;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.io.fs.FileUtils.path;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.baseSchemaIndexFolder;

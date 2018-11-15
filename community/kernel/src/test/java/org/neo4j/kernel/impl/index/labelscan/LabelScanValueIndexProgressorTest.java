@@ -27,7 +27,7 @@ import java.util.HashSet;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;

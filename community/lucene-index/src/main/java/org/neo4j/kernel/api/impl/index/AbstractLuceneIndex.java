@@ -44,8 +44,8 @@ import org.neo4j.kernel.api.impl.index.partition.IndexPartitionFactory;
 import org.neo4j.kernel.api.impl.index.storage.PartitionedIndexStorage;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
 import org.neo4j.kernel.api.impl.schema.writer.PartitionedIndexWriter;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.IndexReader;
+import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 
 import static java.util.Collections.singletonMap;
 import static java.util.stream.Collectors.toList;

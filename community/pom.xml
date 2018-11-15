@@ -53,6 +53,7 @@
     <module>unsafe</module>
     <module>io</module>
     <module>diagnostics</module>
+    <module>storage-engine-api</module>
     <module>kernel-api</module>
     <module>csv</module>
     <module>logging</module>

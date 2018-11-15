@@ -33,17 +33,17 @@ import java.util.Objects;
 
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.internal.kernel.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.Changed;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.NoValue;
 import static org.neo4j.kernel.impl.api.index.EntityUpdates.PropertyValueType.UnChanged;
+import static org.neo4j.storageengine.api.schema.SchemaDescriptor.PropertySchemaType.COMPLETE_ALL_TOKENS;
 
 /**
  * Subclasses of this represent events related to property changes due to entity addition, deletion or update.

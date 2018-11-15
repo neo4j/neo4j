@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
 

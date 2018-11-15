@@ -23,15 +23,17 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaComputer;
-import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.schema.SchemaComputer;
+import org.neo4j.storageengine.api.schema.SchemaProcessor;
 
-public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+
+public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema.LabelSchemaDescriptor
 {
     private final int labelId;
     private final int[] propertyIds;
@@ -129,7 +131,7 @@ public class LabelSchemaDescriptor implements org.neo4j.internal.kernel.api.sche
     @Override
     public String toString()
     {
-        return "LabelSchemaDescriptor( " + userDescription( SchemaUtil.idTokenNameLookup ) + " )";
+        return "LabelSchemaDescriptor( " + userDescription( idTokenNameLookup ) + " )";
     }
 
     @Override

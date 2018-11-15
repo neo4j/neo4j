@@ -22,23 +22,22 @@ package org.neo4j.kernel.impl.api;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
+import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.IndexReader;
 
 public interface IndexReaderFactory
 {
-    IndexReader newReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newReader( IndexReference index ) throws IndexNotFoundKernelException;
 
-    IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException;
+    IndexReader newUnCachedReader( IndexReference index ) throws IndexNotFoundKernelException;
 
     void close();
 
     class Caching implements IndexReaderFactory
     {
-        private Map<IndexDescriptor,IndexReader> indexReaders;
+        private Map<IndexReference,IndexReader> indexReaders;
         private final IndexingService indexingService;
 
         public Caching( IndexingService indexingService )
@@ -47,27 +46,26 @@ public interface IndexReaderFactory
         }
 
         @Override
-        public IndexReader newReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newReader( IndexReference index ) throws IndexNotFoundKernelException
         {
             if ( indexReaders == null )
             {
                 indexReaders = new HashMap<>();
             }
 
-            IndexReader reader = indexReaders.get( descriptor );
+            IndexReader reader = indexReaders.get( index );
             if ( reader == null )
             {
-                reader = newUnCachedReader( descriptor );
-                indexReaders.put( descriptor, reader );
+                reader = newUnCachedReader( index );
+                indexReaders.put( index, reader );
             }
             return reader;
         }
 
         @Override
-        public IndexReader newUnCachedReader( IndexDescriptor descriptor ) throws IndexNotFoundKernelException
+        public IndexReader newUnCachedReader( IndexReference index ) throws IndexNotFoundKernelException
         {
-            IndexProxy index = indexingService.getIndexProxy( descriptor.schema() );
-            return index.newReader();
+            return indexingService.getIndexProxy( index.schema() ).newReader();
         }
 
         @Override

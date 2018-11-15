@@ -26,20 +26,12 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
-import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.register.Register;
-import org.neo4j.storageengine.api.schema.CapableIndexDescriptor;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.IndexReader;
-import org.neo4j.storageengine.api.schema.LabelScanReader;
-import org.neo4j.storageengine.api.schema.PopulationProgress;
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
@@ -127,24 +119,6 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public LabelScanReader getLabelScanReader()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public IndexReader getIndexReader( IndexDescriptor index )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public IndexReader getFreshIndexReader( IndexDescriptor index )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
     public long reserveNode()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -181,31 +155,31 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public Iterator<CapableIndexDescriptor> indexesGetForLabel( int labelId )
+    public Iterator<StorageIndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public CapableIndexDescriptor indexGetForName( String name )
+    public StorageIndexReference indexGetForName( String name )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public Iterator<CapableIndexDescriptor> indexesGetAll()
+    public Iterator<StorageIndexReference> indexesGetAll()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public Iterator<CapableIndexDescriptor> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<StorageIndexReference> indexesGetRelatedToProperty( int propertyId )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
+    public Long indexGetOwningUniquenessConstraintId( StorageIndexReference index )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }
@@ -241,37 +215,7 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesGetForLabel( int labelId )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public CapableIndexDescriptor indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public InternalIndexState indexGetState( IndexDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public IndexReference indexReference( IndexDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public PopulationProgress indexGetPopulationProgress( SchemaDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public String indexGetFailure( SchemaDescriptor descriptor )
+    public StorageIndexReference indexGetForSchema( SchemaDescriptor descriptor )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

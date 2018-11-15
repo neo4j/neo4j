@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.storageengine.api.schema.IndexProgressor;
+import org.neo4j.kernel.api.index.IndexProgressor;
 
 class NodeLabelIndexProgressor implements IndexProgressor
 {

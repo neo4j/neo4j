@@ -22,18 +22,18 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 
 import org.neo4j.graphdb.NotInTransactionException;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.internal.kernel.api.security.AuthSubject;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.api.ClockContext;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**
  * Extends the outwards-facing {@link org.neo4j.internal.kernel.api.Transaction} with additional functionality
@@ -65,9 +65,9 @@ public interface KernelTransaction extends Transaction, AssertOpen
      *
      * @param schema schema to create unique index for.
      * @param provider index provider identifier
-     * @return IndexDescriptor for the index to be created.
+     * @return IndexReference for the index to be created.
      */
-    IndexDescriptor indexUniqueCreate( SchemaDescriptor schema, String provider );
+    IndexReference indexUniqueCreate( SchemaDescriptor schema, String provider );
 
     /**
      * @return the security context this transaction is currently executing in.

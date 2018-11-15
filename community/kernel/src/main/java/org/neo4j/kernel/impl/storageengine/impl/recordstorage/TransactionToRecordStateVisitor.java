@@ -25,7 +25,6 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import java.util.Iterator;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
-import org.neo4j.internal.kernel.api.schema.constraints.ConstraintDescriptor;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
@@ -35,8 +34,8 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.storageengine.api.StorageProperty;
+import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
@@ -160,7 +159,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitAddedIndex( IndexDescriptor index )
     {
-        StoreIndexDescriptor rule = index.withId( schemaStorage.newRuleId() );
+        SchemaRule rule = ((org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor) index).withId( schemaStorage.newRuleId() );
         recordState.createSchemaRule( rule );
     }
 

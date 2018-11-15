@@ -20,8 +20,8 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 public abstract class IndexPopulationFailure
 {

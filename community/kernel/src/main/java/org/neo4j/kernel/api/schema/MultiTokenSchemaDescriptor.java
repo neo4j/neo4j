@@ -24,14 +24,16 @@ import org.apache.commons.lang3.ArrayUtils;
 import java.util.Arrays;
 import java.util.Objects;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
-import org.neo4j.internal.kernel.api.schema.SchemaComputer;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
-import org.neo4j.internal.kernel.api.schema.SchemaProcessor;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.EntityType;
+import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
+import org.neo4j.storageengine.api.schema.SchemaComputer;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaProcessor;
+
+import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 public class MultiTokenSchemaDescriptor implements SchemaDescriptor
 {
@@ -74,7 +76,7 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     @Override
     public String toString()
     {
-        return "MultiTokenSchemaDescriptor[" + userDescription( SchemaUtil.idTokenNameLookup ) + "]";
+        return "MultiTokenSchemaDescriptor[" + userDescription( idTokenNameLookup ) + "]";
     }
 
     @Override

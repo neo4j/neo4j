@@ -42,10 +42,11 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -103,9 +104,10 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
     private final AutoIndexing autoIndexing;
     private final ExplicitIndexStore explicitIndexStore;
-    private final IndexingProvidersService indexProviders;
     private final TokenHolders tokenHolders;
     private final String currentDatabaseName;
+    private final IndexingService indexingService;
+    private final LabelScanStore labelScanStore;
     private final Dependencies dataSourceDependencies;
     private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
@@ -148,7 +150,9 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
             AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            IndexingProvidersService indexProviders, TokenHolders tokenHolders, String currentDatabaseName, Dependencies dataSourceDependencies )
+            TokenHolders tokenHolders, String currentDatabaseName,
+            IndexingService indexingService, LabelScanStore labelScanStore,
+            Dependencies dataSourceDependencies )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -169,9 +173,10 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.accessCapability = accessCapability;
         this.autoIndexing = autoIndexing;
         this.explicitIndexStore = explicitIndexStore;
-        this.indexProviders = indexProviders;
         this.tokenHolders = tokenHolders;
         this.currentDatabaseName = currentDatabaseName;
+        this.indexingService = indexingService;
+        this.labelScanStore = labelScanStore;
         this.dataSourceDependencies = dataSourceDependencies;
         this.explicitIndexTxStateSupplier = explicitIndexTransactionStateProvider::createNewExplicitIndexTransactionState;
         this.versionContextSupplier = versionContextSupplier;
@@ -380,7 +385,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             autoIndexing,
                             explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, indexProviders, tokenHolders, dataSourceDependencies );
+                            schemaState, tokenHolders, indexingService, labelScanStore, dataSourceDependencies );
             this.transactions.add( tx );
             return tx;
         }

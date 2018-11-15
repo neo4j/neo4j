@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.helpers.ArrayUtil;

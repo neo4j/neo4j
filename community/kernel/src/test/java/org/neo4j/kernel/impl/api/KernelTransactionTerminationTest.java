@@ -37,6 +37,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -337,7 +338,7 @@ public class KernelTransactionTerminationTest
         }
     }
 
-    private static class  TestKernelTransaction extends KernelTransactionImplementation
+    private static class TestKernelTransaction extends KernelTransactionImplementation
     {
         final CommitTrackingMonitor monitor;
 
@@ -349,7 +350,7 @@ public class KernelTransactionTerminationTest
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), AutoIndexing.UNSUPPORTED,
                     mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mock( IndexingService.class ), mockedTokenHolders(), new Dependencies() );
+                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
 
             this.monitor = monitor;
         }

@@ -19,10 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index.sampling;
 
-import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.api.TokenNameLookup;
 
 public class OnlineIndexSamplingJobFactory implements IndexSamplingJobFactory
 {

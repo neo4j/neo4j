@@ -35,7 +35,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.storageengine.api.schema.LabelScanReader.NO_ID;
+import static org.neo4j.kernel.api.labelscan.LabelScanReader.NO_ID;
 
 public class LabelScanValueIteratorTest
 {
