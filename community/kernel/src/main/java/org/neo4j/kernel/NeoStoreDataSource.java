@@ -160,8 +160,6 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {
-    public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-
     private final Monitors monitors;
     private final Tracers tracers;
 
