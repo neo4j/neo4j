@@ -398,7 +398,7 @@ public class IndexStatisticsTest
             List<String> mismatches = new ArrayList<>();
             int labelId = ktx.tokenRead().nodeLabel( PERSON_LABEL );
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
-            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( ktx.schemaRead().index( labelId, propertyKeyId ) );
+            IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().index( labelId, propertyKeyId ) );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 // Node --> Index

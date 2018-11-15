@@ -825,7 +825,7 @@ public class MultipleOpenCursorsTest
         NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( indexDescriptor );
+            IndexReadSession index = ktx.dataRead().indexReadSession( indexDescriptor );
             ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, indexQueries );
             return cursor;
         }

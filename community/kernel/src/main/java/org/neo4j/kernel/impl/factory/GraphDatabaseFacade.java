@@ -717,7 +717,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             try
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-                IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
+                IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
 
                 return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
@@ -751,7 +751,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             try
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-                IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
+                IndexReadSession indexSession = read.indexReadSession( index );
                 read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.properties(), queries ) );
                 return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }

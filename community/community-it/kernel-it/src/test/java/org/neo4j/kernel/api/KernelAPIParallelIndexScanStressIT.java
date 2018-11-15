@@ -106,7 +106,7 @@ public class KernelAPIParallelIndexScanStressIT
     {
         int labelId = tx.tokenRead().nodeLabel( label );
         IndexReference index = tx.schemaRead().index( labelId, propKey );
-        return tx.dataRead().getOrCreateIndexReadSession( index );
+        return tx.dataRead().indexReadSession( index );
     }
 
     private void createLabeledNodes( int nNodes, String labelName, String propKey )

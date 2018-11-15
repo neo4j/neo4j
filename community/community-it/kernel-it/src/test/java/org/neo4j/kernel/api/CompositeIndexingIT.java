@@ -338,7 +338,7 @@ public class CompositeIndexingIT
     private NodeValueIndexCursor seek( KernelTransaction transaction ) throws KernelException
     {
         NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-        IndexReadSession indexSession = transaction.dataRead().getOrCreateIndexReadSession( index );
+        IndexReadSession indexSession = transaction.dataRead().indexReadSession( index );
         transaction.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, exactQuery() );
         return cursor;
     }

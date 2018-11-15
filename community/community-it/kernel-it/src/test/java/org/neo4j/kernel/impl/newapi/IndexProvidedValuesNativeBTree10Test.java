@@ -107,7 +107,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
-        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.index( label, prop ) );
+        IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexScan( index, node, IndexOrder.NONE, true );
@@ -132,7 +132,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         int prip = token.propertyKey( "prip" );
-        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.index( label, prop, prip ) );
+        IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop, prip ) );
         try ( NodeValueIndexCursor node = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexScan( index, node, IndexOrder.NONE, true );

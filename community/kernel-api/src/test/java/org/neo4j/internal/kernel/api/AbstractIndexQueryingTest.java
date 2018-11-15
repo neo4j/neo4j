@@ -48,7 +48,7 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
     @Test( expected = IndexNotApplicableKernelException.class )
     public void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
     {
-        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.indexGetForName( "ftsRels" ) );
+        IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( "ftsRels" ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
             read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "search" ) );

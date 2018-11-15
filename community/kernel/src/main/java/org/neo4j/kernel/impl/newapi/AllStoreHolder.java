@@ -39,7 +39,6 @@ import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFo
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.NoBoundIndexException;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
 import org.neo4j.internal.kernel.api.procs.QualifiedName;
@@ -263,24 +262,10 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public IndexReadSession getOrCreateIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
+    public IndexReadSession indexReadSession( IndexReference index ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );
         return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ), index );
-    }
-
-    @Override
-    public IndexReadSession getIndexReadSession( IndexReference index ) throws NoBoundIndexException, IndexNotFoundKernelException
-    {
-        assertValidIndex( index );
-        return new DefaultIndexReadSession( indexReaderCache.getOrCreate( index ), index );
-    }
-
-    @Override
-    public void prepareIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
-    {
-        assertValidIndex( index );
-        indexReaderCache.getOrCreate( index );
     }
 
     @Override

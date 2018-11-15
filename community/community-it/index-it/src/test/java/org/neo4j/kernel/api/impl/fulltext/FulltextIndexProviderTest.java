@@ -407,7 +407,7 @@ public class FulltextIndexProviderTest
                 }
             };
             Read read = ktx.dataRead();
-            IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( indexReference );
+            IndexReadSession indexSession = ktx.dataRead().indexReadSession( indexReference );
             read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
             int counter = 0;
             while ( cursor.next() )
@@ -479,7 +479,7 @@ public class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
-            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
+            IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value" ) );

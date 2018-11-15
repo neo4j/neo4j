@@ -158,7 +158,7 @@ public class LuceneFulltextTestSupport
     void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
     {
         IndexReference index = ktx.schemaRead().indexGetForName( indexName );
-        IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( index );
+        IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         if ( nodes )
         {
@@ -199,7 +199,7 @@ public class LuceneFulltextTestSupport
     {
 
         IndexReference index = ktx.schemaRead().indexGetForName( indexName );
-        IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( index );
+        IndexReadSession indexSession = ktx.dataRead().indexReadSession( index );
         try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
         {
             int num = 0;

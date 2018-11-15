@@ -163,7 +163,7 @@ public class FulltextProcedures
                     ", so it cannot be queried for nodes." );
         }
         NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor();
-        IndexReadSession indexSession = tx.dataRead().getOrCreateIndexReadSession( indexReference );
+        IndexReadSession indexSession = tx.dataRead().indexReadSession( indexReference );
         tx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<NodeOutput>()

@@ -138,7 +138,7 @@ public class ConcurrentLuceneFulltextUpdaterTest extends LuceneFulltextTestSuppo
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = kernelTransaction( tx );
-            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( ktx.schemaRead().indexGetForName( "nodes" ) );
+            IndexReadSession index = ktx.dataRead().indexReadSession( ktx.schemaRead().indexGetForName( "nodes" ) );
             try ( NodeValueIndexCursor bobCursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 ktx.dataRead().nodeIndexSeek( index, bobCursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "bob" ) );

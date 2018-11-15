@@ -40,20 +40,9 @@ import org.neo4j.values.storable.Value;
 public class StubRead implements Read
 {
     @Override
-    public IndexReadSession getOrCreateIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
+    public IndexReadSession indexReadSession( IndexReference index ) throws IndexNotFoundKernelException
     {
         throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public IndexReadSession getIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void prepareIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException
-    {
     }
 
     @Override

@@ -154,7 +154,7 @@ public class NativeStringIndexingIT
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession(
+                IndexReadSession index = ktx.dataRead().indexReadSession(
                         TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 ) );
                 ktx.dataRead().nodeIndexSeek( index,
                                               cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, string1 ),

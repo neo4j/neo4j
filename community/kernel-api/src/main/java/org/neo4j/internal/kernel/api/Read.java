@@ -34,29 +34,12 @@ public interface Read
     int ANY_RELATIONSHIP_TYPE = -1;
 
     /**
-     * If an IndexReadSession for the given index exists for this transaction, return it. Otherwise, bind a new
-     * IndexReadSession to this transaction and return it. Not Thread-safe.
+     * Ensure there is an IndexReadSession for the given index bound to this transaction, and return it. Not Thread-safe.
      *
-     * @param index the index to read from
+     * @param index reference to the index to read from
      * @return the IndexReadSession
      */
-    IndexReadSession getOrCreateIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException;
-
-    /**
-     * Get the IndexReadSession for the given index bound to this transaction, return it. Thread-safe.
-     *
-     * @param index the index to read from
-     * @return the IndexReadSession
-     */
-    IndexReadSession getIndexReadSession( IndexReference index )
-            throws IndexNotFoundKernelException, NoBoundIndexException;
-
-    /**
-     * If no IndexReadSession for the given index is bound to this transaction, bind a new IndexReadSession to this transaction. Not Thread-safe.
-     *
-     * @param index the index to read from
-     */
-    void prepareIndexReadSession( IndexReference index ) throws IndexNotFoundKernelException;
+    IndexReadSession indexReadSession( IndexReference index ) throws IndexNotFoundKernelException;
 
     /**
      * Ensure this transaction is prepared for node label scans. This avoids concurrency issues. Not Thread-safe.

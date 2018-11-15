@@ -134,7 +134,7 @@ public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<R
         int prop = token.propertyKey( "prop" );
 
         RandomValues randomValues = randomRule.randomValues();
-        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.index( label, prop ) );
+        IndexReadSession index = read.indexReadSession( schemaRead.index( label, prop ) );
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
             ValueType type = randomValues.among( targetedTypes );
