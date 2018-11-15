@@ -249,7 +249,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     ValueGroup.ZONED_TIME,
     ValueGroup.DURATION)
 
-  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
                                            predicates: Seq[IndexQuery]): NodeValueIndexCursor = {
@@ -269,7 +269,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
                               properties: Int*): IndexReference =
     transactionalContext.kernelTransaction.schemaRead().index(label, properties: _*)
 
-  private def seek[RESULT <: AnyRef](index: IndexReference,
+  private def seek[RESULT <: AnyRef](index: IndexReadSession,
                                      needsValues: Boolean,
                                      indexOrder: IndexOrder,
                                      queries: IndexQuery*): NodeValueIndexCursor = {
@@ -283,8 +283,7 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         null
 
     val needsValuesFromIndexSeek = actualValues == null && needsValues
-    val indexSession = reads().indexReadSession(index)
-    reads().nodeIndexSeek(indexSession, nodeCursor, asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek, queries: _*)
+    reads().nodeIndexSeek(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek, queries: _*)
     if (needsValues && actualValues != null)
       new ValuedNodeIndexCursor(nodeCursor, actualValues)
     else
@@ -299,17 +298,17 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     nodeCursor
   }
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: String): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder, IndexQuery.stringContains(index.properties()(0), value))
+    seek(index, needsValues, indexOrder, IndexQuery.stringContains(index.reference().properties()(0), value))
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: String): NodeValueIndexCursor =
-    seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.properties()(0), value))
+    seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.reference().properties()(0), value))
 
   override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,
                                               queries: Seq[IndexQuery.ExactPredicate]): NodeValueIndexCursor = {

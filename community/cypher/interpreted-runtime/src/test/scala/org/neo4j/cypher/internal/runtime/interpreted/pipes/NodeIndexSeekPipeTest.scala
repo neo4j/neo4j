@@ -51,7 +51,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, SingleQueryExpression(Literal("hello")), indexOrder = IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, SingleQueryExpression(Literal("hello")), indexOrder = IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -69,7 +69,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), indexOrder = IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), indexOrder = IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -87,7 +87,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), UniqueIndexSeek, IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), UniqueIndexSeek, IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -105,7 +105,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek, IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek, IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -122,7 +122,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(
       ListLiteral(
         Literal("hello"),
         Literal(null))),
@@ -143,7 +143,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(
       ListLiteral(
         Literal("hello"),
         Literal(null))), UniqueIndexSeek, IndexOrderNone)()
@@ -163,7 +163,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral()), indexOrder = IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral()), indexOrder = IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -180,7 +180,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("hello")
     )), indexOrder = IndexOrderNone)()
@@ -201,7 +201,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("world")
     )), indexOrder = IndexOrderNone)()
@@ -222,7 +222,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKeys.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties,
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0,
       CompositeQueryExpression(Seq(
         SingleQueryExpression(Literal("hello")),
         SingleQueryExpression(Literal("world"))
@@ -241,7 +241,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(Literal("wut?")), indexOrder = IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(Literal("wut?")), indexOrder = IndexOrderNone)()
 
     // then
     intercept[CypherTypeException](pipe.createResults(queryState))
@@ -253,7 +253,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, SingleQueryExpression(Literal("hello")), UniqueIndexSeek, IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, SingleQueryExpression(Literal("hello")), UniqueIndexSeek, IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -269,7 +269,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, DoNotGetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, SingleQueryExpression(Variable("x")), indexOrder = IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, SingleQueryExpression(Variable("x")), indexOrder = IndexOrderNone)()
     val result = pipe.createResults(queryState)
 
     // then
@@ -287,7 +287,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, GetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(
       Literal("hello"),
       Literal("bye")
     )), indexOrder = IndexOrderNone)()
@@ -311,7 +311,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKeys.map(IndexedProperty(_, GetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties,
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0,
       CompositeQueryExpression(Seq(
         ManyQueryExpression(ListLiteral(
           Literal("hello"), Literal("bye")
@@ -341,7 +341,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
 
     // when
     val properties = propertyKey.map(IndexedProperty(_, GetValue)).toArray
-    val pipe = NodeIndexSeekPipe("n", label, properties, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek, IndexOrderNone)()
+    val pipe = NodeIndexSeekPipe("n", label, properties, 0, ManyQueryExpression(ListLiteral(Literal("hello"), Literal("world"))), LockingUniqueIndexSeek, IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then

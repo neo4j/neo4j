@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContex
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.graphdb.spatial.Point
 import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.internal.kernel.api.CursorFactory
+import org.neo4j.internal.kernel.api.{CursorFactory, IndexReadSession}
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLocker}
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
@@ -49,10 +49,11 @@ object QueryStateHelper extends MockitoSugar {
                 resources: ExternalCSVResource = null,
                 params: MapValue = EMPTY_MAP,
                 expressionCursors: ExpressionCursors = new ExpressionCursors(mock[CursorFactory]),
+                queryIndexes: Array[IndexReadSession] = Array(mock[IndexReadSession]),
                 decorator: PipeDecorator = NullPipeDecorator,
                 initialContext: Option[ExecutionContext] = None
                ):QueryState =
-    new QueryState(query, resources, params, expressionCursors, Array(null), decorator, initialContext = initialContext)
+    new QueryState(query, resources, params, expressionCursors, queryIndexes, decorator, initialContext = initialContext)
 
   private val locker: PropertyContainerLocker = new PropertyContainerLocker
 

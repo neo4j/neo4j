@@ -314,7 +314,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
       // We are calculating the cost excluding deserialization of values from the index
       val properties = propertyKeyToken.map(IndexedProperty(_, DoNotGetValue)).toArray
 
-      NodeIndexSeekPipe(LABEL.name(), labelToken, properties, SingleQueryExpression(literal), IndexSeek, IndexOrderNone)()
+      NodeIndexSeekPipe(LABEL.name(), labelToken, properties, 0, SingleQueryExpression(literal), IndexSeek, IndexOrderNone)()
     }
   }
 

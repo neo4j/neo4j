@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans.{CachedNodeProperty, IndexOrder, IndexedProperty}
-import org.neo4j.internal.kernel.api.{IndexReference, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api.{IndexReadSession, NodeValueIndexCursor}
 import org.neo4j.values.storable.{TextValue, Values}
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.CypherTypeException
@@ -32,20 +31,12 @@ import org.opencypher.v9_0.util.attribution.Id
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,
                                                property: IndexedProperty,
+                                               queryIndexId: Int,
                                                valueExpr: Expression) extends Pipe with IndexPipeWithValues {
 
   override val indexPropertyIndices: Array[Int] = if (property.shouldGetValue) Array(0) else Array.empty
   override val indexCachedNodeProperties: Array[CachedNodeProperty] = Array(property.asCachedNodeProperty(ident))
   protected val needsValues = indexPropertyIndices.nonEmpty
-
-  private var reference: IndexReference = IndexReference.NO_INDEX
-
-  private def reference(context: QueryContext): IndexReference = {
-    if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, property.propertyKeyToken.nameId.id)
-    }
-    reference
-  }
 
   valueExpr.registerOwningPipe(this)
 
@@ -55,7 +46,7 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
 
     val resultNodes = value match {
       case value: TextValue =>
-        new IndexIterator(state.query, baseContext, queryContextCall(state, reference(state.query), value.stringValue()))
+        new IndexIterator(state.query, baseContext, queryContextCall(state, state.queryIndexes(queryIndexId), value.stringValue()))
       case Values.NO_VALUE =>
         Iterator.empty
       case x => throw new CypherTypeException(s"Expected a string value, but got $x")
@@ -65,34 +56,36 @@ abstract class AbstractNodeIndexStringScanPipe(ident: String,
   }
 
   protected def queryContextCall(state: QueryState,
-                                 indexReference: IndexReference,
+                                 index: IndexReadSession,
                                  value: String): NodeValueIndexCursor
 }
 
 case class NodeIndexContainsScanPipe(ident: String,
                                      label: LabelToken,
                                      property: IndexedProperty,
+                                     queryIndexId: Int,
                                      valueExpr: Expression,
                                      indexOrder: IndexOrder)
                                     (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
+  extends AbstractNodeIndexStringScanPipe(ident, label, property, queryIndexId, valueExpr) {
 
   override protected def queryContextCall(state: QueryState,
-                                          indexReference: IndexReference,
+                                          index: IndexReadSession,
                                           value: String): NodeValueIndexCursor =
-    state.query.indexSeekByContains(indexReference, needsValues, indexOrder, value)
+    state.query.indexSeekByContains(index, needsValues, indexOrder, value)
 }
 
 case class NodeIndexEndsWithScanPipe(ident: String,
                                      label: LabelToken,
                                      property: IndexedProperty,
+                                     queryIndexId: Int,
                                      valueExpr: Expression,
                                      indexOrder: IndexOrder)
                                     (val id: Id = Id.INVALID_ID)
-  extends AbstractNodeIndexStringScanPipe(ident, label, property, valueExpr) {
+  extends AbstractNodeIndexStringScanPipe(ident, label, property, queryIndexId, valueExpr) {
 
   override protected def queryContextCall(state: QueryState,
-                                          indexReference: IndexReference,
+                                          index: IndexReadSession,
                                           value: String): NodeValueIndexCursor =
-    state.query.indexSeekByEndsWith(indexReference, needsValues, indexOrder, value)
+    state.query.indexSeekByEndsWith(index, needsValues, indexOrder, value)
 }

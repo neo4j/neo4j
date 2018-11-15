@@ -101,7 +101,7 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def dropIndexRule(labelId: Int, propertyKeyIds: Seq[Int]): Unit =
     translateException(inner.dropIndexRule(labelId, propertyKeyIds))
 
-  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
                                            values: Seq[IndexQuery]): NodeValueIndexCursor =
@@ -239,13 +239,13 @@ class ExceptionTranslatingQueryContext(val inner: QueryContext) extends QueryCon
   override def getRelationshipFor(relationshipId: Long, typeId: Int, startNodeId: Long, endNodeId: Long): RelationshipValue =
     translateException(inner.getRelationshipFor(relationshipId, typeId, startNodeId, endNodeId))
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: String): NodeValueIndexCursor =
     translateException(inner.indexSeekByContains(index, needsValues, indexOrder, value))
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: String): NodeValueIndexCursor =

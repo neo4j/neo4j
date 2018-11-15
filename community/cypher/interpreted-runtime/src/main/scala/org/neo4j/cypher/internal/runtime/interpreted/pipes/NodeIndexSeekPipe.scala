@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.internal.kernel.api.IndexReference
 import org.opencypher.v9_0.expressions.LabelToken
 import org.opencypher.v9_0.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
                              properties: Array[IndexedProperty],
+                             queryIndexId: Int,
                              valueExpr: QueryExpression[Expression],
                              indexMode: IndexSeekMode = IndexSeek,
                              indexOrder: IndexOrder)
@@ -42,22 +41,13 @@ case class NodeIndexSeekPipe(ident: String,
     indexPropertyIndices.map(offset => properties(offset).asCachedNodeProperty(ident))
   private val needsValues: Boolean = indexPropertyIndices.nonEmpty
 
-  private var reference: IndexReference = IndexReference.NO_INDEX
-
-  private def reference(context: QueryContext): IndexReference = {
-    if (reference == IndexReference.NO_INDEX) {
-      reference = context.indexReference(label.nameId.id, propertyIds:_*)
-    }
-    reference
-  }
-
   valueExpr.expressions.foreach(_.registerOwningPipe(this))
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val indexReference = reference(state.query)
+    val index = state.queryIndexes(queryIndexId)
     val baseContext = state.newExecutionContext(executionContextFactory)
 
-    indexSeek(state, indexReference, needsValues, indexOrder, baseContext).flatMap(
+    indexSeek(state, index, needsValues, indexOrder, baseContext).flatMap(
       cursor => new IndexIterator(state.query, baseContext, cursor)
     )
   }

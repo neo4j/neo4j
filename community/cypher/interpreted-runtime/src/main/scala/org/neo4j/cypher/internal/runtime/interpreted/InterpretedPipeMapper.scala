@@ -82,20 +82,24 @@ case class InterpretedPipeMapper(readOnly: Boolean,
 
       case NodeIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = false, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+        NodeIndexSeekPipe(ident, label, properties.toArray, queryIndexes.registerQueryIndex(label, properties),
+                          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeUniqueIndexSeek(ident, label, properties, valueExpr, _, indexOrder) =>
         val indexSeekMode = IndexSeekModeFactory(unique = true, readOnly = readOnly).fromQueryExpression(valueExpr)
-        NodeIndexSeekPipe(ident, label, properties.toArray, valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
+        NodeIndexSeekPipe(ident, label, properties.toArray, queryIndexes.registerQueryIndex(label, properties),
+                          valueExpr.map(buildExpression), indexSeekMode, indexOrder)(id = id)
 
       case NodeIndexScan(ident, label, property, _, indexOrder) =>
         NodeIndexScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property), indexOrder)(id = id)
 
       case NodeIndexContainsScan(ident, label, property, valueExpr, _, indexOrder) =>
-        NodeIndexContainsScanPipe(ident, label,property, buildExpression(valueExpr), indexOrder)(id = id)
+        NodeIndexContainsScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property),
+                                  buildExpression(valueExpr), indexOrder)(id = id)
 
       case NodeIndexEndsWithScan(ident, label, property, valueExpr, _, indexOrder) =>
-        NodeIndexEndsWithScanPipe(ident, label,property, buildExpression(valueExpr), indexOrder)(id = id)
+        NodeIndexEndsWithScanPipe(ident, label, property, queryIndexes.registerQueryIndex(label, property),
+                                  buildExpression(valueExpr), indexOrder)(id = id)
     }
   }
 

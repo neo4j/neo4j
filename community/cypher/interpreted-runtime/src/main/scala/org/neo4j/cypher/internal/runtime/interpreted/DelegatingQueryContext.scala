@@ -117,7 +117,7 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
 
   override def indexReference(label: Int, properties: Int*): IndexReference = singleDbHit(inner.indexReference(label, properties:_*))
 
-  override def indexSeek[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                            needsValues: Boolean,
                                            indexOrder: IndexOrder,
                                            queries: Seq[IndexQuery]): NodeValueIndexCursor =
@@ -128,13 +128,13 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
                                            indexOrder: IndexOrder): NodeValueIndexCursor =
     manyDbHits(inner.indexScan(index, needsValues, indexOrder))
 
-  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: String): NodeValueIndexCursor =
     manyDbHits(inner.indexSeekByContains(index, needsValues, indexOrder, value))
 
-  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+  override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
                                                      value: String): NodeValueIndexCursor =

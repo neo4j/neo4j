@@ -55,7 +55,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("hello"), IndexOrderNone)()
+    val pipe = NodeIndexEndsWithScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, Literal("hello"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then
@@ -75,7 +75,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     )
 
     // when
-    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), Literal("bye"), IndexOrderNone)()
+    val pipe = NodeIndexContainsScanPipe("n", label, IndexedProperty(propertyKey, GetValue), 0, Literal("bye"), IndexOrderNone)()
     val result = pipe.createResults(queryState).toList
 
     // then

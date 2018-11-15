@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, PrefixSeekRangeExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsList, makeValueNeoSafe}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.internal.kernel.api.{IndexQuery, IndexReference, NodeValueIndexCursor}
+import org.neo4j.internal.kernel.api.{IndexQuery, IndexReadSession, NodeValueIndexCursor}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable._
 import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
@@ -46,7 +46,7 @@ trait NodeIndexSeeker {
 
   // index seek
   protected def indexSeek[RESULT <: AnyRef](state: QueryState,
-                                            indexReference: IndexReference,
+                                            index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
                                             baseContext: ExecutionContext): Iterator[NodeValueIndexCursor] =
@@ -54,11 +54,11 @@ trait NodeIndexSeeker {
       case _: ExactSeek |
            _: SeekByRange =>
         val indexQueries = computeIndexQueries(state, baseContext)
-        indexQueries.toIterator.map(query => state.query.indexSeek(indexReference, needsValues, indexOrder, query))
+        indexQueries.toIterator.map(query => state.query.indexSeek(index, needsValues, indexOrder, query))
 
       case LockingUniqueIndexSeek =>
         val indexQueries = computeExactQueries(state, baseContext)
-        indexQueries.map(indexQuery => state.query.lockingUniqueIndexSeek(indexReference, indexQuery)).toIterator
+        indexQueries.map(indexQuery => state.query.lockingUniqueIndexSeek(index.reference(), indexQuery)).toIterator
     }
 
   // helpers

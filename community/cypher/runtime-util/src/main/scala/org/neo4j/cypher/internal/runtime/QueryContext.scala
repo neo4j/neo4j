@@ -97,17 +97,17 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def indexReference(label: Int, properties: Int*): IndexReference
 
-  def indexSeek[RESULT <: AnyRef](index: IndexReference,
+  def indexSeek[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,
                                   indexOrder: IndexOrder,
                                   queries: Seq[IndexQuery]): NodeValueIndexCursor
 
-  def indexSeekByContains[RESULT <: AnyRef](index: IndexReference,
+  def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
                                             value: String): NodeValueIndexCursor
 
-  def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReference,
+  def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
                                             value: String): NodeValueIndexCursor

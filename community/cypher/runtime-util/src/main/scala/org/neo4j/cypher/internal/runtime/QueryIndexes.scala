@@ -34,10 +34,12 @@ class QueryIndexes(schemaRead: SchemaRead) {
 
   private val buffer = new ArrayBuffer[IndexReference]
 
+  def registerQueryIndex(label: LabelToken, property: IndexedProperty): Int = registerQueryIndex(label, Seq(property))
+
   def registerQueryIndex(label: LabelToken,
-                         property: IndexedProperty): Int = {
+                         properties: Seq[IndexedProperty]): Int = {
     val queryIndexId = buffer.size
-    buffer += schemaRead.indexReferenceUnchecked(label.nameId.id, property.propertyKeyToken.nameId.id)
+    buffer += schemaRead.indexReferenceUnchecked(label.nameId.id, properties.map(_.propertyKeyToken.nameId.id):_*)
     queryIndexId
   }
 
