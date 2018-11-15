@@ -140,7 +140,7 @@ public class MultipleIndexPopulatorUpdatesTest
         {
             if ( node.entityReference() == 7 )
             {
-                indexPopulator.queueUpdate( IndexEntryUpdate.change( 8L, index, Values.of( "a" ), Values.of( "b" ) ) );
+                indexPopulator.queueConcurrentUpdate( IndexEntryUpdate.change( 8L, index, Values.of( "a" ), Values.of( "b" ) ) );
             }
         }
     }

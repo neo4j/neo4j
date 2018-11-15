@@ -69,7 +69,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * and generate updates that are fed into the {@link IndexPopulator populators}. Only a single call to this
  * method should be made during the life time of a {@link MultipleIndexPopulator} and should be called by the
  * same thread instantiating this instance.</li>
- * <li>{@link #queueUpdate(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
+ * <li>{@link #queueConcurrentUpdate(IndexEntryUpdate)} which queues updates which will be read by the thread currently executing
  * {@link #indexAllEntities()} and incorporated into that data stream. Calls to this method may come from any number
  * of concurrent threads.</li>
  * </ul>
@@ -80,7 +80,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * <li>One or more calls to {@link #addPopulator(IndexPopulator, CapableIndexDescriptor, FlippableIndexProxy, FailedIndexProxyFactory, String)}.</li>
  * <li>Call to {@link #create()} to create data structures and files to start accepting updates.</li>
  * <li>Call to {@link #indexAllEntities()} (blocking call).</li>
- * <li>While all nodes are being indexed, calls to {@link #queueUpdate(IndexEntryUpdate)} are accepted.</li>
+ * <li>While all nodes are being indexed, calls to {@link #queueConcurrentUpdate(IndexEntryUpdate)} are accepted.</li>
  * <li>Call to {@link #flipAfterPopulation(boolean)} after successful population, or {@link #fail(Throwable)} if not</li>
  * </ol>
  */
@@ -90,11 +90,11 @@ public class MultipleIndexPopulator implements IndexPopulator
     static final String BATCH_SIZE_NAME = "batch_size";
 
     private final int QUEUE_THRESHOLD = FeatureToggles.getInteger( getClass(), QUEUE_THRESHOLD_NAME, 20_000 );
-    private final int BATCH_SIZE = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
+    private final int BATCH_SIZE_SCAN = FeatureToggles.getInteger( BatchingMultipleIndexPopulator.class, BATCH_SIZE_NAME, 10_000 );
 
     // Concurrency queue since multiple concurrent threads may enqueue updates into it. It is important for this queue
     // to have fast #size() method since it might be drained in batches
-    final Queue<IndexEntryUpdate<?>> updatesQueue = new LinkedBlockingQueue<>();
+    final Queue<IndexEntryUpdate<?>> concurrentUpdateQueue = new LinkedBlockingQueue<>();
 
     // Populators are added into this list. The same thread adding populators will later call #indexAllEntities.
     // Multiple concurrent threads might fail individual populations.
@@ -191,9 +191,9 @@ public class MultipleIndexPopulator implements IndexPopulator
      *
      * @param update {@link IndexEntryUpdate} to queue.
      */
-    void queueUpdate( IndexEntryUpdate<?> update )
+    void queueConcurrentUpdate( IndexEntryUpdate<?> update )
     {
-        updatesQueue.add( update );
+        concurrentUpdateQueue.add( update );
     }
 
     /**
@@ -351,21 +351,21 @@ public class MultipleIndexPopulator implements IndexPopulator
         return populations.remove( indexPopulation );
     }
 
-    boolean populateFromQueueBatched( long currentlyIndexedNodeId )
+    boolean applyConcurrentUpdateQueueBatched( long currentlyIndexedNodeId )
     {
-        return populateFromQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
+        return applyConcurrentUpdateQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
     }
 
     void flushAll()
     {
-        populations.forEach( this::flush );
+        populations.forEach( this::flushBatchFromScan );
     }
 
-    protected void flush( IndexPopulation population )
+    protected void flushBatchFromScan( IndexPopulation population )
     {
         try
         {
-            population.populator.add( population.takeCurrentBatch() );
+            population.populator.add( population.takeCurrentBatchFromScan() );
         }
         catch ( Throwable failure )
         {
@@ -378,9 +378,9 @@ public class MultipleIndexPopulator implements IndexPopulator
      *
      * @return whether or not there were external updates applied.
      */
-    boolean populateFromQueue( int queueThreshold, long currentlyIndexedNodeId )
+    boolean applyConcurrentUpdateQueue( int queueThreshold, long currentlyIndexedNodeId )
     {
-        int queueSize = updatesQueue.size();
+        int queueSize = concurrentUpdateQueue.size();
         if ( queueSize > 0 && queueSize >= queueThreshold )
         {
             // Before applying updates from the updates queue any pending scan updates needs to be applied, i.e. flushed.
@@ -392,10 +392,10 @@ public class MultipleIndexPopulator implements IndexPopulator
                 do
                 {
                     // no need to check for null as nobody else is emptying this queue
-                    IndexEntryUpdate<?> update = updatesQueue.poll();
+                    IndexEntryUpdate<?> update = concurrentUpdateQueue.poll();
                     storeScan.acceptUpdate( updater, update, currentlyIndexedNodeId );
                 }
-                while ( !updatesQueue.isEmpty() );
+                while ( !concurrentUpdateQueue.isEmpty() );
             }
             return true;
         }
@@ -494,7 +494,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         private boolean populationOngoing = true;
         private final ReentrantLock populatorLock = new ReentrantLock();
 
-        List<IndexEntryUpdate<?>> batchedUpdates;
+        List<IndexEntryUpdate<?>> batchedUpdatesFromScan;
 
         IndexPopulation( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
                 FailedIndexProxyFactory failedIndexProxyFactory, String indexUserDescription )
@@ -506,7 +506,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
             this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
-            this.batchedUpdates = new ArrayList<>( BATCH_SIZE );
+            this.batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
         }
 
         private void flipToFailed( IndexPopulationFailure failure )
@@ -549,12 +549,12 @@ public class MultipleIndexPopulator implements IndexPopulator
             }
         }
 
-        private void onUpdate( IndexEntryUpdate<?> update )
+        private void onUpdateFromScan( IndexEntryUpdate<?> update )
         {
             populator.includeSample( update );
-            if ( batch( update ) )
+            if ( addToBatchFromScan( update ) )
             {
-                flush( this );
+                flushBatchFromScan( this );
             }
         }
 
@@ -567,8 +567,8 @@ public class MultipleIndexPopulator implements IndexPopulator
                 {
                     if ( populationOngoing )
                     {
-                        populator.add( takeCurrentBatch() );
-                        populateFromQueue( 0, Long.MAX_VALUE );
+                        populator.add( takeCurrentBatchFromScan() );
+                        applyConcurrentUpdateQueue( 0, Long.MAX_VALUE );
                         if ( populations.contains( IndexPopulation.this ) )
                         {
                             if ( verifyBeforeFlipping )
@@ -614,20 +614,20 @@ public class MultipleIndexPopulator implements IndexPopulator
             return capableIndexDescriptor.schema();
         }
 
-        public boolean batch( IndexEntryUpdate<?> update )
+        boolean addToBatchFromScan( IndexEntryUpdate<?> update )
         {
-            batchedUpdates.add( update );
-            return batchedUpdates.size() >= BATCH_SIZE;
+            batchedUpdatesFromScan.add( update );
+            return batchedUpdatesFromScan.size() >= BATCH_SIZE_SCAN;
         }
 
-        Collection<IndexEntryUpdate<?>> takeCurrentBatch()
+        Collection<IndexEntryUpdate<?>> takeCurrentBatchFromScan()
         {
-            if ( batchedUpdates.isEmpty() )
+            if ( batchedUpdatesFromScan.isEmpty() )
             {
                 return Collections.emptyList();
             }
-            Collection<IndexEntryUpdate<?>> batch = batchedUpdates;
-            batchedUpdates = new ArrayList<>( BATCH_SIZE );
+            Collection<IndexEntryUpdate<?>> batch = batchedUpdatesFromScan;
+            batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
             return batch;
         }
     }
@@ -638,17 +638,17 @@ public class MultipleIndexPopulator implements IndexPopulator
         @Override
         public boolean visit( EntityUpdates updates )
         {
-            add( updates );
-            return populateFromQueueBatched( updates.getEntityId() );
+            addFromScan( updates );
+            return applyConcurrentUpdateQueueBatched( updates.getEntityId() );
         }
 
-        private void add( EntityUpdates updates )
+        private void addFromScan( EntityUpdates updates )
         {
             // This is called from a full store node scan, meaning that all node properties are included in the
             // EntityUpdates object. Therefore no additional properties need to be loaded.
             for ( IndexEntryUpdate<IndexPopulation> indexUpdate : updates.forIndexKeys( populations ) )
             {
-                indexUpdate.indexKey().onUpdate( indexUpdate );
+                indexUpdate.indexKey().onUpdateFromScan( indexUpdate );
             }
         }
     }

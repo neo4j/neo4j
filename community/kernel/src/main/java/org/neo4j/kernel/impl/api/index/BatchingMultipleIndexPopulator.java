@@ -122,11 +122,11 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     {
         String updatesString = populations
                 .stream()
-                .map( population -> population.batchedUpdates.size() + " updates" )
+                .map( population -> population.batchedUpdatesFromScan.size() + " updates" )
                 .collect( joining( ", ", "[", "]" ) );
 
         return "BatchingMultipleIndexPopulator{activeTasks=" + activeTasks + ", executor=" + executor + ", " +
-               "batchedUpdates = " + updatesString + ", queuedUpdates = " + updatesQueue.size() + "}";
+               "batchedUpdatesFromScan = " + updatesString + ", concurrentUpdateQueue = " + concurrentUpdateQueue.size() + "}";
     }
 
     /**
@@ -157,10 +157,10 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      */
     @Override
-    protected void flush( IndexPopulation population )
+    protected void flushBatchFromScan( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
-        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatch();
+        Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatchFromScan();
 
         executor.execute( () ->
         {

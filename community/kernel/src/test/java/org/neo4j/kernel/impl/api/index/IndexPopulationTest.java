@@ -63,7 +63,7 @@ public class IndexPopulationTest
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
-        multipleIndexPopulator.queueUpdate( someUpdate() );
+        multipleIndexPopulator.queueConcurrentUpdate( someUpdate() );
         multipleIndexPopulator.indexAllEntities().run();
 
         // when

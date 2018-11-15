@@ -164,7 +164,7 @@ public class IndexPopulationJob implements Runnable
      */
     public void update( IndexEntryUpdate<?> update )
     {
-        multiPopulator.queueUpdate( update );
+        multiPopulator.queueConcurrentUpdate( update );
     }
 
     @Override

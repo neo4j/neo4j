@@ -98,10 +98,10 @@ public class BatchingMultipleIndexPopulatorTest
 
         IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index1.schema(), "bar" );
-        batchingPopulator.queueUpdate( update1 );
-        batchingPopulator.queueUpdate( update2 );
+        batchingPopulator.queueConcurrentUpdate( update1 );
+        batchingPopulator.queueConcurrentUpdate( update2 );
 
-        batchingPopulator.populateFromQueueBatched( 42 );
+        batchingPopulator.applyConcurrentUpdateQueueBatched( 42 );
 
         verify( updater, never() ).process( any() );
         verify( populator, never() ).newPopulatingUpdater( any() );
@@ -133,11 +133,11 @@ public class BatchingMultipleIndexPopulatorTest
         IndexEntryUpdate<?> update1 = add( 1, index1.schema(), "foo" );
         IndexEntryUpdate<?> update2 = add( 2, index42.schema(), "bar" );
         IndexEntryUpdate<?> update3 = add( 3, index1.schema(), "baz" );
-        batchingPopulator.queueUpdate( update1 );
-        batchingPopulator.queueUpdate( update2 );
-        batchingPopulator.queueUpdate( update3 );
+        batchingPopulator.queueConcurrentUpdate( update1 );
+        batchingPopulator.queueConcurrentUpdate( update2 );
+        batchingPopulator.queueConcurrentUpdate( update3 );
 
-        batchingPopulator.populateFromQueueBatched( 42 );
+        batchingPopulator.applyConcurrentUpdateQueueBatched( 42 );
 
         verify( updater1 ).process( update1 );
         verify( updater1 ).process( update3 );
