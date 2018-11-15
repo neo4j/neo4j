@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.ir.{v3_4 => irV3_4}
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_4, Solveds => SolvedsV3_4}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities => Cardinalitiesv4_0, Solveds => Solvedsv4_0}
 import org.neo4j.cypher.internal.util.v3_4.attribution.{SequentialIdGen => SequentialIdGenv3_4}
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4, symbols => symbolsV3_4}
+import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4}
+import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilv3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
@@ -38,13 +39,15 @@ import org.opencypher.v9_0.expressions.{PathExpression, SemanticDirection}
 import org.opencypher.v9_0.util.attribution.{SequentialIdGen => SequentialIdGenv4_0}
 import org.opencypher.v9_0.util.{InputPosition, NonEmptyList, symbols => symbolsv4_0}
 import org.opencypher.v9_0.{ast => astv4_0, expressions => expressionsv4_0, util => utilv4_0}
+import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.reflections.Reflections
-import org.scalatest.{FunSuite, Matchers}
 
 import scala.collection.JavaConverters._
-import scala.util.{Failure, Success, Try}
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
-class LogicalPlanConverterTest extends FunSuite with Matchers {
+class LogicalPlanConverterTest extends CypherFunSuite {
 
   private implicit val idGen3_4 = new SequentialIdGenv3_4()
   private implicit val idGen4_0 = new SequentialIdGenv4_0()
