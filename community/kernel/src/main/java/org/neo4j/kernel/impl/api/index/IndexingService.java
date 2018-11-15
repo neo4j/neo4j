@@ -446,14 +446,21 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
+    // while indexes will be closed on shutdown we need to stop ongoing jobs before we will start shutdown to prevent
+    // races between checkpoint flush and index jobs
+    @Override
+    public void stop() throws Throwable
+    {
+        samplingController.stop();
+        populationJobController.stop();
+    }
+
     // We need to stop indexing service on shutdown since we can have transactions that are ongoing/finishing
     // after we start stopping components and those transactions should be able to finish successfully
     @Override
     public void shutdown() throws ExecutionException, InterruptedException
     {
         state = State.STOPPED;
-        samplingController.stop();
-        populationJobController.stop();
         closeAllIndexes();
     }
 
