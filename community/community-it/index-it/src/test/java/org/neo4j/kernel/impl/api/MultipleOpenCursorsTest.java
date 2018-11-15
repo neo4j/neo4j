@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -824,7 +825,8 @@ public class MultipleOpenCursorsTest
         NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( indexDescriptor, cursor, IndexOrder.NONE, false, indexQueries );
+            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( indexDescriptor );
+            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, indexQueries );
             return cursor;
         }
     }

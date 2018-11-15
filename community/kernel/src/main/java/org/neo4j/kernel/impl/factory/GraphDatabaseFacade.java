@@ -58,6 +58,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -716,7 +717,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             try
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, query );
+                IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
+                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
 
                 return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
@@ -749,7 +751,8 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             try
             {
                 NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.properties(), queries ) );
+                IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
+                read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, getReorderedIndexQueries( index.properties(), queries ) );
                 return new NodeCursorResourceIterator<>( cursor, statement, this::newNodeProxy );
             }
             catch ( KernelException e )

@@ -41,6 +41,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -412,8 +413,9 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
                 predicates[i] = IndexQuery.exists( propertyKeyIds[i] );
             }
             IndexReference index = ktx.schemaRead().index( labelId, propertyKeyIds );
+            IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( index );
             NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, predicates );
+            ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, predicates );
             int count = 0;
             while ( cursor.next() )
             {

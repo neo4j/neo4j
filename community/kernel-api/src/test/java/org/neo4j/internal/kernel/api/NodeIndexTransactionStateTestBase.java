@@ -385,7 +385,8 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     {
         try ( NodeValueIndexCursor nodes = tx.cursors().allocateNodeValueIndexCursor() )
         {
-            tx.dataRead().nodeIndexSeek( index, nodes, IndexOrder.NONE, needsValues, queries );
+            IndexReadSession indexSession = tx.dataRead().getOrCreateIndexReadSession( index );
+            tx.dataRead().nodeIndexSeek( indexSession, nodes, IndexOrder.NONE, needsValues, queries );
             assertNodeAndValue( expected, tx, needsValues, anotherValueFoundByQuery, nodes );
         }
     }

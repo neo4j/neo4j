@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.CommunityEditionModule;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -100,8 +101,9 @@ class NonUniqueIndexTest
                 KernelTransaction ktx = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency(
                         ThreadToStatementContextBridge.class ).getKernelTransactionBoundToThisThread( true );
                 IndexReference index = ktx.schemaRead().index( ktx.tokenRead().nodeLabel( LABEL ), ktx.tokenRead().propertyKey( KEY ) );
+                IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( index );
                 NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor();
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.exact( 1, VALUE ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.exact( 1, VALUE ) );
                 assertTrue( cursor.next() );
                 assertEquals( node.getId(), cursor.nodeReference() );
                 assertFalse( cursor.next() );

@@ -49,6 +49,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -397,7 +398,7 @@ public class IndexStatisticsTest
             List<String> mismatches = new ArrayList<>();
             int labelId = ktx.tokenRead().nodeLabel( PERSON_LABEL );
             int propertyKeyId = ktx.tokenRead().propertyKey( NAME_PROPERTY );
-            IndexReference index = ktx.schemaRead().index( labelId, propertyKeyId );
+            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( ktx.schemaRead().index( labelId, propertyKeyId ) );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 // Node --> Index

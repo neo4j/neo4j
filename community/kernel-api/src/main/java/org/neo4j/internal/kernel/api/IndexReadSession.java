@@ -26,4 +26,5 @@ package org.neo4j.internal.kernel.api;
  */
 public interface IndexReadSession
 {
+    IndexReference reference();
 }

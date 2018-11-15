@@ -33,4 +33,10 @@ class DefaultIndexReadSession implements IndexReadSession
         this.reader = reader;
         this.reference = reference;
     }
+
+    @Override
+    public IndexReference reference()
+    {
+        return reference;
+    }
 }

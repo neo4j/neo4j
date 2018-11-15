@@ -88,25 +88,25 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public final void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public final void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
             throws IndexNotApplicableKernelException, IndexNotFoundKernelException
     {
         ktx.assertOpen();
-        if ( hasForbiddenProperties( index ) )
+        DefaultIndexReadSession indexSession = (DefaultIndexReadSession) index;
+        if ( hasForbiddenProperties( indexSession.reference ) )
         {
             cursor.close();
             return;
         }
-        if ( index.schema().entityType() != EntityType.NODE )
+        if ( indexSession.reference.schema().entityType() != EntityType.NODE )
         {
             throw new IndexNotApplicableKernelException( "Node index seek can only be performed on node indexes: " + index );
         }
 
         EntityIndexSeekClient client = (EntityIndexSeekClient) cursor;
-        IndexReader reader = indexReader( index, false );
         client.setRead( this, null );
-        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, reader );
-        reader.query( this, withFullPrecision, indexOrder, needsValues, query );
+        IndexProgressor.EntityValueClient withFullPrecision = injectFullValuePrecision( client, query, indexSession.reader );
+        indexSession.reader.query( this, withFullPrecision, indexOrder, needsValues, query );
     }
 
     @Override

@@ -82,7 +82,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexReadSession index = tx.dataRead().getOrCreateIndexReadSession( tx.schemaRead().index( label, prop ) );
 
             try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {
@@ -124,7 +124,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
         {
             int label = tx.tokenRead().nodeLabel( "Node" );
             int prop = tx.tokenRead().propertyKey( "prop" );
-            IndexReference index = tx.schemaRead().index( label, prop );
+            IndexReadSession index = tx.dataRead().getOrCreateIndexReadSession( tx.schemaRead().index( label, prop ) );
 
             try ( NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor() )
             {

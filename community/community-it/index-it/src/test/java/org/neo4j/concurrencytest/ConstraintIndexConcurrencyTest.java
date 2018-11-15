@@ -29,13 +29,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
-import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -81,12 +81,12 @@ public class ConstraintIndexConcurrencyTest
             KernelTransaction ktx = ktxSupplier.get();
             int labelId = ktx.tokenRead().nodeLabel( label.name() );
             int propertyKeyId = ktx.tokenRead().propertyKey( propertyKey );
-            IndexDescriptor index = TestIndexDescriptorFactory.uniqueForLabel( labelId, propertyKeyId );
             Read read = ktx.dataRead();
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                read.nodeIndexSeek( ktx.schemaRead().index( labelId, propertyKeyId ), cursor, IndexOrder.NONE, false,
-                        IndexQuery.exact( index.schema().getPropertyId(),
+                IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( ktx.schemaRead().index( labelId, propertyKeyId ) );
+                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false,
+                        IndexQuery.exact( propertyKeyId,
                                 "The value is irrelevant, we just want to perform some sort of lookup against this " + "index" ) );
             }
             // then let another thread come in and create a node

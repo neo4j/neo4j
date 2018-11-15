@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.IndexReference;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestBase;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.test.rule.RandomRule;
@@ -134,11 +134,11 @@ public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<R
         int prop = token.propertyKey( "prop" );
 
         RandomValues randomValues = randomRule.randomValues();
-        IndexReference index = schemaRead.index( label, prop );
+        IndexReadSession index = read.getOrCreateIndexReadSession( schemaRead.index( label, prop ) );
         for ( int i = 0; i < N_ITERATIONS; i++ )
         {
             ValueType type = randomValues.among( targetedTypes );
-            IndexOrder[] order = index.orderCapability( type.valueGroup.category() );
+            IndexOrder[] order = index.reference().orderCapability( type.valueGroup.category() );
             for ( IndexOrder indexOrder : order )
             {
                 if ( indexOrder == IndexOrder.NONE )

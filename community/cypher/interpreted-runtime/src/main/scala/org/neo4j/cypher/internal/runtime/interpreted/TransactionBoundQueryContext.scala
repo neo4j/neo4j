@@ -283,7 +283,8 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
         null
 
     val needsValuesFromIndexSeek = actualValues == null && needsValues
-    reads().nodeIndexSeek(index, nodeCursor, asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek, queries: _*)
+    val indexSession = reads().getOrCreateIndexReadSession(index)
+    reads().nodeIndexSeek(indexSession, nodeCursor, asKernelIndexOrder(indexOrder), needsValuesFromIndexSeek, queries: _*)
     if (needsValues && actualValues != null)
       new ValuedNodeIndexCursor(nodeCursor, actualValues)
     else

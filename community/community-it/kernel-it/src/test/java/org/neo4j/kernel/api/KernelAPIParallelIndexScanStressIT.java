@@ -29,11 +29,13 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
@@ -80,14 +82,14 @@ public class KernelAPIParallelIndexScanStressIT
 
         // when & then
         Kernel kernel = db.resolveDependency( Kernel.class );
-        IndexReference[] indexes = new IndexReference[3];
+        IndexReadSession[] indexes = new IndexReadSession[3];
         try ( Transaction tx = kernel.beginTransaction( explicit, LoginContext.AUTH_DISABLED ) )
         {
             int propKey = tx.tokenRead().propertyKey( "prop" );
 
-            indexes[0] = tx.schemaRead().index( tx.tokenRead().nodeLabel( "LABEL1" ), propKey );
-            indexes[1] = tx.schemaRead().index( tx.tokenRead().nodeLabel( "LABEL2" ), propKey );
-            indexes[2] = tx.schemaRead().index( tx.tokenRead().nodeLabel( "LABEL3" ), propKey );
+            indexes[0] = indexReadSession( tx, propKey, "LABEL1" );
+            indexes[1] = indexReadSession( tx, propKey, "LABEL2" );
+            indexes[2] = indexReadSession( tx, propKey, "LABEL3" );
             tx.success();
         }
 
@@ -100,7 +102,14 @@ public class KernelAPIParallelIndexScanStressIT
 
     }
 
-    private void createLabeledNodes( int nNodes, String labelName, String propKey ) throws KernelException
+    private IndexReadSession indexReadSession( Transaction tx, int propKey, String label ) throws IndexNotFoundKernelException
+    {
+        int labelId = tx.tokenRead().nodeLabel( label );
+        IndexReference index = tx.schemaRead().index( labelId, propKey );
+        return tx.dataRead().getOrCreateIndexReadSession( index );
+    }
+
+    private void createLabeledNodes( int nNodes, String labelName, String propKey )
     {
         for ( int i = 0; i < nNodes; i++ )
         {
@@ -110,13 +119,14 @@ public class KernelAPIParallelIndexScanStressIT
         }
     }
 
-    private Runnable indexSeek( Read read, NodeValueIndexCursor cursor, IndexReference index )
+    private Runnable indexSeek( Read read, NodeValueIndexCursor cursor, IndexReadSession index )
     {
         return () ->
         {
             try
             {
-                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, true, IndexQuery.exists( index.properties()[0] ) );
+                IndexQuery.ExistsPredicate query = IndexQuery.exists( index.reference().properties()[0] );
+                read.nodeIndexSeek( index, cursor, IndexOrder.NONE, true, query );
                 int n = 0;
                 while ( cursor.next() )
                 {

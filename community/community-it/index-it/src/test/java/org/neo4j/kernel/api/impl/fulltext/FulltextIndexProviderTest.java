@@ -42,6 +42,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -406,7 +407,8 @@ public class FulltextIndexProviderTest
                 }
             };
             Read read = ktx.dataRead();
-            read.nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
+            IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( indexReference );
+            read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, fulltextSearch( "hej:\"villa\"" ) );
             int counter = 0;
             while ( cursor.next() )
             {
@@ -477,7 +479,7 @@ public class FulltextIndexProviderTest
         try ( Transaction tx = db.beginTx() )
         {
             KernelTransaction ktx = LuceneFulltextTestSupport.kernelTransaction( tx );
-            IndexReference index = ktx.schemaRead().indexGetForName( "fulltext" );
+            IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession( ktx.schemaRead().indexGetForName( "fulltext" ) );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
                 ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, fulltextSearch( "value" ) );

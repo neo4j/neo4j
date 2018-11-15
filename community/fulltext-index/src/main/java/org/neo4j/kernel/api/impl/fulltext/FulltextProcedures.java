@@ -41,6 +41,7 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
@@ -162,7 +163,8 @@ public class FulltextProcedures
                     ", so it cannot be queried for nodes." );
         }
         NodeValueIndexCursor cursor = tx.cursors().allocateNodeValueIndexCursor();
-        tx.dataRead().nodeIndexSeek( indexReference, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+        IndexReadSession indexSession = tx.dataRead().getOrCreateIndexReadSession( indexReference );
+        tx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
 
         Spliterator<NodeOutput> spliterator = new SpliteratorAdaptor<NodeOutput>()
         {

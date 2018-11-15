@@ -23,6 +23,7 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
@@ -65,7 +66,8 @@ public final class CompiledIndexUtils
         {
             NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor();
             IndexQuery.ExactPredicate query = exact( index.properties()[0], makeValueNeoSafe( value ) );
-            read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, query );
+            IndexReadSession indexSession = read.getOrCreateIndexReadSession( index );
+            read.nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, query );
             return cursor;
         }
     }

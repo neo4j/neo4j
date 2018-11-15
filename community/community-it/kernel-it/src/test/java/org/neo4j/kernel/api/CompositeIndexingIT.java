@@ -39,6 +39,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Write;
@@ -337,7 +338,8 @@ public class CompositeIndexingIT
     private NodeValueIndexCursor seek( KernelTransaction transaction ) throws KernelException
     {
         NodeValueIndexCursor cursor = transaction.cursors().allocateNodeValueIndexCursor();
-        transaction.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, exactQuery() );
+        IndexReadSession indexSession = transaction.dataRead().getOrCreateIndexReadSession( index );
+        transaction.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, exactQuery() );
         return cursor;
     }
 

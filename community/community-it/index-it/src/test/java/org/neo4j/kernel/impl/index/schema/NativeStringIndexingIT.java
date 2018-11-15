@@ -33,6 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
@@ -153,8 +154,9 @@ public class NativeStringIndexingIT
             int propertyKeyId2 = ktx.tokenRead().propertyKey( KEY2 );
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( TestIndexDescriptorFactory
-                                                      .forLabel( labelId, propertyKeyId1, propertyKeyId2 ),
+                IndexReadSession index = ktx.dataRead().getOrCreateIndexReadSession(
+                        TestIndexDescriptorFactory.forLabel( labelId, propertyKeyId1, propertyKeyId2 ) );
+                ktx.dataRead().nodeIndexSeek( index,
                                               cursor, IndexOrder.NONE, false, IndexQuery.exact( propertyKeyId1, string1 ),
                                               IndexQuery.exact( propertyKeyId2, string2 ) );
                 assertTrue( cursor.next() );

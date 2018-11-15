@@ -62,7 +62,7 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeIndexSeek( IndexReference index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
+    public void nodeIndexSeek( IndexReadSession index, NodeValueIndexCursor cursor, IndexOrder indexOrder, boolean needsValues, IndexQuery... query )
     {
         throw new UnsupportedOperationException();
     }

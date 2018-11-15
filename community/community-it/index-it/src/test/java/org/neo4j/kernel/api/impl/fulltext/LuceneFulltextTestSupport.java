@@ -40,6 +40,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
@@ -157,12 +158,13 @@ public class LuceneFulltextTestSupport
     void assertQueryFindsIds( KernelTransaction ktx, boolean nodes, String indexName, String query, long... ids ) throws Exception
     {
         IndexReference index = ktx.schemaRead().indexGetForName( indexName );
+        IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( index );
         PrimitiveLongSet set = PrimitiveLongCollections.setOf( ids );
         if ( nodes )
         {
             try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
             {
-                ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+                ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
                 while ( cursor.next() )
                 {
                     long nodeId = cursor.nodeReference();
@@ -197,11 +199,12 @@ public class LuceneFulltextTestSupport
     {
 
         IndexReference index = ktx.schemaRead().indexGetForName( indexName );
+        IndexReadSession indexSession = ktx.dataRead().getOrCreateIndexReadSession( index );
         try ( NodeValueIndexCursor cursor = ktx.cursors().allocateNodeValueIndexCursor() )
         {
             int num = 0;
             float score = Float.MAX_VALUE;
-            ktx.dataRead().nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
+            ktx.dataRead().nodeIndexSeek( indexSession, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( query ) );
             while ( cursor.next() )
             {
                 long nextId = cursor.nodeReference();
