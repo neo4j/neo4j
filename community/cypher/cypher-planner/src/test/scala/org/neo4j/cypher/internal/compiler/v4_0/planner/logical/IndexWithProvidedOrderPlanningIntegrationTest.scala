@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
-import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability.{ASC, DESC, BOTH}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Skip => SkipPlan}
+import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability.{ASC, BOTH, DESC}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Limit => LimitPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util._
@@ -44,12 +43,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-    plan._2 should equal(
-      Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-        Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
-    )
-  }
+      plan._2 should equal(
+        Projection(
+          IndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+      )
+    }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan sort if index does not provide order") {
       val plan = new given {
@@ -58,12 +57,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       plan._2 should equal(
         Sort(
-        Projection(
-          IndexSeek(
-            "n:Awesome(prop > 'foo')", indexOrder =
-            IndexOrderNone),
-          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
-        Seq(sortOrder("n.prop")))
+          Projection(
+            IndexSeek(
+              "n:Awesome(prop > 'foo')", indexOrder =
+                IndexOrderNone),
+            Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos))),
+          Seq(sortOrder("n.prop")))
       )
     }
 
@@ -79,12 +78,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           Expand(
-          Projection(
-            IndexSeek(
-              "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-            Map("nnn" -> Variable("n")(pos))),
-          "nnn", SemanticDirection.INCOMING, Seq.empty, "m", "r"),
-        Map("nnn.prop" -> Property(Variable("nnn")(pos), PropertyKeyName("prop")(pos))(pos)))
+            Projection(
+              IndexSeek(
+                "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+              Map("nnn" -> Variable("n")(pos))),
+            "nnn", SemanticDirection.INCOMING, Seq.empty, "m", "r"),
+          Map("nnn.prop" -> Property(Variable("nnn")(pos), PropertyKeyName("prop")(pos))(pos)))
       )
     }
 
@@ -95,12 +94,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         s"""MATCH (n:Awesome) WHERE n.prop > 'foo'
            |RETURN n AS m ORDER BY m.prop $cypherToken""".stripMargin
 
-    plan._2 should equal(
-      Projection(
-        IndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-        Map("m" -> Variable("n")(pos)))
-    )
-  }
+      plan._2 should equal(
+        Projection(
+          IndexSeek("n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+          Map("m" -> Variable("n")(pos)))
+      )
+    }
 
     test(s"$cypherToken-$orderCapability: Cannot order by index when ordering is on same property name, but different node") {
       val plan = new given {
@@ -109,13 +108,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
       plan._2 should equal(
         Sort(
-        Projection(
-          CartesianProduct(
-            IndexSeek(
-              "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
-            NodeByLabelScan("m", LabelName("Awesome")(pos), Set.empty)),
-          Map("m.prop" -> Property(Variable("m")(pos), PropertyKeyName("prop")(pos))(pos))),
-        Seq(sortOrder("m.prop")))
+          Projection(
+            CartesianProduct(
+              IndexSeek(
+                "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+              NodeByLabelScan("m", LabelName("Awesome")(pos), Set.empty)),
+            Map("m.prop" -> Property(Variable("m")(pos), PropertyKeyName("prop")(pos))(pos))),
+          Seq(sortOrder("m.prop")))
       )
     }
 
@@ -124,11 +123,11 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop STARTS WITH 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-    plan._2 should equal(
-      Projection(
-        IndexSeek(
-          "n:Awesome(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
-        Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+      plan._2 should equal(
+        Projection(
+          IndexSeek(
+            "n:Awesome(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
+          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
       )
     }
 
@@ -138,12 +137,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop CONTAINS 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-    plan._2 should equal(
+      plan._2 should equal(
         Projection(
           IndexSeek("n:Awesome(prop CONTAINS 'foo')", indexOrder = plannedOrder),
           Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
-    )
-  }
+      )
+    }
 
     // This is supported because internally all kernel indexes which support ordering will just scan and filter to serve ends with
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (ends with scan)") {
@@ -151,23 +150,23 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop ENDS WITH 'foo' RETURN n.prop ORDER BY n.prop $cypherToken"
 
-    plan._2 should equal(
+      plan._2 should equal(
         Projection(
           IndexSeek("n:Awesome(prop ENDS WITH 'foo')", indexOrder = plannedOrder),
           Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
-    )
-  }
+      )
+    }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property should plan with provided order (scan)") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE EXISTS(n.prop) RETURN n.prop ORDER BY n.prop $cypherToken"
 
-    plan._2 should equal(
-      Projection(
-        IndexSeek(
-          "n:Awesome(prop)", indexOrder = plannedOrder),
-        Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+      plan._2 should equal(
+        Projection(
+          IndexSeek(
+            "n:Awesome(prop)", indexOrder = plannedOrder),
+          Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
       )
     }
 
@@ -177,18 +176,18 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("B", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop $cypherToken"
 
-    plan._2 should equal(
-      Projection(
-        Apply(
-          IndexSeek(
-            "a:A(prop > 'foo')", indexOrder = plannedOrder),
+      plan._2 should equal(
+        Projection(
+          Apply(
+            IndexSeek(
+              "a:A(prop > 'foo')", indexOrder = plannedOrder),
             IndexSeek("b:B(prop = ???)",
-                indexOrder = plannedOrder,
-            paramExpr = Some(prop("a", "prop")),
-            labelId = 1,
-                argumentIds = Set("a"))
-        ),
-        Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)))
+              indexOrder = plannedOrder,
+              paramExpr = Some(prop("a", "prop")),
+              labelId = 1,
+              argumentIds = Set("a"))
+          ),
+          Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos)))
       )
     }
 
@@ -199,32 +198,32 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         // This query is very fragile in the sense that the slightest modification will result in a stupid plan
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop $cypherToken, b.prop $cypherToken"
 
-    plan._2 should equal(
-      Sort(
-        Projection(
-          Apply(
-            IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
-            IndexSeek("b:B(prop > ???)",
-              indexOrder = plannedOrder,
-              paramExpr = Some(prop("a", "prop")),
-              labelId = 1,
-              argumentIds = Set("a"))
-          ),
-          Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
-        Seq(sortOrder("a.prop"), sortOrder("b.prop")))
-    )
-  }
+      plan._2 should equal(
+        Sort(
+          Projection(
+            Apply(
+              IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
+              IndexSeek("b:B(prop > ???)",
+                indexOrder = plannedOrder,
+                paramExpr = Some(prop("a", "prop")),
+                labelId = 1,
+                argumentIds = Set("a"))
+            ),
+            Map("a.prop" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "b.prop" -> Property(Variable("b")(pos), PropertyKeyName("prop")(pos))(pos))),
+          Seq(sortOrder("a.prop"), sortOrder("b.prop")))
+      )
+    }
 
     test(s"$cypherToken-$orderCapability: Order by index backed property in a plan with an renaming Projection") {
       val plan = new given {
         indexOn("A", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (a:A) WHERE a.prop > 'foo' WITH a.prop AS theProp, 1 AS x RETURN theProp ORDER BY theProp $cypherToken"
 
-    plan._2 should equal(
-      Projection(
-        IndexSeek(
-          "a:A(prop > 'foo')", indexOrder = plannedOrder),
-        Map("theProp" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "x" -> SignedDecimalIntegerLiteral("1")(pos)))
+      plan._2 should equal(
+        Projection(
+          IndexSeek(
+            "a:A(prop > 'foo')", indexOrder = plannedOrder),
+          Map("theProp" -> Property(Variable("a")(pos), PropertyKeyName("prop")(pos))(pos), "x" -> SignedDecimalIntegerLiteral("1")(pos)))
       )
     }
 
@@ -238,13 +237,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN a.prop, count(b) ORDER BY a.prop $cypherToken"
 
-    plan._2 should equal(
-      Aggregation(
-        Expand(
-          IndexSeek(
-            "a:A(prop > 'foo')", indexOrder = plannedOrder),
-          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-        Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("count")(pos), distinct = false, Vector(varFor("b")))(pos)))
+      plan._2 should equal(
+        Aggregation(
+          Expand(
+            IndexSeek(
+              "a:A(prop > 'foo')", indexOrder = plannedOrder),
+            "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+          Map("a.prop" -> prop("a", "prop")), Map("count(b)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("count")(pos), distinct = false, Vector(varFor("b")))(pos)))
       )
     }
 
@@ -258,13 +257,13 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         }
       } getLogicalPlanFor s"MATCH (a:A)-[r]->(b) WHERE a.prop > 'foo' RETURN DISTINCT a.prop ORDER BY a.prop $cypherToken"
 
-    plan._2 should equal(
-      Distinct(
-        Expand(
-          IndexSeek(
-            "a:A(prop > 'foo')", indexOrder = plannedOrder),
-          "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
-        Map("a.prop" -> prop("a", "prop")))
+      plan._2 should equal(
+        Distinct(
+          Expand(
+            IndexSeek(
+              "a:A(prop > 'foo')", indexOrder = plannedOrder),
+            "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r"),
+          Map("a.prop" -> prop("a", "prop")))
       )
     }
 
@@ -278,15 +277,15 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         }
       } getLogicalPlanFor s"MATCH (b) OPTIONAL MATCH (a:A)-[r]->(b) USING JOIN ON b WHERE a.prop > 'foo' RETURN a.prop ORDER BY a.prop $cypherToken"
 
-    plan._2 should equal(
-      Projection(
-        LeftOuterHashJoin(Set("b"),
-          AllNodesScan("b", Set.empty),
-          Expand(
-            IndexSeek(
-              "a:A(prop > 'foo')", indexOrder = plannedOrder),
-            "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")),
-        Map("a.prop" -> prop("a", "prop")))
+      plan._2 should equal(
+        Projection(
+          LeftOuterHashJoin(Set("b"),
+            AllNodesScan("b", Set.empty),
+            Expand(
+              IndexSeek(
+                "a:A(prop > 'foo')", indexOrder = plannedOrder),
+              "a", SemanticDirection.OUTGOING, Seq.empty, "b", "r")),
+          Map("a.prop" -> prop("a", "prop")))
       )
     }
 
@@ -301,12 +300,12 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       plan._2 should equal(
         Projection(
           Apply(
-          SkipPlan(
-            IndexSeek(
-              "a:A(prop > 'foo')", indexOrder = plannedOrder),
-            SignedDecimalIntegerLiteral("0")(pos)),
-          AllNodesScan("b", Set("a"))),
-        Map("a.prop" -> prop("a", "prop")))
+            SkipPlan(
+              IndexSeek(
+                "a:A(prop > 'foo')", indexOrder = plannedOrder),
+              SignedDecimalIntegerLiteral("0")(pos)),
+            AllNodesScan("b", Set("a"))),
+          Map("a.prop" -> prop("a", "prop")))
       )
     }
 
@@ -326,5 +325,88 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
           Map("n.prop" -> Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))
       )
     }
+  }
+
+  // Min and Max
+
+  // Tests (ASC, min), (DESC, max), (BOTH, min), (BOTH, max) -> interesting and provided order are the same
+  val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
+  for ((TestOrder(plannedOrder, _, orderCapability, _), functionName) <- List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))) {
+
+    test(s"$orderCapability-$functionName: should not plan aggregation with index and range") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
+
+      plan._2 should equal(
+        LimitPlan(
+          Projection(
+            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+            Map(s"$functionName(n.prop)" -> prop("n", "prop"))
+          ),
+          SignedDecimalIntegerLiteral("1")(pos),
+          DoNotIncludeTies
+        )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: should plan aggregation with exists and index") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesValues()
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE exists(n.prop) RETURN $functionName(n.prop)"
+
+      plan._2 should equal(
+        Aggregation(
+          NodeIndexScan(
+            "n",
+            LabelToken("Awesome", LabelId(0)),
+            IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+            Set.empty,
+            IndexOrderNone),
+          Map.empty,
+          Map(s"$functionName(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName(functionName)(pos), distinct = false, Vector(CachedNodeProperty("n", PropertyKeyName("prop")(pos))(pos)))(pos))
+        )
+      )
+    }
+  }
+
+  // Tests (ASC, max), (DESC, min) -> interesting and provided order differs
+  for ((TestOrder(plannedOrder, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
+
+    test(s"$orderCapability-$functionName: should plan aggregation with index and range") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
+
+      plan._2 should equal(
+        Aggregation(
+          IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+          Map.empty,
+          Map(s"$functionName(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName(functionName)(pos), distinct = false, Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+        )
+      )
+    }
+  }
+
+  test("Without index: should plan aggregation for min") {
+    val plan = new given {} getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 0 RETURN min(n.prop)"
+
+    plan._2 should equal(
+      Aggregation(
+        Selection(
+          Ands(Set(
+            AndedPropertyInequalities(Variable("n")(pos), Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos),
+              NonEmptyList(GreaterThan(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)))
+          ))(pos),
+          NodeByLabelScan(
+            "n",
+            LabelName("Awesome")(pos),
+            Set.empty
+          )
+        ),
+        Map.empty,
+        Map("min(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("min")(pos), distinct = false, Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+      )
+    )
   }
 }

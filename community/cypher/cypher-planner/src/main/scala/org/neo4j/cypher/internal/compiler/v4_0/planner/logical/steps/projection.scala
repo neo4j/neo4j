@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.v4_0.{QueryProjection, InterestingOrder}
+import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, QueryProjection}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -31,13 +31,12 @@ object projection {
             projectionsToPlan: Map[String, Expression],
             projectionsToMarkSolved: Map[String, Expression],
             interestingOrder: InterestingOrder,
-            context: LogicalPlanningContext): LogicalPlan = {
+            context: LogicalPlanningContext,
+            solve: Boolean = true): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
     val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, interestingOrder, context)
 
     val ids = plan.availableSymbols
-
-    val projectAllCoveredIds: Set[(String, Expression)] = ids.map(id => id -> Variable(id)(null))
     val projections: Seq[(String, Expression)] = projectionsMap.toIndexedSeq
 
     // The projections that are not covered yet
@@ -50,7 +49,11 @@ object projection {
     if (projectionsDiff.isEmpty) {
       context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved, context)
     } else {
-      context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
+      if (solve) {
+        context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
+      } else {
+        context.logicalPlanProducer.planRegularProjectionWithFakeSolved(plan, projectionsDiff, context)
+      }
     }
   }
 

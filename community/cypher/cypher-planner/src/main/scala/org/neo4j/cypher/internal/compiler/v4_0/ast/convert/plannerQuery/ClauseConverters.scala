@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
+import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
 import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
 import org.neo4j.cypher.internal.ir.v4_0.helpers.PatternConverters._
 import org.neo4j.cypher.internal.ir.v4_0.{NoHeaders, _}
@@ -114,11 +115,44 @@ object ClauseConverters {
   }
 
   def findRequiredOrder(horizon: QueryHorizon): InterestingOrder = {
+    def fetchFunctionParameter(aggregationFunction: FunctionInvocation): Option[String] = {
+      //.head works since min and max (the only functions we care about) always have one argument
+      aggregationFunction.args.head match {
+        case prop: Property =>
+          Some(prop.asCanonicalStringVal)
+        case variable: Variable =>
+          Some(variable.name)
+        case innerFunc: FunctionInvocation =>
+          Some(innerFunc.asCanonicalStringVal)
+        case _ =>
+          None
+      }
+    }
+
     val requiredOrderColumns = horizon match {
       case RegularQueryProjection(projections, shuffle, _) =>
         extractColumnsFromHorizon(shuffle, projections)
-      case AggregatingQueryProjection(groupingExpressions, _, shuffle, _) =>
-        extractColumnsFromHorizon(shuffle, groupingExpressions)
+      case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, shuffle, _) =>
+        val columnOrders = aggregationExpressions.values.foldLeft(Seq.empty[ColumnOrder]) {
+          case (_columnOrders, f: FunctionInvocation) =>
+           f.name match {
+              case "min" =>
+                fetchFunctionParameter(f) match {
+                  case Some(param) => _columnOrders ++ Seq(Asc(param))
+                  case _ => _columnOrders
+                }
+              case "max" =>
+                fetchFunctionParameter(f) match {
+                  case Some(param) => _columnOrders ++ Seq(Desc(param))
+                  case _ => _columnOrders
+                }
+              case _ =>
+                _columnOrders
+            }
+          case (_columnOrders, _) =>
+            _columnOrders
+        }
+        extractColumnsFromHorizon(shuffle, groupingExpressions) ++ columnOrders
       case DistinctQueryProjection(groupingExpressions, shuffle, _) =>
         extractColumnsFromHorizon(shuffle, groupingExpressions)
       case _ => Seq.empty

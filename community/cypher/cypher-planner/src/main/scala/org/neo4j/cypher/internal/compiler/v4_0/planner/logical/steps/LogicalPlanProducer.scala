@@ -27,10 +27,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.Cardinali
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
 import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v4_0.logical.plans.{DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
-import org.neo4j.cypher.internal.v4_0.logical.plans.Union
-import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
-import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
+import org.neo4j.cypher.internal.v4_0.logical.plans.{Union, UnwindCollection, ValueHashJoin, DeleteExpression => DeleteExpressionPlan, Limit => LimitPlan, LoadCSV => LoadCSVPlan, Skip => SkipPlan, _}
 import org.neo4j.cypher.internal.v4_0.ast
 import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -437,10 +434,17 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planRegularProjection(inner: LogicalPlan, expressions: Map[String, Expression], reported: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
     val solved: PlannerQuery = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.withAddedProjections(reported)))
+    planRegularProjectionHelper(inner, expressions, context, solved)
+  }
+
+  def planRegularProjectionWithFakeSolved(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id)
+    planRegularProjectionHelper(inner, expressions, context, solved)
+  }
+
+  private def planRegularProjectionHelper(inner: LogicalPlan, expressions: Map[String, Expression], context: LogicalPlanningContext, solved: PlannerQuery) = {
     val columnsWithRenames = renameProvidedOrderColumns(providedOrders.get(inner.id).columns, expressions)
-
     val providedOrder = ProvidedOrder(columnsWithRenames)
-
     annotate(Projection(inner, expressions), solved, providedOrder, context)
   }
 
@@ -449,10 +453,16 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                       aggregation: Map[String, Expression],
                       reportedGrouping: Map[String, Expression],
                       reportedAggregation: Map[String, Expression],
-                      context: LogicalPlanningContext): LogicalPlan = {
+                      context: LogicalPlanningContext,
+                      interestingOrder: Option[InterestingOrder] = None): LogicalPlan = {
     val solved = solveds.get(left.id).updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ))
+    val solvedWithOrder = interestingOrder match {
+      case Some(order) => solved.withInterestingOrder(order)
+      case _ => solved
+    }
+
     // Trim provided order for each sort column, if it is a non-grouping column
     val trimmed = providedOrders.get(left.id).columns.takeWhile {
       case ProvidedOrder.ColumnOfProperty((varName, propName)) =>
@@ -469,7 +479,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     }
     val trimmedAndRenamed = renameProvidedOrderColumns(trimmed, grouping)
 
-    annotate(Aggregation(left, grouping, aggregation), solved, ProvidedOrder(trimmedAndRenamed), context)
+    annotate(Aggregation(left, grouping, aggregation), solvedWithOrder, ProvidedOrder(trimmedAndRenamed), context)
   }
 
   /**
@@ -480,6 +490,21 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
                                  interestingOrder: InterestingOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))).withInterestingOrder(interestingOrder))
+    val providedOrder = providedOrders.get(inner.id)
+    annotate(inner.copyPlanWithIdGen(idGen), solved, providedOrder, context)
+  }
+
+  /**
+    * The only purpose of this method is to set the solved correctly for rewritten aggregation for min or max.
+    */
+  def updateSolvedForMinOrMax(inner: LogicalPlan,
+                              reportedGrouping: Map[String, Expression],
+                              reportedAggregation: Map[String, Expression],
+                              interestingOrder: InterestingOrder,
+                              context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(
+      AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
+    ).withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id)
     annotate(inner.copyPlanWithIdGen(idGen), solved, providedOrder, context)
   }
@@ -535,6 +560,11 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planLimit(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
     val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withLimitExpression(count))))
+    annotate(LimitPlan(inner, count, ties), solved, providedOrders.get(inner.id), context)
+  }
+
+  def planLimitWithFakeSolved(inner: LogicalPlan, count: Expression, ties: Ties = DoNotIncludeTies, context: LogicalPlanningContext): LogicalPlan = {
+    val solved = solveds.get(inner.id)
     annotate(LimitPlan(inner, count, ties), solved, providedOrders.get(inner.id), context)
   }
 
