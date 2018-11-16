@@ -145,7 +145,6 @@ class ConfigTest
 
         Config config = Config.fromFile( confFile )
                               .withSetting( GraphDatabaseSettings.strict_config_validation, "false" )
-                              .withSetting( "ha.jibberish", "baah" )
                               .withSetting( "dbms.jibberish", "booh" ).build();
 
         // When
@@ -154,7 +153,6 @@ class ConfigTest
 
         // Then
         verify( log ).warn( "Unknown config option: %s", "dbms.jibberish" );
-        verify( log ).warn( "Unknown config option: %s", "ha.jibberish" );
         verifyNoMoreInteractions( log );
     }
 

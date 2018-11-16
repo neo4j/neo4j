@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.locking;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.List;
@@ -43,14 +43,14 @@ public class IndexEntryResourceTypesTest
     public static final Value value = Values.of( "value" );
 
     @Test
-    public void shouldProduceBackwardsCompatibleId()
+    void shouldProduceBackwardsCompatibleId()
     {
         long id = ResourceTypes.indexEntryResourceId( labelId, exact( propertyId, value ) );
-        assertThat( id, equalTo( 155667838465249649L ) );
+        assertThat( id, equalTo( 6676982443481287192L ) );
     }
 
     @Test
-    public void shouldDifferentiateBetweenIndexes()
+    void shouldDifferentiateBetweenIndexes()
     {
         ExactPredicate pred1 = exact( 1, "value" );
         ExactPredicate pred2 = exact( 1, "value2" );
@@ -72,13 +72,13 @@ public class IndexEntryResourceTypesTest
     }
 
     @Test
-    public void mustBeAbleToHashAllTypesWith220HashFunction()
+    void mustBeAbleToHashAllTypesWith220HashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_2_2_0 );
     }
 
     @Test
-    public void mustBeAbleToHashAllTypesWith4xHashFunction()
+    void mustBeAbleToHashAllTypesWith4xHashFunction()
     {
         verifyCanHashAllTypes( ResourceTypes::indexEntryResourceId_4_x );
     }
