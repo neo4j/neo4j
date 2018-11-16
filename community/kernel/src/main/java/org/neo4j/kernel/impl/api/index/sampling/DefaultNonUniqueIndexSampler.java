@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.api.index.sampling;
 import org.eclipse.collections.api.map.primitive.MutableObjectLongMap;
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap;
 
-import org.neo4j.storageengine.api.schema.IndexSample;
+import org.neo4j.kernel.api.index.IndexSample;
 
 public class DefaultNonUniqueIndexSampler implements NonUniqueIndexSampler
 {

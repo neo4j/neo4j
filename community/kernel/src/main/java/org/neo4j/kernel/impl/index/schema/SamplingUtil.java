@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.index.schema;
 
 import org.apache.commons.lang3.StringUtils;
 
-import org.neo4j.storageengine.api.schema.IndexSampler;
+import org.neo4j.kernel.api.index.IndexSampler;
 
 /**
  * Utilities for implementing {@link IndexSampler sampling}.
