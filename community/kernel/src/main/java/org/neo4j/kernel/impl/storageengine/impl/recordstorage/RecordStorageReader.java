@@ -302,7 +302,7 @@ public class RecordStorageReader implements StorageReader
         }
         closed = true;
     }
-    
+
     RecordStorageCommandCreationContext getCommandCreationContext()
     {
         return commandCreationContext;
