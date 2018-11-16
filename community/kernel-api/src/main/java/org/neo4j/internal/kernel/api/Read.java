@@ -318,16 +318,6 @@ public interface Read
     void nodeProperties( long nodeReference, long reference, PropertyCursor cursor );
 
     /**
-     * @param relationshipReference
-     *         the owner of the properties.
-     * @param reference
-     *         a reference from {@link RelationshipDataAccessor#propertiesReference()}.
-     * @param cursor
-     *         the cursor to use for consuming the results.
-     */
-    void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor );
-
-    /**
      * Checks if a node was deleted in the current transaction
      * @param node the node to check
      * @return <code>true</code> if the node was deleted otherwise <code>false</code>
@@ -351,14 +341,4 @@ public interface Read
     Value nodePropertyChangeInTransactionOrNull( long node, int propertyKeyId );
 
     void graphProperties( PropertyCursor cursor );
-
-    // hints to the page cache about data we will be accessing in the future:
-
-    void futureNodeReferenceRead( long reference );
-
-    void futureRelationshipsReferenceRead( long reference );
-
-    void futureNodePropertyReferenceRead( long reference );
-
-    void futureRelationshipPropertyReferenceRead( long reference );
 }

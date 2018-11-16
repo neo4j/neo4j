@@ -372,12 +372,6 @@ abstract class Read implements TxStateHolder,
     }
 
     @Override
-    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
-    {
-        ((DefaultPropertyCursor) cursor).initRelationship( relationshipReference, reference, this, ktx );
-    }
-
-    @Override
     public final void graphProperties( PropertyCursor cursor )
     {
         ktx.assertOpen();
@@ -471,30 +465,6 @@ abstract class Read implements TxStateHolder,
     private static void explicitIndex( IndexProgressor.ExplicitClient client, ExplicitIndexHits hits )
     {
         client.initialize( new ExplicitIndexProgressor( hits, client ), hits.size() );
-    }
-
-    @Override
-    public final void futureNodeReferenceRead( long reference )
-    {
-        ktx.assertOpen();
-    }
-
-    @Override
-    public final void futureRelationshipsReferenceRead( long reference )
-    {
-        ktx.assertOpen();
-    }
-
-    @Override
-    public final void futureNodePropertyReferenceRead( long reference )
-    {
-        ktx.assertOpen();
-    }
-
-    @Override
-    public final void futureRelationshipPropertyReferenceRead( long reference )
-    {
-        ktx.assertOpen();
     }
 
     public abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;

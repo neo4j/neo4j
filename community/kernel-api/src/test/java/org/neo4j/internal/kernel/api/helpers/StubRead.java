@@ -196,12 +196,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public void relationshipProperties( long relationshipReference, long reference, PropertyCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void relationshipGroups( long nodeReference, long reference, RelationshipGroupCursor cursor )
     {
         throw new UnsupportedOperationException();
@@ -227,30 +221,6 @@ public class StubRead implements Read
 
     @Override
     public void graphProperties( PropertyCursor cursor )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void futureNodeReferenceRead( long reference )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void futureRelationshipsReferenceRead( long reference )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void futureNodePropertyReferenceRead( long reference )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void futureRelationshipPropertyReferenceRead( long reference )
     {
         throw new UnsupportedOperationException();
     }

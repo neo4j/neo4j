@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-import java.util.regex.Pattern;
 
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.kernel.api.AssertOpen;
@@ -29,7 +28,6 @@ import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.ValueWriter;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
@@ -208,108 +206,6 @@ public class DefaultPropertyCursor implements PropertyCursor
 
         assertOpen.assertOpen();
         return value;
-    }
-
-    @Override
-    public <E extends Exception> void writeTo( ValueWriter<E> target )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean booleanValue()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public String stringValue()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public long longValue()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public double doubleValue()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueEqualTo( long value )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueEqualTo( double value )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueEqualTo( String value )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueMatches( Pattern regex )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueGreaterThan( long number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueGreaterThan( double number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueLessThan( long number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueLessThan( double number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueGreaterThanOrEqualTo( long number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueGreaterThanOrEqualTo( double number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueLessThanOrEqualTo( long number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public boolean valueLessThanOrEqualTo( double number )
-    {
-        throw new UnsupportedOperationException( "not implemented" );
     }
 
     @Override
