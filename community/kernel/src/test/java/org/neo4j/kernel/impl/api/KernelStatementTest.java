@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.query.ExecutingQuery;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
-import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static org.junit.Assert.assertEquals;
@@ -40,12 +39,12 @@ import static org.mockito.Mockito.when;
 public class KernelStatementTest
 {
     @Test
-    public void shouldReleaseStorageReaderWhenForceClosed()
+    public void shouldReleaseResourcesWhenForceClosed()
     {
         // given
-        StorageReader storeStatement = mock( StorageReader.class );
-        KernelStatement statement = new KernelStatement( mock( KernelTransactionImplementation.class ),
-                null, storeStatement, LockTracer.NONE,
+        KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
+        KernelStatement statement = new KernelStatement( transaction,
+                null, LockTracer.NONE,
                 mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
         statement.acquire();
 
@@ -60,7 +59,7 @@ public class KernelStatementTest
         }
 
         // then
-        verify( storeStatement ).release();
+        verify( transaction ).releaseStatementResources();
     }
 
     @Test( expected = NotInTransactionException.class )
@@ -68,9 +67,8 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        StorageReader storeStatement = mock( StorageReader.class );
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                storeStatement, LockTracer.NONE, mock( StatementOperationParts.class ),
+                LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
 
         statement.assertOpen();
@@ -81,7 +79,6 @@ public class KernelStatementTest
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
         TxStateHolder txStateHolder = mock( TxStateHolder.class );
-        StorageReader storeStatement = mock( StorageReader.class );
 
         KernelTransactionImplementation.Statistics statistics = new KernelTransactionImplementation.Statistics( transaction,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ) );
@@ -89,7 +86,7 @@ public class KernelStatementTest
         when( transaction.executingQueries() ).thenReturn( ExecutingQueryList.EMPTY );
 
         KernelStatement statement = new KernelStatement( transaction, txStateHolder,
-                storeStatement, LockTracer.NONE, mock( StatementOperationParts.class ),
+                LockTracer.NONE, mock( StatementOperationParts.class ),
                 new ClockContext(), EmptyVersionContextSupplier.EMPTY );
         statement.acquire();
 

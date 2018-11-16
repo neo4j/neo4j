@@ -871,8 +871,6 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         cursors.assertClosed();
         cursors.release();
-
-        allStoreHolder.release();
     }
 
     public Token token()

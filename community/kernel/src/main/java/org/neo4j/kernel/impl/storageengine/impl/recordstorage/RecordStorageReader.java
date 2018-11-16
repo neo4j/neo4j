@@ -67,7 +67,6 @@ public class RecordStorageReader implements StorageReader
     private final SchemaCache schemaCache;
     private final RecordStorageCommandCreationContext commandCreationContext;
 
-    private boolean acquired;
     private boolean closed;
 
     RecordStorageReader(
@@ -277,22 +276,6 @@ public class RecordStorageReader implements StorageReader
     public <T> T getOrCreateSchemaDependantState( Class<T> type, Function<StorageReader,T> factory )
     {
         return schemaCache.getOrCreateDependantState( type, factory, this );
-    }
-
-    @Override
-    public void acquire()
-    {
-        assert !closed;
-        assert !acquired;
-        this.acquired = true;
-    }
-
-    @Override
-    public void release()
-    {
-        assert !closed;
-        assert acquired;
-        acquired = false;
     }
 
     @Override

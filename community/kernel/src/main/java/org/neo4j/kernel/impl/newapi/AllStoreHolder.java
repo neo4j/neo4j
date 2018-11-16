@@ -1193,7 +1193,7 @@ public class AllStoreHolder extends Read
         }
     }
 
-    void release()
+    public void release()
     {
         indexReaderCache.close();
         if ( labelScanReader != null )

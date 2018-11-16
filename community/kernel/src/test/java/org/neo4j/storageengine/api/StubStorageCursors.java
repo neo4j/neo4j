@@ -89,16 +89,6 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public void acquire()
-    {
-    }
-
-    @Override
-    public void release()
-    {
-    }
-
-    @Override
     public void close()
     {
     }

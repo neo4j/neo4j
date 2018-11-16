@@ -29,29 +29,12 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**
  * Abstraction for accessing data from a {@link StorageEngine}.
- * <p>
- * A {@link StorageReader} must be {@link #acquire() acquired} before use. After use the statement
- * should be {@link #release() released}. After released the reader can be acquired again.
- * Creating and closing {@link StorageReader} can be somewhat costly, so there are benefits keeping these readers open
- * during a longer period of time, with the assumption that it's still one thread at a time using each.
- * <p>
+ * A reader is expected to be scoped to one transaction or query or similar.
  */
 public interface StorageReader extends AutoCloseable
 {
     /**
-     * Acquires this statement so that it can be used, should later be {@link #release() released}.
-     * Since a {@link StorageReader} can be reused after {@link #release() released}, this call should
-     * do initialization/clearing of state whereas data structures can be kept between uses.
-     */
-    void acquire();
-
-    /**
-     * Releases this statement so that it can later be {@link #acquire() acquired} again.
-     */
-    void release();
-
-    /**
-     * Closes this statement so that it can no longer be used nor {@link #acquire() acquired}.
+     * Closes this reader and all associated resources.
      */
     @Override
     void close();

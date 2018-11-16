@@ -42,7 +42,6 @@ import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.StatementLocks;
-import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static java.lang.String.format;
@@ -76,7 +75,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private static final Deque<StackTraceElement[]> EMPTY_STATEMENT_HISTORY = new ArrayDeque<>( 0 );
 
     private final TxStateHolder txStateHolder;
-    private final StorageReader storageReader;
     private final KernelTransactionImplementation transaction;
     private final OperationsFacade facade;
     private StatementLocks statementLocks;
@@ -90,7 +88,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
 
     public KernelStatement( KernelTransactionImplementation transaction,
             TxStateHolder txStateHolder,
-            StorageReader storageReader,
             LockTracer systemLockTracer,
             StatementOperationParts statementOperations,
             ClockContext clockContext,
@@ -98,7 +95,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     {
         this.transaction = transaction;
         this.txStateHolder = txStateHolder;
-        this.storageReader = storageReader;
         this.facade = new OperationsFacade( this, statementOperations );
         this.executingQueryList = ExecutingQueryList.EMPTY;
         this.systemLockTracer = systemLockTracer;
@@ -185,7 +181,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     {
         if ( referenceCount++ == 0 )
         {
-            storageReader.acquire();
             clockContext.initializeStatement();
         }
         recordOpenCloseMethods();
@@ -246,7 +241,7 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     private void cleanupResources()
     {
         // closing is done by KTI
-        storageReader.release();
+        transaction.releaseStatementResources();
         executingQueryList = ExecutingQueryList.EMPTY;
         closeAllCloseableResources();
     }

@@ -186,6 +186,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private ClientConnectionInfo clientInfo;
     private volatile int reuseCount;
     private volatile Map<String,Object> userMetaData;
+    private final AllStoreHolder allStoreHolder;
     private final Operations operations;
     private volatile TraceProvider traceProvider;
     private volatile TransactionInitializationTrace initializationTrace;
@@ -224,15 +225,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionTracer = transactionTracer;
         this.cursorTracerSupplier = cursorTracerSupplier;
         this.versionContextSupplier = versionContextSupplier;
-        this.currentStatement = new KernelStatement( this, this, storageReader,
-                lockTracer, statementOperations, this.clocks,
-                versionContextSupplier );
+        this.currentStatement = new KernelStatement( this, this, lockTracer, statementOperations, this.clocks, versionContextSupplier );
         this.accessCapability = accessCapability;
         this.statistics = new Statistics( this, cpuClockRef, heapAllocationRef );
         this.userMetaData = emptyMap();
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
-        AllStoreHolder allStoreHolder =
+        this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, explicitIndexStore,
                         procedures, schemaState, indexingService, labelScanStore, dataSourceDependencies );
         this.operations =
@@ -925,6 +924,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         {
             transactionMonitor.transactionFinished( false, hasTxStateWithChanges() );
         }
+    }
+
+    /**
+     * Release resources for the current statement because it's being closed.
+     */
+    void releaseStatementResources()
+    {
+        allStoreHolder.release();
     }
 
     /**

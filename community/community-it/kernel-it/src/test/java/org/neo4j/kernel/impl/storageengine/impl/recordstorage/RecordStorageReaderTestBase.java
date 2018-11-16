@@ -67,8 +67,7 @@ public abstract class RecordStorageReaderTestBase
         db = (GraphDatabaseAPI) createGraphDatabase();
         DependencyResolver resolver = db.getDependencyResolver();
         this.storageReader = resolver.resolveDependency( StorageEngine.class ).newReader();
-        this.state = new KernelStatement( null, null, storageReader,
-                LockTracer.NONE, null, new ClockContext(), EmptyVersionContextSupplier.EMPTY );
+        this.state = new KernelStatement( null, null, LockTracer.NONE, null, new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 
     protected GraphDatabaseService createGraphDatabase()

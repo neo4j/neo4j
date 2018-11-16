@@ -22,12 +22,11 @@ package org.neo4j.kernel.impl.api;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.LockTracer;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class StatementLifecycleTest
 {
@@ -36,19 +35,17 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        StorageReader storageReader = mock( StorageReader.class );
-        KernelStatement statement = getKernelStatement( transaction, storageReader );
+        KernelStatement statement = getKernelStatement( transaction );
         statement.acquire();
-        verify( storageReader ).acquire();
         statement.acquire();
 
         // when
         statement.close();
-        verifyNoMoreInteractions( storageReader );
+        verify( transaction, never() ).releaseStatementResources();
 
         // then
         statement.close();
-        verify( storageReader ).release();
+        verify( transaction ).releaseStatementResources();
     }
 
     @Test
@@ -56,8 +53,7 @@ public class StatementLifecycleTest
     {
         // given
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        StorageReader storageReader = mock( StorageReader.class );
-        KernelStatement statement = getKernelStatement( transaction, storageReader );
+        KernelStatement statement = getKernelStatement( transaction );
         statement.acquire();
 
         // when
@@ -71,12 +67,12 @@ public class StatementLifecycleTest
         }
 
         // then
-        verify( storageReader ).release();
+        verify( transaction ).releaseStatementResources();
     }
 
-    private KernelStatement getKernelStatement( KernelTransactionImplementation transaction, StorageReader storageReader )
+    private KernelStatement getKernelStatement( KernelTransactionImplementation transaction )
     {
-        return new KernelStatement( transaction, null, storageReader,
+        return new KernelStatement( transaction, null,
                 LockTracer.NONE, mock( StatementOperationParts.class ), new ClockContext(), EmptyVersionContextSupplier.EMPTY );
     }
 }
