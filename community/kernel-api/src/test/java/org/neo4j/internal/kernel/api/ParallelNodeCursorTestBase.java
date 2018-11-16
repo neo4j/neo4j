@@ -20,20 +20,16 @@
 package org.neo4j.internal.kernel.api;
 
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,12 +39,17 @@ import org.neo4j.graphdb.Transaction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
+import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
+import static org.neo4j.internal.kernel.api.TestUtils.concat;
+import static org.neo4j.internal.kernel.api.TestUtils.randomBatchWorker;
+import static org.neo4j.internal.kernel.api.TestUtils.singleBatchWorker;
 
 public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
     private static List<Long> NODE_IDS;
     private static final int NUMBER_OF_NODES = 128;
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -104,15 +105,18 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldHandleSizeHintZero()
+    public void shouldFailForSizeHintZero()
     {
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
         {
+            // given
             Scan<NodeCursor> scan = read.allNodesScan();
-            assertTrue( scan.reserveBatch( nodes, 0 ) );
-            assertFalse( nodes.next() );
-            assertTrue( scan.reserveBatch( nodes, 1 ) );
-            assertTrue( nodes.next() );
+
+            // expect
+            exception.expect( IllegalArgumentException.class );
+
+            // when
+            scan.reserveBatch( nodes, 0 );
         }
     }
 
@@ -213,91 +217,11 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         service.awaitTermination( 1, TimeUnit.MINUTES );
 
         // then
-        List<List<Long>> lists = futures.stream().map( this::unsafeGet ).collect( Collectors.toList() );
+        List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
 
         assertDistinct( lists );
         List<Long> concat = concat( lists );
         concat.sort( Long::compareTo );
         assertEquals( NODE_IDS, concat );
-    }
-
-    private <T> T unsafeGet( Future<T> future )
-    {
-        try
-        {
-            return future.get();
-        }
-        catch ( Exception e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    @SafeVarargs
-    private final <T> void assertDistinct( List<T>... lists )
-    {
-        assertDistinct( Arrays.asList( lists ) );
-    }
-
-    private <T> void assertDistinct( List<List<T>> lists )
-    {
-        Set<T> seen = new HashSet<T>();
-        for ( List<T> list : lists )
-        {
-            for ( T item : list )
-            {
-                assertTrue( String.format( "%s was seen multiple times", item ), seen.add( item ) );
-            }
-        }
-    }
-
-    @SafeVarargs
-    private final <T> List<T> concat( List<T>... lists )
-    {
-        return concat( Arrays.asList( lists ) );
-    }
-
-    private <T> List<T> concat( List<List<T>> lists )
-    {
-        return lists.stream().flatMap( Collection::stream ).collect( Collectors.toList());
-    }
-
-    private Callable<List<Long>> singleBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory, int sizeHint )
-    {
-        return () -> {
-            try ( NodeCursor nodes = cursorsFactory.allocateNodeCursor() )
-            {
-                List<Long> ids = new ArrayList<>( sizeHint );
-                scan.reserveBatch( nodes, sizeHint );
-                while ( nodes.next() )
-                {
-                    ids.add( nodes.nodeReference() );
-                }
-
-                return ids;
-            }
-        };
-    }
-
-    private Callable<List<Long>> randomBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory )
-    {
-        return () -> {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
-
-            try ( NodeCursor nodes = cursorsFactory.allocateNodeCursor() )
-            {
-                int sizeHint = random.nextInt( 4 );
-                List<Long> ids = new ArrayList<>();
-                while ( scan.reserveBatch( nodes, sizeHint ) )
-                {
-                    while ( nodes.next() )
-                    {
-                        ids.add( nodes.nodeReference() );
-                    }
-                }
-
-                return ids;
-            }
-        };
     }
 }

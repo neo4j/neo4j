@@ -65,13 +65,17 @@ class DefaultNodeCursor implements NodeCursor
         this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
     }
 
-    boolean scanBatch( Read read, AllNodeScan scan, int sizeHint )
+    boolean scanBatch( Read read, AllNodeScan scan, int sizeHint, LongIterator addedNodes, boolean hasChanges )
     {
         this.read = read;
         this.single = NO_ID;
-        this.hasChanges = HasChanges.MAYBE;
-        this.addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-        return storeCursor.scanBatch( scan, sizeHint );
+        this.hasChanges = hasChanges ? HasChanges.YES : HasChanges.NO;
+        this.addedNodes = addedNodes;
+        //TODO we could optimize here if addedNodes is non-empty and sizeHint = 0 which will
+        //happen when there is enough data in the tx state to fill up a complete batch. In this
+        //case we just need to reset the storeCursor since we wont be reading from it anyway.
+        boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
+        return addedNodes.hasNext() || scanBatch;
     }
 
     void single( long reference, Read read )
