@@ -21,8 +21,8 @@ package org.neo4j.storageengine.api.schema;
 
 import java.util.function.Predicate;
 
-import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
 
 /**

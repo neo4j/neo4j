@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.planner.v3_4.spi._
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
 import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, symbols}
 import org.neo4j.cypher.internal.v3_4.logical.plans._
-import org.neo4j.internal.kernel.api.exceptions.KernelException
+import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}

@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.internal.kernel.api.exceptions;
+package org.neo4j.exceptions;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.storageengine.api.TokenNameLookup;
 
-/** A super class of checked exceptions. */
 public abstract class KernelException extends Exception implements Status.HasStatus
 {
     private final Status statusCode;

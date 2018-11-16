@@ -26,10 +26,10 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Assume;
 import org.junit.Test;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.Value;

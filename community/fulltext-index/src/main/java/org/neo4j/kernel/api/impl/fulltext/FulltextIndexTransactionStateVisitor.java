@@ -29,12 +29,12 @@ import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.Iterator;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;

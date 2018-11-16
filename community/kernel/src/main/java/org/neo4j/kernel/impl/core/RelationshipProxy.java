@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -45,7 +46,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

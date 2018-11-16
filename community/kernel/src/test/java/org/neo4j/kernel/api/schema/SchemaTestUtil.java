@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.schema;
 
-import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.common.TokenNameLookup;
 
 import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;

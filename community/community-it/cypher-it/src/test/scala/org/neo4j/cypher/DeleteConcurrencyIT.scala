@@ -21,8 +21,8 @@ package org.neo4j.cypher
 
 import java.io.{PrintWriter, StringWriter}
 
+import org.neo4j.exceptions.KernelException
 import org.neo4j.graphdb.{NotFoundException, TransactionFailureException}
-import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.kernel.api.exceptions.Status
 
 class DeleteConcurrencyIT extends ExecutionEngineFunSuite {

@@ -77,6 +77,9 @@ import static org.hamcrest.collection.IsIterableContainingInAnyOrder.containsInA
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.helpers.collection.Iterables.empty;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.multiToken;
@@ -84,9 +87,6 @@ import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescri
 import static org.neo4j.kernel.impl.store.record.Record.NO_LABELS_FIELD;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.storageengine.api.EntityType.NODE;
-import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 @PageCacheExtension
 class OnlineIndexUpdatesTest

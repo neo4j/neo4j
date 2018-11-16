@@ -23,9 +23,9 @@ import org.junit.Test;
 
 import java.util.Optional;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.SchemaWrite;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.impl.api.index.IndexProviderNotFoundException;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;

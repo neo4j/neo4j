@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.impl.locking.Locks;

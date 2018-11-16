@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.TokenNameLookup;
 
 /**
  * Describes an index which is committed to the database.

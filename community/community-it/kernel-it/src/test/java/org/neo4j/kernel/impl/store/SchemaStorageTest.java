@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -50,7 +51,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;

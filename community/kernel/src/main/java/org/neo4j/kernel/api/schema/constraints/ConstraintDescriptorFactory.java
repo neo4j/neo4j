@@ -26,7 +26,7 @@ import org.neo4j.storageengine.api.schema.SchemaComputer;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 public class ConstraintDescriptorFactory
 {

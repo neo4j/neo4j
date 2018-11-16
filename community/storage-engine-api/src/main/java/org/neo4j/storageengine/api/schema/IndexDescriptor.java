@@ -19,7 +19,7 @@
  */
 package org.neo4j.storageengine.api.schema;
 
-import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.common.TokenNameLookup;
 
 public interface IndexDescriptor extends SchemaDescriptorSupplier
 {

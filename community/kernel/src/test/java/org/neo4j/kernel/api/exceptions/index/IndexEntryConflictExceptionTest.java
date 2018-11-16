@@ -30,7 +30,7 @@ import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 class IndexEntryConflictExceptionTest
 {

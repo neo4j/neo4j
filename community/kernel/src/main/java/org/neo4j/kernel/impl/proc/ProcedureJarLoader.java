@@ -34,7 +34,7 @@ import java.util.zip.ZipInputStream;
 
 import org.neo4j.collection.PrefetchingRawIterator;
 import org.neo4j.collection.RawIterator;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.proc.CallableProcedure;
 import org.neo4j.kernel.api.proc.CallableUserAggregationFunction;
 import org.neo4j.kernel.api.proc.CallableUserFunction;

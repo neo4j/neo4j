@@ -27,9 +27,9 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor.{OrderCapabili
 import org.neo4j.cypher.internal.planner.v4_0.spi._
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api
 import org.neo4j.internal.kernel.api._
-import org.neo4j.internal.kernel.api.exceptions.KernelException
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory

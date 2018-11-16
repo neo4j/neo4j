@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.internal.kernel.api.IndexOrder;
@@ -33,7 +34,6 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;

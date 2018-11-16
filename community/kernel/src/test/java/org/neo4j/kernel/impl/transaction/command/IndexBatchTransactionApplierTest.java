@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.Assert.assertEquals;

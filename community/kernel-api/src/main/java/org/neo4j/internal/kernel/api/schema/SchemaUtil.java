@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.schema;
 
-import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.common.TokenNameLookup;
 
 public class SchemaUtil
 {

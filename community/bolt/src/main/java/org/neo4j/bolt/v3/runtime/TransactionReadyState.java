@@ -28,7 +28,7 @@ import org.neo4j.bolt.v1.runtime.bookmarking.Bookmark;
 import org.neo4j.bolt.v3.messaging.request.CommitMessage;
 import org.neo4j.bolt.v3.messaging.request.RollbackMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.bolt.v3.runtime.ReadyState.FIELDS_KEY;

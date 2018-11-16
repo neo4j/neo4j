@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.containsString;

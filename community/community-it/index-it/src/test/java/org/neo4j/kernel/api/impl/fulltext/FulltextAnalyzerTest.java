@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-import static org.neo4j.storageengine.api.EntityType.NODE;
+import static org.neo4j.common.EntityType.NODE;
 
 public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 {

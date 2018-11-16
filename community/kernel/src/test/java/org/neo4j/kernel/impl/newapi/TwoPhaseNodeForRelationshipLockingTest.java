@@ -25,10 +25,10 @@ import org.mockito.InOrder;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.helpers.StubCursorFactory;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.StubRead;

@@ -22,6 +22,7 @@ package org.neo4j.kernel;
 import java.io.File;
 import java.util.function.Function;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -63,7 +64,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.time.SystemNanoClock;
 
 public interface DatabaseCreationContext

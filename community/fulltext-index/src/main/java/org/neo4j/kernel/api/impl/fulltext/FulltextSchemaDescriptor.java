@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.impl.fulltext;
 
 import java.util.Properties;
 
-import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.TokenNameLookup;
+import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaComputer;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;

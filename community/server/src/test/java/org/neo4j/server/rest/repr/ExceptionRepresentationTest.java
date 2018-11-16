@@ -26,7 +26,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.server.rest.domain.JsonHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 import org.neo4j.server.rest.repr.formats.MapWrappingWriter;

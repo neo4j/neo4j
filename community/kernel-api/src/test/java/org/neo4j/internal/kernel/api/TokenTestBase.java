@@ -21,9 +21,9 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.Test;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 
 import static org.junit.Assert.assertEquals;

@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -32,7 +33,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;

@@ -22,10 +22,10 @@ package org.neo4j.kernel.impl.core;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Transaction.Type;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 

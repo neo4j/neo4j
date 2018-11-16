@@ -32,9 +32,9 @@ import java.util.List;
 import java.util.Objects;
 
 import org.neo4j.collection.PrimitiveArrays;
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -29,7 +30,6 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelections;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 

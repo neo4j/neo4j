@@ -36,9 +36,9 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.FieldSignature;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;

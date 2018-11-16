@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.api.schema;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.storageengine.api.EntityType;
 
 public class SchemaDescriptorFactory
 {

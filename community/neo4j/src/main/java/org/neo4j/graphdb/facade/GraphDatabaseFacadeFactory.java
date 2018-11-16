@@ -25,6 +25,7 @@ import java.util.function.Function;
 
 import org.neo4j.bolt.BoltServer;
 import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
@@ -37,7 +38,6 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Pair;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;

@@ -24,6 +24,7 @@ import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
 import java.util.function.IntPredicate;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -37,7 +38,6 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Value;
 

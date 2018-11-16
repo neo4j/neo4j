@@ -23,10 +23,10 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.Arrays;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.storageengine.api.EntityType;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaComputer;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;

@@ -39,8 +39,8 @@ import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.security.auth.AuthenticationException;
 import org.neo4j.bolt.v1.messaging.BoltStateMachineV1Context;
 import org.neo4j.bolt.v1.messaging.request.InterruptSignal;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.security.AuthorizationExpiredException;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
 

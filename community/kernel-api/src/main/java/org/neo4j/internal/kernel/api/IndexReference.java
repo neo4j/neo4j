@@ -22,8 +22,8 @@ package org.neo4j.internal.kernel.api;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.ValueCategory;

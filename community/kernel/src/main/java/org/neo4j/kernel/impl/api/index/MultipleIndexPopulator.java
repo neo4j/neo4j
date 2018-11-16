@@ -33,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntPredicate;
 import java.util.stream.IntStream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
@@ -49,7 +50,6 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;

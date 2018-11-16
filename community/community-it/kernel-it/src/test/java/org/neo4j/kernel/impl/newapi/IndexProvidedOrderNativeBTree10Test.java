@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -37,7 +38,6 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestBase;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;

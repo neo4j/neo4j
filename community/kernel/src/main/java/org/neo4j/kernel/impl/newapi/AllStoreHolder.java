@@ -28,11 +28,11 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
@@ -88,11 +88,11 @@ import org.neo4j.values.ValueMapper;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 
 public class AllStoreHolder extends Read

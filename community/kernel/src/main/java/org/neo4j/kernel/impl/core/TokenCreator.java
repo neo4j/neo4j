@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.function.IntPredicate;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 
 public interface TokenCreator
 {

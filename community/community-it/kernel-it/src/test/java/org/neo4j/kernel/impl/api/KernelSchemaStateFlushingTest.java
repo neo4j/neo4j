@@ -26,10 +26,10 @@ import org.junit.Test;
 
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;

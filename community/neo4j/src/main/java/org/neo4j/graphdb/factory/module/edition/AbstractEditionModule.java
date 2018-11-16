@@ -26,12 +26,12 @@ import java.util.function.Predicate;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.dmbs.database.DefaultDatabaseManager;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.helpers.Service;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
 import org.neo4j.io.pagecache.IOLimiter;

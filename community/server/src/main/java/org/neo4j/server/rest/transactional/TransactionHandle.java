@@ -27,12 +27,12 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.neo4j.cypher.CypherException;
 import org.neo4j.cypher.InvalidSemanticsException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.security.AuthorizationViolationException;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.internal.kernel.api.Transaction.Type;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.GraphDatabaseQueryService;

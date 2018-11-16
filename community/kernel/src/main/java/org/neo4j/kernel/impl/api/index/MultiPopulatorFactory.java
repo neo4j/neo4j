@@ -19,11 +19,11 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.EntityType;
 
 /**
  * Factory that is able to create either {@link MultipleIndexPopulator} or {@link BatchingMultipleIndexPopulator}

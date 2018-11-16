@@ -53,7 +53,7 @@ import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.util.concurrent.AsyncEvents;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.storageengine.api.EntityType.NODE;
+import static org.neo4j.common.EntityType.NODE;
 
 /**
  * Concurrent updates and index changes should result in valid state, and not create conflicts or exceptions during

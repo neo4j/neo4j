@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.IntStream;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -43,7 +44,6 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;

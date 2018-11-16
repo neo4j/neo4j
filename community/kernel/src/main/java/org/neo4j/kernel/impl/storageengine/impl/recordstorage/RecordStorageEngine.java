@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
@@ -104,7 +105,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;

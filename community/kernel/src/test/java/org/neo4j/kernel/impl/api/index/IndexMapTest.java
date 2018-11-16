@@ -36,9 +36,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.emptyIterableOf;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.forSchema;
-import static org.neo4j.storageengine.api.EntityType.NODE;
-import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
 
 public class IndexMapTest
 {

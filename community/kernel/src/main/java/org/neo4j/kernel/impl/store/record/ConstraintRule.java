@@ -24,7 +24,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 public class ConstraintRule implements SchemaRule, ConstraintDescriptor.Supplier
 {

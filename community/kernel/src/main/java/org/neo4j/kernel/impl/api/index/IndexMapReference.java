@@ -24,9 +24,9 @@ import org.eclipse.collections.api.set.primitive.IntSet;
 import java.util.Set;
 import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 

@@ -47,6 +47,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -91,7 +92,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.IndexSample;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;

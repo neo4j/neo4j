@@ -27,8 +27,8 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.IntPredicate;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.NamedToken;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.is;

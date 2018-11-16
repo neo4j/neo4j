@@ -22,12 +22,12 @@ package org.neo4j.kernel.impl.coreapi.schema;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 
 public class PropertyNameUtils

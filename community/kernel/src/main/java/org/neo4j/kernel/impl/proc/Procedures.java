@@ -23,8 +23,8 @@ import java.io.File;
 import java.util.Set;
 
 import org.neo4j.collection.RawIterator;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes;
 import org.neo4j.internal.kernel.api.procs.ProcedureHandle;

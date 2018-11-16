@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.register.Register;

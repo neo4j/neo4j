@@ -21,13 +21,13 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import org.junit.jupiter.api.Test;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
-import org.neo4j.storageengine.api.TokenNameLookup;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 class IndexPopulationFailedKernelExceptionTest
 {

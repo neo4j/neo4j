@@ -26,7 +26,7 @@ import org.neo4j.bolt.runtime.StatementMetadata;
 import org.neo4j.bolt.runtime.StatementProcessor;
 import org.neo4j.bolt.v3.messaging.request.BeginMessage;
 import org.neo4j.bolt.v3.messaging.request.RunMessage;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.util.Preconditions.checkState;

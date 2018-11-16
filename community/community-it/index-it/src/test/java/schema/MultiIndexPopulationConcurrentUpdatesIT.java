@@ -35,6 +35,8 @@ import java.util.Map;
 import java.util.function.IntPredicate;
 import java.util.stream.Collectors;
 
+import org.neo4j.common.EntityType;
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -80,9 +82,7 @@ import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreS
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageReader;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;

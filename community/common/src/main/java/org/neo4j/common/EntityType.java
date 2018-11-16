@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.common;
 
 /**
  * Type of graph entity. The two types, Nodes and Relationships, represent objects that can have properties

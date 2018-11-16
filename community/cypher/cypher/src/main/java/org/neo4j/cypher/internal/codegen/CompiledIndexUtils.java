@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.codegen;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Values;
 
 import static org.neo4j.cypher.internal.codegen.CompiledConversionUtils.makeValueNeoSafe;

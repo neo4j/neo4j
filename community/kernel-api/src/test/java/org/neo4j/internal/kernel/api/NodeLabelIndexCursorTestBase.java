@@ -23,7 +23,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodeCount;
 import static org.neo4j.internal.kernel.api.IndexReadAsserts.assertNodes;

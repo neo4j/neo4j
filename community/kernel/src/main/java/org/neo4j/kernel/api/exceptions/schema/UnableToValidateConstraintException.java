@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.api.exceptions.schema;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 /**
  * Attempting to validate constraints but the apparatus for validation was not available. For example,

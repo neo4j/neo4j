@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 

@@ -21,11 +21,11 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import java.util.Optional;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.IndexValueCapability;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.ValueCategory;

@@ -21,8 +21,8 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.eclipse.collections.api.set.primitive.MutableIntSet;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.values.storable.Value;
 
 /**

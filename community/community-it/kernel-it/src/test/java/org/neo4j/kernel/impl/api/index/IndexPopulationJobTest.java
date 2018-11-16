@@ -33,6 +33,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.function.IntPredicate;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -66,7 +67,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.DoubleLatch;

@@ -22,13 +22,13 @@ package org.neo4j.kernel.impl.api.integrationtest;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;

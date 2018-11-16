@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.exceptions.explicitindex;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 
 public class ExplicitIndexNotFoundKernelException extends KernelException

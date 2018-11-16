@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -38,7 +39,6 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.SearcherReference;
 import org.neo4j.kernel.api.impl.index.collector.ValuesIterator;
 import org.neo4j.kernel.impl.newapi.AllStoreHolder;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 
 import static java.util.Arrays.asList;

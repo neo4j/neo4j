@@ -31,6 +31,8 @@ import java.util.function.LongFunction;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -50,7 +52,6 @@ import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -67,7 +68,6 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.helpers.collection.Iterators.asList;

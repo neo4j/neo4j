@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -59,7 +60,6 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 import org.neo4j.test.rule.VerboseTimeout;

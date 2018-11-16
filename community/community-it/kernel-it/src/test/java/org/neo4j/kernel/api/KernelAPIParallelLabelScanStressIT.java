@@ -24,11 +24,11 @@ import org.junit.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;

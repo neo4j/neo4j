@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;

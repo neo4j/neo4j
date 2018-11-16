@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.coreapi;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
@@ -30,7 +31,6 @@ import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.graphdb.TransientTransactionFailureException;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;

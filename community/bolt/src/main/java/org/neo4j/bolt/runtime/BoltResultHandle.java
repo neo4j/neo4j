@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 
 public interface BoltResultHandle
 {

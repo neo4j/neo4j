@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.core;
 import java.util.List;
 import java.util.function.IntPredicate;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.internal.kernel.api.NamedToken;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDbException;
 
 import static org.neo4j.function.Predicates.ALWAYS_FALSE_INT;

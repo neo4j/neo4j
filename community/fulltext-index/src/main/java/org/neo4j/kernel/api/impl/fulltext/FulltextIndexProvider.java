@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.kernel.api.impl.fulltext.FulltextIndexSettings.readOrInitialiseDescriptor;

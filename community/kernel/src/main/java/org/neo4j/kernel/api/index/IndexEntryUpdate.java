@@ -27,7 +27,7 @@ import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 
 /**
  * Subclasses of this represent events related to property changes due to property or label addition, deletion or

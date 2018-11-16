@@ -31,13 +31,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.stream.Collectors.joining;

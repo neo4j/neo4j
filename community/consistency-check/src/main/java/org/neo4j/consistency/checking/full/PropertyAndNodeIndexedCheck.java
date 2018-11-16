@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.consistency.checking.ChainCheck;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
 import org.neo4j.kernel.impl.store.record.PropertyRecord;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

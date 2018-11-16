@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -52,7 +53,6 @@ import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.util.FeatureToggles;
 

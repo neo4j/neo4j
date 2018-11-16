@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
@@ -86,7 +87,6 @@ import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.PrepareTrackingRecordFormats;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.rule.NeoStoresRule;

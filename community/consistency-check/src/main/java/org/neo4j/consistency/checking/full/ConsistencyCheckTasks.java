@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.NodeRecordCheck;
 import org.neo4j.consistency.checking.PropertyChain;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.store.Scanner;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.storageengine.api.EntityType;
 
 import static java.lang.String.format;
 import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;

@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.api.exceptions.index;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.storageengine.api.TokenNameLookup;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
 
 import static java.lang.String.format;
+import static org.neo4j.common.TokenNameLookup.idTokenNameLookup;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
-import static org.neo4j.storageengine.api.TokenNameLookup.idTokenNameLookup;
 
 /**
  * TODO why isn't this a {@link KernelException}?

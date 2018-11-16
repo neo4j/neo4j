@@ -29,6 +29,7 @@ import org.mockito.junit.MockitoJUnitRunner;
 import java.io.IOException;
 import java.util.function.IntPredicate;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -51,7 +52,6 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;

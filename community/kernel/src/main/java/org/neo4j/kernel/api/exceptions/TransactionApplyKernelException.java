@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
+import org.neo4j.exceptions.KernelException;
 
 /**
  * A {@link KernelException} thrown by a {@link org.neo4j.storageengine.api.StorageEngine} if it failed to apply a

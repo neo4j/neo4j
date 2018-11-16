@@ -19,6 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -32,7 +33,6 @@ import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.values.storable.Value;
 
 public class StubRead implements Read

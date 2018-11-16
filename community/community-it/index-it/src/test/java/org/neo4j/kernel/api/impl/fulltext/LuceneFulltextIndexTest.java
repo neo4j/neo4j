@@ -30,8 +30,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-import static org.neo4j.storageengine.api.EntityType.NODE;
-import static org.neo4j.storageengine.api.EntityType.RELATIONSHIP;
+import static org.neo4j.common.EntityType.NODE;
+import static org.neo4j.common.EntityType.RELATIONSHIP;
 
 public class LuceneFulltextIndexTest extends LuceneFulltextTestSupport
 {

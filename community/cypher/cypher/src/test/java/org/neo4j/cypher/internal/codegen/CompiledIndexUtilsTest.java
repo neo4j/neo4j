@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.codegen;
 
 import org.junit.Test;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 
 import static org.junit.Assert.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
