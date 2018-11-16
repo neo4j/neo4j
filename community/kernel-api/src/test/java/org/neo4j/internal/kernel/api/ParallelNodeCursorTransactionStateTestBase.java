@@ -65,7 +65,6 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         }
     }
 
-
     @Test
     public void scanShouldNotSeeDeletedNode() throws Exception
     {
@@ -82,7 +81,6 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             }
             tx.success();
         }
-
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -348,7 +346,6 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         threadPool.shutdown();
         threadPool.awaitTermination( 1, TimeUnit.MINUTES );
     }
-
 
     private Set<Long> createNodes( int size )
             throws TransactionFailureException, InvalidTransactionTypeKernelException

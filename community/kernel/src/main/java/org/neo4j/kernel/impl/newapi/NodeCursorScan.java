@@ -40,7 +40,6 @@ final class NodeCursorScan implements Scan<NodeCursor>
     private final long[] addedNodesArray;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
-
     NodeCursorScan( AllNodeScan internalScan, Read read )
     {
         this.allNodeScan = internalScan;
@@ -65,7 +64,7 @@ final class NodeCursorScan implements Scan<NodeCursor>
             if ( addedStart < addedNodesArray.length )
             {
                 int addedStop = Math.min( addedStart + sizeHint, addedNodesArray.length );
-                sizeHint -= (addedStop - addedStart);
+                sizeHint -= addedStop - addedStart;
                 addedNodes = createIterator( addedStart, addedStop );
             }
             else
