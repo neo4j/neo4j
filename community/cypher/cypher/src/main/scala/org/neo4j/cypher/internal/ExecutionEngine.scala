@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal
 
 import java.time.Clock
 
+import org.neo4j.cypher.internal.ExecutionEngine.{JitCompilation, NEVER_COMPILE, QueryCompilation}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
 import org.neo4j.cypher.internal.tracing.CompilationTracer
@@ -118,27 +119,21 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
   private def compilers(preParsedQuery: PreParsedQuery,
                         tracer: QueryCompilationEvent,
                         transactionalContext: TransactionalContext,
-                        params: MapValue): (() => ExecutableQuery, (Int) => Option[ExecutableQuery]) = {
+                        params: MapValue): (QueryCompilation, JitCompilation) = {
+
+  val compiledExpressionCompiler = () => masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
+                                                                  tracer, transactionalContext, params)
+    val interpretedExpressionCompiler = () => masterCompiler.compile(preParsedQuery, tracer, transactionalContext, params)
     //check if we need to jit compiling of queries
     if (preParsedQuery.compileWhenHot && config.recompilationLimit > 0) {
-      val primary: () => ExecutableQuery = () => masterCompiler.compile(preParsedQuery,
-                                                                        tracer, transactionalContext, params)
-      val secondary: Int => Option[ExecutableQuery] =
-        count => {
-          if (count > config.recompilationLimit) Some(
-            masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
-                                   tracer, transactionalContext, params))
-          else None
-        }
-
-      (primary, secondary)
+      //compile if hot enough
+      (interpretedExpressionCompiler,  count => if (count > config.recompilationLimit) Some(compiledExpressionCompiler()) else None)
     } else if (preParsedQuery.compileWhenHot) {
       //We have recompilationLimit == 0, go to compiled directly
-      (() => masterCompiler.compile(preParsedQuery.copy(recompilationLimitReached = true),
-                                    tracer, transactionalContext, params), _ => None)
+      (compiledExpressionCompiler, NEVER_COMPILE)
     } else {
       //In the other cases we have no recompilation step
-     (() => masterCompiler.compile(preParsedQuery, tracer, transactionalContext, params), (_) => None)
+     (interpretedExpressionCompiler, NEVER_COMPILE)
     }
   }
 
@@ -207,4 +202,8 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
 
 object ExecutionEngine {
   val PLAN_BUILDING_TRIES: Int = 20
+  type QueryCompilation = () => ExecutableQuery
+  type JitCompilation = Int => Option[ExecutableQuery]
+
+  private val NEVER_COMPILE: JitCompilation = _ => None
 }

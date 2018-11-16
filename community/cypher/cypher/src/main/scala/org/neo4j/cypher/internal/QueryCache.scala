@@ -115,7 +115,7 @@ class QueryCache[QUERY_REP <: AnyRef, QUERY_KEY <: Pair[QUERY_REP, ParameterType
   def computeIfAbsentOrStale(queryKey: QUERY_KEY,
                              tc: TransactionalContext,
                              compile: () => EXECUTABLE_QUERY,
-                             recompile: (Int) => Option[EXECUTABLE_QUERY],
+                             recompile: Int => Option[EXECUTABLE_QUERY],
                              metaData: String = ""
                             ): CacheLookup[EXECUTABLE_QUERY] = {
     if (maximumSize == 0)
