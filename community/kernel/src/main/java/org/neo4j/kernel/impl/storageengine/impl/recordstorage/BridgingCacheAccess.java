@@ -17,22 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.cache;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.internal.kernel.api.NamedToken;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 
-public class BridgingCacheAccess implements CacheAccessBackDoor
+class BridgingCacheAccess implements CacheAccessBackDoor
 {
     private final SchemaCache schemaCache;
     private final SchemaState schemaState;
     private final TokenHolders tokenHolders;
 
-    public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState, TokenHolders tokenHolders )
+    BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState, TokenHolders tokenHolders )
     {
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;

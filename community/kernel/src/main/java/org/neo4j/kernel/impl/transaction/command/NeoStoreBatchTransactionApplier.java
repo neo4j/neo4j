@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.transaction.command;
 
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.storageengine.api.CommandVersion;
 import org.neo4j.storageengine.api.CommandsToApply;

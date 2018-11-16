@@ -25,7 +25,6 @@ import java.util.function.Function;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
