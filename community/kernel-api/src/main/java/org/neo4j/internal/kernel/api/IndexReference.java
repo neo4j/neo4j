@@ -39,6 +39,7 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
     /**
      * Returns true if this index only allows one value per key.
      */
+    @Override
     boolean isUnique();
 
     /**
@@ -49,6 +50,7 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
     /**
      * Returns the schema of this index.
      */
+    @Override
     SchemaDescriptor schema();
 
     /**
@@ -64,12 +66,14 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
     /**
      * The unique name for this index - either automatically generated or user supplied - or the {@link #UNNAMED_INDEX} constant.
      */
+    @Override
     String name();
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
+    @Override
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
