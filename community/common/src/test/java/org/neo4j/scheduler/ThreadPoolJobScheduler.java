@@ -37,7 +37,17 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
  */
 public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private final ExecutorService executor = newCachedThreadPool( new DaemonThreadFactory( "ThreadPoolScheduler" ) );
+    private final ExecutorService executor;
+
+    public ThreadPoolJobScheduler()
+    {
+        executor = newCachedThreadPool( new DaemonThreadFactory( "ThreadPoolScheduler" ) );
+    }
+
+    public ThreadPoolJobScheduler( ExecutorService executor )
+    {
+        this.executor = executor;
+    }
 
     @Override
     public void setTopLevelGroupName( String name )

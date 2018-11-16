@@ -66,6 +66,7 @@ public enum Group
     BOLT_WORKER( "BoltWorker" ),
 
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
+    RAFT( "Raft" ),
     RAFT_TIMER( "RaftTimer" ),
     RAFT_LOG_PRUNING( "RaftLogPruning" ),
     RAFT_BATCH_HANDLER( "RaftBatchHandler" ),
