@@ -32,8 +32,10 @@ object aggregation {
     val (step1, groupingExpressions) = expressionSolver(plan, aggregation.groupingExpressions, interestingOrder, context)
     val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregation.aggregationExpressions, interestingOrder, context)
 
-    val usingInterestingOrder: Boolean = interestingOrder.required.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(rewrittenPlan.id))
-    if (usingInterestingOrder) {
+    // check if satisfying interesting order for min/max
+    // The interestingOrder.nonEmpty check is only here because an empty interesting order is satisfied by anything.
+    if (interestingOrder.interesting.nonEmpty &&
+      interestingOrder.interestingSatisfiedBy(context.planningAttributes.providedOrders.get(rewrittenPlan.id))) {
       val projectionMap =
         aggregations.keys.foldLeft(Map.empty[String, Expression]) {
           case (_projectionMap, key) =>

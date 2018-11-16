@@ -129,11 +129,11 @@ object ClauseConverters {
       }
     }
 
-    val requiredOrderColumns = horizon match {
+    val (requiredOrderColumns, interestingOrderColumns) = horizon match {
       case RegularQueryProjection(projections, shuffle, _) =>
-        extractColumnsFromHorizon(shuffle, projections)
+        (extractColumnsFromHorizon(shuffle, projections), Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, shuffle, _) =>
-        val columnOrders = aggregationExpressions.values.foldLeft(Seq.empty[ColumnOrder]) {
+        val interestingColumnOrders = aggregationExpressions.values.foldLeft(Seq.empty[ColumnOrder]) {
           case (_columnOrders, f: FunctionInvocation) =>
            f.name match {
               case "min" =>
@@ -152,12 +152,12 @@ object ClauseConverters {
           case (_columnOrders, _) =>
             _columnOrders
         }
-        extractColumnsFromHorizon(shuffle, groupingExpressions) ++ columnOrders
+        (extractColumnsFromHorizon(shuffle, groupingExpressions), interestingColumnOrders)
       case DistinctQueryProjection(groupingExpressions, shuffle, _) =>
-        extractColumnsFromHorizon(shuffle, groupingExpressions)
-      case _ => Seq.empty
+        (extractColumnsFromHorizon(shuffle, groupingExpressions), Seq.empty)
+      case _ => (Seq.empty, Seq.empty)
     }
-    InterestingOrder(requiredOrderColumns)
+    InterestingOrder(requiredOrderColumns, interestingOrderColumns)
   }
 
   private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {

@@ -123,6 +123,19 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
       case _ => false
     }
   }
+
+  /**
+    * Checks if interesting is satisfied by a ProvidedOrder
+    */
+  def interestingSatisfiedBy(providedOrder: ProvidedOrder): Boolean = {
+    interesting.zipAll(providedOrder.columns, null, null).forall {
+      case (null, _) => true // no interesting order left
+      case (_, null) => false // interesting order left but no provided
+      case (InterestingOrder.Asc(interestingId), ProvidedOrder.Asc(providedId)) => interestingId == providedId
+      case (InterestingOrder.Desc(interestingId), ProvidedOrder.Desc(providedId)) => interestingId == providedId
+      case _ => false
+    }
+  }
 }
 
 /**
