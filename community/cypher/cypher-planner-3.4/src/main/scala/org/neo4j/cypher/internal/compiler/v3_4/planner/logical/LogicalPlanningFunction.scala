@@ -24,7 +24,6 @@ import org.neo4j.cypher.internal.ir.v3_4.QueryGraph
 import org.neo4j.cypher.internal.planner.v3_4.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v3_4.logical.plans.LogicalPlan
 
-// TODO: Return Iterator
 trait CandidateGenerator[T] extends ((T, QueryGraph, LogicalPlanningContext, Solveds, Cardinalities) => Seq[LogicalPlan])
 
 trait PlanTransformer[-T] extends ((LogicalPlan, T, LogicalPlanningContext, Solveds, Cardinalities) => LogicalPlan)
