@@ -22,16 +22,20 @@ package org.neo4j.kernel.impl.util.collection;
 
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.block.procedure.primitive.LongProcedure;
+import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.iterator.MutableLongIterator;
 import org.eclipse.collections.api.multimap.MutableMultimap;
 import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.Multimaps;
 import org.eclipse.collections.impl.set.mutable.primitive.SynchronizedLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.UnmodifiableLongSet;
 
+import java.util.ConcurrentModificationException;
+import java.util.NoSuchElementException;
+
 import org.neo4j.graphdb.Resource;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.Integer.bitCount;
@@ -244,7 +248,7 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     }
 
     @Override
-    public LongSet freeze()
+    public RichLongSet freeze()
     {
         frozen = true;
         final FrozenCopy frozen = new FrozenCopy();
@@ -364,16 +368,140 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         }
     }
 
+    private class RangeIterator implements LongIterator
+    {
+        private static final int NOT_INITIALIZED = -2;
+        private static final int ON_ONE = -1;
+        private final int stop;
+        //the position referes to the position of the iterator
+        private int currentPosition;
+        //keeps track of where in the backing memory we are currently looking
+        private int internalPosition = NOT_INITIALIZED;
+        private long modCount;
+
+        RangeIterator( int start, int stop )
+        {
+            Preconditions.requireNonNegative( start );
+            Preconditions.requireNonNegative( stop );
+            Preconditions.requireNonNegative( size() - start );
+            this.stop = Math.min( stop, size() );
+            this.currentPosition = start;
+            this.modCount = MutableLinearProbeLongHashSet.this.modCount;
+        }
+
+        /**
+         * Finds the n:th item of the iteration and sets the internalPosition so that it is ready to find the next
+         * element.
+         * <p>
+         * Example: Say we have elements (4, 5, 6) in the set and pretend they are layed out in memory as
+         * [x, 6, x, 5, x, 4, x, 3, x] where x marks empty slots. Calling findNth(2) would then
+         * return 4 and set internalPosition to 6. When the set contains 0 and 1 we need to treat this with some care
+         * since they are not stored in the same way. Here it is assumed that if we have 0L in the set it is always
+         * stored at position 0 and if the set contains 1L it is either stored at position 0 if 0L is not present in
+         * the set or at position 1 if 0L is in the set.
+         *
+         * @param n the nth element to find
+         * @return the n:th element of the set when viewed as an iterator.
+         */
+        private long findNth( int n )
+        {
+            int positionNotCountingZerorOrOne = n - (hasOne ? 1 : 0) - (hasZero ? 1 : 0);
+            if ( positionNotCountingZerorOrOne == -2 )
+            {   //we are looking for the zeroth element, which is always 0 if it is in the set
+                //if this set also
+                internalPosition = hasOne ? ON_ONE : 0;
+                return 0L;
+            }
+            else if ( positionNotCountingZerorOrOne == -1 )
+            {
+                //we are either looking for the zeroth element of a set containing either 0L or 1L
+                //or we are looking for the first element of a set containing both 0L and 1L
+                internalPosition = 0;
+                return (hasZero && hasOne) ? 1L : (hasOne ? 1L : 0L);
+            }
+            int pos = 0;
+            for ( int i = 0; i < capacity && pos < elementsInMemory; i++ )
+            {
+                final long value = valueAt( i );
+                if ( isRealValue( value ) )
+                {
+                    if ( pos == positionNotCountingZerorOrOne )
+                    {
+                        internalPosition = i + 1;
+                        return value;
+                    }
+                    pos++;
+                }
+            }
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public long next()
+        {
+            switch ( internalPosition )
+            {
+            case NOT_INITIALIZED:
+                return findNth( currentPosition++ );
+            case ON_ONE:
+                currentPosition++;
+                internalPosition = 0;
+                return 1L;
+            default:
+                return findNext();
+
+            }
+        }
+
+        private long findNext()
+        {
+            assert internalPosition >= 0;
+            int i = internalPosition;
+            while ( i < capacity )
+            {
+                final long value = valueAt( i++ );
+                if ( isRealValue( value ) )
+                {
+                    internalPosition = i;
+                    currentPosition++;
+                    return value;
+                }
+            }
+
+            throw new NoSuchElementException();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            checkState();
+            return currentPosition < stop;
+        }
+
+        private void checkState()
+        {
+            if ( modCount != MutableLinearProbeLongHashSet.this.modCount )
+            {
+                throw new ConcurrentModificationException();
+            }
+        }
+    }
+
+    @Override
+    public LongIterator rangeIterator( int start, int stop )
+    {
+        return new RangeIterator( start, stop );
+    }
+
     class FrozenCopy extends AbstractLinearProbeLongHashSet
     {
-
         FrozenCopy()
         {
             super( MutableLinearProbeLongHashSet.this );
         }
 
         @Override
-        public LongSet freeze()
+        public RichLongSet freeze()
         {
             return this;
         }
@@ -388,5 +516,12 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         {
             ++FrozenCopy.this.modCount;
         }
+
+        @Override
+        public LongIterator rangeIterator( int start, int stop )
+        {
+            return new RangeIterator( start, stop );
+        }
+
     }
 }

@@ -313,7 +313,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         ExecutorService threadPool = Executors.newFixedThreadPool( workers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 100000; i++ )
+        for ( int i = 0; i < 1000; i++ )
         {
             Set<Long> allNodes = new HashSet<>( existingNodes );
             try ( Transaction tx = beginTransaction() )

@@ -20,24 +20,27 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.util.NoSuchElementException;
+import java.nio.LongBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Scan;
+import org.neo4j.kernel.impl.util.collection.BaseRichLongSet;
+import org.neo4j.kernel.impl.util.collection.RichLongSet;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.util.Preconditions;
 
 final class NodeCursorScan implements Scan<NodeCursor>
 {
-    private static final long[] EMPTY = new long[0];
     private final AllNodeScan allNodeScan;
     private final Read read;
     private final boolean hasChanges;
     private volatile boolean addedNodesConsumed;
-    private final long[] addedNodesArray;
+    private final RichLongSet addedNodesSet;
+    private final int numberOfAddedNodes;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
     NodeCursorScan( AllNodeScan internalScan, Read read )
@@ -45,9 +48,9 @@ final class NodeCursorScan implements Scan<NodeCursor>
         this.allNodeScan = internalScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
-        //Dear reviewer, can we do something more heap friendly here?
-        this.addedNodesArray = hasChanges ? read.txState().addedAndRemovedNodes().getAdded().freeze().toArray() : EMPTY;
-        this.addedNodesConsumed = addedNodesArray.length == 0;
+        this.addedNodesSet = addedNodes( read.txState().addedAndRemovedNodes().getAdded().freeze() );
+        this.numberOfAddedNodes = addedNodesSet.size();
+        this.addedNodesConsumed = addedNodesSet.size() == 0;
     }
 
     @Override
@@ -59,13 +62,13 @@ final class NodeCursorScan implements Scan<NodeCursor>
         if ( hasChanges && !addedNodesConsumed )
         {
             //the idea here is to give each batch an exclusive range of the underlying
-            //array so that each thread can read in parallel without contention.
+            //memory so that each thread can read in parallel without contention.
             int addedStart = addedChunk.getAndAdd( sizeHint );
-            if ( addedStart < addedNodesArray.length )
+            if ( addedStart < numberOfAddedNodes )
             {
-                int addedStop = Math.min( addedStart + sizeHint, addedNodesArray.length );
+                int addedStop = Math.min( addedStart + sizeHint, numberOfAddedNodes );
                 sizeHint -= addedStop - addedStart;
-                addedNodes = createIterator( addedStart, addedStop );
+                addedNodes = addedNodesSet.rangeIterator( addedStart, addedStop );
             }
             else
             {
@@ -75,27 +78,39 @@ final class NodeCursorScan implements Scan<NodeCursor>
         return ((DefaultNodeCursor) cursor).scanBatch( read, allNodeScan, sizeHint, addedNodes, hasChanges );
     }
 
-    private LongIterator createIterator( int start, int stop )
+    //TODO: if we choose to go down this route we should probably have tx state return a RichLongSet
+    private RichLongSet addedNodes( LongSet added )
     {
-        return new LongIterator()
+        if ( added instanceof RichLongSet )
         {
-            private int i = start;
+            return (RichLongSet) added;
+        }
+        else
+        {
+            return new AddedNodesSet( added );
+        }
+    }
 
-            @Override
-            public long next()
-            {
-                if ( !hasNext() )
-                {
-                    throw new NoSuchElementException();
-                }
-                return addedNodesArray[i++];
-            }
+    private static class AddedNodesSet extends BaseRichLongSet
+    {
+        private final LongBuffer buffer;
 
-            @Override
-            public boolean hasNext()
-            {
-                return i < stop;
-            }
-        };
+        AddedNodesSet( LongSet longSet )
+        {
+            super( longSet );
+            this.buffer = LongBuffer.wrap( longSet.toArray() );
+        }
+
+        @Override
+        public LongIterator rangeIterator( int start, int stop )
+        {
+            return new RangeLongIterator( buffer, start, stop );
+        }
+
+        @Override
+        public RichLongSet freeze()
+        {
+            return new AddedNodesSet( longSet.freeze() );
+        }
     }
 }

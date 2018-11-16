@@ -40,7 +40,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.util.VisibleForTesting;
 
-abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable implements LongSet
+abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable implements RichLongSet
 {
     private static final long EMPTY = 0;
     static final long REMOVED = 1;
@@ -233,10 +233,7 @@ abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable imple
     public <V> MutableSet<V> collect( LongToObjectFunction<? extends V> function )
     {
         final MutableSet<V> result = new UnifiedSet<>( size() );
-        each( element ->
-        {
-            result.add( function.apply( element ) );
-        } );
+        each( element -> result.add( function.apply( element ) ) );
         return result;
     }
 
