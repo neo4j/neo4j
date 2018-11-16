@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.virtual.VirtualValues
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.attribution.Id
@@ -36,7 +37,7 @@ case object simpleExpressionEvaluator extends ExpressionEvaluator {
     val converters = new ExpressionConverters(CommunityExpressionConverter(TokenContext.EMPTY))
     val commandExpr = converters.toCommandExpression(Id.INVALID_ID, expr)
 
-    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null, Array())
+    val emptyQueryState = new QueryState(null, null, VirtualValues.EMPTY_MAP, null, Array.empty[IndexReadSession])
 
     try {
       Some(commandExpr(ExecutionContext.empty, emptyQueryState))

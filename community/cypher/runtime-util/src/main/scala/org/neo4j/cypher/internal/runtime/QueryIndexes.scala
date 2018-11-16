@@ -32,7 +32,7 @@ import scala.collection.mutable.ArrayBuffer
   */
 class QueryIndexes(schemaRead: SchemaRead) {
 
-  private var buffer = new ArrayBuffer[IndexReference]
+  private val buffer = new ArrayBuffer[IndexReference]
 
   def registerQueryIndex(label: LabelToken,
                          property: IndexedProperty): Int = {

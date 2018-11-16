@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource,
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
 import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.virtual.MapValue
 import org.opencypher.v9_0.expressions.Expression
 import org.opencypher.v9_0.util.{InternalNotification, InvalidArgumentException}
@@ -75,7 +76,7 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
   }
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {
-    val state = new QueryState(ctx, ExternalCSVResource.empty, params, new ExpressionCursors(ctx.transactionalContext.cursors), Array())
+    val state = new QueryState(ctx, ExternalCSVResource.empty, params, new ExpressionCursors(ctx.transactionalContext.cursors), Array.empty[IndexReadSession])
     val args = zippedArgCandidates.map {
       // an actual argument (or even a parameter that ResolvedCall puts there instead if there is no default value)
       case (Some(actualArg), _, _) => actualArg
