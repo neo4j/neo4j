@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.database;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,7 +43,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
-import org.neo4j.test.rule.NeoStoreDataSourceRule;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -62,21 +62,21 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
-public class NeoStoreDataSourceTest
+public class DatabaseTest
 {
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory( fs.get() );
     @Rule
-    public NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+    public DatabaseRule dsRule = new DatabaseRule();
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
     public void databaseHealthShouldBeHealedOnStart() throws Throwable
     {
-        NeoStoreDataSource theDataSource = null;
+        Database theDataSource = null;
         try
         {
             DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
@@ -84,7 +84,7 @@ public class NeoStoreDataSourceTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
-            theDataSource = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            theDataSource = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     dependencies );
 
             databaseHealth.panic( new Throwable() );
@@ -107,7 +107,7 @@ public class NeoStoreDataSourceTest
     public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCache );
+        Database ds = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -123,7 +123,7 @@ public class NeoStoreDataSourceTest
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCache );
+        Database ds = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -142,7 +142,7 @@ public class NeoStoreDataSourceTest
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( health );
-        NeoStoreDataSource ds = dsRule.getDataSource( dir.databaseLayout(), fs.get(), pageCache, dependencies );
+        Database ds = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache, dependencies );
 
         ds.start();
         verify( pageCache, never() ).flushAndForce();
@@ -156,7 +156,7 @@ public class NeoStoreDataSourceTest
     public void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()
     {
         // GIVEN
-        NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId( noLogs() );
+        Database dataSource = databaseWithLogFilesContainingLowestTxId( noLogs() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
@@ -173,7 +173,7 @@ public class NeoStoreDataSourceTest
         // GIVEN
         long logVersion = 2;
         long prevLogLastTxId = 45;
-        NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
+        Database dataSource = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactions( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
@@ -192,7 +192,7 @@ public class NeoStoreDataSourceTest
         // GIVEN
         long logVersion = 2;
         long prevLogLastTxId = 45;
-        NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
+        Database dataSource = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
@@ -221,7 +221,7 @@ public class NeoStoreDataSourceTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.databaseLayout(), fs.get(),
+        Database dataSource = dsRule.getDatabase( dir.databaseLayout(), fs.get(),
                 pageCache, dependencies );
 
         try
@@ -234,7 +234,7 @@ public class NeoStoreDataSourceTest
             assertEquals( openStoresError, e );
         }
 
-        logProvider.assertAtLeastOnce( inLog( NeoStoreDataSource.class ).warn(
+        logProvider.assertAtLeastOnce( inLog( Database.class ).warn(
                 equalTo( "Exception occurred while setting up store modules. Attempting to close things down." ),
                 equalTo( openStoresError ) ) );
     }
@@ -252,7 +252,7 @@ public class NeoStoreDataSourceTest
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseHealth );
-        NeoStoreDataSource dataSource = dsRule.getDataSource( dir.databaseLayout(), fs, pageCache, dependencies );
+        Database dataSource = dsRule.getDatabase( dir.databaseLayout(), fs, pageCache, dependencies );
         dataSource.start();
 
         try
@@ -268,11 +268,11 @@ public class NeoStoreDataSourceTest
         }
     }
 
-    private static NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( LogFiles files )
+    private static Database databaseWithLogFilesContainingLowestTxId( LogFiles files )
     {
         Dependencies dependencies = mock( Dependencies.class );
         when( dependencies.resolveDependency( LogFiles.class ) ).thenReturn( files );
-        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        Database dataSource = mock( Database.class );
         when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
         return dataSource;
     }

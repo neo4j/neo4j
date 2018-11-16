@@ -28,8 +28,8 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 
 import static org.junit.Assert.assertTrue;
 
@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
 public class ConsistentPropertyReadsIT
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule();
+    public GraphDatabaseRule db = new EmbeddedDatabaseRule();
 
     @Test
     public void shouldReadConsistentPropertyValues() throws Throwable

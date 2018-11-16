@@ -29,8 +29,8 @@ import java.util.Set;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertEquals;
@@ -42,7 +42,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
  */
 public class NativeLabelScanStoreChaosIT
 {
-    private final DatabaseRule dbRule = new EmbeddedDatabaseRule();
+    private final GraphDatabaseRule dbRule = new EmbeddedDatabaseRule();
     private final RandomRule randomRule = new RandomRule();
     @Rule
     public final RuleChain ruleChain = RuleChain.outerRule( randomRule ).around( dbRule );
@@ -78,12 +78,12 @@ public class NativeLabelScanStoreChaosIT
         return databaseLayout.labelScanStore();
     }
 
-    private DatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
+    private GraphDatabaseRule.RestartAction corruptTheLabelScanStoreIndex()
     {
         return ( fs, directory ) -> scrambleFile( storeFile( directory ) );
     }
 
-    private static DatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
+    private static GraphDatabaseRule.RestartAction deleteTheLabelScanStoreIndex()
     {
         return ( fs, directory ) -> fs.deleteFile( storeFile( directory ) );
     }

@@ -36,8 +36,8 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStoreTest;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -49,7 +49,7 @@ public class NativeLabelScanStoreStartupIT
     private static final Label LABEL = Label.label( "testLabel" );
 
     @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public final GraphDatabaseRule dbRule = new EmbeddedDatabaseRule();
     @Rule
     public final RandomRule random = new RandomRule();
 

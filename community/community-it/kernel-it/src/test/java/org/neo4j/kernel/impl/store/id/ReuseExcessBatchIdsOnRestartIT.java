@@ -29,8 +29,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 
 import static java.lang.Math.toIntExact;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -42,7 +42,7 @@ import static org.junit.Assert.assertThat;
 public class ReuseExcessBatchIdsOnRestartIT
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule();
 
     // Knowing that ids are grabbed in batches internally we only create one node and later assert
     // that the excess ids that were only grabbed, but not used can be reused.

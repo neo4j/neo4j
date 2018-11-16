@@ -35,8 +35,8 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.Read;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
@@ -45,7 +45,7 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 public class KernelAPIParallelIndexScanStressIT
 {
     @ClassRule
-    public static final DatabaseRule db = new EmbeddedDatabaseRule();
+    public static final GraphDatabaseRule db = new EmbeddedDatabaseRule();
 
     private final int N_THREADS = 10;
     private final int N_NODES = 10_000;

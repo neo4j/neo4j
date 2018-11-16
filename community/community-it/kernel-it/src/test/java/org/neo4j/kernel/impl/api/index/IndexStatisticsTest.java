@@ -67,8 +67,8 @@ import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.util.FeatureToggles;
 import org.neo4j.values.storable.Values;
@@ -112,7 +112,7 @@ public class IndexStatisticsTest
     public boolean multiThreadedPopulationEnabled;
 
     @Rule
-    public final DatabaseRule dbRule = new EmbeddedDatabaseRule()
+    public final GraphDatabaseRule dbRule = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.index_background_sampling_enabled, "false" )
             .startLazily();
     @Rule

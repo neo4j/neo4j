@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.database;
 
 import java.io.File;
 import java.io.IOException;
@@ -157,7 +157,7 @@ import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
-public class NeoStoreDataSource extends LifecycleAdapter
+public class Database extends LifecycleAdapter
 {
     private final Monitors monitors;
     private final Tracers tracers;
@@ -212,13 +212,13 @@ public class NeoStoreDataSource extends LifecycleAdapter
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
     private NeoStoreTransactionLogModule transactionLogModule;
-    private NeoStoreKernelModule kernelModule;
+    private DatabaseKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
 
-    public NeoStoreDataSource( DatabaseCreationContext context )
+    public Database( DatabaseCreationContext context )
     {
         this.databaseName = context.getDatabaseName();
         this.databaseLayout = context.getDatabaseLayout();
@@ -354,7 +354,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                     scheduler, storageEngine, logEntryReader, explicitIndexTransactionOrdering, transactionIdStore );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
-            final NeoStoreKernelModule kernelModule = buildKernel(
+            final DatabaseKernelModule kernelModule = buildKernel(
                     logFiles,
                     transactionLogModule.transactionAppender(),
                     dataSourceDependencies.resolveDependency( IndexingService.class ),
@@ -531,7 +531,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 logRotation, checkPointer, appender, explicitIndexTransactionOrdering );
     }
 
-    private NeoStoreKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
+    private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, IndexConfigStore indexConfigStore, TransactionIdStore transactionIdStore,
             AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock )
@@ -579,7 +579,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
                 indexingService, explicitIndexProvider, storageEngine );
         dataSourceDependencies.satisfyDependency( fileListing );
 
-        return new NeoStoreKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
+        return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }
 
     private AtomicReference<CpuClock> setupCpuClockAtomicReference()

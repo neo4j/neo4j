@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Race;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.neo4j.test.Race.throwing;
@@ -40,7 +40,7 @@ public class UpdateDeletedIndexIT
     private static final String KEY = "key";
     private static final int NODES = 100;
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
 
     @Test
     public void shouldHandleUpdateRemovalOfLabelConcurrentlyWithIndexDrop() throws Throwable

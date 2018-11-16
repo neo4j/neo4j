@@ -39,7 +39,7 @@ import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ public class ExplicitIndexTest
     private static final RelationshipType TYPE = RelationshipType.withName( "TYPE" );
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
 

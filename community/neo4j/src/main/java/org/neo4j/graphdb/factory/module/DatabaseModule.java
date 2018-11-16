@@ -24,16 +24,16 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.storageengine.api.StoreId;
 
-public class DataSourceModule
+public class DatabaseModule
 {
-    public final NeoStoreDataSource neoStoreDataSource;
+    public final Database database;
 
     public final Supplier<InwardKernel> kernelAPI;
 
@@ -41,18 +41,18 @@ public class DataSourceModule
 
     public final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
 
-    public DataSourceModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures,
+    public DatabaseModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
         platformModule.diagnosticsManager.prependProvider( platformModule.config );
         EditionDatabaseContext editionContext = editionModule.createDatabaseContext( databaseName );
         ModularDatabaseCreationContext context =
                 new ModularDatabaseCreationContext( databaseName, platformModule, editionContext, procedures, graphDatabaseFacade );
-        neoStoreDataSource = new NeoStoreDataSource( context );
+        database = new Database( context );
 
         this.coreAPIAvailabilityGuard = context.getCoreAPIAvailabilityGuard();
-        this.storeId = neoStoreDataSource::getStoreId;
-        this.kernelAPI = neoStoreDataSource::getKernel;
+        this.storeId = database::getStoreId;
+        this.kernelAPI = database::getKernel;
 
         ProcedureGDSFactory gdsFactory =
                 new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(),

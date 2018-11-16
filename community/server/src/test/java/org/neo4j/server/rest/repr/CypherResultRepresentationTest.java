@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.server.rest.repr.formats.JsonFormat;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Arrays.asList;
@@ -48,7 +48,7 @@ import static org.neo4j.server.rest.domain.JsonHelper.jsonToMap;
 public class CypherResultRepresentationTest
 {
     @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    public GraphDatabaseRule database = new ImpermanentDatabaseRule();
 
     @Test
     @SuppressWarnings( "unchecked" )

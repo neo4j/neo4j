@@ -25,7 +25,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.module.DataSourceModule;
+import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
@@ -55,12 +55,12 @@ import org.neo4j.values.virtual.MapValue;
 public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
 {
     private final PlatformModule platform;
-    private final DataSourceModule dataSource;
+    private final DatabaseModule dataSource;
     private final Logger msgLog;
     private final CoreAPIAvailabilityGuard availability;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public ClassicCoreSPI( PlatformModule platform, DataSourceModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability,
+    public ClassicCoreSPI( PlatformModule platform, DatabaseModule dataSource, Logger msgLog, CoreAPIAvailabilityGuard availability,
             ThreadToStatementContextBridge threadToTransactionBridge )
     {
         this.platform = platform;
@@ -73,7 +73,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public boolean databaseIsAvailable( long timeout )
     {
-        return dataSource.neoStoreDataSource.getDatabaseAvailabilityGuard().isAvailable( timeout );
+        return dataSource.database.getDatabaseAvailabilityGuard().isAvailable( timeout );
     }
 
     @Override
@@ -82,7 +82,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return dataSource.neoStoreDataSource.getExecutionEngine().executeQuery( query, parameters, transactionalContext, false );
+            return dataSource.database.getExecutionEngine().executeQuery( query, parameters, transactionalContext, false );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -93,37 +93,37 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public AutoIndexing autoIndexing()
     {
-        return dataSource.neoStoreDataSource.getAutoIndexing();
+        return dataSource.database.getAutoIndexing();
     }
 
     @Override
     public DependencyResolver resolver()
     {
-        return dataSource.neoStoreDataSource.getDependencyResolver();
+        return dataSource.database.getDependencyResolver();
     }
 
     @Override
     public void registerKernelEventHandler( DatabaseEventHandler handler )
     {
-        dataSource.neoStoreDataSource.getEventHandlers().registerDatabaseEventHandler( handler );
+        dataSource.database.getEventHandlers().registerDatabaseEventHandler( handler );
     }
 
     @Override
     public void unregisterKernelEventHandler( DatabaseEventHandler handler )
     {
-        dataSource.neoStoreDataSource.getEventHandlers().unregisterDatabaseEventHandler( handler );
+        dataSource.database.getEventHandlers().unregisterDatabaseEventHandler( handler );
     }
 
     @Override
     public <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler )
     {
-        dataSource.neoStoreDataSource.getTransactionEventHandlers().registerTransactionEventHandler( handler );
+        dataSource.database.getTransactionEventHandlers().registerTransactionEventHandler( handler );
     }
 
     @Override
     public <T> void unregisterTransactionEventHandler( TransactionEventHandler<T> handler )
     {
-        dataSource.neoStoreDataSource.getTransactionEventHandlers().unregisterTransactionEventHandler( handler );
+        dataSource.database.getTransactionEventHandlers().unregisterTransactionEventHandler( handler );
     }
 
     @Override
@@ -135,7 +135,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     @Override
     public DatabaseLayout databaseLayout()
     {
-        return dataSource.neoStoreDataSource.getDatabaseLayout();
+        return dataSource.database.getDatabaseLayout();
     }
 
     @Override
@@ -168,7 +168,7 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
         try
         {
             msgLog.log( "Shutdown started" );
-            dataSource.neoStoreDataSource.getDatabaseAvailabilityGuard().shutdown();
+            dataSource.database.getDatabaseAvailabilityGuard().shutdown();
             platform.life.shutdown();
         }
         catch ( LifecycleException throwable )

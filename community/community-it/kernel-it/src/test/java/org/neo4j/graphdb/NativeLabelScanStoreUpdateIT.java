@@ -31,7 +31,7 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Collections.emptySet;
@@ -45,7 +45,7 @@ import static org.neo4j.helpers.collection.Iterators.single;
 public class NativeLabelScanStoreUpdateIT
 {
     @ClassRule
-    public static final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public static final GraphDatabaseRule dbRule = new ImpermanentDatabaseRule();
     @Rule
     public final TestName testName = new TestName();
 

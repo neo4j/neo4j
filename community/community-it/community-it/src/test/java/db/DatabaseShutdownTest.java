@@ -71,7 +71,7 @@ class DatabaseShutdownTest
             factory.setFailFlush( true );
             databaseService.shutdown();
         } );
-        assertEquals( LifecycleStatus.SHUTDOWN, factory.getNeoStoreDataSourceStatus() );
+        assertEquals( LifecycleStatus.SHUTDOWN, factory.getDatabaseStatus() );
     }
 
     @Test
@@ -136,7 +136,7 @@ class DatabaseShutdownTest
             }.newFacade( storeDir, config, dependencies );
         }
 
-        LifecycleStatus getNeoStoreDataSourceStatus()
+        LifecycleStatus getDatabaseStatus()
         {
             return life.getStatus();
         }

@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.mockito.matcher.KernelExceptionUserMessageMatcher;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -79,7 +79,7 @@ public class SchemaStorageTest
     private static final String PROP2 = "prop2";
 
     @ClassRule
-    public static final DatabaseRule db = new ImpermanentDatabaseRule();
+    public static final GraphDatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 

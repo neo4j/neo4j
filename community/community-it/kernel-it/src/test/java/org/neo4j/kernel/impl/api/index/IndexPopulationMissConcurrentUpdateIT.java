@@ -60,7 +60,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.util.FeatureToggles;
 
@@ -88,7 +88,7 @@ public class IndexPopulationMissConcurrentUpdateIT
     private final ControlledSchemaIndexProvider index = new ControlledSchemaIndexProvider();
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    public final GraphDatabaseRule db = new ImpermanentDatabaseRule()
     {
         @Override
         protected GraphDatabaseFactory newFactory()

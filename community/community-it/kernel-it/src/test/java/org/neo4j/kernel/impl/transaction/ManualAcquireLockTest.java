@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -42,7 +42,7 @@ import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public final DatabaseRule db = new ImpermanentDatabaseRule();
+    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
     public final GraphTransactionRule tx = new GraphTransactionRule( db );
 
     @Rule

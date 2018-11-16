@@ -31,12 +31,12 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertTrue;
@@ -44,7 +44,7 @@ import static org.junit.Assert.assertTrue;
 public class ShutdownOnIndexUpdateIT
 {
     @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    public GraphDatabaseRule database = new ImpermanentDatabaseRule();
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();
@@ -62,7 +62,7 @@ public class ShutdownOnIndexUpdateIT
             node.setProperty( UNIQUE_PROPERTY_NAME, indexProvider.getAndIncrement() );
 
             DependencyResolver dependencyResolver = database.getDependencyResolver();
-            NeoStoreDataSource dataSource = dependencyResolver.resolveDependency( NeoStoreDataSource.class );
+            Database dataSource = dependencyResolver.resolveDependency( Database.class );
             LifeSupport dataSourceLife = dataSource.getLife();
             TransactionCloseListener closeListener = new TransactionCloseListener( transaction );
             dataSourceLife.addLifecycleListener( closeListener );

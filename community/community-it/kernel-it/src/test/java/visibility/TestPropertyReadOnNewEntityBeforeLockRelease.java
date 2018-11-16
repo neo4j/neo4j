@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 import org.neo4j.test.rule.RepeatRule;
 import org.neo4j.test.rule.RepeatRule.Repeat;
@@ -49,7 +49,7 @@ public class TestPropertyReadOnNewEntityBeforeLockRelease
     private static final int MAX_READER_DELAY_MS = 10;
 
     @ClassRule
-    public static final DatabaseRule db = new ImpermanentDatabaseRule();
+    public static final GraphDatabaseRule db = new ImpermanentDatabaseRule();
     @Rule
     public final RepeatRule repeat = new RepeatRule();
 

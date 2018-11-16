@@ -32,8 +32,8 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescript
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.neo4j.helpers.collection.Iterators.filter;
@@ -45,7 +45,7 @@ public class DropBrokenUniquenessConstraintIT
     private final String key = "key";
 
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule();
 
     @Test
     public void shouldDropUniquenessConstraintWithBackingIndexNotInUse()

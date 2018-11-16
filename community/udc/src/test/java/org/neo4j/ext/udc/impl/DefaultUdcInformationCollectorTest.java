@@ -37,8 +37,8 @@ import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.Edition;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -76,7 +76,7 @@ class DefaultUdcInformationCollectorTest
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
 
     private final DataSourceManager dataSourceManager = new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
-    private final NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+    private final Database dataSource = mock( Database.class );
     private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
     private final DefaultFileSystemAbstraction fileSystem = mock( DefaultFileSystemAbstraction.class );
 

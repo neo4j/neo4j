@@ -22,6 +22,7 @@ package org.neo4j.kernel.recovery;
 import java.io.IOException;
 import java.nio.channels.ClosedByInterruptException;
 
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
@@ -36,7 +37,7 @@ import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_REC
 
 /**
  * This is the process of doing a recovery on the transaction log and store, and is executed
- * at startup of {@link org.neo4j.kernel.NeoStoreDataSource}.
+ * at startup of {@link Database}.
  */
 public class TransactionLogsRecovery extends LifecycleAdapter
 {

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.database;
 
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
@@ -25,14 +25,14 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 
-class NeoStoreKernelModule
+class DatabaseKernelModule
 {
     private final TransactionCommitProcess transactionCommitProcess;
     private final KernelImpl kernel;
     private final KernelTransactions kernelTransactions;
     private final NeoStoreFileListing fileListing;
 
-    NeoStoreKernelModule( TransactionCommitProcess transactionCommitProcess, KernelImpl kernel,
+    DatabaseKernelModule( TransactionCommitProcess transactionCommitProcess, KernelImpl kernel,
             KernelTransactions kernelTransactions, NeoStoreFileListing fileListing )
     {
         this.transactionCommitProcess = transactionCommitProcess;

@@ -37,8 +37,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -83,7 +83,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private String storeId;
 
-    private NeoStoreDataSource neoStoreDataSource;
+    private Database database;
 
     DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager, UsageData usageData )
     {
@@ -95,19 +95,19 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
             dataSourceManager.addListener( new DataSourceManager.Listener()
             {
                 @Override
-                public void registered( NeoStoreDataSource ds )
+                public void registered( Database ds )
                 {
                     storeId = Long.toHexString( ds.getStoreId().getRandomId() );
 
-                    neoStoreDataSource = ds;
+                    database = ds;
                 }
 
                 @Override
-                public void unregistered( NeoStoreDataSource ds )
+                public void unregistered( Database ds )
                 {
                     storeId = null;
 
-                    neoStoreDataSource = null;
+                    database = null;
                 }
             } );
         }
@@ -166,13 +166,13 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
      */
     private void addStoreFileSizes( Map<String,String> udcFields )
     {
-        if ( neoStoreDataSource == null )
+        if ( database == null )
         {
             return;
         }
-        DependencyResolver dependencyResolver = neoStoreDataSource.getDependencyResolver();
+        DependencyResolver dependencyResolver = database.getDependencyResolver();
         FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
-        long databaseSize = FileUtils.size( fileSystem, neoStoreDataSource.getDatabaseLayout().databaseDirectory() );
+        long databaseSize = FileUtils.size( fileSystem, database.getDatabaseLayout().databaseDirectory() );
         add( udcFields, STORE_SIZE, databaseSize );
     }
 
@@ -299,7 +299,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private long getNumberOfIdsInUse( IdType type )
     {
-        return neoStoreDataSource.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).getNumberOfIdsInUse();
+        return database.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).getNumberOfIdsInUse();
     }
 
     private static String toCommaString( Object values )

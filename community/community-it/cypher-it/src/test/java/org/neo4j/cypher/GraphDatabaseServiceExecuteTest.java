@@ -38,7 +38,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -50,7 +50,7 @@ public class GraphDatabaseServiceExecuteTest
 {
 
     @Rule
-    public final DatabaseRule graphDb = new ImpermanentDatabaseRule();
+    public final GraphDatabaseRule graphDb = new ImpermanentDatabaseRule();
 
     @Test
     public void shouldExecuteCypher()

@@ -60,8 +60,8 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.newapi.ExtendedNodeValueIndexCursorAdapter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.VerboseTimeout;
 import org.neo4j.values.storable.Value;
 
@@ -91,7 +91,7 @@ public class FulltextIndexProviderTest
     public Timeout timeout = VerboseTimeout.builder().withTimeout( 1, TimeUnit.MINUTES ).build();
 
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule();
+    public GraphDatabaseRule db = new EmbeddedDatabaseRule();
 
     private Node node1;
     private Node node2;
@@ -135,7 +135,7 @@ public class FulltextIndexProviderTest
     public void createAndRetainFulltextIndex() throws Exception
     {
         IndexReference fulltextIndex = createIndex( new int[]{7, 8, 9}, new int[]{2, 3, 4} );
-        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+        db.restartDatabase( GraphDatabaseRule.RestartAction.EMPTY );
 
         verifyThatFulltextIndexIsPresent( fulltextIndex );
     }
@@ -151,7 +151,7 @@ public class FulltextIndexProviderTest
             transaction.success();
         }
         await( indexReference );
-        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+        db.restartDatabase( GraphDatabaseRule.RestartAction.EMPTY );
 
         verifyThatFulltextIndexIsPresent( indexReference );
     }
@@ -166,7 +166,7 @@ public class FulltextIndexProviderTest
         long thirdNodeid;
         thirdNodeid = createTheThirdNode();
         verifyNodeData( thirdNodeid );
-        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+        db.restartDatabase( GraphDatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         verifyNodeData( thirdNodeid );
     }
@@ -193,7 +193,7 @@ public class FulltextIndexProviderTest
             transaction.success();
         }
         verifyRelationshipData( secondRelId );
-        db.restartDatabase( DatabaseRule.RestartAction.EMPTY );
+        db.restartDatabase( GraphDatabaseRule.RestartAction.EMPTY );
         provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         verifyRelationshipData( secondRelId );
     }

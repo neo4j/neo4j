@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.graphdb.GraphDatabaseService
 import org.neo4j.internal.kernel.api.Transaction
-import org.neo4j.kernel.NeoStoreDataSource
 import org.neo4j.kernel.api.security.AnonymousContext
+import org.neo4j.kernel.database.Database
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
 import org.scalatest.BeforeAndAfterAll
@@ -74,7 +74,7 @@ class LastCommittedTxIdProviderTest extends CypherFunSuite with BeforeAndAfterAl
   }
 
   private def restartDataSource(): Unit = {
-    val ds = db.getDependencyResolver.resolveDependency(classOf[NeoStoreDataSource])
+    val ds = db.getDependencyResolver.resolveDependency(classOf[Database])
     ds.stop()
     ds.start()
   }

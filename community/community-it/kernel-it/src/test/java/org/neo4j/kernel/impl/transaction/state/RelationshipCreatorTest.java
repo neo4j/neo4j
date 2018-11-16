@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.storageengine.api.lock.AcquireLockTimeoutException;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -65,7 +65,7 @@ public class RelationshipCreatorTest
 
     private static final int DENSE_NODE_THRESHOLD = 5;
     @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule()
+    public final GraphDatabaseRule dbRule = new ImpermanentDatabaseRule()
             .withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( DENSE_NODE_THRESHOLD ) );
     private IdGeneratorFactory idGeneratorFactory;
 

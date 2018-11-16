@@ -37,8 +37,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -67,7 +67,7 @@ public class NeoStoreFileListingTest
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 
-    private NeoStoreDataSource neoStoreDataSource;
+    private Database database;
     private static final String[] STANDARD_STORE_DIR_FILES = new String[]{
             "index",
             "lock",
@@ -116,7 +116,7 @@ public class NeoStoreFileListingTest
     public void setUp() throws IOException
     {
         createIndexDbFile();
-        neoStoreDataSource = db.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
+        database = db.getDependencyResolver().resolveDependency( Database.class );
     }
 
     @Test
@@ -152,15 +152,15 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListMetaDataStoreLast() throws Exception
     {
-        StoreFileMetadata fileMetadata = Iterators.last( neoStoreDataSource.listStoreFiles( false ) );
-        assertEquals( fileMetadata.file(), neoStoreDataSource.getDatabaseLayout().metadataStore() );
+        StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( false ) );
+        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore() );
     }
 
     @Test
     public void shouldListMetaDataStoreLastWithTxLogs() throws Exception
     {
-        StoreFileMetadata fileMetadata = Iterators.last( neoStoreDataSource.listStoreFiles( true ) );
-        assertEquals( fileMetadata.file(), neoStoreDataSource.getDatabaseLayout().metadataStore() );
+        StoreFileMetadata fileMetadata = Iterators.last( database.listStoreFiles( true ) );
+        assertEquals( fileMetadata.file(), database.getDatabaseLayout().metadataStore() );
     }
 
     @Test
@@ -180,7 +180,7 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListTxLogFiles() throws Exception
     {
-        assertTrue( neoStoreDataSource.listStoreFiles( true ).stream()
+        assertTrue( database.listStoreFiles( true ).stream()
                 .map( metaData -> metaData.file().getName() )
                 .anyMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
@@ -188,7 +188,7 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldNotListTxLogFiles() throws Exception
     {
-        assertTrue( neoStoreDataSource.listStoreFiles( false ).stream()
+        assertTrue( database.listStoreFiles( false ).stream()
                 .map( metaData -> metaData.file().getName() )
                 .noneMatch( fileName -> TransactionLogFiles.DEFAULT_FILENAME_FILTER.accept( null, fileName ) ) );
     }
@@ -196,11 +196,11 @@ public class NeoStoreFileListingTest
     @Test
     public void shouldListNeostoreFiles() throws Exception
     {
-        DatabaseLayout layout = neoStoreDataSource.getDatabaseLayout();
+        DatabaseLayout layout = database.getDatabaseLayout();
         Set<File> expectedFiles = layout.storeFiles();
         // there was no rotation
         expectedFiles.remove( layout.countStoreB() );
-        ResourceIterator<StoreFileMetadata> storeFiles = neoStoreDataSource.listStoreFiles( false );
+        ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
         Set<File> listedStoreFiles = storeFiles.stream()
                 .map( StoreFileMetadata::file )
                 .filter( file -> !file.getName().equals( INDEX_DB_FILE_NAME ) )
@@ -211,7 +211,7 @@ public class NeoStoreFileListingTest
     @Test
     public void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
     {
-        NeoStoreFileListing neoStoreFileListing = neoStoreDataSource.getNeoStoreFileListing();
+        NeoStoreFileListing neoStoreFileListing = database.getNeoStoreFileListing();
         MarkerFileProvider provider = new MarkerFileProvider();
         neoStoreFileListing.registerStoreFileProvider( provider );
         neoStoreFileListing.registerStoreFileProvider( provider );
@@ -225,7 +225,7 @@ public class NeoStoreFileListingTest
                 .newEmbeddedDatabaseBuilder( testDirectory.databaseDir( "customDb" ) )
                 .setConfig( GraphDatabaseSettings.logical_logs_location, path )
                 .newGraphDatabase();
-        NeoStoreDataSource dataSource = graphDatabase.getDependencyResolver().resolveDependency( NeoStoreDataSource.class );
+        Database dataSource = graphDatabase.getDependencyResolver().resolveDependency( Database.class );
         LogFiles logFiles = graphDatabase.getDependencyResolver().resolveDependency( LogFiles.class );
         assertTrue( dataSource.listStoreFiles( true ).stream()
                 .anyMatch( metadata -> metadata.isLogFile() && logFiles.isLogFile( metadata.file() ) ) );

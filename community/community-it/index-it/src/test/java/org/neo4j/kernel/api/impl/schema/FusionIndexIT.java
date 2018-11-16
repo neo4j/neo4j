@@ -36,8 +36,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.index.schema.NumberIndexProvider;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;
 import org.neo4j.values.storable.PointValue;
@@ -50,7 +50,7 @@ import static org.neo4j.values.storable.Values.pointValue;
 public class FusionIndexIT
 {
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule()
+    public GraphDatabaseRule db = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
 
     private DatabaseLayout databaseLayout;

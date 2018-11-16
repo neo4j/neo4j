@@ -48,8 +48,8 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -306,7 +306,7 @@ class RecoveryCleanupIT
     private static CheckPointer checkPointer( GraphDatabaseService db )
     {
         DependencyResolver dependencyResolver = dependencyResolver( db );
-        return dependencyResolver.resolveDependency( NeoStoreDataSource.class ).getDependencyResolver()
+        return dependencyResolver.resolveDependency( Database.class ).getDependencyResolver()
                 .resolveDependency( CheckPointer.class );
     }
 

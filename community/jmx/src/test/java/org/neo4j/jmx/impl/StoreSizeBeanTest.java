@@ -37,12 +37,12 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.jmx.StoreSize;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
@@ -89,7 +89,7 @@ class StoreSizeBeanTest
         Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );
         DataSourceManager dataSourceManager = new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
-        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
+        Database dataSource = mock( Database.class );
 
         dependencies.satisfyDependency( indexProvider );
         dependencies.satisfyDependency( indexProvider2 );

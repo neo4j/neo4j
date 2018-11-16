@@ -38,8 +38,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -57,7 +57,7 @@ public class NativeStringIndexingIT
     private static final String KEY2 = "key2";
 
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule()
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule()
             .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
     @Rule
     public final RandomRule random = new RandomRule();

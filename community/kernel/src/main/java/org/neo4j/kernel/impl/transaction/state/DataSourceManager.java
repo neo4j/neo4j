@@ -27,8 +27,8 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
@@ -38,23 +38,23 @@ import org.neo4j.logging.LogProvider;
 import static java.lang.String.format;
 
 /**
- * Adds change listener features to a {@link NeoStoreDataSource}.
+ * Adds change listener features to a {@link Database}.
  * <p/>
  * TODO This being a {@link Kernel} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
- * where {@link NeoStoreDataSource} and {@link Kernel} are needed before they exist.
+ * where {@link Database} and {@link Kernel} are needed before they exist.
  */
 public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 {
     public interface Listener
     {
-        void registered( NeoStoreDataSource dataSource );
+        void registered( Database dataSource );
 
-        void unregistered( NeoStoreDataSource dataSource );
+        void unregistered( Database dataSource );
     }
 
     private LifeSupport life = new LifeSupport();
     private final Listeners<Listener> dsRegistrationListeners = new Listeners<>();
-    private final Map<String,NeoStoreDataSource> dataSources = new HashMap<>();
+    private final Map<String,Database> dataSources = new HashMap<>();
     private final Log log;
     private final Config config;
 
@@ -85,7 +85,7 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
         dsRegistrationListeners.add( listener );
     }
 
-    public void register( String name, NeoStoreDataSource dataSource )
+    public void register( String name, Database dataSource )
     {
         dataSources.put( name, dataSource );
         if ( life.getStatus().equals( LifecycleStatus.STARTED ) )
@@ -97,18 +97,18 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
 
     public void unregister( String name )
     {
-        NeoStoreDataSource dataSource = dataSources.remove( name );
+        Database dataSource = dataSources.remove( name );
         dsRegistrationListeners.notify( listener -> listener.unregistered( dataSource ) );
         life.remove( dataSource );
     }
 
-    public NeoStoreDataSource getDataSource()
+    public Database getDataSource()
     {
         return Optional.ofNullable( dataSources.get( config.get( GraphDatabaseSettings.active_database ) ) )
                 .orElseThrow( () -> new IllegalStateException( "Default database not found" ) );
     }
 
-    public Optional<NeoStoreDataSource> getDataSource( String name )
+    public Optional<Database> getDataSource( String name )
     {
         return Optional.ofNullable( dataSources.get( name ) );
     }

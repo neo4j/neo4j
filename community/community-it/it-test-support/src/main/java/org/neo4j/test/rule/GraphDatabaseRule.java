@@ -64,7 +64,7 @@ import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
-public abstract class DatabaseRule extends ExternalResource implements GraphDatabaseAPI
+public abstract class GraphDatabaseRule extends ExternalResource implements GraphDatabaseAPI
 {
     private GraphDatabaseBuilder databaseBuilder;
     private GraphDatabaseAPI database;
@@ -78,7 +78,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
      * Means the database will be started on first {@link #getGraphDatabaseAPI()}}
      * or {@link #ensureStarted()} call.
      */
-    public DatabaseRule startLazily()
+    public GraphDatabaseRule startLazily()
     {
         startEagerly = false;
         return this;
@@ -316,7 +316,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
     }
 
     /**
-     * {@link DatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
+     * {@link GraphDatabaseRule} now implements {@link GraphDatabaseAPI} directly, so no need. Also for ensuring
      * a lazily started database is created, use {@link #ensureStarted()} instead.
      */
     public GraphDatabaseAPI getGraphDatabaseAPI()
@@ -347,7 +347,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
      * If this method is called when a database is already started an {@link IllegalStateException} will be thrown since the setting
      * will have no effect, instead letting the developer notice that and change the test code.
      */
-    public DatabaseRule withSetting( Setting<?> key, String value )
+    public GraphDatabaseRule withSetting( Setting<?> key, String value )
     {
         if ( database != null )
         {
@@ -372,7 +372,7 @@ public abstract class DatabaseRule extends ExternalResource implements GraphData
      *
      * @see #withSetting(Setting, String)
      */
-    public DatabaseRule withSettings( Map<Setting<?>,String> configuration )
+    public GraphDatabaseRule withSettings( Map<Setting<?>,String> configuration )
     {
         configuration.forEach( this::withSetting );
         return this;

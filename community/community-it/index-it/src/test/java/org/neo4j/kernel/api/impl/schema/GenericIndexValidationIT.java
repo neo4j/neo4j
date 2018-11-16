@@ -33,8 +33,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.IndexCreator;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
@@ -75,7 +75,7 @@ public class GenericIndexValidationIT
     private static final int WIGGLE_ROOM = 50;
 
     @Rule
-    public DatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerName() );
+    public GraphDatabaseRule db = new EmbeddedDatabaseRule().withSetting( default_schema_provider, NATIVE_BTREE10.providerName() );
 
     @ClassRule
     public static RandomRule random = new RandomRule();

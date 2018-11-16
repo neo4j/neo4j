@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertThat;
@@ -39,7 +39,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestTransactionEventDeadlocks
 {
     @Rule
-    public DatabaseRule database = new ImpermanentDatabaseRule();
+    public GraphDatabaseRule database = new ImpermanentDatabaseRule();
 
     @Test
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()

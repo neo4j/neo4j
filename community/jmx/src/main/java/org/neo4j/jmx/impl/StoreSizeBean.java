@@ -31,8 +31,8 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.jmx.StoreSize;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -176,14 +176,14 @@ public final class StoreSizeBean extends ManagementBeanProvider
         }
 
         @Override
-        public void registered( NeoStoreDataSource ds )
+        public void registered( Database ds )
         {
             final StoreSizeProvider dataProvider = new StoreSizeProvider( fs, ds );
             this.delegate = newThrottlingBeanSnapshotProxy( StoreSize.class, dataProvider, updateInterval, clock );
         }
 
         @Override
-        public void unregistered( NeoStoreDataSource ds )
+        public void unregistered( Database ds )
         {
             this.delegate = NO_STORE_SIZE;
         }
@@ -264,7 +264,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
         private final LabelScanStore labelScanStore;
         private final DatabaseLayout databaseLayout;
 
-        private StoreSizeProvider( FileSystemAbstraction fs, NeoStoreDataSource ds )
+        private StoreSizeProvider( FileSystemAbstraction fs, Database ds )
         {
             final DependencyResolver deps = ds.getDependencyResolver();
             this.fs = requireNonNull( fs );

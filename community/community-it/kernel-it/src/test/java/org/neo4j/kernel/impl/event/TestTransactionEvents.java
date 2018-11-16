@@ -48,7 +48,7 @@ import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.lang.String.format;
@@ -74,7 +74,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestTransactionEvents
 {
     @Rule
-    public final DatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final GraphDatabaseRule dbRule = new ImpermanentDatabaseRule();
     private static final TimeUnit AWAIT_INDEX_UNIT = TimeUnit.SECONDS;
     private static final int AWAIT_INDEX_DURATION = 60;
 

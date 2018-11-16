@@ -35,8 +35,8 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 
 import static org.junit.Assert.assertFalse;
@@ -50,7 +50,7 @@ import static org.neo4j.graphdb.RelationshipType.withName;
 public class RecoveryTest
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule();
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 

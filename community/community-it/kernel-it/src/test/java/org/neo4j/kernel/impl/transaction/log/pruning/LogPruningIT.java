@@ -34,8 +34,8 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -44,7 +44,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 public class LogPruningIT
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule().withSetting( keep_logical_logs, "true" );
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule().withSetting( keep_logical_logs, "true" );
 
     private static final SimpleTriggerInfo triggerInfo = new SimpleTriggerInfo( "forced trigger" );
 

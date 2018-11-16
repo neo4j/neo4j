@@ -26,7 +26,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.factory.module.DataSourceModule;
+import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -48,18 +48,18 @@ import org.neo4j.values.virtual.MapValue;
 public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
 {
     private final DatabaseLayout databaseLayout;
-    private final DataSourceModule sourceModule;
+    private final DatabaseModule sourceModule;
     private final DependencyResolver resolver;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator;
     private final SecurityContext securityContext;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
 
-    public ProcedureGDBFacadeSPI( DataSourceModule sourceModule, DependencyResolver resolver, CoreAPIAvailabilityGuard availability,
+    public ProcedureGDBFacadeSPI( DatabaseModule sourceModule, DependencyResolver resolver, CoreAPIAvailabilityGuard availability,
             ThrowingFunction<URL,URL,URLAccessValidationError> urlValidator, SecurityContext securityContext,
             ThreadToStatementContextBridge threadToTransactionBridge )
     {
-        this.databaseLayout = sourceModule.neoStoreDataSource.getDatabaseLayout();
+        this.databaseLayout = sourceModule.database.getDatabaseLayout();
         this.sourceModule = sourceModule;
         this.resolver = resolver;
         this.availability = availability;
@@ -104,7 +104,7 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         try
         {
             availability.assertDatabaseAvailable();
-            return sourceModule.neoStoreDataSource.getExecutionEngine().executeQuery( query, parameters, tc, false );
+            return sourceModule.database.getExecutionEngine().executeQuery( query, parameters, tc, false );
         }
         catch ( QueryExecutionKernelException e )
         {
@@ -115,7 +115,7 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     @Override
     public AutoIndexing autoIndexing()
     {
-        return sourceModule.neoStoreDataSource.getAutoIndexing();
+        return sourceModule.database.getAutoIndexing();
     }
 
     @Override

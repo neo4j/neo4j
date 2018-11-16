@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.DataSourceModule;
+import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -77,7 +77,7 @@ import static org.neo4j.kernel.api.proc.Context.SECURITY_CONTEXT;
 
 /**
  * This is the main factory for creating database instances. It delegates creation to three different modules
- * ({@link PlatformModule}, {@link AbstractEditionModule}, and {@link DataSourceModule}),
+ * ({@link PlatformModule}, {@link AbstractEditionModule}, and {@link DatabaseModule}),
  * which create all the specific services needed to run a graph database.
  * <p>
  * To create test versions of databases, override an edition factory (e.g. {@link org.neo4j.kernel.impl.factory

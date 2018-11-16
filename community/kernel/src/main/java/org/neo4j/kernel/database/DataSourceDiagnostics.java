@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.database;
 
 import java.io.IOException;
 
@@ -27,12 +27,12 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Logger;
 
-enum DataSourceDiagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
+enum DataSourceDiagnostics implements DiagnosticsExtractor<Database>
 {
     TRANSACTION_RANGE( "Transaction log:" )
             {
                 @Override
-                void dump( NeoStoreDataSource source, Logger log )
+                void dump( Database source, Logger log )
                 {
                     LogFiles logFiles = source.getDependencyResolver().resolveDependency( LogFiles.class );
                     try
@@ -66,7 +66,7 @@ enum DataSourceDiagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
     }
 
     @Override
-    public void dumpDiagnostics( final NeoStoreDataSource source, DiagnosticsPhase phase, Logger logger )
+    public void dumpDiagnostics( final Database source, DiagnosticsPhase phase, Logger logger )
     {
         if ( applicable( phase ) )
         {
@@ -80,5 +80,5 @@ enum DataSourceDiagnostics implements DiagnosticsExtractor<NeoStoreDataSource>
         return phase.isInitialization() || phase.isExplicitlyRequested();
     }
 
-    abstract void dump( NeoStoreDataSource source, Logger logger );
+    abstract void dump( Database source, Logger logger );
 }

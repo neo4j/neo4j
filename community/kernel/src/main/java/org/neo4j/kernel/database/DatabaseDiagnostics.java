@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.database;
 
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -27,21 +27,21 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class DatabaseDiagnostics extends LifecycleAdapter
 {
     private final DiagnosticsManager diagnosticsManager;
-    private final NeoStoreDataSource neoStoreDataSource;
+    private final Database database;
     private final DatabaseInfo databaseInfo;
 
-    DatabaseDiagnostics( DiagnosticsManager diagnosticsManager, NeoStoreDataSource neoStoreDataSource, DatabaseInfo databaseInfo )
+    DatabaseDiagnostics( DiagnosticsManager diagnosticsManager, Database database, DatabaseInfo databaseInfo )
     {
         this.diagnosticsManager = diagnosticsManager;
-        this.neoStoreDataSource = neoStoreDataSource;
+        this.database = database;
 
         this.databaseInfo = databaseInfo;
     }
     @Override
     public void start() throws Throwable
     {
-        diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( databaseInfo, neoStoreDataSource.getStoreId() ) );
-        neoStoreDataSource.registerDiagnosticsWith( diagnosticsManager );
-        diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getDatabaseLayout() ) );
+        diagnosticsManager.prependProvider( new KernelDiagnostics.Versions( databaseInfo, database.getStoreId() ) );
+        database.registerDiagnosticsWith( diagnosticsManager );
+        diagnosticsManager.appendProvider( new KernelDiagnostics.StoreFiles( database.getDatabaseLayout() ) );
     }
 }

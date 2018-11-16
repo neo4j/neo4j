@@ -24,7 +24,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 import org.neo4j.jmx.Kernel;
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
@@ -110,7 +110,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private class DataSourceInfo implements DataSourceManager.Listener
     {
         @Override
-        public void registered( NeoStoreDataSource ds )
+        public void registered( Database ds )
         {
             StoreId id = ds.getStoreId();
             storeLogVersion =
@@ -122,7 +122,7 @@ public class KernelBean extends Neo4jMBean implements Kernel
         }
 
         @Override
-        public void unregistered( NeoStoreDataSource ds )
+        public void unregistered( Database ds )
         {
             storeCreationDate = -1;
             storeLogVersion = -1;

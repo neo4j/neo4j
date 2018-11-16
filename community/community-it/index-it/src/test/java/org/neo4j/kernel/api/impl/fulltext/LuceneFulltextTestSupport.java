@@ -51,8 +51,8 @@ import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RepeatRule;
 
 import static java.lang.String.format;
@@ -69,7 +69,7 @@ public class LuceneFulltextTestSupport
     static final RelationshipType RELTYPE = RelationshipType.withName( "type" );
     static final String PROP = "prop";
 
-    DatabaseRule db = new EmbeddedDatabaseRule();
+    GraphDatabaseRule db = new EmbeddedDatabaseRule();
     private RepeatRule repeatRule = createRepeatRule();
 
     @Rule

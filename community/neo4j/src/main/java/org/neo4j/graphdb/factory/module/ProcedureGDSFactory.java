@@ -37,13 +37,13 @@ import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDatabaseService,ProcedureException>
 {
     private final PlatformModule platform;
-    private final DataSourceModule dataSource;
+    private final DatabaseModule dataSource;
     private final CoreAPIAvailabilityGuard availability;
     private final ThrowingFunction<URL, URL, URLAccessValidationError> urlValidator;
     private final TokenHolders tokenHolders;
     private final ThreadToStatementContextBridge bridge;
 
-    ProcedureGDSFactory( PlatformModule platform, DataSourceModule dataSource, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders,
+    ProcedureGDSFactory( PlatformModule platform, DatabaseModule dataSource, CoreAPIAvailabilityGuard coreAPIAvailabilityGuard, TokenHolders tokenHolders,
             ThreadToStatementContextBridge bridge )
     {
         this.platform = platform;
@@ -68,7 +68,7 @@ public class ProcedureGDSFactory implements ThrowingFunction<Context,GraphDataba
             securityContext = context.get( Context.SECURITY_CONTEXT );
         }
         GraphDatabaseFacade facade = new GraphDatabaseFacade();
-        ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( dataSource, dataSource.neoStoreDataSource.getDependencyResolver(),
+        ProcedureGDBFacadeSPI procedureGDBFacadeSPI = new ProcedureGDBFacadeSPI( dataSource, dataSource.database.getDependencyResolver(),
                 availability, urlValidator, securityContext, bridge );
         facade.init( procedureGDBFacadeSPI, bridge, platform.config, tokenHolders );
         return facade;

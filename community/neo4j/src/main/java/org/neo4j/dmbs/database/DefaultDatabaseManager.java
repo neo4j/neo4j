@@ -23,7 +23,7 @@ import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
-import org.neo4j.graphdb.factory.module.DataSourceModule;
+import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -63,10 +63,10 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     {
         checkState( database == null, "Database is already created, fail to create another one." );
         log.log( "Creating '%s' database.", databaseName );
-        DataSourceModule dataSource = new DataSourceModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
+        DatabaseModule dataSource = new DatabaseModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
         ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, log, dataSource.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
-        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, dataSource.neoStoreDataSource.getTokenHolders() );
-        platform.dataSourceManager.register( databaseName, dataSource.neoStoreDataSource );
+        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, dataSource.database.getTokenHolders() );
+        platform.dataSourceManager.register( databaseName, dataSource.database );
         database = graphDatabaseFacade;
         return database;
     }

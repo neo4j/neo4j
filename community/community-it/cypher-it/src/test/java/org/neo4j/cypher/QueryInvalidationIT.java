@@ -36,7 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static java.util.Collections.singletonMap;
@@ -52,7 +52,7 @@ public class QueryInvalidationIT
     private static final int CONNECTIONS = 100;
 
     @Rule
-    public final DatabaseRule db = new ImpermanentDatabaseRule()
+    public final GraphDatabaseRule db = new ImpermanentDatabaseRule()
             .withSetting( GraphDatabaseSettings.query_statistics_divergence_threshold, "0.5" )
             .withSetting( GraphDatabaseSettings.cypher_min_replan_interval, "1s" );
 

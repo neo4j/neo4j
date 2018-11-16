@@ -26,7 +26,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
@@ -40,7 +40,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestShortStringProperties
 {
     @ClassRule
-    public static DatabaseRule graphdb = new ImpermanentDatabaseRule();
+    public static GraphDatabaseRule graphdb = new ImpermanentDatabaseRule();
 
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( graphdb );

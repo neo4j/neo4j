@@ -51,11 +51,11 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
@@ -93,7 +93,7 @@ import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
-import org.neo4j.test.rule.NeoStoreDataSourceRule;
+import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -122,7 +122,7 @@ public class NeoStoresTest
     private final ExpectedException exception = ExpectedException.none();
     private final EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private final TestDirectory dir = TestDirectory.testDirectory( fs.get() );
-    private final NeoStoreDataSourceRule dsRule = new NeoStoreDataSourceRule();
+    private final DatabaseRule dsRule = new DatabaseRule();
 
     @Rule
     public RuleChain ruleChain = RuleChain.outerRule( exception ).around( pageCacheRule )
@@ -134,7 +134,7 @@ public class NeoStoresTest
     private RelationshipTypeTokenStore rtStore;
     private RelationshipStore relStore;
     private NodeStore nodeStore;
-    private NeoStoreDataSource ds;
+    private Database ds;
     private KernelTransaction tx;
     private TransactionState transaction;
     private StorageReader storageReader;
@@ -863,7 +863,7 @@ public class NeoStoresTest
     {
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( Config.defaults( additionalConfig ) );
-        ds = dsRule.getDataSource( databaseLayout, fs.get(), pageCache, dependencies );
+        ds = dsRule.getDatabase( databaseLayout, fs.get(), pageCache, dependencies );
         ds.start();
 
         NeoStores neoStores = ds.getDependencyResolver()

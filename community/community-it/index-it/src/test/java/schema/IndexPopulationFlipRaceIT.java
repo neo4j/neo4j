@@ -30,8 +30,8 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.Values;
 
@@ -45,7 +45,7 @@ public class IndexPopulationFlipRaceIT
     private static final int NODES_PER_INDEX = 10;
 
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule();
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule();
     @Rule
     public final RandomRule random = new RandomRule();
 

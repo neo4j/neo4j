@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.LogTestUtils.CountingLogHook;
-import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 import org.neo4j.test.rule.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
@@ -50,7 +50,7 @@ import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 public class ReadTransactionLogWritingTest
 {
     @Rule
-    public final DatabaseRule dbr = new ImpermanentDatabaseRule();
+    public final GraphDatabaseRule dbr = new ImpermanentDatabaseRule();
 
     private final Label label = label( "Test" );
     private Node node;

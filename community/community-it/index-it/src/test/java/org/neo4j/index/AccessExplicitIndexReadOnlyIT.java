@@ -29,8 +29,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.security.WriteOperationsNotAllowedException;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.GraphDatabaseRule;
 
 import static java.lang.Boolean.TRUE;
 import static org.junit.Assert.assertNotNull;
@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 public class AccessExplicitIndexReadOnlyIT
 {
     @Rule
-    public final DatabaseRule db = new EmbeddedDatabaseRule().startLazily();
+    public final GraphDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
 
     @Test
     public void shouldListAndReadExplicitIndexesForReadOnlyDb() throws Exception

@@ -32,13 +32,13 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.DatabaseCreationContext;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
@@ -103,27 +103,27 @@ import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.O
 import static org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService.EMPTY_WATCHER;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
-public class NeoStoreDataSourceRule extends ExternalResource
+public class DatabaseRule extends ExternalResource
 {
-    private NeoStoreDataSource dataSource;
+    private Database database;
 
-    public NeoStoreDataSource getDataSource( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
+    public Database getDatabase( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
     {
-        return getDataSource( databaseLayout, fs, pageCache, new Dependencies() );
+        return getDatabase( databaseLayout, fs, pageCache, new Dependencies() );
     }
 
-    public NeoStoreDataSource getDataSource( String databaseName, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
+    public Database getDatabase( String databaseName, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache )
     {
-        return getDataSource( databaseName, databaseLayout, fs, pageCache, new Dependencies() );
+        return getDatabase( databaseName, databaseLayout, fs, pageCache, new Dependencies() );
     }
 
-    public NeoStoreDataSource getDataSource( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
+    public Database getDatabase( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
             DependencyResolver otherCustomOverriddenDependencies )
     {
-        return getDataSource( DEFAULT_DATABASE_NAME, databaseLayout, fs, pageCache, otherCustomOverriddenDependencies );
+        return getDatabase( DEFAULT_DATABASE_NAME, databaseLayout, fs, pageCache, otherCustomOverriddenDependencies );
     }
 
-    public NeoStoreDataSource getDataSource( String databaseName, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
+    public Database getDatabase( String databaseName, DatabaseLayout databaseLayout, FileSystemAbstraction fs,
             PageCache pageCache, DependencyResolver otherCustomOverriddenDependencies )
     {
         shutdownAnyRunning();
@@ -161,7 +161,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 deps -> new DiagnosticsManager( NullLog.getInstance() ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
 
-        dataSource = new NeoStoreDataSource( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
+        database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor, databaseHealth,
                 mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
@@ -171,7 +171,7 @@ public class NeoStoreDataSourceRule extends ExternalResource
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
                 file -> EMPTY_WATCHER, new GraphDatabaseFacade(), Iterables.empty() ) );
-        return dataSource;
+        return database;
     }
 
     private static <T> T dependency( Dependencies dependencies, Class<T> type, Function<DependencyResolver,T> defaultSupplier )
@@ -188,9 +188,9 @@ public class NeoStoreDataSourceRule extends ExternalResource
 
     private void shutdownAnyRunning()
     {
-        if ( dataSource != null )
+        if ( database != null )
         {
-            dataSource.stop();
+            database.stop();
         }
     }
 
