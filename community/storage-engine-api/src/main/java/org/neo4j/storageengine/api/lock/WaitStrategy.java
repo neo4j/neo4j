@@ -20,11 +20,13 @@
 package org.neo4j.storageengine.api.lock;
 
 /** What to do if we need to wait. */
-public interface WaitStrategy<EXCEPTION extends Exception>
+public interface WaitStrategy
 {
     /**
      * Throws Exception to force users of this interface to handle any possible failure, since this is used in
      * potentially very sensitive code.
+     *
+     * @throws AcquireLockTimeoutException in case of timeout
      */
-    void apply( long iteration ) throws EXCEPTION;
+    void apply( long iteration );
 }

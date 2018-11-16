@@ -31,8 +31,10 @@ public interface ResourceLocker
      * @param tracer
      * @param resourceType type or resource(s) to lock.
      * @param resourceIds id(s) of resources to lock. Multiple ids should be ordered consistently by all callers
+     *
+     * @throws AcquireLockTimeoutException in case of timeout
      */
-    void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds ) throws AcquireLockTimeoutException;
+    void acquireExclusive( LockTracer tracer, ResourceType resourceType, long... resourceIds );
 
     ResourceLocker NONE = ( tracer, resourceType, resourceIds ) ->
     {

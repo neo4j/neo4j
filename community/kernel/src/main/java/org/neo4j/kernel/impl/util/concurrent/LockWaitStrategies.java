@@ -25,7 +25,7 @@ import org.neo4j.storageengine.api.lock.WaitStrategy;
 
 import static org.neo4j.kernel.api.exceptions.Status.Transaction.Interrupted;
 
-public enum LockWaitStrategies implements WaitStrategy<AcquireLockTimeoutException>
+public enum LockWaitStrategies implements WaitStrategy
 {
     SPIN
     {
