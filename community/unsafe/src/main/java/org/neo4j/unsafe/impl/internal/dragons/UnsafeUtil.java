@@ -1145,11 +1145,17 @@ public final class UnsafeUtil
      */
     public static Class<?> defineAnonymousClass( Class<?> host, ByteBuffer byteBuffer )
     {
-        //Move data into a byte[]
-        byte[] bytes = new byte[byteBuffer.remaining()];
-        byteBuffer.get(bytes);
-
-        return unsafe.defineAnonymousClass( host, bytes, null );
+        if ( byteBuffer.hasArray() )
+        {
+            return unsafe.defineAnonymousClass( host, byteBuffer.array(), null );
+        }
+        else
+        {
+            //buffer not backed by an array, copy data into an array
+            byte[] bytes = new byte[byteBuffer.remaining()];
+            byteBuffer.get( bytes );
+            return unsafe.defineAnonymousClass( host, bytes, null );
+        }
     }
 
     private static final class Allocation
