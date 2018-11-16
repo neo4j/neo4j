@@ -23,14 +23,12 @@ import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers.PrimitiveLongHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, PipeDecorator, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.{DelegatingOperations, DelegatingQueryContext, ExecutionContext}
-import org.neo4j.cypher.internal.runtime.{NodeOperations, Operations, QueryContext, RelationshipOperations}
+import org.neo4j.cypher.internal.runtime.{NodeOperations, Operations, QueryContext, RelationshipOperations, RelationshipIterator}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.factory.{DatabaseInfo, Edition}
 import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.Value
-import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.util.attribution.Id
 
 class Profiler(databaseInfo: DatabaseInfo,

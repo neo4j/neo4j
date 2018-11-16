@@ -46,7 +46,6 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory
 import org.neo4j.kernel.api.{ResourceManager => _, _}
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.{EmbeddedProxySPI, ThreadToStatementContextBridge}
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContext

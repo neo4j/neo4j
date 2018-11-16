@@ -28,13 +28,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.cypher.internal.runtime.RelationshipIterator;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.lang.Thread.sleep;

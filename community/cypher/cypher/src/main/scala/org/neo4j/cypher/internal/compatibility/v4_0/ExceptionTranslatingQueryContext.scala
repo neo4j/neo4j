@@ -29,7 +29,6 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
-import org.neo4j.kernel.impl.api.store.RelationshipIterator
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Value
