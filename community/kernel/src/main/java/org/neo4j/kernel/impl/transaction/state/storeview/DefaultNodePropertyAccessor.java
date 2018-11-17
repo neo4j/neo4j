@@ -48,7 +48,7 @@ public class DefaultNodePropertyAccessor implements NodePropertyAccessor
         nodeCursor.single( nodeId );
         if ( nodeCursor.next() && nodeCursor.hasProperties() )
         {
-            propertyCursor.init( nodeCursor.propertiesReference() );
+            nodeCursor.properties( propertyCursor );
             while ( propertyCursor.next() )
             {
                 if ( propertyCursor.propertyKey() == propertyKeyId )

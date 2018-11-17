@@ -74,8 +74,6 @@ public interface StorageReader extends AutoCloseable
      */
     long reserveRelationship();
 
-    long getGraphPropertyReference();
-
     /**
      * @param labelId label to list indexes for.
      * @return {@link StorageIndexReference} associated with the given {@code labelId}.

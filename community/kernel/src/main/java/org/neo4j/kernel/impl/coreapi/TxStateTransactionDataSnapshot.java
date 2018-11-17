@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -207,7 +208,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                 node.single( nodeId );
                 if ( node.next() )
                 {
-                    properties.init( node.propertiesReference() );
+                    node.properties( properties );
                     while ( properties.next() )
                     {
                         try
@@ -240,7 +241,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
                 relationship.single( relId );
                 if ( relationship.next() )
                 {
-                    properties.init( relationship.propertiesReference() );
+                    relationship.properties( properties );
                     while ( properties.next() )
                     {
                         try
@@ -385,12 +386,12 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             return Values.NO_VALUE;
         }
 
-        return committedValue( properties, node.propertiesReference(), property );
+        return committedValue( properties, node, property );
     }
 
-    private Value committedValue( StoragePropertyCursor properties, long propertiesReference, int propertyKey )
+    private Value committedValue( StoragePropertyCursor properties, StorageEntityCursor entity, int propertyKey )
     {
-        properties.init( propertiesReference );
+        entity.properties( properties );
         while ( properties.next() )
         {
             if ( properties.propertyKey() == propertyKey )
@@ -415,7 +416,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData, AutoClos
             return Values.NO_VALUE;
         }
 
-        return committedValue( properties, relationship.propertiesReference(), property );
+        return committedValue( properties, relationship, property );
     }
 
     private class NodePropertyEntryView implements PropertyEntry<Node>

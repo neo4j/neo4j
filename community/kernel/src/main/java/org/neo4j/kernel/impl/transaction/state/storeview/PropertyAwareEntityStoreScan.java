@@ -79,7 +79,7 @@ public abstract class PropertyAwareEntityStoreScan<CURSOR extends StorageEntityS
             return false;
         }
         boolean hasRelevantProperty = false;
-        propertyCursor.init( cursor.propertiesReference() );
+        cursor.properties( propertyCursor );
         while ( propertyCursor.next() )
         {
             int propertyKeyId = propertyCursor.propertyKey();

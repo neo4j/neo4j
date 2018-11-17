@@ -96,7 +96,7 @@ public class RecordStorageReaderPropertyTest extends RecordStorageReaderTestBase
 
                 try ( StoragePropertyCursor props = storageReader.allocatePropertyCursor() )
                 {
-                    props.init( node.propertiesReference() );
+                    node.properties( props );
                     if ( props.next() )
                     {
                         Value propVal = props.propertyValue();

@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.impl.store.GeometryType;
 import org.neo4j.kernel.impl.store.LongerShortString;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.ShortArray;
@@ -53,6 +54,7 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private static final int INITIAL_POSITION = -1;
 
     private final PropertyStore read;
+    private final MetaDataStore metaDataStore;
     private long next;
     private int block;
     public ByteBuffer buffer;
@@ -61,14 +63,36 @@ class RecordPropertyCursor extends PropertyRecord implements StoragePropertyCurs
     private PageCursor arrayPage;
     private boolean open;
 
-    RecordPropertyCursor( PropertyStore read )
+    RecordPropertyCursor( PropertyStore read, MetaDataStore metaDataStore )
     {
         super( NO_ID );
         this.read = read;
+        this.metaDataStore = metaDataStore;
     }
 
     @Override
-    public void init( long reference )
+    public void initNodeProperties( long reference )
+    {
+        init( reference );
+    }
+
+    @Override
+    public void initRelationshipProperties( long reference )
+    {
+        init( reference );
+    }
+
+    @Override
+    public void initGraphProperties()
+    {
+        init( metaDataStore.getGraphNextProp() );
+    }
+
+    /**
+     * In this implementation property ids are unique among nodes AND relationships so they all init the same way
+     * @param reference properties reference, actual property record id.
+     */
+    private void init( long reference )
     {
         if ( getId() != NO_ID )
         {

@@ -255,12 +255,6 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    long graphPropertiesReference()
-    {
-        return storageReader.getGraphPropertyReference();
-    }
-
-    @Override
     public IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException
     {
         assertValidIndex( index );

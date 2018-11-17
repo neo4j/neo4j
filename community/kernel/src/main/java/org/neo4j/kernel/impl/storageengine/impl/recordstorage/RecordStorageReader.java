@@ -27,6 +27,7 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.TokenHolders;
+import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
@@ -62,6 +63,7 @@ public class RecordStorageReader implements StorageReader
     private final RelationshipGroupStore relationshipGroupStore;
     private final PropertyStore propertyStore;
     private final CountsTracker counts;
+    private final MetaDataStore metaDataStore;
     private final SchemaCache schemaCache;
     private final RecordStorageCommandCreationContext commandCreationContext;
 
@@ -81,6 +83,7 @@ public class RecordStorageReader implements StorageReader
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
         this.counts = neoStores.getCounts();
+        this.metaDataStore = neoStores.getMetaDataStore();
         this.schemaCache = schemaCache;
         this.commandCreationContext = commandCreationContext;
     }
@@ -339,12 +342,6 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public long getGraphPropertyReference()
-    {
-        return neoStores.getMetaDataStore().getGraphNextProp();
-    }
-
-    @Override
     public RecordNodeCursor allocateNodeCursor()
     {
         return new RecordNodeCursor( nodeStore );
@@ -371,6 +368,6 @@ public class RecordStorageReader implements StorageReader
     @Override
     public StoragePropertyCursor allocatePropertyCursor()
     {
-        return new RecordPropertyCursor( propertyStore );
+        return new RecordPropertyCursor( propertyStore, metaDataStore );
     }
 }

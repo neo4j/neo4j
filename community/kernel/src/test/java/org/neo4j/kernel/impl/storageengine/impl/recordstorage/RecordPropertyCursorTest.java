@@ -120,13 +120,14 @@ public class RecordPropertyCursorTest
 
     private RecordPropertyCursor createCursor()
     {
-        return new RecordPropertyCursor( neoStores.getPropertyStore() );
+        return new RecordPropertyCursor( neoStores.getPropertyStore(), neoStores.getMetaDataStore() );
     }
 
     private void assertPropertyChain( Value[] values, long firstPropertyId, RecordPropertyCursor cursor )
     {
         Map<Integer,Value> expectedValues = asMap( values );
-        cursor.init( firstPropertyId );
+        // This is a specific test for RecordPropertyCursor and we know that node/relationships init methods are the same
+        cursor.initNodeProperties( firstPropertyId );
         while ( cursor.next() )
         {
             // then

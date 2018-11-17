@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.StorageNodeCursor;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
@@ -127,6 +128,12 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     public long propertiesReference()
     {
         return getNextProp();
+    }
+
+    @Override
+    public void properties( StoragePropertyCursor propertyCursor )
+    {
+        propertyCursor.initNodeProperties( getNextProp() );
     }
 
     @Override

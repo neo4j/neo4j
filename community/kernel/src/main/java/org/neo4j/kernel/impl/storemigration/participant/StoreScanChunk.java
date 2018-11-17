@@ -29,7 +29,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputEntityVisitor;
 
 abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChunk
 {
-    protected final StoragePropertyCursor storePropertyCursor;
+    final StoragePropertyCursor storePropertyCursor;
     protected final T cursor;
     private final boolean requiresPropertyMigration;
     private long id;
@@ -50,7 +50,7 @@ abstract class StoreScanChunk<T extends StorageEntityCursor> implements InputChu
         }
         else
         {
-            storePropertyCursor.init( record.propertiesReference() );
+            record.properties( storePropertyCursor );
             while ( storePropertyCursor.next() )
             {
                 // add key as int here as to have the importer use the token id

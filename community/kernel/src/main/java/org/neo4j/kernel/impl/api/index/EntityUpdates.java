@@ -289,7 +289,7 @@ public class EntityUpdates
         {
             try ( StoragePropertyCursor propertyCursor = reader.allocatePropertyCursor() )
             {
-                propertyCursor.init( cursor.propertiesReference() );
+                cursor.properties( propertyCursor );
                 while ( propertyCursor.next() )
                 {
                     if ( additionalPropertiesToLoad.contains( propertyCursor.propertyKey() ) )

@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.stream.LongStream;
 
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -347,6 +348,12 @@ public class DefaultRelationshipTraversalCursorTest
 
             @Override
             public long propertiesReference()
+            {
+                throw new UnsupportedOperationException( "not implemented" );
+            }
+
+            @Override
+            public void properties( StoragePropertyCursor propertyCursor )
             {
                 throw new UnsupportedOperationException( "not implemented" );
             }

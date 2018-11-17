@@ -377,10 +377,8 @@ abstract class Read implements TxStateHolder,
     public final void graphProperties( PropertyCursor cursor )
     {
         ktx.assertOpen();
-        ((DefaultPropertyCursor) cursor).initGraph( graphPropertiesReference(), this, ktx );
+        ((DefaultPropertyCursor) cursor).initGraph( this, ktx );
     }
-
-    abstract long graphPropertiesReference();
 
     @Override
     public final void nodeExplicitIndexLookup(

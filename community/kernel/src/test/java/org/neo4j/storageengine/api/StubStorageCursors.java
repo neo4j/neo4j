@@ -139,12 +139,6 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public long getGraphPropertyReference()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
     public Iterator<StorageIndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -481,6 +475,12 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
+        public void properties( StoragePropertyCursor propertyCursor )
+        {
+            propertyCursor.initNodeProperties( propertiesReference() );
+        }
+
+        @Override
         public boolean next()
         {
             if ( iterator != null )
@@ -592,6 +592,12 @@ public class StubStorageCursors implements StorageReader
         }
 
         @Override
+        public void properties( StoragePropertyCursor propertyCursor )
+        {
+            propertyCursor.initRelationshipProperties( propertiesReference() );
+        }
+
+        @Override
         public boolean next()
         {
             if ( iterator != null )
@@ -632,7 +638,24 @@ public class StubStorageCursors implements StorageReader
         private Iterator<Map.Entry<String,Value>> iterator;
 
         @Override
-        public void init( long reference )
+        public void initNodeProperties( long reference )
+        {
+            init( reference );
+        }
+
+        @Override
+        public void initRelationshipProperties( long reference )
+        {
+            init( reference );
+        }
+
+        @Override
+        public void initGraphProperties()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        private void init( long reference )
         {
             PropertyData properties = StubStorageCursors.this.propertyData.get( reference );
             iterator = properties != null ? properties.properties.entrySet().iterator() : emptyIterator();

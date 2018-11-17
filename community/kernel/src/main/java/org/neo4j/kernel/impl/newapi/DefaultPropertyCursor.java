@@ -51,7 +51,8 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         assert nodeReference != NO_ID;
 
-        init( reference, read, assertOpen );
+        init( read, assertOpen );
+        storeCursor.initNodeProperties( reference );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -70,7 +71,8 @@ public class DefaultPropertyCursor implements PropertyCursor
     {
         assert relationshipReference != NO_ID;
 
-        init( reference, read, assertOpen );
+        init( read, assertOpen );
+        storeCursor.initRelationshipProperties( reference );
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -85,9 +87,10 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
     }
 
-    void initGraph( long reference, Read read, AssertOpen assertOpen )
+    void initGraph( Read read, AssertOpen assertOpen )
     {
-        init( reference, read, assertOpen );
+        init( read, assertOpen );
+        storeCursor.initGraphProperties();
 
         // Transaction state
         if ( read.hasTxStateWithChanges() )
@@ -109,11 +112,10 @@ public class DefaultPropertyCursor implements PropertyCursor
         }
     }
 
-    private void init( long reference, Read read, AssertOpen assertOpen )
+    private void init( Read read, AssertOpen assertOpen )
     {
         this.assertOpen = assertOpen;
         this.read = read;
-        this.storeCursor.init( reference );
     }
 
     @Override

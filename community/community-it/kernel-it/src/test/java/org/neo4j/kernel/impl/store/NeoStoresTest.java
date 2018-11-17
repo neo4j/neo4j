@@ -346,7 +346,7 @@ public class NeoStoresTest
     {
         try ( StoragePropertyCursor propertyCursor = storageReader.allocatePropertyCursor() )
         {
-            propertyCursor.init( propertyId );
+            propertyCursor.initNodeProperties( propertyId );
             if ( propertyCursor.next() )
             {
                 Value oldValue = propertyCursor.propertyValue();
