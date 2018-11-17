@@ -69,6 +69,7 @@ class DefaultNodeCursor implements NodeCursor
     {
         this.read = read;
         this.single = NO_ID;
+        this.currentAddedInTx = NO_ID;
         this.hasChanges = hasChanges ? HasChanges.YES : HasChanges.NO;
         this.addedNodes = addedNodes;
         //TODO we could optimize here if addedNodes is non-empty and sizeHint = 0 which will
