@@ -12,7 +12,7 @@ Neo4j is available both as a standalone server, or an embeddable component. You 
 
 We encourage experimentation with Neo4j. You can build extensions to Neo4j, develop library or drivers atop the product, or make contributions directly to the product core. You'll need to sign a Contributor License Agreement in order for us to accept your patches.
 
-NOTE: This GitHub repository contains mixed GPL and AGPL code. Our Community edition (in the link:community/[community/] directory) is GPLv3. Our Enterprise edition (link:enterprise/[enterprise/]) is differently licensed under the AGPLv3.
+NOTE: This GitHub repository contains GPL code. Our Community edition (in the link:community/[community/] directory) is GPLv3.
 
 == Dependencies ==
 
@@ -71,8 +71,6 @@ to start Neo4j.
 
 Neo4j Community Edition is an open source product licensed under GPLv3.
 
-Neo4j Enterprise Edition expands the functionality of Community Edition with Enterprise-grade features.
+Neo4j Enterprise Edition, available separately as a binary distribution, expands the functionality of Community Edition with Enterprise-grade features such as role-based access control, online backup, high availability, and increased performance. Learn more about Enterprise Edition on https://neo4j.com/business-edge/whats-in-neo4j-enterprise-edition/[neo4j.com].
 
-Neo4j Enterprise consists of modules from Neo4j Community Edition and modules licensed under AGPLv3 with the Commons Clause in this repository, and other closed source components not present in this repository.
-
-When packaged as a binary, Enterprise Edition includes additional closed-source components _not available in this repository_ and requires a commercial license from Neo4j Sweden AB or one of its affiliates.
+Neo4j Enterprise Edition requires a commercial license from Neo4j Sweden AB or one of its affiliates. Please contact licensing@neo4j.com for more information.
