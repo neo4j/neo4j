@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.schema.NoBoundIndexException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -50,16 +49,6 @@ public class IndexReaderCache
         {
             reader = newUnCachedReader( descriptor );
             indexReaders.put( descriptor, reader );
-        }
-        return reader;
-    }
-
-    public IndexReader get( IndexDescriptor descriptor ) throws NoBoundIndexException
-    {
-        IndexReader reader = indexReaders.get( descriptor );
-        if ( reader == null )
-        {
-            throw new NoBoundIndexException( "No IndexReader is present for the index " + descriptor );
         }
         return reader;
     }
