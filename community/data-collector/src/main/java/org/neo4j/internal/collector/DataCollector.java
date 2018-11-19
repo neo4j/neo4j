@@ -20,24 +20,16 @@
 package org.neo4j.internal.collector;
 
 import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
-import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.Preconditions;
 
-public class DataCollectorModule
+public class DataCollector
 {
-    private DataCollectorModule()
-    {
-    }
+    final Kernel kernel;
+    final JobScheduler jobScheduler;
 
-    public static void setupDataCollector( Procedures procedures,
-                                           JobScheduler jobScheduler,
-                                           Kernel kernel ) throws KernelException
+    DataCollector( Kernel kernel, JobScheduler jobScheduler )
     {
-        Preconditions.checkState( kernel != null, "Kernel was null" );
-        DataCollector dataCollector = new DataCollector( kernel, jobScheduler );
-        procedures.registerComponent( DataCollector.class, ctx -> dataCollector, false );
-        procedures.registerProcedure( CollectorProcedures.class );
+        this.kernel = kernel;
+        this.jobScheduler = jobScheduler;
     }
 }

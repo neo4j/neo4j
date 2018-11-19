@@ -22,6 +22,7 @@ package org.neo4j.internal.collector;
 import java.util.Collections;
 import java.util.stream.Stream;
 
+import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
@@ -30,10 +31,20 @@ import org.neo4j.procedure.Procedure;
 @SuppressWarnings( "WeakerAccess" )
 public class CollectorProcedures
 {
+    @Context
+    public DataCollector dataCollector;
+
     @Description( "Retrieve statistical data about the current database." )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section", defaultValue = "all" ) String section )
     {
-        return Stream.of( new RetrieveResult( section, Collections.emptyMap() ) );
+        if ( section.equals( "GRAPH COUNTS" ) )
+        {
+            return GraphCountsSection.collect( dataCollector.kernel );
+        }
+        else
+        {
+            return Stream.of( new RetrieveResult( section, Collections.emptyMap() ) );
+        }
     }
 }
