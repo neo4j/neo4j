@@ -82,6 +82,7 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -750,7 +751,7 @@ public class BatchInsertTest
             NeoStores neoStores = graphdb.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
-            SchemaStorage storage = new SchemaStorage( store );
+            SchemaRuleAccess schemaRuleAccess = new SchemaStorage( store );
             List<Long> inUse = new ArrayList<>();
             DynamicRecord record = store.nextRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
@@ -762,8 +763,8 @@ public class BatchInsertTest
                 }
             }
             assertEquals( "records in use", 2, inUse.size() );
-            SchemaRule rule0 = storage.loadSingleSchemaRule( inUse.get( 0 ) );
-            SchemaRule rule1 = storage.loadSingleSchemaRule( inUse.get( 1 ) );
+            SchemaRule rule0 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 0 ) );
+            SchemaRule rule1 = schemaRuleAccess.loadSingleSchemaRule( inUse.get( 1 ) );
             StoreIndexDescriptor indexRule;
             ConstraintRule constraintRule;
             if ( rule0 instanceof StoreIndexDescriptor )

@@ -31,6 +31,7 @@ import java.util.function.Function;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -53,8 +54,8 @@ public class MandatoryProperties
     public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        SchemaStorage schemaStorage = new SchemaStorage( storeAccess.getSchemaStore() );
-        for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaStorage ) )
+        SchemaRuleAccess schemaRuleAccess = new SchemaStorage( storeAccess.getSchemaStore() );
+        for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
             if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )
             {
@@ -139,7 +140,7 @@ public class MandatoryProperties
         };
     }
 
-    private Iterable<ConstraintRule> constraintsIgnoringMalformed( SchemaStorage schemaStorage )
+    private Iterable<ConstraintRule> constraintsIgnoringMalformed( SchemaRuleAccess schemaStorage )
     {
         return schemaStorage::constraintsGetAllIgnoreMalformed;
     }

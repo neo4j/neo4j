@@ -26,7 +26,6 @@ import java.util.function.Predicate;
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexReference;
-import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
@@ -36,7 +35,6 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
@@ -54,6 +52,7 @@ public class SchemaStorage implements SchemaRuleAccess
      * @throws  IllegalStateException if more than one matching rule.
      * @param index the target {@link IndexReference}
      */
+    @Override
     public StoreIndexDescriptor indexGetForSchema( final IndexDescriptor index )
     {
         Iterator<StoreIndexDescriptor> indexes = loadAllSchemaRules( index::equals, StoreIndexDescriptor.class, false );
@@ -74,36 +73,16 @@ public class SchemaStorage implements SchemaRuleAccess
         return foundRule;
     }
 
+    @Override
     public Iterator<StoreIndexDescriptor> indexesGetAll()
     {
         return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );
     }
 
-    public Iterator<ConstraintRule> constraintsGetAll()
-    {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, false );
-    }
-
+    @Override
     public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
     {
         return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
-    }
-
-    public Iterator<ConstraintRule> constraintsGetForRelType( int relTypeId )
-    {
-        return loadAllSchemaRules( rule -> SchemaDescriptorPredicates.hasRelType( rule, relTypeId ),
-                ConstraintRule.class, false );
-    }
-
-    public Iterator<ConstraintRule> constraintsGetForLabel( int labelId )
-    {
-        return loadAllSchemaRules( rule -> SchemaDescriptorPredicates.hasLabel( rule, labelId ),
-                ConstraintRule.class, false );
-    }
-
-    public Iterator<ConstraintRule> constraintsGetForSchema( SchemaDescriptor schemaDescriptor )
-    {
-        return loadAllSchemaRules( SchemaDescriptor.equalTo( schemaDescriptor ), ConstraintRule.class, false );
     }
 
     /**
@@ -113,6 +92,7 @@ public class SchemaStorage implements SchemaRuleAccess
      * @throws SchemaRuleNotFoundException if no ConstraintRule matches the given descriptor
      * @throws DuplicateSchemaRuleException if two or more ConstraintRules match the given descriptor
      */
+    @Override
     public ConstraintRule constraintsGetSingle( final ConstraintDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
@@ -132,7 +112,7 @@ public class SchemaStorage implements SchemaRuleAccess
         return rule;
     }
 
-    public Iterator<SchemaRule> loadAllSchemaRules()
+    Iterator<SchemaRule> loadAllSchemaRules()
     {
         return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, false );
     }
@@ -221,6 +201,7 @@ public class SchemaStorage implements SchemaRuleAccess
         };
     }
 
+    @Override
     public long newRuleId()
     {
         return schemaStore.nextId();

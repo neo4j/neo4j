@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -97,8 +98,8 @@ public class IndexStatisticsIT
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
-        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
-        long indexId = storage.indexGetForSchema( index ).getId();
+        SchemaRuleAccess schemaRuleAccess = new SchemaStorage( neoStores().getSchemaStore() );
+        long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
 
         // for which we don't have index counts
         resetIndexCounts( indexId );

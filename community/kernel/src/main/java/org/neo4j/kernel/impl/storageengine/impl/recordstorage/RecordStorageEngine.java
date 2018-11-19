@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
@@ -130,7 +131,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IndexProviderMap indexProviderMap;
     private final ExplicitIndexApplierLookup explicitIndexApplierLookup;
     private final SchemaState schemaState;
-    private final SchemaStorage schemaStorage;
+    private final SchemaRuleAccess schemaRuleAccess;
     private final ConstraintSemantics constraintSemantics;
     private final IdOrderingQueue explicitIndexTransactionOrdering;
     private final LockService lockService;
@@ -188,7 +189,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
-            schemaStorage = new SchemaStorage( neoStores.getSchemaStore() );
+            schemaRuleAccess = new SchemaStorage( neoStores.getSchemaStore() );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores, this::newReader );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
@@ -203,7 +204,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             this.indexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( schemaStorage.indexesGetAll() ), logProvider, userLogProvider,
+                    Iterators.asList( schemaRuleAccess.indexesGetAll() ), logProvider, userLogProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
@@ -262,7 +263,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
-                    schemaStorage, constraintSemantics );
+                    schemaRuleAccess, constraintSemantics );
             CountsRecordState countsRecordState = new CountsRecordState();
             txStateVisitor = additionalTxStateVisitor.apply( txStateVisitor );
             txStateVisitor = new TransactionCountingStateVisitor(

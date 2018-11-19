@@ -55,10 +55,10 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -215,8 +215,8 @@ public class IndexStatisticsTest
         IndexReference index = createPersonNameIndex();
         awaitIndexesOnline();
 
-        SchemaStorage storage = new SchemaStorage( neoStores().getSchemaStore() );
-        long indexId = storage.indexGetForSchema( (IndexDescriptor) index ).getId();
+        SchemaRuleAccess schemaRuleAccess = new SchemaStorage( neoStores().getSchemaStore() );
+        long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
 
         // when
         dropIndex( index );

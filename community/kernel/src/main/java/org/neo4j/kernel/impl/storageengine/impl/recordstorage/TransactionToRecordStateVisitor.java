@@ -32,7 +32,7 @@ import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
@@ -43,15 +43,15 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     private boolean clearSchemaState;
     private final TransactionRecordState recordState;
     private final SchemaState schemaState;
-    private final SchemaStorage schemaStorage;
+    private final SchemaRuleAccess schemaStorage;
     private final ConstraintSemantics constraintSemantics;
 
-    TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState, SchemaStorage schemaStorage,
+    TransactionToRecordStateVisitor( TransactionRecordState recordState, SchemaState schemaState, SchemaRuleAccess schemaRuleAccess,
             ConstraintSemantics constraintSemantics )
     {
         this.recordState = recordState;
         this.schemaState = schemaState;
-        this.schemaStorage = schemaStorage;
+        this.schemaStorage = schemaRuleAccess;
         this.constraintSemantics = constraintSemantics;
     }
 

@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.MalformedSchemaRuleException;
-import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.LabelTokenRecord;
@@ -365,9 +365,9 @@ class SchemaRecordCheckTest
         return mock( IndexAccessors.class );
     }
 
-    private static SchemaStorage configureSchemaStore()
+    private static SchemaRuleAccess configureSchemaStore()
     {
-        return mock( SchemaStorage.class );
+        return mock( SchemaRuleAccess.class );
     }
 
     private static DynamicRecord dynamicRecord( long id )
