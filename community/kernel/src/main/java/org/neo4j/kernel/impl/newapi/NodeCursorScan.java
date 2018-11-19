@@ -20,17 +20,14 @@
 package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.nio.LongBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.kernel.impl.util.collection.BaseRichLongSet;
-import org.neo4j.kernel.impl.util.collection.RichLongSet;
 import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.storageengine.api.txstate.RichLongSet;
 import org.neo4j.util.Preconditions;
 
 final class NodeCursorScan implements Scan<NodeCursor>
@@ -48,7 +45,7 @@ final class NodeCursorScan implements Scan<NodeCursor>
         this.allNodeScan = internalScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
-        this.addedNodesSet = addedNodes( read.txState().addedAndRemovedNodes().getAdded().freeze() );
+        this.addedNodesSet = read.txState().addedAndRemovedNodes().getAdded().freeze();
         this.numberOfAddedNodes = addedNodesSet.size();
         this.addedNodesConsumed = addedNodesSet.size() == 0;
     }
@@ -76,41 +73,5 @@ final class NodeCursorScan implements Scan<NodeCursor>
             }
         }
         return ((DefaultNodeCursor) cursor).scanBatch( read, allNodeScan, sizeHint, addedNodes, hasChanges );
-    }
-
-    //TODO: if we choose to go down this route we should probably have tx state return a RichLongSet
-    private RichLongSet addedNodes( LongSet added )
-    {
-        if ( added instanceof RichLongSet )
-        {
-            return (RichLongSet) added;
-        }
-        else
-        {
-            return new AddedNodesSet( added );
-        }
-    }
-
-    private static class AddedNodesSet extends BaseRichLongSet
-    {
-        private final LongBuffer buffer;
-
-        AddedNodesSet( LongSet longSet )
-        {
-            super( longSet );
-            this.buffer = LongBuffer.wrap( longSet.toArray() );
-        }
-
-        @Override
-        public LongIterator rangeIterator( int start, int stop )
-        {
-            return new RangeLongIterator( buffer, start, stop );
-        }
-
-        @Override
-        public RichLongSet freeze()
-        {
-            return new AddedNodesSet( longSet.freeze() );
-        }
     }
 }

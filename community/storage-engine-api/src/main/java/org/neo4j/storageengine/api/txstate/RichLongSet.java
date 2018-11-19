@@ -17,12 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 public interface RichLongSet extends LongSet
 {
@@ -31,25 +30,5 @@ public interface RichLongSet extends LongSet
     @Override
     RichLongSet freeze();
 
-    RichLongSet EMPTY = new EmptyRichLongSet();
-
-    final class EmptyRichLongSet extends BaseRichLongSet
-    {
-        private EmptyRichLongSet()
-        {
-            super( LongSets.immutable.empty() );
-        }
-
-        @Override
-        public LongIterator rangeIterator( int start, int stop )
-        {
-            return ImmutableEmptyLongIterator.INSTANCE;
-        }
-
-        @Override
-        public RichLongSet freeze()
-        {
-            return this;
-        }
-    }
+    RichLongSet EMPTY = new DelegatingRichLongSet( LongSets.immutable.empty() );
 }

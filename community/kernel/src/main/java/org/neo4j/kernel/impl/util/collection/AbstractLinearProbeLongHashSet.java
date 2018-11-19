@@ -38,6 +38,7 @@ import java.io.IOException;
 import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
 
+import org.neo4j.storageengine.api.txstate.RichLongSet;
 import org.neo4j.util.VisibleForTesting;
 
 abstract class AbstractLinearProbeLongHashSet extends AbstractLongIterable implements RichLongSet

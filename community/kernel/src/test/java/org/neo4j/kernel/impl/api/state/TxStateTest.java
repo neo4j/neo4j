@@ -66,6 +66,7 @@ import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.txstate.DiffSets;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
+import org.neo4j.storageengine.api.txstate.RichMutableLongHashSet;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.RepeatRule;
@@ -1025,7 +1026,7 @@ public class TxStateTest
 
     private LongDiffSets addedNodes( long... added )
     {
-        return new MutableLongDiffSetsImpl( LongSets.mutable.of( added ), LongSets.mutable.empty(), collectionsFactory );
+        return new MutableLongDiffSetsImpl( new RichMutableLongHashSet( LongSets.mutable.of( added ) ), new RichMutableLongHashSet(  ), collectionsFactory );
     }
 
     private TreeMap<ValueTuple,LongDiffSets> sortedAddedNodesDiffSets( long... added )

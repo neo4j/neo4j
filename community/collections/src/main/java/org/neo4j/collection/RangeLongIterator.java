@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.nio.LongBuffer;
 import java.util.NoSuchElementException;
 
-class RangeLongIterator implements LongIterator
+public class RangeLongIterator implements LongIterator
 {
     private final LongBuffer buffer;
     private final int stop;
     private int currentPosition;
 
-    RangeLongIterator( LongBuffer buffer, int start, int stop )
+    public RangeLongIterator( LongBuffer buffer, int start, int stop )
     {
         assertRange( buffer, start, stop );
         this.buffer = buffer;

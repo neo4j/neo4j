@@ -35,6 +35,8 @@ import java.util.ConcurrentModificationException;
 import java.util.NoSuchElementException;
 
 import org.neo4j.graphdb.Resource;
+import org.neo4j.storageengine.api.txstate.RichLongSet;
+import org.neo4j.storageengine.api.txstate.RichMutableLongSet;
 import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 
@@ -50,7 +52,7 @@ import static org.neo4j.util.Preconditions.checkArgument;
  * <li>Iterators returned by this set are fail-fast
  * </ul>
  */
-class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet implements MutableLongSet, Resource
+class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet implements RichMutableLongSet, Resource
 {
     static final int DEFAULT_CAPACITY = 32;
     static final int REMOVALS_RATIO = 4;

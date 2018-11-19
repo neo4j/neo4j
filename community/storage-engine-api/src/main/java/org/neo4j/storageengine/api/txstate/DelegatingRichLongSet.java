@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util.collection;
+package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.LazyLongIterable;
 import org.eclipse.collections.api.LongIterable;
@@ -50,14 +50,17 @@ import org.eclipse.collections.api.set.primitive.ImmutableLongSet;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
+import java.nio.LongBuffer;
 import java.util.Collection;
 import java.util.LongSummaryStatistics;
 
-public abstract class BaseRichLongSet implements RichLongSet
-{
-    protected final LongSet longSet;
+import org.neo4j.collection.RangeLongIterator;
 
-    protected BaseRichLongSet( LongSet longSet )
+public final class DelegatingRichLongSet implements RichLongSet
+{
+    private final LongSet longSet;
+
+    public DelegatingRichLongSet( LongSet longSet )
     {
         this.longSet = longSet;
     }
@@ -66,6 +69,18 @@ public abstract class BaseRichLongSet implements RichLongSet
     public LongSet tap( LongProcedure procedure )
     {
         return longSet.tap( procedure );
+    }
+
+    @Override
+    public LongIterator rangeIterator( int start, int stop )
+    {
+        return new RangeLongIterator( LongBuffer.wrap( toArray() ), start, stop );
+    }
+
+    @Override
+    public RichLongSet freeze()
+    {
+        return new DelegatingRichLongSet( longSet.freeze() );
     }
 
     @Override

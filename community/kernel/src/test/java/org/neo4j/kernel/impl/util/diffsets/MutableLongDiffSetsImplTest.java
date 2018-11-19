@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.util.diffsets;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.eclipse.collections.api.set.primitive.MutableLongSet;
-import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.OnHeapCollectionsFactory;
+import org.neo4j.storageengine.api.txstate.RichMutableLongHashSet;
+import org.neo4j.storageengine.api.txstate.RichMutableLongSet;
 
 import static org.eclipse.collections.impl.set.mutable.primitive.LongHashSet.newSetWith;
 import static org.junit.Assert.assertEquals;
@@ -161,8 +161,8 @@ public class MutableLongDiffSetsImplTest
     @Test
     public void useCollectionsFactory()
     {
-        final MutableLongSet set1 = new LongHashSet();
-        final MutableLongSet set2 = new LongHashSet();
+        final RichMutableLongSet set1 = new RichMutableLongHashSet();
+        final RichMutableLongSet set2 = new RichMutableLongHashSet();
         final CollectionsFactory collectionsFactory = mock( CollectionsFactory.class );
         doReturn( set1, set2 ).when( collectionsFactory ).newLongSet();
 

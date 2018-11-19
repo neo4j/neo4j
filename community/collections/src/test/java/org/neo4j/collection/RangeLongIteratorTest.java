@@ -17,13 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.Test;
 
-import java.nio.ByteBuffer;
 import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -36,18 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RangeLongIteratorTest
 {
-    enum Mode
-    {
-        DIRECT,
-        HEAP
-    }
-
-    @ParameterizedTest
-    @EnumSource( Mode.class )
-    void shouldHandleEmptyBuffer( Mode mode )
+    @Test
+    public void shouldHandleEmptyBuffer()
     {
         // given
-        LongBuffer buffer = buffer( mode );
+        LongBuffer buffer = buffer();
 
         // when
         RangeLongIterator iterator = new RangeLongIterator( buffer, 0, 0 );
@@ -57,12 +48,11 @@ class RangeLongIteratorTest
         assertThrows( NoSuchElementException.class, iterator::next );
     }
 
-    @ParameterizedTest
-    @EnumSource( Mode.class )
-    void shouldIterateOverSubsetOfData( Mode mode )
+    @Test
+    public void shouldIterateOverSubsetOfData()
     {
         // given
-        LongBuffer buffer = buffer( mode, 1L, 2L, 3L, 4L, 5L );
+        LongBuffer buffer = buffer( 1L, 2L, 3L, 4L, 5L );
 
         // when
         RangeLongIterator iterator = new RangeLongIterator( buffer, 2, 4 );
@@ -71,12 +61,11 @@ class RangeLongIteratorTest
         assertThat( iteratorAsList( iterator ), equalTo( asList( 3L, 4L ) ) );
     }
 
-    @ParameterizedTest
-    @EnumSource( Mode.class )
-    void shouldNotBeAbleToCreateInvalidRanges( Mode mode )
+    @Test
+    public void shouldNotBeAbleToCreateInvalidRanges()
     {
         // given
-        LongBuffer buffer = buffer( mode, 1L, 2L, 3L, 4L, 5L );
+        LongBuffer buffer = buffer( 1L, 2L, 3L, 4L, 5L );
 
         // expect
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, -1, 0 ) );
@@ -96,22 +85,8 @@ class RangeLongIteratorTest
         return list;
     }
 
-    private LongBuffer buffer( Mode mode, long... values )
+    private LongBuffer buffer( long... values )
     {
-        switch ( mode )
-        {
-        case DIRECT:
-            ByteBuffer directBuffer = ByteBuffer.allocateDirect( Long.BYTES * values.length );
-            for ( long value : values )
-            {
-                directBuffer.putLong( value );
-            }
-            directBuffer.flip();
-            return directBuffer.asLongBuffer();
-        case HEAP:
-            return LongBuffer.wrap( values );
-        default:
-            throw new AssertionError( "oh noes!" );
-        }
+        return LongBuffer.wrap( values );
     }
 }
