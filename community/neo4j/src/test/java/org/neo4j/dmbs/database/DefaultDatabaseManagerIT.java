@@ -24,21 +24,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 @ExtendWith( TestDirectoryExtension.class )
 class DefaultDatabaseManagerIT
@@ -50,7 +55,7 @@ class DefaultDatabaseManagerIT
     @BeforeEach
     void setUp()
     {
-        database = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.storeDir() );
+        database = new GraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
     }
 
     @AfterEach
@@ -63,15 +68,33 @@ class DefaultDatabaseManagerIT
     void createDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) );
+        assertThrows( IllegalStateException.class, () -> databaseManager.createDatabase( DEFAULT_DATABASE_NAME ) );
     }
 
     @Test
     void lookupExistingDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        Optional<GraphDatabaseFacade> database = databaseManager.getDatabaseFacade( GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        Optional<GraphDatabaseFacade> database = databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME );
         assertTrue( database.isPresent() );
+    }
+
+    @Test
+    void listDatabases()
+    {
+        DatabaseManager databaseManager = getDatabaseManager();
+        List<String> databases = databaseManager.listDatabases();
+        assertThat( databases, hasSize( 1 ) );
+        assertEquals( DEFAULT_DATABASE_NAME, databases.get( 0 ) );
+    }
+
+    @Test
+    void listDatabaseEmptyWhenManagerShutdown() throws Throwable
+    {
+        DatabaseManager databaseManager = getDatabaseManager();
+        databaseManager.stop();
+        List<String> databases = databaseManager.listDatabases();
+        assertThat( databases, empty() );
     }
 
     @Test

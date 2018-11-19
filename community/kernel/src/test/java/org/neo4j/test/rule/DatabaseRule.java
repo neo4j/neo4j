@@ -157,8 +157,7 @@ public class DatabaseRule extends ExternalResource
         DatabaseAvailabilityGuard databaseAvailabilityGuard = dependency( mutableDependencies, DatabaseAvailabilityGuard.class,
                 deps -> new DatabaseAvailabilityGuard( databaseName, deps.resolveDependency( SystemNanoClock.class ),
                         NullLog.getInstance() ) );
-        dependency( mutableDependencies, DiagnosticsManager.class,
-                deps -> new DiagnosticsManager( NullLog.getInstance() ) );
+        dependency( mutableDependencies, DiagnosticsManager.class, deps -> mock( DiagnosticsManager.class ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,

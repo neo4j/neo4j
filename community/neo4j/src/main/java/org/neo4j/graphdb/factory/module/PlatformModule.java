@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.diagnostics.DbmsDiagnosticsManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -59,7 +60,6 @@ import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
-import org.neo4j.kernel.info.SystemDiagnostics;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.kernel.internal.locker.GlobalStoreLocker;
 import org.neo4j.kernel.internal.locker.StoreLocker;
@@ -105,7 +105,7 @@ public class PlatformModule
 
     public final DatabaseInfo databaseInfo;
 
-    public final DiagnosticsManager diagnosticsManager;
+    public final DbmsDiagnosticsManager dbmsDiagnosticsManager;
 
     public final Tracers tracers;
 
@@ -196,11 +196,11 @@ public class PlatformModule
 
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        diagnosticsManager = new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) );
-        dependencies.satisfyDependency( diagnosticsManager );
+        DiagnosticsManager diagnosticsManager = new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) );
+        dbmsDiagnosticsManager = new DbmsDiagnosticsManager( dependencies, diagnosticsManager );
+        dependencies.satisfyDependency( dbmsDiagnosticsManager );
 
-        diagnosticsManager.dump( SystemDiagnostics.class );
-        diagnosticsManager.dump( config );
+        dbmsDiagnosticsManager.dumpSystemDiagnostics();
 
         dependencies.satisfyDependency( dataSourceManager );
 
@@ -289,7 +289,7 @@ public class PlatformModule
         }
 
         builder.withRotationListener(
-                logProvider -> diagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
+                logProvider -> dbmsDiagnosticsManager.dumpAll( logProvider.getLog( DiagnosticsManager.class ) ) );
 
         for ( String debugContext : config.get( GraphDatabaseSettings.store_internal_debug_contexts ) )
         {

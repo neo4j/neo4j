@@ -19,69 +19,29 @@
  */
 package org.neo4j.internal.diagnostics;
 
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLog;
 
-/**
- * Collects and manages all {@link DiagnosticsProvider}.
- */
-public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
+// TODO:javadoc
+public class DiagnosticsManager
 {
-    private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<>();
     private final Log log;
 
     public DiagnosticsManager( Log log )
     {
         this.log = log;
-
-        providers.add( new DiagnosticsProvider()
-        {
-            @Override
-            public String getDiagnosticsIdentifier()
-            {
-                return DiagnosticsManager.this.getClass().getName();
-            }
-
-            @Override
-            public void dump( final Logger logger )
-            {
-                logger.log( "Diagnostics providers:" );
-                for ( DiagnosticsProvider provider : providers )
-                {
-                    logger.log( provider.getDiagnosticsIdentifier() );
-                }
-            }
-        } );
     }
 
-    private Log getLog()
+    public void dump( DiagnosticsProvider provider )
     {
-        return log;
+        dump( provider, getLog() );
     }
 
-    public void dumpAll()
+    public void dump( List<DiagnosticsProvider> providers, Log dumpLog )
     {
-        dumpAll( getLog() );
-    }
-
-    public void dump( String identifier )
-    {
-        extract( identifier, getLog() );
-    }
-
-    public void dump( DiagnosticsProvider diagnosticsProvider )
-    {
-        dump( diagnosticsProvider, getLog() );
-    }
-
-    public void dumpAll( Log log )
-    {
-        log.bulk( bulkLog ->
+        dumpLog.bulk( bulkLog ->
         {
             for ( DiagnosticsProvider provider : providers )
             {
@@ -90,30 +50,20 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         } );
     }
 
-    public void extract( final String identifier, Log log )
+    public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider )
     {
-        log.bulk( bulkLog ->
-        {
-            for ( DiagnosticsProvider provider : providers )
-            {
-                if ( identifier.equals( provider.getDiagnosticsIdentifier() ) )
-                {
-                    dump( provider, bulkLog );
-                    return;
-                }
-            }
-        } );
+        dump( enumProvider, getLog() );
     }
 
-    public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider )
+    public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, Log log )
     {
         for ( E provider : enumProvider.getEnumConstants() )
         {
-            dump( provider );
+            dump( provider, log );
         }
     }
 
-    private static void dump( DiagnosticsProvider provider, Log log )
+    public void dump( DiagnosticsProvider provider, Log log )
     {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
         // This is first and foremost useful for speeding up testing.
@@ -121,7 +71,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         {
             return;
         }
-
         try
         {
             provider.dump( log.infoLogger() );
@@ -132,9 +81,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         }
     }
 
-    @Override
-    public Iterator<DiagnosticsProvider> iterator()
+    public Log getLog()
     {
-        return providers.iterator();
+        return log;
     }
 }

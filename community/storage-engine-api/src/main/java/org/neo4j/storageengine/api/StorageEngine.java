@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.io.pagecache.IOLimiter;
+import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
@@ -115,8 +116,9 @@ public interface StorageEngine
      * Dump diagnostics about the storage onto {@link DiagnosticsManager}.
      *
      * @param diagnosticsManager {@link DiagnosticsManager} to register diagnostics at.
+     * @param log {@link DiagnosticsManager} to register diagnostics at.
      */
-    void dumpDiagnostics( DiagnosticsManager diagnosticsManager );
+    void dumpDiagnostics( DiagnosticsManager diagnosticsManager, Log log );
 
     /**
      * Force close all opened resources. This may be called during startup if there's a failure

@@ -19,6 +19,7 @@
  */
 package org.neo4j.dmbs.database;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseManager;
@@ -31,6 +32,8 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Logger;
 
+import static java.util.Collections.emptyList;
+import static java.util.Collections.singletonList;
 import static org.neo4j.util.Preconditions.checkState;
 
 public final class DefaultDatabaseManager extends LifecycleAdapter implements DatabaseManager
@@ -83,12 +86,23 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         shutdownDatabase();
     }
 
+    @Override
+    public List<String> listDatabases()
+    {
+        if ( database == null )
+        {
+            return emptyList();
+        }
+        return singletonList( database.databaseLayout().getDatabaseName() );
+    }
+
     private void shutdownDatabase()
     {
         if ( database != null )
         {
             log.log( "Shutting down '%s' database.", database.databaseLayout().getDatabaseName() );
             database.shutdown();
+            database = null;
         }
     }
 }

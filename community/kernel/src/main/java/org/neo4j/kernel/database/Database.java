@@ -31,11 +31,11 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.diagnostics.DbmsDiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -132,7 +132,6 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -400,7 +399,8 @@ public class Database extends LifecycleAdapter
             throw new RuntimeException( e );
         }
 
-        dumpDiagnostics();
+        // TODO:
+        dependencyResolver.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
         life.add( databaseAvailability );
         life.setLast( lifecycleToTriggerCheckPointOnShutdown() );
@@ -433,15 +433,6 @@ public class Database extends LifecycleAdapter
          * kernel panics.
          */
         databaseHealth.healed();
-    }
-
-    private void dumpDiagnostics()
-    {
-        DiagnosticsManager diagnosticsManager = dataSourceDependencies.resolveDependency( DiagnosticsManager.class );
-        diagnosticsManager.dump( new KernelDiagnostics.Versions( databaseInfo, getStoreId() ) );
-        diagnosticsManager.dump( new KernelDiagnostics.StoreFiles( getDatabaseLayout() ) );
-        storageEngine.dumpDiagnostics( diagnosticsManager );
-        diagnosticsManager.dump( new DataSourceDiagnostics.TransactionRangeDiagnostics( this ) );
     }
 
     private LifeSupport initializeExtensions( Dependencies dependencies )
