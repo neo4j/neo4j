@@ -44,7 +44,6 @@ public class DatabaseModule
     public DatabaseModule( String databaseName, PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures,
             GraphDatabaseFacade graphDatabaseFacade )
     {
-        platformModule.diagnosticsManager.prependProvider( platformModule.config );
         EditionDatabaseContext editionContext = editionModule.createDatabaseContext( databaseName );
         ModularDatabaseCreationContext context =
                 new ModularDatabaseCreationContext( databaseName, platformModule, editionContext, procedures, graphDatabaseFacade );

@@ -40,6 +40,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
+import org.neo4j.kernel.NeoStoresDiagnostics;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
@@ -481,9 +482,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void registerDiagnostics( DiagnosticsManager diagnosticsManager )
+    public void dumpDiagnostics( DiagnosticsManager diagnosticsManager )
     {
-        neoStores.registerDiagnostics( diagnosticsManager );
+        diagnosticsManager.dump( NeoStoresDiagnostics.class, neoStores );
     }
 
     @Override

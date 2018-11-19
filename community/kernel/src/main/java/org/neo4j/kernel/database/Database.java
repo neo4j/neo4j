@@ -132,6 +132,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -399,7 +400,8 @@ public class Database extends LifecycleAdapter
             throw new RuntimeException( e );
         }
 
-        life.add( new DatabaseDiagnostics( dataSourceDependencies.resolveDependency( DiagnosticsManager.class ), this, databaseInfo ) );
+        dumpDiagnostics();
+
         life.add( databaseAvailability );
         life.setLast( lifecycleToTriggerCheckPointOnShutdown() );
 
@@ -431,6 +433,15 @@ public class Database extends LifecycleAdapter
          * kernel panics.
          */
         databaseHealth.healed();
+    }
+
+    private void dumpDiagnostics()
+    {
+        DiagnosticsManager diagnosticsManager = dataSourceDependencies.resolveDependency( DiagnosticsManager.class );
+        diagnosticsManager.dump( new KernelDiagnostics.Versions( databaseInfo, getStoreId() ) );
+        diagnosticsManager.dump( new KernelDiagnostics.StoreFiles( getDatabaseLayout() ) );
+        storageEngine.dumpDiagnostics( diagnosticsManager );
+        diagnosticsManager.dump( DataSourceDiagnostics.class, this );
     }
 
     private LifeSupport initializeExtensions( Dependencies dependencies )
@@ -720,12 +731,6 @@ public class Database extends LifecycleAdapter
     public DatabaseFileListing getDatabaseFileListing()
     {
         return kernelModule.fileListing();
-    }
-
-    public void registerDiagnosticsWith( DiagnosticsManager manager )
-    {
-        storageEngine.registerDiagnostics( manager );
-        manager.registerAll( DataSourceDiagnostics.class, this );
     }
 
     public Dependencies getDependencyResolver()

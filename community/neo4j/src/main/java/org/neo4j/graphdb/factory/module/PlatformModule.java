@@ -196,9 +196,12 @@ public class PlatformModule
 
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        diagnosticsManager = life.add( dependencies
-                .satisfyDependency( new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) ) ) );
-        SystemDiagnostics.registerWith( diagnosticsManager );
+        diagnosticsManager = new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) );
+        dependencies.satisfyDependency( diagnosticsManager );
+        life.add( diagnosticsManager );
+
+        diagnosticsManager.dump( SystemDiagnostics.class );
+        diagnosticsManager.dump( config );
 
         dependencies.satisfyDependency( dataSourceManager );
 

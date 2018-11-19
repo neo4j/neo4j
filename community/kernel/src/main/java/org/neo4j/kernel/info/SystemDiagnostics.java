@@ -34,7 +34,6 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.ByteOrder;
-import java.nio.file.Files;
 import java.time.zone.ZoneRulesProvider;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,9 +44,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
-import java.util.stream.Stream;
 
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.os.OsBeanUtil;
@@ -261,40 +258,6 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    LINUX_SCHEDULERS( "Linux scheduler information:" )
-    {
-        private final File SYS_BLOCK = new File( "/sys/block" );
-
-        @Override
-        boolean isApplicable()
-        {
-            return SYS_BLOCK.isDirectory();
-        }
-
-        @Override
-        void dump( Logger logger )
-        {
-            File[] files = SYS_BLOCK.listFiles( File::isDirectory );
-            if ( files != null )
-            {
-                for ( File subdir : files )
-                {
-                    File scheduler = new File( subdir, "queue/scheduler" );
-                    if ( scheduler.isFile() )
-                    {
-                        try ( Stream<String> lines = Files.lines( scheduler.toPath() ) )
-                        {
-                            lines.forEach( logger::log );
-                        }
-                        catch ( IOException e )
-                        {
-                            // ignore
-                        }
-                    }
-                }
-            }
-        }
-    },
     NETWORK( "Network information:" )
     {
         @Override
@@ -323,30 +286,13 @@ public enum SystemDiagnostics implements DiagnosticsProvider
                 logger.log( "ERROR: failed to inspect network interfaces and addresses: " + e.getMessage() );
             }
         }
-    },
-    ;
+    };
 
     private final String message;
 
     SystemDiagnostics( String message )
     {
         this.message = message;
-    }
-
-    public static void registerWith( DiagnosticsManager manager )
-    {
-        for ( SystemDiagnostics provider : values() )
-        {
-            if ( provider.isApplicable() )
-            {
-                manager.appendProvider( provider );
-            }
-        }
-    }
-
-    boolean isApplicable()
-    {
-        return true;
     }
 
     @Override

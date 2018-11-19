@@ -23,8 +23,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.internal.diagnostics.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.diagnostics.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
@@ -190,6 +190,19 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         extract( identifier, getTargetLog() );
     }
 
+    public void dump( DiagnosticsProvider diagnosticsProvider )
+    {
+        dump( diagnosticsProvider, DiagnosticsPhase.EXPLICIT, getTargetLog() );
+    }
+
+    public <T, E extends Enum<E> & DiagnosticsExtractor<T>> void dump( Class<E> extractorEnum, T source )
+    {
+        for ( DiagnosticsExtractor<T> extractor : extractorEnum.getEnumConstants() )
+        {
+            dump( extractedProvider( extractor, source ) );
+        }
+    }
+
     public void dumpAll( Log log )
     {
         log.bulk( bulkLog ->
@@ -227,6 +240,14 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
             }
             phase.emitDone( bulkLog );
         } );
+    }
+
+    public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider )
+    {
+        for ( E provider : enumProvider.getEnumConstants() )
+        {
+            dump( provider );
+        }
     }
 
     public <T> void register( DiagnosticsExtractor<T> extractor, T source )
@@ -303,7 +324,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         return providers.iterator();
     }
 
-    static <T> DiagnosticsProvider extractedProvider( DiagnosticsExtractor<T> extractor, T source )
+    private static <T> DiagnosticsProvider extractedProvider( DiagnosticsExtractor<T> extractor, T source )
     {
         if ( extractor instanceof DiagnosticsExtractor.VisitableDiagnostics<?> )
         {

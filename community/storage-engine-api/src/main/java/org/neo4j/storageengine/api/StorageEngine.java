@@ -112,11 +112,11 @@ public interface StorageEngine
     void flushAndForce( IOLimiter limiter );
 
     /**
-     * Registers diagnostics about the storage onto {@link DiagnosticsManager}.
+     * Dump diagnostics about the storage onto {@link DiagnosticsManager}.
      *
      * @param diagnosticsManager {@link DiagnosticsManager} to register diagnostics at.
      */
-    void registerDiagnostics( DiagnosticsManager diagnosticsManager );
+    void dumpDiagnostics( DiagnosticsManager diagnosticsManager );
 
     /**
      * Force close all opened resources. This may be called during startup if there's a failure

@@ -33,7 +33,6 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -614,11 +613,6 @@ public class NeoStores implements AutoCloseable
         }
         return initialize( new DynamicArrayStore( storeFile, idFile, config, idType, idGeneratorFactory, pageCache,
                 logProvider, blockSize, recordFormats, openOptions ) );
-    }
-
-    public void registerDiagnostics( DiagnosticsManager diagnosticsManager )
-    {
-        diagnosticsManager.registerAll( NeoStoresDiagnostics.class, this );
     }
 
     @SuppressWarnings( "unchecked" )
