@@ -25,7 +25,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.diagnostics.DiagnosticsExtractor.VisitableDiagnostics;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLog;
@@ -33,7 +32,7 @@ import org.neo4j.logging.NullLog;
 /**
  * Collects and manages all {@link DiagnosticsProvider}.
  */
-public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecycle
+public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
 {
     private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<>();
     private final Log targetLog;
@@ -77,32 +76,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
                 }
             }
         } );
-    }
-
-    @Override
-    public void init()
-    {
-        dumpAll( DiagnosticsPhase.INITIALIZED, getTargetLog() );
-    }
-
-    @Override
-    public void start()
-    {
-        dumpAll( DiagnosticsPhase.STARTED, getTargetLog() );
-    }
-
-    @Override
-    public void stop()
-    {
-        dumpAll( DiagnosticsPhase.STOPPING, getTargetLog() );
-        providers.clear();
-    }
-
-    @Override
-    public void shutdown()
-    {
-        dumpAll( DiagnosticsPhase.SHUTDOWN, getTargetLog() );
-        providers.clear();
     }
 
     public Log getTargetLog()
