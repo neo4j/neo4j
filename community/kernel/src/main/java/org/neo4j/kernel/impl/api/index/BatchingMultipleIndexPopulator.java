@@ -111,9 +111,9 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
     }
 
     @Override
-    protected void flushAll()
+    protected void applyBatchesFromAllScans()
     {
-        super.flushAll();
+        super.applyBatchesFromAllScans();
         awaitCompletion();
     }
 
@@ -157,7 +157,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
      * @param population the index population.
      */
     @Override
-    protected void flushBatchFromScan( IndexPopulation population )
+    protected void applyBatchFromScan( IndexPopulation population )
     {
         activeTasks.incrementAndGet();
         Collection<IndexEntryUpdate<?>> batch = population.takeCurrentBatchFromScan();
@@ -286,7 +286,7 @@ public class BatchingMultipleIndexPopulator extends MultipleIndexPopulator
             super.run();
             log.info( "Completed node store scan. " +
                       "Flushing all pending updates." + EOL + BatchingMultipleIndexPopulator.this );
-            flushAll();
+            applyBatchesFromAllScans();
         }
     }
 }

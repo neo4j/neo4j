@@ -180,7 +180,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             public void run() throws IndexPopulationFailedKernelException
             {
                 super.run();
-                flushAll();
+                applyBatchesFromAllScans();
             }
         };
     }
@@ -356,12 +356,12 @@ public class MultipleIndexPopulator implements IndexPopulator
         return applyConcurrentUpdateQueue( QUEUE_THRESHOLD, currentlyIndexedNodeId );
     }
 
-    void flushAll()
+    void applyBatchesFromAllScans()
     {
-        populations.forEach( this::flushBatchFromScan );
+        populations.forEach( this::applyBatchFromScan );
     }
 
-    protected void flushBatchFromScan( IndexPopulation population )
+    protected void applyBatchFromScan( IndexPopulation population )
     {
         try
         {
@@ -385,7 +385,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         {
             // Before applying updates from the updates queue any pending scan updates needs to be applied, i.e. flushed.
             // This is because 'currentlyIndexedNodeId' is based on how far the scan has come.
-            flushAll();
+            applyBatchesFromAllScans();
 
             try ( MultipleIndexUpdater updater = newPopulatingUpdater( propertyAccessor ) )
             {
@@ -554,7 +554,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             populator.includeSample( update );
             if ( addToBatchFromScan( update ) )
             {
-                flushBatchFromScan( this );
+                applyBatchFromScan( this );
             }
         }
 
