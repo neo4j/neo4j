@@ -42,7 +42,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.AssertableLogProvider;
@@ -98,7 +97,7 @@ public class IndexStatisticsIT
 
         // where ALIEN and SPECIMEN are both the first ids of their kind
         IndexDescriptor index = TestIndexDescriptorFactory.forLabel( labelId( ALIEN ), pkId( SPECIMEN ) );
-        SchemaRuleAccess schemaRuleAccess = new SchemaStorage( neoStores().getSchemaStore() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore() );
         long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
 
         // for which we don't have index counts

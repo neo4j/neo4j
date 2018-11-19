@@ -59,7 +59,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -215,7 +214,7 @@ public class IndexStatisticsTest
         IndexReference index = createPersonNameIndex();
         awaitIndexesOnline();
 
-        SchemaRuleAccess schemaRuleAccess = new SchemaStorage( neoStores().getSchemaStore() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores().getSchemaStore() );
         long indexId = schemaRuleAccess.indexGetForSchema( index ).getId();
 
         // when

@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
@@ -392,7 +393,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
     private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
     {
-        return Iterators.asList( new SchemaStorage( neoStores.getSchemaStore() ).indexesGetAll() );
+        return Iterators.asList( SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() ).indexesGetAll() );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )

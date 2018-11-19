@@ -76,7 +76,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -189,7 +188,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
             schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
-            schemaRuleAccess = new SchemaStorage( neoStores.getSchemaStore() );
+            schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores, this::newReader );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;

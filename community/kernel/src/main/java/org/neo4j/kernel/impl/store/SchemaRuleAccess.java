@@ -32,6 +32,16 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 public interface SchemaRuleAccess
 {
+    static SchemaRuleAccess getSchemaRuleAccess( RecordStore<?> store )
+    {
+        if ( store instanceof SchemaStore )
+        {
+            SchemaStore schemaStore = (SchemaStore) store;
+            return new SchemaStorage( schemaStore );
+        }
+        throw new IllegalArgumentException( "Cannot create SchemaRuleAccess for schema store: " + store );
+    }
+
     long newRuleId();
 
     SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException;

@@ -90,6 +90,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -451,7 +452,7 @@ public class FullCheckIntegrationTest
         DirectStoreAccess storeAccess = fixture.directStoreAccess();
 
         // fail all indexes
-        Iterator<StoreIndexDescriptor> rules = new SchemaStorage( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
+        Iterator<StoreIndexDescriptor> rules = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.nativeStores().getSchemaStore() ).indexesGetAll();
         while ( rules.hasNext() )
         {
             StoreIndexDescriptor rule = rules.next();
@@ -559,7 +560,7 @@ public class FullCheckIntegrationTest
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<StoreIndexDescriptor> indexDescriptorIterator =
-                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+                SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
                 fixture.directStoreAccess().nativeStores().getRawNeoStores(),
                 () -> new RecordStorageReader( fixture.directStoreAccess().nativeStores().getRawNeoStores() ) );
@@ -597,7 +598,7 @@ public class FullCheckIntegrationTest
         // given
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<StoreIndexDescriptor> indexRuleIterator =
-                new SchemaStorage( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
+                SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         while ( indexRuleIterator.hasNext() )
         {
             StoreIndexDescriptor indexRule = indexRuleIterator.next();

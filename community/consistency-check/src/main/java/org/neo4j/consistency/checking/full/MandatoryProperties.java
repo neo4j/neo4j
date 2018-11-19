@@ -32,7 +32,6 @@ import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.report.ConsistencyReporter;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
@@ -54,7 +53,7 @@ public class MandatoryProperties
     public MandatoryProperties( StoreAccess storeAccess )
     {
         this.storeAccess = storeAccess;
-        SchemaRuleAccess schemaRuleAccess = new SchemaStorage( storeAccess.getSchemaStore() );
+        SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( storeAccess.getSchemaStore() );
         for ( ConstraintRule rule : constraintsIgnoringMalformed( schemaRuleAccess ) )
         {
             if ( rule.getConstraintDescriptor().enforcesPropertyExistence() )

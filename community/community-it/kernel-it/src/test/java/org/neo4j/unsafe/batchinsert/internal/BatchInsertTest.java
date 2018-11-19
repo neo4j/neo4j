@@ -751,7 +751,7 @@ public class BatchInsertTest
             NeoStores neoStores = graphdb.getDependencyResolver()
                     .resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
             SchemaStore store = neoStores.getSchemaStore();
-            SchemaRuleAccess schemaRuleAccess = new SchemaStorage( store );
+            SchemaRuleAccess schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( store );
             List<Long> inUse = new ArrayList<>();
             DynamicRecord record = store.nextRecord();
             for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )

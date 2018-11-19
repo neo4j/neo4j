@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.Scanner;
-import org.neo4j.kernel.impl.store.SchemaStorage;
+import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 
@@ -174,7 +174,7 @@ public class ConsistencyCheckTasks
         tasks.add( create( "SchemaStore", nativeStores.getSchemaStore(), ROUND_ROBIN ) );
         // PASS 2: Rule integrity and obligation build up
         final SchemaRecordCheck schemaCheck =
-                new SchemaRecordCheck( new SchemaStorage( nativeStores.getSchemaStore() ), indexes );
+                new SchemaRecordCheck( SchemaRuleAccess.getSchemaRuleAccess( nativeStores.getSchemaStore() ), indexes );
         tasks.add( new SchemaStoreProcessorTask<>( "SchemaStoreProcessor-check_rules", statistics, numberOfThreads,
                 nativeStores.getSchemaStore(), nativeStores, "check_rules",
                 schemaCheck, multiPartBuilder, cacheAccess, defaultProcessor, ROUND_ROBIN ) );
