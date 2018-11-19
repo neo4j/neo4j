@@ -37,7 +37,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
 {
     private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<>();
     private final Log targetLog;
-    private volatile State state = State.INITIAL;
 
     public DiagnosticsManager( Log targetLog )
     {
@@ -83,45 +82,18 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     @Override
     public void init()
     {
-        synchronized ( providers )
-        {
-            @SuppressWarnings( "hiding" )
-            State state = this.state;
-            if ( !state.startup( this ) )
-            {
-                return;
-            }
-        }
         dumpAll( DiagnosticsPhase.INITIALIZED, getTargetLog() );
     }
 
     @Override
     public void start()
     {
-        synchronized ( providers )
-        {
-            @SuppressWarnings( "hiding" )
-            State state = this.state;
-            if ( !state.startup( this ) )
-            {
-                return;
-            }
-        }
         dumpAll( DiagnosticsPhase.STARTED, getTargetLog() );
     }
 
     @Override
     public void stop()
     {
-        synchronized ( providers )
-        {
-            @SuppressWarnings( "hiding" )
-            State state = this.state;
-            if ( !state.shutdown( this ) )
-            {
-                return;
-            }
-        }
         dumpAll( DiagnosticsPhase.STOPPING, getTargetLog() );
         providers.clear();
     }
@@ -129,50 +101,8 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
     @Override
     public void shutdown()
     {
-        synchronized ( providers )
-        {
-            @SuppressWarnings( "hiding" )
-            State state = this.state;
-            if ( !state.shutdown( this ) )
-            {
-                return;
-            }
-        }
         dumpAll( DiagnosticsPhase.SHUTDOWN, getTargetLog() );
         providers.clear();
-    }
-
-    private enum State
-    {
-        INITIAL
-        {
-            @Override
-            boolean startup( DiagnosticsManager manager )
-            {
-                manager.state = STARTED;
-                return true;
-            }
-        },
-        STARTED,
-        STOPPED
-        {
-            @Override
-            boolean shutdown( DiagnosticsManager manager )
-            {
-                return false;
-            }
-        };
-
-        boolean startup( DiagnosticsManager manager )
-        {
-            return false;
-        }
-
-        boolean shutdown( DiagnosticsManager manager )
-        {
-            manager.state = STOPPED;
-            return true;
-        }
     }
 
     public Log getTargetLog()
@@ -255,41 +185,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>, Lifecy
         appendProvider( extractedProvider( extractor, source ) );
     }
 
-    public <T, E extends Enum<E> & DiagnosticsExtractor<T>> void registerAll( Class<E> extractorEnum, T source )
-    {
-        for ( DiagnosticsExtractor<T> extractor : extractorEnum.getEnumConstants() )
-        {
-            register( extractor, source );
-        }
-    }
-
-    public void prependProvider( DiagnosticsProvider provider )
-    {
-        State state = this.state;
-        if ( state == State.STOPPED )
-        {
-            return;
-        }
-        providers.add( 0, provider );
-        if ( state == State.STARTED )
-        {
-            dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
-        }
-    }
-
     public void appendProvider( DiagnosticsProvider provider )
     {
-        @SuppressWarnings( "hiding" )
-        State state = this.state;
-        if ( state == State.STOPPED )
-        {
-            return;
-        }
         providers.add( provider );
-        if ( state == State.STARTED )
-        {
-            dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
-        }
+        dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
     }
 
     private void dump( DiagnosticsPhase phase, DiagnosticsProvider provider, Log log )
