@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 
 import org.neo4j.function.Predicates;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
@@ -45,13 +44,33 @@ public class SchemaStorage implements SchemaRuleAccess
         this.schemaStore = schemaStore;
     }
 
-    /**
-     * Find the IndexRule that matches the given IndexDescriptor.
-     *
-     * @return  the matching IndexRule, or null if no matching IndexRule was found
-     * @throws  IllegalStateException if more than one matching rule.
-     * @param index the target {@link IndexReference}
-     */
+    @Override
+    public long newRuleId()
+    {
+        return schemaStore.nextId();
+    }
+
+    @Override
+    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
+    {
+        Collection<DynamicRecord> records;
+        try
+        {
+            records = schemaStore.getRecords( ruleId, RecordLoad.NORMAL );
+        }
+        catch ( Exception e )
+        {
+            throw new MalformedSchemaRuleException( e.getMessage(), e );
+        }
+        return SchemaStore.readSchemaRule( ruleId, records, newRecordBuffer() );
+    }
+
+    @Override
+    public Iterator<StoreIndexDescriptor> indexesGetAll()
+    {
+        return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );
+    }
+
     @Override
     public StoreIndexDescriptor indexGetForSchema( final IndexDescriptor index )
     {
@@ -74,25 +93,6 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public Iterator<StoreIndexDescriptor> indexesGetAll()
-    {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), StoreIndexDescriptor.class, false );
-    }
-
-    @Override
-    public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
-    {
-        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
-    }
-
-    /**
-     * Get the constraint rule that matches the given ConstraintDescriptor
-     * @param descriptor the ConstraintDescriptor to match
-     * @return the matching ConstrainRule
-     * @throws SchemaRuleNotFoundException if no ConstraintRule matches the given descriptor
-     * @throws DuplicateSchemaRuleException if two or more ConstraintRules match the given descriptor
-     */
-    @Override
     public ConstraintRule constraintsGetSingle( final ConstraintDescriptor descriptor )
             throws SchemaRuleNotFoundException, DuplicateSchemaRuleException
     {
@@ -112,24 +112,15 @@ public class SchemaStorage implements SchemaRuleAccess
         return rule;
     }
 
+    @Override
+    public Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed()
+    {
+        return loadAllSchemaRules( Predicates.alwaysTrue(), ConstraintRule.class, true );
+    }
+
     Iterator<SchemaRule> loadAllSchemaRules()
     {
         return loadAllSchemaRules( Predicates.alwaysTrue(), SchemaRule.class, false );
-    }
-
-    @Override
-    public SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException
-    {
-        Collection<DynamicRecord> records;
-        try
-        {
-            records = schemaStore.getRecords( ruleId, RecordLoad.NORMAL );
-        }
-        catch ( Exception e )
-        {
-            throw new MalformedSchemaRuleException( e.getMessage(), e );
-        }
-        return SchemaStore.readSchemaRule( ruleId, records, newRecordBuffer() );
     }
 
     /**
@@ -199,12 +190,6 @@ public class SchemaStorage implements SchemaRuleAccess
                 return null;
             }
         };
-    }
-
-    @Override
-    public long newRuleId()
-    {
-        return schemaStore.nextId();
     }
 
     private byte[] newRecordBuffer()

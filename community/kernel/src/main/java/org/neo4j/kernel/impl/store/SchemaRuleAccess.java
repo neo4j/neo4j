@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.store;
 
 import java.util.Iterator;
 
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
@@ -31,16 +32,30 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 public interface SchemaRuleAccess
 {
-    StoreIndexDescriptor indexGetForSchema( IndexDescriptor index );
-
-    Iterator<StoreIndexDescriptor> indexesGetAll();
-
-    Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed();
-
-    ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor )
-            throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
+    long newRuleId();
 
     SchemaRule loadSingleSchemaRule( long ruleId ) throws MalformedSchemaRuleException;
 
-    long newRuleId();
+    Iterator<StoreIndexDescriptor> indexesGetAll();
+
+    /**
+     * Find the IndexRule that matches the given IndexDescriptor.
+     *
+     * @return  the matching IndexRule, or null if no matching IndexRule was found
+     * @throws  IllegalStateException if more than one matching rule.
+     * @param index the target {@link IndexReference}
+     */
+    StoreIndexDescriptor indexGetForSchema( IndexDescriptor index );
+
+    /**
+     * Get the constraint rule that matches the given ConstraintDescriptor
+     * @param descriptor the ConstraintDescriptor to match
+     * @return the matching ConstrainRule
+     * @throws SchemaRuleNotFoundException if no ConstraintRule matches the given descriptor
+     * @throws DuplicateSchemaRuleException if two or more ConstraintRules match the given descriptor
+     */
+    ConstraintRule constraintsGetSingle( ConstraintDescriptor descriptor )
+    throws SchemaRuleNotFoundException, DuplicateSchemaRuleException;
+
+    Iterator<ConstraintRule> constraintsGetAllIgnoreMalformed();
 }
