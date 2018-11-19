@@ -33,11 +33,11 @@ import org.neo4j.logging.NullLog;
 public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
 {
     private final List<DiagnosticsProvider> providers = new CopyOnWriteArrayList<>();
-    private final Log targetLog;
+    private final Log log;
 
-    public DiagnosticsManager( Log targetLog )
+    public DiagnosticsManager( Log log )
     {
-        this.targetLog = targetLog;
+        this.log = log;
 
         providers.add( new DiagnosticsProvider()
         {
@@ -59,24 +59,24 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         } );
     }
 
-    public Log getTargetLog()
+    private Log getLog()
     {
-        return targetLog;
+        return log;
     }
 
     public void dumpAll()
     {
-        dumpAll( getTargetLog() );
+        dumpAll( getLog() );
     }
 
     public void dump( String identifier )
     {
-        extract( identifier, getTargetLog() );
+        extract( identifier, getLog() );
     }
 
     public void dump( DiagnosticsProvider diagnosticsProvider )
     {
-        dump( diagnosticsProvider, getTargetLog() );
+        dump( diagnosticsProvider, getLog() );
     }
 
     public void dumpAll( Log log )

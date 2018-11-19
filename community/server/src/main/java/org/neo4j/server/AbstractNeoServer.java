@@ -37,7 +37,6 @@ import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.helpers.RunCarefully;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.security.AuthManager;
@@ -53,6 +52,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.server.configuration.ServerSettings;
@@ -512,9 +512,9 @@ public abstract class AbstractNeoServer implements NeoServer
         @Override
         public void start() throws Throwable
         {
-            DiagnosticsManager diagnosticsManager = resolveDependency( DiagnosticsManager.class );
-            Log diagnosticsLog = diagnosticsManager.getTargetLog();
-            diagnosticsLog.info( "--- SERVER STARTED START ---" );
+            LogService logService = resolveDependency( LogService.class );
+            Log serverLog = logService.getInternalLog( ServerComponentsLifecycleAdapter.class );
+            serverLog.info( "Starting web server" );
             connectorPortRegister = dependencyResolver.resolveDependency( ConnectorPortRegister.class );
             databaseActions = createDatabaseActions();
 
@@ -530,7 +530,7 @@ public abstract class AbstractNeoServer implements NeoServer
 
             startWebServer();
 
-            diagnosticsLog.info( "--- SERVER STARTED END ---" );
+            serverLog.info( "Web server started." );
         }
 
         @Override
