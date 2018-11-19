@@ -26,17 +26,21 @@ import org.neo4j.kernel.api.exceptions.schema.DuplicateSchemaRuleException;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
+import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 public interface SchemaRuleAccess
 {
+    @SuppressWarnings( "unchecked" )
     static SchemaRuleAccess getSchemaRuleAccess( RecordStore<?> store )
     {
-        if ( store instanceof SchemaStore )
+        AbstractBaseRecord record = store.newRecord();
+        if ( record instanceof DynamicRecord )
         {
-            SchemaStore schemaStore = (SchemaStore) store;
+            RecordStore<DynamicRecord> schemaStore = (RecordStore<DynamicRecord>) store;
             return new SchemaStorage( schemaStore );
         }
         throw new IllegalArgumentException( "Cannot create SchemaRuleAccess for schema store: " + store );
