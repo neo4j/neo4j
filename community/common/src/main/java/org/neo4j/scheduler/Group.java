@@ -59,6 +59,9 @@ public enum Group
     /** Thread pool for parallel Cypher query execution. */
     CYPHER_WORKER( "CypherWorker", ExecutorServiceFactory.workStealing() ),
 
+    // DATA COLLECTOR
+    DATA_COLLECTOR( "DataCollector" ),
+
     // BOLT.
     /** Network IO threads for the Bolt protocol. */
     BOLT_NETWORK_IO( "BoltNetworkIO" ),

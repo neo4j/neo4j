@@ -43,6 +43,12 @@ trait RewindableExecutionResult {
   def size: Long = result.size
   def head(str: String): AnyRef = result.head(str)
 
+  def single: Map[String, AnyRef] =
+    if (result.size == 1)
+      result.head
+    else
+      throw new IllegalStateException(s"Result should have one row, but had ${result.size}")
+
   def executionPlanDescription(): InternalPlanDescription = planDescription
 
   def executionPlanString(): String = planDescription.toString
