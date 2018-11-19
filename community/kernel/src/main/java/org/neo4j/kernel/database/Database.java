@@ -31,7 +31,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.diagnostics.DbmsDiagnosticsManager;
+import org.neo4j.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;

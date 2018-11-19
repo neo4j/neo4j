@@ -22,7 +22,7 @@ package org.neo4j.graphdb.factory.module;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.diagnostics.DbmsDiagnosticsManager;
+import org.neo4j.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;

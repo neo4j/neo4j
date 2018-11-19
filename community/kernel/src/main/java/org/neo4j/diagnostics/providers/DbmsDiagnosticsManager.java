@@ -17,19 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.diagnostics;
+package org.neo4j.diagnostics.providers;
 
 import java.util.List;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.kernel.DataSourceDiagnostics;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.info.SystemDiagnostics;
-import org.neo4j.kernel.internal.KernelDiagnostics;
 import org.neo4j.logging.Log;
 import org.neo4j.storageengine.api.StorageEngine;
 
@@ -89,7 +86,7 @@ public class DbmsDiagnosticsManager
     private void dumpSystemDiagnostics( Log log )
     {
         diagnosticsManager.dump( SystemDiagnostics.class, log );
-        diagnosticsManager.dump( dependencies.resolveDependency( Config.class ), log);
+        diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
     }
 
     private void dumpDatabaseDiagnostics( NeoStoreDataSource neoStoreDataSource, Log log )

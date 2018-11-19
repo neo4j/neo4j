@@ -24,9 +24,9 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.internal.diagnostics.DiagnosticsManager;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -157,7 +157,7 @@ public class DatabaseRule extends ExternalResource
         DatabaseAvailabilityGuard databaseAvailabilityGuard = dependency( mutableDependencies, DatabaseAvailabilityGuard.class,
                 deps -> new DatabaseAvailabilityGuard( databaseName, deps.resolveDependency( SystemNanoClock.class ),
                         NullLog.getInstance() ) );
-        dependency( mutableDependencies, DiagnosticsManager.class, deps -> mock( DiagnosticsManager.class ) );
+        dependency( mutableDependencies, DbmsDiagnosticsManager.class, deps -> mock( DbmsDiagnosticsManager.class ) );
         dependency( mutableDependencies, IndexProvider.class, deps -> EMPTY );
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.internal;
+package org.neo4j.diagnostics.providers;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
@@ -32,6 +32,7 @@ import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Logger;
 import org.neo4j.storageengine.api.StoreId;
 

@@ -54,12 +54,10 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
-import org.neo4j.logging.Logger;
 
 import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonMap;
@@ -77,7 +75,7 @@ import static org.neo4j.kernel.configuration.Settings.TRUE;
  * Users can assume that old settings have been migrated to their new counterparts, and that defaults have been
  * applied.
  */
-public class Config implements DiagnosticsProvider, Configuration
+public class Config implements Configuration
 {
     public static final String DEFAULT_CONFIG_FILE_NAME = "neo4j.conf";
 
@@ -734,22 +732,6 @@ public class Config implements DiagnosticsProvider, Configuration
                 {
                     throw new RuntimeException( "Duplicate setting: " + val1.name() + ": " + val1 + " and " + val2 );
                 } ) );
-    }
-
-    @Override
-    public String getDiagnosticsIdentifier()
-    {
-        return getClass().getName();
-    }
-
-    @Override
-    public void dump( Logger logger )
-    {
-        logger.log( "Neo4j Kernel properties:" );
-        for ( Map.Entry<String,String> param : params.entrySet() )
-        {
-            logger.log( "%s=%s", param.getKey(), param.getValue() );
-        }
     }
 
     /**
