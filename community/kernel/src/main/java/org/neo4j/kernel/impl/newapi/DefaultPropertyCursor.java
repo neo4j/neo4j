@@ -29,7 +29,7 @@ import org.neo4j.storageengine.api.txstate.PropertyContainerState;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 public class DefaultPropertyCursor implements PropertyCursor
 {

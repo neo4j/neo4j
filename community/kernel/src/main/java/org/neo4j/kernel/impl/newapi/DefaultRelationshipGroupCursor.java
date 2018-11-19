@@ -31,10 +31,12 @@ import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
 import org.neo4j.storageengine.api.txstate.NodeState;
 import org.neo4j.storageengine.api.txstate.RelationshipState;
 
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncomingRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoopRels;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoingRels;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDenseSelection;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoIncoming;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoLoops;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeNoOutgoing;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeSelection;
 
 class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
 {
@@ -46,6 +48,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     private final MutableIntSet txTypes = new IntHashSet();
     private IntIterator txTypeIterator;
     private int currentTypeAddedInTx = NO_ID;
+    private boolean nodeIsDense;
 
     DefaultRelationshipGroupCursor( CursorPool<DefaultRelationshipGroupCursor> pool, StorageRelationshipGroupCursor storeCursor )
     {
@@ -53,9 +56,10 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         this.storeCursor = storeCursor;
     }
 
-    void init( long nodeReference, long reference, Read read )
+    void init( long nodeReference, long reference, boolean nodeIsDense, Read read )
     {
-        storeCursor.init( nodeReference, reference );
+        this.nodeIsDense = nodeIsDense;
+        this.storeCursor.init( nodeReference, reference, nodeIsDense );
         this.txTypes.clear();
         this.txTypeIterator = null;
         this.currentTypeAddedInTx = NO_ID;
@@ -198,40 +202,68 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
     @Override
     public void outgoing( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), outgoingReference(), read );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), outgoingReferenceWithoutFlags(),
+                type(), RelationshipDirection.OUTGOING, nodeIsDense, read );
     }
 
     @Override
     public void incoming( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReference(), read );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), incomingReferenceWithoutFlags(),
+                type(), RelationshipDirection.INCOMING, nodeIsDense, read );
     }
 
     @Override
     public void loops( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), loopsReference(), read );
+        ((DefaultRelationshipTraversalCursor) cursor).init( storeCursor.getOwningNode(), loopsReferenceWithoutFlags(),
+                type(), RelationshipDirection.LOOP, nodeIsDense, read );
     }
 
     @Override
     public long outgoingReference()
     {
-        long reference = currentTypeAddedInTx != NO_ID ? NO_ID : storeCursor.outgoingReference();
-        return reference == NO_ID ? encodeNoOutgoingRels( type() ) : reference;
+        long reference = outgoingReferenceWithoutFlags();
+        return reference == NO_ID ? encodeNoOutgoing( type() ) : encodeSelectionToReference( reference );
     }
 
     @Override
     public long incomingReference()
     {
-        long reference = currentTypeAddedInTx != NO_ID ? NO_ID : storeCursor.incomingReference();
-        return reference == NO_ID ? encodeNoIncomingRels( type() ) : reference;
+        long reference = incomingReferenceWithoutFlags();
+        return reference == NO_ID ? encodeNoIncoming( type() ) : encodeSelectionToReference( reference );
     }
 
     @Override
     public long loopsReference()
     {
-        long reference = currentTypeAddedInTx != NO_ID ? NO_ID : storeCursor.loopsReference();
-        return reference == NO_ID ? encodeNoLoopRels( type() ) : reference;
+        long reference = loopsReferenceWithoutFlags();
+        return reference == NO_ID ? encodeNoLoops( type() ) : encodeSelectionToReference( reference );
+    }
+
+    private long encodeSelectionToReference( long reference )
+    {
+        return nodeIsDense ? encodeDenseSelection( reference ) : encodeSelection( reference );
+    }
+
+    private long outgoingReferenceWithoutFlags()
+    {
+        return relationshipReferenceWithoutFlags( storeCursor.outgoingReference() );
+    }
+
+    private long incomingReferenceWithoutFlags()
+    {
+        return relationshipReferenceWithoutFlags( storeCursor.incomingReference() );
+    }
+
+    private long loopsReferenceWithoutFlags()
+    {
+        return relationshipReferenceWithoutFlags( storeCursor.loopsReference() );
+    }
+
+    private long relationshipReferenceWithoutFlags( long storeReference )
+    {
+        return currentTypeAddedInTx != NO_ID ? NO_ID : storeReference;
     }
 
     @Override
@@ -249,7 +281,7 @@ class DefaultRelationshipGroupCursor implements RelationshipGroupCursor
         }
         else
         {
-            return "RelationshipGroupCursor[id=" + storeCursor.groupReference() + ", " + storeCursor.toString() + "]";
+            return "RelationshipGroupCursor[" + storeCursor.toString() + "]";
         }
     }
 

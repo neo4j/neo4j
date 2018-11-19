@@ -30,23 +30,21 @@ public interface StorageRelationshipGroupCursor extends StorageCursor
     int loopCount();
 
     /**
-     * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
+     * @return reference to a starting point for outgoing relationships with this type.
      */
     long outgoingReference();
 
     /**
-     * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
+     * @return reference to a starting point for outgoing relationships with this type.
      */
     long incomingReference();
 
     /**
-     * @return reference to a starting point for outgoing relationships with this type. Can be passed into {@link #init(long, long)} at a later point.
+     * @return reference to a starting point for outgoing relationships with this type.
      */
     long loopsReference();
 
     long getOwningNode();
 
-    long groupReference();
-
-    void init( long nodeReference, long reference );
+    void init( long nodeReference, long reference, boolean nodeIsDense );
 }

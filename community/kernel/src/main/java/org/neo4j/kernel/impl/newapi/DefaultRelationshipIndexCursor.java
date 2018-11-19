@@ -30,7 +30,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.values.storable.Value;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 final class DefaultRelationshipIndexCursor extends IndexCursor<IndexProgressor> implements RelationshipIndexCursor, EntityIndexSeekClient
 {

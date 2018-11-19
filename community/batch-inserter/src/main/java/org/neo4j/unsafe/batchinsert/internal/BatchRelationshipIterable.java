@@ -40,7 +40,7 @@ abstract class BatchRelationshipIterable<T> implements Iterable<T>
         {
             throw new NotFoundException( "Node " + nodeId + " not found" );
         }
-        relationshipCursor.init( nodeId, nodeCursor.allRelationshipsReference() );
+        relationshipCursor.init( nodeId, nodeCursor.allRelationshipsReference(), nodeCursor.isDense() );
     }
 
     @Override

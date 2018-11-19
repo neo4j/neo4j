@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.ExplicitClient;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultRelationshipExplicitIndexCursor extends IndexCursor<IndexProgressor>
         implements RelationshipExplicitIndexCursor, ExplicitClient

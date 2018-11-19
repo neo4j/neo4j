@@ -42,6 +42,7 @@ import org.neo4j.values.storable.Value;
 
 import static java.util.Arrays.stream;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeek;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesForScan;
@@ -51,7 +52,6 @@ import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithV
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForRangeSeekByPrefix;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForScan;
 import static org.neo4j.kernel.impl.newapi.TxStateIndexChanges.indexUpdatesWithValuesForSuffixOrContains;
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
 final class DefaultNodeValueIndexCursor extends IndexCursor<IndexProgressor>
         implements NodeValueIndexCursor, EntityIndexSeekClient, SortedMergeJoin.Sink

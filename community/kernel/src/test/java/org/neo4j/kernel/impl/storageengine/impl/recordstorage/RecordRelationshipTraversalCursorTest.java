@@ -112,13 +112,13 @@ public class RecordRelationshipTraversalCursorTest
 
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1L );
+            cursor.init( FIRST_OWNING_NODE, 1L, dense );
             assertTrue( cursor.next() );
 
-            cursor.init( FIRST_OWNING_NODE, 2 );
+            cursor.init( FIRST_OWNING_NODE, 2, dense );
             assertTrue( cursor.next() );
 
-            cursor.init( FIRST_OWNING_NODE, 3 );
+            cursor.init( FIRST_OWNING_NODE, 3, dense );
             assertTrue( cursor.next() );
         }
     }
@@ -130,7 +130,7 @@ public class RecordRelationshipTraversalCursorTest
         long expectedNodeId = 1;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1 );
+            cursor.init( FIRST_OWNING_NODE, 1, dense );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence", expectedNodeId++, cursor.entityReference() );
@@ -148,7 +148,7 @@ public class RecordRelationshipTraversalCursorTest
         int relationshipIndex = 0;
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
-            cursor.init( FIRST_OWNING_NODE, 1 );
+            cursor.init( FIRST_OWNING_NODE, 1, dense );
             while ( cursor.next() )
             {
                 assertEquals( "Should load next relationship in a sequence",
@@ -167,7 +167,7 @@ public class RecordRelationshipTraversalCursorTest
         try ( RecordRelationshipTraversalCursor cursor = getNodeRelationshipCursor() )
         {
             // WHEN
-            cursor.init( FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue() );
+            cursor.init( FIRST_OWNING_NODE, NO_NEXT_RELATIONSHIP.intValue(), dense );
 
             // THEN
             assertFalse( cursor.next() );

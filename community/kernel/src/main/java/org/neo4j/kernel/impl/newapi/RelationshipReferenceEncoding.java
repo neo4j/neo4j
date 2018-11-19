@@ -21,30 +21,59 @@ package org.neo4j.kernel.impl.newapi;
 
 import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
 
-public enum RelationshipReferenceEncoding
+/**
+ * Relationship/relationship group references that leave the are exposed from the kernel API surface into the client
+ * will have some flags encoded into them, basically to provide some context which will be lost when exiting the kernel.
+ * The flags will help recreated that context when these references are passed back into the kernel API, i.e. when client uses them later.
+ * <p>
+ * Among the reasons we need to encode references are:
+ * <ul>
+ *     <li>relationship group references exists as a thing that can be exposed outside the cursors, where context is lost</li>
+ *     <li>relationship group references can actually be a relationship reference at times (at least in the record storage implementation)</li>
+ * </ul>
+ * Specifically for the record storage engine it is because there are dense and non-dense nodes. A dense node will have a
+ * pointer into the relationship group store, while a non-dense node points directly to the relationship store. On
+ * retrieving a relationship reference from a dense node, we therefore have to transparently encode in the reference
+ * that it actually points to a group. When the kernel then serves a relationship cursor using the reference, we need
+ * to silently detect that we have a group reference, parse the groups, and setup the cursor to serve relationship
+ * via this mode instead.
+ * <p>
+ * Note that {@code -1} is used to encode {@link Read#NO_ID that a reference is invalid}. In terms of
+ * encoding {@code -1} is considered to have all flags, so setting one will not change {@code -1}. This however also
+ * means that calling code must check for {@code -1} references before checking flags existence.
+ * <p>
+ * Finally, an encoded reference cannot be used directly as an id to acquire the referenced object. Before using
+ * the reference, the encoding must be cleared with {@link #clearEncoding(long)}. To guard against using an
+ * encoded reference, all encoded references are marked so they appear negative.
+ */
+enum RelationshipReferenceEncoding
 {
     /** No encoding */
     NONE( 0 ),
 
-    /** @see #encodeForFiltering(long) */
-    FILTER( 1 ),
+    /** @see #encodeDense(long) */
+    DENSE( 1 ),
 
-    /** @see #encodeForTxStateFiltering(long) */
-    FILTER_TX_STATE( 2 ),
+    /** @see #encodeSelection(long)  */
+    SELECTION( 2 ),
 
-    /** @see #encodeGroup(long) */
-    GROUP( 3 ),
+    /** @see #encodeDenseSelection(long)   */
+    DENSE_SELECTION( 3 ),
 
-    /** @see #encodeNoOutgoingRels(int) */
+    /** @see #encodeNoOutgoing(int) */
     NO_OUTGOING_OF_TYPE( 4 ),
 
-    /** @see #encodeNoIncomingRels(int) */
+    /** @see #encodeNoIncoming(int) */
     NO_INCOMING_OF_TYPE( 5 ),
 
-    /** @see #encodeNoLoopRels(int) */
-    NO_LOOP_OF_TYPE( 6 );
+    /** @see #encodeNoLoops(int) */
+    NO_LOOPS_OF_TYPE( 6 );
 
     private static final RelationshipReferenceEncoding[] ENCODINGS = RelationshipReferenceEncoding.values();
+    static final long FLAG_MARKER = 0x8000_0000_0000_0000L;
+    static final long FLAG_MASK = 0x7000_0000_0000_0000L;
+    static final long FLAGS = 0xF000_0000_0000_0000L;
+
     final long id;
     final long bits;
 
@@ -54,7 +83,7 @@ public enum RelationshipReferenceEncoding
         this.bits = id << 60;
     }
 
-    public static RelationshipReferenceEncoding parseEncoding( long reference )
+    static RelationshipReferenceEncoding parseEncoding( long reference )
     {
         if ( reference == NO_ID )
         {
@@ -65,54 +94,66 @@ public enum RelationshipReferenceEncoding
 
     private static int encodingId( long reference )
     {
-        return (int)((reference & References.FLAG_MASK) >> 60);
+        return (int)((reference & FLAG_MASK) >> 60);
     }
 
     /**
-     * Encode a group id as a relationship reference.
+     * Encode the fact that an all-relationships references came from a dense node.
      */
-    public static long encodeGroup( long groupId )
+    static long encodeDense( long reference )
     {
-        return groupId | GROUP.bits | References.FLAG_MARKER;
+        return reference | DENSE.bits | FLAG_MARKER;
     }
 
     /**
-     * Encode that the relationship id needs filtering by it's first element.
+     * Encode the fact that a relationship reference from a selected group came from a sparse node.
      */
-    public static long encodeForFiltering( long relationshipId )
+    static long encodeSelection( long reference )
     {
-        return relationshipId | FILTER.bits | References.FLAG_MARKER;
+        return reference | SELECTION.bits | FLAG_MARKER;
     }
 
     /**
-     * Encode that the relationship id needs filtering by it's first element.
+     * Encode the fact that a relationship reference from a selected group came from a dense node.
      */
-    public static long encodeForTxStateFiltering( long relationshipId )
+    static long encodeDenseSelection( long reference )
     {
-        return relationshipId | FILTER_TX_STATE.bits | References.FLAG_MARKER;
+        return reference | DENSE_SELECTION.bits | FLAG_MARKER;
     }
 
     /**
      * Encode that no outgoing relationships of the encoded type exist.
      */
-    public static long encodeNoOutgoingRels( int type )
+    static long encodeNoOutgoing( int type )
     {
-        return type | NO_OUTGOING_OF_TYPE.bits | References.FLAG_MARKER;
+        return type | NO_OUTGOING_OF_TYPE.bits | FLAG_MARKER;
     }
 
     /**
      * Encode that no incoming relationships of the encoded type exist.
      */
-    public static long encodeNoIncomingRels( int type )
+    static long encodeNoIncoming( int type )
     {
-        return type | NO_INCOMING_OF_TYPE.bits | References.FLAG_MARKER;
+        return type | NO_INCOMING_OF_TYPE.bits | FLAG_MARKER;
     }
 
     /**
      * Encode that no loop relationships of the encoded type exist.
      */
-    public static long encodeNoLoopRels( int type )
+    static long encodeNoLoops( int type )
     {
-        return type | NO_LOOP_OF_TYPE.bits | References.FLAG_MARKER;
+        return type | NO_LOOPS_OF_TYPE.bits | FLAG_MARKER;
+    }
+
+    /**
+     * Clear all encoding from a reference.
+     *
+     * @param reference The reference to clear.
+     * @return The cleared reference.
+     */
+    static long clearEncoding( long reference )
+    {
+        assert reference != NO_ID;
+        return reference & ~FLAGS;
     }
 }

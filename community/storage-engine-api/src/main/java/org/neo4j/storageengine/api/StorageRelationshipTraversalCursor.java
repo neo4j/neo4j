@@ -25,5 +25,23 @@ public interface StorageRelationshipTraversalCursor extends StorageRelationshipC
 
     long originNodeReference();
 
-    void init( long nodeReference, long reference );
+    /**
+     * Called when traversing all relationships for a node.
+     *
+     * @param nodeReference reference to the node that has these relationships.
+     * @param reference reference to the relationships.
+     * @param nodeIsDense whether or not node is dense.
+     */
+    void init( long nodeReference, long reference, boolean nodeIsDense );
+
+    /**
+     * Called when traversing all relationships for a node.
+     *
+     * @param nodeReference reference to the node that has these relationships.
+     * @param reference reference to the relationships.
+     * @param type type of relationships. If -1 then type/direction of first read relationship will act as filter.
+     * @param direction direction of relationships.
+     * @param nodeIsDense whether or not node is dense.
+     */
+    void init( long nodeReference, long reference, int type, RelationshipDirection direction, boolean nodeIsDense );
 }

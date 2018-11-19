@@ -34,7 +34,8 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeDense;
 
 class DefaultNodeCursor implements NodeCursor
 {
@@ -139,13 +140,13 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public void relationships( RelationshipGroupCursor cursor )
     {
-        ((DefaultRelationshipGroupCursor) cursor).init( nodeReference(), relationshipGroupReference(), read );
+        ((DefaultRelationshipGroupCursor) cursor).init( nodeReference(), relationshipGroupReferenceWithoutFlags(), isDense(), read );
     }
 
     @Override
     public void allRelationships( RelationshipTraversalCursor cursor )
     {
-        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference(), allRelationshipsReference(), read );
+        ((DefaultRelationshipTraversalCursor) cursor).init( nodeReference(), allRelationshipsReferenceWithoutFlags(), isDense(), read );
     }
 
     @Override
@@ -157,11 +158,25 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public long relationshipGroupReference()
     {
+        long reference = relationshipGroupReferenceWithoutFlags();
+        // Mark reference with special flags since this reference will leave some context behind when returned
+        return isDense() ? encodeDense( reference ) : reference;
+    }
+
+    private long relationshipGroupReferenceWithoutFlags()
+    {
         return currentAddedInTx != NO_ID ? NO_ID : storeCursor.relationshipGroupReference();
     }
 
     @Override
     public long allRelationshipsReference()
+    {
+        long reference = allRelationshipsReferenceWithoutFlags();
+        // Mark reference with special flags since this reference will leave some context behind when returned
+        return isDense() ? encodeDense( reference ) : reference;
+    }
+
+    private long allRelationshipsReferenceWithoutFlags()
     {
         return currentAddedInTx != NO_ID ? NO_ID : storeCursor.allRelationshipsReference();
     }

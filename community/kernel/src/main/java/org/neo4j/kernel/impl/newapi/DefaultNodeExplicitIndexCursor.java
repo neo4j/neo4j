@@ -23,7 +23,7 @@ import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexProgressor.ExplicitClient;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 class DefaultNodeExplicitIndexCursor extends IndexCursor<IndexProgressor>
         implements org.neo4j.internal.kernel.api.NodeExplicitIndexCursor, ExplicitClient

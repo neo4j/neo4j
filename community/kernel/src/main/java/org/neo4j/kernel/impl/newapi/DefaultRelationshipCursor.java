@@ -25,7 +25,7 @@ import org.neo4j.internal.kernel.api.RelationshipDataAccessor;
 import org.neo4j.storageengine.api.RelationshipVisitor;
 import org.neo4j.storageengine.api.StorageRelationshipCursor;
 
-import static org.neo4j.kernel.impl.store.record.AbstractBaseRecord.NO_ID;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 
 abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationshipCursor> implements RelationshipDataAccessor
 {

@@ -23,7 +23,6 @@ import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordRelationshipTraversalCursor.Record;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -31,11 +30,6 @@ import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.StorageRelationshipGroupCursor;
-
-import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForFiltering;
-import static org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding.encodeForTxStateFiltering;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.GroupReferenceEncoding.isRelationship;
 
 class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements StorageRelationshipGroupCursor
 {
@@ -56,12 +50,12 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     }
 
     @Override
-    public void init( long nodeReference, long reference )
+    public void init( long nodeReference, long reference, boolean nodeIsDense )
     {
         // the relationships for this node are not grouped in the store
-        if ( reference != NO_ID && isRelationship( reference ) )
+        if ( reference != NO_ID && !nodeIsDense )
         {
-            buffer( nodeReference, clearEncoding( reference ) );
+            buffer( nodeReference, reference );
         }
         else // this is a normal group reference.
         {
@@ -229,37 +223,31 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
     /**
      * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
      * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
      */
     @Override
     public long outgoingReference()
     {
-        long outgoing = getFirstOut();
-        return outgoing == NO_ID ? NO_ID : encodeRelationshipReference( outgoing );
+        return getFirstOut();
     }
 
     /**
      * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
      * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
      */
     @Override
     public long incomingReference()
     {
-        long incoming = getFirstIn();
-        return incoming == NO_ID ? NO_ID : encodeRelationshipReference( incoming );
+        return getFirstIn();
     }
 
     /**
      * If the returned reference points to a chain of relationships that aren't physically filtered by direction and type then
      * a flag in this reference can be set so that external filtering will be performed as the cursor progresses.
-     * See {@link RelationshipReferenceEncoding#encodeForFiltering(long)}.
      */
     @Override
     public long loopsReference()
     {
-        long loops = getFirstLoop();
-        return loops == NO_ID ? NO_ID : encodeRelationshipReference( loops );
+        return getFirstLoop();
     }
 
     @Override
@@ -308,12 +296,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
         return getFirstLoop();
     }
 
-    private long encodeRelationshipReference( long relationshipId )
-    {
-        assert relationshipId != NO_ID;
-        return isBuffered() ? encodeForFiltering( relationshipId ) : encodeForTxStateFiltering( relationshipId );
-    }
-
     private boolean isBuffered()
     {
         return bufferedGroup != null;
@@ -333,12 +315,6 @@ class RecordRelationshipGroupCursor extends RelationshipGroupRecord implements S
             page.close();
             page = null;
         }
-    }
-
-    @Override
-    public long groupReference()
-    {
-        return getId();
     }
 
     static class BufferedGroup

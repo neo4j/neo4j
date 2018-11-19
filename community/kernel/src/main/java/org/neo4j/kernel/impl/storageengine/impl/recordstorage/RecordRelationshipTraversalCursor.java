@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.kernel.impl.newapi.RelationshipReferenceEncoding;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
-import static org.neo4j.kernel.impl.newapi.References.clearEncoding;
+import static org.neo4j.storageengine.api.RelationshipDirection.directionOfStrict;
 
 class RecordRelationshipTraversalCursor extends RecordRelationshipCursor implements StorageRelationshipTraversalCursor
 {
@@ -38,6 +38,9 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         NONE
     }
 
+    private int filterType = NO_ID;
+    private RelationshipDirection filterDirection;
+    private boolean lazyFilterInitialization;
     private long originNodeReference;
     private long next;
     private Record buffer;
@@ -53,31 +56,37 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public void init( long nodeReference, long reference )
+    public void init( long nodeReference, long reference, boolean nodeIsDense )
     {
-        /* There are basically two ways a relationship traversal cursor can be initialized:
-         *
-         * 1. From a dense node, where multiple relationship chains are discovered from relationship groups
-         *    as the internal group cursor sees them.
-         * 2. From a sparse node, where a single relationship chain is traversed.
-         */
-
-        RelationshipReferenceEncoding encoding = RelationshipReferenceEncoding.parseEncoding( reference );
-
-        switch ( encoding )
+        // Read all relationships, regardless of type/direction
+        if ( nodeIsDense )
         {
-        case NONE: // this is a normal relationship reference
-            chain( nodeReference, reference );
-            break;
-
-        case GROUP: // this reference is actually to a group record
-            groups( nodeReference, clearEncoding( reference ) );
-            break;
-
-        default:
-            throw new IllegalStateException( "Unknown encoding " + encoding );
+            // The reference points to a relationship group record
+            groups( nodeReference, reference );
         }
+        else
+        {
+            // The reference points to a relationship record
+            chain( nodeReference, reference );
+        }
+        open = true;
+    }
 
+    @Override
+    public void init( long nodeReference, long reference, int type, RelationshipDirection direction, boolean nodeIsDense )
+    {
+        // Read relationships of specific type/direction
+        chain( nodeReference, reference );
+        if ( !nodeIsDense )
+        {
+            // For non-dense nodes the chain we're about to traverse contains relationships of mixed type/direction so we need to filter
+            filterType = type;
+            filterDirection = direction;
+            if ( filterType == NO_ID )
+            {
+                lazyFilterInitialization = true;
+            }
+        }
         open = true;
     }
 
@@ -105,7 +114,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         this.next = NO_ID;
         this.groupState = GroupState.INCOMING;
         this.originNodeReference = nodeReference;
-        group.direct( nodeReference, groupReference );
+        this.group.direct( nodeReference, groupReference );
     }
 
     @Override
@@ -142,7 +151,8 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
         do
         {
-            if ( traversingDenseNode() )
+            boolean traversingDenseNode = traversingDenseNode();
+            if ( traversingDenseNode )
             {
                 traverseDenseNode();
             }
@@ -154,10 +164,25 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             }
 
             relationshipFull( this, next, pageCursor );
+            if ( !traversingDenseNode )
+            {
+                if ( lazyFilterInitialization )
+                {
+                    filterType = getType();
+                    filterDirection = directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() );
+                    lazyFilterInitialization = false;
+                }
+            }
             computeNext();
-        } while ( !inUse() );
+        }
+        while ( !inUse() || (filterType != NO_ID && !correctTypeAndDirection()) );
 
         return true;
+    }
+
+    private boolean correctTypeAndDirection()
+    {
+        return filterType == getType() && directionOfStrict( originNodeReference, getFirstNode(), getSecondNode() ) == filterDirection;
     }
 
     private boolean nextBuffered()
@@ -283,7 +308,6 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         if ( open )
         {
             open = false;
-            buffer = null;
             resetState();
         }
     }
@@ -292,6 +316,9 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     {
         setId( next = NO_ID );
         groupState = GroupState.NONE;
+        filterType = NO_ID;
+        filterDirection = null;
+        lazyFilterInitialization = false;
         buffer = null;
     }
 

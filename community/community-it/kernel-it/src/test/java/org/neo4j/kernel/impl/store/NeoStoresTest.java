@@ -998,7 +998,7 @@ public class NeoStoresTest
     private StorageRelationshipTraversalCursor allocateRelationshipTraversalCursor( StorageNodeCursor node )
     {
         StorageRelationshipTraversalCursor relationships = storageReader.allocateRelationshipTraversalCursor();
-        relationships.init( node.entityReference(), node.allRelationshipsReference() );
+        relationships.init( node.entityReference(), node.allRelationshipsReference(), node.isDense() );
         return relationships;
     }
 

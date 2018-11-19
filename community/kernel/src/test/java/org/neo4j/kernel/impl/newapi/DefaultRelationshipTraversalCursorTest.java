@@ -24,6 +24,7 @@ import org.junit.Test;
 import java.util.stream.LongStream;
 
 import org.neo4j.kernel.impl.api.state.TxState;
+import org.neo4j.storageengine.api.RelationshipDirection;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 
@@ -32,6 +33,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
+import static org.neo4j.storageengine.api.RelationshipDirection.INCOMING;
+import static org.neo4j.storageengine.api.RelationshipDirection.LOOP;
+import static org.neo4j.storageengine.api.RelationshipDirection.OUTGOING;
 
 public class DefaultRelationshipTraversalCursorTest
 {
@@ -47,13 +52,13 @@ public class DefaultRelationshipTraversalCursorTest
     @Test
     public void regularSparseTraversal()
     {
-        regularTraversal( relationship );
+        regularTraversal( relationship, false );
     }
 
     @Test
     public void regularSparseTraversalWithTxState()
     {
-        regularTraversalWithTxState( relationship );
+        regularTraversalWithTxState( relationship, false );
     }
 
     // Dense traversal is just like regular for this class, denseness is handled by the store
@@ -61,13 +66,13 @@ public class DefaultRelationshipTraversalCursorTest
     @Test
     public void regularDenseTraversal()
     {
-        regularTraversal( RelationshipReferenceEncoding.encodeGroup( relationshipGroup ) );
+        regularTraversal( relationshipGroup, true );
     }
 
     @Test
     public void regularDenseTraversalWithTxState()
     {
-        regularTraversalWithTxState( RelationshipReferenceEncoding.encodeGroup( relationshipGroup ) );
+        regularTraversalWithTxState( relationshipGroup, true );
     }
 
     // Sparse traversal but with tx-state filtering
@@ -92,7 +97,9 @@ public class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, RelationshipReferenceEncoding.encodeForTxStateFiltering( relationship ), read );
+        cursor.init( node, relationship,
+                // relationships of a specific type/direction
+                NO_ID, null, true, read );
 
         // then
         assertRelationships( cursor, 100, 3, 7, 102, 104 );
@@ -107,10 +114,7 @@ public class DefaultRelationshipTraversalCursorTest
         StorageRelationshipTraversalCursor storeCursor =
                 storeCursor(
                         rel( 100, 50, node, type ), // <- the filter template
-                        rel( 101, node, 50, type ),
-                        rel( 102, 50, node, type2 ),
-                        rel( 103, 51, node, type ),
-                        rel( 104, node, node, type ) );
+                        rel( 103, 51, node, type ) );
 
         DefaultRelationshipTraversalCursor cursor = new DefaultRelationshipTraversalCursor( pool::accept, storeCursor );
         Read read = txState(
@@ -122,7 +126,9 @@ public class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, RelationshipReferenceEncoding.encodeForFiltering( relationship ), read );
+        cursor.init( node, relationship,
+                // relationships of a specific type/direction
+                NO_ID, null, false, read );
 
         // then
         assertRelationships( cursor, 100, 4, 103 );
@@ -146,7 +152,7 @@ public class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, RelationshipReferenceEncoding.encodeNoOutgoingRels( type ), read );
+        cursor.init( node, relationship, type, OUTGOING, false, read );
 
         // then
         assertRelationships( cursor, 3, 7 );
@@ -169,7 +175,7 @@ public class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, RelationshipReferenceEncoding.encodeNoIncomingRels( type ), read );
+        cursor.init( node, relationship, type, INCOMING, false, read );
 
         // then
         assertRelationships( cursor, 4, 7 );
@@ -192,7 +198,7 @@ public class DefaultRelationshipTraversalCursorTest
         );
 
         // when
-        cursor.init( node, RelationshipReferenceEncoding.encodeNoLoopRels( type ), read );
+        cursor.init( node, relationship, type, LOOP, false, read );
 
         // then
         assertRelationships( cursor, 2, 6 );
@@ -200,7 +206,7 @@ public class DefaultRelationshipTraversalCursorTest
 
     // HELPERS
 
-    private void regularTraversal( long reference )
+    private void regularTraversal( long reference, boolean dense )
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
@@ -208,13 +214,13 @@ public class DefaultRelationshipTraversalCursorTest
         Read read = emptyTxState();
 
         // when
-        cursor.init( node, reference, read );
+        cursor.init( node, reference, dense, read );
 
         // then
         assertRelationships( cursor, 100, 102, 104 );
     }
 
-    private void regularTraversalWithTxState( long reference )
+    private void regularTraversalWithTxState( long reference, boolean dense )
     {
         // given
         StorageRelationshipTraversalCursor storeCursor = storeCursor( 100, 102, 104 );
@@ -222,7 +228,7 @@ public class DefaultRelationshipTraversalCursorTest
         Read read = txState( 3, 4 );
 
         // when
-        cursor.init( node, reference, read );
+        cursor.init( node, reference, dense, read );
 
         // then
         assertRelationships( cursor, 3, 4, 100, 102, 104 );
@@ -318,7 +324,12 @@ public class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void init( long nodeReference, long reference )
+            public void init( long nodeReference, long reference, boolean nodeIsDense )
+            {
+            }
+
+            @Override
+            public void init( long nodeReference, long reference, int type, RelationshipDirection direction, boolean nodeIsDense )
             {
             }
 
