@@ -93,8 +93,7 @@ public class DiagnosticsReportSources
      * @param messageSupplier a string supplier with the final message.
      * @return a diagnostics source consuming a string.
      */
-    public static DiagnosticsReportSource newDiagnosticsString( String destination,
-            Supplier<String> messageSupplier )
+    public static DiagnosticsReportSource newDiagnosticsString( String destination, Supplier<String> messageSupplier )
     {
         return new DiagnosticsStringReportSource( destination, messageSupplier );
     }

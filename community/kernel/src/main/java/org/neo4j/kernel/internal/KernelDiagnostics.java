@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
@@ -52,7 +51,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         }
 
         @Override
-        void dump( Logger logger )
+        public void dump( Logger logger )
         {
             logger.log( "Graph Database: " + databaseInfo + " " + storeId );
             logger.log( "Kernel version: " + Version.getKernelVersion() );
@@ -74,7 +73,7 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
         }
 
         @Override
-        void dump( Logger logger )
+        public void dump( Logger logger )
         {
             logger.log( getDiskSpace( databaseLayout ) );
             logger.log( "Storage files: (filename : modification date - size)" );
@@ -199,12 +198,5 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, Logger log )
-    {
-        if ( phase.isInitialization() || phase.isExplicitlyRequested() )
-        {
-            dump( log );
-        }
-    }
-    abstract void dump( Logger logger );
+    public abstract void dump( Logger log );
 }

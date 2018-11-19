@@ -20,7 +20,6 @@
 package org.neo4j.kernel.database;
 
 import org.neo4j.internal.diagnostics.DiagnosticsExtractor;
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.Logger;
 
@@ -59,18 +58,10 @@ public enum NeoStoresDiagnostics implements DiagnosticsExtractor<NeoStores>
     }
 
     @Override
-    public void dumpDiagnostics( final NeoStores source, DiagnosticsPhase phase, Logger logger )
+    public void dumpDiagnostics( final NeoStores source, Logger logger )
     {
-        if ( applicable( phase ) )
-        {
-            logger.log( message );
-            dump( source, logger );
-        }
-    }
-
-    boolean applicable( DiagnosticsPhase phase )
-    {
-        return phase.isInitialization() || phase.isExplicitlyRequested();
+        logger.log( message );
+        dump( source, logger );
     }
 
     abstract void dump( NeoStores source, Logger logger );

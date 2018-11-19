@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.logging.Logger;
@@ -58,7 +57,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     SYSTEM_MEMORY( "System memory information:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             logBytes( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
             logBytes( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
@@ -70,7 +69,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     JAVA_MEMORY( "JVM memory information:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             logger.log( "Free  memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
             logger.log( "Total memory: " + bytes( Runtime.getRuntime().totalMemory() ) );
@@ -92,7 +91,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     OPERATING_SYSTEM( "Operating system information:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
@@ -114,7 +113,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     JAVA_VIRTUAL_MACHINE( "JVM information:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             logger.log( "VM Name: " + runtime.getVmName() );
@@ -128,7 +127,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     CLASSPATH( "Java classpath:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             Collection<String> classpath;
@@ -208,7 +207,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     LIBRARY_PATH( "Library path:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             for ( String path : runtime.getLibraryPath().split( File.pathSeparator ) )
@@ -220,7 +219,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     SYSTEM_PROPERTIES( "System.properties:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             for ( Object property : System.getProperties().keySet() )
             {
@@ -240,7 +239,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     TIMEZONE_DATABASE( "(IANA) TimeZone Database Version:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             Map<String,Integer> versions = new HashMap<>();
             for ( String tz : ZoneRulesProvider.getAvailableZoneIds() )
@@ -261,7 +260,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     NETWORK( "Network information:" )
     {
         @Override
-        void dump( Logger logger )
+        void dumpDiagnostics( Logger logger )
         {
             try
             {
@@ -308,16 +307,13 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, Logger logger )
+    public void dump( Logger logger )
     {
-        if ( phase.isInitialization() || phase.isExplicitlyRequested() )
-        {
-            logger.log( message );
-            dump( logger );
-        }
+        logger.log( message );
+        dumpDiagnostics( logger );
     }
 
-    abstract void dump( Logger logger );
+    abstract void dumpDiagnostics( Logger logger );
 
     private static String canonicalize( String path )
     {

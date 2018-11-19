@@ -72,12 +72,9 @@ public interface DiagnosticsProvider
     void acceptDiagnosticsVisitor( Object visitor );
 
     /**
-     * Dump the diagnostic information of this {@link DiagnosticsProvider} for
-     * the specified {@link DiagnosticsPhase phase} to the provided
-     * {@link Logger logger}.
+     * Dump the diagnostic information of this {@link DiagnosticsProvider} to the provided {@link Logger logger}.
      *
-     * @param phase the {@link DiagnosticsPhase phase} to dump information for.
      * @param logger the {@link Logger logger} to dump information to.
      */
-    void dump( DiagnosticsPhase phase, Logger logger );
+    void dump( Logger logger );
 }

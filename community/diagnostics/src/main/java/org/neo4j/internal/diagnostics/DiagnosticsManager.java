@@ -50,15 +50,12 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
             }
 
             @Override
-            public void dump( DiagnosticsPhase phase, final Logger logger )
+            public void dump( final Logger logger )
             {
-                if ( phase.isInitialization() || phase.isExplicitlyRequested() )
+                logger.log( "Diagnostics providers:" );
+                for ( DiagnosticsProvider provider : providers )
                 {
-                    logger.log( "Diagnostics providers:" );
-                    for ( DiagnosticsProvider provider : providers )
-                    {
-                        logger.log( provider.getDiagnosticsIdentifier() );
-                    }
+                    logger.log( provider.getDiagnosticsIdentifier() );
                 }
             }
 
@@ -85,7 +82,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
 
     public void dumpAll()
     {
-        dumpAll( DiagnosticsPhase.REQUESTED, getTargetLog() );
+        dumpAll( getTargetLog() );
     }
 
     public void dump( String identifier )
@@ -95,7 +92,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
 
     public void dump( DiagnosticsProvider diagnosticsProvider )
     {
-        dump( diagnosticsProvider, DiagnosticsPhase.EXPLICIT, getTargetLog() );
+        dump( diagnosticsProvider, getTargetLog() );
     }
 
     public <T, E extends Enum<E> & DiagnosticsExtractor<T>> void dump( Class<E> extractorEnum, T source )
@@ -112,7 +109,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         {
             for ( DiagnosticsProvider provider : providers )
             {
-                dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
+                dump( provider, bulkLog );
             }
         } );
     }
@@ -125,23 +122,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
             {
                 if ( identifier.equals( provider.getDiagnosticsIdentifier() ) )
                 {
-                    dump( provider, DiagnosticsPhase.EXPLICIT, bulkLog );
+                    dump( provider, bulkLog );
                     return;
                 }
             }
-        } );
-    }
-
-    private void dumpAll( final DiagnosticsPhase phase, Log log )
-    {
-        log.bulk( bulkLog ->
-        {
-            phase.emitStart( bulkLog );
-            for ( DiagnosticsProvider provider : providers )
-            {
-                dump( provider, phase, bulkLog );
-            }
-            phase.emitDone( bulkLog );
         } );
     }
 
@@ -161,17 +145,10 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
     public void appendProvider( DiagnosticsProvider provider )
     {
         providers.add( provider );
-        dump( DiagnosticsPhase.STARTED, provider, getTargetLog() );
+        dump( provider, getTargetLog() );
     }
 
-    private void dump( DiagnosticsPhase phase, DiagnosticsProvider provider, Log log )
-    {
-        phase.emitStart( log, provider );
-        dump( provider, phase, log );
-        phase.emitDone( log, provider );
-    }
-
-    private static void dump( DiagnosticsProvider provider, DiagnosticsPhase phase, Log log )
+    private static void dump( DiagnosticsProvider provider, Log log )
     {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
         // This is first and foremost useful for speeding up testing.
@@ -182,7 +159,7 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
 
         try
         {
-            provider.dump( phase, log.infoLogger() );
+            provider.dump( log.infoLogger() );
         }
         catch ( Exception cause )
         {
@@ -233,9 +210,9 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         }
 
         @Override
-        public void dump( DiagnosticsPhase phase, Logger logger )
+        public void dump( Logger logger )
         {
-            extractor.dumpDiagnostics( source, phase, logger );
+            extractor.dumpDiagnostics( source, logger );
         }
     }
 

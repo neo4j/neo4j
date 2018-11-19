@@ -22,7 +22,6 @@ package org.neo4j.kernel.database;
 import java.io.IOException;
 
 import org.neo4j.internal.diagnostics.DiagnosticsExtractor;
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Logger;
@@ -66,18 +65,10 @@ enum DataSourceDiagnostics implements DiagnosticsExtractor<Database>
     }
 
     @Override
-    public void dumpDiagnostics( final Database source, DiagnosticsPhase phase, Logger logger )
+    public void dumpDiagnostics( final Database source, Logger logger )
     {
-        if ( applicable( phase ) )
-        {
-            logger.log( message );
-            dump( source, logger );
-        }
-    }
-
-    boolean applicable( DiagnosticsPhase phase )
-    {
-        return phase.isInitialization() || phase.isExplicitlyRequested();
+       logger.log( message );
+        dump( source, logger );
     }
 
     abstract void dump( Database source, Logger logger );

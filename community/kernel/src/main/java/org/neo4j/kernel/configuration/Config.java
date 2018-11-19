@@ -54,7 +54,6 @@ import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.config.SettingValidator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.kernel.configuration.HttpConnector.Encryption;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
@@ -750,15 +749,12 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     @Override
-    public void dump( DiagnosticsPhase phase, Logger logger )
+    public void dump( Logger logger )
     {
-        if ( phase.isInitialization() || phase.isExplicitlyRequested() )
+        logger.log( "Neo4j Kernel properties:" );
+        for ( Map.Entry<String,String> param : params.entrySet() )
         {
-            logger.log( "Neo4j Kernel properties:" );
-            for ( Map.Entry<String,String> param : params.entrySet() )
-            {
-                logger.log( "%s=%s", param.getKey(), param.getValue() );
-            }
+            logger.log( "%s=%s", param.getKey(), param.getValue() );
         }
     }
 

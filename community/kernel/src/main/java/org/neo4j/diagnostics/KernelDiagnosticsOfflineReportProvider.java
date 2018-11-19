@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.diagnostics.DiagnosticsPhase;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
@@ -131,7 +130,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( databaseLayout );
 
         BufferingLog logger = new BufferingLog();
-        storeFiles.dump( DiagnosticsPhase.INITIALIZED, logger.debugLogger() );
+        storeFiles.dump( logger.debugLogger() );
 
         sources.add( newDiagnosticsString( "tree.txt", logger::toString ) );
     }

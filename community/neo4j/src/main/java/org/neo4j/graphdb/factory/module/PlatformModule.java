@@ -198,7 +198,6 @@ public class PlatformModule
 
         diagnosticsManager = new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) );
         dependencies.satisfyDependency( diagnosticsManager );
-        life.add( diagnosticsManager );
 
         diagnosticsManager.dump( SystemDiagnostics.class );
         diagnosticsManager.dump( config );
