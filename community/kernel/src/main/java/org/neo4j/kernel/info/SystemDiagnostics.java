@@ -301,12 +301,6 @@ public enum SystemDiagnostics implements DiagnosticsProvider
     }
 
     @Override
-    public void acceptDiagnosticsVisitor( Object visitor )
-    {
-        // nothing visits this
-    }
-
-    @Override
     public void dump( Logger logger )
     {
         logger.log( message );

@@ -192,11 +192,5 @@ public abstract class KernelDiagnostics implements DiagnosticsProvider
     }
 
     @Override
-    public void acceptDiagnosticsVisitor( Object visitor )
-    {
-        // nothing visits ConfigurationLogging
-    }
-
-    @Override
     public abstract void dump( Logger log );
 }

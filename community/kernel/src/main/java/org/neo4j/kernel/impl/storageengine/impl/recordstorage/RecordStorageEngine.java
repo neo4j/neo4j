@@ -484,7 +484,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void dumpDiagnostics( DiagnosticsManager diagnosticsManager )
     {
-        diagnosticsManager.dump( NeoStoresDiagnostics.class, neoStores );
+        diagnosticsManager.dump( new NeoStoresDiagnostics.NeoStoreIdUsage( neoStores ) );
+        diagnosticsManager.dump( new NeoStoresDiagnostics.NeoStoreRecords( neoStores ) );
+        diagnosticsManager.dump( new NeoStoresDiagnostics.NeoStoreVersions( neoStores ) );
     }
 
     @Override

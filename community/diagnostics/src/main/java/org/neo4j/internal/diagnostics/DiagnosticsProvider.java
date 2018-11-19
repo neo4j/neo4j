@@ -45,33 +45,6 @@ public interface DiagnosticsProvider
     String getDiagnosticsIdentifier();
 
     /**
-     * Accept a visitor that may or may not be capable of visiting this object.
-     *
-     * Typical example:
-     *
-     * <code><pre>
-     * class OperationalStatistics implements {@link DiagnosticsProvider}
-     * {
-     *     public void {@link #acceptDiagnosticsVisitor(Object) acceptDiagnosticsVisitor}( {@link Object} visitor )
-     *     {
-     *         if ( visitor instanceof OperationalStatisticsVisitor )
-     *         {
-     *              ((OperationalStatisticsVisitor)visitor).visitOperationalStatistics( this );
-     *         }
-     *     }
-     * }
-     *
-     * interface OperationalStatisticsVisitor
-     * {
-     *     void visitOperationalStatistics( OperationalStatistics statistics );
-     * }
-     * </pre></code>
-     *
-     * @param visitor the visitor visiting this {@link DiagnosticsProvider}.
-     */
-    void acceptDiagnosticsVisitor( Object visitor );
-
-    /**
      * Dump the diagnostic information of this {@link DiagnosticsProvider} to the provided {@link Logger logger}.
      *
      * @param logger the {@link Logger logger} to dump information to.

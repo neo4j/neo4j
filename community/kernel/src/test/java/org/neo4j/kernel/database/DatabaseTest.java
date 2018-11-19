@@ -161,7 +161,7 @@ public class DatabaseTest
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        DataSourceDiagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
+        new DataSourceDiagnostics.TransactionRangeDiagnostics( dataSource ).dump( logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "No transactions" );
@@ -179,7 +179,7 @@ public class DatabaseTest
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        DataSourceDiagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
+        new DataSourceDiagnostics.TransactionRangeDiagnostics( dataSource ).dump( logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
@@ -198,7 +198,7 @@ public class DatabaseTest
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        DataSourceDiagnostics.TRANSACTION_RANGE.dump( dataSource, logger );
+        new DataSourceDiagnostics.TransactionRangeDiagnostics( dataSource ).dump( logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );

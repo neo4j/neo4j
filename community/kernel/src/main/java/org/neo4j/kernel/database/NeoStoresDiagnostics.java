@@ -19,49 +19,75 @@
  */
 package org.neo4j.kernel.database;
 
-import org.neo4j.internal.diagnostics.DiagnosticsExtractor;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.Logger;
 
-public enum NeoStoresDiagnostics implements DiagnosticsExtractor<NeoStores>
+public abstract class NeoStoresDiagnostics implements DiagnosticsProvider
 {
-    NEO_STORE_VERSIONS( "Store versions:" )
+    public static class NeoStoreVersions extends NeoStoresDiagnostics
     {
+        public NeoStoreVersions( NeoStores nodeStores )
+        {
+            super( nodeStores, "Store versions:" );
+        }
+
         @Override
         void dump( NeoStores source, Logger logger )
         {
             source.logVersions( logger );
         }
-    },
-    NEO_STORE_ID_USAGE( "Id usage:" )
+    }
+
+    public static class NeoStoreIdUsage extends NeoStoresDiagnostics
     {
+
+        public NeoStoreIdUsage( NeoStores neoStores )
+        {
+            super( neoStores, "Id usage:" );
+        }
+
         @Override
         void dump( NeoStores source, Logger logger )
         {
             source.logIdUsage( logger );
         }
-    },
-    NEO_STORE_RECORDS( "Neostore records:" )
+    }
+
+    public static class NeoStoreRecords extends NeoStoresDiagnostics
     {
+        public NeoStoreRecords( NeoStores neoStores )
+        {
+            super( neoStores,  "Neostore records:"  );
+        }
+
         @Override
         void dump( NeoStores source, Logger logger )
         {
             source.getMetaDataStore().logRecords( logger );
         }
-    };
+    }
 
     private final String message;
+    private final NeoStores neoStores;
 
-    NeoStoresDiagnostics( String message )
+    NeoStoresDiagnostics( NeoStores neoStores, String message )
     {
+        this.neoStores = neoStores;
         this.message = message;
     }
 
     @Override
-    public void dumpDiagnostics( final NeoStores source, Logger logger )
+    public String getDiagnosticsIdentifier()
+    {
+        return null;
+    }
+
+    @Override
+    public void dump( Logger logger )
     {
         logger.log( message );
-        dump( source, logger );
+        dump( neoStores, logger );
     }
 
     abstract void dump( NeoStores source, Logger logger );

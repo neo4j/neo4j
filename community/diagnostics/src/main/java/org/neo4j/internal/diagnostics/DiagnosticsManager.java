@@ -23,8 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.internal.diagnostics.DiagnosticsExtractor.VisitableDiagnostics;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLog;
@@ -58,20 +56,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
                     logger.log( provider.getDiagnosticsIdentifier() );
                 }
             }
-
-            @Override
-            public void acceptDiagnosticsVisitor( Object visitor )
-            {
-                Visitor<? super DiagnosticsProvider, ? extends RuntimeException> target =
-                        Visitor.SafeGenerics.castOrNull( DiagnosticsProvider.class, RuntimeException.class, visitor );
-                if ( target != null )
-                {
-                    for ( DiagnosticsProvider provider : providers )
-                    {
-                        target.visit( provider );
-                    }
-                }
-            }
         } );
     }
 
@@ -93,14 +77,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
     public void dump( DiagnosticsProvider diagnosticsProvider )
     {
         dump( diagnosticsProvider, getTargetLog() );
-    }
-
-    public <T, E extends Enum<E> & DiagnosticsExtractor<T>> void dump( Class<E> extractorEnum, T source )
-    {
-        for ( DiagnosticsExtractor<T> extractor : extractorEnum.getEnumConstants() )
-        {
-            dump( extractedProvider( extractor, source ) );
-        }
     }
 
     public void dumpAll( Log log )
@@ -137,17 +113,6 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
         }
     }
 
-    public <T> void register( DiagnosticsExtractor<T> extractor, T source )
-    {
-        appendProvider( extractedProvider( extractor, source ) );
-    }
-
-    public void appendProvider( DiagnosticsProvider provider )
-    {
-        providers.add( provider );
-        dump( provider, getTargetLog() );
-    }
-
     private static void dump( DiagnosticsProvider provider, Log log )
     {
         // Optimization to skip diagnostics dumping (which is time consuming) if there's no log anyway.
@@ -171,62 +136,5 @@ public class DiagnosticsManager implements Iterable<DiagnosticsProvider>
     public Iterator<DiagnosticsProvider> iterator()
     {
         return providers.iterator();
-    }
-
-    private static <T> DiagnosticsProvider extractedProvider( DiagnosticsExtractor<T> extractor, T source )
-    {
-        if ( extractor instanceof DiagnosticsExtractor.VisitableDiagnostics<?> )
-        {
-            return new ExtractedVisitableDiagnosticsProvider<>(
-                    (DiagnosticsExtractor.VisitableDiagnostics<T>) extractor, source );
-        }
-        else
-        {
-            return new ExtractedDiagnosticsProvider<>( extractor, source );
-        }
-    }
-
-    private static class ExtractedDiagnosticsProvider<T> implements DiagnosticsProvider
-    {
-        final DiagnosticsExtractor<T> extractor;
-        final T source;
-
-        ExtractedDiagnosticsProvider( DiagnosticsExtractor<T> extractor, T source )
-        {
-            this.extractor = extractor;
-            this.source = source;
-        }
-
-        @Override
-        public String getDiagnosticsIdentifier()
-        {
-            return extractor.toString();
-        }
-
-        @Override
-        public void acceptDiagnosticsVisitor( Object visitor )
-        {
-            // nobody visits the source of this
-        }
-
-        @Override
-        public void dump( Logger logger )
-        {
-            extractor.dumpDiagnostics( source, logger );
-        }
-    }
-
-    private static class ExtractedVisitableDiagnosticsProvider<T> extends ExtractedDiagnosticsProvider<T>
-    {
-        ExtractedVisitableDiagnosticsProvider( VisitableDiagnostics<T> extractor, T source )
-        {
-            super( extractor, source );
-        }
-
-        @Override
-        public void acceptDiagnosticsVisitor( Object visitor )
-        {
-            ( (DiagnosticsExtractor.VisitableDiagnostics<T>) extractor ).dispatchDiagnosticsVisitor( source, visitor );
-        }
     }
 }

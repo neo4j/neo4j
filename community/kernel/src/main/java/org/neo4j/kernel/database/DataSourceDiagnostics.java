@@ -21,55 +21,42 @@ package org.neo4j.kernel.database;
 
 import java.io.IOException;
 
-import org.neo4j.internal.diagnostics.DiagnosticsExtractor;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Logger;
 
-enum DataSourceDiagnostics implements DiagnosticsExtractor<Database>
+public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
 {
-    TRANSACTION_RANGE( "Transaction log:" )
-            {
-                @Override
-                void dump( Database source, Logger log )
-                {
-                    LogFiles logFiles = source.getDependencyResolver().resolveDependency( LogFiles.class );
-                    try
-                    {
-                        for ( long logVersion = logFiles.getLowestLogVersion();
-                              logFiles.versionExists( logVersion ); logVersion++ )
-                        {
-                            if ( logFiles.hasAnyEntries( logVersion ) )
-                            {
-                                LogHeader header = logFiles.extractHeader( logVersion );
-                                long firstTransactionIdInThisLog = header.lastCommittedTxId + 1;
-                                log.log( "Oldest transaction " + firstTransactionIdInThisLog +
-                                         " found in log with version " + logVersion );
-                                return;
-                            }
-                        }
-                        log.log( "No transactions found in any log" );
-                    }
-                    catch ( IOException e )
-                    {   // It's fine, we just tried to be nice and log this. Failing is OK
-                        log.log( "Error trying to figure out oldest transaction in log" );
-                    }
-                }
-            };
+    private final Database dataSource;
 
-    private final String message;
-
-    DataSourceDiagnostics( String message )
+    TransactionRangeDiagnostics( Database dataSource )
     {
-        this.message = message;
+        super( "Transaction log" );
+        this.dataSource = dataSource;
     }
 
     @Override
-    public void dumpDiagnostics( final Database source, Logger logger )
+    public void dump( Logger logger )
     {
-       logger.log( message );
-        dump( source, logger );
+        LogFiles logFiles = dataSource.getDependencyResolver().resolveDependency( LogFiles.class );
+        try
+        {
+            for ( long logVersion = logFiles.getLowestLogVersion(); logFiles.versionExists( logVersion ); logVersion++ )
+            {
+                if ( logFiles.hasAnyEntries( logVersion ) )
+                {
+                    LogHeader header = logFiles.extractHeader( logVersion );
+                    long firstTransactionIdInThisLog = header.lastCommittedTxId + 1;
+                    logger.log( "Oldest transaction " + firstTransactionIdInThisLog + " found in log with version " + logVersion );
+                    return;
+                }
+            }
+            logger.log( "No transactions found in any log" );
+        }
+        catch ( IOException e )
+        {
+            logger.log( "Error trying to figure out oldest transaction in log" );
+        }
     }
-
-    abstract void dump( Database source, Logger logger );
 }

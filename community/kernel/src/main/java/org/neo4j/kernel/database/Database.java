@@ -441,7 +441,7 @@ public class Database extends LifecycleAdapter
         diagnosticsManager.dump( new KernelDiagnostics.Versions( databaseInfo, getStoreId() ) );
         diagnosticsManager.dump( new KernelDiagnostics.StoreFiles( getDatabaseLayout() ) );
         storageEngine.dumpDiagnostics( diagnosticsManager );
-        diagnosticsManager.dump( DataSourceDiagnostics.class, this );
+        diagnosticsManager.dump( new DataSourceDiagnostics.TransactionRangeDiagnostics( this ) );
     }
 
     private LifeSupport initializeExtensions( Dependencies dependencies )

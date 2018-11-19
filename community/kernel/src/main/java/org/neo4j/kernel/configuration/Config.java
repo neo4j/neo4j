@@ -743,12 +743,6 @@ public class Config implements DiagnosticsProvider, Configuration
     }
 
     @Override
-    public void acceptDiagnosticsVisitor( Object visitor )
-    {
-        // nothing visits configuration
-    }
-
-    @Override
     public void dump( Logger logger )
     {
         logger.log( "Neo4j Kernel properties:" );
