@@ -102,7 +102,7 @@
     <cypher.compatibility.34>3.4.9</cypher.compatibility.34>
     <opencypher.version>1.0.0-M12</opencypher.version>
     <caffeine.version>2.6.2</caffeine.version>
-    <required.maven.version>3.5.2</required.maven.version>
+    <required.maven.version>3.5.4</required.maven.version>
     <jackson.version>1.9.13</jackson.version>
   </properties>
 
