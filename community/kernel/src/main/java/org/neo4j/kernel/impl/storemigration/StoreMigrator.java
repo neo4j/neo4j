@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.participant;
+package org.neo4j.kernel.impl.storemigration;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -60,9 +60,6 @@ import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.storemigration.DirectRecordStoreMigrator;
-import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -94,7 +91,7 @@ import static org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat.F
 import static org.neo4j.kernel.impl.storemigration.FileOperation.COPY;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-import static org.neo4j.kernel.impl.storemigration.participant.StoreMigratorFileOperation.fileOperation;
+import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_CHECKSUM;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_COMMIT_TIMESTAMP;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.BASE_TX_LOG_BYTE_OFFSET;

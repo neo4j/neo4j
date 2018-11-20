@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.participant;
+package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,11 +45,6 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
-import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;

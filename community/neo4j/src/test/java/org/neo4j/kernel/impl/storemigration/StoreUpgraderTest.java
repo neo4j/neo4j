@@ -53,12 +53,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
-import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
-import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
-import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -369,10 +363,23 @@ public class StoreUpgraderTest
         return new AbstractStoreMigrationParticipant( "Failing" )
         {
             @Override
+            public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
+                String versionToMigrateTo )
+            {
+                // nop
+            }
+
+            @Override
             public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToUpgradeFrom,
                     String versionToMigrateTo ) throws IOException
             {
                 throw new IOException( failureMessage );
+            }
+
+            @Override
+            public void cleanup( DatabaseLayout migrationLayout )
+            {
+                // nop
             }
         };
     }

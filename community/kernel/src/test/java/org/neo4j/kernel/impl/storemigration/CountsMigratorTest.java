@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.participant;
+package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,6 +29,7 @@ import java.io.IOException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
+import org.neo4j.kernel.impl.storemigration.CountsMigrator;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.monitoring;
+package org.neo4j.kernel.impl.storemigration;
 
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.common.ProgressReporter;

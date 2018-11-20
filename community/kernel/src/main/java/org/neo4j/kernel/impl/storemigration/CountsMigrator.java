@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.participant;
+package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
@@ -45,8 +45,6 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
-import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
@@ -56,7 +54,7 @@ import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.DELETE;
 import static org.neo4j.kernel.impl.storemigration.FileOperation.MOVE;
-import static org.neo4j.kernel.impl.storemigration.participant.StoreMigratorFileOperation.fileOperation;
+import static org.neo4j.kernel.impl.storemigration.StoreMigratorFileOperation.fileOperation;
 
 /**
  * Rebuilds the count store during migration.

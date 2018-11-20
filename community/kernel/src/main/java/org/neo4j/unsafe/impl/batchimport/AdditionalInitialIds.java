@@ -19,7 +19,7 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 /**

@@ -17,29 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration.monitoring;
+package org.neo4j.kernel.impl.storemigration;
 
+import java.io.IOException;
+
+import org.neo4j.io.layout.DatabaseLayout;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
-import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
-public class SilentMigrationProgressMonitor implements MigrationProgressMonitor
+/**
+ * Default empty implementation of StoreMigrationParticipant.
+ * Base class for all StoreMigrationParticipant implementations.
+ *
+ * @see org.neo4j.kernel.impl.storemigration.StoreUpgrader
+ */
+abstract class AbstractStoreMigrationParticipant implements StoreMigrationParticipant
 {
+    protected final String name;
 
-    @Override
-    public void started( int numStages )
+    AbstractStoreMigrationParticipant( String name )
     {
+        this.name = name;
     }
 
     @Override
-    public ProgressReporter startSection( String name )
+    public String getName()
     {
-        return SilentProgressReporter.INSTANCE;
+        return name;
     }
-
-    @Override
-    public void completed()
-    {
-    }
-
 }

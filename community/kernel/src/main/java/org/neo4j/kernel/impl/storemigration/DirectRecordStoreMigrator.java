@@ -45,13 +45,13 @@ import static org.neo4j.helpers.ArrayUtil.contains;
  * Idea is to migrate a {@link NeoStores} store by store, record by record in a sequential fashion for
  * quick migration from one {@link RecordFormats} to another.
  */
-public class DirectRecordStoreMigrator
+class DirectRecordStoreMigrator
 {
     private final PageCache pageCache;
     private final FileSystemAbstraction fs;
     private final Config config;
 
-    public DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config )
+    DirectRecordStoreMigrator( PageCache pageCache, FileSystemAbstraction fs, Config config )
     {
         this.pageCache = pageCache;
         this.fs = fs;
