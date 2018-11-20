@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;
@@ -55,7 +55,7 @@ import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChanne
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.NullLogProvider;

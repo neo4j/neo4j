@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;

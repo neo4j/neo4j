@@ -47,7 +47,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.storemigration.ExistingTargetStrategy;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;

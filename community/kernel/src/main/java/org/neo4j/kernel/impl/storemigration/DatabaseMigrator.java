@@ -25,7 +25,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.participant.CountsMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.NativeLabelScanStoreMigrator;
 import org.neo4j.kernel.impl.storemigration.participant.StoreMigrator;

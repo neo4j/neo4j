@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 
 /**
  * Migrates schema and label indexes between different neo4j versions.

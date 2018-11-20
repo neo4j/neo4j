@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.recovery.Recovery.throwUnableToCleanRecover;

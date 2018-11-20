@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;

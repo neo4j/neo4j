@@ -22,7 +22,7 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.staging.BatchFeedStep;
 import org.neo4j.unsafe.impl.batchimport.staging.ReadRecordsStep;

@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.util.monitoring;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;

@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 
 import static org.neo4j.helpers.ArrayUtil.contains;

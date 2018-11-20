@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 
 /**
  * Default empty implementation of StoreMigrationParticipant.

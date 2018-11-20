@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;

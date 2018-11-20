@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;

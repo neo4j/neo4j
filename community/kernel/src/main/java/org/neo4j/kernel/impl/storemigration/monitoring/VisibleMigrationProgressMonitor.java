@@ -20,8 +20,9 @@
 package org.neo4j.kernel.impl.storemigration.monitoring;
 
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.Log;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
 import static java.lang.String.format;
 

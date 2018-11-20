@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;

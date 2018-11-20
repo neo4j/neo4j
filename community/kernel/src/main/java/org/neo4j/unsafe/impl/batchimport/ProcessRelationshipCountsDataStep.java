@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;

@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

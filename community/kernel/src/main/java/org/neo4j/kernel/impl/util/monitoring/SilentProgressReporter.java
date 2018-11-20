@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util.monitoring;
 
+import org.neo4j.common.ProgressReporter;
+
 /**
  * Progress reporter version that does not report any progress
  */

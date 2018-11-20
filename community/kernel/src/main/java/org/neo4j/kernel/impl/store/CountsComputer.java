@@ -24,7 +24,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;

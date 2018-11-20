@@ -21,17 +21,42 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
-import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
 public interface StoreMigrationParticipant
 {
     /**
      * Default empty implementation of StoreMigrationParticipant
      */
-    StoreMigrationParticipant NOT_PARTICIPATING = new AbstractStoreMigrationParticipant( "Nothing" );
+    StoreMigrationParticipant NOT_PARTICIPATING = new StoreMigrationParticipant()
+    {
+        @Override
+        public void migrate( DatabaseLayout directoryLayout, DatabaseLayout migrationLayout, ProgressReporter progress, String versionToMigrateFrom,
+            String versionToMigrateTo )
+        {
+            // nop
+        }
+
+        @Override
+        public void moveMigratedFiles( DatabaseLayout migrationLayout, DatabaseLayout directoryLayout, String versionToMigrateFrom, String versionToMigrateTo )
+        {
+            // nop
+        }
+
+        @Override
+        public void cleanup( DatabaseLayout migrationLayout )
+        {
+            // nop
+        }
+
+        @Override
+        public String getName()
+        {
+            return "Nothing";
+        }
+    };
 
     /**
      * Performs migration of data this participant is responsible for if necessary.
