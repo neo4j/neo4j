@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.diagnostics.providers;
+package org.neo4j.kernel.diagnostics.providers;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

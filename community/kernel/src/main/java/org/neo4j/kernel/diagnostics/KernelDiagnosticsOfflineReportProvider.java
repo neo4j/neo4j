@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.diagnostics;
+package org.neo4j.kernel.diagnostics;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,18 +25,14 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import org.neo4j.diagnostics.providers.KernelDiagnostics;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.diagnostics.providers.KernelDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.BufferingLog;
-
-import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsFile;
-import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsRotatingFile;
-import static org.neo4j.diagnostics.DiagnosticsReportSources.newDiagnosticsString;
 
 public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineReportProvider
 {
@@ -95,7 +91,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
             sb.append( "List of plugin directory:" ).append( System.lineSeparator() );
             listContentOfDirectory( pluginDirectory, "  ", sb );
 
-            sources.add( newDiagnosticsString( "plugins.txt", sb::toString ) );
+            sources.add( DiagnosticsReportSources.newDiagnosticsString( "plugins.txt", sb::toString ) );
         }
     }
 
@@ -132,7 +128,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         BufferingLog logger = new BufferingLog();
         storeFiles.dump( logger.debugLogger() );
 
-        sources.add( newDiagnosticsString( "tree.txt", logger::toString ) );
+        sources.add( DiagnosticsReportSources.newDiagnosticsString( "tree.txt", logger::toString ) );
     }
 
     /**
@@ -146,7 +142,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         File debugLogFile = config.get( GraphDatabaseSettings.store_internal_log_path );
         if ( fs.fileExists( debugLogFile ) )
         {
-            sources.addAll( newDiagnosticsRotatingFile( "logs/debug.log", fs, debugLogFile ) );
+            sources.addAll( DiagnosticsReportSources.newDiagnosticsRotatingFile( "logs/debug.log", fs, debugLogFile ) );
         }
 
         // neo4j.log
@@ -154,14 +150,14 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
         File neo4jLog = new File( logDirectory, "neo4j.log" );
         if ( fs.fileExists( neo4jLog ) )
         {
-            sources.add( newDiagnosticsFile( "logs/neo4j.log", fs, neo4jLog ) );
+            sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/neo4j.log", fs, neo4jLog ) );
         }
 
         // gc.log
         File gcLog = new File( logDirectory, "gc.log" );
         if ( fs.fileExists( gcLog ) )
         {
-            sources.add( newDiagnosticsFile( "logs/gc.log", fs, gcLog ) );
+            sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/gc.log", fs, gcLog ) );
         }
         // we might have rotation activated, check
         int i = 0;
@@ -172,7 +168,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
             {
                 break;
             }
-            sources.add( newDiagnosticsFile( "logs/gc.log." + i, fs, gcRotationLog ) );
+            sources.add( DiagnosticsReportSources.newDiagnosticsFile( "logs/gc.log." + i, fs, gcRotationLog ) );
             i++;
         }
         // there are other rotation schemas but nothing we can predict...

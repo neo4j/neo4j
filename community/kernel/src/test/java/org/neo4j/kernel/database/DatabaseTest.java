@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.diagnostics.providers.DataSourceDiagnostics;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -33,15 +32,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
-import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
-import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.logging.Logger;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.test.rule.DatabaseRule;
@@ -154,59 +148,6 @@ public class DatabaseTest
     }
 
     @Test
-    public void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()
-    {
-        // GIVEN
-        Database dataSource = databaseWithLogFilesContainingLowestTxId( noLogs() );
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Logger logger = logProvider.getLog( getClass() ).infoLogger();
-
-        // WHEN
-        new DataSourceDiagnostics.TransactionRangeDiagnostics( dataSource ).dump( logger );
-
-        // THEN
-        logProvider.assertContainsMessageContaining( "No transactions" );
-    }
-
-    @Test
-    public void shouldLogCorrectTransactionLogDiagnosticsForTransactionsInOldestLog() throws Exception
-    {
-        // GIVEN
-        long logVersion = 2;
-        long prevLogLastTxId = 45;
-        Database dataSource = databaseWithLogFilesContainingLowestTxId(
-                logWithTransactions( logVersion, prevLogLastTxId ) );
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Logger logger = logProvider.getLog( getClass() ).infoLogger();
-
-        // WHEN
-        new DataSourceDiagnostics.TransactionRangeDiagnostics( dataSource ).dump( logger );
-
-        // THEN
-        logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.assertContainsMessageContaining( "version " + logVersion );
-    }
-
-    @Test
-    public void shouldLogCorrectTransactionLogDiagnosticsForTransactionsInSecondOldestLog() throws Exception
-    {
-        // GIVEN
-        long logVersion = 2;
-        long prevLogLastTxId = 45;
-        Database dataSource = databaseWithLogFilesContainingLowestTxId(
-                logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Logger logger = logProvider.getLog( getClass() ).infoLogger();
-
-        // WHEN
-        new DataSourceDiagnostics.TransactionRangeDiagnostics( dataSource ).dump( logger );
-
-        // THEN
-        logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
-        logProvider.assertContainsMessageContaining( "version " + (logVersion + 1) );
-    }
-
-    @Test
     public void logModuleSetUpError()
     {
         Config config = Config.defaults();
@@ -267,42 +208,5 @@ public class DatabaseTest
             // Then
             assertEquals( ex, e.getCause() );
         }
-    }
-
-    private static Database databaseWithLogFilesContainingLowestTxId( LogFiles files )
-    {
-        Dependencies dependencies = mock( Dependencies.class );
-        when( dependencies.resolveDependency( LogFiles.class ) ).thenReturn( files );
-        Database dataSource = mock( Database.class );
-        when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
-        return dataSource;
-    }
-
-    private static LogFiles noLogs()
-    {
-        LogFiles files = mock( TransactionLogFiles.class );
-        when( files.getLowestLogVersion() ).thenReturn( -1L );
-        return files;
-    }
-
-    private static LogFiles logWithTransactions( long logVersion, long headerTxId ) throws IOException
-    {
-        LogFiles files = mock( TransactionLogFiles.class );
-        when( files.getLowestLogVersion() ).thenReturn( logVersion );
-        when( files.hasAnyEntries( logVersion ) ).thenReturn( true );
-        when( files.versionExists( logVersion ) ).thenReturn( true );
-        when( files.extractHeader( logVersion ) ).thenReturn( new LogHeader( LogEntryVersion.CURRENT.byteCode(),
-                logVersion, headerTxId ) );
-        return files;
-    }
-
-    private static LogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
-            throws IOException
-    {
-        LogFiles files = logWithTransactions( logVersion + 1, prevLogLastTxId );
-        when( files.getLowestLogVersion() ).thenReturn( logVersion );
-        when( files.hasAnyEntries( logVersion ) ).thenReturn( false );
-        when( files.versionExists( logVersion ) ).thenReturn( true );
-        return files;
     }
 }

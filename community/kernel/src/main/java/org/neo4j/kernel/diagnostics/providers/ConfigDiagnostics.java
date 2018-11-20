@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.diagnostics.providers;
+package org.neo4j.kernel.diagnostics.providers;
 
 import java.util.Map;
 
@@ -43,8 +43,14 @@ public class ConfigDiagnostics implements DiagnosticsProvider
     @Override
     public void dump( Logger logger )
     {
-        logger.log( "Neo4j Kernel properties:" );
-        for ( Map.Entry<String,String> param : config.getRaw().entrySet() )
+        Map<String,String> configRaw = config.getRaw();
+        if ( configRaw.isEmpty() )
+        {
+            logger.log( "No provided DBMS settings." );
+            return;
+        }
+        logger.log( "DBMS provided settings:" );
+        for ( Map.Entry<String,String> param : configRaw.entrySet() )
         {
             logger.log( "%s=%s", param.getKey(), param.getValue() );
         }

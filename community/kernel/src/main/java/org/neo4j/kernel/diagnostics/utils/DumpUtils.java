@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.diagnostics.utils;
+package org.neo4j.kernel.diagnostics.utils;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MonitorInfo;

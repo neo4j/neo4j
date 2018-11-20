@@ -17,26 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.diagnostics;
+package org.neo4j.kernel.diagnostics;
 
 import java.io.PrintStream;
-import java.util.Collections;
 
-/**
- * Tracks progress in an interactive way, relies on the fact that the {@code PrintStream} echoes to a terminal that can
- * interpret the carrier return to reset the current line.
- */
-public class InteractiveProgress implements DiagnosticsReporterProgress
+public class NonInteractiveProgress implements DiagnosticsReporterProgress
 {
-    private String prefix;
-    private String suffix;
     private String totalSteps = "?";
     private final PrintStream out;
     private final boolean verbose;
-    private String info = "";
-    private int longestInfo;
+    private int lastPercentage;
 
-    public InteractiveProgress( PrintStream out, boolean verbose )
+    public NonInteractiveProgress( PrintStream out, boolean verbose )
     {
         this.out = out;
         this.verbose = verbose;
@@ -45,38 +37,28 @@ public class InteractiveProgress implements DiagnosticsReporterProgress
     @Override
     public void percentChanged( int percent )
     {
-        out.print( String.format( "\r%8s [", prefix ) );
-        int totalWidth = 20;
-
-        int numBars = totalWidth * percent / 100;
-        for ( int i = 0; i < totalWidth; i++ )
+        for ( int i = lastPercentage + 1; i <= percent; i++ )
         {
-            if ( i < numBars )
+            out.print( '.' );
+            if ( i % 20 == 0 )
             {
-                out.print( '#' );
-            }
-            else
-            {
-                out.print( ' ' );
+                out.printf( " %3d%%%n", i );
             }
         }
-        out.print( String.format( "] %3s%%   %s %s", percent, suffix, info ) );
+        lastPercentage = percent;
+        out.flush();
     }
 
     @Override
     public void started( long currentStepIndex, String target )
     {
-        this.prefix = currentStepIndex + "/" + totalSteps;
-        this.suffix = target;
-        percentChanged( 0 );
+        out.println( currentStepIndex + "/" + totalSteps + " " + target );
+        lastPercentage = 0;
     }
 
     @Override
     public void finished()
     {
-        // Pad string to erase info string
-        info = String.join( "", Collections.nCopies( longestInfo, " " ) );
-
         percentChanged( 100 );
         out.println();
     }
@@ -84,11 +66,7 @@ public class InteractiveProgress implements DiagnosticsReporterProgress
     @Override
     public void info( String info )
     {
-        this.info = info;
-        if ( info.length() > longestInfo )
-        {
-            longestInfo = info.length();
-        }
+        // Ignore info message
     }
 
     @Override

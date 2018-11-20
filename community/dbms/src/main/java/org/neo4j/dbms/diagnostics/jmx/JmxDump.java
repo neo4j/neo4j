@@ -41,11 +41,11 @@ import javax.management.remote.JMXConnector;
 import javax.management.remote.JMXConnectorFactory;
 import javax.management.remote.JMXServiceURL;
 
-import org.neo4j.diagnostics.DiagnosticsReportSource;
-import org.neo4j.diagnostics.DiagnosticsReportSources;
-import org.neo4j.diagnostics.DiagnosticsReporterProgress;
-import org.neo4j.diagnostics.ProgressAwareInputStream;
-import org.neo4j.diagnostics.utils.DumpUtils;
+import org.neo4j.kernel.diagnostics.DiagnosticsReportSource;
+import org.neo4j.kernel.diagnostics.DiagnosticsReportSources;
+import org.neo4j.kernel.diagnostics.DiagnosticsReporterProgress;
+import org.neo4j.kernel.diagnostics.ProgressAwareInputStream;
+import org.neo4j.kernel.diagnostics.utils.DumpUtils;
 
 /**
  * Encapsulates remoting functionality for collecting diagnostics information on running instances.

@@ -34,7 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Function;
 
-import org.neo4j.diagnostics.utils.DumpUtils;
+import org.neo4j.kernel.diagnostics.utils.DumpUtils;
 
 /**
  * Timeout rule implementation that print out stack traces of all thread
