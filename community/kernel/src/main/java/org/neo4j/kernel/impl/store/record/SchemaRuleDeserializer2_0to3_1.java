@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFac
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule.Kind;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.store.MalformedSchemaRuleException;
+import org.neo4j.internal.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 
 import static org.neo4j.helpers.Numbers.safeCastLongToInt;
 import static org.neo4j.string.UTF8.getDecodedStringFrom;
