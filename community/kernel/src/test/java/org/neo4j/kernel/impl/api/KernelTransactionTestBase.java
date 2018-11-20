@@ -62,6 +62,7 @@ import org.neo4j.kernel.impl.util.diffsets.MutableLongDiffSetsImpl;
 import org.neo4j.memory.MemoryTracker;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -90,7 +91,8 @@ public class KernelTransactionTestBase
     protected final StorageEngine storageEngine = mock( StorageEngine.class );
     protected final NeoStores neoStores = mock( NeoStores.class );
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
-    protected final StorageReader readLayer = mock( StorageReader.class );
+    protected final StorageReader storageReader = mock( StorageReader.class );
+    protected final CommandCreationContext commandCreationContext = mock( CommandCreationContext.class );
     protected final TransactionHooks hooks = new TransactionHooks();
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
@@ -112,13 +114,16 @@ public class KernelTransactionTestBase
         when( headerInformation.getAdditionalHeader() ).thenReturn( new byte[0] );
         when( headerInformationFactory.create() ).thenReturn( headerInformation );
         when( neoStores.getMetaDataStore() ).thenReturn( metaDataStore );
-        when( storageEngine.newReader() ).thenReturn( readLayer );
+        when( storageEngine.newReader() ).thenReturn( storageReader );
+        when( storageEngine.newCommandCreationContext() ).thenReturn( commandCreationContext );
         doAnswer( invocation -> ((Collection<StorageCommand>) invocation.getArgument(0) ).add( new Command
                 .RelationshipCountsCommand( 1, 2,3, 4L ) ) )
             .when( storageEngine ).createCommands(
                     anyCollection(),
                     any( ReadableTransactionState.class ),
-                    any( StorageReader.class ), any( ResourceLocker.class ),
+                    any( StorageReader.class ),
+                    any( CommandCreationContext.class ),
+                    any( ResourceLocker.class ),
                     anyLong(),
                     any( TxStateVisitor.Decorator.class ) );
     }

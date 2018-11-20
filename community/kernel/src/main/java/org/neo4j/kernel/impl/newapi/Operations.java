@@ -77,6 +77,7 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
@@ -111,8 +112,8 @@ public class Operations implements Write, SchemaWrite
 {
     private final KernelTransactionImplementation ktx;
     private final AllStoreHolder allStoreHolder;
+    private final CommandCreationContext commandCreationContext;
     private final KernelToken token;
-    private final StorageReader statement;
     private final IndexTxStateUpdater updater;
     private final DefaultPooledCursors cursors;
     private final ConstraintIndexCreator constraintIndexCreator;
@@ -123,14 +124,15 @@ public class Operations implements Write, SchemaWrite
     private DefaultPropertyCursor propertyCursor;
     private DefaultRelationshipScanCursor relationshipCursor;
 
-    public Operations( AllStoreHolder allStoreHolder, IndexTxStateUpdater updater, StorageReader statement, KernelTransactionImplementation ktx,
+    public Operations( AllStoreHolder allStoreHolder, IndexTxStateUpdater updater,
+            CommandCreationContext commandCreationContext, KernelTransactionImplementation ktx,
             KernelToken token, DefaultPooledCursors cursors, ConstraintIndexCreator constraintIndexCreator,
             ConstraintSemantics constraintSemantics, IndexingProvidersService indexProviders, Config config )
     {
+        this.commandCreationContext = commandCreationContext;
         this.token = token;
         this.allStoreHolder = allStoreHolder;
         this.ktx = ktx;
-        this.statement = statement;
         this.updater = updater;
         this.cursors = cursors;
         this.constraintIndexCreator = constraintIndexCreator;
@@ -150,7 +152,7 @@ public class Operations implements Write, SchemaWrite
     public long nodeCreate()
     {
         ktx.assertOpen();
-        long nodeId = statement.reserveNode();
+        long nodeId = commandCreationContext.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         return nodeId;
     }
@@ -171,7 +173,7 @@ public class Operations implements Write, SchemaWrite
         long[] lockingIds = SchemaDescriptor.schemaTokenLockingIds( labels );
         Arrays.sort( lockingIds ); // Sort to ensure labels are locked and assigned in order.
         ktx.statementLocks().optimistic().acquireShared( ktx.lockTracer(), ResourceTypes.LABEL, lockingIds );
-        long nodeId = statement.reserveNode();
+        long nodeId = commandCreationContext.reserveNode();
         ktx.txState().nodeDoCreate( nodeId );
         nodeCursor.single( nodeId, allStoreHolder );
         nodeCursor.next();
@@ -230,7 +232,7 @@ public class Operations implements Write, SchemaWrite
         assertNodeExists( sourceNode );
         assertNodeExists( targetNode );
 
-        long id = statement.reserveRelationship();
+        long id = commandCreationContext.reserveRelationship();
         ktx.txState().relationshipDoCreate( id, relationshipType, sourceNode, targetNode );
         return id;
     }

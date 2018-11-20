@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 
+import static java.lang.Math.toIntExact;
+
 /**
  * Holds commit data structures for creating records in a {@link NeoStores}.
  */
@@ -65,6 +67,48 @@ class RecordStorageCommandCreationContext implements CommandCreationContext
     public long nextId( StoreType storeType )
     {
         return idBatches.nextId( storeType );
+    }
+
+    @Override
+    public void releaseNode( long id )
+    {
+        neoStores.getNodeStore().freeId( id );
+    }
+
+    @Override
+    public void releaseRelationship( long id )
+    {
+        neoStores.getRelationshipStore().freeId( id );
+    }
+
+    @Override
+    public long reserveNode()
+    {
+        return nextId( StoreType.NODE );
+    }
+
+    @Override
+    public long reserveRelationship()
+    {
+        return nextId( StoreType.RELATIONSHIP );
+    }
+
+    @Override
+    public int reserveRelationshipTypeTokenId()
+    {
+        return toIntExact( neoStores.getRelationshipTypeTokenStore().nextId() );
+    }
+
+    @Override
+    public int reservePropertyKeyTokenId()
+    {
+        return toIntExact( neoStores.getPropertyKeyTokenStore().nextId() );
+    }
+
+    @Override
+    public int reserveLabelTokenId()
+    {
+        return toIntExact( neoStores.getLabelTokenStore().nextId() );
     }
 
     @Override

@@ -59,6 +59,7 @@ import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.LockTracer;
@@ -103,6 +104,7 @@ public class OperationsLockTest
     private final LabelSchemaDescriptor descriptor = SchemaDescriptorFactory.forLabel( 123, 456 );
     private StorageReader storageReader;
     private ConstraintIndexCreator constraintIndexCreator;
+    private CommandCreationContext creationContext;
 
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
@@ -133,8 +135,9 @@ public class OperationsLockTest
                 new AllStoreHolder( storageReader, transaction, cursors, mock( Procedures.class ), mock( SchemaState.class ), mock( IndexingService.class ),
                         mock( LabelScanStore.class ), new Dependencies() );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
-        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
-                 transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors,
+        creationContext = mock( CommandCreationContext.class );
+        operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), creationContext,
+                 transaction, new KernelToken( storageReader, creationContext, transaction, mockedTokenHolders() ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults() );
         operations.initialize();
 

@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -407,6 +408,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
                 any( Collection.class ),
                 any( TransactionState.class ),
                 any( StorageReader.class ),
+                any( CommandCreationContext.class ),
                 any( ResourceLocker.class ),
                 anyLong(), any( TxStateVisitor.Decorator.class ) );
 

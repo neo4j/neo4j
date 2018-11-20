@@ -94,6 +94,7 @@ import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -146,6 +147,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final PageCursorTracerSupplier cursorTracerSupplier;
     private final VersionContextSupplier versionContextSupplier;
     private final StorageReader storageReader;
+    private final CommandCreationContext commandCreationContext;
     private final ClockContext clocks;
     private final AccessCapability accessCapability;
     private final ConstraintSemantics constraintSemantics;
@@ -209,6 +211,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.storageReader = storageEngine.newReader();
+        this.commandCreationContext = storageEngine.newCommandCreationContext();
         this.storageEngine = storageEngine;
         this.pool = pool;
         this.clocks = new ClockContext( clock );
@@ -226,9 +229,10 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.operations =
                 new Operations(
                         allStoreHolder,
-                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ), storageReader,
+                        new IndexTxStateUpdater( storageReader, allStoreHolder, indexingService ),
+                        commandCreationContext,
                         this,
-                        new KernelToken( storageReader, this, tokenHolders ),
+                        new KernelToken( storageReader, commandCreationContext, this, tokenHolders ),
                         cursors,
                         constraintIndexCreator,
                         constraintSemantics,
@@ -645,7 +649,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 Collection<StorageCommand> extractedCommands = new ArrayList<>();
                 storageEngine.createCommands(
                         extractedCommands,
-                        txState, storageReader,
+                        txState,
+                        storageReader,
+                        commandCreationContext,
                         commitLocks,
                         lastTransactionIdWhenStarted,
                         this::enforceConstraints );
@@ -725,13 +731,13 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         @Override
                         public void visitCreatedNode( long id )
                         {
-                            storageReader.releaseNode( id );
+                            commandCreationContext.releaseNode( id );
                         }
 
                         @Override
                         public void visitCreatedRelationship( long id, int type, long startNode, long endNode )
                         {
-                            storageReader.releaseRelationship( id );
+                            commandCreationContext.releaseRelationship( id );
                         }
                     } );
                 }
@@ -1001,6 +1007,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public void dispose()
     {
         storageReader.close();
+        commandCreationContext.close();
     }
 
     /**

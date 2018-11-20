@@ -21,10 +21,63 @@ package org.neo4j.storageengine.api;
 
 /**
  * A context which {@link StorageEngine} hands out to clients and which gets passed back in
- * to calls about creating commands.
+ * to calls about creating commands. One of its purposes is to reserve and release ids. E.g. internal nodes and relationship references
+ * are publicly exposed even before committed, which means that they will have to be reserved before committing.
  */
 public interface CommandCreationContext extends AutoCloseable
 {
+    /**
+     * Reserves a node id for future use to store a node. The reason for it being exposed here is that
+     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
+     * This will likely change in the future though.
+     *
+     * @return a reserved node id for future use.
+     */
+    long reserveNode();
+
+    /**
+     * Reserves a relationship id for future use to store a relationship. The reason for it being exposed here is that
+     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
+     * This will likely change in the future though.
+     *
+     * @return a reserved relationship id for future use.
+     */
+    long reserveRelationship();
+
+    /**
+     * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
+     * for example in the event of a transaction rolling back.
+     *
+     * @param id reserved node id to release.
+     */
+    void releaseNode( long id );
+
+    /**
+     * Releases a previously {@link #reserveRelationship() reserved} relationship id if it turns out to not
+     * actually being used, for example in the event of a transaction rolling back.
+     *
+     * @param id reserved relationship id to release.
+     */
+    void releaseRelationship( long id );
+
+    /**
+     * Reserves a label token id.
+     * @return a unique label token id.
+     */
+    int reserveLabelTokenId();
+
+    /**
+     * Reserves a property key token id.
+     * @return a unique property key token id.
+     */
+    int reservePropertyKeyTokenId();
+
+    /**
+     * Reserves a relationship type token id.
+     * @return a unique relationship type token id.
+     */
+    int reserveRelationshipTypeTokenId();
+
     @Override
     void close();
 }

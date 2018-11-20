@@ -49,10 +49,10 @@ public interface StorageEngine
 
     /**
      * @return a new {@link CommandCreationContext} meant to be kept for multiple calls to
-     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker, long, TxStateVisitor.Decorator)}.
+     * {@link #createCommands(Collection, ReadableTransactionState, StorageReader, CommandCreationContext, ResourceLocker, long, TxStateVisitor.Decorator)}.
      * Must be {@link CommandCreationContext#close() closed} after used, before being discarded.
      */
-    CommandCreationContext allocateCommandCreationContext();
+    CommandCreationContext newCommandCreationContext();
 
     /**
      * Generates a list of {@link StorageCommand commands} representing the changes in the given transaction state
@@ -64,6 +64,7 @@ public interface StorageEngine
      * @param target {@link Collection} to put {@link StorageCommand commands} into.
      * @param state {@link ReadableTransactionState} representing logical store changes to generate commands for.
      * @param storageReader {@link StorageReader} to use for reading store state during creation of commands.
+     * @param creationContext {@link CommandCreationContext} to use for do contextualized command creation e.g. id allocation.
      * @param locks {@link ResourceLocker} can grab additional locks.
      * This locks client still have the potential to acquire more locks at this point.
      * TODO we should try to get rid of this locking mechanism during creation of commands
@@ -85,6 +86,7 @@ public interface StorageEngine
             Collection<StorageCommand> target,
             ReadableTransactionState state,
             StorageReader storageReader,
+            CommandCreationContext creationContext,
             ResourceLocker locks,
             long lastTransactionIdWhenStarted,
             TxStateVisitor.Decorator additionalTxStateVisitor )

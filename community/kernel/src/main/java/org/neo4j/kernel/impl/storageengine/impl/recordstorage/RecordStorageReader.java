@@ -32,7 +32,6 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -45,7 +44,6 @@ import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-import static java.lang.Math.toIntExact;
 import static org.neo4j.helpers.collection.Iterators.map;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 
@@ -57,7 +55,6 @@ public class RecordStorageReader implements StorageReader
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final TokenHolders tokenHolders;
     private final IndexingService indexService;
-    private final NeoStores neoStores;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore relationshipGroupStore;
@@ -65,17 +62,14 @@ public class RecordStorageReader implements StorageReader
     private final CountsTracker counts;
     private final MetaDataStore metaDataStore;
     private final SchemaCache schemaCache;
-    private final RecordStorageCommandCreationContext commandCreationContext;
 
     private boolean closed;
 
     RecordStorageReader(
             TokenHolders tokenHolders, NeoStores neoStores, CountsTracker counts,
-            IndexingService indexService, SchemaCache schemaCache,
-            RecordStorageCommandCreationContext commandCreationContext )
+            IndexingService indexService, SchemaCache schemaCache )
     {
         this.tokenHolders = tokenHolders;
-        this.neoStores = neoStores;
         this.indexService = indexService;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
@@ -84,7 +78,6 @@ public class RecordStorageReader implements StorageReader
         this.counts = counts;
         this.metaDataStore = neoStores.getMetaDataStore();
         this.schemaCache = schemaCache;
-        this.commandCreationContext = commandCreationContext;
     }
 
     /**
@@ -93,7 +86,7 @@ public class RecordStorageReader implements StorageReader
      */
     public RecordStorageReader( NeoStores stores )
     {
-        this( null, stores, null, null, null, null );
+        this( null, stores, null, null, null );
     }
 
     @Override
@@ -181,18 +174,6 @@ public class RecordStorageReader implements StorageReader
         {
             return null;
         }
-    }
-
-    @Override
-    public void releaseNode( long id )
-    {
-        nodeStore.freeId( id );
-    }
-
-    @Override
-    public void releaseRelationship( long id )
-    {
-        relationshipStore.freeId( id );
     }
 
     @Override
@@ -288,46 +269,7 @@ public class RecordStorageReader implements StorageReader
     public void close()
     {
         assert !closed;
-        if ( commandCreationContext != null )
-        {
-            commandCreationContext.close();
-        }
         closed = true;
-    }
-
-    RecordStorageCommandCreationContext getCommandCreationContext()
-    {
-        return commandCreationContext;
-    }
-
-    @Override
-    public long reserveNode()
-    {
-        return commandCreationContext.nextId( StoreType.NODE );
-    }
-
-    @Override
-    public long reserveRelationship()
-    {
-        return commandCreationContext.nextId( StoreType.RELATIONSHIP );
-    }
-
-    @Override
-    public int reserveRelationshipTypeTokenId()
-    {
-        return toIntExact( neoStores.getRelationshipTypeTokenStore().nextId() );
-    }
-
-    @Override
-    public int reservePropertyKeyTokenId()
-    {
-        return toIntExact( neoStores.getPropertyKeyTokenStore().nextId() );
-    }
-
-    @Override
-    public int reserveLabelTokenId()
-    {
-        return toIntExact( neoStores.getLabelTokenStore().nextId() );
     }
 
     @Override

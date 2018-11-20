@@ -36,17 +36,20 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageReader;
 
 public class KernelToken implements Token
 {
     private final StorageReader store;
+    private final CommandCreationContext commandCreationContext;
     private final KernelTransactionImplementation ktx;
     private final TokenHolders tokenHolders;
 
-    public KernelToken( StorageReader store, KernelTransactionImplementation ktx, TokenHolders tokenHolders )
+    public KernelToken( StorageReader store, CommandCreationContext commandCreationContext, KernelTransactionImplementation ktx, TokenHolders tokenHolders )
     {
         this.store = store;
+        this.commandCreationContext = commandCreationContext;
         this.ktx = ktx;
         this.tokenHolders = tokenHolders;
     }
@@ -96,7 +99,7 @@ public class KernelToken implements Token
     public int labelCreateForName( String labelName ) throws IllegalTokenNameException, TooManyLabelsException
     {
         ktx.assertOpen();
-        int id = store.reserveLabelTokenId();
+        int id = commandCreationContext.reserveLabelTokenId();
         ktx.txState().labelDoCreateForName( labelName, id );
         return id;
     }
@@ -105,7 +108,7 @@ public class KernelToken implements Token
     public int relationshipTypeCreateForName( String relationshipTypeName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
-        int id = store.reserveRelationshipTypeTokenId();
+        int id = commandCreationContext.reserveRelationshipTypeTokenId();
         ktx.txState().relationshipTypeDoCreateForName( relationshipTypeName, id );
         return id;
     }
@@ -114,7 +117,7 @@ public class KernelToken implements Token
     public int propertyKeyCreateForName( String propertyKeyName ) throws IllegalTokenNameException
     {
         ktx.assertOpen();
-        int id = store.reservePropertyKeyTokenId();
+        int id = commandCreationContext.reservePropertyKeyTokenId();
         ktx.txState().propertyKeyDoCreateForName( propertyKeyName, id );
         return id;
     }

@@ -40,24 +40,6 @@ public interface StorageReader extends AutoCloseable
     void close();
 
     /**
-     * Reserves a node id for future use to store a node. The reason for it being exposed here is that
-     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
-     * This will likely change in the future though.
-     *
-     * @return a reserved node id for future use.
-     */
-    long reserveNode();
-
-    /**
-     * Reserves a relationship id for future use to store a relationship. The reason for it being exposed here is that
-     * internal ids of nodes and relationships are publicly accessible all the way out to the user.
-     * This will likely change in the future though.
-     *
-     * @return a reserved relationship id for future use.
-     */
-    long reserveRelationship();
-
-    /**
      * @param labelId label to list indexes for.
      * @return {@link StorageIndexReference} associated with the given {@code labelId}.
      */
@@ -118,28 +100,6 @@ public interface StorageReader extends AutoCloseable
      * @return all stored property constraints.
      */
     Iterator<ConstraintDescriptor> constraintsGetAll();
-
-    /**
-     * Releases a previously {@link #reserveNode() reserved} node id if it turns out to not actually being used,
-     * for example in the event of a transaction rolling back.
-     *
-     * @param id reserved node id to release.
-     */
-    void releaseNode( long id );
-
-    /**
-     * Releases a previously {@link #reserveRelationship() reserved} relationship id if it turns out to not
-     * actually being used, for example in the event of a transaction rolling back.
-     *
-     * @param id reserved relationship id to release.
-     */
-    void releaseRelationship( long id );
-
-    int reserveLabelTokenId();
-
-    int reservePropertyKeyTokenId();
-
-    int reserveRelationshipTypeTokenId();
 
     /**
      * Returns number of stored nodes labeled with the label represented by {@code labelId}.

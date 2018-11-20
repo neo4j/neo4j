@@ -99,36 +99,6 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public long reserveNode()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public long reserveRelationship()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public int reserveLabelTokenId()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public int reservePropertyKeyTokenId()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public int reserveRelationshipTypeTokenId()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
     public Iterator<StorageIndexReference> indexesGetForLabel( int labelId )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -190,18 +160,6 @@ public class StubStorageCursors implements StorageReader
 
     @Override
     public StorageIndexReference indexGetForSchema( SchemaDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public void releaseNode( long id )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public void releaseRelationship( long id )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

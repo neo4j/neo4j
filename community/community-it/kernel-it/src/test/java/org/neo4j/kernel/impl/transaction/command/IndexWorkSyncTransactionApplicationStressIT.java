@@ -172,13 +172,14 @@ public class IndexWorkSyncTransactionApplicationStressIT
             this.index = index;
             NeoStores neoStores = this.storageEngine.testAccessNeoStores();
             this.nodeIds = neoStores.getNodeStore();
-            this.commandCreationContext = storageEngine.allocateCommandCreationContext();
+            this.commandCreationContext = storageEngine.newCommandCreationContext();
         }
 
         @Override
         public void run()
         {
-            try
+            try ( StorageReader reader = storageEngine.newReader();
+                  CommandCreationContext creationContext = storageEngine.newCommandCreationContext() )
             {
                 TransactionQueue queue = new TransactionQueue( batchSize, ( tx, last ) ->
                 {
@@ -191,7 +192,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
                 } );
                 for ( ; !end.get(); i++ )
                 {
-                    queue.queue( createNodeAndProperty( i ) );
+                    queue.queue( createNodeAndProperty( i, reader, creationContext ) );
                 }
                 queue.empty();
             }
@@ -205,7 +206,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             }
         }
 
-        private TransactionToApply createNodeAndProperty( int progress ) throws Exception
+        private TransactionToApply createNodeAndProperty( int progress, StorageReader reader, CommandCreationContext creationContext ) throws Exception
         {
             TransactionState txState = new TxState();
             long nodeId = nodeIds.nextId();
@@ -213,10 +214,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
             txState.nodeDoAddLabel( descriptor.getLabelId(), nodeId );
             txState.nodeDoAddProperty( nodeId, descriptor.getPropertyId(), propertyValue( id, progress ) );
             Collection<StorageCommand> commands = new ArrayList<>();
-            try ( StorageReader statement = storageEngine.newReader() )
-            {
-                storageEngine.createCommands( commands, txState, statement, null, 0, NO_DECORATION );
-            }
+            storageEngine.createCommands( commands, txState, reader, creationContext, null, 0, NO_DECORATION );
             return tx( commands );
         }
 

@@ -21,14 +21,15 @@ package org.neo4j.storageengine.api;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.function.Function;
 
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 
 /**
  * A command representing one unit of change to a {@link StorageEngine}. Commands are created by
- * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, StorageReader, ResourceLocker, long, Function)}
+ * {@link StorageEngine#createCommands(Collection, ReadableTransactionState, StorageReader,
+ * CommandCreationContext, ResourceLocker, long, TxStateVisitor.Decorator)}
  * and once created can be serialized onto a {@link WritableChannel} and/or passed back to
  * {@link StorageEngine#apply(CommandsToApply, TransactionApplicationMode)} for application where the
  * changes represented by the command are actually applied onto storage.

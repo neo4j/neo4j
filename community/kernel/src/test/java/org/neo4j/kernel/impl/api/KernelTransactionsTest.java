@@ -77,6 +77,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
@@ -667,6 +668,7 @@ public class KernelTransactionsTest
 
         StorageEngine storageEngine = mock( StorageEngine.class );
         when( storageEngine.newReader() ).thenReturn( firstReader, otherReaders );
+        when( storageEngine.newCommandCreationContext() ).thenReturn( mock( CommandCreationContext.class ) );
         doAnswer( invocation ->
         {
             Collection<StorageCommand> argument = invocation.getArgument( 0 );
@@ -676,6 +678,7 @@ public class KernelTransactionsTest
                 anyCollection(),
                 any( ReadableTransactionState.class ),
                 any( StorageReader.class ),
+                any( CommandCreationContext.class ),
                 any( ResourceLocker.class ),
                 anyLong(),
                 any( TxStateVisitor.Decorator.class ) );

@@ -101,6 +101,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -251,11 +252,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public StorageReader newReader()
     {
-        return new RecordStorageReader( tokenHolders, neoStores, countsStore, indexingService, schemaCache, allocateCommandCreationContext() );
+        return new RecordStorageReader( tokenHolders, neoStores, countsStore, indexingService, schemaCache );
     }
 
     @Override
-    public RecordStorageCommandCreationContext allocateCommandCreationContext()
+    public RecordStorageCommandCreationContext newCommandCreationContext()
     {
         return new RecordStorageCommandCreationContext( neoStores, denseNodeThreshold, recordIdBatchSize );
     }
@@ -268,8 +269,14 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     @SuppressWarnings( "resource" )
     @Override
-    public void createCommands( Collection<StorageCommand> commands, ReadableTransactionState txState, StorageReader storageReader, ResourceLocker locks,
-            long lastTransactionIdWhenStarted, TxStateVisitor.Decorator additionalTxStateVisitor )
+    public void createCommands(
+            Collection<StorageCommand> commands,
+            ReadableTransactionState txState,
+            StorageReader storageReader,
+            CommandCreationContext commandCreationContext,
+            ResourceLocker locks,
+            long lastTransactionIdWhenStarted,
+            TxStateVisitor.Decorator additionalTxStateVisitor )
             throws TransactionFailureException, CreateConstraintFailureException, ConstraintValidationException
     {
         if ( txState != null )
@@ -277,10 +284,8 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // We can make this cast here because we expected that the storageReader passed in here comes from
             // this storage engine itself, anything else is considered a bug. And we do know the inner workings
             // of the storage statements that we create.
-            RecordStorageCommandCreationContext creationContext =
-                    ((RecordStorageReader) storageReader).getCommandCreationContext();
-            TransactionRecordState recordState =
-                    creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
+            RecordStorageCommandCreationContext creationContext = (RecordStorageCommandCreationContext) commandCreationContext;
+            TransactionRecordState recordState = creationContext.createTransactionRecordState( integrityValidator, lastTransactionIdWhenStarted, locks );
 
             // Visit transaction state and populate these record state objects
             TxStateVisitor txStateVisitor = new TransactionToRecordStateVisitor( recordState, schemaState,
