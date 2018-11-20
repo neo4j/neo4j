@@ -19,34 +19,27 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import java.util.Map;
-
-import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.factory.DatabaseInfo;
+import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Logger;
+import org.neo4j.storageengine.api.StoreId;
 
-public class ConfigDiagnostics extends NamedDiagnosticsProvider
+public class VersionDiagnostics extends NamedDiagnosticsProvider
 {
-    private final Config config;
+    private final DatabaseInfo databaseInfo;
+    private final StoreId storeId;
 
-    ConfigDiagnostics( Config config )
+    VersionDiagnostics( DatabaseInfo databaseInfo, StoreId storeId )
     {
-        super( "DBMS config" );
-        this.config = config;
+        super( "Version" );
+        this.databaseInfo = databaseInfo;
+        this.storeId = storeId;
     }
 
     @Override
     public void dump( Logger logger )
     {
-        Map<String,String> configRaw = config.getRaw();
-        if ( configRaw.isEmpty() )
-        {
-            logger.log( "No provided DBMS settings." );
-            return;
-        }
-        logger.log( "DBMS provided settings:" );
-        for ( Map.Entry<String,String> param : configRaw.entrySet() )
-        {
-            logger.log( "%s=%s", param.getKey(), param.getValue() );
-        }
+        logger.log( "DBMS: " + databaseInfo + " " + storeId );
+        logger.log( "Kernel version: " + Version.getKernelVersion() );
     }
 }

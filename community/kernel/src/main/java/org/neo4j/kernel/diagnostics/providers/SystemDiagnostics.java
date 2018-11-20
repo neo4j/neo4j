@@ -20,7 +20,7 @@
 package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.File;
-import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.management.CompilationMXBean;
 import java.lang.management.GarbageCollectorMXBean;
 import java.lang.management.ManagementFactory;
@@ -46,6 +46,7 @@ import java.util.Map;
 import java.util.TimeZone;
 
 import org.neo4j.internal.diagnostics.DiagnosticsProvider;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.logging.Logger;
 
@@ -54,10 +55,10 @@ import static org.neo4j.helpers.Format.bytes;
 
 public enum SystemDiagnostics implements DiagnosticsProvider
 {
-    SYSTEM_MEMORY( "System memory information:" )
+    SYSTEM_MEMORY( "System memory information" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             logBytes( logger, "Total Physical memory: ", OsBeanUtil.getTotalPhysicalMemory() );
             logBytes( logger, "Free Physical memory: ", OsBeanUtil.getFreePhysicalMemory() );
@@ -66,10 +67,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             logBytes( logger, "Free swap space: ", OsBeanUtil.getFreeSwapSpace() );
         }
     },
-    JAVA_MEMORY( "JVM memory information:" )
+    JAVA_MEMORY( "JVM memory information" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             logger.log( "Free  memory: " + bytes( Runtime.getRuntime().freeMemory() ) );
             logger.log( "Total memory: " + bytes( Runtime.getRuntime().totalMemory() ) );
@@ -88,10 +89,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    OPERATING_SYSTEM( "Operating system information:" )
+    OPERATING_SYSTEM( "Operating system information" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             OperatingSystemMXBean os = ManagementFactory.getOperatingSystemMXBean();
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
@@ -110,10 +111,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             return tz.getID();
         }
     },
-    JAVA_VIRTUAL_MACHINE( "JVM information:" )
+    JAVA_VIRTUAL_MACHINE( "JVM information" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             logger.log( "VM Name: " + runtime.getVmName() );
@@ -124,10 +125,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             logger.log( "VM Arguments: " + runtime.getInputArguments() );
         }
     },
-    CLASSPATH( "Java classpath:" )
+    CLASSPATH( "Java classpath" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             Collection<String> classpath;
@@ -204,10 +205,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             return value;
         }
     },
-    LIBRARY_PATH( "Library path:" )
+    LIBRARY_PATH( "Library path" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             RuntimeMXBean runtime = ManagementFactory.getRuntimeMXBean();
             for ( String path : runtime.getLibraryPath().split( File.pathSeparator ) )
@@ -216,10 +217,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    SYSTEM_PROPERTIES( "System.properties:" )
+    SYSTEM_PROPERTIES( "System.properties" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             for ( Object property : System.getProperties().keySet() )
             {
@@ -236,10 +237,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    TIMEZONE_DATABASE( "(IANA) TimeZone Database Version:" )
+    TIMEZONE_DATABASE( "(IANA) TimeZone Database Version" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             Map<String,Integer> versions = new HashMap<>();
             for ( String tz : ZoneRulesProvider.getAvailableZoneIds() )
@@ -257,10 +258,10 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    NETWORK( "Network information:" )
+    NETWORK( "Network information" )
     {
         @Override
-        void dumpDiagnostics( Logger logger )
+        public void dump( Logger logger )
         {
             try
             {
@@ -287,35 +288,26 @@ public enum SystemDiagnostics implements DiagnosticsProvider
         }
     };
 
-    private final String message;
+    private final String name;
 
-    SystemDiagnostics( String message )
+    SystemDiagnostics( String name )
     {
-        this.message = message;
+        this.name = name;
     }
 
     @Override
-    public String getDiagnosticsIdentifier()
+    public String getDiagnosticsName()
     {
-        return name();
+        return name;
     }
-
-    @Override
-    public void dump( Logger logger )
-    {
-        logger.log( message );
-        dumpDiagnostics( logger );
-    }
-
-    abstract void dumpDiagnostics( Logger logger );
 
     private static String canonicalize( String path )
     {
         try
         {
-            return new File( path ).getCanonicalFile().getAbsolutePath();
+            return FileUtils.getCanonicalFile( new File( path ) ).getAbsolutePath();
         }
-        catch ( IOException e )
+        catch ( UncheckedIOException e )
         {
             return new File( path ).getAbsolutePath();
         }

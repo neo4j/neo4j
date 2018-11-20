@@ -19,34 +19,20 @@
  */
 package org.neo4j.kernel.diagnostics.providers;
 
-import java.util.Map;
+import org.neo4j.internal.diagnostics.DiagnosticsProvider;
 
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.Logger;
-
-public class ConfigDiagnostics extends NamedDiagnosticsProvider
+public abstract class NamedDiagnosticsProvider implements DiagnosticsProvider
 {
-    private final Config config;
+    private final String name;
 
-    ConfigDiagnostics( Config config )
+    NamedDiagnosticsProvider( String name )
     {
-        super( "DBMS config" );
-        this.config = config;
+        this.name = name;
     }
 
     @Override
-    public void dump( Logger logger )
+    public String getDiagnosticsName()
     {
-        Map<String,String> configRaw = config.getRaw();
-        if ( configRaw.isEmpty() )
-        {
-            logger.log( "No provided DBMS settings." );
-            return;
-        }
-        logger.log( "DBMS provided settings:" );
-        for ( Map.Entry<String,String> param : configRaw.entrySet() )
-        {
-            logger.log( "%s=%s", param.getKey(), param.getValue() );
-        }
+        return name;
     }
 }

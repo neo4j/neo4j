@@ -29,7 +29,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.diagnostics.providers.KernelDiagnostics;
+import org.neo4j.kernel.diagnostics.providers.StoreFilesDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.logging.BufferingLog;
@@ -123,7 +123,7 @@ public class KernelDiagnosticsOfflineReportProvider extends DiagnosticsOfflineRe
      */
     private void listDataDirectory( List<DiagnosticsReportSource> sources )
     {
-        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( databaseLayout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( databaseLayout );
 
         BufferingLog logger = new BufferingLog();
         storeFiles.dump( logger.debugLogger() );

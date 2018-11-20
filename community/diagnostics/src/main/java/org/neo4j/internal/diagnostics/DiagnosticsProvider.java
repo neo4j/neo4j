@@ -34,7 +34,7 @@ public interface DiagnosticsProvider
      * sane default, given that the implementing class has a sensible name:
      *
      * <code><pre>
-     * public String getDiagnosticsIdentifier()
+     * public String getDiagnosticsName()
      * {
      *     return getClass().getName();
      * }
@@ -42,7 +42,7 @@ public interface DiagnosticsProvider
      *
      * @return the identifier of this diagnostics provider.
      */
-    String getDiagnosticsIdentifier();
+    String getDiagnosticsName();
 
     /**
      * Dump the diagnostic information of this {@link DiagnosticsProvider} to the provided {@link Logger logger}.

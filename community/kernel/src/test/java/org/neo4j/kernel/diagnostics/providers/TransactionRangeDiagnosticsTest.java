@@ -24,7 +24,6 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import org.neo4j.kernel.NeoStoreDataSource;
-import org.neo4j.kernel.diagnostics.providers.DataSourceDiagnostics.TransactionRangeDiagnostics;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -36,7 +35,7 @@ import org.neo4j.logging.Logger;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class DataSourceDiagnosticsTest
+class TransactionRangeDiagnosticsTest
 {
     @Test
     void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()

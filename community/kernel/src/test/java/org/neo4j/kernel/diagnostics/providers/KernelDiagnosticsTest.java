@@ -43,7 +43,7 @@ class KernelDiagnosticsTest
         when( databaseDir.getFreeSpace() ).thenReturn( 40L );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "100 / 40 / 40" );
@@ -77,7 +77,7 @@ class KernelDiagnosticsTest
         when( databaseDir.getAbsolutePath() ).thenReturn( "/test/storeDir" );
 
         AssertableLogProvider logProvider = new AssertableLogProvider();
-        KernelDiagnostics.StoreFiles storeFiles = new KernelDiagnostics.StoreFiles( layout );
+        StoreFilesDiagnostics storeFiles = new StoreFilesDiagnostics( layout );
         storeFiles.dump( logProvider.getLog( getClass() ).debugLogger() );
 
         logProvider.assertContainsMessageContaining( "Total size of store: 4.00 kB" );

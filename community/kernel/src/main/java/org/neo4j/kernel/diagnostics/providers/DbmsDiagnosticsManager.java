@@ -95,9 +95,9 @@ public class DbmsDiagnosticsManager
         DatabaseInfo databaseInfo = databaseResolver.resolveDependency( DatabaseInfo.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
-        diagnosticsManager.dump( new KernelDiagnostics.Versions( databaseInfo, neoStoreDataSource.getStoreId() ), log );
-        diagnosticsManager.dump( new KernelDiagnostics.StoreFiles( neoStoreDataSource.getDatabaseLayout() ), log );
-        diagnosticsManager.dump( new DataSourceDiagnostics.TransactionRangeDiagnostics( neoStoreDataSource ), log );
+        diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, neoStoreDataSource.getStoreId() ), log );
+        diagnosticsManager.dump( new StoreFilesDiagnostics( neoStoreDataSource.getDatabaseLayout() ), log );
+        diagnosticsManager.dump( new TransactionRangeDiagnostics( neoStoreDataSource ), log );
         storageEngine.dumpDiagnostics( diagnosticsManager, log );
     }
 
