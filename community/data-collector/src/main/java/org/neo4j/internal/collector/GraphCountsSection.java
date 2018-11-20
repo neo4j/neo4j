@@ -51,7 +51,7 @@ import org.neo4j.register.Registers;
  */
 class GraphCountsSection
 {
-    static String name = "GRAPH COUNTS";
+    static final String name = "GRAPH COUNTS";
 
     static Stream<RetrieveResult> collect( Kernel kernel, Anonymizer anonymizer )
     {

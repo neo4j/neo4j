@@ -42,12 +42,17 @@ public class CollectorProcedures
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
             throws InvalidArgumentsException
     {
-        if ( section.toLowerCase().equals( GraphCountsSection.name.toLowerCase() ) )
+        String upperSection = section.toUpperCase();
+        if ( upperSection.equals( GraphCountsSection.name ) )
         {
             return GraphCountsSection.collect( dataCollector.kernel, Anonymizer.PLAIN_TEXT );
         }
-        throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s']",
-                                                            section, GraphCountsSection.name ) );
+        if ( upperSection.equals( TokensSection.name ) )
+        {
+            return TokensSection.collect( dataCollector.kernel );
+        }
+        throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s', '%s']",
+                                                            section, GraphCountsSection.name, TokensSection.name ) );
     }
 
     @Description( "Retrieve all available statistical data about the current database, in an anonymized form." )
