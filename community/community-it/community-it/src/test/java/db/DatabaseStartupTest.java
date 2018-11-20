@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.lifecycle.LifecycleException;
+import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
@@ -132,6 +133,31 @@ class DatabaseStartupTest
         GraphDatabaseFactory databaseFactory = new EphemeralGraphDatabaseFactory( factory );
         GraphDatabaseService service = databaseFactory.newEmbeddedDatabase( directory );
         service.shutdown();
+    }
+
+    @Test
+    void dumpSystemDiagnosticLoggingOnStartup()
+    {
+        AssertableLogProvider logProvider = new AssertableLogProvider();
+        GraphDatabaseService database = new TestGraphDatabaseFactory().setInternalLogProvider( logProvider ).newEmbeddedDatabase( testDirectory.databaseDir() );
+        try
+        {
+            logProvider.assertContainsMessageContaining( "System diagnostics" );
+            logProvider.assertContainsMessageContaining( "System memory information" );
+            logProvider.assertContainsMessageContaining( "JVM memory information" );
+            logProvider.assertContainsMessageContaining( "Operating system information" );
+            logProvider.assertContainsMessageContaining( "JVM information" );
+            logProvider.assertContainsMessageContaining( "Java classpath" );
+            logProvider.assertContainsMessageContaining( "Library path" );
+            logProvider.assertContainsMessageContaining( "System properties" );
+            logProvider.assertContainsMessageContaining( "(IANA) TimeZone database version" );
+            logProvider.assertContainsMessageContaining( "Network information" );
+            logProvider.assertContainsMessageContaining( "DBMS config" );
+        }
+        finally
+        {
+            database.shutdown();
+        }
     }
 
     private static class EphemeralCommunityFacadeFactory extends GraphDatabaseFacadeFactory

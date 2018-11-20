@@ -88,7 +88,7 @@ public class DbmsDiagnosticsManager
 
     private void dumpSystemDiagnostics( Log log )
     {
-        diagnosticsManager.section( log, "System Diagnostics" );
+        diagnosticsManager.section( log, "System diagnostics" );
         diagnosticsManager.dump( SystemDiagnostics.class, log );
         diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
     }
