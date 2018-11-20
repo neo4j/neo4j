@@ -114,6 +114,25 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
     duration should be <= 120000L
   }
 
+  test("should plan a large star relationship pattern") {
+      // GIVEN
+      makeStarDataset(9)
+
+      // WHEN
+      val query = makeStarPatternQuery(9)
+      val start = System.currentTimeMillis()
+      val result = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
+      val duration = System.currentTimeMillis() - start
+
+      // THEN
+      val plan = result.executionPlanDescription()
+      val counts = countExpandsAndJoins(plan)
+      counts("expands") should equal(9)
+
+      // Check that planning didn't take longer than 2 minutes
+      duration should be <= 120000L
+  }
+
   test("very long pattern expressions should be solvable with multiple planners giving identical results using index lookups, expands and joins") {
 
     graph.createIndex("Person", "name")
@@ -241,6 +260,22 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       if (a > 0) relate(nodes(s"n(${a - 1},${b})"), nodes(s"n(${a},${b})"), "KNOWS", s"n(${a - 1},${b}-n(${a},${b})")
       if (b > 0) relate(nodes(s"n(${a},${b - 1})"), nodes(s"n(${a},${b})"), "KNOWS", s"n(${a},${b - 1}-n(${a},${b})")
     }
+  }
+
+  private def makeStarDataset(size: Int): Unit = graph.inTx {
+    val center = createLabeledNode("Center")
+
+    for (i <- 1 to size) {
+      val node = createLabeledNode(s"Label$i")
+      relate(center, node, s"REL$i")
+    }
+  }
+
+  private def makeStarPatternQuery(size: Int): String = {
+    val (matchStatement, returnStatement) = (1 to size).foldLeft(("MATCH (c:Center) WITH c LIMIT 1 ", "RETURN c")) {
+      (strings, i) => (strings._1 + s"MATCH (c)-[:REL$i]->(n$i:Label$i) ", strings._2 + s", n$i")
+    }
+    matchStatement + returnStatement
   }
 
   private def runWithConfig(m: (Setting[_], String)*)(run: (ExecutionEngine, GraphDatabaseCypherService) => Unit) = {
