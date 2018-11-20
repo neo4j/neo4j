@@ -21,25 +21,25 @@ package org.neo4j.kernel.diagnostics.providers;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.logging.Logger;
 
 public class TransactionRangeDiagnostics extends NamedDiagnosticsProvider
 {
-    private final NeoStoreDataSource dataSource;
+    private final Database database;
 
-    TransactionRangeDiagnostics( NeoStoreDataSource dataSource )
+    TransactionRangeDiagnostics( Database database )
     {
         super( "Transaction log" );
-        this.dataSource = dataSource;
+        this.database = database;
     }
 
     @Override
     public void dump( Logger logger )
     {
-        LogFiles logFiles = dataSource.getDependencyResolver().resolveDependency( LogFiles.class );
+        LogFiles logFiles = database.getDependencyResolver().resolveDependency( LogFiles.class );
         try
         {
             for ( long logVersion = logFiles.getLowestLogVersion(); logFiles.versionExists( logVersion ); logVersion++ )

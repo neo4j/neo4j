@@ -46,7 +46,9 @@ import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.diagnostics.providers.NeoStoresDiagnostics;
+import org.neo4j.kernel.diagnostics.providers.NeoStoresDiagnostics.NeoStoreIdUsage;
+import org.neo4j.kernel.diagnostics.providers.NeoStoresDiagnostics.NeoStoreRecords;
+import org.neo4j.kernel.diagnostics.providers.NeoStoresDiagnostics.NeoStoreVersions;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
@@ -484,9 +486,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void dumpDiagnostics( DiagnosticsManager diagnosticsManager, Log log )
     {
-        diagnosticsManager.dump( new NeoStoresDiagnostics.NeoStoreIdUsage( neoStores ), log );
-        diagnosticsManager.dump( new NeoStoresDiagnostics.NeoStoreRecords( neoStores ), log );
-        diagnosticsManager.dump( new NeoStoresDiagnostics.NeoStoreVersions( neoStores ), log );
+        diagnosticsManager.dump( new NeoStoreIdUsage( neoStores ), log );
+        diagnosticsManager.dump( new NeoStoreRecords( neoStores ), log );
+        diagnosticsManager.dump( new NeoStoreVersions( neoStores ), log );
     }
 
     @Override

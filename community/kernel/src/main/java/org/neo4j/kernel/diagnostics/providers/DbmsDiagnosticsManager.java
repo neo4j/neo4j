@@ -23,8 +23,8 @@ import java.util.List;
 
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
-import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
@@ -46,9 +46,9 @@ public class DbmsDiagnosticsManager
         dumpSystemDiagnostics( diagnosticsManager.getLog() );
     }
 
-    public void dumpDatabaseDiagnostics( NeoStoreDataSource neoStoreDataSource )
+    public void dumpDatabaseDiagnostics( Database database )
     {
-        dumpDatabaseDiagnostics( neoStoreDataSource, diagnosticsManager.getLog() );
+        dumpDatabaseDiagnostics( database, diagnosticsManager.getLog() );
     }
 
     public void dumpAll()
@@ -70,8 +70,8 @@ public class DbmsDiagnosticsManager
     public void dump( String databaseName, Log log )
     {
         getDatabaseManager().getDatabaseFacade( databaseName ).map(
-                facade -> facade.getDependencyResolver().resolveDependency( NeoStoreDataSource.class ) )
-                .ifPresent( dataSource -> dumpDatabaseDiagnostics( dataSource, log ) );
+                facade -> facade.getDependencyResolver().resolveDependency( Database.class ) )
+                .ifPresent( database -> dumpDatabaseDiagnostics( database, log ) );
     }
 
     private void dumpAllDatabases( Log log )
@@ -89,15 +89,15 @@ public class DbmsDiagnosticsManager
         diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
     }
 
-    private void dumpDatabaseDiagnostics( NeoStoreDataSource neoStoreDataSource, Log log )
+    private void dumpDatabaseDiagnostics( Database database, Log log )
     {
-        Dependencies databaseResolver = neoStoreDataSource.getDependencyResolver();
+        Dependencies databaseResolver = database.getDependencyResolver();
         DatabaseInfo databaseInfo = databaseResolver.resolveDependency( DatabaseInfo.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
-        diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, neoStoreDataSource.getStoreId() ), log );
-        diagnosticsManager.dump( new StoreFilesDiagnostics( neoStoreDataSource.getDatabaseLayout() ), log );
-        diagnosticsManager.dump( new TransactionRangeDiagnostics( neoStoreDataSource ), log );
+        diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
+        diagnosticsManager.dump( new StoreFilesDiagnostics( database.getDatabaseLayout() ), log );
+        diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );
         storageEngine.dumpDiagnostics( diagnosticsManager, log );
     }
 

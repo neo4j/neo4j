@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.NeoStoreDataSource;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -41,12 +41,12 @@ class TransactionRangeDiagnosticsTest
     void shouldLogCorrectTransactionLogDiagnosticsForNoTransactionLogs()
     {
         // GIVEN
-        NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId( noLogs() );
+        Database database = databaseWithLogFilesContainingLowestTxId( noLogs() );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        new TransactionRangeDiagnostics( dataSource ).dump( logger );
+        new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "No transactions" );
@@ -58,13 +58,13 @@ class TransactionRangeDiagnosticsTest
         // GIVEN
         long logVersion = 2;
         long prevLogLastTxId = 45;
-        NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
+        Database database = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactions( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        new TransactionRangeDiagnostics( dataSource ).dump( logger );
+        new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
@@ -77,26 +77,26 @@ class TransactionRangeDiagnosticsTest
         // GIVEN
         long logVersion = 2;
         long prevLogLastTxId = 45;
-        NeoStoreDataSource dataSource = neoStoreDataSourceWithLogFilesContainingLowestTxId(
+        Database database = databaseWithLogFilesContainingLowestTxId(
                 logWithTransactionsInNextToOldestLog( logVersion, prevLogLastTxId ) );
         AssertableLogProvider logProvider = new AssertableLogProvider();
         Logger logger = logProvider.getLog( getClass() ).infoLogger();
 
         // WHEN
-        new TransactionRangeDiagnostics( dataSource ).dump( logger );
+        new TransactionRangeDiagnostics( database ).dump( logger );
 
         // THEN
         logProvider.assertContainsMessageContaining( "transaction " + (prevLogLastTxId + 1) );
         logProvider.assertContainsMessageContaining( "version " + (logVersion + 1) );
     }
 
-    private static NeoStoreDataSource neoStoreDataSourceWithLogFilesContainingLowestTxId( LogFiles files )
+    private static Database databaseWithLogFilesContainingLowestTxId( LogFiles files )
     {
         Dependencies dependencies = mock( Dependencies.class );
         when( dependencies.resolveDependency( LogFiles.class ) ).thenReturn( files );
-        NeoStoreDataSource dataSource = mock( NeoStoreDataSource.class );
-        when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
-        return dataSource;
+        Database database = mock( Database.class );
+        when( database.getDependencyResolver() ).thenReturn( dependencies );
+        return database;
     }
 
     private static LogFiles logWithTransactionsInNextToOldestLog( long logVersion, long prevLogLastTxId )
