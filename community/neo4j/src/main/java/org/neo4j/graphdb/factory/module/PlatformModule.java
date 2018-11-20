@@ -142,7 +142,7 @@ public class PlatformModule
         dependencies.satisfyDependency( databaseInfo );
 
         clock = dependencies.satisfyDependency( createClock() );
-        life = dependencies.satisfyDependency( createLife() );
+        life = createLife();
 
         this.storeLayout = StoreLayout.of( providedStoreDir );
 
