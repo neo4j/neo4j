@@ -115,22 +115,33 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   }
 
   test("should plan a large star relationship pattern") {
+    for (numberOfPatternRelationships <- Range(9, 50, 5))
+    {
       // GIVEN
-      makeStarDataset(9)
+      makeStarDataset(numberOfPatternRelationships)
 
       // WHEN
-      val query = makeStarPatternQuery(9)
+      val query = makeStarPatternQuery(numberOfPatternRelationships)
+      if (VERBOSE) {
+        println(s"Running IDP on pattern expression of length $numberOfPatternRelationships")
+        println(s"\t$query")
+      }
       val start = System.currentTimeMillis()
       val result = innerExecuteDeprecated(s"EXPLAIN CYPHER planner=IDP $query", Map.empty)
       val duration = System.currentTimeMillis() - start
+      if (VERBOSE) {
+        println(result.executionPlanDescription())
+        println(s"IDP took ${duration}ms to solve length $numberOfPatternRelationships")
+      }
 
       // THEN
       val plan = result.executionPlanDescription()
       val counts = countExpandsAndJoins(plan)
-      counts("expands") should equal(9)
+      counts("expands") should equal(numberOfPatternRelationships)
 
-      // Check that planning didn't take longer than 2 minutes
+      // Check that planning didn't take longer than 2 minutes (normally takes ~ 1 - 3 seconds on an laptop)
       duration should be <= 120000L
+    }
   }
 
   test("very long pattern expressions should be solvable with multiple planners giving identical results using index lookups, expands and joins") {
