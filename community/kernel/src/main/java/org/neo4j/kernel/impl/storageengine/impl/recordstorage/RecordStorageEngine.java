@@ -432,17 +432,11 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         idController.start();
     }
 
-    @Override
+    @VisibleForTesting
     public void loadSchemaCache()
     {
         List<SchemaRule> schemaRules = Iterators.asList( neoStores.getSchemaStore().loadAllSchemaRules() );
         schemaCache.load( schemaRules );
-    }
-
-    @Override
-    public void clearBufferedIds()
-    {
-        idController.clear();
     }
 
     @Override

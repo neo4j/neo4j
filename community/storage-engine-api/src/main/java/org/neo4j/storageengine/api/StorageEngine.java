@@ -142,15 +142,4 @@ public interface StorageEngine
      * @return the {@link StoreId} of the underlying store.
      */
     StoreId getStoreId();
-
-    // ====================================================================
-    // All these methods below are temporary while in the process of
-    // creating this API, take little notice to them, as they will go away
-    // ====================================================================
-
-    @Deprecated
-    void loadSchemaCache();
-
-    @Deprecated
-    void clearBufferedIds();
 }
