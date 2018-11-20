@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.stream.Stream;
 
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
@@ -37,6 +38,7 @@ public class CollectorProcedures
     @Context
     public DataCollector dataCollector;
 
+    @Admin
     @Description( "Retrieve statistical data about the current database." )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
@@ -55,6 +57,7 @@ public class CollectorProcedures
                                                             section, GraphCountsSection.name, TokensSection.name ) );
     }
 
+    @Admin
     @Description( "Retrieve all available statistical data about the current database, in an anonymized form." )
     @Procedure( name = "db.stats.retrieveAllAnonymized", mode = Mode.READ )
     public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken" ) String graphToken )
