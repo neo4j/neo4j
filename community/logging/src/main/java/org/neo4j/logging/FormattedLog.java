@@ -28,7 +28,6 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -71,19 +70,6 @@ public class FormattedLog extends AbstractLog
         public Builder withUTCZoneId()
         {
             return withZoneId( ZoneOffset.UTC );
-        }
-
-        /**
-         * Set the zoneId for datestamps in the log
-         *
-         * @return this builder
-         * @param timezone to use
-         * @deprecated use {@link #withZoneId(ZoneId)}
-         */
-        @Deprecated
-        public Builder withTimeZone( TimeZone timezone )
-        {
-            return this.withZoneId( timezone.toZoneId() );
         }
 
         /**
@@ -247,19 +233,6 @@ public class FormattedLog extends AbstractLog
     public static Builder withUTCTimeZone()
     {
         return new Builder().withUTCZoneId();
-    }
-
-    /**
-     * Start creating a {@link FormattedLog} with the specified zoneId from timezone for datestamps in the log
-     *
-     * @param timezone to use
-     * @return a builder for a {@link FormattedLog}
-     * @deprecated use {@link #withZoneId(ZoneId)}
-     */
-    @Deprecated
-    public static Builder withTimeZone( TimeZone timezone )
-    {
-        return new Builder().withZoneId( timezone.toZoneId() );
     }
 
     /**

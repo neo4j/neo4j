@@ -24,7 +24,6 @@ import java.io.StringWriter;
 import java.lang.Thread.State;
 import java.lang.Thread.UncaughtExceptionHandler;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -40,8 +39,6 @@ public class Exceptions
     public static final UncaughtExceptionHandler SILENT_UNCAUGHT_EXCEPTION_HANDLER = ( t, e ) ->
     {   // Don't print about it
     };
-
-    private static final String UNEXPECTED_MESSAGE = "Unexpected Exception";
 
     private Exceptions()
     {
@@ -119,101 +116,6 @@ public class Exceptions
         if ( clazz.isInstance( exception ) )
         {
             throw clazz.cast( exception );
-        }
-    }
-
-    /**
-     * @deprecated Use {@link Throwable#initCause(Throwable)} instead.
-     */
-    @Deprecated
-    public static <T extends Throwable> T withCause( T exception, Throwable cause )
-    {
-        try
-        {
-            exception.initCause( cause );
-        }
-        catch ( Exception failure )
-        {
-            // OK, we did our best, guess there will be no cause
-        }
-        return exception;
-    }
-
-    /**
-     * @deprecated Use {@link Throwable#addSuppressed(Throwable)} instead.
-     */
-    @Deprecated
-    public static <T extends Throwable> T withSuppressed( T exception, Throwable... suppressed )
-    {
-        if ( suppressed != null )
-        {
-            for ( Throwable s : suppressed )
-            {
-                exception.addSuppressed( s );
-            }
-        }
-        return exception;
-    }
-
-    /**
-     * @deprecated See {@link #launderedException(Class, String, Throwable)}.
-     */
-    @Deprecated
-    public static RuntimeException launderedException( Throwable exception )
-    {
-        return launderedException( RuntimeException.class, UNEXPECTED_MESSAGE, exception );
-    }
-
-    /**
-     * @deprecated See {@link #launderedException(Class, String, Throwable)}.
-     */
-    @Deprecated
-    public static RuntimeException launderedException( String messageForUnexpected, Throwable exception )
-    {
-        return launderedException( RuntimeException.class, messageForUnexpected, exception );
-    }
-
-    /**
-     * @deprecated See {@link #launderedException(Class, String, Throwable)}.
-     */
-    @Deprecated
-    public static <T extends Throwable> T launderedException( Class<T> type, Throwable exception )
-    {
-        return launderedException( type, UNEXPECTED_MESSAGE, exception );
-    }
-
-    /**
-     * @deprecated use {@code throw e} or {@code throw new RuntimeException(e)} directly. Prefer multi-caches if applicable.
-     * For more elaborate scenarios, have a look at {@link #throwIfUnchecked(Throwable)} and
-     * {@link #throwIfInstanceOf(Throwable, Class)}
-     * <p>
-     * For a more furrow explanation take a look at the very similar case:
-     * <a href="https://goo.gl/Ivn2kc">Why we deprecated {@code Throwables.propagate}</a>
-     */
-    @Deprecated
-    public static <T extends Throwable> T launderedException( Class<T> type, String messageForUnexpected,
-            Throwable exception )
-    {
-        if ( type.isInstance( exception ) )
-        {
-            return type.cast( exception );
-        }
-        else if ( exception instanceof Error )
-        {
-            throw (Error) exception;
-        }
-        else if ( exception instanceof InvocationTargetException )
-        {
-            return launderedException( type, messageForUnexpected,
-                    ( (InvocationTargetException) exception ).getTargetException() );
-        }
-        else if ( exception instanceof RuntimeException )
-        {
-            throw (RuntimeException) exception;
-        }
-        else
-        {
-            throw new RuntimeException( messageForUnexpected, exception );
         }
     }
 

@@ -28,15 +28,6 @@ import org.neo4j.graphdb.ResourceUtils;
 
 public abstract class ResourceClosingIterator<T, V> implements ResourceIterator<V>
 {
-    /**
-     * @deprecated use {@link #newResourceIterator(Iterator, Resource...)}
-     */
-    @Deprecated
-    public static <R> ResourceIterator<R> newResourceIterator( Resource resource, Iterator<R> iterator )
-    {
-        return newResourceIterator( iterator, resource );
-    }
-
     public static <R> ResourceIterator<R> newResourceIterator( Iterator<R> iterator, Resource... resources )
     {
         return new ResourceClosingIterator<R,R>( iterator, resources )
