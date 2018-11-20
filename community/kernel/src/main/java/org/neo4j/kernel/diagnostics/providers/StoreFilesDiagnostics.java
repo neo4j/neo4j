@@ -42,7 +42,7 @@ public class StoreFilesDiagnostics extends NamedDiagnosticsProvider
 
     public StoreFilesDiagnostics( DatabaseLayout databaseLayout )
     {
-        super( "Store Files" );
+        super( "Store files" );
         this.databaseLayout = databaseLayout;
         dateFormat = new SimpleDateFormat( FORMAT_DATE_ISO );
         dateFormat.setTimeZone( TimeZone.getDefault() );

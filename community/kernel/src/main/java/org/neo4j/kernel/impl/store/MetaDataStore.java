@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.OutOfOrderSequence;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
-import org.neo4j.logging.internal.CappedLogger;
 import org.neo4j.storageengine.api.StoreId;
 
 import static java.lang.String.format;
@@ -846,7 +845,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
         }
     }
 
-    public void logRecords( final Logger msgLog )
+    public void logRecords( final Logger log )
     {
         scanAllFields( PF_SHARED_READ_LOCK, cursor ->
         {
@@ -859,7 +858,7 @@ public class MetaDataStore extends CommonAbstractStore<MetaDataRecord,NoStoreHea
                 }
                 while ( cursor.shouldRetry() );
                 boolean bounds = cursor.checkAndClearBoundsFlag();
-                msgLog.log( position.name() + " (" + position.description() + "): " + value +
+                log.log( position.name() + " (" + position.description() + "): " + value +
                             (bounds ? " (out-of-bounds detected; value cannot be trusted)" : ""));
             }
             return false;

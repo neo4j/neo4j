@@ -19,9 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-
 /**
  * A visitor to internalize iteration.
  *
@@ -41,56 +38,4 @@ public interface Visitor<E, FAILURE extends Exception>
      * @throws FAILURE exception thrown by the visitor
      */
     boolean visit( E element ) throws FAILURE;
-
-    final class SafeGenerics
-    {
-        /**
-         * Useful for determining "is this an object that can visit the things I can provide?"
-         *
-         * Checks if the passed in object is a {@link Visitor} and if the objects it can
-         * {@link Visitor#visit(Object) visit} is compatible (super type of) with the provided type. Returns the
-         * visitor cast to compatible type parameters. If the passed in object is not an instance of {@link Visitor},
-         * or if it is a {@link Visitor} but one that {@link Visitor#visit(Object) visits} another type of object, this
-         * method returns {@code null}.
-         *
-         * @param eType element type of the visitor
-         * @param fType failure type of the visitor
-         * @param visitor the visitor
-         * @param <T> type of the elements
-         * @param <F> type of the exception
-         * @return the visitor cast to compatible type parameters or {@code null}
-         */
-        @SuppressWarnings( "unchecked"/*checked through reflection*/ )
-        public static <T, F extends Exception>
-        Visitor<? super T, ? extends F> castOrNull( Class<T> eType, Class<F> fType, Object visitor )
-        {
-            if ( visitor instanceof Visitor<?, ?> )
-            {
-                for ( Type iface : visitor.getClass().getGenericInterfaces() )
-                {
-                    if ( iface instanceof ParameterizedType )
-                    {
-                        ParameterizedType paramType = (ParameterizedType) iface;
-                        if ( paramType.getRawType() == Visitor.class )
-                        {
-                            Type arg = paramType.getActualTypeArguments()[0];
-                            if ( arg instanceof ParameterizedType )
-                            {
-                                arg = ((ParameterizedType) arg).getRawType();
-                            }
-                            if ( (arg instanceof Class<?>) && ((Class<?>) arg).isAssignableFrom( eType ) )
-                            {
-                                return (Visitor<? super T, ? extends F>) visitor;
-                            }
-                        }
-                    }
-                }
-            }
-            return null;
-        }
-
-        private SafeGenerics()
-        {
-        }
-    }
 }

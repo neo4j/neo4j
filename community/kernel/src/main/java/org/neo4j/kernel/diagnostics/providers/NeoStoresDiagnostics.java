@@ -28,7 +28,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
     {
         public NeoStoreVersions( NeoStores nodeStores )
         {
-            super( nodeStores, "Store Versions" );
+            super( nodeStores, "Store versions" );
         }
 
         @Override
@@ -43,7 +43,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
 
         public NeoStoreIdUsage( NeoStores neoStores )
         {
-            super( neoStores, "Id Usage" );
+            super( neoStores, "Id usage" );
         }
 
         @Override
@@ -57,7 +57,7 @@ public abstract class NeoStoresDiagnostics extends NamedDiagnosticsProvider
     {
         public NeoStoreRecords( NeoStores neoStores )
         {
-            super( neoStores,  "Neostore Records"  );
+            super( neoStores,  "Neostore records"  );
         }
 
         @Override

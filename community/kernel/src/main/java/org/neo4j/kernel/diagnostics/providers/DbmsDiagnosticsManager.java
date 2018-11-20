@@ -28,32 +28,35 @@ import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
+import org.neo4j.logging.internal.LogService;
 import org.neo4j.storageengine.api.StorageEngine;
 
 public class DbmsDiagnosticsManager
 {
     private final Dependencies dependencies;
     private final DiagnosticsManager diagnosticsManager;
+    private final Log log;
 
-    public DbmsDiagnosticsManager( Dependencies dependencies, DiagnosticsManager diagnosticsManager )
+    public DbmsDiagnosticsManager( Dependencies dependencies, LogService logService )
     {
+        this.log = logService.getInternalLog( DiagnosticsManager.class );
         this.dependencies = dependencies;
-        this.diagnosticsManager = diagnosticsManager;
+        this.diagnosticsManager = new DiagnosticsManager( log );
     }
 
     public void dumpSystemDiagnostics()
     {
-        dumpSystemDiagnostics( diagnosticsManager.getLog() );
+        dumpSystemDiagnostics( log );
     }
 
     public void dumpDatabaseDiagnostics( Database database )
     {
-        dumpDatabaseDiagnostics( database, diagnosticsManager.getLog() );
+        dumpDatabaseDiagnostics( database, log );
     }
 
     public void dumpAll()
     {
-        dumpAll( diagnosticsManager.getLog() );
+        dumpAll( log );
     }
 
     public void dumpAll( Log log )
@@ -64,7 +67,7 @@ public class DbmsDiagnosticsManager
 
     public void dump( String databaseName )
     {
-        dump( databaseName, diagnosticsManager.getLog() );
+        dump( databaseName, log );
     }
 
     public void dump( String databaseName, Log log )
@@ -85,6 +88,7 @@ public class DbmsDiagnosticsManager
 
     private void dumpSystemDiagnostics( Log log )
     {
+        diagnosticsManager.section( log, "System Diagnostics" );
         diagnosticsManager.dump( SystemDiagnostics.class, log );
         diagnosticsManager.dump( new ConfigDiagnostics( dependencies.resolveDependency( Config.class ) ), log );
     }
@@ -95,6 +99,7 @@ public class DbmsDiagnosticsManager
         DatabaseInfo databaseInfo = databaseResolver.resolveDependency( DatabaseInfo.class );
         StorageEngine storageEngine = databaseResolver.resolveDependency( StorageEngine.class );
 
+        diagnosticsManager.section( log, "Database: " + database.getDatabaseName() );
         diagnosticsManager.dump( new VersionDiagnostics( databaseInfo, database.getStoreId() ), log );
         diagnosticsManager.dump( new StoreFilesDiagnostics( database.getDatabaseLayout() ), log );
         diagnosticsManager.dump( new TransactionRangeDiagnostics( database ), log );

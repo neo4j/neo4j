@@ -49,6 +49,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
 import static java.lang.Math.max;
+import static java.lang.String.format;
 import static java.nio.file.StandardOpenOption.DELETE_ON_CLOSE;
 import static org.neo4j.helpers.ArrayUtil.contains;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
@@ -939,13 +940,12 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
 
     void logVersions( Logger logger )
     {
-        logger.log( "  " + getTypeDescriptor() + " " + storeVersion );
+        logger.log( getTypeDescriptor() + " " + storeVersion );
     }
 
     void logIdUsage( Logger logger )
     {
-        logger.log( String.format( "  %s: used=%s high=%s",
-                getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
+        logger.log( format( "%s: used=%s high=%s", getTypeDescriptor(), getNumberOfIdsInUse(), getHighestPossibleIdInUse() ) );
     }
 
     /**

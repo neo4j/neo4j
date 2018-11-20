@@ -24,9 +24,21 @@ import java.util.List;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 
-// TODO:javadoc
+import static org.apache.commons.lang3.StringUtils.EMPTY;
+import static org.apache.commons.lang3.StringUtils.center;
+import static org.apache.commons.lang3.StringUtils.repeat;
+
+/**
+ * Manager that dumps information from independent available {@link DiagnosticsProvider}s.
+ * Each independent diagnostics provider will be logged as table with caption and body, where caption will contain provider name
+ * and body - information provided by diagnostic provider.
+ */
 public class DiagnosticsManager
 {
+    private static final int CAPTION_WIDTH = 80;
+    private static final String NAME_START = "[ ";
+    private static final String NAME_END = " ]";
+
     private final Log log;
 
     public DiagnosticsManager( Log log )
@@ -36,7 +48,7 @@ public class DiagnosticsManager
 
     public void dump( DiagnosticsProvider provider )
     {
-        dump( provider, getLog() );
+        dump( provider, log );
     }
 
     public void dump( List<DiagnosticsProvider> providers, Log dumpLog )
@@ -52,7 +64,7 @@ public class DiagnosticsManager
 
     public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider )
     {
-        dump( enumProvider, getLog() );
+        dump( enumProvider, log );
     }
 
     public <E extends Enum & DiagnosticsProvider> void dump( Class<E> enumProvider, Log log )
@@ -73,7 +85,9 @@ public class DiagnosticsManager
         }
         try
         {
+            header( log, provider.getDiagnosticsName() );
             provider.dump( log.infoLogger() );
+            log.info( EMPTY );
         }
         catch ( Exception cause )
         {
@@ -81,8 +95,22 @@ public class DiagnosticsManager
         }
     }
 
-    public Log getLog()
+    public void section( Log log, String sectionName )
     {
-        return log;
+        log.info( repeat( "*", CAPTION_WIDTH ) );
+        log.info( center( title( sectionName ), CAPTION_WIDTH ) );
+        log.info( repeat( "*", CAPTION_WIDTH ) );
+    }
+
+    private static void header( Log log, String caption )
+    {
+        log.info( repeat( "-", CAPTION_WIDTH ) );
+        log.info( center( title( caption ), CAPTION_WIDTH ) );
+        log.info( repeat( "-", CAPTION_WIDTH ) );
+    }
+
+    private static String title( String name )
+    {
+        return NAME_START + name + NAME_END;
     }
 }

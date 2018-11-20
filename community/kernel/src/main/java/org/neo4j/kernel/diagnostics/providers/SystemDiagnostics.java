@@ -217,7 +217,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    SYSTEM_PROPERTIES( "System.properties" )
+    SYSTEM_PROPERTIES( "System properties" )
     {
         @Override
         public void dump( Logger logger )
@@ -237,7 +237,7 @@ public enum SystemDiagnostics implements DiagnosticsProvider
             }
         }
     },
-    TIMEZONE_DATABASE( "(IANA) TimeZone Database Version" )
+    TIMEZONE_DATABASE( "(IANA) TimeZone database version" )
     {
         @Override
         public void dump( Logger logger )

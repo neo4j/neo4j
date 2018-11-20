@@ -196,8 +196,7 @@ public class PlatformModule
 
         life.add( new PageCacheLifecycle( pageCache ) );
 
-        DiagnosticsManager diagnosticsManager = new DiagnosticsManager( logService.getInternalLog( DiagnosticsManager.class ) );
-        dbmsDiagnosticsManager = new DbmsDiagnosticsManager( dependencies, diagnosticsManager );
+        dbmsDiagnosticsManager = new DbmsDiagnosticsManager( dependencies, logService );
         dependencies.satisfyDependency( dbmsDiagnosticsManager );
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
