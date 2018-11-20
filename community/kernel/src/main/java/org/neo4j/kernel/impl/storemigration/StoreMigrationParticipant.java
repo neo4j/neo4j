@@ -21,9 +21,9 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
 
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.storemigration.participant.AbstractStoreMigrationParticipant;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 
 public interface StoreMigrationParticipant

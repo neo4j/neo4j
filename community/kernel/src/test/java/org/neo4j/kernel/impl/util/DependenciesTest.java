@@ -26,6 +26,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
+
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;

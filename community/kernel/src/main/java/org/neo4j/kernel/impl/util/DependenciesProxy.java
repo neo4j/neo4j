@@ -25,6 +25,7 @@ import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Proxy;
 import java.util.function.Supplier;
 
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.DependencyResolver;
 
 /**

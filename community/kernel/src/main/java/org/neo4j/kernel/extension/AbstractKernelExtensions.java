@@ -27,7 +27,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.DependenciesProxy;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 

@@ -73,7 +73,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;

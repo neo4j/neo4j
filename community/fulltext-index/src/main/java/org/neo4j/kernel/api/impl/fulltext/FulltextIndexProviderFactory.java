@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.recovery.RecoveryExtension;
 import org.neo4j.logging.Log;
