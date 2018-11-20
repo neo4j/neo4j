@@ -39,7 +39,7 @@ public class CollectorProcedures
 
     @Description( "Retrieve statistical data about the current database." )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
-    public Stream<RetrieveResult> retrieve( @Name( value = "section", defaultValue = "all" ) String section )
+    public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
             throws InvalidArgumentsException
     {
         if ( section.toLowerCase().equals( GraphCountsSection.name.toLowerCase() ) )
@@ -52,7 +52,7 @@ public class CollectorProcedures
 
     @Description( "Retrieve all available statistical data about the current database, in an anonymized form." )
     @Procedure( name = "db.stats.retrieveAllAnonymized", mode = Mode.READ )
-    public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken", defaultValue = "" ) String graphToken )
+    public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken" ) String graphToken )
     {
         Map<String, Object> metaData = new HashMap<>();
         metaData.put( "graphToken", graphToken );
