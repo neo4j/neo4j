@@ -84,6 +84,45 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
 
   test("retrieve complex graph") {
     // given
+    createSteelfaceGraph()
+
+    // when
+    val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
+
+    // then
+    assertSteelfaceGraphCounts(res, TokenNames("User",
+                                               "Car",
+                                               "Room",
+                                               "OWNS",
+                                               "STAYS_IN",
+                                               "email",
+                                               "lastName",
+                                               "firstName",
+                                               "number",
+                                               "hotel"))
+  }
+
+  test("retrieve anonymized complex graph") {
+    // given
+    createSteelfaceGraph()
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')").toList.filter(row => row("section") == "GRAPH COUNTS").head
+
+    // then
+    assertSteelfaceGraphCounts(res, TokenNames("L0",
+                                               "L1",
+                                               "L2",
+                                               "R0",
+                                               "R1",
+                                               "p0",
+                                               "p1",
+                                               "p2",
+                                               "p3",
+                                               "p4"))
+  }
+
+  private def createSteelfaceGraph(): Unit = {
     val users =
       graph.inTx {
         val users = (0 until 1000).map(i => createLabeledNode(Map("email" -> s"user$i@mail.com"), "User"))
@@ -130,37 +169,48 @@ class DataCollectorGraphCountsAcceptanceTest extends ExecutionEngineFunSuite wit
     graph.inTx { // these are added after index uniqueness estimation
       (0 until 8).map(i => createLabeledNode(Map("number" -> i), "Car"))
     }
+  }
 
-    // when
-    val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
+  case class TokenNames(User: String,
+                        Car: String,
+                        Room: String,
+                        OWNS: String,
+                        STAYS_IN: String,
+                        email: String,
+                        lastName: String,
+                        firstName: String,
+                        number: String,
+                        hotel: String)
 
-    // then
+  private def assertSteelfaceGraphCounts(res: Map[String, AnyRef], tokenNames: TokenNames): Unit = {
+    import tokenNames._
+
     res("section") should be("GRAPH COUNTS")
     list(res("data"), "nodes") should contain only(
       Map("count" -> 1278),
-      Map("label" -> "User", "count" -> 1000),
-      Map("label" -> "Car", "count" -> 128),
-      Map("label" -> "Room", "count" -> 150)
+      Map("label" -> User, "count" -> 1000),
+      Map("label" -> Car, "count" -> 128),
+      Map("label" -> Room, "count" -> 150)
     )
     list(res("data"), "relationships") should contain only(
       Map("count" -> 320),
-      Map("relationshipType" -> "OWNS", "count" -> 170),
-      Map("relationshipType" -> "OWNS", "startLabel" -> "User", "count" -> 170),
-      Map("relationshipType" -> "OWNS", "endLabel" -> "Car", "count" -> 100),
-      Map("relationshipType" -> "OWNS", "endLabel" -> "Room", "count" -> 70),
-      Map("relationshipType" -> "STAYS_IN", "count" -> 150),
-      Map("relationshipType" -> "STAYS_IN", "startLabel" -> "User", "count" -> 150),
-      Map("relationshipType" -> "STAYS_IN", "endLabel" -> "Room", "count" -> 150)
+      Map("relationshipType" -> OWNS, "count" -> 170),
+      Map("relationshipType" -> OWNS, "startLabel" -> User, "count" -> 170),
+      Map("relationshipType" -> OWNS, "endLabel" -> Car, "count" -> 100),
+      Map("relationshipType" -> OWNS, "endLabel" -> Room, "count" -> 70),
+      Map("relationshipType" -> STAYS_IN, "count" -> 150),
+      Map("relationshipType" -> STAYS_IN, "startLabel" -> User, "count" -> 150),
+      Map("relationshipType" -> STAYS_IN, "endLabel" -> Room, "count" -> 150)
     )
     list(res("data"), "indexes") should contain only(
-      Map("labels" -> List("User"), "properties" -> List("email"), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List("User"), "properties" -> List("lastName"), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List("User"), "properties" -> List("firstName", "lastName"), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List("Room"), "properties" -> List("hotel", "number"), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0),
-      Map("labels" -> List("Car"), "properties" -> List("number"), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8)
+      Map("labels" -> List(User), "properties" -> List(email), "totalSize" -> 1000, "estimatedUniqueSize" -> 1000, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(User), "properties" -> List(lastName), "totalSize" -> 500, "estimatedUniqueSize" -> 500, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(User), "properties" -> List(firstName, lastName), "totalSize" -> 300, "estimatedUniqueSize" -> 300, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(Room), "properties" -> List(hotel, number), "totalSize" -> 150, "estimatedUniqueSize" -> 50, "updatesSinceEstimation" -> 0),
+      Map("labels" -> List(Car), "properties" -> List(number), "totalSize" -> 120, "estimatedUniqueSize" -> 120, "updatesSinceEstimation" -> 8)
     )
     list(res("data"), "constraints") should contain only
-      Map("label" -> "User", "properties" -> List("email"), "type" -> "Uniqueness constraint")
+      Map("label" -> User, "properties" -> List(email), "type" -> "Uniqueness constraint")
   }
 
   private def list(map: AnyRef, key: String): IndexedSeq[AnyRef] =

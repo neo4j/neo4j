@@ -44,7 +44,7 @@ public class CollectorProcedures
     {
         if ( section.toLowerCase().equals( GraphCountsSection.name.toLowerCase() ) )
         {
-            return GraphCountsSection.collect( dataCollector.kernel );
+            return GraphCountsSection.collect( dataCollector.kernel, Anonymizer.PLAIN_TEXT );
         }
         throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s']",
                                                             section, GraphCountsSection.name ) );
@@ -59,6 +59,6 @@ public class CollectorProcedures
         metaData.put( "retrieveTime", ZonedDateTime.now() );
         Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
 
-        return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel ) );
+        return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel, Anonymizer.IDS ) );
     }
 }

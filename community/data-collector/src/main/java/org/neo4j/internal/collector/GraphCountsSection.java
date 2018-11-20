@@ -44,7 +44,7 @@ import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
 /**
- * The Graph Counts section hold all data that is available form the counts store, plus metadata
+ * The Graph Counts section holds all data that is available form the counts store, plus metadata
  * about the available indexes and constraints. This essentially captures all the knowledge the
  * planner has when planning, meaning that the data from this section could be used to investigate
  * planning problems.
@@ -53,7 +53,7 @@ class GraphCountsSection
 {
     static String name = "GRAPH COUNTS";
 
-    static Stream<RetrieveResult> collect( Kernel kernel )
+    static Stream<RetrieveResult> collect( Kernel kernel, Anonymizer anonymizer )
     {
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
         {
@@ -61,10 +61,10 @@ class GraphCountsSection
             Read read = tx.dataRead();
 
             Map<String,Object> data = new HashMap<>( 4 );
-            data.put( "nodes", nodeCounts( tokens, read ) );
-            data.put( "relationships", relationshipCounts( tokens, read ) );
-            data.put( "indexes", indexes( tokens, tx.schemaRead() ) );
-            data.put( "constraints", constraints( tokens, tx.schemaRead() ) );
+            data.put( "nodes", nodeCounts( tokens, read, anonymizer ) );
+            data.put( "relationships", relationshipCounts( tokens, read, anonymizer ) );
+            data.put( "indexes", indexes( tokens, tx.schemaRead(), anonymizer ) );
+            data.put( "constraints", constraints( tokens, tx.schemaRead(), anonymizer ) );
 
             return Stream.of( new RetrieveResult( "GRAPH COUNTS", data ) );
         }
@@ -74,7 +74,7 @@ class GraphCountsSection
         }
     }
 
-    private static List<Map<String,Object>> nodeCounts( TokenRead tokens, Read read )
+    private static List<Map<String,Object>> nodeCounts( TokenRead tokens, Read read, Anonymizer anonymizer )
     {
         List<Map<String,Object>> nodeCounts = new ArrayList<>();
         Map<String,Object> nodeCount = new HashMap<>( 2 );
@@ -85,7 +85,7 @@ class GraphCountsSection
         tokens.labelsGetAllTokens().forEachRemaining( t -> {
             long count = read.countsForNodeWithoutTxState( t.id() );
             Map<String,Object> labelCount = new HashMap<>( 2 );
-            labelCount.put( "label", t.name() );
+            labelCount.put( "label", anonymizer.label( t.name(), t.id() ) );
             labelCount.put( "count", count );
             nodeCounts.add( labelCount );
         } );
@@ -93,7 +93,7 @@ class GraphCountsSection
         return nodeCounts;
     }
 
-    private static List<Map<String,Object>> relationshipCounts( TokenRead tokens, Read read )
+    private static List<Map<String,Object>> relationshipCounts( TokenRead tokens, Read read, Anonymizer anonymizer )
     {
         List<Map<String,Object>> relationshipCounts = new ArrayList<>();
         Map<String,Object> relationshipCount = new HashMap<>( 2 );
@@ -105,7 +105,7 @@ class GraphCountsSection
         tokens.relationshipTypesGetAllTokens().forEachRemaining( t -> {
             long count = read.countsForRelationshipWithoutTxState( -1, t.id(), -1 );
             Map<String,Object> relationshipTypeCount = new HashMap<>( 2 );
-            relationshipTypeCount.put( "relationshipType", t.name() );
+            relationshipTypeCount.put( "relationshipType", anonymizer.relationshipType( t.name(), t.id() ) );
             relationshipTypeCount.put( "count", count );
             relationshipCounts.add( relationshipTypeCount );
 
@@ -115,8 +115,8 @@ class GraphCountsSection
                 if ( startCount > 0 )
                 {
                     Map<String,Object> x = new HashMap<>( 2 );
-                    x.put( "relationshipType", t.name() );
-                    x.put( "startLabel", label.name() );
+                    x.put( "relationshipType", anonymizer.relationshipType( t.name(), t.id() ) );
+                    x.put( "startLabel", anonymizer.label( label.name(), label.id() ) );
                     x.put( "count", startCount );
                     relationshipCounts.add( x );
                 }
@@ -124,8 +124,8 @@ class GraphCountsSection
                 if ( endCount > 0 )
                 {
                     Map<String,Object> x = new HashMap<>( 2 );
-                    x.put( "relationshipType", t.name() );
-                    x.put( "endLabel", label.name() );
+                    x.put( "relationshipType", anonymizer.relationshipType( t.name(), t.id() ) );
+                    x.put( "endLabel", anonymizer.label( label.name(), label.id() ) );
                     x.put( "count", endCount );
                     relationshipCounts.add( x );
                 }
@@ -135,7 +135,7 @@ class GraphCountsSection
         return relationshipCounts;
     }
 
-    private static List<Map<String,Object>> indexes( TokenRead tokens, SchemaRead schemaRead )
+    private static List<Map<String,Object>> indexes( TokenRead tokens, SchemaRead schemaRead, Anonymizer anonymizer )
             throws IndexNotFoundKernelException
     {
         List<Map<String,Object>> indexes = new ArrayList<>();
@@ -148,8 +148,8 @@ class GraphCountsSection
             IndexReference index = iterator.next();
 
             Map<String,Object> data = new HashMap<>( 4 );
-            data.put( "labels", map( index.schema().getEntityTokenIds(), tokenLookup::labelGetName ) );
-            data.put( "properties", map( index.schema().getPropertyIds(), tokenLookup::propertyKeyGetName ) );
+            data.put( "labels", map( index.schema().getEntityTokenIds(), id -> anonymizer.label( tokenLookup.labelGetName( id ), id ) ) );
+            data.put( "properties", map( index.schema().getPropertyIds(), id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
 
             Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
             schemaRead.indexUpdatesAndSize( index, register );
@@ -164,7 +164,7 @@ class GraphCountsSection
         return indexes;
     }
 
-    private static List<Map<String,Object>> constraints( TokenRead tokens, SchemaRead schemaRead )
+    private static List<Map<String,Object>> constraints( TokenRead tokens, SchemaRead schemaRead, Anonymizer anonymizer )
     {
         List<Map<String,Object>> constraints = new ArrayList<>();
 
@@ -176,8 +176,10 @@ class GraphCountsSection
             ConstraintDescriptor constraint = iterator.next();
 
             Map<String,Object> data = new HashMap<>( 4 );
-            data.put( "label", tokenLookup.labelGetName( constraint.schema().getEntityTokenIds()[0] ) );
-            data.put( "properties", map( constraint.schema().getPropertyIds(), tokenLookup::propertyKeyGetName ) );
+
+            int labelId = constraint.schema().getEntityTokenIds()[0];
+            data.put( "label", anonymizer.label( tokenLookup.labelGetName( labelId ), labelId ) );
+            data.put( "properties", map( constraint.schema().getPropertyIds(), id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
             data.put( "type", constraintType( constraint ) );
 
             constraints.add( data );
