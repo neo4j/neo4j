@@ -37,6 +37,9 @@ public interface QueryResult
 
     interface QueryResultVisitor<E extends Exception>
     {
+        /**
+         * @return true to continue, false otherwise.
+         */
         boolean visit( Record row ) throws E;
     }
 
