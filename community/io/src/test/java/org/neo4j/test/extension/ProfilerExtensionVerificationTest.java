@@ -66,7 +66,7 @@ class ProfilerExtensionVerificationTest
 
     private void someVeryExpensiveComputation() throws InterruptedException
     {
-        Thread.sleep( 50 );
+        Thread.sleep( 1000 );
     }
 
     static class ConfigurationParameterCondition implements ExecutionCondition
