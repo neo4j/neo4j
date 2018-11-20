@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
-import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder, Selections}
+import org.neo4j.cypher.internal.ir.v3_5.{InterestingOrder, QueryGraph, Selections}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.opencypher.v9_0.expressions.PartialPredicate.PartialPredicateWrapper
 import org.opencypher.v9_0.expressions.{Expression, Ors}
 import org.opencypher.v9_0.frontend.helpers.SeqCombiner.combine
@@ -38,7 +38,9 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
           e: Expression =>
             val plansForVariables: Seq[LeafPlansForVariable] = inner.flatMap(_.producePlanFor(Set(e), qg, interestingOrder, context))
             val qgForExpression = qg.copy(selections = Selections.from(e))
-            plansForVariables.map(p =>
+            val canDoIndexSeek = plansForVariables.exists(leafPlans => leafPlans.plans.exists(nodeIndexSeek))
+            val withoutIndexScans = if (canDoIndexSeek) plansForVariables.filter(x => !x.plans.exists(nodeIndexScan)) else plansForVariables
+            withoutIndexScans.map(p =>
               p.copy(plans = p.plans.map(context.config.applySelections(_, qgForExpression, interestingOrder, context))))
         }
 
@@ -88,4 +90,16 @@ case class OrLeafPlanner(inner: Seq[LeafPlanFromExpressions]) extends LeafPlanne
       case predicate => predicate
     }
   }
+
+  private def nodeIndexSeek(logicalPlan: LogicalPlan): Boolean =
+    logicalPlan match {
+      case _: NodeIndexSeek |
+           _: NodeUniqueIndexSeek |
+           _: NodeIndexEndsWithScan |
+           _: NodeIndexContainsScan => true
+      case _ => false
+    }
+
+  private def nodeIndexScan(logicalPlan: LogicalPlan): Boolean =
+    logicalPlan.isInstanceOf[NodeIndexScan]
 }
