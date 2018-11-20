@@ -124,8 +124,8 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLog
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
@@ -211,7 +211,7 @@ public class Database extends LifecycleAdapter
 
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
-    private NeoStoreTransactionLogModule transactionLogModule;
+    private DatabaseTransactionLogModule transactionLogModule;
     private DatabaseKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Function<File,FileSystemWatcherService> watcherServiceFactory;
@@ -350,7 +350,7 @@ public class Database extends LifecycleAdapter
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
-            NeoStoreTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
+            DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
                     scheduler, storageEngine, logEntryReader, explicitIndexTransactionOrdering, transactionIdStore );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
@@ -491,7 +491,7 @@ public class Database extends LifecycleAdapter
         return life.add( storageEngine );
     }
 
-    private NeoStoreTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,
+    private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,
             LogProvider logProvider, JobScheduler scheduler, StorageEngine storageEngine,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader,
             SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering, TransactionIdStore transactionIdStore )
@@ -527,7 +527,7 @@ public class Database extends LifecycleAdapter
         life.add( checkPointer );
         life.add( checkPointScheduler );
 
-        return new NeoStoreTransactionLogModule( logicalTransactionStore, logFiles,
+        return new DatabaseTransactionLogModule( logicalTransactionStore, logFiles,
                 logRotation, checkPointer, appender, explicitIndexTransactionOrdering );
     }
 
@@ -575,7 +575,7 @@ public class Database extends LifecycleAdapter
         kernel.registerTransactionHook( transactionEventHandlers );
         life.add( kernel );
 
-        final NeoStoreFileListing fileListing = new NeoStoreFileListing( databaseLayout, logFiles, labelScanStore,
+        final DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore,
                 indexingService, explicitIndexProvider, storageEngine );
         dataSourceDependencies.satisfyDependency( fileListing );
 
@@ -710,7 +710,7 @@ public class Database extends LifecycleAdapter
 
     public ResourceIterator<StoreFileMetadata> listStoreFiles( boolean includeLogs ) throws IOException
     {
-        NeoStoreFileListing.StoreFileListingBuilder fileListingBuilder = getNeoStoreFileListing().builder();
+        DatabaseFileListing.StoreFileListingBuilder fileListingBuilder = getDatabaseFileListing().builder();
         if ( !includeLogs )
         {
             fileListingBuilder.excludeLogFiles();
@@ -718,7 +718,7 @@ public class Database extends LifecycleAdapter
         return fileListingBuilder.build();
     }
 
-    public NeoStoreFileListing getNeoStoreFileListing()
+    public DatabaseFileListing getDatabaseFileListing()
     {
         return kernelModule.fileListing();
     }

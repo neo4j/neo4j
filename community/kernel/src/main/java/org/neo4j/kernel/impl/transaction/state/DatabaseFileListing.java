@@ -44,7 +44,7 @@ import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.helpers.collection.Iterators.resourceIterator;
 
-public class NeoStoreFileListing
+public class DatabaseFileListing
 {
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
@@ -56,7 +56,7 @@ public class NeoStoreFileListing
     private final NeoStoreFileIndexListing neoStoreFileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
-    public NeoStoreFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
+    public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
             LabelScanStore labelScanStore, IndexingService indexingService,
             ExplicitIndexProvider explicitIndexProviders, StorageEngine storageEngine )
     {

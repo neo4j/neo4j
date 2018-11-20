@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.kernel.impl.index.IndexConfigStore.INDEX_DB_FILE_NAME;
 
-public class NeoStoreFileListingTest
+public class DatabaseFileListingTest
 {
     @Rule
     public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
@@ -132,7 +132,7 @@ public class NeoStoreFileListingTest
         LogFiles logFiles = mock( LogFiles.class );
         filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
-        NeoStoreFileListing fileListing = new NeoStoreFileListing( databaseLayout, logFiles, labelScanStore,
+        DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore,
                 indexingService, explicitIndexes, storageEngine );
 
         ResourceIterator<File> scanSnapshot = scanStoreFilesAre( labelScanStore,
@@ -211,11 +211,11 @@ public class NeoStoreFileListingTest
     @Test
     public void doNotListFilesFromAdditionalProviderThatRegisterTwice() throws IOException
     {
-        NeoStoreFileListing neoStoreFileListing = database.getNeoStoreFileListing();
+        DatabaseFileListing databaseFileListing = database.getDatabaseFileListing();
         MarkerFileProvider provider = new MarkerFileProvider();
-        neoStoreFileListing.registerStoreFileProvider( provider );
-        neoStoreFileListing.registerStoreFileProvider( provider );
-        ResourceIterator<StoreFileMetadata> metadataResourceIterator = neoStoreFileListing.builder().build();
+        databaseFileListing.registerStoreFileProvider( provider );
+        databaseFileListing.registerStoreFileProvider( provider );
+        ResourceIterator<StoreFileMetadata> metadataResourceIterator = databaseFileListing.builder().build();
         assertEquals( 1, metadataResourceIterator.stream().filter( metadata -> "marker".equals( metadata.file().getName() ) ).count() );
     }
 
@@ -287,7 +287,7 @@ public class NeoStoreFileListingTest
         }
     }
 
-    private static class MarkerFileProvider implements NeoStoreFileListing.StoreFileProvider
+    private static class MarkerFileProvider implements DatabaseFileListing.StoreFileProvider
     {
         @Override
         public Resource addFilesTo( Collection<StoreFileMetadata> fileMetadataCollection )

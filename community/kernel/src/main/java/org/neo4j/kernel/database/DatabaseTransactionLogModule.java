@@ -28,7 +28,7 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 
-class NeoStoreTransactionLogModule
+class DatabaseTransactionLogModule
 {
     private final LogicalTransactionStore logicalTransactionStore;
     private final LogFiles logFiles;
@@ -37,7 +37,7 @@ class NeoStoreTransactionLogModule
     private final TransactionAppender appender;
     private final SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering;
 
-    NeoStoreTransactionLogModule( LogicalTransactionStore logicalTransactionStore,
+    DatabaseTransactionLogModule( LogicalTransactionStore logicalTransactionStore,
             LogFiles logFiles, LogRotation logRotation,
             CheckPointerImpl checkPointer, TransactionAppender appender,
             SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering )

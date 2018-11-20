@@ -22,7 +22,7 @@ package org.neo4j.kernel.database;
 import org.neo4j.kernel.impl.api.KernelImpl;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.transaction.state.NeoStoreFileListing;
+import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.util.Dependencies;
 
 class DatabaseKernelModule
@@ -30,10 +30,10 @@ class DatabaseKernelModule
     private final TransactionCommitProcess transactionCommitProcess;
     private final KernelImpl kernel;
     private final KernelTransactions kernelTransactions;
-    private final NeoStoreFileListing fileListing;
+    private final DatabaseFileListing fileListing;
 
     DatabaseKernelModule( TransactionCommitProcess transactionCommitProcess, KernelImpl kernel,
-            KernelTransactions kernelTransactions, NeoStoreFileListing fileListing )
+            KernelTransactions kernelTransactions, DatabaseFileListing fileListing )
     {
         this.transactionCommitProcess = transactionCommitProcess;
         this.kernel = kernel;
@@ -51,7 +51,7 @@ class DatabaseKernelModule
         return kernelTransactions;
     }
 
-    NeoStoreFileListing fileListing()
+    DatabaseFileListing fileListing()
     {
         return fileListing;
     }
