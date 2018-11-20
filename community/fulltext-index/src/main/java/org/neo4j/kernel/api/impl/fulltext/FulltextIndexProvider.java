@@ -162,7 +162,7 @@ class FulltextIndexProvider extends IndexProvider implements FulltextAdapter
         String failure = getIndexStorage( descriptor.indexReference() ).getStoredIndexFailure();
         if ( failure == null )
         {
-            throw new IllegalStateException( "Index " + descriptor.isUnique() + " isn't failed" );
+            throw new IllegalStateException( "Index " + descriptor.indexReference() + " isn't failed" );
         }
         return failure;
     }

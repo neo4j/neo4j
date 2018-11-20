@@ -66,7 +66,7 @@ class FulltextIndexDescriptor implements StorageIndexReference
     @Override
     public boolean isUnique()
     {
-        return false;
+        return descriptor.isUnique();
     }
 
     @Override
