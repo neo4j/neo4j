@@ -15,12 +15,12 @@
   </properties>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-batch-inserter</artifactId>
+  <artifactId>neo4j-record-storage-engine</artifactId>
   <version>4.0.0-SNAPSHOT</version>
 
   <packaging>jar</packaging>
-  <name>Neo4j - Batch inserter</name>
-  <description>Batch inserter.</description>
+  <name>Neo4j - Record storage engine</name>
+  <description>Record storage engine.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -49,6 +49,12 @@
   </licenses>
 
   <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-storage-engine-api</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <!--TODO this dependency is a temporary hack and must be removed-->
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>

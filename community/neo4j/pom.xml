@@ -100,7 +100,7 @@ the relevant Commercial Agreement.
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-batch-inserter</artifactId>
+            <artifactId>neo4j-record-storage-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
 

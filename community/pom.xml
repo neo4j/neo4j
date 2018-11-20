@@ -42,7 +42,7 @@
   </properties>
 
   <modules>
-    <module>batch-inserter</module>
+    <module>record-storage-engine</module>
     <module>common</module>
     <module>configuration</module>
     <module>resource</module>
