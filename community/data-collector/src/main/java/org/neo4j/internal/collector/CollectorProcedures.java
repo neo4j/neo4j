@@ -19,9 +19,12 @@
  */
 package org.neo4j.internal.collector;
 
-import java.util.Collections;
+import java.time.ZonedDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Stream;
 
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
@@ -37,14 +40,25 @@ public class CollectorProcedures
     @Description( "Retrieve statistical data about the current database." )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section", defaultValue = "all" ) String section )
+            throws InvalidArgumentsException
     {
-        if ( section.equals( "GRAPH COUNTS" ) )
+        if ( section.toLowerCase().equals( GraphCountsSection.name.toLowerCase() ) )
         {
             return GraphCountsSection.collect( dataCollector.kernel );
         }
-        else
-        {
-            return Stream.of( new RetrieveResult( section, Collections.emptyMap() ) );
-        }
+        throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s']",
+                                                            section, GraphCountsSection.name ) );
+    }
+
+    @Description( "Retrieve all available statistical data about the current database, in an anonymized form." )
+    @Procedure( name = "db.stats.retrieveAllAnonymized", mode = Mode.READ )
+    public Stream<RetrieveResult> retrieveAllAnonymized( @Name( value = "graphToken", defaultValue = "" ) String graphToken )
+    {
+        Map<String, Object> metaData = new HashMap<>();
+        metaData.put( "graphToken", graphToken );
+        metaData.put( "retrieveTime", ZonedDateTime.now() );
+        Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
+
+        return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel ) );
     }
 }

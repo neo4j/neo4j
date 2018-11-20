@@ -19,12 +19,38 @@
  */
 package org.neo4j.internal.collector
 
-import org.neo4j.cypher.ExecutionEngineFunSuite
+import java.time.ZonedDateTime
+
+import org.neo4j.cypher.{CypherExecutionException, ExecutionEngineFunSuite}
+import org.neo4j.internal.collector.DataCollectorMatchers.{beListInOrder, beMapContaining, occurBetween}
 
 class DataCollectorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should retrieve correct section") {
-    val res = execute("CALL db.stats.retrieve('teddybear')")
-    res.toList should be(Seq(Map("section" -> "teddybear", "data" -> Map())))
+    val res = execute("CALL db.stats.retrieve('GRAPH COUNTS')").single
+    res should beMapContaining(
+      "section" -> "GRAPH COUNTS"
+    )
+  }
+
+  test("should fail on non-existing section") {
+    intercept[CypherExecutionException](execute("CALL db.stats.retrieve('teddybear')"))
+  }
+
+  test("should retrieveAllAnonymized") {
+    val before = ZonedDateTime.now()
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+    val after = ZonedDateTime.now()
+    res.toList should beListInOrder(
+      beMapContaining(
+        "section" -> "META",
+        "data" -> beMapContaining(
+          "graphToken" -> "myToken",
+          "retrieveTime" -> occurBetween(before, after)
+        )),
+      beMapContaining(
+        "section" -> "GRAPH COUNTS"
+      )
+    )
   }
 }

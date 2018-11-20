@@ -51,6 +51,8 @@ import org.neo4j.register.Registers;
  */
 class GraphCountsSection
 {
+    static String name = "GRAPH COUNTS";
+
     static Stream<RetrieveResult> collect( Kernel kernel )
     {
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
