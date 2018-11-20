@@ -61,4 +61,20 @@ class TokensSection
             throw new UnsupportedOperationException( "How to handle errors?" );
         }
     }
+
+    static void putTokenCounts( Map<String,Object> metaData, Kernel kernel )
+    {
+        try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
+        {
+            TokenRead tokens = tx.tokenRead();
+            metaData.put( "labelCount", tokens.labelCount() );
+            metaData.put( "relationshipTypeCount", tokens.relationshipTypeCount() );
+            metaData.put( "propertyKeyCount", tokens.propertyKeyCount() );
+            tx.success();
+        }
+        catch ( TransactionFailureException e )
+        {
+            throw new UnsupportedOperationException( "How to handle errors?" );
+        }
+    }
 }

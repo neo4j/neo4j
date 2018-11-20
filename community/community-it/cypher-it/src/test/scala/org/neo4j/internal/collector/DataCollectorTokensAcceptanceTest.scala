@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector
 
 import org.neo4j.cypher._
+import org.neo4j.internal.collector.DataCollectorMatchers.beMapContaining
 
 class DataCollectorTokensAcceptanceTest extends ExecutionEngineFunSuite {
 
@@ -41,6 +42,31 @@ class DataCollectorTokensAcceptanceTest extends ExecutionEngineFunSuite {
     list(res("data"), "labels") should contain only ("User", "Office", "Manager")
     list(res("data"), "relationshipTypes") should contain only ("KNOWS", "BOSSES", "AT")
     list(res("data"), "propertyKeys") should contain only ("name", "age", "weight", "firstName", "lastName", "since")
+  }
+
+  test("should put token counts into META section on retrieveAllAnonymized") {
+    // given
+    execute(
+      """CREATE (u:User {name:'Herbert', age:42, weight: 67.1})
+         CREATE (m:Manager {firstName:'Joe', lastName:'Lee'})
+         CREATE (o:Office)
+         CREATE (m)-[:BOSSES {since:"forever"}]->(u)
+         CREATE (m)-[:AT]->(o)""".stripMargin)
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myGraphToken')")
+
+    // then
+    res.toList.head should beMapContaining(
+        "section" -> "META",
+        "data" -> beMapContaining(
+          "graphToken" -> "myGraphToken",
+          "labelCount" -> 3,
+          "relationshipTypeCount" -> 2,
+          "propertyKeyCount" -> 6
+        )
+      )
+
   }
 
   private def list(map: AnyRef, key: String) =

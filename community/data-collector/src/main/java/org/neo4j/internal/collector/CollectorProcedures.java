@@ -62,6 +62,7 @@ public class CollectorProcedures
         Map<String, Object> metaData = new HashMap<>();
         metaData.put( "graphToken", graphToken );
         metaData.put( "retrieveTime", ZonedDateTime.now() );
+        TokensSection.putTokenCounts( metaData, dataCollector.kernel );
         Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
 
         return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel, Anonymizer.IDS ) );
