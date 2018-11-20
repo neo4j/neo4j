@@ -125,6 +125,12 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
+    public <T> void ifElseStatement( Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block )
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
     public <T> void tryCatchBlock( Consumer<T> body, Consumer<T> handler, LocalVariable exception, T block )
     {
         throw new IllegalStateException( reason );

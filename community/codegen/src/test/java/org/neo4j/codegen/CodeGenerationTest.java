@@ -649,6 +649,32 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateIfElseStatement() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock conditional = simple.generateMethod( String.class, "conditional",
+                    param( boolean.class, "test" ) ) )
+            {
+                conditional.ifElseStatement( conditional.load( "test" ),
+                        block -> block.returns( constant( "true" ) ),
+                        block -> block.returns( constant( "false" ) )
+                );
+            }
+
+            handle = simple.handle();
+        }
+
+        // when
+        MethodHandle conditional = instanceMethod( handle.newInstance(), "conditional", boolean.class );
+
+        assertThat( conditional.invoke( true ), equalTo( "true" ) );
+        assertThat( conditional.invoke( false ), equalTo( "false" ) );
+    }
+
+    @Test
     public void shouldGenerateIfEqualsStatement() throws Throwable
     {
         // given

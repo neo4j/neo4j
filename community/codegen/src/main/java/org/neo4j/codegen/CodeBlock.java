@@ -179,6 +179,11 @@ public class CodeBlock implements AutoCloseable
         return new CodeBlock( this );
     }
 
+    public void ifElseStatement( Expression test, Consumer<CodeBlock> onTrue, Consumer<CodeBlock> onFalse )
+    {
+        emitter.ifElseStatement( test, onTrue, onFalse, this );
+    }
+
     public CodeBlock block()
     {
         emitter.beginBlock();

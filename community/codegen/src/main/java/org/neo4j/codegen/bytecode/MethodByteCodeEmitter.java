@@ -215,6 +215,24 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
+    public <T> void ifElseStatement( Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block )
+    {
+        Label onFailLabel = new Label();
+        Label doneLabel = new Label();
+        test.accept( new JumpVisitor( expressionVisitor, methodVisitor, onFailLabel ) );
+        //test true, evaluate and GOTO done
+        onTrue.accept( block );
+        methodVisitor.visitJumpInsn( GOTO, doneLabel );
+
+        //test false, go to here
+        methodVisitor.visitLabel( onFailLabel );
+        onFalse.accept( block );
+
+        //goto here when onTrue body is done
+        methodVisitor.visitLabel( doneLabel );
+    }
+
+    @Override
     public void beginBlock()
     {
         stateStack.push( () -> {} );

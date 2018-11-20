@@ -171,6 +171,20 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public <T> void ifElseStatement( Expression test, Consumer<T> onTrue, Consumer<T> onFalse, T block )
+    {
+        beginIf( test );
+        onTrue.accept( block );
+        levels.pop();
+        indent().append( "}\n" );
+        indent().append( "else {\n" );
+        levels.push( LEVEL );
+        onFalse.accept( block );
+        levels.pop();
+        indent().append( "}\n" );
+    }
+
+    @Override
     public void beginBlock()
     {
         indent().append( "{\n" );
