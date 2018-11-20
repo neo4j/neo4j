@@ -31,8 +31,8 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.Collections.emptySet;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -45,7 +45,7 @@ import static org.neo4j.helpers.collection.Iterators.single;
 public class NativeLabelScanStoreUpdateIT
 {
     @ClassRule
-    public static final GraphDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public static final DbmsRule dbRule = new ImpermanentDbmsRule();
     @Rule
     public final TestName testName = new TestName();
 

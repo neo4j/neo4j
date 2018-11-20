@@ -36,15 +36,15 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertTrue;
 
 public class ShutdownOnIndexUpdateIT
 {
     @Rule
-    public GraphDatabaseRule database = new ImpermanentDatabaseRule();
+    public DbmsRule database = new ImpermanentDbmsRule();
 
     private static final String UNIQUE_PROPERTY_NAME = "uniquePropertyName";
     private static final AtomicLong indexProvider = new AtomicLong();

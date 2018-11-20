@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -46,7 +46,7 @@ public class NestedIndexReadersIT
     private static final String KEY = "key";
 
     @Rule
-    public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    public final ImpermanentDbmsRule db = new ImpermanentDbmsRule();
     @Rule
     public final OtherThreadRule<Void> t2 = new OtherThreadRule<>();
 

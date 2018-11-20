@@ -32,9 +32,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.GraphTransactionRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -44,7 +44,7 @@ import static org.junit.Assert.fail;
 public class NodeTest
 {
     @ClassRule
-    public static GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public static DbmsRule db = new ImpermanentDbmsRule();
 
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( db );

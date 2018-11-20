@@ -31,8 +31,8 @@ import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.io.IOUtils;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
@@ -40,7 +40,7 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.explicit;
 public class KernelAPIParallelTraversalStressIT
 {
     @ClassRule
-    public static final GraphDatabaseRule db = new EmbeddedDatabaseRule();
+    public static final DbmsRule db = new EmbeddedDbmsRule();
 
     private final int N_THREADS = 10;
     private final int N_NODES = 10_000;

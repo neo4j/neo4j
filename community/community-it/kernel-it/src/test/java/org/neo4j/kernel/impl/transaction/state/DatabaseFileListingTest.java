@@ -47,7 +47,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -63,7 +63,7 @@ import static org.neo4j.kernel.impl.index.IndexConfigStore.INDEX_DB_FILE_NAME;
 public class DatabaseFileListingTest
 {
     @Rule
-    public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    public final EmbeddedDbmsRule db = new EmbeddedDbmsRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 

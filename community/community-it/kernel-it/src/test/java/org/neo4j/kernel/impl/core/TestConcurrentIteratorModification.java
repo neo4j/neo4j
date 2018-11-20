@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.asSet;
@@ -38,7 +38,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class TestConcurrentIteratorModification
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
 
     @Test
     public void shouldNotThrowConcurrentModificationExceptionWhenUpdatingWhileIterating()

@@ -23,12 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 public class DeleteNodeWithRelsIT
 {
     @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule db = new ImpermanentDbmsRule();
 
     @Rule
     public ExpectedException exception = ExpectedException.none();

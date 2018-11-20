@@ -32,8 +32,8 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.ControlledPopulationIndexProvider;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -46,7 +46,7 @@ public class SchemaIndexWaitingAcceptanceTest
     private final ControlledPopulationIndexProvider provider = new ControlledPopulationIndexProvider();
 
     @Rule
-    public final GraphDatabaseRule rule = new ImpermanentDatabaseRule()
+    public final DbmsRule rule = new ImpermanentDbmsRule()
     {
         @Override
         protected void configure( GraphDatabaseFactory databaseFactory )

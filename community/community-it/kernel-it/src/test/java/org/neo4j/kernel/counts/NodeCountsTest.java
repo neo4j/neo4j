@@ -34,8 +34,8 @@ import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.NamedFunction;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 
 import static org.junit.Assert.assertEquals;
@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 public class NodeCountsTest
 {
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public final DbmsRule db = new ImpermanentDbmsRule();
     @Rule
     public final ThreadingRule threading = new ThreadingRule();
 

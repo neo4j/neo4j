@@ -38,8 +38,8 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,7 +50,7 @@ public class GraphDatabaseServiceExecuteTest
 {
 
     @Rule
-    public final GraphDatabaseRule graphDb = new ImpermanentDatabaseRule();
+    public final DbmsRule graphDb = new ImpermanentDbmsRule();
 
     @Test
     public void shouldExecuteCypher()

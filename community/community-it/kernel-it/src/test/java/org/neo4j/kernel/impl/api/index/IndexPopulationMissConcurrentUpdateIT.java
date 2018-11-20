@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
@@ -57,11 +58,10 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescript
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.util.FeatureToggles;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -88,7 +88,7 @@ public class IndexPopulationMissConcurrentUpdateIT
     private final ControlledSchemaIndexProvider index = new ControlledSchemaIndexProvider();
 
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule()
+    public final DbmsRule db = new ImpermanentDbmsRule()
     {
         @Override
         protected GraphDatabaseFactory newFactory()

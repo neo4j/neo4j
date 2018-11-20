@@ -31,8 +31,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertFalse;
 
@@ -42,7 +42,7 @@ public class CreateIndexStressIT
     private final AtomicBoolean hasFailed = new AtomicBoolean( false );
 
     @Rule
-    public GraphDatabaseRule db = new ImpermanentDatabaseRule()
+    public DbmsRule db = new ImpermanentDbmsRule()
         .withSetting( GraphDatabaseSettings.query_cache_size, "0" );
 
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );

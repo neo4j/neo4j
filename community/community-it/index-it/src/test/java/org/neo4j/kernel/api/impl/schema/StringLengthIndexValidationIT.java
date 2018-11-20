@@ -34,8 +34,8 @@ import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.index.internal.gbptree.TreeNodeDynamicSize;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -46,7 +46,7 @@ import static org.neo4j.test.TestLabels.LABEL_ONE;
 public class StringLengthIndexValidationIT
 {
     @Rule
-    public GraphDatabaseRule db = new EmbeddedDatabaseRule()
+    public DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.default_schema_provider, GraphDatabaseSettings.SchemaIndex.NATIVE20.providerName() );
 
     private static final String propKey = "largeString";

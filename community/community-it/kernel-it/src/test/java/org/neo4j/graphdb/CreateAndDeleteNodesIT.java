@@ -23,12 +23,12 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.test.GraphDatabaseServiceCleaner;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 public class CreateAndDeleteNodesIT
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     enum RelTypes implements RelationshipType
     {

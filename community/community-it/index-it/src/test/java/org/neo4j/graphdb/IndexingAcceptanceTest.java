@@ -31,7 +31,7 @@ import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
 import org.neo4j.test.mockito.mock.SpatialMocks;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PointValue;
 import org.neo4j.values.storable.Values;
@@ -511,7 +511,7 @@ public class IndexingAcceptanceTest
     public static final String LONG_STRING = "a long string that has to be stored in dynamic records";
 
     @ClassRule
-    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
     @Rule
     public final TestName testName = new TestName();
 

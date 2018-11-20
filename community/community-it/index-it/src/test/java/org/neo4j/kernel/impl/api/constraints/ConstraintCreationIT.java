@@ -32,7 +32,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.impl.index.storage.layout.IndexFolderLayout;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,7 +43,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_pro
 public class ConstraintCreationIT
 {
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
+    public EmbeddedDbmsRule db = new EmbeddedDbmsRule().startLazily();
 
     private static final Label LABEL = Label.label( "label1" );
     private static final long indexId = 1;

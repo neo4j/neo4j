@@ -59,7 +59,7 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactoryState;
 import org.neo4j.test.impl.EphemeralIdGenerator;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.util.stream.Collectors.toSet;
@@ -84,7 +84,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class LabelsAcceptanceTest
 {
     @Rule
-    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
     @Rule
     public final TestDirectory testDirectory = TestDirectory.testDirectory();
 

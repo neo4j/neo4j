@@ -23,7 +23,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -31,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 public class ServerExecutionEngineTest
 {
     @Rule
-    public EmbeddedDatabaseRule rule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule rule = new EmbeddedDbmsRule();
 
     @Test
     public void shouldDetectPeriodicCommitQueries()

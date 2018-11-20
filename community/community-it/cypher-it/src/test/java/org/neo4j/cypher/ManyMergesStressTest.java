@@ -36,7 +36,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static java.lang.String.format;
 
@@ -50,7 +50,7 @@ public class ManyMergesStressTest
     private static final int TRIES = 8000;
 
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
 
     @Test
     public void shouldWorkFine()

@@ -42,7 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.String.format;
@@ -59,7 +59,7 @@ public class IndexBackupIT
     @Rule
     public RandomRule randomRule = new RandomRule();
     @Rule
-    public EmbeddedDatabaseRule database = new EmbeddedDatabaseRule().startLazily();
+    public EmbeddedDbmsRule database = new EmbeddedDbmsRule().startLazily();
     private CheckPointer checkPointer;
     private IndexingService indexingService;
     private FileSystemAbstraction fileSystem;

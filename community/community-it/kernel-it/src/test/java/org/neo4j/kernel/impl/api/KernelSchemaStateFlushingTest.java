@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.assertEquals;
@@ -46,7 +46,7 @@ import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
 public class KernelSchemaStateFlushingTest
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     private GraphDatabaseAPI db;
     private Kernel kernel;

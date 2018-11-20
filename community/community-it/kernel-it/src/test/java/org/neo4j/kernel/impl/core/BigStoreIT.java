@@ -44,7 +44,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static java.lang.Math.pow;
 import static java.util.Arrays.asList;
@@ -70,7 +70,7 @@ public class BigStoreIT implements RelationshipType
         }
     };
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
 
     @Before
     public void doBefore()

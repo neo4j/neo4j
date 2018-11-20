@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.neo4j.graphdb.Label.label;
 
@@ -42,7 +42,7 @@ public class DeleteRelationshipStressIT
     private final ExecutorService executorService = Executors.newFixedThreadPool( 10 );
 
     @Rule
-    public ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule db = new ImpermanentDbmsRule();
 
     @Before
     public void setup()

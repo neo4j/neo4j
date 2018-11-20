@@ -38,8 +38,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransientFailureException;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -55,7 +55,7 @@ public class ConcurrentCreateDropIndexIT
     private static final String KEY = "key";
 
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public final DbmsRule db = new ImpermanentDbmsRule();
     @Rule
     public final CleanupRule cleanupRule = new CleanupRule();
 

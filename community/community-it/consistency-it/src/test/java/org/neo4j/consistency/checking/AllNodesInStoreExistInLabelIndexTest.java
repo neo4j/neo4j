@@ -42,7 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.Matchers.containsString;
@@ -59,7 +59,7 @@ import static org.neo4j.test.TestLabels.LABEL_TWO;
 public class AllNodesInStoreExistInLabelIndexTest
 {
     @Rule
-    public final EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    public final EmbeddedDbmsRule db = new EmbeddedDbmsRule();
 
     @Rule
     public final RandomRule random = new RandomRule();

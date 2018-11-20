@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -47,7 +47,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class ExecutionResultTest
 {
     @Rule
-    public final ImpermanentDatabaseRule db = new ImpermanentDatabaseRule();
+    public final ImpermanentDbmsRule db = new ImpermanentDbmsRule();
 
     //TODO this test is not valid for compiled runtime as the transaction will be closed when the iterator was created
     @Test

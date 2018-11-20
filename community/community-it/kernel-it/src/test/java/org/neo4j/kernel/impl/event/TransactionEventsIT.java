@@ -55,8 +55,8 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.mockito.matcher.RootCauseMatcher;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -74,7 +74,7 @@ import static org.neo4j.helpers.collection.MapUtil.genericMap;
  */
 public class TransactionEventsIT
 {
-    private final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    private final DbmsRule db = new ImpermanentDbmsRule();
     private final RandomRule random = new RandomRule();
     private final ExpectedException expectedException = ExpectedException.none();
 

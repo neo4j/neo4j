@@ -39,7 +39,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.schema.IndexCreator;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
@@ -49,7 +49,7 @@ import static org.neo4j.helpers.collection.Iterators.array;
 public class IndexingCompositeQueryAcceptanceTest
 {
     @ClassRule
-    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
     @Rule
     public final TestName testName = new TestName();
 

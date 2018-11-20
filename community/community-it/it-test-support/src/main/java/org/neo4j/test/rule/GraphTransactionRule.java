@@ -24,16 +24,16 @@ import org.junit.rules.ExternalResource;
 import org.neo4j.graphdb.Transaction;
 
 /**
- * JUnit @Rule for running a transaction for the duration of a test. Requires an EmbeddedDatabaseRule with
+ * JUnit @Rule for running a transaction for the duration of a test. Requires an EmbeddedDbmsRule with
  * whose database the transaction will be executed.
  */
 public class GraphTransactionRule extends ExternalResource
 {
-    private final GraphDatabaseRule database;
+    private final DbmsRule database;
 
     private Transaction tx;
 
-    public GraphTransactionRule( GraphDatabaseRule database )
+    public GraphTransactionRule( DbmsRule database )
     {
         this.database = database;
     }

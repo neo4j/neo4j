@@ -30,7 +30,7 @@ import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,7 +53,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.waitForIndex;
 public class SchemaAcceptanceTest
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     private GraphDatabaseService db;
     private Label label = Labels.MY_LABEL;

@@ -26,7 +26,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.single;
@@ -35,7 +35,7 @@ import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 public class DenseNodeIT
 {
     @Rule
-    public ImpermanentDatabaseRule databaseRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule databaseRule = new ImpermanentDbmsRule();
 
     @Test
     public void testBringingNodeOverDenseThresholdIsConsistent()

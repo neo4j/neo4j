@@ -26,9 +26,9 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.GraphTransactionRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
@@ -40,7 +40,7 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 public class TestShortStringProperties
 {
     @ClassRule
-    public static GraphDatabaseRule graphdb = new ImpermanentDatabaseRule();
+    public static DbmsRule graphdb = new ImpermanentDbmsRule();
 
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( graphdb );

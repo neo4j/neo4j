@@ -60,7 +60,7 @@ import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
@@ -81,7 +81,7 @@ import static org.neo4j.helpers.collection.Iterators.asSet;
 public class NeoStoreIndexStoreViewTest
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
 
     private final Map<Long, Lock> lockMocks = new HashMap<>();
     private final Label label = Label.label( "Person" );

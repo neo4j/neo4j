@@ -35,12 +35,12 @@ import java.util.concurrent.ThreadLocalRandom;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 public class ExplicitIndexAddDropConcurrentlyTest
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     @Ignore
     @Test

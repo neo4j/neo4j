@@ -28,8 +28,8 @@ import java.util.Map;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.CleanupRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
@@ -37,7 +37,7 @@ import static org.neo4j.test.assertion.Assert.assertObjectOrArrayEquals;
 public abstract class PropertyContainerProxyTest
 {
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public final DbmsRule db = new ImpermanentDbmsRule();
     @Rule
     public final CleanupRule cleanup = new CleanupRule();
 

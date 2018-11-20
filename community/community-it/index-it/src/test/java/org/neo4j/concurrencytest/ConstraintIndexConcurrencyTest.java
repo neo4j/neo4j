@@ -39,8 +39,8 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.values.storable.Values;
 
@@ -51,7 +51,7 @@ import static org.neo4j.graphdb.Label.label;
 public class ConstraintIndexConcurrencyTest
 {
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public final DbmsRule db = new ImpermanentDbmsRule();
     @Rule
     public final ThreadingRule threads = new ThreadingRule();
 

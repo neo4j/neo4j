@@ -33,8 +33,8 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -47,7 +47,7 @@ import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 public class CompiledExpandUtilsTest
 {
     @Rule
-    public GraphDatabaseRule db = new EmbeddedDatabaseRule()
+    public DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     private Transaction transaction() throws TransactionFailureException

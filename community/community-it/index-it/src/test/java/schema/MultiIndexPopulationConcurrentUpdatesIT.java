@@ -87,7 +87,7 @@ import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.values.storable.Values;
 
 import static java.lang.String.format;
@@ -111,7 +111,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private static final String CAR_LABEL = "car";
 
     @Rule
-    public EmbeddedDatabaseRule embeddedDatabase = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule embeddedDatabase = new EmbeddedDbmsRule();
     private StoreIndexDescriptor[] rules;
     private StorageEngine storageEngine;
 

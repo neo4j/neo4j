@@ -23,16 +23,16 @@ import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.GraphTransactionRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.fail;
 
 public class GraphPropertiesProxyTest
 {
     @ClassRule
-    public static GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public static DbmsRule db = new ImpermanentDbmsRule();
 
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( db );

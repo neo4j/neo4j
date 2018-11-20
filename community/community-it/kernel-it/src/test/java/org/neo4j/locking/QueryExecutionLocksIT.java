@@ -81,7 +81,7 @@ import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.query.statistic.StatisticProvider;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.values.virtual.VirtualValues;
 
 import static java.util.Arrays.asList;
@@ -98,7 +98,7 @@ public class QueryExecutionLocksIT
 {
 
     @Rule
-    public EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
 
     @Test
     public void noLocksTakenForQueryWithoutAnyIndexesUsage() throws Exception

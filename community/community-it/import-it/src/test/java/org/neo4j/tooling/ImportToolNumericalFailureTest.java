@@ -32,7 +32,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.unsafe.impl.batchimport.input.InputException;
 
@@ -95,7 +95,7 @@ public class ImportToolNumericalFailureTest
     public String expectedError;
 
     @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+    public final EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule().startLazily();
     @Rule
     public final SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.values() );
 

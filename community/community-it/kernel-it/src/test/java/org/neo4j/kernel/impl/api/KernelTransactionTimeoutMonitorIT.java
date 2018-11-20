@@ -40,8 +40,8 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.hamcrest.Matchers.hasSize;
@@ -53,7 +53,7 @@ import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.
 public class KernelTransactionTimeoutMonitorIT
 {
     @Rule
-    public GraphDatabaseRule database = createDatabaseRule();
+    public DbmsRule database = createDatabaseRule();
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -61,9 +61,9 @@ public class KernelTransactionTimeoutMonitorIT
     private static final int NODE_ID = 0;
     private ExecutorService executor;
 
-    protected GraphDatabaseRule createDatabaseRule()
+    protected DbmsRule createDatabaseRule()
     {
-        return new EmbeddedDatabaseRule()
+        return new EmbeddedDbmsRule()
                 .withSetting( GraphDatabaseSettings.transaction_monitor_check_interval, "100ms" );
     }
 

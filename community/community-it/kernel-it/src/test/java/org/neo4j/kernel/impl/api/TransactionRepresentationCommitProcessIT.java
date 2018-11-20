@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -52,7 +52,7 @@ public class TransactionRepresentationCommitProcessIT
     private static final int TOTAL_ACTIVE_THREADS = 6;
 
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule()
+    public final DbmsRule db = new ImpermanentDbmsRule()
             .withSetting( GraphDatabaseSettings.check_point_interval_time, "10ms" );
 
     @Test( timeout = 15000 )

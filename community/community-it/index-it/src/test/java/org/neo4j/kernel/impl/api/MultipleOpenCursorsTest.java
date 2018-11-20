@@ -50,8 +50,8 @@ import org.neo4j.kernel.api.exceptions.schema.AlreadyIndexedException;
 import org.neo4j.kernel.api.exceptions.schema.RepeatedPropertyInCompositeSchemaException;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -108,7 +108,7 @@ public class MultipleOpenCursorsTest
                 String numberProp2, String stringProp1, String stringProp2 );
     }
 
-    private final GraphDatabaseRule db = new EmbeddedDatabaseRule();
+    private final DbmsRule db = new EmbeddedDbmsRule();
 
     private static final RandomRule rnd = new RandomRule();
     @Rule
@@ -482,7 +482,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( GraphDatabaseRule db )
+        void doCreateIndex( DbmsRule db )
         {
             db.schema().indexFor( indexLabel ).on( stringProp1 ).on( stringProp2 ).create();
         }
@@ -546,7 +546,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( GraphDatabaseRule db )
+        void doCreateIndex( DbmsRule db )
         {
             db.schema().indexFor( indexLabel ).on( numberProp1 ).on( numberProp2 ).create();
         }
@@ -617,7 +617,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( GraphDatabaseRule db )
+        void doCreateIndex( DbmsRule db )
         {
             db.schema().indexFor( indexLabel ).on( stringProp1 ).create();
         }
@@ -688,7 +688,7 @@ public class MultipleOpenCursorsTest
         }
 
         @Override
-        void doCreateIndex( GraphDatabaseRule db )
+        void doCreateIndex( DbmsRule db )
         {
             db.schema().indexFor( indexLabel ).on( numberProp1 ).create();
         }
@@ -745,7 +745,7 @@ public class MultipleOpenCursorsTest
             }
         }
 
-        void init( GraphDatabaseRule db )
+        void init( DbmsRule db )
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -775,7 +775,7 @@ public class MultipleOpenCursorsTest
 
         protected abstract IndexDescriptor extractIndexDescriptor();
 
-        void createIndex( GraphDatabaseRule db )
+        void createIndex( DbmsRule db )
         {
             try ( Transaction tx = db.beginTx() )
             {
@@ -819,7 +819,7 @@ public class MultipleOpenCursorsTest
 
         abstract void assertExactResult( List<Long> result );
 
-        abstract void doCreateIndex( GraphDatabaseRule db );
+        abstract void doCreateIndex( DbmsRule db );
 
         NodeValueIndexCursor indexQuery( KernelTransaction ktx, IndexDescriptor indexDescriptor, IndexQuery... indexQueries ) throws KernelException
         {

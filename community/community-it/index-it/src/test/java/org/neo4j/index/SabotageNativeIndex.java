@@ -30,13 +30,13 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
 import org.neo4j.kernel.impl.index.schema.GenericNativeIndexProvider;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 
-public class SabotageNativeIndex implements GraphDatabaseRule.RestartAction
+public class SabotageNativeIndex implements DbmsRule.RestartAction
 {
     private final Random random;
 

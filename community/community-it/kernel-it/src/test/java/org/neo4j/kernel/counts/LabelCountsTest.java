@@ -34,8 +34,8 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
@@ -43,7 +43,7 @@ import static org.neo4j.graphdb.Label.label;
 public class LabelCountsTest
 {
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public final DbmsRule db = new ImpermanentDbmsRule();
 
     private Supplier<KernelTransaction> transactionSupplier;
 

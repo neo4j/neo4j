@@ -27,26 +27,26 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 /**
  * JUnit @Rule for configuring, creating and managing an ImpermanentGraphDatabase instance.
  */
-public class ImpermanentDatabaseRule extends GraphDatabaseRule
+public class ImpermanentDbmsRule extends DbmsRule
 {
     private final LogProvider userLogProvider;
     private final LogProvider internalLogProvider;
 
-    public ImpermanentDatabaseRule()
+    public ImpermanentDbmsRule()
     {
         this( null );
     }
 
-    public ImpermanentDatabaseRule( LogProvider logProvider )
+    public ImpermanentDbmsRule( LogProvider logProvider )
     {
         this.userLogProvider = logProvider;
         this.internalLogProvider = logProvider;
     }
 
     @Override
-    public ImpermanentDatabaseRule startLazily()
+    public ImpermanentDbmsRule startLazily()
     {
-        return (ImpermanentDatabaseRule) super.startLazily();
+        return (ImpermanentDbmsRule) super.startLazily();
     }
 
     @Override

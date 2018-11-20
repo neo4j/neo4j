@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -55,7 +55,7 @@ import static org.neo4j.graphdb.Direction.OUTGOING;
 public class ConcurrentCreateAndGetRelationshipsIT
 {
     @Rule
-    public final ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public final ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
     private static final RelationshipType RELTYPE = MyRelTypes.TEST;
 
     @Test

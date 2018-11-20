@@ -34,24 +34,24 @@ import org.neo4j.test.TestGraphDatabaseFactory;
  * The database instance is created lazily, so configurations can be injected prior to calling
  * {@link #getGraphDatabaseAPI()}.
  */
-public class EmbeddedDatabaseRule extends GraphDatabaseRule
+public class EmbeddedDbmsRule extends DbmsRule
 {
     private final TestDirectory testDirectory;
 
-    public EmbeddedDatabaseRule()
+    public EmbeddedDbmsRule()
     {
         this.testDirectory = TestDirectory.testDirectory();
     }
 
-    public EmbeddedDatabaseRule( TestDirectory testDirectory )
+    public EmbeddedDbmsRule( TestDirectory testDirectory )
     {
         this.testDirectory = testDirectory;
     }
 
     @Override
-    public EmbeddedDatabaseRule startLazily()
+    public EmbeddedDbmsRule startLazily()
     {
-        return (EmbeddedDatabaseRule) super.startLazily();
+        return (EmbeddedDbmsRule) super.startLazily();
     }
 
     @Override

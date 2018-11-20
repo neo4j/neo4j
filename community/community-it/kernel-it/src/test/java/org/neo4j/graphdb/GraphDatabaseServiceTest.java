@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
@@ -51,7 +51,7 @@ import static org.junit.Assert.fail;
 public class GraphDatabaseServiceTest
 {
     @ClassRule
-    public static final GraphDatabaseRule globalDb = new ImpermanentDatabaseRule()
+    public static final DbmsRule globalDb = new ImpermanentDbmsRule()
                                             .withSetting( GraphDatabaseSettings.shutdown_transaction_end_timeout, "10s" );
 
     private final ExpectedException exception = ExpectedException.none();

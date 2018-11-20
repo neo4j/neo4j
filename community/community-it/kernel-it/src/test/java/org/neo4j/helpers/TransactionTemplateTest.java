@@ -33,7 +33,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -46,7 +46,7 @@ import static org.junit.Assert.assertThat;
 public class TransactionTemplateTest
 {
     @Rule
-    public EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
 
     @Rule
     public final ExpectedException expected = ExpectedException.none();

@@ -28,8 +28,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -39,7 +39,7 @@ public class RelationshipGroupStoreIT
     private static final int RELATIONSHIP_COUNT = 20;
 
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule()
+    public final DbmsRule db = new ImpermanentDbmsRule()
             .withSetting( GraphDatabaseSettings.dense_node_threshold, "1" );
 
     @Test

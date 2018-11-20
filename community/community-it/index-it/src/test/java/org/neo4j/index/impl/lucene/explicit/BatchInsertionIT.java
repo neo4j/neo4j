@@ -30,7 +30,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.validation.ReservedIdException;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
@@ -44,7 +44,7 @@ import static org.neo4j.helpers.collection.MapUtil.map;
 public class BatchInsertionIT
 {
     @Rule
-    public final EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule().startLazily();
+    public final EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule().startLazily();
     @Rule
     public final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
 

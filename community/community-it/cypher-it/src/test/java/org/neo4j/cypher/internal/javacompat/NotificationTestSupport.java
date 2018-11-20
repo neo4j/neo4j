@@ -27,7 +27,6 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 
 import java.util.Map;
-import java.util.stream.Stream;
 
 import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
@@ -37,8 +36,7 @@ import org.neo4j.graphdb.impl.notification.NotificationCode;
 import org.neo4j.graphdb.impl.notification.NotificationDetail;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.procedure.Procedure;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.containsString;
@@ -49,7 +47,7 @@ import static org.junit.Assert.assertThat;
 public class NotificationTestSupport
 {
     @Rule
-    public final ImpermanentDatabaseRule rule = new ImpermanentDatabaseRule();
+    public final ImpermanentDbmsRule rule = new ImpermanentDbmsRule();
 
     @Rule
     public ExpectedException thrown = ExpectedException.none();

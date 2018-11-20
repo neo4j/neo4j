@@ -30,8 +30,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.ReadableRelationshipIndex;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.Iterators.count;
@@ -39,7 +39,7 @@ import static org.neo4j.helpers.collection.Iterators.count;
 public class AutoIndexOperationsTest
 {
     @Rule
-    public final GraphDatabaseRule db = new EmbeddedDatabaseRule()
+    public final DbmsRule db = new EmbeddedDbmsRule()
             .withSetting( GraphDatabaseSettings.relationship_keys_indexable, "Type" )
             .withSetting( GraphDatabaseSettings.relationship_auto_indexing, "true" );
 

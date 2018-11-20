@@ -47,7 +47,7 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -64,7 +64,7 @@ public class CompositeIndexingIT
     private static final int LABEL_ID = 1;
 
     @ClassRule
-    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     @Rule
     public final TestName testName = new TestName();

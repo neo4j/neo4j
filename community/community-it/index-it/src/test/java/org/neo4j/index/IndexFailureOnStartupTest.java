@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.Values;
@@ -55,7 +55,7 @@ public class IndexFailureOnStartupTest
     @Rule
     public final RandomRule random = new RandomRule();
     @Rule
-    public final GraphDatabaseRule db = new EmbeddedDatabaseRule().startLazily();
+    public final DbmsRule db = new EmbeddedDbmsRule().startLazily();
 
     @Test
     public void failedIndexShouldRepairAutomatically() throws Exception

@@ -25,14 +25,14 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.fail;
 
 public class MandatoryTransactionsForIndexHitsFacadeTest
 {
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     private IndexHits<Node> indexHits;
 

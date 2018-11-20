@@ -35,7 +35,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.mockito.matcher.Neo4jMatchers;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
@@ -43,7 +43,7 @@ import static org.junit.Assert.fail;
 public class BigPropertyIndexValidationIT
 {
     @Rule
-    public  ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
     @Rule
     public final TestName testName = new TestName();
     @Rule

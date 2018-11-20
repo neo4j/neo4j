@@ -27,7 +27,7 @@ import org.neo4j.helpers.ListenSocketAddress;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
@@ -38,7 +38,7 @@ public class Jetty9WebServerIT extends ExclusiveServerTestBase
     @Rule
     public SuppressOutput suppressOutput = suppressAll();
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     private Jetty9WebServer webServer;
 

@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.io.os.OsBeanUtil;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.hamcrest.Matchers.lessThan;
 import static org.hamcrest.Matchers.not;
@@ -41,7 +41,7 @@ public class TestNoFileDescriptorLeaks
     private static final AtomicInteger counter = new AtomicInteger();
 
     @Rule
-    public EmbeddedDatabaseRule db = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule db = new EmbeddedDbmsRule();
 
     @BeforeClass
     public static void beforeClass()

@@ -32,8 +32,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
-import org.neo4j.test.rule.GraphDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -41,7 +41,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class NeoStoresIT
 {
     @ClassRule
-    public static final GraphDatabaseRule db = new EmbeddedDatabaseRule()
+    public static final DbmsRule db = new EmbeddedDbmsRule()
             .withSetting(  GraphDatabaseSettings.dense_node_threshold, "1");
 
     private static final RelationshipType FRIEND = RelationshipType.withName( "FRIEND" );

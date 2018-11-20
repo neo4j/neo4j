@@ -27,13 +27,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.QueryContext;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 public class ExplicitIndexRegressionTest
 {
     @Rule
-    public final GraphDatabaseRule graphdb = new ImpermanentDatabaseRule();
+    public final DbmsRule graphdb = new ImpermanentDbmsRule();
 
     @Test
     public void shouldAccessAndUpdateIndexInSameTransaction()

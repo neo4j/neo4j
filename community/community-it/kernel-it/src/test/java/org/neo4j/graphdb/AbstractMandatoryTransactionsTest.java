@@ -23,14 +23,14 @@ import org.junit.Rule;
 
 import java.util.function.Consumer;
 
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 
 import static org.junit.Assert.fail;
 
 public abstract class AbstractMandatoryTransactionsTest<T>
 {
     @Rule
-    public EmbeddedDatabaseRule dbRule = new EmbeddedDatabaseRule();
+    public EmbeddedDbmsRule dbRule = new EmbeddedDbmsRule();
 
     public T obtainEntity()
     {

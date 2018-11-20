@@ -32,7 +32,7 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.EmbeddedDatabaseRule;
+import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.test.rule.RepeatRule;
 
 import static java.util.Arrays.asList;
@@ -50,7 +50,7 @@ import static org.neo4j.helpers.collection.Iterables.asSet;
 public class TokenCreationIT
 {
     @Rule
-    public final EmbeddedDatabaseRule databaseRule = new EmbeddedDatabaseRule();
+    public final EmbeddedDbmsRule databaseRule = new EmbeddedDbmsRule();
 
     private volatile boolean stop;
 

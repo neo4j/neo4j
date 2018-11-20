@@ -32,8 +32,8 @@ import java.util.Random;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -184,7 +184,7 @@ public class IndexTxStateLookupTest
     }
 
     @ClassRule
-    public static final GraphDatabaseRule db = new ImpermanentDatabaseRule();
+    public static final DbmsRule db = new ImpermanentDbmsRule();
 
     private final Object store;
     private final Object lookup;

@@ -29,8 +29,8 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestLabels;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
@@ -40,7 +40,7 @@ import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 public class NoChangeWriteTransactionTest
 {
     @Rule
-    public final GraphDatabaseRule dbr = new ImpermanentDatabaseRule();
+    public final DbmsRule dbr = new ImpermanentDbmsRule();
 
     @Test
     public void shouldIdentifyTransactionWithNetZeroChangesAsReadOnly()

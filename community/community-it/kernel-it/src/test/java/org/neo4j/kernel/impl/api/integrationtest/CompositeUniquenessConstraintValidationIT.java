@@ -41,7 +41,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.fail;
@@ -52,7 +52,7 @@ import static org.neo4j.test.assertion.Assert.assertException;
 public class CompositeUniquenessConstraintValidationIT
 {
     @ClassRule
-    public static ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public static ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule();
 
     @Rule
     public final TestName testName = new TestName();

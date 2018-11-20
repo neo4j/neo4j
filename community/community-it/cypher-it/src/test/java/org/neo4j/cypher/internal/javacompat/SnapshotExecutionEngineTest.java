@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,7 +51,7 @@ import static org.mockito.Mockito.when;
 public class SnapshotExecutionEngineTest
 {
     @Rule
-    public final GraphDatabaseRule database = new ImpermanentDatabaseRule();
+    public final DbmsRule database = new ImpermanentDbmsRule();
 
     private CompilerFactory compilerFactory;
     private TestSnapshotExecutionEngine executionEngine;

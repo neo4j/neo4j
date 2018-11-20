@@ -28,8 +28,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.test.rule.GraphDatabaseRule;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.DbmsRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -54,7 +54,7 @@ public class RelationshipChainPointerChasingTest
     private static final int THRESHOLD = 10;
 
     @Rule
-    public final GraphDatabaseRule db = new ImpermanentDatabaseRule()
+    public final DbmsRule db = new ImpermanentDbmsRule()
             .withSetting( GraphDatabaseSettings.dense_node_threshold, String.valueOf( THRESHOLD ) );
 
     @Test

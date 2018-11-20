@@ -34,7 +34,7 @@ import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.test.rule.ImpermanentDatabaseRule;
+import org.neo4j.test.rule.ImpermanentDbmsRule;
 import org.neo4j.test.rule.SuppressOutput;
 
 import static org.hamcrest.Matchers.is;
@@ -52,7 +52,7 @@ public class TestLifecycleManagedDatabase
     private final AssertableLogProvider logProvider = new AssertableLogProvider();
 
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logProvider );
+    public ImpermanentDbmsRule dbRule = new ImpermanentDbmsRule( logProvider );
 
     private File dataDirectory;
     private Database theDatabase;
