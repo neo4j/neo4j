@@ -131,7 +131,7 @@ class OrLeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         |)
         |RETURN tn""".stripMargin
 
-    val plan = runWithTimeout(10)((new given {
+    val plan = runWithTimeout(1000)((new given {
       indexOn("X", "prop")
     } getLogicalPlanFor query)._2)
 
