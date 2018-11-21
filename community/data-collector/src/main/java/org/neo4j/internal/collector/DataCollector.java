@@ -22,7 +22,7 @@ package org.neo4j.internal.collector;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.scheduler.JobScheduler;
 
-public class DataCollector
+public class DataCollector implements AutoCloseable
 {
     final Kernel kernel;
     final JobScheduler jobScheduler;
@@ -31,5 +31,11 @@ public class DataCollector
     {
         this.kernel = kernel;
         this.jobScheduler = jobScheduler;
+    }
+
+    @Override
+    public void close()
+    {
+        // intended to eventually be used to stop any ongoing collection
     }
 }

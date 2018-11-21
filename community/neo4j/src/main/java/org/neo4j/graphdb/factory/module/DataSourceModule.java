@@ -24,14 +24,11 @@ import java.util.function.Supplier;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext;
-import org.neo4j.internal.collector.DataCollectorModule;
-import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.NeoStoreDataSource;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.storageengine.api.StoreId;
 
 public class DataSourceModule
@@ -61,23 +58,6 @@ public class DataSourceModule
                 new ProcedureGDSFactory( platformModule, this, coreAPIAvailabilityGuard, context.getTokenHolders(),
                         editionModule.getThreadToTransactionBridge() );
         procedures.registerComponent( GraphDatabaseService.class, gdsFactory::apply, true );
-
-        platformModule.life.add( new LifecycleAdapter()
-                {
-                    @Override
-                    public void start()
-                    {
-                        // Data collector procedures
-                        try
-                        {
-                            DataCollectorModule.setupDataCollector( procedures, platformModule.jobScheduler, kernelAPI.get() );
-                        }
-                        catch ( KernelException e )
-                        {
-                            throw new RuntimeException( "Failed to setup Data Collector", e );
-                        }
-                    }
-                } );
     }
 
     public CoreAPIAvailabilityGuard getCoreAPIAvailabilityGuard()

@@ -31,13 +31,14 @@ public class DataCollectorModule
     {
     }
 
-    public static void setupDataCollector( Procedures procedures,
-                                           JobScheduler jobScheduler,
-                                           Kernel kernel ) throws KernelException
+    public static AutoCloseable setupDataCollector( Procedures procedures,
+                                                    JobScheduler jobScheduler,
+                                                    Kernel kernel ) throws KernelException
     {
         Preconditions.checkState( kernel != null, "Kernel was null" );
         DataCollector dataCollector = new DataCollector( kernel, jobScheduler );
         procedures.registerComponent( DataCollector.class, ctx -> dataCollector, false );
         procedures.registerProcedure( CollectorProcedures.class );
+        return dataCollector;
     }
 }
