@@ -30,7 +30,6 @@ import java.util.Iterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
 
@@ -39,7 +38,6 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.forced_kernel_id;
 
@@ -154,7 +152,7 @@ class KernelDataTest
     {
         Kernel( String desiredId )
         {
-            super( fileSystem, pageCache, new File( DEFAULT_DATABASE_NAME ), Config.defaults( forced_kernel_id, desiredId ), mock( DataSourceManager.class ) );
+            super( fileSystem, pageCache, new File( DEFAULT_DATABASE_NAME ), Config.defaults( forced_kernel_id, desiredId ) );
             kernels.add( this );
         }
 

@@ -71,7 +71,7 @@ public class JmxKernelExtension extends LifecycleAdapter
         {
             try
             {
-                for ( Neo4jMBean bean : provider.loadBeans( kernelData, support ) )
+                for ( Neo4jMBean bean : provider.loadBeans( kernelData, dataSourceManager, support ) )
                 {
                     mbs.registerMBean( bean, bean.objectName );
                     beans.add( bean );

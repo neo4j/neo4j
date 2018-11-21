@@ -25,6 +25,7 @@ import javax.management.DynamicMBean;
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 
 public abstract class ManagementBeanProvider extends Service
@@ -76,16 +77,16 @@ public abstract class ManagementBeanProvider extends Service
         return createMBean( management );
     }
 
-    final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, ManagementSupport support )
+    final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, DataSourceManager dataSourceManager, ManagementSupport support )
             throws Exception
     {
         if ( support.supportsMxBeans() )
         {
-            return createMXBeans( new ManagementData( this, kernel, support ) );
+            return createMXBeans( new ManagementData( this, kernel, dataSourceManager, support ) );
         }
         else
         {
-            return createMBeans( new ManagementData( this, kernel, support ) );
+            return createMBeans( new ManagementData( this, kernel, dataSourceManager, support ) );
         }
     }
 

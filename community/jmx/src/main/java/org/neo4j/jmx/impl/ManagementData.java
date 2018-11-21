@@ -21,19 +21,22 @@ package org.neo4j.jmx.impl;
 
 import javax.management.ObjectName;
 
+import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 
 public final class ManagementData
 {
     private final KernelData kernel;
     private final ManagementSupport support;
+    private final DataSourceManager dataSourceManager;
     final ManagementBeanProvider provider;
 
-    public ManagementData( ManagementBeanProvider provider, KernelData kernel, ManagementSupport support )
+    public ManagementData( ManagementBeanProvider provider, KernelData kernel, DataSourceManager dataSourceManager, ManagementSupport support )
     {
         this.provider = provider;
         this.kernel = kernel;
         this.support = support;
+        this.dataSourceManager = dataSourceManager;
     }
 
     public KernelData getKernelData()
@@ -41,9 +44,14 @@ public final class ManagementData
         return kernel;
     }
 
+    public DataSourceManager getDataSourceManager()
+    {
+        return dataSourceManager;
+    }
+
     public <T> T resolveDependency( Class<T> clazz )
     {
-        return kernel.getDataSourceManager().getDataSource().getDependencyResolver().resolveDependency( clazz );
+        return dataSourceManager.getDataSource().getDependencyResolver().resolveDependency( clazz );
     }
 
     ObjectName getObjectName( String... extraNaming )

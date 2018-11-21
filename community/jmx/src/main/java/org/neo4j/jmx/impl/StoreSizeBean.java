@@ -153,7 +153,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
     static StoreSizeMBean createBean( ManagementData management, boolean isMxBean, long updateInterval, Clock clock )
     {
         final StoreSizeMBean bean = new StoreSizeMBean( management, isMxBean, updateInterval, clock );
-        final DataSourceManager dataSourceManager = management.getKernelData().getDataSourceManager();
+        final DataSourceManager dataSourceManager = management.getDataSourceManager();
         dataSourceManager.addListener( bean );
         return bean;
     }

@@ -107,7 +107,9 @@ public class CommunityEditionModule extends DefaultEditionModule
         tokenHoldersProvider = createTokenHolderProvider( platformModule );
 
         File kernelContextDirectory = platformModule.storeLayout.storeDirectory();
-        dependencies.satisfyDependency( createKernelData( fileSystem, pageCache, kernelContextDirectory, config, life, dataSourceManager ) );
+        KernelData kernelData = createKernelData( fileSystem, pageCache, kernelContextDirectory, config );
+        dependencies.satisfyDependency( kernelData );
+        life.add( kernelData );
 
         commitProcessFactory = new CommunityCommitProcessFactory();
 
@@ -202,10 +204,9 @@ public class CommunityEditionModule extends DefaultEditionModule
         }
     }
 
-    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir,
-            Config config, LifeSupport life, DataSourceManager dataSourceManager )
+    private KernelData createKernelData( FileSystemAbstraction fileSystem, PageCache pageCache, File storeDir, Config config )
     {
-        return life.add( new KernelData( fileSystem, pageCache, storeDir, config, dataSourceManager ) );
+        return new KernelData( fileSystem, pageCache, storeDir, config );
     }
 
     protected TransactionHeaderInformationFactory createHeaderInformationFactory()
