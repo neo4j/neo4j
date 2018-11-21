@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.exception;
 
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.logging.Log;
 import org.neo4j.server.ServerStartupException;
 

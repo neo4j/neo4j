@@ -22,7 +22,7 @@ package org.neo4j.server.exception;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 

@@ -25,7 +25,7 @@ import org.junit.rules.ExpectedException;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.kernel.recovery.LogTailScanner;
 

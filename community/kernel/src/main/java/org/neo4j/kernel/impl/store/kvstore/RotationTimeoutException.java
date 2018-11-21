@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
-import org.neo4j.kernel.impl.store.StoreFailureException;
+import org.neo4j.storageengine.api.StoreFailureException;
 
 /**
  * When {@link org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore.RotationTask} do rotation without force

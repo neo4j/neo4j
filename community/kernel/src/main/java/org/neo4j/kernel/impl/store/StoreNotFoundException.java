@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.storageengine.api.StoreFailureException;
+
 class StoreNotFoundException extends StoreFailureException
 {
     StoreNotFoundException( String msg )

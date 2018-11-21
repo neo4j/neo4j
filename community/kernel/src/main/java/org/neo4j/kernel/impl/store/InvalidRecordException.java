@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.storageengine.api.StoreFailureException;
+
 public class InvalidRecordException extends StoreFailureException
 {
     public InvalidRecordException( String msg )

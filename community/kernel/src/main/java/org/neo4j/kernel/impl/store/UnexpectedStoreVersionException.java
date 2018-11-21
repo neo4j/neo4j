@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.storageengine.api.StoreFailureException;
+
 public class UnexpectedStoreVersionException extends StoreFailureException
 {
     private static final String MESSAGE = "Unable to open store with version '%s', expected store version '%s'.";

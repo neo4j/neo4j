@@ -17,16 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.storageengine.migration;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.store.StoreFailureException;
+import org.neo4j.storageengine.api.StoreFailureException;
 
 public class UpgradeNotAllowedException extends StoreFailureException
 {
     private static final String BASE_MSG = String.format(
         "Neo4j cannot be started because the database files require upgrading and upgrades are disabled "
-            + "in the configuration. Please set '%s' to 'true' in your configuration file and try again.", GraphDatabaseSettings.allow_upgrade.name() );
+            + "in the configuration. Please set 'allow_upgrade' to 'true' in your configuration file and try again." );
 
     public UpgradeNotAllowedException( String msg )
     {

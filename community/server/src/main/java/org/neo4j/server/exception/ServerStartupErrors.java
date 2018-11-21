@@ -20,7 +20,7 @@
 package org.neo4j.server.exception;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedException;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.server.ServerStartupException;
 
 import static java.lang.String.format;
