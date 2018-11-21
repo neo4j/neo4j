@@ -61,6 +61,11 @@ public class IndexReaderCache
 
     public void close()
     {
+        if ( indexReaders.isEmpty() )
+        {
+            return;
+        }
+
         for ( IndexReader indexReader : indexReaders.values() )
         {
             indexReader.close();
