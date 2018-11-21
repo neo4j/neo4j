@@ -28,20 +28,22 @@ import java.util.Enumeration;
 import java.util.Formatter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -69,6 +71,7 @@ import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
 import static org.neo4j.ext.udc.UdcConstants.UNKNOWN_DIST;
 import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
 import static org.neo4j.ext.udc.UdcConstants.VERSION;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public class DefaultUdcInformationCollector implements UdcInformationCollector
 {
@@ -79,38 +82,14 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                     "groovy", "groovy", "(tomcat|jetty)", "web", "spring-data-neo4j", "sdn" );
 
     private final Config config;
+    private final DatabaseManager databaseManager;
     private final UsageData usageData;
 
-    private String storeId;
-
-    private Database database;
-
-    DefaultUdcInformationCollector( Config config, DataSourceManager dataSourceManager, UsageData usageData )
+    DefaultUdcInformationCollector( Config config, DatabaseManager databaseManager, UsageData usageData )
     {
         this.config = config;
+        this.databaseManager = databaseManager;
         this.usageData = usageData;
-
-        if ( dataSourceManager != null )
-        {
-            dataSourceManager.addListener( new DataSourceManager.Listener()
-            {
-                @Override
-                public void registered( Database ds )
-                {
-                    storeId = Long.toHexString( ds.getStoreId().getRandomId() );
-
-                    database = ds;
-                }
-
-                @Override
-                public void unregistered( Database ds )
-                {
-                    storeId = null;
-
-                    database = null;
-                }
-            } );
-        }
     }
 
     static String filterVersionForUDC( String version )
@@ -126,10 +105,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     public Map<String,String> getUdcParams()
     {
         String classPath = getClassPath();
-
         Map<String,String> udcFields = new HashMap<>();
-
-        add( udcFields, ID, storeId );
         add( udcFields, VERSION, filterVersionForUDC( usageData.get( UsageDataKeys.version ) ) );
         add( udcFields, REVISION, filterVersionForUDC( usageData.get( UsageDataKeys.revision ) ) );
 
@@ -147,31 +123,47 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, NUM_PROCESSORS, determineNumberOfProcessors() );
         add( udcFields, TOTAL_MEMORY, determineTotalMemory() );
         add( udcFields, HEAP_SIZE, determineHeapSize() );
-
-        add( udcFields, NODE_IDS_IN_USE, determineNodesIdsInUse() );
-        add( udcFields, RELATIONSHIP_IDS_IN_USE, determineRelationshipIdsInUse() );
-        add( udcFields, LABEL_IDS_IN_USE, determineLabelIdsInUse() );
-        add( udcFields, PROPERTY_IDS_IN_USE, determinePropertyIdsInUse() );
-
         add( udcFields, FEATURES, usageData.get( UsageDataKeys.features ).asHex() );
-
-        addStoreFileSizes( udcFields );
-
         udcFields.putAll( determineSystemProperties() );
+        getDatabaseUdcValues( udcFields, DEFAULT_DATABASE_NAME );
         return udcFields;
     }
 
-    /**
-     * Register store file sizes, sans transaction logs
-     */
-    private void addStoreFileSizes( Map<String,String> udcFields )
+    @Override
+    public String getStoreId()
     {
-        if ( database == null )
-        {
-            return;
-        }
-        DependencyResolver dependencyResolver = database.getDependencyResolver();
-        FileSystemAbstraction fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+        return getDatabaseFacade( DEFAULT_DATABASE_NAME )
+                .map( GraphDatabaseFacade::getDependencyResolver )
+                .map( resolver -> resolver.resolveDependency( Database.class ) )
+                .map( Database::getStoreId )
+                .map( DefaultUdcInformationCollector::getStoreIdString )
+                .orElse( null );
+    }
+
+    private void getDatabaseUdcValues( Map<String,String> udcFields, String databaseName )
+    {
+        getDatabaseFacade( databaseName ).map( GraphDatabaseFacade::getDependencyResolver )
+                .ifPresent( resolver ->
+                {
+                    FileSystemAbstraction fileSystem = resolver.resolveDependency( FileSystemAbstraction.class );
+                    Database database = resolver.resolveDependency( Database.class );
+                    IdGeneratorFactory idGeneratorFactory = resolver.resolveDependency( IdGeneratorFactory.class );
+                    addStoreFileSizes( database, fileSystem, udcFields );
+                    add( udcFields, ID, getStoreIdString( database.getStoreId() ) );
+                    add( udcFields, NODE_IDS_IN_USE, determineNodesIdsInUse( idGeneratorFactory ) );
+                    add( udcFields, RELATIONSHIP_IDS_IN_USE, determineRelationshipIdsInUse( idGeneratorFactory ) );
+                    add( udcFields, LABEL_IDS_IN_USE, determineLabelIdsInUse( idGeneratorFactory ) );
+                    add( udcFields, PROPERTY_IDS_IN_USE, determinePropertyIdsInUse( idGeneratorFactory ) );
+                } );
+    }
+
+    private Optional<GraphDatabaseFacade> getDatabaseFacade( String defaultDatabaseName )
+    {
+        return databaseManager.getDatabaseFacade( defaultDatabaseName );
+    }
+
+    private void addStoreFileSizes( Database database, FileSystemAbstraction fileSystem, Map<String,String> udcFields )
+    {
         long databaseSize = FileUtils.size( fileSystem, database.getDatabaseLayout().databaseDirectory() );
         add( udcFields, STORE_SIZE, databaseSize );
     }
@@ -277,29 +269,29 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
     }
 
-    private long determineNodesIdsInUse()
+    private long determineNodesIdsInUse( IdGeneratorFactory idGeneratorFactory )
     {
-        return getNumberOfIdsInUse( IdType.NODE );
+        return getNumberOfIdsInUse( idGeneratorFactory, IdType.NODE );
     }
 
-    private long determineLabelIdsInUse()
+    private long determineLabelIdsInUse( IdGeneratorFactory idGeneratorFactory )
     {
-        return getNumberOfIdsInUse( IdType.LABEL_TOKEN );
+        return getNumberOfIdsInUse( idGeneratorFactory, IdType.LABEL_TOKEN );
     }
 
-    private long determinePropertyIdsInUse()
+    private long determinePropertyIdsInUse( IdGeneratorFactory idGeneratorFactory )
     {
-        return getNumberOfIdsInUse( IdType.PROPERTY );
+        return getNumberOfIdsInUse( idGeneratorFactory, IdType.PROPERTY );
     }
 
-    private long determineRelationshipIdsInUse()
+    private long determineRelationshipIdsInUse( IdGeneratorFactory idGeneratorFactory )
     {
-        return getNumberOfIdsInUse( IdType.RELATIONSHIP );
+        return getNumberOfIdsInUse( idGeneratorFactory, IdType.RELATIONSHIP );
     }
 
-    private long getNumberOfIdsInUse( IdType type )
+    private long getNumberOfIdsInUse( IdGeneratorFactory idGeneratorFactory, IdType type )
     {
-        return database.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( type ).getNumberOfIdsInUse();
+        return idGeneratorFactory.get( type ).getNumberOfIdsInUse();
     }
 
     private static String toCommaString( Object values )
@@ -372,10 +364,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         return relevantSysProps;
     }
 
-    @Override
-    public String getStoreId()
+    private static String getStoreIdString( StoreId storeId )
     {
-        return storeId;
+        return Long.toHexString( storeId.getRandomId() );
     }
-
 }

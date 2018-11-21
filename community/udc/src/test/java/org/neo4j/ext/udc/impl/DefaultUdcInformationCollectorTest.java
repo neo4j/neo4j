@@ -29,10 +29,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -40,15 +42,14 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.Edition;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdRange;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
@@ -75,9 +76,9 @@ class DefaultUdcInformationCollectorTest
 
     private final UsageData usageData = new UsageData( mock( JobScheduler.class ) );
 
-    private final DataSourceManager dataSourceManager = new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
-    private final Database dataSource = mock( Database.class );
-    private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
+    private final DatabaseManager databaseManager = mock( DatabaseManager.class );
+    private final Database database = mock( Database.class );
+    private final DefaultUdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), databaseManager, usageData );
     private final DefaultFileSystemAbstraction fileSystem = mock( DefaultFileSystemAbstraction.class );
 
     @BeforeEach
@@ -86,12 +87,13 @@ class DefaultUdcInformationCollectorTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( new StubIdGeneratorFactory() );
         dependencies.satisfyDependencies( fileSystem );
-        when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
-        when( dataSource.getDatabaseLayout() ).thenReturn( DatabaseLayout.of( new File( "database" ) ) );
-        when( dataSource.getStoreId() ).thenReturn( StoreId.DEFAULT );
-
-        dataSourceManager.start();
-        dataSourceManager.register( GraphDatabaseSettings.DEFAULT_DATABASE_NAME, dataSource );
+        dependencies.satisfyDependencies( database );
+        GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
+        when( facade.getDependencyResolver() ).thenReturn( dependencies );
+        when( database.getDependencyResolver() ).thenReturn( dependencies );
+        when( database.getDatabaseLayout() ).thenReturn( DatabaseLayout.of( new File( "database" ) ) );
+        when( database.getStoreId() ).thenReturn( StoreId.DEFAULT );
+        when( databaseManager.getDatabaseFacade( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( facade ) );
     }
 
     @Test
@@ -186,7 +188,7 @@ class DefaultUdcInformationCollectorTest
     @Test
     void shouldReportStoreSizes() throws Throwable
     {
-        UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), dataSourceManager, usageData );
+        UdcInformationCollector collector = new DefaultUdcInformationCollector( Config.defaults(), databaseManager, usageData );
 
         when( fileSystem.getFileSize( Mockito.any() ) ).thenReturn( 152L );
         Map<String, String> udcParams = collector.getUdcParams();

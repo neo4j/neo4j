@@ -21,10 +21,10 @@ package org.neo4j.ext.udc.impl;
 
 import java.util.Timer;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.udc.UsageData;
 
@@ -42,12 +42,12 @@ public class UdcKernelExtension extends LifecycleAdapter
     private Timer timer;
     private final UsageData usageData;
     private final Config config;
-    private final DataSourceManager dataSourceManager;
+    private final DatabaseManager databaseManager;
 
-    UdcKernelExtension( Config config, DataSourceManager dataSourceManager, UsageData usageData, Timer timer )
+    UdcKernelExtension( Config config, DatabaseManager databaseManager, UsageData usageData, Timer timer )
     {
         this.config = config;
-        this.dataSourceManager = dataSourceManager;
+        this.databaseManager = databaseManager;
         this.usageData = usageData;
         this.timer = timer;
     }
@@ -64,7 +64,7 @@ public class UdcKernelExtension extends LifecycleAdapter
         int interval = config.get( UdcSettings.interval );
         HostnamePort hostAddress = config.get(UdcSettings.udc_host);
 
-        UdcInformationCollector collector = new DefaultUdcInformationCollector( config, dataSourceManager, usageData );
+        UdcInformationCollector collector = new DefaultUdcInformationCollector( config, databaseManager, usageData );
         UdcTimerTask task = new UdcTimerTask( hostAddress, collector );
 
         timer.scheduleAtFixedRate( task, firstDelay, interval );

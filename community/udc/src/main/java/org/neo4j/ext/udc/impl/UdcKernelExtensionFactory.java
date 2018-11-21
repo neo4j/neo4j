@@ -21,11 +21,11 @@ package org.neo4j.ext.udc.impl;
 
 import java.util.Timer;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.udc.UsageData;
 
@@ -46,7 +46,7 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
     public interface Dependencies
     {
         Config config();
-        DataSourceManager dataSourceManager();
+        DatabaseManager databaseManager();
         UsageData usageData();
     }
 
@@ -61,7 +61,7 @@ public class UdcKernelExtensionFactory extends KernelExtensionFactory<UdcKernelE
         Config config = dependencies.config();
         return new UdcKernelExtension(
                 config,
-                dependencies.dataSourceManager(),
+                dependencies.databaseManager(),
                 dependencies.usageData(),
                 new Timer( "Neo4j UDC Timer", true ) );
     }
