@@ -56,6 +56,7 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var largestBlockSizeAdded = 0
+      var failedToFinish = false
       var blockSize = 1
       var keepGoing = true
       val start = System.currentTimeMillis()
@@ -75,8 +76,9 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
               (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
           }
         }
+        failedToFinish = goals.hasNext && largestBlockSizeAdded == blockSize
       }
-      largestBlockSizeAdded
+      largestBlockSizeAdded - (if (failedToFinish) 1 else 0)
     }
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
