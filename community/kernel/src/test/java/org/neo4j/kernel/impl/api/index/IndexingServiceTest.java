@@ -84,7 +84,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescri
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;

@@ -54,7 +54,7 @@ import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;

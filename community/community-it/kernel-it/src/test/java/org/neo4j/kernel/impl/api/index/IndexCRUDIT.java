@@ -51,7 +51,7 @@ import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.CollectingIndexUpdater;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;

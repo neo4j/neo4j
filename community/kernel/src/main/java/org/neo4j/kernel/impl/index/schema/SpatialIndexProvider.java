@@ -39,7 +39,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.index.schema.config.ConfiguredSpaceFillingCurveSettingsCache;
 import org.neo4j.kernel.impl.index.schema.config.SpaceFillingCurveSettingsFactory;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.values.storable.ValueCategory;
 

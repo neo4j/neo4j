@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**

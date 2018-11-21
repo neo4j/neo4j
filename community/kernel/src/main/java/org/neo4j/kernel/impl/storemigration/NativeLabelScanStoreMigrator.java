@@ -48,6 +48,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;

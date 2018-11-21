@@ -37,6 +37,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.internal.Version;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 
 /**

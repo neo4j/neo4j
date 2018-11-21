@@ -29,6 +29,7 @@ import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.common.ProgressReporter;
+import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 /**
  * Migrates schema and label indexes between different neo4j versions.

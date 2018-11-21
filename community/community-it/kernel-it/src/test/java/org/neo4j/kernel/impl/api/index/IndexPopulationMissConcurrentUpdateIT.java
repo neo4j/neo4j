@@ -55,7 +55,7 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
-import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.Barrier;
@@ -76,7 +76,7 @@ import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.BATCH_SIZE_NAME;
 import static org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.QUEUE_THRESHOLD_NAME;
-import static org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant.NOT_PARTICIPATING;
+import static org.neo4j.storageengine.migration.StoreMigrationParticipant.NOT_PARTICIPATING;
 import static org.neo4j.test.TestLabels.LABEL_ONE;
 
 public class IndexPopulationMissConcurrentUpdateIT

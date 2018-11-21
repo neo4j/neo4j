@@ -49,6 +49,7 @@ import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory;
 
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;

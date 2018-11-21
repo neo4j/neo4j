@@ -70,6 +70,7 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
+import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.unsafe.impl.batchimport.AdditionalInitialIds;
 import org.neo4j.unsafe.impl.batchimport.BatchImporter;
 import org.neo4j.unsafe.impl.batchimport.BatchImporterFactory;
