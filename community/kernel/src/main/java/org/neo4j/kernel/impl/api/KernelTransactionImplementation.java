@@ -960,6 +960,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             clientInfo = null;
             userTransactionId = 0;
             statistics.reset();
+            releaseStatementResources();
             operations.release();
             initializationTrace = null;
             pool.release( this );
