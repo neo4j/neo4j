@@ -36,6 +36,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
@@ -53,6 +56,8 @@ import static org.neo4j.internal.kernel.api.TestUtils.singleBatchWorker;
 public abstract class ParallelNodeCursorTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
+
+    private static final ToLongFunction<NodeCursor> NODE_GET = NodeCursor::nodeReference;
 
     @Test
     public void shouldHandleEmptyDatabase() throws TransactionFailureException
@@ -199,10 +204,10 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, size / 4 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, size / 4 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, size / 4 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, size / 4 ) );
 
             // then
             LongList ids1 = future1.get();
@@ -244,10 +249,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Supplier<NodeCursor> allocateCursor = cursors::allocateNodeCursor;
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, 100 ) );
 
             // then
             LongList ids1 = future1.get();
@@ -292,7 +298,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
-                futures.add( service.submit( randomBatchWorker( scan, cursors ) ) );
+                futures.add( service.submit( randomBatchWorker( scan, cursors::allocateNodeCursor, NODE_GET ) ) );
             }
 
             // then
@@ -337,7 +343,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                     List<Future<LongList>> futures = new ArrayList<>( workers );
                     for ( int j = 0; j < workers; j++ )
                     {
-                        futures.add( threadPool.submit( randomBatchWorker( scan, cursors ) ) );
+                        futures.add( threadPool.submit( randomBatchWorker( scan, cursors::allocateNodeCursor, NODE_GET ) ) );
                     }
 
                     List<LongList> lists =

@@ -128,6 +128,25 @@ class NativeLabelScanReader implements LabelScanReader
         client.scan( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false, labelId );
     }
 
+    @Override
+    public void nodesWithLabel(  IndexProgressor.NodeLabelClient client, int labelId, long from, long to )
+    {
+        assert from % LabelScanValue.RANGE_SIZE == 0;
+        assert to % LabelScanValue.RANGE_SIZE == 0;
+
+        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+        try
+        {
+            cursor = seekerForLabel( from, to, labelId );
+            openCursors.add( cursor );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+        client.scan( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false, labelId );
+    }
+
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )
     {
         List<PrimitiveLongResourceIterator> iterators = new ArrayList<>();
@@ -151,6 +170,14 @@ class NativeLabelScanReader implements LabelScanReader
     {
         LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
         LabelScanKey to = new LabelScanKey( labelId, Long.MAX_VALUE );
+        return index.seek( from, to );
+    }
+
+    private RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seekerForLabel( long startId, long stopId, int labelId ) throws IOException
+    {
+        LabelScanKey from = new LabelScanKey( labelId, rangeOf( startId ) );
+        LabelScanKey to = new LabelScanKey( labelId, rangeOf( stopId ) );
+
         return index.seek( from, to );
     }
 

@@ -19,6 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.block.function.primitive.LongObjectToLongFunction;
+import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -31,6 +33,12 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import java.util.function.LongFunction;
+import java.util.function.LongUnaryOperator;
+import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
@@ -67,41 +75,41 @@ final class TestUtils
         return concat;
     }
 
-    static Callable<LongList> singleBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory, int sizeHint )
+    static <T extends Cursor> Callable<LongList> singleBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer, int sizeHint )
     {
         return () -> {
-            try ( NodeCursor nodes = cursorsFactory.allocateNodeCursor() )
+            try ( T nodes = supplier.get() )
             {
-                LongArrayList ids = new LongArrayList();
+                LongArrayList batch = new LongArrayList();
                 scan.reserveBatch( nodes, sizeHint );
                 while ( nodes.next() )
                 {
-                    ids.add( nodes.nodeReference() );
+                    batch.add( producer.applyAsLong( nodes ) );
                 }
 
-                return ids;
+                return batch;
             }
         };
     }
 
-    static Callable<LongList> randomBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory )
+    static <T extends Cursor> Callable<LongList> randomBatchWorker( Scan<T> scan, Supplier<T> supplier, ToLongFunction<T> producer )
     {
         return () -> {
             ThreadLocalRandom random = ThreadLocalRandom.current();
 
-            try ( NodeCursor nodes = cursorsFactory.allocateNodeCursor() )
+            try ( T nodes = supplier.get() )
             {
                 int sizeHint = random.nextInt( 1, 5 );
-                LongArrayList ids = new LongArrayList();
+                LongArrayList batch = new LongArrayList();
                 while ( scan.reserveBatch( nodes, sizeHint ) )
                 {
                     while ( nodes.next() )
                     {
-                        ids.add( nodes.nodeReference() );
+                        batch.add( producer.applyAsLong( nodes ) );
                     }
                 }
 
-                return ids;
+                return batch;
             }
         };
     }

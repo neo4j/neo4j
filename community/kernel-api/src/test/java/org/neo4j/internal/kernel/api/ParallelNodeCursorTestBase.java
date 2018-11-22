@@ -34,6 +34,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
+import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,6 +56,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     private static final int NUMBER_OF_NODES = 128;
     @Rule
     public ExpectedException exception = ExpectedException.none();
+    private static final ToLongFunction<NodeCursor> NODE_GET = NodeCursor::nodeReference;
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -155,10 +159,14 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<LongList> future1 = service.submit(
+                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+            Future<LongList> future2 = service.submit(
+                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+            Future<LongList> future3 = service.submit(
+                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
+            Future<LongList> future4 = service.submit(
+                    singleBatchWorker( scan, cursors::allocateNodeCursor, NodeCursor::nodeReference, 32 ) );
 
             // then
             LongList ids1 = future1.get();
@@ -188,10 +196,11 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Supplier<NodeCursor> allocateNodeCursor = cursors::allocateNodeCursor;
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, allocateNodeCursor, NODE_GET, 100 ) );
 
             // then
             LongList ids1 = future1.get();
@@ -224,7 +233,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
-                futures.add( service.submit( randomBatchWorker( scan, cursors ) ) );
+                futures.add( service.submit( randomBatchWorker( scan, cursors::allocateNodeCursor, NODE_GET ) ) );
             }
 
             service.shutdown();

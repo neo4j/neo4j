@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.CursorFactory;
@@ -54,6 +56,7 @@ import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
+import org.neo4j.util.Preconditions;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -299,7 +302,41 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException( "not implemented" );
+
+        return new Scan<NodeLabelIndexCursor>()
+        {
+            private final AtomicLong nextStart = new AtomicLong( 0 );
+            //TODO we should be able to find a better max further down from the index
+            private final long max = roundUp( storageReader.highestPossibleNodeId() );
+            private static final int CHUNK_SIZE = Long.SIZE;
+
+            @Override
+            public boolean reserveBatch( NodeLabelIndexCursor cursor, int sizeHint )
+            {
+                Preconditions.requirePositive( sizeHint );
+
+                long size = roundUp( sizeHint );
+                DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
+                indexCursor.setRead( Read.this );
+                long start = nextStart.getAndAdd( size );
+                long stop = Math.min(start + size, max);
+
+                if (start >= max)
+                {
+                    return false;
+                }
+                else
+                {
+                    labelScanReader().nodesWithLabel( indexCursor, label, start, stop);
+                    return true;
+                }
+            }
+
+            private long roundUp( long sizeHint )
+            {
+                return (sizeHint / CHUNK_SIZE + 1) * CHUNK_SIZE;
+            }
+        };
     }
 
     @Override
