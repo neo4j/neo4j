@@ -19,7 +19,7 @@
 
   <packaging>jar</packaging>
   <name>Neo4j - Data Collector</name>
-  <description>The Neo4j data collector deamon.</description>
+  <description>The Neo4j data collector daemon.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
 
   <scm>
@@ -86,31 +86,5 @@ the relevant Commercial Agreement.
 
         <!-- Test are located with other IT tests to solve problems with depending of TestGraphDatabaseFactory et.c. -->
 
-        <!-- tests -->
-
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-migrationsupport</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.vintage</groupId>
-            <artifactId>junit-vintage-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter-engine</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.hamcrest</groupId>
-            <artifactId>hamcrest-library</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-        </dependency>
     </dependencies>
 </project>
