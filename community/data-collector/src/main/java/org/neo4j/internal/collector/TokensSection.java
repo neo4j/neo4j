@@ -39,7 +39,7 @@ final class TokensSection
     { // only static methods
     }
 
-    static Stream<RetrieveResult> collect( Kernel kernel )
+    static Stream<RetrieveResult> collect( Kernel kernel ) throws TransactionFailureException
     {
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
         {
@@ -59,10 +59,6 @@ final class TokensSection
             data.put( "relationshipTypes", relationshipTypes );
             data.put( "propertyKeys", propertyKeys );
             return Stream.of( new RetrieveResult( NAME, data ) );
-        }
-        catch ( TransactionFailureException e )
-        {
-            throw new UnsupportedOperationException( "How to handle errors?" );
         }
     }
 

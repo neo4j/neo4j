@@ -60,6 +60,7 @@ final class GraphCountsSection
     }
 
     static Stream<RetrieveResult> collect( Kernel kernel, Anonymizer anonymizer )
+            throws TransactionFailureException, IndexNotFoundKernelException
     {
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
         {
@@ -73,10 +74,6 @@ final class GraphCountsSection
             data.put( "constraints", constraints( tokens, tx.schemaRead(), anonymizer ) );
 
             return Stream.of( new RetrieveResult( NAME, data ) );
-        }
-        catch ( TransactionFailureException | IndexNotFoundKernelException e )
-        {
-            throw new UnsupportedOperationException( "How to handle errors?", e );
         }
     }
 
