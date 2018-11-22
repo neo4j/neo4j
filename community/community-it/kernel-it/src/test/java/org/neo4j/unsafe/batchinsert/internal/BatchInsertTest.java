@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.batchinsert.internal;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -43,6 +42,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -1431,14 +1431,21 @@ public class BatchInsertTest
         }
     }
 
-    private List<Long> extractPrimitiveLongIteratorAsList( LongIterator longIterator )
+    private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongResourceIterator longIterator )
     {
-        List<Long> actualNodeIds = new ArrayList<>();
-        while ( longIterator.hasNext() )
+        try
         {
-            actualNodeIds.add( longIterator.next() );
+            List<Long> actualNodeIds = new ArrayList<>();
+            while ( longIterator.hasNext() )
+            {
+                actualNodeIds.add( longIterator.next() );
+            }
+            return actualNodeIds;
         }
-        return actualNodeIds;
+        finally
+        {
+            longIterator.close();
+        }
     }
 
     private void createRelationships( BatchInserter inserter, long node, RelationshipType relType, int out )

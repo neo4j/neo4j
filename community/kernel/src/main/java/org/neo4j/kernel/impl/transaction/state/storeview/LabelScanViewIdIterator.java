@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.state.storeview;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
+import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.storageengine.api.StorageEntityScanCursor;
 
@@ -46,7 +47,7 @@ class LabelScanViewIdIterator<CURSOR extends StorageEntityScanCursor> implements
     @Override
     public void close()
     {
-        labelScanReader.close();
+        IOUtils.closeAllSilently( labelScanReader, idIterator );
     }
 
     @Override

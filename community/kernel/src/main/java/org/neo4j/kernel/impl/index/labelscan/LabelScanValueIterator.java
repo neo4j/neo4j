@@ -23,7 +23,6 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -52,10 +51,9 @@ class LabelScanValueIterator extends LabelScanValueIndexAccessor implements Prim
      * @param fromId entity to start from (exclusive). The cursor gives entries that are effectively small bit-sets and the fromId may
      * be somewhere inside a bit-set range.
      */
-    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
-            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed, long fromId )
+    LabelScanValueIterator( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor, long fromId )
     {
-        super( toRemoveFromWhenClosed, cursor );
+        super( cursor );
         this.fromId = fromId;
     }
 

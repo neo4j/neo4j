@@ -23,7 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -80,7 +79,7 @@ public class NativeLabelScanWriterTest
         for ( int i = 0; i < LABEL_COUNT; i++ )
         {
             long[] expectedNodeIds = nodesWithLabel( expected, i );
-            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), new ArrayList<>(), NO_ID ) );
+            long[] actualNodeIds = asArray( new LabelScanValueIterator( inserter.nodesFor( i ), NO_ID ) );
             assertArrayEquals( "For label " + i, expectedNodeIds, actualNodeIds );
         }
     }

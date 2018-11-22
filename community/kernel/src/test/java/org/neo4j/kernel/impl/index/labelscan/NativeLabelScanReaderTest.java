@@ -37,6 +37,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 
 public class NativeLabelScanReaderTest
 {
@@ -58,11 +59,10 @@ public class NativeLabelScanReaderTest
                 null );
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
                 .thenReturn( cursor );
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
+        // WHEN
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
+              PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID ))
         {
-            // WHEN
-            LongIterator iterator = reader.nodesWithLabel( LABEL_ID );
-
             // THEN
             assertArrayEquals( new long[] {
                     // base 0*64 = 0
@@ -72,7 +72,7 @@ public class NativeLabelScanReaderTest
                     // base 3*64 = 192
                     192 + 0, 192 + 5, 192 + 7, 192 + 13 },
 
-                    asArray( iterator ) );
+                    closingAsArray( iterator ) );
         }
     }
 
@@ -88,13 +88,14 @@ public class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
+              PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID );
+              PrimitiveLongResourceIterator second = reader.nodesWithLabel( LABEL_ID ) )
         {
             // first check test invariants
             verify( cursor1, never() ).close();
             verify( cursor2, never() ).close();
-            LongIterator first = reader.nodesWithLabel( LABEL_ID );
-            LongIterator second = reader.nodesWithLabel( LABEL_ID );
+
 
             // getting the second iterator should not have closed the first one
             verify( cursor1, never() ).close();
@@ -124,11 +125,13 @@ public class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index ) )
+        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
+              PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID );
+              PrimitiveLongResourceIterator ignore2 = reader.nodesWithLabel( LABEL_ID )
+        )
         {
             // first check test invariants
-            reader.nodesWithLabel( LABEL_ID );
-            reader.nodesWithLabel( LABEL_ID );
+
             verify( cursor1, never() ).close();
             verify( cursor2, never() ).close();
         }

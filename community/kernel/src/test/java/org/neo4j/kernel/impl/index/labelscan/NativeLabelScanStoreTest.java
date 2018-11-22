@@ -497,49 +497,13 @@ public class NativeLabelScanStoreTest
         {
             assertArrayEquals(
                     new long[] {1, 2, 3, 4, 5, 6, 7},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2} ) ) );
+                    PrimitiveLongCollections.closingAsArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2} ) ) );
             assertArrayEquals(
                     new long[] {1, 2, 3, 4, 5, 8, 9},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId3} ) ) );
+                    PrimitiveLongCollections.closingAsArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId3} ) ) );
             assertArrayEquals(
                     new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2, labelId3} ) ) );
-        }
-    }
-
-    @Test
-    void shouldFindNodesWithAllGivenLabels() throws Exception
-    {
-        // GIVEN
-        int labelId1 = 3;
-        int labelId2 = 5;
-        int labelId3 = 13;
-        start();
-
-        // WHEN
-        write( iterator(
-                labelChanges( 5, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2, labelId3} ),
-                labelChanges( 8, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ),
-                labelChanges( 3, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
-                labelChanges( 6, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
-                labelChanges( 1, EMPTY_LONG_ARRAY, new long[] {labelId1} ),
-                labelChanges( 7, EMPTY_LONG_ARRAY, new long[] {          labelId2} ),
-                labelChanges( 4, EMPTY_LONG_ARRAY, new long[] {labelId1,           labelId3} ),
-                labelChanges( 2, EMPTY_LONG_ARRAY, new long[] {labelId1, labelId2} ),
-                labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
-
-        // THEN
-        try ( LabelScanReader reader = store.newReader() )
-        {
-            assertArrayEquals(
-                    new long[] {2, 5},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( new int[] {labelId1, labelId2} ) ) );
-            assertArrayEquals(
-                    new long[] {4, 5},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( new int[] {labelId1, labelId3} ) ) );
-            assertArrayEquals(
-                    new long[] {5},
-                    PrimitiveLongCollections.asArray( reader.nodesWithAllLabels( new int[] {labelId1, labelId2, labelId3} ) ) );
+                    PrimitiveLongCollections.closingAsArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2, labelId3} ) ) );
         }
     }
 

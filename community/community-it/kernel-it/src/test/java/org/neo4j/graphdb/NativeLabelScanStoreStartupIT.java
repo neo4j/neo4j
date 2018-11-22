@@ -26,6 +26,7 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
@@ -116,7 +117,7 @@ public class NativeLabelScanStoreStartupIT
     {
         try ( LabelScanReader reader = labelScanStore.newReader() )
         {
-            return PrimitiveLongCollections.asArray( reader.nodesWithLabel( labelId ) );
+            return PrimitiveLongCollections.closingAsArray( reader.nodesWithLabel( labelId ) );
         }
     }
 
@@ -162,9 +163,11 @@ public class NativeLabelScanStoreStartupIT
         {
             labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
-        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
+        try ( LabelScanReader labelScanReader = labelScanStore.newReader();
+              PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId )
+        )
         {
-            assertEquals( 1, labelScanReader.nodesWithLabel( labelId ).next() );
+            assertEquals( 1, iterator.next() );
         }
     }
 }

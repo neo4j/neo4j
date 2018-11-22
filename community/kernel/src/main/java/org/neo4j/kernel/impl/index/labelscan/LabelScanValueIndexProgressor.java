@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.graphdb.Resource;
@@ -39,10 +38,9 @@ public class LabelScanValueIndexProgressor extends LabelScanValueIndexAccessor i
     private final NodeLabelClient client;
 
     LabelScanValueIndexProgressor( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor,
-            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed,
             NodeLabelClient client )
     {
-        super( toRemoveFromWhenClosed, cursor );
+        super( cursor );
         this.client = client;
     }
 

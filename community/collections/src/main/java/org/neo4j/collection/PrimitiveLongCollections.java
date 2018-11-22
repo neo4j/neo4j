@@ -144,6 +144,30 @@ public class PrimitiveLongCollections
         return count;
     }
 
+    public static int countAndClose( PrimitiveLongResourceIterator iterator )
+    {
+        try
+        {
+            return count( iterator );
+        }
+        finally
+        {
+            iterator.close();
+        }
+    }
+
+
+    public static long[] closingAsArray( PrimitiveLongResourceIterator iterator )
+    {
+        try {
+            return asArray( iterator );
+        }
+        finally
+        {
+            iterator.close();
+        }
+    }
+
     public static long[] asArray( LongIterator iterator )
     {
         long[] array = new long[8];

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.index.labelscan;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.Collection;
 
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.Hit;
@@ -35,10 +34,7 @@ abstract class LabelScanValueIndexAccessor
      * {@link RawCursor} to lazily read new {@link LabelScanValue} from.
      */
     protected final RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
-    /**
-     * Remove provided cursor from this collection when iterator is exhausted.
-     */
-    private final Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed;
+
     /**
      * Current base nodeId, i.e. the {@link LabelScanKey#idRange} of the current {@link LabelScanKey}.
      */
@@ -61,10 +57,8 @@ abstract class LabelScanValueIndexAccessor
     protected boolean closed;
 
     LabelScanValueIndexAccessor(
-            Collection<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> toRemoveFromWhenClosed,
             RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
     {
-        this.toRemoveFromWhenClosed = toRemoveFromWhenClosed;
         this.cursor = cursor;
     }
 
@@ -94,7 +88,6 @@ abstract class LabelScanValueIndexAccessor
             }
             finally
             {
-                toRemoveFromWhenClosed.remove( cursor );
                 closed = true;
             }
         }

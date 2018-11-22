@@ -181,7 +181,7 @@ class NativeLabelScanStoreMigratorTest
             {
                 try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
                 {
-                    int nodeCount = PrimitiveLongCollections.count( labelScanReader.nodesWithLabel( labelId ) );
+                    int nodeCount = PrimitiveLongCollections.countAndClose( labelScanReader.nodesWithLabel( labelId ) );
                     assertEquals( 1, nodeCount, format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ) );
                 }
             }
@@ -227,7 +227,7 @@ class NativeLabelScanStoreMigratorTest
             lifespan.add( nativeLabelScanStore );
             try ( LabelScanReader labelScanReader = nativeLabelScanStore.newReader() )
             {
-                int count = PrimitiveLongCollections.count( labelScanReader.nodesWithLabel( 1 ) );
+                int count = PrimitiveLongCollections.countAndClose( labelScanReader.nodesWithLabel( 1 ) );
                 assertEquals( 0, count );
             }
         }

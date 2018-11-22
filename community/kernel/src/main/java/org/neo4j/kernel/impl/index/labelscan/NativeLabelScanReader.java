@@ -24,9 +24,7 @@ import org.eclipse.collections.api.iterator.LongIterator;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
@@ -52,32 +50,16 @@ class NativeLabelScanReader implements LabelScanReader
      */
     private final GBPTree<LabelScanKey,LabelScanValue> index;
 
-    /**
-     * Currently open {@link RawCursor} from query methods below. Open cursors are closed when calling
-     * new query methods or when {@link #close() closing} this reader.
-     */
-    private final Set<RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException>> openCursors;
-
     NativeLabelScanReader( GBPTree<LabelScanKey,LabelScanValue> index )
     {
         this.index = index;
-        this.openCursors = new HashSet<>();
     }
 
-    /**
-     * Closes all currently open {@link RawCursor cursors} from last query method call.
-     */
+
     @Override
     public void close()
     {
-        try
-        {
-            ensureOpenCursorsClosed();
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
+      //nothing to close
     }
 
     @Override
@@ -87,14 +69,13 @@ class NativeLabelScanReader implements LabelScanReader
         try
         {
             cursor = seekerForLabel( 0, labelId );
-            openCursors.add( cursor );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
 
-        return new LabelScanValueIterator( cursor, openCursors, NO_ID );
+        return new LabelScanValueIterator( cursor, NO_ID );
     }
 
     @Override
@@ -105,27 +86,19 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public PrimitiveLongResourceIterator nodesWithAllLabels( int... labelIds )
-    {
-        List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( NO_ID, labelIds );
-        return new CompositeLabelScanValueIterator( iterators, true );
-    }
-
-    @Override
     public IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId )
     {
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
         try
         {
             cursor = seekerForLabel( 0, labelId );
-            openCursors.add( cursor );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
 
-        return new LabelScanValueIndexProgressor( cursor, openCursors, client );
+        return new LabelScanValueIndexProgressor( cursor, client );
     }
 
     @Override
@@ -138,13 +111,12 @@ class NativeLabelScanReader implements LabelScanReader
         try
         {
             cursor = seekerForLabel( from, to, labelId );
-            openCursors.add( cursor );
         }
         catch ( IOException e )
         {
             throw new UncheckedIOException( e );
         }
-        return new LabelScanValueIndexProgressor( cursor, openCursors, client );
+        return new LabelScanValueIndexProgressor( cursor, client );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )
@@ -155,8 +127,7 @@ class NativeLabelScanReader implements LabelScanReader
             for ( int labelId : labelIds )
             {
                 RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor = seekerForLabel( fromId, labelId );
-                openCursors.add( cursor );
-                iterators.add( new LabelScanValueIterator( cursor, openCursors, fromId ) );
+                iterators.add( new LabelScanValueIterator( cursor, fromId ) );
             }
         }
         catch ( IOException e )
@@ -179,14 +150,5 @@ class NativeLabelScanReader implements LabelScanReader
         LabelScanKey to = new LabelScanKey( labelId, rangeOf( stopId ) );
 
         return index.seek( from, to );
-    }
-
-    private void ensureOpenCursorsClosed() throws IOException
-    {
-        for ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor : openCursors )
-        {
-            cursor.close();
-        }
-        openCursors.clear();
     }
 }
