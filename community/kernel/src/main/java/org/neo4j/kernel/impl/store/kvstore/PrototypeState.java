@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.store.kvstore;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.concurrent.locks.Lock;
 

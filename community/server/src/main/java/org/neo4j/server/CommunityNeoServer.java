@@ -27,7 +27,6 @@ import java.util.function.Supplier;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.CommunityGraphFactory;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.modules.AuthorizationModule;

@@ -32,7 +32,6 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.spatial.Point;
-import org.neo4j.values.storable.DateTimeValue;
 
 public final class RepresentationType
 {

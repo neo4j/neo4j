@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;

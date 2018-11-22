@@ -25,7 +25,6 @@ import java.util.Iterator;
 import java.util.function.ToLongFunction;
 
 import org.neo4j.helpers.collection.BoundedIterable;
-import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 
 public class LuceneAllEntriesIndexAccessorReader implements BoundedIterable<Long>
 {

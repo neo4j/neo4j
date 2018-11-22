@@ -23,7 +23,6 @@ import java.io.File;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.AbstractNeoServer;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.database.CommunityGraphFactory;

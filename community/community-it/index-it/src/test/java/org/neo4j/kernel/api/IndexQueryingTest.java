@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.AbstractIndexQueryingTest;
 import org.neo4j.kernel.impl.newapi.ReadTestSupport;
 

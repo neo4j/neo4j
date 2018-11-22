@@ -19,18 +19,11 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
-
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader.readLogHeader;
 
 public class PhysicalLogVersionedStoreChannel implements LogVersionedStoreChannel
 {

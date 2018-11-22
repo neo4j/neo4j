@@ -20,7 +20,6 @@
 package org.neo4j.server.configuration;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.graphdb.config.Setting;

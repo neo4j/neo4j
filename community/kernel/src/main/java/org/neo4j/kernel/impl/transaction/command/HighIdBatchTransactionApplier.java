@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.store.NeoStores;

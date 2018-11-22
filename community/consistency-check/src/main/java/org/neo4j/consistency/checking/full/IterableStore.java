@@ -19,7 +19,6 @@
  */
 package org.neo4j.consistency.checking.full;
 
-import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.ResourceIterable;

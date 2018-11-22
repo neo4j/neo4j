@@ -38,7 +38,6 @@ import com.sun.jersey.spi.monitoring.RequestListener;
 import com.sun.jersey.spi.monitoring.ResponseListener;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import javax.ws.rs.ext.Providers;

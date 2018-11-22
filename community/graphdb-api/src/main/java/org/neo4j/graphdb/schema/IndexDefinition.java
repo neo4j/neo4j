@@ -19,8 +19,6 @@
  */
 package org.neo4j.graphdb.schema;
 
-import java.util.Optional;
-
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.IndexManager;

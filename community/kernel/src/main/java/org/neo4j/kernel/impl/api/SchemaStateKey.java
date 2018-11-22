@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**

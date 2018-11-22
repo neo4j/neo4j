@@ -19,11 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.regex.Pattern;
-
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
-import org.neo4j.values.storable.ValueWriter;
 
 /**
  * Cursor for scanning the properties of a node or relationship.

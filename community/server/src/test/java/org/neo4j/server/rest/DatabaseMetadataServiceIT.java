@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest;
 
-import java.io.IOException;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 

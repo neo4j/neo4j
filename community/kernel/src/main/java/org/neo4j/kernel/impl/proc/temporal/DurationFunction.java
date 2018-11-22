@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.proc.temporal;
 
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.IsoFields;
 import java.time.temporal.TemporalUnit;
 import java.util.Arrays;
 import java.util.Collections;

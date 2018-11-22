@@ -38,7 +38,6 @@ import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 

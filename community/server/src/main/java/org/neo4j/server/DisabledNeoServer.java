@@ -24,7 +24,6 @@ import java.util.Collections;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.logging.LogProvider;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.GraphFactory;
 import org.neo4j.server.database.LifecycleManagingDatabase;

@@ -24,9 +24,7 @@ import org.eclipse.collections.api.map.ImmutableMap;
 import org.eclipse.collections.impl.list.immutable.ImmutableListFactoryImpl;
 import org.eclipse.collections.impl.map.immutable.ImmutableMapFactoryImpl;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -42,10 +40,10 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
 
-import static org.neo4j.helpers.collection.Iterables.concat;
 import static org.neo4j.helpers.collection.Iterables.asImmutableList;
 import static org.neo4j.helpers.collection.Iterables.asImmutableMap;
 import static org.neo4j.helpers.collection.Iterables.asIterable;
+import static org.neo4j.helpers.collection.Iterables.concat;
 
 public class GraphDatabaseDependencies implements GraphDatabaseFacadeFactory.Dependencies
 {

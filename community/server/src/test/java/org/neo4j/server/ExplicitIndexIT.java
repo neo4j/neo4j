@@ -27,8 +27,6 @@ import org.junit.experimental.theories.Theory;
 import org.junit.runner.RunWith;
 
 import java.io.IOException;
-import java.security.KeyManagementException;
-import java.security.NoSuchAlgorithmException;
 import java.util.Random;
 
 import org.neo4j.server.configuration.ServerSettings;

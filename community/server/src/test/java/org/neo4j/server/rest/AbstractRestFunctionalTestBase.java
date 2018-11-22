@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
-import java.util.stream.Collectors;
 import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.GraphDatabaseService;

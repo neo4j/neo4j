@@ -21,13 +21,11 @@ package org.neo4j.server.rest.batch;
 
 import org.junit.Test;
 
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import javax.servlet.ServletException;
 
 import org.neo4j.server.rest.web.InternalJettyServletRequest;
 import org.neo4j.server.rest.web.InternalJettyServletRequest.RequestData;

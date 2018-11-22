@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;

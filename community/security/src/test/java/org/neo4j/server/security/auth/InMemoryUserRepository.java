@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.security.auth;
 
-import java.io.IOException;
 import java.util.ArrayList;
 
 import org.neo4j.kernel.impl.security.User;

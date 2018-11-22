@@ -55,7 +55,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.runners.Parameterized.Parameter;
 import static org.junit.runners.Parameterized.Parameters;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory.SYNCHRONOUS_QUEUE;
 import static org.neo4j.bolt.runtime.CachedThreadPoolExecutorFactory.UNBOUNDED_QUEUE;
 

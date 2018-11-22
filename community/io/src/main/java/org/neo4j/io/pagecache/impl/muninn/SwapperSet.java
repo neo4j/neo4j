@@ -29,8 +29,6 @@ import java.util.function.Consumer;
 
 import org.neo4j.io.pagecache.PageSwapper;
 
-import static org.neo4j.helpers.Numbers.safeCastIntToShort;
-
 /**
  * The SwapperSet maintains the set of allocated {@link PageSwapper}s, and their mapping to swapper ids.
  * These swapper ids are a limited resource, so they must eventually be reused as files are mapped and unmapped.

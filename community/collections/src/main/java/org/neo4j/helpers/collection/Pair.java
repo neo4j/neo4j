@@ -19,8 +19,6 @@
  */
 package org.neo4j.helpers.collection;
 
-import java.util.Map;
-
 /**
  * Utility to handle pairs of objects.
  *

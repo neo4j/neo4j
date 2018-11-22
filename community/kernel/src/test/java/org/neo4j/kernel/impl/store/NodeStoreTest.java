@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.LongSupplier;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.DelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.DelegatingStoreChannel;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;

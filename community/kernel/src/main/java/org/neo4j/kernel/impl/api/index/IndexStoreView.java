@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api.index;
 
 import java.util.function.IntPredicate;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;

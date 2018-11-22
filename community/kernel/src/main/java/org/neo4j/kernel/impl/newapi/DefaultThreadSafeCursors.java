@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.impl.factory.Lists;
-
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.internal.kernel.api.CursorFactory;

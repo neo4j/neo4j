@@ -19,7 +19,6 @@
  */
 package org.neo4j.bolt.v1.transport.socket.client;
 
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.function.Consumer;
 import javax.net.ssl.X509TrustManager;

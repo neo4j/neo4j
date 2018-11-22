@@ -23,7 +23,6 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.function.IntPredicate;
 
-import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;

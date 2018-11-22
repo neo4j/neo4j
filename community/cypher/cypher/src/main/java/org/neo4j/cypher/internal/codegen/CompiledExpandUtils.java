@@ -23,7 +23,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Read;
-import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor;
 
 import static org.neo4j.internal.kernel.api.helpers.Nodes.countAll;

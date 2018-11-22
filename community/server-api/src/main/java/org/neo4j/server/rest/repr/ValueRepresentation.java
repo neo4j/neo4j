@@ -24,9 +24,6 @@ import java.time.temporal.Temporal;
 import java.time.temporal.TemporalAmount;
 
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.spatial.CRS;
-import org.neo4j.graphdb.spatial.Coordinate;
-import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.server.helpers.PropertyTypeDispatcher;

@@ -30,7 +30,6 @@ import org.neo4j.graphdb.InputPosition;
 import org.neo4j.graphdb.Notification;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.SeverityLevel;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.procedure.Procedure;
 

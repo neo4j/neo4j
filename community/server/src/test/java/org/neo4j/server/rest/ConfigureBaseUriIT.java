@@ -26,7 +26,6 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import java.net.URI;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;

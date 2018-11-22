@@ -22,8 +22,6 @@ package org.neo4j.server.rest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.domain.JsonParseException;
 

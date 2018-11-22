@@ -23,7 +23,6 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import javax.ws.rs.core.Response.Status;
 
 import org.neo4j.graphdb.Direction;

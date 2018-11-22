@@ -21,7 +21,6 @@ package org.neo4j.server.rest;
 
 import org.junit.Test;
 
-import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Map;
 import javax.ws.rs.core.Response.Status;

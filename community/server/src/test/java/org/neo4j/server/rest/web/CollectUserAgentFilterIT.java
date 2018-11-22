@@ -22,8 +22,6 @@ package org.neo4j.server.rest.web;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.server.rest.JaxRsResponse;

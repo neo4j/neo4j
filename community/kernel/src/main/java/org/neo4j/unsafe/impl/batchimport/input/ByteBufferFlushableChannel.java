@@ -20,7 +20,6 @@
 package org.neo4j.unsafe.impl.batchimport.input;
 
 import java.io.Flushable;
-import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.transaction.log.FlushableChannel;

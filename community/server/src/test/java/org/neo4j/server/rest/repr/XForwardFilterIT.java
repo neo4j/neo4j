@@ -25,7 +25,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.io.IOException;
 import javax.ws.rs.core.MediaType;
 
 import org.neo4j.server.helpers.FunctionalTestHelper;
