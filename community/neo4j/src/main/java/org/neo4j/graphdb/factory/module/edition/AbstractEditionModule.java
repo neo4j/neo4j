@@ -122,27 +122,24 @@ public abstract class AbstractEditionModule
             String key )
     {
         SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( platformModule, editionModule, procedures );
-        Iterable<SecurityModule> candidates = Service.load( SecurityModule.class );
-        for ( SecurityModule candidate : candidates )
+        SecurityModule securityModule = Service.loadSilently( SecurityModule.class, key );
+        if ( securityModule == null )
         {
-            if ( candidate.matches( key ) )
-            {
-                try
-                {
-                    candidate.setup( securityModuleDependencies );
-                    return candidate;
-                }
-                catch ( Exception e )
-                {
-                    String errorMessage = "Failed to load security module.";
-                    log.error( errorMessage );
-                    throw new RuntimeException( errorMessage, e );
-                }
-            }
+            String errorMessage = "Failed to load security module with key '" + key + "'.";
+            log.error( errorMessage );
+            throw new IllegalArgumentException( errorMessage );
         }
-        String errorMessage = "Failed to load security module with key '" + key + "'.";
-        log.error( errorMessage );
-        throw new IllegalArgumentException( errorMessage );
+        try
+        {
+            securityModule.setup( securityModuleDependencies );
+            return securityModule;
+        }
+        catch ( Exception e )
+        {
+            String errorMessage = "Failed to load security module.";
+            log.error( errorMessage );
+            throw new RuntimeException( errorMessage, e );
+        }
     }
 
     protected NetworkConnectionTracker createConnectionTracker()

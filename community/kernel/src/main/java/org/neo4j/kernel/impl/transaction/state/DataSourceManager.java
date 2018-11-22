@@ -43,7 +43,7 @@ import static java.lang.String.format;
  * TODO This being a {@link Kernel} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
  * where {@link Database} and {@link Kernel} are needed before they exist.
  */
-public class DataSourceManager implements Lifecycle, Supplier<Kernel>
+public class DataSourceManager implements Lifecycle
 {
     public interface Listener
     {
@@ -142,11 +142,5 @@ public class DataSourceManager implements Lifecycle, Supplier<Kernel>
     {
         life.shutdown();
         dataSources.clear();
-    }
-
-    @Override
-    public Kernel get()
-    {
-        return getDataSource().getKernel();
     }
 }

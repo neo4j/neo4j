@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.api.security.SecurityModule;
 import org.neo4j.kernel.api.security.provider.NoAuthSecurityProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ssl.SslPolicyLoader;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -51,6 +53,7 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
@@ -59,7 +62,6 @@ import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.internal.LogService;
@@ -67,6 +69,7 @@ import org.neo4j.udc.UsageData;
 
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockFactory;
 import static org.neo4j.graphdb.factory.EditionLocksFactories.createLockManager;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 /**
  * This implementation of {@link AbstractEditionModule} creates the implementations of services
@@ -80,27 +83,26 @@ public class CommunityEditionModule extends DefaultEditionModule
     {
         org.neo4j.kernel.impl.util.Dependencies dependencies = platformModule.dependencies;
         Config config = platformModule.config;
-        LogService logging = platformModule.logService;
+        LogService logService = platformModule.logService;
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
-        DataSourceManager dataSourceManager = platformModule.dataSourceManager;
         LifeSupport life = platformModule.life;
         life.add( platformModule.dataSourceManager );
 
-        watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( platformModule.fileSystemWatcher.getFileWatcher(), databaseLayout, logging,
-                fileWatcherFileNameFilter() );
+        watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( platformModule.fileSystemWatcher.getFileWatcher(), databaseLayout,
+                logService, fileWatcherFileNameFilter() );
 
         this.accessCapability = config.get( GraphDatabaseSettings.read_only ) ? new ReadOnly() : new CanWrite();
 
         dependencies.satisfyDependency(
-                SslPolicyLoader.create( config, logging.getInternalLogProvider() ) ); // for bolt and web server
+                SslPolicyLoader.create( config, logService.getInternalLogProvider() ) ); // for bolt and web server
 
-        LocksFactory lockFactory = createLockFactory( config, logging );
+        LocksFactory lockFactory = createLockFactory( config, logService );
         locksSupplier = () -> createLockManager( lockFactory, config, platformModule.clock );
-        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, config, logging );
+        statementLocksFactoryProvider = locks -> createStatementLocksFactory( locks, config, logService );
 
         threadToTransactionBridge = dependencies.satisfyDependency(
-                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logging, platformModule.config ) ) );
+                new ThreadToStatementContextBridge( getGlobalAvailabilityGuard( platformModule.clock, logService, platformModule.config ) ) );
 
         idContextFactory = createIdContextFactory( platformModule, fileSystem );
 
@@ -131,11 +133,16 @@ public class CommunityEditionModule extends DefaultEditionModule
     protected Function<String,TokenHolders> createTokenHolderProvider( PlatformModule platform )
     {
         Config config = platform.config;
-        DataSourceManager dataSourceManager = platform.dataSourceManager;
+        Supplier<Kernel> kernelSupplier = () -> platform.dependencies.resolveDependency( DatabaseManager.class )
+                        .getDatabaseFacade( DEFAULT_DATABASE_NAME )
+                        .map( GraphDatabaseFacade::getDependencyResolver )
+                        .map( resolver -> resolver.resolveDependency( Database.class ) )
+                        .map( Database::getKernel )
+                        .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );
         return ignored -> new TokenHolders(
-                new DelegatingTokenHolder( createPropertyKeyCreator( config, dataSourceManager ), TokenHolder.TYPE_PROPERTY_KEY ),
-                new DelegatingTokenHolder( createLabelIdCreator( config, dataSourceManager ), TokenHolder.TYPE_LABEL ),
-                new DelegatingTokenHolder( createRelationshipTypeCreator( config, dataSourceManager ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
+                new DelegatingTokenHolder( createPropertyKeyCreator( config, kernelSupplier ), TokenHolder.TYPE_PROPERTY_KEY ),
+                new DelegatingTokenHolder( createLabelIdCreator( config, kernelSupplier ), TokenHolder.TYPE_LABEL ),
+                new DelegatingTokenHolder( createRelationshipTypeCreator( config, kernelSupplier ), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
     }
 
     protected IdContextFactory createIdContextFactory( PlatformModule platformModule, FileSystemAbstraction fileSystem )
