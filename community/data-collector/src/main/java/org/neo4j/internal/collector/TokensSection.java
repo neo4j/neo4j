@@ -31,9 +31,13 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 
-class TokensSection
+final class TokensSection
 {
-    static final String name = "TOKENS";
+    static final String NAME = "TOKENS";
+
+    private TokensSection()
+    { // only static methods
+    }
 
     static Stream<RetrieveResult> collect( Kernel kernel )
     {
@@ -54,7 +58,7 @@ class TokensSection
             data.put( "labels", labels );
             data.put( "relationshipTypes", relationshipTypes );
             data.put( "propertyKeys", propertyKeys );
-            return Stream.of( new RetrieveResult( "TOKENS", data ) );
+            return Stream.of( new RetrieveResult( NAME, data ) );
         }
         catch ( TransactionFailureException e )
         {

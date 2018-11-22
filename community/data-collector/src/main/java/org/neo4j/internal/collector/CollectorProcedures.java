@@ -45,16 +45,18 @@ public class CollectorProcedures
             throws InvalidArgumentsException
     {
         String upperSection = section.toUpperCase();
-        if ( upperSection.equals( GraphCountsSection.name ) )
+        switch ( upperSection )
         {
+        case GraphCountsSection.NAME:
             return GraphCountsSection.collect( dataCollector.kernel, Anonymizer.PLAIN_TEXT );
-        }
-        if ( upperSection.equals( TokensSection.name ) )
-        {
+
+        case TokensSection.NAME:
             return TokensSection.collect( dataCollector.kernel );
+
+        default:
+            throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s', '%s']",
+                                                                section, GraphCountsSection.NAME, TokensSection.NAME ) );
         }
-        throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s', '%s']",
-                                                            section, GraphCountsSection.name, TokensSection.name ) );
     }
 
     @Admin

@@ -20,11 +20,13 @@
 package org.neo4j.internal.collector;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntFunction;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.Iterators;
@@ -49,9 +51,13 @@ import org.neo4j.register.Registers;
  * planner has when planning, meaning that the data from this section could be used to investigate
  * planning problems.
  */
-class GraphCountsSection
+final class GraphCountsSection
 {
-    static final String name = "GRAPH COUNTS";
+    static final String NAME = "GRAPH COUNTS";
+
+    private GraphCountsSection()
+    { // only static functionality
+    }
 
     static Stream<RetrieveResult> collect( Kernel kernel, Anonymizer anonymizer )
     {
@@ -66,7 +72,7 @@ class GraphCountsSection
             data.put( "indexes", indexes( tokens, tx.schemaRead(), anonymizer ) );
             data.put( "constraints", constraints( tokens, tx.schemaRead(), anonymizer ) );
 
-            return Stream.of( new RetrieveResult( "GRAPH COUNTS", data ) );
+            return Stream.of( new RetrieveResult( NAME, data ) );
         }
         catch ( TransactionFailureException | IndexNotFoundKernelException e )
         {
@@ -147,9 +153,12 @@ class GraphCountsSection
         {
             IndexReference index = iterator.next();
 
-            Map<String,Object> data = new HashMap<>( 4 );
-            data.put( "labels", map( index.schema().getEntityTokenIds(), id -> anonymizer.label( tokenLookup.labelGetName( id ), id ) ) );
-            data.put( "properties", map( index.schema().getPropertyIds(), id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
+            Map<String,Object> data = new HashMap<>();
+            data.put( "labels", map( index.schema().getEntityTokenIds(),
+                                     id -> anonymizer.label( tokenLookup.labelGetName( id ), id ) ) );
+
+            data.put( "properties", map( index.schema().getPropertyIds(),
+                                         id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
 
             Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
             schemaRead.indexUpdatesAndSize( index, register );
@@ -179,7 +188,8 @@ class GraphCountsSection
 
             int labelId = constraint.schema().getEntityTokenIds()[0];
             data.put( "label", anonymizer.label( tokenLookup.labelGetName( labelId ), labelId ) );
-            data.put( "properties", map( constraint.schema().getPropertyIds(), id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
+            data.put( "properties", map( constraint.schema().getPropertyIds(),
+                                         id -> anonymizer.propertyKey( tokenLookup.propertyKeyGetName( id ), id ) ) );
             data.put( "type", constraintType( constraint ) );
 
             constraints.add( data );
@@ -190,12 +200,7 @@ class GraphCountsSection
 
     private static List<String> map( int[] ids, IntFunction<String> f )
     {
-        List<String> x = new ArrayList<>( ids.length );
-        for ( int id : ids )
-        {
-            x.add( f.apply( id ) );
-        }
-        return x;
+        return Arrays.stream(ids).mapToObj( f ).collect( Collectors.toList());
     }
 
     private static String constraintType( ConstraintDescriptor constraint )
