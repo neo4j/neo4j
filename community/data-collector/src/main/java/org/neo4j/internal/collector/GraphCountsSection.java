@@ -67,7 +67,7 @@ final class GraphCountsSection
             TokenRead tokens = tx.tokenRead();
             Read read = tx.dataRead();
 
-            Map<String,Object> data = new HashMap<>( 4 );
+            Map<String,Object> data = new HashMap<>();
             data.put( "nodes", nodeCounts( tokens, read, anonymizer ) );
             data.put( "relationships", relationshipCounts( tokens, read, anonymizer ) );
             data.put( "indexes", indexes( tokens, tx.schemaRead(), anonymizer ) );
@@ -80,14 +80,14 @@ final class GraphCountsSection
     private static List<Map<String,Object>> nodeCounts( TokenRead tokens, Read read, Anonymizer anonymizer )
     {
         List<Map<String,Object>> nodeCounts = new ArrayList<>();
-        Map<String,Object> nodeCount = new HashMap<>( 2 );
+        Map<String,Object> nodeCount = new HashMap<>();
 
         nodeCount.put( "count", read.countsForNodeWithoutTxState( -1 ) );
         nodeCounts.add( nodeCount );
 
         tokens.labelsGetAllTokens().forEachRemaining( t -> {
             long count = read.countsForNodeWithoutTxState( t.id() );
-            Map<String,Object> labelCount = new HashMap<>( 2 );
+            Map<String,Object> labelCount = new HashMap<>();
             labelCount.put( "label", anonymizer.label( t.name(), t.id() ) );
             labelCount.put( "count", count );
             nodeCounts.add( labelCount );
@@ -99,7 +99,7 @@ final class GraphCountsSection
     private static List<Map<String,Object>> relationshipCounts( TokenRead tokens, Read read, Anonymizer anonymizer )
     {
         List<Map<String,Object>> relationshipCounts = new ArrayList<>();
-        Map<String,Object> relationshipCount = new HashMap<>( 2 );
+        Map<String,Object> relationshipCount = new HashMap<>();
         relationshipCount.put( "count", read.countsForRelationshipWithoutTxState( -1, -1, -1 ) );
         relationshipCounts.add( relationshipCount );
 
@@ -107,7 +107,7 @@ final class GraphCountsSection
 
         tokens.relationshipTypesGetAllTokens().forEachRemaining( t -> {
             long count = read.countsForRelationshipWithoutTxState( -1, t.id(), -1 );
-            Map<String,Object> relationshipTypeCount = new HashMap<>( 2 );
+            Map<String,Object> relationshipTypeCount = new HashMap<>();
             relationshipTypeCount.put( "relationshipType", anonymizer.relationshipType( t.name(), t.id() ) );
             relationshipTypeCount.put( "count", count );
             relationshipCounts.add( relationshipTypeCount );
@@ -117,7 +117,7 @@ final class GraphCountsSection
                 long startCount = read.countsForRelationshipWithoutTxState( label.id(), t.id(), -1 );
                 if ( startCount > 0 )
                 {
-                    Map<String,Object> x = new HashMap<>( 2 );
+                    Map<String,Object> x = new HashMap<>();
                     x.put( "relationshipType", anonymizer.relationshipType( t.name(), t.id() ) );
                     x.put( "startLabel", anonymizer.label( label.name(), label.id() ) );
                     x.put( "count", startCount );
@@ -126,7 +126,7 @@ final class GraphCountsSection
                 long endCount = read.countsForRelationshipWithoutTxState( -1, t.id(), label.id() );
                 if ( endCount > 0 )
                 {
-                    Map<String,Object> x = new HashMap<>( 2 );
+                    Map<String,Object> x = new HashMap<>();
                     x.put( "relationshipType", anonymizer.relationshipType( t.name(), t.id() ) );
                     x.put( "endLabel", anonymizer.label( label.name(), label.id() ) );
                     x.put( "count", endCount );
@@ -181,7 +181,7 @@ final class GraphCountsSection
         {
             ConstraintDescriptor constraint = iterator.next();
 
-            Map<String,Object> data = new HashMap<>( 4 );
+            Map<String,Object> data = new HashMap<>();
 
             int labelId = constraint.schema().getEntityTokenIds()[0];
             data.put( "label", anonymizer.label( tokenLookup.labelGetName( labelId ), labelId ) );

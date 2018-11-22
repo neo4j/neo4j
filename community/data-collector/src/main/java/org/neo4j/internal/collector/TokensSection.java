@@ -54,7 +54,7 @@ final class TokensSection
             List<String> propertyKeys = new ArrayList<>( tokens.propertyKeyCount() );
             tokens.propertyKeyGetAllTokens().forEachRemaining( t -> propertyKeys.add( t.name() ) );
 
-            Map<String,Object> data = new HashMap<>( 3 );
+            Map<String,Object> data = new HashMap<>();
             data.put( "labels", labels );
             data.put( "relationshipTypes", relationshipTypes );
             data.put( "propertyKeys", propertyKeys );
