@@ -26,11 +26,10 @@ import org.junit.rules.RuleChain;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
-import org.neo4j.kernel.impl.storemigration.CountsMigrator;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -57,7 +56,7 @@ public class CountsMigratorTest
         DatabaseLayout migrationLayout = directory.databaseLayout( "migration" );
         String versionToMigrateFrom = StoreVersion.STANDARD_V3_2.versionString();
         String versionToMigrateTo = StoreVersion.STANDARD_V3_4.versionString();
-        migrator.migrate( sourceLayout, migrationLayout, SilentProgressReporter.INSTANCE, versionToMigrateFrom, versionToMigrateTo );
+        migrator.migrate( sourceLayout, migrationLayout, ProgressReporter.SILENT, versionToMigrateFrom, versionToMigrateTo );
         assertEquals( "Invalid test assumption: There should not have been migration for those versions", 0,
                 migrationLayout.listDatabaseFiles( ( dir, name ) -> true ).length );
 

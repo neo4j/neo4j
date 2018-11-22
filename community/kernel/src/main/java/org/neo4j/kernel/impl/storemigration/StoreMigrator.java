@@ -65,7 +65,6 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
@@ -449,7 +448,7 @@ public class StoreMigrator extends AbstractStoreMigrationParticipant
                     StoreType.SCHEMA};
 
             // Migrate these stores silently because they are usually very small
-            ProgressReporter progressReporter = SilentProgressReporter.INSTANCE;
+            ProgressReporter progressReporter = ProgressReporter.SILENT;
 
             migrator.migrate( sourceDirectoryStructure, oldFormat, migrationStrcuture, newFormat, progressReporter, storesToMigrate, StoreType.NODE );
         }

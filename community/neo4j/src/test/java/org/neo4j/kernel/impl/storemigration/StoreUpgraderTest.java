@@ -399,9 +399,7 @@ public class StoreUpgraderTest
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache, Config config )
     {
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
-
-        return newUpgrader( upgradableDatabase, pageCache, config, progressMonitor );
+        return newUpgrader( upgradableDatabase, pageCache, config, MigrationProgressMonitor.SILENT );
     }
 
     private StoreUpgrader newUpgrader( UpgradableDatabase upgradableDatabase, PageCache pageCache, Config config,

@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -58,7 +59,6 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -211,7 +211,7 @@ class RecoveryTest
                         }
                     };
                 }
-            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
 
@@ -269,7 +269,7 @@ class RecoveryTest
                 {
                     fail( "Recovery should not be required" );
                 }
-            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
 
@@ -423,7 +423,7 @@ class RecoveryTest
                 {
                     recoveryRequired.set( true );
                 }
-            }, logPruner, monitor, SilentProgressReporter.INSTANCE, false ) );
+            }, logPruner, monitor, ProgressReporter.SILENT, false ) );
 
             life.start();
         }

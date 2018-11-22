@@ -57,6 +57,7 @@ import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
@@ -71,6 +72,7 @@ public class StoreMigratorIT
     private final TestDirectory directory = TestDirectory.testDirectory();
     private final PageCacheRule pageCacheRule = new PageCacheRule();
     private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
+    private final MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
     private static final Config CONFIG = Config.defaults( GraphDatabaseSettings.pagecache_memory, "8m" );
 
     @Rule
@@ -126,7 +128,7 @@ public class StoreMigratorIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
@@ -167,7 +169,6 @@ public class StoreMigratorIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
@@ -205,14 +206,13 @@ public class StoreMigratorIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
-        progressMonitor = new SilentMigrationProgressMonitor();
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         countsMigrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
@@ -242,7 +242,7 @@ public class StoreMigratorIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
@@ -268,7 +268,7 @@ public class StoreMigratorIT
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache, tailScanner );
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 

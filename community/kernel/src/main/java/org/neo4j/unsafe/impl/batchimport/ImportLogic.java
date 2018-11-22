@@ -40,12 +40,11 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
-import org.neo4j.storageengine.migration.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.GatheringMemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
@@ -489,7 +488,7 @@ public class ImportLogic implements Closeable
         try ( CountsAccessor.Updater countsUpdater = neoStore.getCountsStore().reset(
                 neoStore.getLastCommittedTransactionId() ) )
         {
-            MigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+            MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
             nodeLabelsCache = new NodeLabelsCache( numberArrayFactory, neoStore.getLabelRepository().getHighId() );
             MemoryUsageStatsProvider memoryUsageStats = new MemoryUsageStatsProvider( neoStore, nodeLabelsCache );
             executeStage( new NodeCountsAndLabelIndexBuildStage( config, nodeLabelsCache, neoStore.getNodeStore(),

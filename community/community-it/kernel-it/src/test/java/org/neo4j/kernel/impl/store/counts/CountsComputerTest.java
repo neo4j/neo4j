@@ -46,7 +46,6 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.logging.NullLogProvider;
@@ -327,7 +326,7 @@ class CountsComputerTest
 
     private void rebuildCounts( long lastCommittedTransactionId )
     {
-        rebuildCounts( lastCommittedTransactionId, SilentProgressReporter.INSTANCE );
+        rebuildCounts( lastCommittedTransactionId, ProgressReporter.SILENT );
     }
 
     private void rebuildCounts( long lastCommittedTransactionId, ProgressReporter progressReporter )

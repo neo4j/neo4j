@@ -44,4 +44,25 @@ public interface ProgressReporter
      * Called if this section was completed successfully.
      */
     void completed();
+
+    ProgressReporter SILENT = new ProgressReporter()
+    {
+        @Override
+        public void start( long max )
+        {
+            // nop
+        }
+
+        @Override
+        public void progress( long add )
+        {
+            // nop
+        }
+
+        @Override
+        public void completed()
+        {
+            // nop
+        }
+    };
 }

@@ -48,7 +48,6 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
@@ -125,7 +124,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
         {
@@ -151,7 +150,6 @@ public class StoreUpgraderInterruptionTestIT
             assertEquals( "This upgrade is failing", e.getMessage() );
         }
 
-        progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         SchemaIndexMigrator indexMigrator = createIndexMigrator();
         newUpgrader( upgradableDatabase, pageCache, progressMonitor, indexMigrator, migrator ).migrateIfNeeded( workingDatabaseLayout );
@@ -184,7 +182,7 @@ public class StoreUpgraderInterruptionTestIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         StoreVersionCheck check = new StoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
-        SilentMigrationProgressMonitor progressMonitor = new SilentMigrationProgressMonitor();
+        MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
         StoreMigrator failingStoreMigrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler )
         {
@@ -210,7 +208,6 @@ public class StoreUpgraderInterruptionTestIT
 
         assertTrue( checkNeoStoreHasDefaultFormatVersion( check, workingDatabaseLayout ) );
 
-        progressMonitor = new SilentMigrationProgressMonitor();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
         newUpgrader( upgradableDatabase, pageCache, progressMonitor, createIndexMigrator(), migrator )
                 .migrateIfNeeded( workingDatabaseLayout );

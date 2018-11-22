@@ -19,13 +19,12 @@
  */
 package org.neo4j.kernel.impl.store;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
-import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.NodeCountsStage;
 import org.neo4j.unsafe.impl.batchimport.RelationshipCountsStage;
@@ -66,7 +65,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
             NumberArrayFactory numberArrayFactory )
     {
         this( lastCommittedTransactionId, nodes, relationships, highLabelId, highRelationshipTypeId,
-                numberArrayFactory, SilentProgressReporter.INSTANCE );
+                numberArrayFactory, ProgressReporter.SILENT );
     }
 
     public CountsComputer( long lastCommittedTransactionId, NodeStore nodes, RelationshipStore relationships,

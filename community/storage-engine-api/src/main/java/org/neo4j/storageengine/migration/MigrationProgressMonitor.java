@@ -42,4 +42,25 @@ public interface MigrationProgressMonitor
      */
     void completed();
 
+    MigrationProgressMonitor SILENT = new MigrationProgressMonitor()
+    {
+        @Override
+        public void started( int numStages )
+        {
+
+        }
+
+        @Override
+        public ProgressReporter startSection( String name )
+        {
+            return ProgressReporter.SILENT;
+        }
+
+        @Override
+        public void completed()
+        {
+
+        }
+    };
+
 }
