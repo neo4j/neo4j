@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.transaction.state;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Listeners;
@@ -40,7 +39,6 @@ import static java.lang.String.format;
 /**
  * Adds change listener features to a {@link Database}.
  * <p/>
- * TODO This being a {@link Kernel} {@link Supplier} is a smell, it comes from established bad dependency hierarchy
  * where {@link Database} and {@link Kernel} are needed before they exist.
  */
 public class DataSourceManager implements Lifecycle

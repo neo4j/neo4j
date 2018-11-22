@@ -19,13 +19,15 @@
  */
 package org.neo4j.jmx.impl;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
+
+import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
 @Service.Implementation( KernelExtensionFactory.class )
 public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensionFactory.Dependencies>
@@ -36,21 +38,21 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
 
         LogService getLogService();
 
-        DataSourceManager getDataSourceManager();
+        DatabaseManager getDatabaseManager();
     }
 
     public static final String KEY = "kernel jmx";
 
     public JmxExtensionFactory()
     {
-        super( KEY );
+        super( DATABASE, KEY );
     }
 
     @Override
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new JmxKernelExtension( dependencies.getKernelData(),
-                dependencies.getDataSourceManager(),
+                dependencies.getDatabaseManager(),
                 dependencies.getLogService().getInternalLogProvider() );
     }
 }

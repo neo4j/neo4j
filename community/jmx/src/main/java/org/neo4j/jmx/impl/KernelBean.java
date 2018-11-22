@@ -20,15 +20,21 @@
 package org.neo4j.jmx.impl;
 
 import java.util.Date;
+import java.util.function.Supplier;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.storageengine.api.StoreId;
+
+import static org.neo4j.function.Suppliers.lazySingleton;
 
 public class KernelBean extends Neo4jMBean implements Kernel
 {
@@ -36,22 +42,26 @@ public class KernelBean extends Neo4jMBean implements Kernel
     private final String kernelVersion;
     private final ObjectName query;
     private final String instanceId;
+    private final Supplier<DatabaseInfo> databaseInfoSupplier;
 
-    private boolean isReadOnly;
-    private long storeCreationDate = -1;
-    private long storeId = -1;
-    private String databaseName;
-    private long storeLogVersion;
-
-    KernelBean( KernelData kernel, DataSourceManager dataSourceManager, ManagementSupport support ) throws NotCompliantMBeanException
+    KernelBean( KernelData kernel, DatabaseManager databaseManager, ManagementSupport support ) throws NotCompliantMBeanException
     {
         super( Kernel.class, kernel, support );
-        dataSourceManager.addListener( new DataSourceInfo() );
         this.kernelVersion = kernel.version().toString();
         this.instanceId = kernel.instanceId();
         this.query = support.createMBeanQuery( instanceId );
-
-        kernelStartTime = new Date().getTime();
+        this.kernelStartTime = new Date().getTime();
+        this.databaseInfoSupplier = lazySingleton( () ->
+        {
+            GraphDatabaseFacade defaultFacade = databaseManager.getDatabaseFacade( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ).orElseThrow(
+                    () -> new IllegalStateException( "Default database not found" ) );
+            DependencyResolver dependencyResolver = defaultFacade.getDependencyResolver();
+            Database database = dependencyResolver.resolveDependency( Database.class );
+            StoreId storeId = database.getStoreId();
+            LogVersionRepository versionRepository = dependencyResolver.resolveDependency( LogVersionRepository.class );
+            return new DatabaseInfo( database.isReadOnly(), storeId.getCreationTime(), storeId.getRandomId(), versionRepository.getCurrentLogVersion(),
+                    database.getDatabaseName() );
+        } );
     }
 
     String getInstanceId()
@@ -74,19 +84,19 @@ public class KernelBean extends Neo4jMBean implements Kernel
     @Override
     public Date getStoreCreationDate()
     {
-        return new Date( storeCreationDate );
+        return new Date( databaseInfoSupplier.get().getStoreCreationDate() );
     }
 
     @Override
     public String getStoreId()
     {
-        return Long.toHexString( storeId );
+        return Long.toHexString( databaseInfoSupplier.get().getStoreId() );
     }
 
     @Override
     public long getStoreLogVersion()
     {
-        return storeLogVersion;
+        return databaseInfoSupplier.get().getStoreLogVersion();
     }
 
     @Override
@@ -98,36 +108,56 @@ public class KernelBean extends Neo4jMBean implements Kernel
     @Override
     public boolean isReadOnly()
     {
-        return isReadOnly;
+        return databaseInfoSupplier.get().isReadOnly();
     }
 
     @Override
     public String getDatabaseName()
     {
-        return databaseName;
+        return databaseInfoSupplier.get().getDatabaseName();
     }
 
-    private class DataSourceInfo implements DataSourceManager.Listener
+    private class DatabaseInfo
     {
-        @Override
-        public void registered( Database ds )
+        private final boolean readOnly;
+        private final long storeCreationDate;
+        private final long storeId;
+        private final long storeLogVersion;
+        private final String databaseName;
+
+        DatabaseInfo( boolean isReadOnly, long storeCreationDate, long storeId, long storeLogVersion, String databaseName )
         {
-            StoreId id = ds.getStoreId();
-            storeLogVersion =
-                    ds.getDependencyResolver().resolveDependency( LogVersionRepository.class ).getCurrentLogVersion();
-            storeCreationDate = id.getCreationTime();
-            isReadOnly = ds.isReadOnly();
-            storeId = id.getRandomId();
-            databaseName = ds.getDatabaseName();
+            this.readOnly = isReadOnly;
+            this.storeCreationDate = storeCreationDate;
+            this.storeId = storeId;
+            this.storeLogVersion = storeLogVersion;
+            this.databaseName = databaseName;
         }
 
-        @Override
-        public void unregistered( Database ds )
+        public boolean isReadOnly()
         {
-            storeCreationDate = -1;
-            storeLogVersion = -1;
-            isReadOnly = false;
-            storeId = -1;
+            return readOnly;
+        }
+
+        long getStoreCreationDate()
+        {
+            return storeCreationDate;
+        }
+
+        public long getStoreId()
+        {
+            return storeId;
+        }
+
+        long getStoreLogVersion()
+        {
+            return storeLogVersion;
+        }
+
+        public String getDatabaseName()
+        {
+            return databaseName;
         }
     }
+
 }

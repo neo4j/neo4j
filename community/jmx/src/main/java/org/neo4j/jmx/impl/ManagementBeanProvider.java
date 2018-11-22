@@ -24,8 +24,8 @@ import java.util.Collections;
 import javax.management.DynamicMBean;
 import javax.management.NotCompliantMBeanException;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 
 public abstract class ManagementBeanProvider extends Service
@@ -42,14 +42,12 @@ public abstract class ManagementBeanProvider extends Service
         this.beanInterface = beanInterface;
     }
 
-    protected Iterable<? extends Neo4jMBean> createMBeans( ManagementData management )
-            throws NotCompliantMBeanException
+    private Iterable<? extends Neo4jMBean> createMBeans( ManagementData management ) throws NotCompliantMBeanException
     {
         return singletonOrNone( createMBean( management ) );
     }
 
-    protected Iterable<? extends Neo4jMBean> createMXBeans( ManagementData management )
-            throws NotCompliantMBeanException
+    private Iterable<? extends Neo4jMBean> createMXBeans( ManagementData management ) throws NotCompliantMBeanException
     {
         Class<?> implClass;
         try
@@ -77,16 +75,16 @@ public abstract class ManagementBeanProvider extends Service
         return createMBean( management );
     }
 
-    final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, DataSourceManager dataSourceManager, ManagementSupport support )
+    final Iterable<? extends Neo4jMBean> loadBeans( KernelData kernel, DatabaseManager databaseManager, ManagementSupport support )
             throws Exception
     {
         if ( support.supportsMxBeans() )
         {
-            return createMXBeans( new ManagementData( this, kernel, dataSourceManager, support ) );
+            return createMXBeans( new ManagementData( this, kernel, databaseManager, support ) );
         }
         else
         {
-            return createMBeans( new ManagementData( this, kernel, dataSourceManager, support ) );
+            return createMBeans( new ManagementData( this, kernel, databaseManager, support ) );
         }
     }
 

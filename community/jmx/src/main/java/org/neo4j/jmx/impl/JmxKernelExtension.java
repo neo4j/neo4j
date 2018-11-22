@@ -26,9 +26,9 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.management.MBeanServer;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
@@ -37,16 +37,16 @@ import org.neo4j.logging.LogProvider;
 public class JmxKernelExtension extends LifecycleAdapter
 {
     private final KernelData kernelData;
-    private final DataSourceManager dataSourceManager;
+    private final DatabaseManager databaseManager;
     private final Log log;
     private List<Neo4jMBean> beans;
     private MBeanServer mbs;
     private ManagementSupport support;
 
-    public JmxKernelExtension( KernelData kernelData, DataSourceManager dataSourceManager, LogProvider logProvider )
+    public JmxKernelExtension( KernelData kernelData, DatabaseManager databaseManager, LogProvider logProvider )
     {
         this.kernelData = kernelData;
-        this.dataSourceManager = dataSourceManager;
+        this.databaseManager = databaseManager;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -58,7 +58,7 @@ public class JmxKernelExtension extends LifecycleAdapter
         beans = new LinkedList<>();
         try
         {
-            Neo4jMBean bean = new KernelBean( kernelData, dataSourceManager, support );
+            Neo4jMBean bean = new KernelBean( kernelData, databaseManager, support );
             mbs.registerMBean( bean, bean.objectName );
             beans.add( bean );
         }
@@ -71,7 +71,7 @@ public class JmxKernelExtension extends LifecycleAdapter
         {
             try
             {
-                for ( Neo4jMBean bean : provider.loadBeans( kernelData, dataSourceManager, support ) )
+                for ( Neo4jMBean bean : provider.loadBeans( kernelData, databaseManager, support ) )
                 {
                     mbs.registerMBean( bean, bean.objectName );
                     beans.add( bean );

@@ -29,8 +29,9 @@ import java.nio.ByteBuffer;
 import java.time.Clock;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -42,14 +43,13 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -58,6 +58,7 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
@@ -81,10 +82,12 @@ class StoreSizeBeanTest
 
         Dependencies dependencies = new Dependencies();
         Config config = Config.defaults( default_schema_provider, indexProvider.getProviderDescriptor().name() );
-        DataSourceManager dataSourceManager = new DataSourceManager( NullLogProvider.getInstance(), Config.defaults() );
+        DatabaseManager databaseManager = mock( DatabaseManager.class );
+        GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
         GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
-        Database dataSource = mock( Database.class );
+        Database database = mock( Database.class );
 
+        dependencies.satisfyDependency( database );
         dependencies.satisfyDependency( indexProvider );
         dependencies.satisfyDependency( indexProvider2 );
 
@@ -93,21 +96,19 @@ class StoreSizeBeanTest
 
         // Setup all dependencies
         dependencies.satisfyDependency( fs );
-        dependencies.satisfyDependencies( dataSourceManager );
+        dependencies.satisfyDependencies( databaseManager );
         dependencies.satisfyDependency( logFiles );
         dependencies.satisfyDependency( indexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
+        when( databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( facade ) );
+        when( facade.getDependencyResolver() ).thenReturn( dependencies );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
-        when( dataSource.getDependencyResolver() ).thenReturn( dependencies );
-        when( dataSource.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
-
-        // Start DataSourceManager
-        dataSourceManager.register( GraphDatabaseSettings.DEFAULT_DATABASE_NAME, dataSource );
-        dataSourceManager.start();
+        when( database.getDependencyResolver() ).thenReturn( dependencies );
+        when( database.getDatabaseLayout() ).thenReturn( testDirectory.databaseLayout() );
 
         // Create bean
         KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.databaseDir(), config );
-        managementData = new ManagementData( new StoreSizeBean(), kernelData, dataSourceManager, ManagementSupport.load() );
+        managementData = new ManagementData( new StoreSizeBean(), kernelData, databaseManager, ManagementSupport.load() );
         storeSizeBean = StoreSizeBean.createBean( managementData, false, 0, mock( Clock.class ) );
 
         when( indexProvider.directoryStructure() ).thenReturn( mock( IndexDirectoryStructure.class ) );
