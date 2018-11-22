@@ -385,7 +385,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Description( "The size of the morsels" )
     @Internal
     public static final Setting<Integer> cypher_morsel_size =
-            setting( "unsupported.cypher.morsel_size", INTEGER, "10000" );
+            buildSetting( "unsupported.cypher.morsel_size", INTEGER, "1000" ).constraint( min( 1 ) ).build();
 
     @Description( "Duration in milliseconds that parallel runtime waits on a task before trying another task" )
     @Internal
