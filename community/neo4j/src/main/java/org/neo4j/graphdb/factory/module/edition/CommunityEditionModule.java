@@ -87,7 +87,6 @@ public class CommunityEditionModule extends DefaultEditionModule
         FileSystemAbstraction fileSystem = platformModule.fileSystem;
         PageCache pageCache = platformModule.pageCache;
         LifeSupport life = platformModule.life;
-        life.add( platformModule.dataSourceManager );
 
         watcherServiceFactory = databaseLayout -> createDatabaseFileSystemWatcher( platformModule.fileSystemWatcher.getFileWatcher(), databaseLayout,
                 logService, fileWatcherFileNameFilter() );

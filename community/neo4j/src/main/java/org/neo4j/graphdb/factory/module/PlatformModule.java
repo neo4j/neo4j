@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CapacityLimitingBlockAllocatorDecorator;
@@ -115,8 +114,6 @@ public class PlatformModule
 
     public final FileSystemAbstraction fileSystem;
 
-    public final DataSourceManager dataSourceManager;
-
     public final GlobalKernelExtensions globalKernelExtensions;
     public final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
     public final Iterable<QueryEngineProvider> engineProviders;
@@ -134,6 +131,7 @@ public class PlatformModule
     public final UsageData usageData;
 
     public final ConnectorPortRegister connectorPortRegister;
+
     public final FileSystemWatcherService fileSystemWatcher;
 
     public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
@@ -172,8 +170,6 @@ public class PlatformModule
 
         config.setLogger( logService.getInternalLog( Config.class ) );
 
-        this.dataSourceManager = new DataSourceManager( logService.getInternalLogProvider(), config );
-
         life.add( dependencies
                 .satisfyDependency( new StoreLockerLifecycleAdapter( createStoreLocker() ) ) );
 
@@ -207,8 +203,6 @@ public class PlatformModule
         fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, config );
         life.add( fileSystemWatcher );
         dependencies.satisfyDependency( fileSystemWatcher );
-
-        dependencies.satisfyDependency( dataSourceManager );
 
         kernelExtensionFactories = externalDependencies.kernelExtensions();
         engineProviders = externalDependencies.executionEngines();

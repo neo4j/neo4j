@@ -24,7 +24,7 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
@@ -95,9 +95,10 @@ public class TestReferenceDangling
         return nId;
     }
 
-    private void restartNeoDataSource( GraphDatabaseAPI slave ) throws Throwable
+    private void restartNeoDataSource( GraphDatabaseAPI databaseAPI ) throws Throwable
     {
-        slave.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().stop();
-        slave.getDependencyResolver().resolveDependency( DataSourceManager.class ).getDataSource().start();
+        Database database = databaseAPI.getDependencyResolver().resolveDependency( Database.class );
+        database.stop();
+        database.start();
     }
 }
