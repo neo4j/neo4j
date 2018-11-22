@@ -61,6 +61,13 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         }
     }
 
+    public void scan( IndexProgressor progressor, LongIterator added, LongSet removed )
+    {
+        super.initialize( progressor );
+        this.added = added;
+        this.removed = removed;
+    }
+
     @Override
     public boolean acceptNode( long reference, LabelSet labels )
     {
