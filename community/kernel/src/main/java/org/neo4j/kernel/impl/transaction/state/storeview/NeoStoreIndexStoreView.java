@@ -52,14 +52,14 @@ public class NeoStoreIndexStoreView implements IndexStoreView
     private final Supplier<StorageReader> storageEngine;
     private final NeoStores neoStores;
 
-    public NeoStoreIndexStoreView( LockService locks, NeoStores neoStores, Supplier<StorageReader> storageEngine )
+    public NeoStoreIndexStoreView( LockService locks, NeoStores neoStores, CountsTracker counts, Supplier<StorageReader> storageEngine )
     {
         this.locks = locks;
         this.neoStores = neoStores;
         this.propertyStore = neoStores.getPropertyStore();
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
-        this.counts = neoStores.getCounts();
+        this.counts = counts;
         this.storageEngine = storageEngine;
     }
 

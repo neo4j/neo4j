@@ -211,11 +211,8 @@ public class MemoryRecommendationsCommandTest
         MutableLong luceneTotal = new MutableLong();
         for ( StoreType storeType : StoreType.values() )
         {
-            if ( storeType.isRecordStore() )
-            {
-                long length = databaseLayout.file( storeType.getDatabaseFile() ).mapToLong( File::length ).sum();
-                pageCacheTotal.add( length );
-            }
+            long length = databaseLayout.file( storeType.getDatabaseFile() ).mapToLong( File::length ).sum();
+            pageCacheTotal.add( length );
         }
 
         Files.walkFileTree( IndexDirectoryStructure.baseSchemaIndexFolder( databaseLayout.databaseDirectory() ).toPath(), new SimpleFileVisitor<Path>()

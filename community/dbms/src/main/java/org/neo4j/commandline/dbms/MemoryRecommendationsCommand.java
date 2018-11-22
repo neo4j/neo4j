@@ -287,11 +287,8 @@ public class MemoryRecommendationsCommand implements AdminCommand
         long total = 0;
         for ( StoreType type : StoreType.values() )
         {
-            if ( type.isRecordStore() )
-            {
-                FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
-                total += databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).mapToLong( fileSystem::getFileSize ).sum();
-            }
+            FileSystemAbstraction fileSystem = outsideWorld.fileSystem();
+            total += databaseLayout.file( type.getDatabaseFile() ).filter( fileSystem::fileExists ).mapToLong( fileSystem::getFileSize ).sum();
         }
         return total;
     }

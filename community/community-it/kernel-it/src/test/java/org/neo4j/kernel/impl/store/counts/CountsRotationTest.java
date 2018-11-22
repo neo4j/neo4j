@@ -188,7 +188,7 @@ public class CountsRotationTest
 
         DependencyResolver resolver = db.getDependencyResolver();
         RecordStorageEngine storageEngine = resolver.resolveDependency( RecordStorageEngine.class );
-        CountsTracker countStore = storageEngine.testAccessNeoStores().getCounts();
+        CountsTracker countStore = storageEngine.testAccessCountsStore();
 
         AtomicBoolean workerContinueFlag = new AtomicBoolean( true );
         AtomicLong lookupsCounter = new AtomicLong();
@@ -302,7 +302,7 @@ public class CountsRotationTest
 
         // on the other hand the tracker should read the correct value by merging data on disk and data in memory
         final CountsTracker tracker = db.getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getCounts();
+                .testAccessCountsStore();
         assertEquals( 1 + 1, tracker.nodeCount( -1, newDoubleLongRegister() ).readSecond() );
 
         int labelId;

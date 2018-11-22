@@ -48,6 +48,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescript
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
@@ -75,11 +76,12 @@ public class MultipleIndexPopulatorUpdatesTest
     {
         NeoStores neoStores = Mockito.mock( NeoStores.class );
         NodeStore nodeStore = mock( NodeStore.class );
+        CountsTracker counts = mock( CountsTracker.class );
 
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
 
         ProcessListenableNeoStoreIndexView
-                storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores, () -> mock( StorageReader.class ) );
+                storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores, counts, () -> mock( StorageReader.class ) );
         MultipleIndexPopulator indexPopulator =
                 new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ) );
 
@@ -150,9 +152,9 @@ public class MultipleIndexPopulatorUpdatesTest
         private Listener<StorageNodeCursor> processListener;
         private NeoStores neoStores;
 
-        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores, Supplier<StorageReader> storageReaderSupplier )
+        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores, CountsTracker counts, Supplier<StorageReader> storageReaderSupplier )
         {
-            super( locks, neoStores, storageReaderSupplier );
+            super( locks, neoStores, counts, storageReaderSupplier );
             this.neoStores = neoStores;
         }
 

@@ -229,12 +229,12 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister actual = getTracker().indexSample( indexId, Registers.newDoubleLongRegister() );
+            DoubleLongRegister actual = getCounts().indexSample( indexId, Registers.newDoubleLongRegister() );
             assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
-        DoubleLongRegister actual = getTracker().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
+        DoubleLongRegister actual = getCounts().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
         assertDoubleLongEquals( 0L, 0L, actual );
     }
 
@@ -582,10 +582,10 @@ public class IndexStatisticsTest
         return bridge.getKernelTransactionBoundToThisThread( true ).schemaRead().indexUniqueValuesSelectivity( reference );
     }
 
-    private CountsTracker getTracker()
+    private CountsTracker getCounts()
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessNeoStores().getCounts();
+                .testAccessCountsStore();
     }
 
     private void createSomePersons() throws KernelException

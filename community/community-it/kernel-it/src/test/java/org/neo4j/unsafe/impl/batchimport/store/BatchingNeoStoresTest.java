@@ -266,7 +266,7 @@ class BatchingNeoStoresTest
     private StoreType[] relevantRecordStores()
     {
         return Stream.of( StoreType.values() )
-                .filter( type -> type.isRecordStore() && type != StoreType.META_DATA ).toArray( StoreType[]::new );
+                .filter( type -> type != StoreType.META_DATA ).toArray( StoreType[]::new );
     }
 
     private static <RECORD extends AbstractBaseRecord> void createRecordIn( RecordStore<RECORD> store )

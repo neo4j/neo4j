@@ -33,19 +33,16 @@ public class RenewableBatchIdSequences implements Resource
     {
         for ( StoreType type : StoreType.values() )
         {
-            if ( type.isRecordStore() )
+            RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
+            if ( type.isLimitedIdStore() || batchSize == 1 )
             {
-                RecordStore<AbstractBaseRecord> store = stores.getRecordStore( type );
-                if ( type.isLimitedIdStore() || batchSize == 1 )
-                {
-                    // This is a token store or otherwise meta-data store, so let's not add batching for it
-                    types[type.ordinal()] = store;
-                }
-                else
-                {
-                    // This is a normal record store where id batching is beneficial
-                    types[type.ordinal()] = new RenewableBatchIdSequence( store, batchSize, store::freeId );
-                }
+                // This is a token store or otherwise meta-data store, so let's not add batching for it
+                types[type.ordinal()] = store;
+            }
+            else
+            {
+                // This is a normal record store where id batching is beneficial
+                types[type.ordinal()] = new RenewableBatchIdSequence( store, batchSize, store::freeId );
             }
         }
     }

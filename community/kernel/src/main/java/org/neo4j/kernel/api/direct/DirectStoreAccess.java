@@ -25,19 +25,21 @@ import java.io.IOException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.store.StoreAccess;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 
 public class DirectStoreAccess implements Closeable
 {
     private final StoreAccess nativeStores;
     private final LabelScanStore labelScanStore;
     private final IndexProviderMap indexes;
+    private final CountsTracker counts;
 
-    public DirectStoreAccess(
-            StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes )
+    public DirectStoreAccess( StoreAccess nativeStores, LabelScanStore labelScanStore, IndexProviderMap indexes, CountsTracker counts )
     {
         this.nativeStores = nativeStores;
         this.labelScanStore = labelScanStore;
         this.indexes = indexes;
+        this.counts = counts;
     }
 
     public StoreAccess nativeStores()
@@ -55,9 +57,15 @@ public class DirectStoreAccess implements Closeable
         return indexes;
     }
 
+    public CountsTracker counts()
+    {
+        return counts;
+    }
+
     @Override
     public void close() throws IOException
     {
+        // counts life cycle is managed outside
         nativeStores.close();
         labelScanStore.shutdown();
     }

@@ -129,6 +129,7 @@ import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.id.validation.IdValidator;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DirectRecordAccessSet;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -199,6 +200,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     private final FileSystemAbstraction fileSystem;
     private final Monitors monitors;
     private final JobScheduler jobScheduler;
+    private final CountsTracker counts;
     private boolean labelsTouched;
     private boolean isShutdown;
 
@@ -294,10 +296,13 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         RecordStore<RelationshipGroupRecord> relationshipGroupStore = neoStores.getRelationshipGroupStore();
         schemaStore = neoStores.getSchemaStore();
         labelTokenStore = neoStores.getLabelTokenStore();
+        counts = new CountsTracker( logService.getInternalLogProvider(), fileSystem, pageCache, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
+        counts.setInitializer( DataInitializer.empty() );
+        life.add( counts );
 
         monitors = new Monitors();
 
-        storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores, () -> new RecordStorageReader( neoStores ) );
+        storeIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores, counts, () -> new RecordStorageReader( neoStores ) );
         Dependencies deps = new Dependencies();
         Monitors monitors = new Monitors();
         deps.satisfyDependencies( fileSystem, config, logService, storeIndexStoreView, pageCache, monitors, RecoveryCleanupWorkCollector.immediate() );
@@ -544,17 +549,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
     private void rebuildCounts()
     {
-        CountsTracker counts = neoStores.getCounts();
-        try
-        {
-            counts.start();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-
-        CountsComputer.recomputeCounts( neoStores, pageCache, databaseLayout );
+        CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
     }
 
     private StoreIndexDescriptor[] getIndexesNeedingPopulation()

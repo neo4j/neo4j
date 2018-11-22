@@ -70,7 +70,6 @@ public class DynamicIndexStoreViewTest
     {
         NodeRecord nodeRecord = getNodeRecord();
         when( labelScanStore.allNodeLabelRanges()).thenReturn( nodeLabelRanges );
-        when( neoStores.getCounts() ).thenReturn( countStore );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
         when( nodeStore.newRecord() ).thenReturn( nodeRecord );
         doAnswer( invocation ->
@@ -144,7 +143,7 @@ public class DynamicIndexStoreViewTest
     private DynamicIndexStoreView dynamicIndexStoreView()
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
-        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, neoStores, () -> mock( StorageReader.class ) ), labelScanStore,
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, neoStores, countStore, () -> mock( StorageReader.class ) ), labelScanStore,
                 locks, neoStores, NullLogProvider.getInstance() );
     }
 

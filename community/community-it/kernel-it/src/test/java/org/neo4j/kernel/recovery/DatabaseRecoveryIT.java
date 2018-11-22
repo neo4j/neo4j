@@ -497,10 +497,7 @@ class DatabaseRecoveryIT
         {
             for ( StoreType storeType : StoreType.values() )
             {
-                if ( storeType.isRecordStore() )
-                {
-                    assertSameStoreContents( store1.getRecordStore( storeType ), store2.getRecordStore( storeType ) );
-                }
+                assertSameStoreContents( store1.getRecordStore( storeType ), store2.getRecordStore( storeType ) );
             }
         }
     }

@@ -147,16 +147,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     {
         if ( pagedFile != null )
         {
-            try
-            {
-                closeStoreFile();
-            }
-            catch ( IOException failureToClose )
-            {
-                // Not really a suppressed exception, but we still want to throw the real exception, e,
-                // but perhaps also throw this in there or convenience.
-                e.addSuppressed( failureToClose );
-            }
+            closeStoreFile();
         }
         throwIfUnchecked( e );
         throw new RuntimeException( e );
@@ -869,19 +860,19 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
         {
             closeStoreFile();
         }
-        catch ( IOException | IllegalStateException e )
+        catch ( IllegalStateException e )
         {
             throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFile(), e );
         }
     }
 
-    private void closeStoreFile() throws IOException
+    private void closeStoreFile()
     {
         try
         {
             /*
              * Note: the closing ordering here is important!
-             * It is the case since we wand to mark the id generator as closed cleanly ONLY IF
+             * It is the case since we want to mark the id generator as closed cleanly ONLY IF
              * also the store file is cleanly shutdown.
              */
             if ( pagedFile != null )

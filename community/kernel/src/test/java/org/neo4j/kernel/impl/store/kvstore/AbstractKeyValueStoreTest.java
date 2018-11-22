@@ -610,19 +610,7 @@ public class AbstractKeyValueStoreTest
                     new RotationTimerFactory( Clocks.nanoClock(), rotationTimeout ),
                     EmptyVersionContextSupplier.EMPTY, 16, 16, headerFields );
             this.headerFields = headerFields;
-            setEntryUpdaterInitializer( new DataInitializer<EntryUpdater<String>>()
-            {
-                @Override
-                public void initialize( EntryUpdater<String> stringEntryUpdater )
-                {
-                }
-
-                @Override
-                public long initialVersion()
-                {
-                    return 0;
-                }
-            } );
+            setEntryUpdaterInitializer( DataInitializer.empty() );
         }
 
         @Override

@@ -69,7 +69,7 @@ public class RecordStorageReader implements StorageReader
     private boolean closed;
 
     RecordStorageReader(
-            TokenHolders tokenHolders, NeoStores neoStores,
+            TokenHolders tokenHolders, NeoStores neoStores, CountsTracker counts,
             IndexingService indexService, SchemaCache schemaCache,
             RecordStorageCommandCreationContext commandCreationContext )
     {
@@ -80,7 +80,7 @@ public class RecordStorageReader implements StorageReader
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
         this.propertyStore = neoStores.getPropertyStore();
-        this.counts = neoStores.getCounts();
+        this.counts = counts;
         this.metaDataStore = neoStores.getMetaDataStore();
         this.schemaCache = schemaCache;
         this.commandCreationContext = commandCreationContext;
@@ -92,7 +92,7 @@ public class RecordStorageReader implements StorageReader
      */
     public RecordStorageReader( NeoStores stores )
     {
-        this( null, stores, null, null, null );
+        this( null, stores, null, null, null, null );
     }
 
     @Override

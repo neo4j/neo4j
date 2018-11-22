@@ -27,7 +27,6 @@ import org.junit.rules.RuleChain;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
 import org.neo4j.consistency.statistics.Statistics;
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -43,11 +42,12 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
-import org.neo4j.kernel.impl.store.StoreType;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
@@ -97,16 +97,10 @@ public class DetectAllRelationshipInconsistenciesIT
 
             // WHEN sabotaging a random relationship
             DependencyResolver resolver = db.getDependencyResolver();
-            PageCache pageCache = resolver.resolveDependency( PageCache.class );
-
-            StoreFactory storeFactory = newStoreFactory( pageCache );
-
-            try ( NeoStores neoStores = storeFactory.openNeoStores( false, StoreType.RELATIONSHIP ) )
-            {
-                RelationshipStore relationshipStore = neoStores.getRelationshipStore();
-                Relationship sabotagedRelationships = random.among( relationships );
-                sabotage = sabotage( relationshipStore, sabotagedRelationships.getId() );
-            }
+            NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+            RelationshipStore relationshipStore = neoStores.getRelationshipStore();
+            Relationship sabotagedRelationships = random.among( relationships );
+            sabotage = sabotage( relationshipStore, sabotagedRelationships.getId() );
         }
         finally
         {
@@ -118,28 +112,23 @@ public class DetectAllRelationshipInconsistenciesIT
         try
         {
             DependencyResolver resolver = db.getDependencyResolver();
-            PageCache pageCache = resolver.resolveDependency( PageCache.class );
-            StoreFactory storeFactory = newStoreFactory( pageCache );
+            NeoStores neoStores = resolver.resolveDependency( RecordStorageEngine.class ).testAccessNeoStores();
+            CountsTracker counts = resolver.resolveDependency( RecordStorageEngine.class ).testAccessCountsStore();
+            StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
+            DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
+                    db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
+                    db.getDependencyResolver().resolveDependency( IndexProviderMap.class ), counts );
 
-            try ( NeoStores neoStores = storeFactory.openAllNeoStores() )
-            {
-                StoreAccess storeAccess = new StoreAccess( neoStores ).initialize();
-                DirectStoreAccess directStoreAccess = new DirectStoreAccess( storeAccess,
-                        db.getDependencyResolver().resolveDependency( LabelScanStore.class ),
-                        db.getDependencyResolver().resolveDependency( IndexProviderMap.class ) );
+            int threads = random.intBetween( 2, 10 );
+            FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE, Statistics.NONE, threads );
+            AssertableLogProvider logProvider = new AssertableLogProvider( true );
+            ConsistencySummaryStatistics summary = checker.execute( directStoreAccess,
+                    logProvider.getLog( FullCheck.class ) );
+            int relationshipInconsistencies = summary.getInconsistencyCountForRecordType(
+                    RecordType.RELATIONSHIP );
 
-                int threads = random.intBetween( 2, 10 );
-                FullCheck checker = new FullCheck( getTuningConfiguration(), ProgressMonitorFactory.NONE,
-                        Statistics.NONE, threads );
-                AssertableLogProvider logProvider = new AssertableLogProvider( true );
-                ConsistencySummaryStatistics summary = checker.execute( directStoreAccess,
-                        logProvider.getLog( FullCheck.class ) );
-                int relationshipInconsistencies = summary.getInconsistencyCountForRecordType(
-                        RecordType.RELATIONSHIP );
-
-                assertTrue( "Couldn't detect sabotaged relationship " + sabotage, relationshipInconsistencies > 0 );
-                logProvider.assertContainsLogCallContaining( sabotage.after.toString() );
-            }
+            assertTrue( "Couldn't detect sabotaged relationship " + sabotage, relationshipInconsistencies > 0 );
+            logProvider.assertContainsLogCallContaining( sabotage.after.toString() );
         }
         finally
         {

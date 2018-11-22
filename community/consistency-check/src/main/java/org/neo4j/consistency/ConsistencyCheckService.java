@@ -60,6 +60,7 @@ import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -225,8 +226,11 @@ public class ConsistencyCheckService
         config.augment( GraphDatabaseSettings.read_only, TRUE );
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
 
+        LifeSupport life = new LifeSupport();
         StoreFactory factory = new StoreFactory( databaseLayout, config,
                 new DefaultIdGeneratorFactory( fileSystem ), pageCache, fileSystem, logProvider, EmptyVersionContextSupplier.EMPTY );
+        ReadOnlyCountsTracker counts = new ReadOnlyCountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout );
+        life.add( counts );
 
         ConsistencySummaryStatistics summary;
         final File reportFile = chooseReportPath( reportDir );
@@ -235,7 +239,6 @@ public class ConsistencyCheckService
 
         // Bootstrap kernel extensions
         Monitors monitors = new Monitors();
-        LifeSupport life = new LifeSupport();
         JobScheduler jobScheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
@@ -276,7 +279,7 @@ public class ConsistencyCheckService
                 storeAccess = new StoreAccess( neoStores );
             }
             storeAccess.initialize();
-            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes );
+            DirectStoreAccess stores = new DirectStoreAccess( storeAccess, labelScanStore, indexes, counts );
             FullCheck check = new FullCheck(
                     progressFactory, statistics, numberOfThreads, consistencyFlags, config );
             summary = check.execute( stores, new DuplicatingLog( log, reportLog ) );

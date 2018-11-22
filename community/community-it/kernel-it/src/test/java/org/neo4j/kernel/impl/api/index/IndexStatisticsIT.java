@@ -107,7 +107,7 @@ public class IndexStatisticsIT
         restart();
 
         // then we should have re-sampled the index
-        CountsTracker tracker = neoStores().getCounts();
+        CountsTracker tracker = counts();
         assertEqualRegisters(
                 "Unexpected updates and size for the index",
                 newDoubleLongRegister( 0, 32 ),
@@ -192,7 +192,7 @@ public class IndexStatisticsIT
 
     private void resetIndexCounts( long indexId )
     {
-        try ( CountsAccessor.IndexStatsUpdater updater = neoStores().getCounts().updateIndexCounts() )
+        try ( CountsAccessor.IndexStatsUpdater updater = counts().updateIndexCounts() )
         {
             updater.replaceIndexSample( indexId, 0, 0 );
             updater.replaceIndexUpdateAndSize( indexId, 0, 0 );
@@ -203,6 +203,12 @@ public class IndexStatisticsIT
     {
         return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                 .testAccessNeoStores();
+    }
+
+    private CountsTracker counts()
+    {
+        return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
+                .testAccessCountsStore();
     }
 
     private void startDb()

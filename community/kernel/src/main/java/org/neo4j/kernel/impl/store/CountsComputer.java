@@ -36,10 +36,9 @@ import static org.neo4j.unsafe.impl.batchimport.staging.ExecutionSupervisors.sup
 
 public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
 {
-    public static void recomputeCounts( NeoStores stores, PageCache pageCache, DatabaseLayout databaseLayout )
+    public static void recomputeCounts( NeoStores stores, CountsTracker counts, PageCache pageCache, DatabaseLayout databaseLayout )
     {
         MetaDataStore metaDataStore = stores.getMetaDataStore();
-        CountsTracker counts = stores.getCounts();
         try ( CountsAccessor.Updater updater = counts.reset( metaDataStore.getLastCommittedTransactionId() ) )
         {
             new CountsComputer( stores, pageCache, databaseLayout ).initialize( updater );
@@ -54,7 +53,7 @@ public class CountsComputer implements DataInitializer<CountsAccessor.Updater>
     private final ProgressReporter progressMonitor;
     private final NumberArrayFactory numberArrayFactory;
 
-    CountsComputer( NeoStores stores, PageCache pageCache, DatabaseLayout databaseLayout )
+    public CountsComputer( NeoStores stores, PageCache pageCache, DatabaseLayout databaseLayout )
     {
         this( stores.getMetaDataStore().getLastCommittedTransactionId(),
                 stores.getNodeStore(), stores.getRelationshipStore(),

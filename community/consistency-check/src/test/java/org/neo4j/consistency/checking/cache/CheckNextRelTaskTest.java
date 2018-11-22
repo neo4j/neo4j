@@ -40,7 +40,6 @@ import static org.mockito.Mockito.when;
 
 class CheckNextRelTaskTest
 {
-
     @Test
     void scanForHighIdOnlyOnceWhenProcessCache()
     {

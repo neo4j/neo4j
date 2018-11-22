@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.PropertyType;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.SchemaStorage;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.allocator.ReusableRecordsAllocator;
@@ -562,7 +561,7 @@ public class FullCheckIntegrationTest
         Iterator<StoreIndexDescriptor> indexDescriptorIterator =
                 SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
         NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
-                fixture.directStoreAccess().nativeStores().getRawNeoStores(),
+                fixture.directStoreAccess().nativeStores().getRawNeoStores(), fixture.directStoreAccess().counts(),
                 () -> new RecordStorageReader( fixture.directStoreAccess().nativeStores().getRawNeoStores() ) );
         while ( indexDescriptorIterator.hasNext() )
         {

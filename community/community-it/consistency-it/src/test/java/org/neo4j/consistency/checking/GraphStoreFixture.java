@@ -71,6 +71,7 @@ import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NeoStoreRecord;
@@ -126,7 +127,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     private int relTypeId;
     private int propKeyId;
     private DefaultFileSystemAbstraction fileSystem;
-    private final LifeSupport life = new LifeSupport();
+    private final LifeSupport storeLife = new LifeSupport();
+    private final LifeSupport fixtureLife = new LifeSupport();
 
     /**
      * Record format used to generate initial database.
@@ -148,7 +150,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     protected void after( boolean success )
     {
         super.after( success );
-        life.shutdown();
+        storeLife.shutdown();
+        fixtureLife.shutdown();
         if ( fileSystem != null )
         {
             try
@@ -171,8 +174,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         if ( directStoreAccess == null )
         {
-            life.start();
-            JobScheduler scheduler = life.add( JobSchedulerFactory.createInitialisedScheduler() );
+            fixtureLife.start();
+            storeLife.start();
+            JobScheduler scheduler = fixtureLife.add( JobSchedulerFactory.createInitialisedScheduler() );
             fileSystem = new DefaultFileSystemAbstraction();
             PageCache pageCache = getPageCache( fileSystem );
             LogProvider logProvider = NullLogProvider.getInstance();
@@ -196,14 +200,17 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             }
             nativeStores.initialize();
 
+            CountsTracker counts = new CountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout(), EmptyVersionContextSupplier.EMPTY );
+            storeLife.add( counts );
+
             IndexStoreView indexStoreView =
-                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores(),
+                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores(), counts,
                             () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );
             IndexProviderMap indexes = createIndexes( pageCache, fileSystem, directory.databaseDir(), config, scheduler, logProvider, monitors);
-            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes );
+            directStoreAccess = new DirectStoreAccess( nativeStores, labelScanStore, indexes, counts );
             storeReader = new RecordStorageReader( neoStore );
         }
         return directStoreAccess;
@@ -234,9 +241,9 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TokenHolder.TYPE_RELATIONSHIP_TYPE ) );
-        DatabaseKernelExtensions extensions = life.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
+        DatabaseKernelExtensions extensions = fixtureLife.add( instantiateKernelExtensions( storeDir, fileSystem, config, logService,
                 pageCache, scheduler, RecoveryCleanupWorkCollector.ignore(), DatabaseInfo.COMMUNITY, monitors, tokenHolders ) );
-        return life.add( new DefaultIndexProviderMap( extensions, config ) );
+        return fixtureLife.add( new DefaultIndexProviderMap( extensions, config ) );
     }
 
     public DatabaseLayout databaseLayout()
@@ -492,6 +499,7 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
     {
         if ( directStoreAccess != null )
         {
+            storeLife.shutdown();
             storeReader.close();
             neoStore.close();
             directStoreAccess.close();

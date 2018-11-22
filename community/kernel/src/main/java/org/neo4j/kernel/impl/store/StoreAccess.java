@@ -24,7 +24,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
@@ -61,7 +60,6 @@ public class StoreAccess
     private RecordStore<DynamicRecord> labelNameStore;
     private RecordStore<DynamicRecord> propertyKeyNameStore;
     private RecordStore<RelationshipGroupRecord> relGroupStore;
-    private final CountsAccessor counts;
     // internal state
     private boolean closeable;
     private final NeoStores neoStores;
@@ -69,7 +67,6 @@ public class StoreAccess
     public StoreAccess( NeoStores store )
     {
         this.neoStores = store;
-        this.counts = store.getCounts();
     }
 
     public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, DatabaseLayout directoryStructure, Config config )
@@ -179,11 +176,6 @@ public class StoreAccess
     public RecordStore<DynamicRecord> getPropertyKeyNameStore()
     {
         return propertyKeyNameStore;
-    }
-
-    public CountsAccessor getCounts()
-    {
-        return counts;
     }
 
     private static RecordStore<DynamicRecord> wrapNodeDynamicLabelStore( RecordStore<DynamicRecord> store )

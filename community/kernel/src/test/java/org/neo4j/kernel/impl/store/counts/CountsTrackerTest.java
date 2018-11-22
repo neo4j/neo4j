@@ -475,19 +475,7 @@ public class CountsTrackerTest
         return new CountsTracker( resourceManager.logProvider(), resourceManager.fileSystem(),
                 resourceManager.pageCache(), Config.defaults(), resourceManager.testDirectory().databaseLayout(), clock,
                 versionContextSupplier )
-                .setInitializer( new DataInitializer<CountsAccessor.Updater>()
-                {
-                    @Override
-                    public void initialize( CountsAccessor.Updater updater )
-                    {
-                    }
-
-                    @Override
-                    public long initialVersion()
-                    {
-                        return FileVersion.INITIAL_TX_ID;
-                    }
-                } );
+                .setInitializer( DataInitializer.empty() );
     }
 
     private static CountsOracle someData()

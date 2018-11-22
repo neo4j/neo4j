@@ -1307,10 +1307,7 @@ public class ImportToolTest
 
         for ( StoreType storeType : StoreType.values() )
         {
-            if ( storeType.isRecordStore() )
-            {
-                dbRule.databaseLayout().file( storeType.getDatabaseFile() ).forEach( File::delete );
-            }
+            dbRule.databaseLayout().file( storeType.getDatabaseFile() ).forEach( File::delete );
         }
     }
 
@@ -1939,10 +1936,7 @@ public class ImportToolTest
             // THEN the store files should be there
             for ( StoreType storeType : StoreType.values() )
             {
-                if ( storeType.isRecordStore() )
-                {
-                    dbRule.databaseLayout().file( storeType.getDatabaseFile() ).forEach( f -> assertTrue( f.exists() ) );
-                }
+                dbRule.databaseLayout().file( storeType.getDatabaseFile() ).forEach( f -> assertTrue( f.exists() ) );
             }
 
             List<String> errorLines = suppressOutput.getErrorVoice().lines();

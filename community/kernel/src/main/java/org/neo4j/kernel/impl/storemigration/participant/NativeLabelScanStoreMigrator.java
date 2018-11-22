@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.ReadOnlyIdGeneratorFactory;
@@ -77,11 +78,13 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
                     Lifespan lifespan = new Lifespan() )
             {
                 neoStores.verifyStoreOk();
-                // Remove any existing file to ensure we always do migration
                 deleteNativeIndexFile( migrationLayout );
 
+                // Explicitly set counts to null. It's needed only as an argument to NeoStoreIndexStoreView when creating the
+                // LabelScanStore, which is an unnecessary dependency and will be untangled in the future.
+                CountsTracker counts = null;
                 progressReporter.start( neoStores.getNodeStore().getNumberOfIdsInUse() );
-                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationLayout, progressReporter, neoStores );
+                NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( migrationLayout, progressReporter, neoStores, counts );
                 lifespan.add( nativeLabelScanStore );
             }
             nativeLabelScanStoreMigrated = true;
@@ -127,9 +130,10 @@ public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticip
     }
 
     private NativeLabelScanStore getNativeLabelScanStore( DatabaseLayout migrationDirectoryStructure,
-            ProgressReporter progressReporter, NeoStores neoStores )
+            ProgressReporter progressReporter, NeoStores neoStores, CountsTracker counts )
     {
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores, () -> new RecordStorageReader( neoStores ) );
+        NeoStoreIndexStoreView neoStoreIndexStoreView =
+                new NeoStoreIndexStoreView( NO_LOCK_SERVICE, neoStores, counts, () -> new RecordStorageReader( neoStores ) );
         return new NativeLabelScanStore( pageCache, migrationDirectoryStructure, fileSystem,
                 new MonitoredFullLabelStream( neoStoreIndexStoreView, progressReporter ), false, new Monitors(),
                 RecoveryCleanupWorkCollector.immediate() );

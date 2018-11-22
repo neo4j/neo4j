@@ -51,7 +51,9 @@ import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.StoreFactory;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.DirectRecordAccess;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
@@ -111,6 +113,7 @@ class OnlineIndexUpdatesTest
     private LifeSupport life;
     private PropertyCreator propertyCreator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
+    private CountsTracker counts;
 
     @BeforeEach
     void setUp() throws Exception
@@ -123,8 +126,9 @@ class OnlineIndexUpdatesTest
                         fileSystem, nullLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
-        neoStores.getCounts().start();
-        CountsComputer.recomputeCounts( neoStores, pageCache, databaseLayout );
+        counts = new CountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
+        counts.setInitializer( DataInitializer.empty() );
+        life.add( counts );
         nodeStore = neoStores.getNodeStore();
         relationshipStore = neoStores.getRelationshipStore();
         PropertyStore propertyStore = neoStores.getPropertyStore();
@@ -134,14 +138,14 @@ class OnlineIndexUpdatesTest
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         life.add( providerMap );
         indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, providerMap,
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores, () -> new RecordStorageReader( neoStores ) ),
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores, counts, () -> new RecordStorageReader( neoStores ) ),
                 idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
                 IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ) );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );
-        life.init();
         life.start();
+        CountsComputer.recomputeCounts( neoStores, counts, pageCache, databaseLayout );
         propertyCreator = new PropertyCreator( neoStores.getPropertyStore(), new PropertyTraverser() );
         recordAccess = new DirectRecordAccess<>( neoStores.getPropertyStore(), Loaders.propertyLoader( propertyStore ) );
     }

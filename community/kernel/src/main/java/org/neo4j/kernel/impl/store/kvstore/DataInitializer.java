@@ -19,8 +19,32 @@
  */
 package org.neo4j.kernel.impl.store.kvstore;
 
+import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
+
 public interface DataInitializer<Sink>
 {
+    static <Sink> DataInitializer<Sink> empty()
+    {
+        return empty( TransactionIdStore.BASE_TX_ID );
+    }
+
+    static <Sink> DataInitializer<Sink> empty( long initialTxId )
+    {
+        return new DataInitializer<Sink>()
+        {
+            @Override
+            public void initialize( Sink sink )
+            {
+            }
+
+            @Override
+            public long initialVersion()
+            {
+                return initialTxId;
+            }
+        };
+    }
+
     void initialize( Sink sink );
 
     long initialVersion();

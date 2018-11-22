@@ -38,7 +38,6 @@ import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.StoreAccess;
@@ -105,20 +104,16 @@ public class FullCheck
 
         if ( checkGraph )
         {
-            CountsAccessor countsAccessor = stores.nativeStores().getCounts();
-            if ( countsAccessor instanceof CountsTracker )
+            CountsTracker counts = stores.counts();
+            try
             {
-                CountsTracker tracker = (CountsTracker) countsAccessor;
-                try
-                {
-                    tracker.start();
-                }
-                catch ( Exception e )
-                {
-                    // let's hope it was already started :)
-                }
+                counts.start();
             }
-            countsBuilder.checkCounts( countsAccessor, new ConsistencyReporter( records, report ), progressFactory );
+            catch ( Exception e )
+            {
+                // let's hope it was already started :)
+            }
+            countsBuilder.checkCounts( counts, new ConsistencyReporter( records, report ), progressFactory );
         }
 
         if ( !summary.isConsistent() )

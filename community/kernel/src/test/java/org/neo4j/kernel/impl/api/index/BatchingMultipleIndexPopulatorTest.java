@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
+import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageReader;
@@ -114,10 +115,11 @@ public class BatchingMultipleIndexPopulatorTest
 
         NeoStores neoStores = mock( NeoStores.class );
         NodeStore nodeStore = mock( NodeStore.class );
+        CountsTracker counts = mock( CountsTracker.class );
         when( neoStores.getNodeStore() ).thenReturn( nodeStore );
 
         NeoStoreIndexStoreView storeView =
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores, () -> mock( StorageReader.class ) );
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores, counts, () -> mock( StorageReader.class ) );
         BatchingMultipleIndexPopulator batchingPopulator = new BatchingMultipleIndexPopulator(
                 storeView, immediateExecutor(), NullLogProvider.getInstance(), mock( SchemaState.class ) );
 

@@ -27,14 +27,12 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.LongSupplier;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -64,12 +62,13 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.store.MetaDataStore.Position;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.DynamicRecordFormat;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
+import org.neo4j.kernel.impl.store.id.IdGeneratorImpl;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.PropertyBlock;
@@ -91,7 +90,6 @@ import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.StorageRelationshipTraversalCursor;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.ThreadTestUtils;
 import org.neo4j.test.rule.ConfigurablePageCacheRule;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.PageCacheRule;
@@ -105,7 +103,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
@@ -583,7 +580,7 @@ public class NeoStoresTest
     }
 
     @Test
-    public void testSetLatestConstraintTx()
+    public void testSetLatestConstraintTx() throws IOException
     {
         // given
         Config config = Config.defaults();
@@ -754,57 +751,26 @@ public class NeoStoresTest
     public void shouldCloseAllTheStoreEvenIfExceptionsAreThrown() throws Exception
     {
         // given
-        FileSystemAbstraction fileSystem = fs.get();
         Config defaults = Config.defaults( counts_store_rotation_timeout, "60m" );
-        StoreFactory factory = getStoreFactory( defaults, databaseLayout, fileSystem, LOG_PROVIDER );
+        String errorMessage = "Failing for the heck of it";
+        StoreFactory factory = new StoreFactory( databaseLayout, defaults, new CloseFailingDefaultIdGeneratorFactory( fs, errorMessage ), pageCache,
+                fs, NullLogProvider.getInstance(), EmptyVersionContextSupplier.EMPTY );
         NeoStores neoStore = factory.openAllNeoStores( true );
-
-        // let's hack the counts store so it fails to rotate and hence it fails to close as well...
-        CountsTracker counts = neoStore.getCounts();
-        counts.start();
-        long nextTxId = neoStore.getMetaDataStore().getLastCommittedTransactionId() + 1;
-        AtomicReference<Throwable> exRef = new AtomicReference<>();
-        Thread thread = new Thread( () ->
-        {
-            try
-            {
-                counts.rotate( nextTxId );
-            }
-            catch ( InterruptedIOException e )
-            {
-                // expected due to the interrupted below
-            }
-            catch ( Throwable e )
-            {
-                exRef.set( e );
-                throw new RuntimeException( e );
-            }
-        } );
-        thread.start();
-
-        // let's wait for the thread to start waiting for the next transaction id
-        ThreadTestUtils.awaitThreadState( thread, TimeUnit.SECONDS.toMillis( 5 ), Thread.State.TIMED_WAITING,
-                Thread.State.WAITING );
 
         try
         {
             // when we close the stores...
             neoStore.close();
-            fail( "should have thrown2" );
+            fail( "should have thrown" );
         }
-        catch ( IllegalStateException ex )
+        catch ( UnderlyingStorageException ex )
         {
             // then
-            assertEquals( "Cannot stop in state: rotating", ex.getMessage() );
+            assertEquals( errorMessage, ex.getCause().getMessage() );
         }
-
-        thread.interrupt();
-        thread.join();
 
         // and the page cache closes with no errors
         pageCache.close();
-        // and only InterruptedIOException is thrown in the other thread
-        assertNull( exRef.get() );
     }
 
     @Test
@@ -1486,9 +1452,40 @@ public class NeoStoresTest
     }
 
     private StoreFactory getStoreFactory( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction ephemeralFileSystemAbstraction,
-            NullLogProvider instance )
+            NullLogProvider logProvider )
     {
         return new StoreFactory( databaseLayout, config, new DefaultIdGeneratorFactory( ephemeralFileSystemAbstraction ), pageCache,
-                ephemeralFileSystemAbstraction, instance, EmptyVersionContextSupplier.EMPTY );
+                ephemeralFileSystemAbstraction, logProvider, EmptyVersionContextSupplier.EMPTY );
+    }
+
+    private class CloseFailingDefaultIdGeneratorFactory extends DefaultIdGeneratorFactory
+    {
+        private final String errorMessage;
+
+        CloseFailingDefaultIdGeneratorFactory( FileSystemAbstraction fs, String errorMessage )
+        {
+            super( fs );
+            this.errorMessage = errorMessage;
+        }
+
+        @Override
+        protected IdGenerator instantiate( FileSystemAbstraction fs, File fileName, int grabSize, long maxValue, boolean aggressiveReuse, IdType idType,
+                LongSupplier highId )
+        {
+            if ( idType == IdType.NODE )
+            {
+                // Return a special id generator which will throw exception on close
+                return new IdGeneratorImpl( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId )
+                {
+                    @Override
+                    public synchronized void close()
+                    {
+                        super.close();
+                        throw new IllegalStateException( errorMessage );
+                    }
+                };
+            }
+            return super.instantiate( fs, fileName, grabSize, maxValue, aggressiveReuse, idType, highId );
+        }
     }
 }

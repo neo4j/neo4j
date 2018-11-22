@@ -26,16 +26,13 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.File;
-import java.io.IOException;
 import java.nio.file.OpenOption;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -111,18 +108,6 @@ public class StoreFactoryTest
 
         // Then
         assertEquals( metaDataStore.getUpgradeTransaction(), metaDataStore.getLastCommittedTransaction() );
-    }
-
-    @Test
-    public void shouldHaveSpecificCountsTrackerForReadOnlyDatabase() throws IOException
-    {
-        // when
-        StoreFactory readOnlyStoreFactory = storeFactory( Config.defaults( GraphDatabaseSettings.read_only, Settings.TRUE ) );
-        neoStores = readOnlyStoreFactory.openAllNeoStores( true );
-        long lastClosedTransactionId = neoStores.getMetaDataStore().getLastClosedTransactionId();
-
-        // then
-        assertEquals( -1, neoStores.getCounts().rotate( lastClosedTransactionId ) );
     }
 
     @Test( expected = StoreNotFoundException.class )

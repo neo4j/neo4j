@@ -42,9 +42,6 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.NeoStoresDiagnostics;
-import org.neo4j.kernel.impl.api.CountsAccessor;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.FormatFamily;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
@@ -52,9 +49,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
-import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
-import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.Logger;
 
@@ -92,12 +87,12 @@ public class NeoStores implements AutoCloseable
 
     private static final StoreType[] STORE_TYPES = StoreType.values();
 
-    private final Predicate<StoreType> INSTANTIATED_RECORD_STORES = new Predicate<StoreType>()
+    private final Predicate<StoreType> INSTANTIATED_STORES = new Predicate<StoreType>()
     {
         @Override
         public boolean test( StoreType type )
         {
-            return type.isRecordStore() && stores[type.ordinal()] != null;
+            return stores[type.ordinal()] != null;
         }
     };
 
@@ -113,7 +108,7 @@ public class NeoStores implements AutoCloseable
     private final FileSystemAbstraction fileSystemAbstraction;
     private final RecordFormats recordFormats;
     // All stores, as Object due to CountsTracker being different that all other stores.
-    private final Object[] stores;
+    private final CommonAbstractStore[] stores;
     private final OpenOption[] openOptions;
 
     NeoStores(
@@ -142,7 +137,7 @@ public class NeoStores implements AutoCloseable
         this.openOptions = openOptions;
 
         verifyRecordFormat();
-        stores = new Object[StoreType.values().length];
+        stores = new CommonAbstractStore[StoreType.values().length];
         try
         {
             for ( StoreType type : storeTypes )
@@ -232,7 +227,7 @@ public class NeoStores implements AutoCloseable
         {
             try
             {
-                type.close( stores[i] );
+                stores[i].close();
             }
             finally
             {
@@ -241,27 +236,15 @@ public class NeoStores implements AutoCloseable
         }
     }
 
-    public void flush( IOLimiter limiter )
+    public void flush( IOLimiter limiter ) throws IOException
     {
-        try
-        {
-            CountsTracker counts = (CountsTracker) stores[StoreType.COUNTS.ordinal()];
-            if ( counts != null )
-            {
-                counts.rotate( getMetaDataStore().getLastCommittedTransactionId() );
-            }
-            pageCache.flushAndForce( limiter );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Failed to flush", e );
-        }
+        pageCache.flushAndForce( limiter );
     }
 
-    private Object openStore( StoreType type )
+    private CommonAbstractStore openStore( StoreType type )
     {
         int storeIndex = type.ordinal();
-        Object store = type.open( this );
+        CommonAbstractStore store = type.open( this );
         stores[storeIndex] = store;
         return store;
     }
@@ -281,9 +264,9 @@ public class NeoStores implements AutoCloseable
      * @return store of requested type
      * @throws IllegalStateException if opened store not found
      */
-    private Object getStore( StoreType storeType )
+    private CommonAbstractStore getStore( StoreType storeType )
     {
-        Object store = stores[storeType.ordinal()];
+        CommonAbstractStore store = stores[storeType.ordinal()];
         if ( store == null )
         {
             String message = ArrayUtil.contains( initializedStores, storeType ) ? STORE_ALREADY_CLOSED_MESSAGE :
@@ -301,9 +284,9 @@ public class NeoStores implements AutoCloseable
      * @param storeType store type to get or create
      * @return store of requested type
      */
-    private Object getOrCreateStore( StoreType storeType )
+    private CommonAbstractStore getOrCreateStore( StoreType storeType )
     {
-        Object store = stores[storeType.ordinal()];
+        CommonAbstractStore store = stores[storeType.ordinal()];
         if ( store == null )
         {
             store = openStore( storeType );
@@ -423,25 +406,9 @@ public class NeoStores implements AutoCloseable
         return (SchemaStore) getStore( StoreType.SCHEMA );
     }
 
-    public CountsTracker getCounts()
-    {
-        return (CountsTracker) getStore( StoreType.COUNTS );
-    }
-
-    private CountsTracker createWritableCountsTracker( DatabaseLayout databaseLayout )
-    {
-        return new CountsTracker( logProvider, fileSystemAbstraction, pageCache, config, databaseLayout,
-                versionContextSupplier );
-    }
-
-    private ReadOnlyCountsTracker createReadOnlyCountsTracker( DatabaseLayout databaseLayout )
-    {
-        return new ReadOnlyCountsTracker( logProvider, fileSystemAbstraction, pageCache, config, databaseLayout );
-    }
-
     private Iterable<CommonAbstractStore> instantiatedRecordStores()
     {
-        Iterator<StoreType> storeTypes = new FilteringIterator<>( iterator( STORE_TYPES ), INSTANTIATED_RECORD_STORES );
+        Iterator<StoreType> storeTypes = new FilteringIterator<>( iterator( STORE_TYPES ), INSTANTIATED_STORES );
         return loop( new IteratorWrapper<CommonAbstractStore,StoreType>( storeTypes )
         {
             @Override
@@ -503,12 +470,6 @@ public class NeoStores implements AutoCloseable
         {
             store.visitStore( visitor );
         }
-    }
-
-    public void startCountStore() throws IOException
-    {
-        // TODO: move this to LifeCycle
-        getCounts().start();
     }
 
     public void deleteIdGenerators()
@@ -621,43 +582,6 @@ public class NeoStores implements AutoCloseable
                 TokenStore.NAME_STORE_BLOCK_SIZE );
     }
 
-    CountsTracker createCountStore()
-    {
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only );
-        CountsTracker counts = readOnly
-                               ? createReadOnlyCountsTracker( layout )
-                               : createWritableCountsTracker( layout );
-        NeoStores neoStores = this;
-        counts.setInitializer( new DataInitializer<CountsAccessor.Updater>()
-        {
-            private final Log log = logProvider.getLog( MetaDataStore.class );
-
-            @Override
-            public void initialize( CountsAccessor.Updater updater )
-            {
-                log.warn( "Missing counts store, rebuilding it." );
-                new CountsComputer( neoStores, pageCache, layout ).initialize( updater );
-                log.warn( "Counts store rebuild completed." );
-            }
-
-            @Override
-            public long initialVersion()
-            {
-                return ((MetaDataStore) getOrCreateStore( StoreType.META_DATA )).getLastCommittedTransactionId();
-            }
-        } );
-
-        try
-        {
-            counts.init(); // TODO: move this to LifeCycle
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Failed to initialize counts store", e );
-        }
-        return counts;
-    }
-
     CommonAbstractStore createMetadataStore()
     {
         return initialize(
@@ -700,8 +624,7 @@ public class NeoStores implements AutoCloseable
     @SuppressWarnings( "unchecked" )
     public <RECORD extends AbstractBaseRecord> RecordStore<RECORD> getRecordStore( StoreType type )
     {
-        assert type.isRecordStore();
-        return (RecordStore<RECORD>) getStore( type );
+        return getStore( type );
     }
 
     public RecordFormats getRecordFormats()

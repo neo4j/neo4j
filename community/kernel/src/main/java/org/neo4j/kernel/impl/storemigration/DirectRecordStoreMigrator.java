@@ -76,11 +76,8 @@ public class DirectRecordStoreMigrator
             for ( StoreType type : types )
             {
                 // This condition will exclude counts store first and foremost.
-                if ( type.isRecordStore() )
-                {
-                    migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );
-                    progressReporter.progress( 1 );
-                }
+                migrate( fromStores.getRecordStore( type ), toStores.getRecordStore( type ) );
+                progressReporter.progress( 1 );
             }
         }
     }

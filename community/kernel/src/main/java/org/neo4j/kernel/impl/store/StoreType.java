@@ -19,16 +19,14 @@
  */
 package org.neo4j.kernel.impl.store;
 
-import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;
 
 import org.neo4j.io.layout.DatabaseFile;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 
 public enum StoreType
 {
-    NODE_LABEL( DatabaseFile.NODE_LABEL_STORE, true, false )
+    NODE_LABEL( DatabaseFile.NODE_LABEL_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -36,7 +34,7 @@ public enum StoreType
                     return neoStores.createNodeLabelStore();
                 }
             },
-    NODE( DatabaseFile.NODE_STORE, true, false )
+    NODE( DatabaseFile.NODE_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -44,7 +42,7 @@ public enum StoreType
                     return neoStores.createNodeStore();
                 }
             },
-    PROPERTY_KEY_TOKEN_NAME( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, true, true )
+    PROPERTY_KEY_TOKEN_NAME( DatabaseFile.PROPERTY_KEY_TOKEN_NAMES_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -52,7 +50,7 @@ public enum StoreType
                     return neoStores.createPropertyKeyTokenNamesStore();
                 }
             },
-    PROPERTY_KEY_TOKEN( DatabaseFile.PROPERTY_KEY_TOKEN_STORE, true, true )
+    PROPERTY_KEY_TOKEN( DatabaseFile.PROPERTY_KEY_TOKEN_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -60,7 +58,7 @@ public enum StoreType
                     return neoStores.createPropertyKeyTokenStore();
                 }
             },
-    PROPERTY_STRING( DatabaseFile.PROPERTY_STRING_STORE, true, false )
+    PROPERTY_STRING( DatabaseFile.PROPERTY_STRING_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -68,7 +66,7 @@ public enum StoreType
                     return neoStores.createPropertyStringStore();
                 }
             },
-    PROPERTY_ARRAY( DatabaseFile.PROPERTY_ARRAY_STORE, true, false )
+    PROPERTY_ARRAY( DatabaseFile.PROPERTY_ARRAY_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -76,7 +74,7 @@ public enum StoreType
                     return neoStores.createPropertyArrayStore();
                 }
             },
-    PROPERTY( DatabaseFile.PROPERTY_STORE, true, false )
+    PROPERTY( DatabaseFile.PROPERTY_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -84,7 +82,7 @@ public enum StoreType
                     return neoStores.createPropertyStore();
                 }
             },
-    RELATIONSHIP( DatabaseFile.RELATIONSHIP_STORE, true, false )
+    RELATIONSHIP( DatabaseFile.RELATIONSHIP_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -92,7 +90,7 @@ public enum StoreType
                     return neoStores.createRelationshipStore();
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN_NAME( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, true, true )
+    RELATIONSHIP_TYPE_TOKEN_NAME( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_NAMES_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -100,7 +98,7 @@ public enum StoreType
                     return neoStores.createRelationshipTypeTokenNamesStore();
                 }
             },
-    RELATIONSHIP_TYPE_TOKEN( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, true, true )
+    RELATIONSHIP_TYPE_TOKEN( DatabaseFile.RELATIONSHIP_TYPE_TOKEN_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -108,7 +106,7 @@ public enum StoreType
                     return neoStores.createRelationshipTypeTokenStore();
                 }
             },
-    LABEL_TOKEN_NAME( DatabaseFile.LABEL_TOKEN_NAMES_STORE, true, true )
+    LABEL_TOKEN_NAME( DatabaseFile.LABEL_TOKEN_NAMES_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -116,7 +114,7 @@ public enum StoreType
                     return neoStores.createLabelTokenNamesStore();
                 }
             },
-    LABEL_TOKEN( DatabaseFile.LABEL_TOKEN_STORE, true, true )
+    LABEL_TOKEN( DatabaseFile.LABEL_TOKEN_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -124,7 +122,7 @@ public enum StoreType
                     return neoStores.createLabelTokenStore();
                 }
             },
-    SCHEMA( DatabaseFile.SCHEMA_STORE, true, true )
+    SCHEMA( DatabaseFile.SCHEMA_STORE, true )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -132,7 +130,7 @@ public enum StoreType
                     return neoStores.createSchemaStore();
                 }
             },
-    RELATIONSHIP_GROUP( DatabaseFile.RELATIONSHIP_GROUP_STORE, true, false )
+    RELATIONSHIP_GROUP( DatabaseFile.RELATIONSHIP_GROUP_STORE, false )
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -140,28 +138,7 @@ public enum StoreType
                     return neoStores.createRelationshipGroupStore();
                 }
             },
-    COUNTS( DatabaseFile.COUNTS_STORES, false, false )
-            {
-                @Override
-                public CountsTracker open( NeoStores neoStores )
-                {
-                    return neoStores.createCountStore();
-                }
-
-                @Override
-                void close( Object object )
-                {
-                    try
-                    {
-                        ((CountsTracker) object).shutdown();
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new UnderlyingStorageException( e );
-                    }
-                }
-            },
-    META_DATA( DatabaseFile.METADATA_STORE, true, true ) // Make sure this META store is last
+    META_DATA( DatabaseFile.METADATA_STORE, true ) // Make sure this META store is last
             {
                 @Override
                 public CommonAbstractStore open( NeoStores neoStores )
@@ -170,23 +147,16 @@ public enum StoreType
                 }
             };
 
-    private final boolean recordStore;
     private final boolean limitedIdStore;
     private final DatabaseFile databaseFile;
 
-    StoreType( DatabaseFile databaseFile, boolean recordStore, boolean limitedIdStore )
+    StoreType( DatabaseFile databaseFile, boolean limitedIdStore )
     {
         this.databaseFile = databaseFile;
-        this.recordStore = recordStore;
         this.limitedIdStore = limitedIdStore;
     }
 
-    abstract Object open( NeoStores neoStores );
-
-    public boolean isRecordStore()
-    {
-        return recordStore;
-    }
+    abstract CommonAbstractStore open( NeoStores neoStores );
 
     /**
      * @return {@code true} to signal that this store has a quite limited id space and is more of a meta data store.
@@ -200,11 +170,6 @@ public enum StoreType
     public DatabaseFile getDatabaseFile()
     {
         return databaseFile;
-    }
-
-    void close( Object object )
-    {
-        ((CommonAbstractStore) object).close();
     }
 
     /**

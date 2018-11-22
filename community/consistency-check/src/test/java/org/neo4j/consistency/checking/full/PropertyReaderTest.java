@@ -38,8 +38,7 @@ public class PropertyReaderTest
 {
     @Rule
     public final NeoStoresRule storesRule = new NeoStoresRule( PropertyReaderTest.class,
-            StoreType.NODE, StoreType.COUNTS,
-            StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
+            StoreType.NODE, StoreType.PROPERTY, StoreType.PROPERTY_ARRAY, StoreType.PROPERTY_STRING );
 
     @Test
     public void shouldDetectAndAbortPropertyChainLoadingOnCircularReference() throws IOException
