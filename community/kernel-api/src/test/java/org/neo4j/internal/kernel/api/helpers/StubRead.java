@@ -83,18 +83,6 @@ public class StubRead implements Read
     }
 
     @Override
-    public void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels )
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         throw new UnsupportedOperationException();

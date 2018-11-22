@@ -112,7 +112,7 @@ class NativeLabelScanReader implements LabelScanReader
     }
 
     @Override
-    public void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId )
+    public IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId )
     {
         RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
         try
@@ -125,11 +125,11 @@ class NativeLabelScanReader implements LabelScanReader
             throw new UncheckedIOException( e );
         }
 
-        client.scan( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false, labelId );
+        return new LabelScanValueIndexProgressor( cursor, openCursors, client );
     }
 
     @Override
-    public void nodesWithLabel(  IndexProgressor.NodeLabelClient client, int labelId, long from, long to )
+    public IndexProgressor nodesWithLabel(  IndexProgressor.NodeLabelClient client, int labelId, long from, long to )
     {
         assert from % LabelScanValue.RANGE_SIZE == 0;
         assert to % LabelScanValue.RANGE_SIZE == 0;
@@ -144,7 +144,7 @@ class NativeLabelScanReader implements LabelScanReader
         {
             throw new UncheckedIOException( e );
         }
-        client.scan( new LabelScanValueIndexProgressor( cursor, openCursors, client ), false, labelId );
+        return new LabelScanValueIndexProgressor( cursor, openCursors, client );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )

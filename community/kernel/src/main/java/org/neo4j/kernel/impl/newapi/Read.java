@@ -272,30 +272,7 @@ abstract class Read implements TxStateHolder,
 
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( this );
-        labelScanReader().nodesWithLabel( indexCursor, label);
-    }
-
-    @Override
-    public void nodeLabelUnionScan( NodeLabelIndexCursor cursor, int... labels )
-    {
-        ktx.assertOpen();
-
-        DefaultNodeLabelIndexCursor client = (DefaultNodeLabelIndexCursor) cursor;
-        client.setRead( this );
-        client.unionScan( new NodeLabelIndexProgressor( labelScanReader().nodesWithAnyOfLabels( labels ), client ),
-                false, labels );
-    }
-
-    @Override
-    public void nodeLabelIntersectionScan( NodeLabelIndexCursor cursor, int... labels )
-    {
-        ktx.assertOpen();
-
-        DefaultNodeLabelIndexCursor client = (DefaultNodeLabelIndexCursor) cursor;
-        client.setRead( this );
-        client.intersectionScan(
-                new NodeLabelIndexProgressor( labelScanReader().nodesWithAllLabels( labels ), client ),
-                false, labels );
+        indexCursor.scan( labelScanReader().nodesWithLabel( indexCursor, label ), label );
     }
 
     @Override
@@ -327,7 +304,7 @@ abstract class Read implements TxStateHolder,
                 }
                 else
                 {
-                    labelScanReader().nodesWithLabel( indexCursor, label, start, stop);
+                    indexCursor.scan( labelScanReader().nodesWithLabel( indexCursor, label, start, stop ), label );
                     return true;
                 }
             }

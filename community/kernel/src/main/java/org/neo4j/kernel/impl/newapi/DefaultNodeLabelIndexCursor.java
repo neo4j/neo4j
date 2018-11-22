@@ -50,8 +50,7 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
         node = NO_ID;
     }
 
-    @Override
-    public void scan( IndexProgressor progressor, boolean providesLabels, int label )
+    public void scan( IndexProgressor progressor, int label )
     {
         super.initialize( progressor );
         if ( read.hasTxStateWithChanges() )
@@ -60,28 +59,6 @@ class DefaultNodeLabelIndexCursor extends IndexCursor<IndexProgressor>
             added = changes.augment( ImmutableEmptyLongIterator.INSTANCE );
             removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
-    }
-
-    @Override
-    public void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
-    {
-        //TODO: Currently we don't have a good way of handling this in the tx state
-        //The problem is this case:
-        //Given a node with label :A
-        //we remove label A in a transaction and follow that by
-        //a scan of `:A and :B`. In order to figure this out we need
-        //to check both tx state and disk, which we currently don't.
-        throw new UnsupportedOperationException(  );
-    }
-
-    @Override
-    public void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels )
-    {
-        //TODO: Currently we don't have a good way of handling this in the tx state
-        //The problem is for the nodes where some - but not all of the labels - are
-        //added in the transaction. For these we need to go to disk and check if they
-        //have the missing labels and hence return them or if not discard them.
-        throw new UnsupportedOperationException(  );
     }
 
     @Override

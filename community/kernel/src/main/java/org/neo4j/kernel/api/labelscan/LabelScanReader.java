@@ -45,7 +45,7 @@ public interface LabelScanReader extends Resource
      * @param client the client to communicate with
      * @param labelId label token id
      */
-    void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId );
+    IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId );
 
     /**
      * Sets the client up for a label scan on <code>labelId</code> in the given range
@@ -55,7 +55,7 @@ public interface LabelScanReader extends Resource
      * @param start nodeId starting the scan
      * @param stop nodeId ending the scan
      */
-    void nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId, long start, long stop );
+    IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId, long start, long stop );
 
     /**
      * @param labelIds label token ids.

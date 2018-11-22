@@ -105,18 +105,6 @@ public interface IndexProgressor extends AutoCloseable
     interface NodeLabelClient
     {
         /**
-         * Setup the client for progressing using the supplied progressor. Called by index implementation.
-         * @param progressor the progressor
-         * @param providesLabels true if the progression can provide label information
-         * @param label the label to scan for
-         */
-        void scan( IndexProgressor progressor, boolean providesLabels, int label );
-
-        void unionScan( IndexProgressor progressor, boolean providesLabels, int... labels );
-
-        void intersectionScan( IndexProgressor progressor, boolean providesLabels, int... labels );
-
-        /**
          * Accept the node id and (some) labels of a candidate index entry. Return true if the entry
          * is accepted, false otherwise.
          * @param reference the node id of the candidate index entry
