@@ -144,10 +144,9 @@ public class ReadablesTest
         File compressed = compressWithZip( text, ".nothing", ".DS_Store", "somewhere/something" );
 
         // WHEN
-        CharReadable readable;
         try
         {
-            readable = Readables.files( Charset.defaultCharset(), compressed );
+            Readables.files( Charset.defaultCharset(), compressed );
             fail( "Should fail since there are multiple suitable files in the zip archive" );
         }
         catch ( IOException e )

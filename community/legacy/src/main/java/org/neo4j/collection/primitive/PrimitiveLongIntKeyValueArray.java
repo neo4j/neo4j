@@ -31,10 +31,10 @@ public class PrimitiveLongIntKeyValueArray
     public static final int DEFAULT_INITIAL_CAPACITY = 100;
     public static final double DEFAULT_GROWTH_FACTOR = 0.2;
 
-    private long[] naturalKeys = new long[DEFAULT_INITIAL_CAPACITY];
-    private int[] naturalValues = new int[DEFAULT_INITIAL_CAPACITY];
-    private long[] sortedKeys = new long[DEFAULT_INITIAL_CAPACITY];
-    private int[] sortedValues = new int[DEFAULT_INITIAL_CAPACITY];
+    private long[] naturalKeys;
+    private int[] naturalValues;
+    private long[] sortedKeys;
+    private int[] sortedValues;
     private double growthFactor;
     private int size;
 

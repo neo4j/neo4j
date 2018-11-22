@@ -342,8 +342,8 @@ public class DataFactories
         {
             // For nodes it's simply ID,LABEL,PROPERTY. typeSpec can be either ID,LABEL or a type of property,
             // like 'int' or 'string_array' or similar, or empty for 'string' property.
-            Type type = null;
-            Extractor<?> extractor = null;
+            Type type;
+            Extractor<?> extractor;
             CSVHeaderInformation optionalParameter = null;
             if ( typeSpec == null )
             {
@@ -402,8 +402,8 @@ public class DataFactories
         protected Header.Entry entry( int index, String name, String typeSpec, Group group, Extractors extractors,
                 Extractor<?> idExtractor )
         {
-            Type type = null;
-            Extractor<?> extractor = null;
+            Type type;
+            Extractor<?> extractor;
             CSVHeaderInformation optionalParameter = null;
             if ( typeSpec == null )
             {   // Property

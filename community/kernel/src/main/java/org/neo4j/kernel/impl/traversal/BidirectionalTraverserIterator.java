@@ -139,14 +139,13 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
             if ( foundPaths.hasNext() )
             {
                 numberOfPathsReturned++;
-                Path next = foundPaths.next();
-                return next;
+                return foundPaths.next();
             }
             foundPaths = null;
         }
 
-        TraversalBranch result = null;
-        while ( true )
+        TraversalBranch result;
+        for ( ; ; )
         {
             result = selector.next( this );
             if ( result == null )

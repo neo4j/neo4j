@@ -101,7 +101,7 @@ public class ClockCache<K, V>
 
     private void evict()
     {
-        Page<V> theElement = null;
+        Page<V> theElement;
         while ( ( theElement = clock.poll() ) != null )
         {
             try

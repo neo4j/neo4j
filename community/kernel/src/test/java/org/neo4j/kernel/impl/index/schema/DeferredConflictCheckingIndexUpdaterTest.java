@@ -68,7 +68,7 @@ public class DeferredConflictCheckingIndexUpdaterTest
         updates.add( change( nodeId++, descriptor, tuple( "abc", "def" ), tuple( "ghi", "klm" ) ) );
         updates.add( remove( nodeId++, descriptor, tuple( 1001L, 1002L ) ) );
         updates.add( change( nodeId++, descriptor, tuple( (byte) 2, (byte) 3 ), tuple( (byte) 4, (byte) 5 ) ) );
-        updates.add( add( nodeId++, descriptor, tuple( 5, "5" ) ) );
+        updates.add( add( nodeId, descriptor, tuple( 5, "5" ) ) );
         try ( DeferredConflictCheckingIndexUpdater updater = new DeferredConflictCheckingIndexUpdater( actual, () -> reader, descriptor ) )
         {
             // when

@@ -127,7 +127,7 @@ public class FulltextAnalyzerTest extends LuceneFulltextTestSupport
 
         try ( Transaction tx = db.beginTx() )
         {
-            firstID = createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
+            createNodeIndexableByPropertyValue( LABEL, "Hello and hello again, in the end." );
             secondID = createNodeIndexableByPropertyValue( LABEL, "En apa och en tomte bodde i ett hus." );
 
             tx.success();

@@ -105,7 +105,7 @@ public class DumpProcessInformation
     {
         Process process = Runtime.getRuntime().exec( new String[] { "jps", "-l" } );
         BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-        String line = null;
+        String line;
         Collection<Pair<Long, String>> jPids = new ArrayList<>();
         Collection<Pair<Long, String>> excludedJPids = new ArrayList<>();
         while ( (line = reader.readLine()) != null )
@@ -118,8 +118,7 @@ public class DumpProcessInformation
             // If that's the case then use the PID instead
             if ( name.contains( ":" ) )
             {
-                String pid = line.substring( 0, spaceIndex );
-                name = pid;
+                name = line.substring( 0, spaceIndex );
             }
 
             Pair<Long, String> pid = Pair.of( Long.parseLong( line.substring( 0, spaceIndex ) ), name );
@@ -143,7 +142,7 @@ public class DumpProcessInformation
     private void writeProcessOutputToFile( Process process, File outputFile ) throws Exception
     {
         BufferedReader reader = new BufferedReader( new InputStreamReader( process.getInputStream() ) );
-        String line = null;
+        String line;
         try ( PrintStream out = new PrintStream( outputFile ) )
         {
             while ( (line = reader.readLine()) != null )

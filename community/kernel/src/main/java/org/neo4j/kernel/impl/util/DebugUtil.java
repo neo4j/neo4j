@@ -107,7 +107,7 @@ public class DebugUtil
         try
         {
             BufferedReader reader = new BufferedReader( new StringReader( string ) );
-            String line = null;
+            String line;
             for ( int count = 0; ( line = reader.readLine() ) != null && count < maxNumberOfLines;
                     count++ )
             {

@@ -93,12 +93,11 @@ public class RelationshipGroupDefragmenter
             StatsProvider memoryUsage = new MemoryUsageStatsProvider( neoStore, groupCache );
             executeStage( new CountGroupsStage( groupConfig, fromStore, groupCache, memoryUsage ) );
             long fromNodeId = 0;
-            long toNodeId = 0;
             while ( fromNodeId < highNodeId )
             {
                 // See how many nodes' groups we can fit into the cache this iteration of the loop.
                 // Groups that doesn't fit in this round will be included in consecutive rounds.
-                toNodeId = groupCache.prepare( fromNodeId );
+                long toNodeId = groupCache.prepare( fromNodeId );
                 monitor.defragmentingNodeRange( fromNodeId, toNodeId );
                 // Cache those groups
                 executeStage( new ScanAndCacheGroupsStage( groupConfig, fromStore, groupCache, memoryUsage ) );

@@ -308,7 +308,7 @@ public class EncodingIdMapperTest
         mapper.put( ids.apply( id ), id++, firstGroup );
         mapper.put( ids.apply( id ), id++, firstGroup );
         // group 1
-        mapper.put( ids.apply( id ), id++, secondGroup );
+        mapper.put( ids.apply( id ), id, secondGroup );
         Collector collector = mock( Collector.class );
         mapper.prepare( ids, collector, NONE );
 
@@ -333,7 +333,7 @@ public class EncodingIdMapperTest
         int id = 0;
         mapper.put( ids.apply( id ), id++, firstGroup );
         mapper.put( ids.apply( id ), id++, secondGroup );
-        mapper.put( ids.apply( id ), id++, thirdGroup );
+        mapper.put( ids.apply( id ), id, thirdGroup );
         mapper.prepare( ids, mock( Collector.class ), NONE );
 
         // WHEN/THEN

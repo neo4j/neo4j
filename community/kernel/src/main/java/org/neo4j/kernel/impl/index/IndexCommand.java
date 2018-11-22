@@ -104,7 +104,7 @@ public abstract class IndexCommand extends Command
 
     private static byte valueTypeOf( Object value )
     {
-        byte valueType = 0;
+        byte valueType;
         if ( value == null )
         {
             valueType = VALUE_TYPE_NULL;

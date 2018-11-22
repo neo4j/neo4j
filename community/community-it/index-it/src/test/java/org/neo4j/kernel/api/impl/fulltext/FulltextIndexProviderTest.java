@@ -161,21 +161,18 @@ public class FulltextIndexProviderTest
     public void createAndQueryFulltextIndex() throws Exception
     {
         IndexReference indexReference;
-        FulltextIndexProvider provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         indexReference = createIndex( new int[]{0, 1, 2}, new int[]{0, 1, 2, 3} );
         await( indexReference );
         long thirdNodeid;
         thirdNodeid = createTheThirdNode();
         verifyNodeData( thirdNodeid );
         db.restartDatabase( DbmsRule.RestartAction.EMPTY );
-        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         verifyNodeData( thirdNodeid );
     }
 
     @Test
     public void createAndQueryFulltextRelationshipIndex() throws Exception
     {
-        FulltextIndexProvider provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         IndexReference indexReference;
         try ( KernelTransactionImplementation transaction = getKernelTransaction() )
         {
@@ -195,7 +192,6 @@ public class FulltextIndexProviderTest
         }
         verifyRelationshipData( secondRelId );
         db.restartDatabase( DbmsRule.RestartAction.EMPTY );
-        provider = (FulltextIndexProvider) db.resolveDependency( IndexProviderMap.class ).lookup( DESCRIPTOR );
         verifyRelationshipData( secondRelId );
     }
 

@@ -138,7 +138,7 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
-        Node myNode = null;
+        Node myNode;
 
         // When
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -186,7 +186,7 @@ public class LabelsAcceptanceTest
     {
         // Given
         GraphDatabaseService graphDatabase = dbRule.getGraphDatabaseAPI();
-        Node myNode = null;
+        Node myNode;
 
         // When
         try ( Transaction tx = graphDatabase.beginTx() )
@@ -248,7 +248,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
 
         // WHEN
-        Node node = null;
+        Node node;
         try ( Transaction tx = db.beginTx() )
         {
             node = db.createNode( Labels.values() );
@@ -328,7 +328,7 @@ public class LabelsAcceptanceTest
     {
         // GIVEN
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
-        Node node = null;
+        Node node;
         Set<String> expected = asSet( Labels.MY_LABEL.name(), Labels.MY_OTHER_LABEL.name() );
         try ( Transaction tx = beansAPI.beginTx() )
         {
@@ -361,7 +361,7 @@ public class LabelsAcceptanceTest
         GraphDatabaseService beansAPI = dbRule.getGraphDatabaseAPI();
 
         // When
-        Node node = null;
+        Node node;
         try ( Transaction tx = beansAPI.beginTx() )
         {
             node = beansAPI.createNode();
@@ -407,7 +407,7 @@ public class LabelsAcceptanceTest
         // Given
         GraphDatabaseService db = dbRule.getGraphDatabaseAPI();
         createNode( db, Labels.MY_LABEL, Labels.MY_OTHER_LABEL );
-        List<Label> labels = null;
+        List<Label> labels;
 
         // When
         try ( Transaction tx = db.beginTx() )
@@ -432,7 +432,7 @@ public class LabelsAcceptanceTest
             node.delete();
             tx.success();
         }
-        List<Label> labels = null;
+        List<Label> labels;
 
         // When
         try ( Transaction tx = db.beginTx() )

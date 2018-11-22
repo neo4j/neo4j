@@ -430,7 +430,7 @@ public class EncodingIdMapper implements IdMapper
             processors = 1;
             stride = totalCount;
         }
-        long fromInclusive = 0;
+        long fromInclusive;
         long toExclusive = 0;
         for ( int i = 0; i < processors; i++ )
         {

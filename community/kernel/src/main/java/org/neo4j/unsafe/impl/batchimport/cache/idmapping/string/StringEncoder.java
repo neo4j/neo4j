@@ -83,7 +83,7 @@ public class StringEncoder implements Encoder
             i += 2;
         }
         int carryOver = lengthEncoder( inputLength ) << 1;
-        int temp = 0;
+        int temp;
         for ( int i = 0; i < numCodes; i++ )
         {
             temp = codes[i] & FOURTH_BYTE;

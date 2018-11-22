@@ -84,7 +84,7 @@ public class RotatingFileOutputStreamSupplier implements Supplier<OutputStream>,
     private final AtomicBoolean closed = new AtomicBoolean( false );
     private final AtomicBoolean rotating = new AtomicBoolean( false );
     private final AtomicLong earliestRotationTimeRef = new AtomicLong( 0 );
-    private OutputStream outRef = nullStream;
+    private OutputStream outRef;
 
     /**
      * @param fileSystem The filesystem to use

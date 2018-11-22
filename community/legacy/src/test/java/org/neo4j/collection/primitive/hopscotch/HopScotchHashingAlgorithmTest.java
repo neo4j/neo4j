@@ -111,7 +111,7 @@ class HopScotchHashingAlgorithmTest
         try ( PrimitiveLongSet set = new PrimitiveLongHashSet(
                 new LongKeyTable<>( DEFAULT_H, VALUE_MARKER ), VALUE_MARKER, monitor ) )
         {
-            int i = 0;
+            int i;
             for ( i = 0; !grew.get(); i++ )
             {
                 set.add( i * 3 );

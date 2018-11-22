@@ -554,7 +554,7 @@ public class ShortestPath implements PathFinder<Path>
 
         void addRel( Relationship rel )
         {
-            long[] newRels = null;
+            long[] newRels;
             if ( relsToHere == null )
             {
                 newRels = new long[1];

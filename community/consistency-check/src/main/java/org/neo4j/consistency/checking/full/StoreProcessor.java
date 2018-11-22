@@ -98,7 +98,7 @@ public class StoreProcessor extends AbstractStoreProcessor
 
     public void countLinks( long id1, long id2, CacheAccess.Client client )
     {
-        Counts.Type type = null;
+        Counts.Type type;
         if ( id2 == -1 )
         {
             type = Counts.Type.nullLinks;

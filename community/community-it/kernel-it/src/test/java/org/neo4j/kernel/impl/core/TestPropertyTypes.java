@@ -101,8 +101,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, fValue );
         newTransaction();
 
-        Float propertyValue = null;
-        propertyValue = (Float) node1.getProperty( key );
+        Float propertyValue = (Float) node1.getProperty( key );
         assertEquals( fValue, propertyValue );
 
         fValue = 5684.3243f;
@@ -126,8 +125,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, lValue );
         newTransaction();
 
-        Long propertyValue = null;
-        propertyValue = (Long) node1.getProperty( key );
+        Long propertyValue = (Long) node1.getProperty( key );
         assertEquals( lValue, propertyValue );
 
         lValue = System.currentTimeMillis();
@@ -157,8 +155,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, iValue );
         newTransaction();
 
-        Integer propertyValue = null;
-        propertyValue = (Integer) node1.getProperty( key );
+        Integer propertyValue = (Integer) node1.getProperty( key );
         assertEquals( iValue, propertyValue );
 
         iValue = (int) System.currentTimeMillis();
@@ -188,8 +185,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, bValue );
         newTransaction();
 
-        Byte propertyValue = null;
-        propertyValue = (Byte) node1.getProperty( key );
+        Byte propertyValue = (Byte) node1.getProperty( key );
         assertEquals( bValue, propertyValue );
 
         bValue = (byte) 200;
@@ -213,8 +209,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, sValue );
         newTransaction();
 
-        Short propertyValue = null;
-        propertyValue = (Short) node1.getProperty( key );
+        Short propertyValue = (Short) node1.getProperty( key );
         assertEquals( sValue, propertyValue );
 
         sValue = (short) 5335;
@@ -233,14 +228,12 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
     @Test
     public void testCharType()
     {
-        char c = 'c';
-        Character cValue = c;
+        Character cValue = 'c';
         String key = "testchar";
         node1.setProperty( key, cValue );
         newTransaction();
 
-        Character propertyValue = null;
-        propertyValue = (Character) node1.getProperty( key );
+        Character propertyValue = (Character) node1.getProperty( key );
         assertEquals( cValue, propertyValue );
 
         cValue = 'd';
@@ -346,8 +339,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array );
         newTransaction();
 
-        Point[] propertyValue = null;
-        propertyValue = (Point[]) node1.getProperty( key );
+        Point[] propertyValue = (Point[]) node1.getProperty( key );
         assertEquals( array.length, propertyValue.length );
         for ( int i = 0; i < array.length; i++ )
         {
@@ -638,8 +630,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        int[] propertyValue = null;
-        propertyValue = (int[]) node1.getProperty( key );
+        int[] propertyValue = (int[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -671,8 +662,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        short[] propertyValue = null;
-        propertyValue = (short[]) node1.getProperty( key );
+        short[] propertyValue = (short[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -704,8 +694,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        String[] propertyValue = null;
-        propertyValue = (String[]) node1.getProperty( key );
+        String[] propertyValue = (String[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -737,8 +726,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        boolean[] propertyValue = null;
-        propertyValue = (boolean[]) node1.getProperty( key );
+        boolean[] propertyValue = (boolean[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -770,8 +758,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        double[] propertyValue = null;
-        propertyValue = (double[]) node1.getProperty( key );
+        double[] propertyValue = (double[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -803,8 +790,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        float[] propertyValue = null;
-        propertyValue = (float[]) node1.getProperty( key );
+        float[] propertyValue = (float[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -836,8 +822,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        long[] propertyValue = null;
-        propertyValue = (long[]) node1.getProperty( key );
+        long[] propertyValue = (long[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -869,8 +854,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        byte[] propertyValue = null;
-        propertyValue = (byte[]) node1.getProperty( key );
+        byte[] propertyValue = (byte[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {
@@ -902,8 +886,7 @@ public class TestPropertyTypes extends AbstractNeo4jTestCase
         node1.setProperty( key, array1 );
         newTransaction();
 
-        char[] propertyValue = null;
-        propertyValue = (char[]) node1.getProperty( key );
+        char[] propertyValue = (char[]) node1.getProperty( key );
         assertEquals( array1.length, propertyValue.length );
         for ( int i = 0; i < array1.length; i++ )
         {

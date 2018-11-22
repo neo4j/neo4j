@@ -182,7 +182,7 @@ public abstract class IndexType
     static IndexType getIndexType( Map<String, String> config )
     {
         String type = config.get( LuceneIndexImplementation.KEY_TYPE );
-        IndexType result = null;
+        IndexType result;
         Similarity similarity = getCustomSimilarity( config );
         Boolean toLowerCaseUnbiased = config.get( LuceneIndexImplementation.KEY_TO_LOWER_CASE ) != null ?
                                       parseBoolean( config.get( LuceneIndexImplementation.KEY_TO_LOWER_CASE ), true ) : null;

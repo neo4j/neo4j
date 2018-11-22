@@ -627,7 +627,6 @@ public abstract class InternalTreeLogicTestBase<KEY,VALUE>
 
         // ... enough keys in right child to share with left child if rebalance is needed
         insert( key( key ), value( key ) );
-        key++;
 
         // ... and the prim key diving key range for left child and right child
         goTo( readCursor, rootId );

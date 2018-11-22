@@ -74,7 +74,7 @@ public abstract class SubProcess<T, P> implements Serializable
     private static final boolean INHERIT_OUTPUT_DEFAULT_VALUE = true;
 
     private Class<T> t;
-    private transient boolean inheritOutput = INHERIT_OUTPUT_DEFAULT_VALUE;
+    private transient boolean inheritOutput;
     private final transient Predicate<String> classPathFilter;
 
     @SuppressWarnings( { "unchecked", "rawtypes" } )

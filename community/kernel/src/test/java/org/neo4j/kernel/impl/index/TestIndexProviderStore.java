@@ -110,7 +110,7 @@ public class TestIndexProviderStore
             IndexProviderStore store = new IndexProviderStore( file, fileSystem,
                     MetaDataStore.versionStringToLong( newerVersion ), true );
             store.close();
-            store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), false );
+            new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), false );
         }
         catch ( NotCurrentStoreVersionException e )
         {
@@ -130,7 +130,7 @@ public class TestIndexProviderStore
             IndexProviderStore store = new IndexProviderStore( file, fileSystem,
                     MetaDataStore.versionStringToLong( newerVersion ), true );
             store.close();
-            store = new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), true );
+            new IndexProviderStore( file, fileSystem, MetaDataStore.versionStringToLong( olderVersion ), true );
         }
         catch ( NotCurrentStoreVersionException e )
         {
@@ -149,7 +149,7 @@ public class TestIndexProviderStore
         FileUtils.truncateFile( file, 4 * 8 );
         try
         {
-            store = new IndexProviderStore( file, fileSystem, 0, false );
+            new IndexProviderStore( file, fileSystem, 0, false );
             fail( "Should have thrown upgrade exception" );
         }
         catch ( UpgradeNotAllowedException e )

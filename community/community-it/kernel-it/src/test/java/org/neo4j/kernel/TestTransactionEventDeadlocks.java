@@ -45,7 +45,7 @@ public class TestTransactionEventDeadlocks
     public void canAvoidDeadlockThatWouldHappenIfTheRelationshipTypeCreationTransactionModifiedData()
     {
         GraphDatabaseService graphdb = database.getGraphDatabaseAPI();
-        Node node = null;
+        Node node;
         try ( Transaction tx = graphdb.beginTx() )
         {
             node = graphdb.createNode();

@@ -256,19 +256,17 @@ public class ProcedureRegistry
         return func.create(ctx);
     }
 
-    public UserAggregator createAggregationFunction( Context ctx, int id )
-            throws ProcedureException
+    public UserAggregator createAggregationFunction( Context ctx, int id ) throws ProcedureException
     {
-        CallableUserAggregationFunction func = null;
         try
         {
-            func = aggregationFunctions.get( id );
+            CallableUserAggregationFunction func = aggregationFunctions.get( id );
+            return func.create(ctx);
         }
         catch ( IndexOutOfBoundsException e )
         {
-           throw noSuchFunction( id );
+            throw noSuchFunction( id );
         }
-        return func.create(ctx);
     }
 
     private ProcedureException noSuchProcedure( QualifiedName name )

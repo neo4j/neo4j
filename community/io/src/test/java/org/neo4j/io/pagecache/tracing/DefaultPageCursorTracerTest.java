@@ -48,9 +48,8 @@ class DefaultPageCursorTracerTest
     @Test
     void countPinsAndUnpins()
     {
-        PinEvent pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
-        pinEvent.done();
-        pinEvent = pageCursorTracer.beginPin( true, 0, swapper );
+        pageCursorTracer.beginPin( true, 0, swapper ).done();
+        pageCursorTracer.beginPin( true, 0, swapper );
 
         assertEquals( 2, pageCursorTracer.pins() );
         assertEquals( 1, pageCursorTracer.unpins() );

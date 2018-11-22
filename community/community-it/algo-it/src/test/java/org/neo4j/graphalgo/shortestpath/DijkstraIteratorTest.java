@@ -99,16 +99,6 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
             assertEquals( iter1.next(), graph.getNode( "x" ) );
             assertEquals( 6.0, seen1.get( graph.getNode( "x" ) ), 0.0 );
             assertFalse( iter1.hasNext() );
-            int count = 0;
-            // This code below is correct for the alternative priority queue
-            // while ( iter1.hasNext() )
-            // {
-            // iter1.next();
-            // ++count;
-            // }
-            // assertTrue( count == 4 );
-            // assertTrue( seen1.get( graph.getNode( "x" ) ) == 6.0 );
-            // Now test node limit
             seen1 = new HashMap<>();
             seen2 = new HashMap<>();
             dists1 = new HashMap<>();
@@ -117,7 +107,7 @@ public class DijkstraIteratorTest extends Neo4jAlgoTestCase
                 seen1, seen2, dists1, dists2, false );
             this.numberOfNodesTraversed = 0;
             this.limitMaxNodesToTraverse( 3 );
-            count = 0;
+            int count = 0;
             while ( iter1.hasNext() )
             {
                 iter1.next();

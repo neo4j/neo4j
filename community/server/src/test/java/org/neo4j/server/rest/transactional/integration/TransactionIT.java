@@ -650,7 +650,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
 
         // then soon the transaction should have been terminated
         long endTime = System.currentTimeMillis() + 5000;
-        long additionalTerminations = 0;
+        long additionalTerminations;
 
         while ( true )
         {

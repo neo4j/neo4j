@@ -174,7 +174,7 @@ public class TreePrinter<KEY, VALUE>
         if ( printHeader )
         {
             //[TYPE][GEN][KEYCOUNT] ([RIGHTSIBLING][LEFTSIBLING][SUCCESSOR]))
-            long generation = -1;
+            long generation;
             do
             {
                 generation = TreeNode.generation( cursor );
@@ -270,7 +270,7 @@ public class TreePrinter<KEY, VALUE>
     private void printLevel( PageCursor readCursor, PageCursor writeCursor, PrintStream out, boolean printValues, boolean printPosition,
             boolean printHeader ) throws IOException
     {
-        long rightSibling = -1;
+        long rightSibling;
         do
         {
             PageCursor cursor = select( readCursor, writeCursor );

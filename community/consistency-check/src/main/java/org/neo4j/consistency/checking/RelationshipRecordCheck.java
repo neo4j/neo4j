@@ -530,10 +530,9 @@ public class RelationshipRecordCheck extends
             {
                 RecordReference<RelationshipRecord> referred = null;
                 long reference = valueFrom( relationship );
-                long nodeId = -1;
                 if ( records.shouldCheck( reference, MultiPassStore.RELATIONSHIPS ) )
                 {
-                    nodeId = NODE == NodeField.SOURCE ? relationship.getFirstNode() : relationship.getSecondNode();
+                    long nodeId = NODE == NodeField.SOURCE ? relationship.getFirstNode() : relationship.getSecondNode();
                     if ( Record.NO_NEXT_RELATIONSHIP.is( cacheAccess.getFromCache( nodeId, SLOT_RELATIONSHIP_ID ) ) )
                     {
                         referred = RecordReference.SkippingReference.skipReference();

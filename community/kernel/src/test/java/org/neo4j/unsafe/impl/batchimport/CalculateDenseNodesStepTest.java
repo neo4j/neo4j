@@ -52,7 +52,7 @@ public class CalculateDenseNodesStepTest
                     relationship( id++, 1, 5 ),
                     relationship( id++, 3, 10 ),
                     relationship( id++, 2, 2 ), // <-- the loop
-                    relationship( id++, 4, 1 ) );
+                    relationship( id, 4, 1 ) );
             step.receive( 0, batch );
             step.endOfUpstream();
             step.awaitCompleted();

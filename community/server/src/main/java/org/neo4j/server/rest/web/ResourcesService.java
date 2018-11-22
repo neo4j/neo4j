@@ -38,7 +38,7 @@ public class ResourcesService
     {
         // FIXME This is so very ugly, it's because when running it with maven
         // it won't add the src/main/resources to the classpath
-        String body = null;
+        String body;
         try
         {
             body = readResourceAsString( "htmlbrowse.js" );
