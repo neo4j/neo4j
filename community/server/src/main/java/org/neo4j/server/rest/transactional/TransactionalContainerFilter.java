@@ -19,14 +19,10 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.glassfish.jersey.server.ContainerResponse;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ContainerResponseContext;
-import javax.ws.rs.container.ContainerResponseFilter;
 import javax.ws.rs.container.ResourceContext;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.Context;
@@ -49,10 +45,8 @@ import org.neo4j.server.web.JettyHttpConnection;
 
 import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
 
-public class TransactionalContainerFilter implements ContainerRequestFilter, ContainerResponseFilter
+public class TransactionalContainerFilter implements ContainerRequestFilter
 {
-    private static final String PROPERTY_REPRESENTATION_WRITE_HANDLER = "representationWriteHandler";
-
     @Context
     private Database database;
 
@@ -159,22 +153,6 @@ public class TransactionalContainerFilter implements ContainerRequestFilter, Con
             };
             extensionService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler );
         }
-
-        requestContext.setProperty( PROPERTY_REPRESENTATION_WRITE_HANDLER, representationWriteHandler );
-    }
-
-    @Override
-    public void filter( ContainerRequestContext requestContext, ContainerResponseContext responseContext )
-    {
-        if ( isCausedByException( responseContext ) )
-        {
-            Object value = requestContext.getProperty( PROPERTY_REPRESENTATION_WRITE_HANDLER );
-            if ( value != null )
-            {
-                RepresentationWriteHandler representationWriteHandler = (RepresentationWriteHandler) value;
-                representationWriteHandler.onRepresentationFinal();
-            }
-        }
     }
 
     private static ClientConnectionInfo getConnectionInfo()
@@ -187,11 +165,5 @@ public class TransactionalContainerFilter implements ContainerRequestFilter, Con
         }
         HttpServletRequest request = httpConnection.getHttpChannel().getRequest();
         return HttpConnectionInfoFactory.create( request );
-    }
-
-    private static boolean isCausedByException( ContainerResponseContext responseContext )
-    {
-        return responseContext instanceof ContainerResponse &&
-               ((ContainerResponse) responseContext).isMappedFromException();
     }
 }
