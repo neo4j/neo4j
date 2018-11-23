@@ -24,12 +24,11 @@ import java.util.function.Supplier;
 import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.transaction.log.LogVersionRepository;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.storageengine.api.StoreId;
@@ -53,12 +52,11 @@ public class KernelBean extends Neo4jMBean implements Kernel
         this.kernelStartTime = new Date().getTime();
         this.databaseInfoSupplier = lazySingleton( () ->
         {
-            GraphDatabaseFacade defaultFacade = databaseManager.getDatabaseFacade( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ).orElseThrow(
+            DatabaseContext context = databaseManager.getDatabaseContext( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ).orElseThrow(
                     () -> new IllegalStateException( "Default database not found" ) );
-            DependencyResolver dependencyResolver = defaultFacade.getDependencyResolver();
-            Database database = dependencyResolver.resolveDependency( Database.class );
+            Database database = context.getDatabase();
             StoreId storeId = database.getStoreId();
-            LogVersionRepository versionRepository = dependencyResolver.resolveDependency( LogVersionRepository.class );
+            LogVersionRepository versionRepository = context.getDependencies().resolveDependency( LogVersionRepository.class );
             return new DatabaseInfo( database.isReadOnly(), storeId.getCreationTime(), storeId.getRandomId(), versionRepository.getCurrentLogVersion(),
                     database.getDatabaseName() );
         } );

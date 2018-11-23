@@ -27,10 +27,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import java.util.List;
 import java.util.Optional;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
@@ -75,7 +77,7 @@ class DefaultDatabaseManagerIT
     void lookupExistingDatabase()
     {
         DatabaseManager databaseManager = getDatabaseManager();
-        Optional<GraphDatabaseFacade> database = databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME );
+        Optional<DatabaseContext> database = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME );
         assertTrue( database.isPresent() );
     }
 

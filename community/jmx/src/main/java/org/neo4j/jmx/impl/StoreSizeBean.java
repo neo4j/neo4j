@@ -182,8 +182,8 @@ public final class StoreSizeBean extends ManagementBeanProvider
 
         private StoreSizeProvider( FileSystemAbstraction fs, DatabaseManager databaseManager )
         {
-            DependencyResolver databaseResolver = databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME ).orElseThrow(
-                    () -> new IllegalStateException( "Default database not found." ) ).getDependencyResolver();
+            DependencyResolver databaseResolver = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).orElseThrow(
+                    () -> new IllegalStateException( "Default database not found." ) ).getDependencies();
             this.fs = requireNonNull( fs );
             this.logFiles = databaseResolver.resolveDependency( LogFiles.class );
             this.indexProviderMap = databaseResolver.resolveDependency( IndexProviderMap.class );

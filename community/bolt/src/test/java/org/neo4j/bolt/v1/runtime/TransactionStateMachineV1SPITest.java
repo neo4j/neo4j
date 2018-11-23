@@ -30,14 +30,14 @@ import java.util.concurrent.Future;
 import java.util.function.Supplier;
 
 import org.neo4j.bolt.BoltChannel;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.time.FakeClock;
@@ -129,15 +129,15 @@ public class TransactionStateMachineV1SPITest
     {
         QueryExecutionEngine queryExecutionEngine = mock( QueryExecutionEngine.class );
 
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
+        Dependencies dependencyResolver = mock( Dependencies.class );
         ThreadToStatementContextBridge bridge = new ThreadToStatementContextBridge( availabilityGuard );
         when( dependencyResolver.resolveDependency( ThreadToStatementContextBridge.class ) ).thenReturn( bridge );
         when( dependencyResolver.resolveDependency( QueryExecutionEngine.class ) ).thenReturn( queryExecutionEngine );
         when( dependencyResolver.resolveDependency( DatabaseAvailabilityGuard.class ) ).thenReturn( availabilityGuard );
         when( dependencyResolver.provideDependency( TransactionIdStore.class ) ).thenReturn( txIdStore );
 
-        GraphDatabaseAPI db = mock( GraphDatabaseAPI.class );
-        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
+        DatabaseContext context = mock( DatabaseContext.class );
+        when( context.getDependencies() ).thenReturn( dependencyResolver );
 
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
         when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
@@ -145,6 +145,6 @@ public class TransactionStateMachineV1SPITest
 
         BoltChannel boltChannel = new BoltChannel( "bolt-42", "bolt", new EmbeddedChannel() );
 
-        return new TransactionStateMachineV1SPI( db, boltChannel, txAwaitDuration, clock );
+        return new TransactionStateMachineV1SPI( context, boltChannel, txAwaitDuration, clock );
     }
 }

@@ -30,6 +30,7 @@ import org.neo4j.bolt.runtime.BoltResult;
 import org.neo4j.bolt.runtime.BoltResultHandle;
 import org.neo4j.bolt.runtime.TransactionStateMachineSPI;
 import org.neo4j.cypher.internal.javacompat.QueryResultProvider;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Result;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -43,13 +44,13 @@ import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
+import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.query.QueryExecutionKernelException;
 import org.neo4j.kernel.impl.query.TransactionalContext;
 import org.neo4j.kernel.impl.query.TransactionalContextFactory;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
-import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.values.virtual.MapValue;
 
 import static java.lang.String.format;
@@ -60,7 +61,6 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
 {
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
-    private final GraphDatabaseAPI db;
     private final BoltChannel boltChannel;
     private final ThreadToStatementContextBridge txBridge;
     private final QueryExecutionEngine queryExecutionEngine;
@@ -68,15 +68,16 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
     private final TransactionalContextFactory contextFactory;
     private final Duration txAwaitDuration;
     private final Clock clock;
+    private final GraphDatabaseFacade databaseFacade;
 
-    public TransactionStateMachineV1SPI( GraphDatabaseAPI db, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
+    public TransactionStateMachineV1SPI( DatabaseContext databaseContext, BoltChannel boltChannel, Duration txAwaitDuration, Clock clock )
     {
-        this.db = db;
         this.boltChannel = boltChannel;
-        this.txBridge = resolveDependency( db, ThreadToStatementContextBridge.class );
-        this.queryExecutionEngine = resolveDependency( db, QueryExecutionEngine.class );
-        this.transactionIdTracker = newTransactionIdTracker( db );
-        this.contextFactory = newTransactionalContextFactory( db );
+        this.txBridge = resolveDependency( databaseContext, ThreadToStatementContextBridge.class );
+        this.queryExecutionEngine = resolveDependency( databaseContext, QueryExecutionEngine.class );
+        this.transactionIdTracker = newTransactionIdTracker( databaseContext );
+        this.contextFactory = newTransactionalContextFactory( databaseContext );
+        this.databaseFacade = databaseContext.getDatabaseFacade();
         this.txAwaitDuration = txAwaitDuration;
         this.clock = clock;
     }
@@ -138,11 +139,11 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         InternalTransaction tx;
         if ( txTimeout == null )
         {
-            tx = db.beginTransaction( type, loginContext, clientInfo );
+            tx = databaseFacade.beginTransaction( type, loginContext, clientInfo );
         }
         else
         {
-            tx = db.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
+            tx = databaseFacade.beginTransaction( type, loginContext, clientInfo, txTimeout.toMillis(), TimeUnit.MILLISECONDS );
         }
 
         if ( txMetadata != null )
@@ -152,22 +153,22 @@ public class TransactionStateMachineV1SPI implements TransactionStateMachineSPI
         return tx;
     }
 
-    private static TransactionIdTracker newTransactionIdTracker( GraphDatabaseAPI db )
+    private static TransactionIdTracker newTransactionIdTracker( DatabaseContext databaseContext )
     {
-        Supplier<TransactionIdStore> transactionIdStoreSupplier = db.getDependencyResolver().provideDependency( TransactionIdStore.class );
-        AvailabilityGuard guard = resolveDependency( db, DatabaseAvailabilityGuard.class );
+        Supplier<TransactionIdStore> transactionIdStoreSupplier = databaseContext.getDependencies().provideDependency( TransactionIdStore.class );
+        AvailabilityGuard guard = resolveDependency( databaseContext, DatabaseAvailabilityGuard.class );
         return new TransactionIdTracker( transactionIdStoreSupplier, guard );
     }
 
-    private static TransactionalContextFactory newTransactionalContextFactory( GraphDatabaseAPI db )
+    private static TransactionalContextFactory newTransactionalContextFactory( DatabaseContext databaseContext )
     {
-        GraphDatabaseQueryService queryService = resolveDependency( db, GraphDatabaseQueryService.class );
+        GraphDatabaseQueryService queryService = resolveDependency( databaseContext, GraphDatabaseQueryService.class );
         return Neo4jTransactionalContextFactory.create( queryService, locker );
     }
 
-    private static <T> T resolveDependency( GraphDatabaseAPI db, Class<T> clazz )
+    private static <T> T resolveDependency( DatabaseContext databaseContext, Class<T> clazz )
     {
-        return db.getDependencyResolver().resolveDependency( clazz );
+        return databaseContext.getDependencies().resolveDependency( clazz );
     }
 
     public class BoltResultHandleV1 implements BoltResultHandle

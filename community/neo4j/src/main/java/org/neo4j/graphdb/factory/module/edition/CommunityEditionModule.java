@@ -24,6 +24,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -53,7 +54,6 @@ import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.ReadOnly;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
@@ -133,9 +133,8 @@ public class CommunityEditionModule extends DefaultEditionModule
     {
         Config config = platform.config;
         Supplier<Kernel> kernelSupplier = () -> platform.dependencies.resolveDependency( DatabaseManager.class )
-                        .getDatabaseFacade( DEFAULT_DATABASE_NAME )
-                        .map( GraphDatabaseFacade::getDependencyResolver )
-                        .map( resolver -> resolver.resolveDependency( Database.class ) )
+                        .getDatabaseContext( DEFAULT_DATABASE_NAME )
+                        .map( DatabaseContext::getDatabase)
                         .map( Database::getKernel )
                         .orElseThrow( () -> new IllegalStateException( "Default database kernel should be always accessible" ) );
         return ignored -> new TokenHolders(

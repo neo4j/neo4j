@@ -23,11 +23,13 @@ import java.util.List;
 import java.io.IOException;
 import java.util.Optional;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.facade.spi.ClassicCoreSPI;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -39,13 +41,12 @@ import static org.neo4j.util.Preconditions.checkState;
 
 public final class DefaultDatabaseManager extends LifecycleAdapter implements DatabaseManager
 {
-    private GraphDatabaseFacade database;
+    private DatabaseContext databaseContext;
     private final PlatformModule platform;
     private final AbstractEditionModule edition;
     private final Procedures procedures;
     private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
-    private DatabaseModule dataSource;
 
     public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, Procedures procedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
@@ -58,29 +59,32 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
-    public Optional<GraphDatabaseFacade> getDatabaseFacade( String name )
+    public Optional<DatabaseContext> getDatabaseContext( String name )
     {
-        return Optional.ofNullable( database );
+        return Optional.ofNullable( databaseContext );
     }
 
     @Override
-    public GraphDatabaseFacade createDatabase( String databaseName )
+    public DatabaseContext createDatabase( String databaseName )
     {
-        checkState( database == null, "Database is already created, fail to create another one." );
+        checkState( databaseContext == null, "Database is already created, fail to create another one." );
         log.log( "Creating '%s' database.", databaseName );
-        dataSource = new DatabaseModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
-        ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, log, dataSource.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
-        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, dataSource.database.getTokenHolders() );
+        DatabaseModule databaseModule = new DatabaseModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
+        Database database = databaseModule.database;
+        ClassicCoreSPI spi =
+                new ClassicCoreSPI( platform, databaseModule, log, databaseModule.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
+        graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, database.getTokenHolders() );
+
         try
         {
-            dataSource.database.start();
+            database.start();
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
         }
-        database = graphDatabaseFacade;
-        return database;
+        databaseContext = new DatabaseContext( database, database.getDependencyResolver(), graphDatabaseFacade );
+        return databaseContext;
     }
 
     @Override
@@ -98,21 +102,22 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     @Override
     public List<String> listDatabases()
     {
-        if ( database == null )
+        if ( databaseContext == null )
         {
             return emptyList();
         }
-        return singletonList( database.databaseLayout().getDatabaseName() );
+        return singletonList( databaseContext.getDatabase().getDatabaseName() );
     }
 
     private void shutdownDatabase()
     {
-        if ( database != null )
+        if ( databaseContext != null )
         {
-            log.log( "Shutting down '%s' database.", database.databaseLayout().getDatabaseName() );
-            dataSource.database.stop();
-            dataSource.database.shutdown();
-            database = null;
+            Database database = databaseContext.getDatabase();
+            log.log( "Shutting down '%s' database.", database.getDatabaseName() );
+            database.stop();
+            database.shutdown();
+            databaseContext = null;
         }
     }
 }

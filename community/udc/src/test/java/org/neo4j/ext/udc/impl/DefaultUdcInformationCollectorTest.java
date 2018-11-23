@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcConstants;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -42,7 +43,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.factory.Edition;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.store.id.IdGenerator;
@@ -88,12 +88,12 @@ class DefaultUdcInformationCollectorTest
         dependencies.satisfyDependencies( new StubIdGeneratorFactory() );
         dependencies.satisfyDependencies( fileSystem );
         dependencies.satisfyDependencies( database );
-        GraphDatabaseFacade facade = mock( GraphDatabaseFacade.class );
-        when( facade.getDependencyResolver() ).thenReturn( dependencies );
+        DatabaseContext databaseContext = mock( DatabaseContext.class );
+        when( databaseContext.getDependencies() ).thenReturn( dependencies );
         when( database.getDependencyResolver() ).thenReturn( dependencies );
         when( database.getDatabaseLayout() ).thenReturn( DatabaseLayout.of( new File( "database" ) ) );
         when( database.getStoreId() ).thenReturn( StoreId.DEFAULT );
-        when( databaseManager.getDatabaseFacade( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( facade ) );
+        when( databaseManager.getDatabaseContext( GraphDatabaseSettings.DEFAULT_DATABASE_NAME ) ).thenReturn( Optional.of( databaseContext ) );
     }
 
     @Test

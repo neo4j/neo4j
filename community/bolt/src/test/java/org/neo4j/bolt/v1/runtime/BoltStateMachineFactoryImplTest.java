@@ -34,20 +34,20 @@ import org.neo4j.bolt.testing.BoltTestUtil;
 import org.neo4j.bolt.v1.BoltProtocolV1;
 import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.udc.UsageData;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.startsWith;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -106,14 +106,14 @@ class BoltStateMachineFactoryImplTest
 
     private static DatabaseManager newDbMock()
     {
-        GraphDatabaseFacade db = mock( GraphDatabaseFacade.class );
-        DependencyResolver dependencyResolver = mock( DependencyResolver.class );
-        when( db.getDependencyResolver() ).thenReturn( dependencyResolver );
+        DatabaseContext db = mock( DatabaseContext.class );
+        Dependencies dependencies = mock( Dependencies.class );
+        when( db.getDependencies() ).thenReturn( dependencies );
         GraphDatabaseQueryService queryService = mock( GraphDatabaseQueryService.class );
-        when( queryService.getDependencyResolver() ).thenReturn( dependencyResolver );
-        when( dependencyResolver.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
+        when( queryService.getDependencyResolver() ).thenReturn( dependencies );
+        when( dependencies.resolveDependency( GraphDatabaseQueryService.class ) ).thenReturn( queryService );
         DatabaseManager databaseManager = mock( DatabaseManager.class );
-        when( databaseManager.getDatabaseFacade( CUSTOM_DB_NAME ) ).thenReturn( Optional.of( db ) );
+        when( databaseManager.getDatabaseContext( CUSTOM_DB_NAME ) ).thenReturn( Optional.of( db ) );
         return databaseManager;
     }
 }

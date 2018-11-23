@@ -32,10 +32,10 @@ import org.neo4j.bolt.v2.BoltProtocolV2;
 import org.neo4j.bolt.v3.BoltProtocolV3;
 import org.neo4j.bolt.v3.BoltStateMachineV3;
 import org.neo4j.bolt.v3.runtime.TransactionStateMachineV3SPI;
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.udc.UsageData;
 
@@ -99,8 +99,8 @@ public class BoltStateMachineFactoryImpl implements BoltStateMachineFactory
         return Duration.ofMillis( bookmarkReadyTimeout );
     }
 
-    private GraphDatabaseFacade getActiveDatabase()
+    private DatabaseContext getActiveDatabase()
     {
-        return databaseManager.getDatabaseFacade( activeDatabaseName ).get();
+        return databaseManager.getDatabaseContext( activeDatabaseName ).get();
     }
 }

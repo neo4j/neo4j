@@ -53,9 +53,9 @@ public final class ManagementData
 
     public <T> T resolveDependency( Class<T> clazz )
     {
-        return databaseManager.getDatabaseFacade( DEFAULT_DATABASE_NAME )
+        return databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME )
                 .orElseThrow( () -> new IllegalStateException( "Default database not found." ) )
-                .getDependencyResolver().resolveDependency( clazz );
+                .getDependencies().resolveDependency( clazz );
     }
 
     ObjectName getObjectName( String... extraNaming )

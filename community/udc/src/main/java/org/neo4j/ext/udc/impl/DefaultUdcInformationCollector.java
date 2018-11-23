@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import org.neo4j.dbms.database.DatabaseContext;
 import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -42,7 +43,6 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.os.OsBeanUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdType;
 import org.neo4j.storageengine.api.StoreId;
@@ -134,9 +134,8 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     @Override
     public String getStoreId()
     {
-        return getDatabaseFacade( DEFAULT_DATABASE_NAME )
-                .map( GraphDatabaseFacade::getDependencyResolver )
-                .map( resolver -> resolver.resolveDependency( Database.class ) )
+        return getDatabaseContext( DEFAULT_DATABASE_NAME )
+                .map( DatabaseContext::getDatabase )
                 .map( Database::getStoreId )
                 .map( DefaultUdcInformationCollector::getStoreIdString )
                 .orElse( null );
@@ -144,7 +143,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private void getDatabaseUdcValues( Map<String,String> udcFields, String databaseName )
     {
-        getDatabaseFacade( databaseName ).map( GraphDatabaseFacade::getDependencyResolver )
+        getDatabaseContext( databaseName ).map( DatabaseContext::getDependencies )
                 .ifPresent( resolver ->
                 {
                     FileSystemAbstraction fileSystem = resolver.resolveDependency( FileSystemAbstraction.class );
@@ -159,9 +158,9 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
                 } );
     }
 
-    private Optional<GraphDatabaseFacade> getDatabaseFacade( String defaultDatabaseName )
+    private Optional<DatabaseContext> getDatabaseContext( String defaultDatabaseName )
     {
-        return databaseManager.getDatabaseFacade( defaultDatabaseName );
+        return databaseManager.getDatabaseContext( defaultDatabaseName );
     }
 
     private void addStoreFileSizes( Database database, FileSystemAbstraction fileSystem, Map<String,String> udcFields )

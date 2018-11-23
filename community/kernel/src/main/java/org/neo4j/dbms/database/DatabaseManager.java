@@ -22,15 +22,14 @@ package org.neo4j.dbms.database;
 import java.util.List;
 import java.util.Optional;
 
-import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public interface DatabaseManager extends Lifecycle
 {
 
-    Optional<GraphDatabaseFacade> getDatabaseFacade( String name );
+    Optional<DatabaseContext> getDatabaseContext( String name );
 
-    GraphDatabaseFacade createDatabase( String name );
+    DatabaseContext createDatabase( String name );
 
     /**
      * Shutdown database with specified name.
