@@ -55,13 +55,13 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
-      var largestBlockSizeAdded = 0
-      var failedToFinish = false
+      var largestFinishedIteration = 0
       var blockSize = 1
       var keepGoing = true
       val start = System.currentTimeMillis()
 
       while (keepGoing && blockSize <= maxBlockSize) {
+        var foundNoCandidate = true
         blockSize += 1
         val goals = toDo.subsets(blockSize)
         while (keepGoing && goals.hasNext) {
@@ -69,16 +69,16 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
           if (!table.contains(goal)) {
             val candidates = LazyIterable(generator(registry, goal, table, context, solveds))
             projectingSelector(candidates).foreach { candidate =>
-              largestBlockSizeAdded = blockSize
+              foundNoCandidate = false
               table.put(goal, candidate)
             }
             keepGoing = blockSize == 2 ||
               (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
           }
         }
-        failedToFinish = goals.hasNext && largestBlockSizeAdded == blockSize
+        largestFinishedIteration = if (foundNoCandidate || goals.hasNext) largestFinishedIteration else blockSize
       }
-      largestBlockSizeAdded - (if (failedToFinish) 1 else 0)
+      largestFinishedIteration
     }
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
