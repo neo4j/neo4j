@@ -115,7 +115,7 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
   }
 
   test("should plan a large star relationship pattern") {
-    for (numberOfPatternRelationships <- Range(9, 50, 5))
+    for (numberOfPatternRelationships <- Range(9, 50, 9))
     {
       // GIVEN
       makeStarDataset(numberOfPatternRelationships)
@@ -138,9 +138,6 @@ class MatchLongPatternAcceptanceTest extends ExecutionEngineFunSuite with QueryS
       val plan = result.executionPlanDescription()
       val counts = countExpandsAndJoins(plan)
       counts("expands") should equal(numberOfPatternRelationships)
-
-      // Check that planning didn't take longer than 2 minutes (normally takes ~ 1 - 3 seconds on an laptop)
-      duration should be <= 120000L
     }
   }
 
