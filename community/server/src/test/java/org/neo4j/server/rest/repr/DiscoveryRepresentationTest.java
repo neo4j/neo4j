@@ -38,8 +38,10 @@ public class DiscoveryRepresentationTest
         String managementUri = "/management";
         String dataUri = "/data";
         DiscoveryRepresentation dr = new DiscoveryRepresentation(
-                new DiscoverableURIs().addRelative( "management", managementUri ).addRelative( "data",
-                        dataUri ).addAbsolute( "bolt", new URI( "bolt://localhost:7687" ) ) );
+                new DiscoverableURIs.Builder()
+                        .add( "management", managementUri, 0 )
+                        .add( "data", dataUri, 0 )
+                        .add( "bolt", new URI( "bolt://localhost:7687" ), 0 ).build() );
 
         Map<String,Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 
