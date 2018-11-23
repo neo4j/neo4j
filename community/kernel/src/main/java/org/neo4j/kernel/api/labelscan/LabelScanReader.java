@@ -21,7 +21,6 @@ package org.neo4j.kernel.api.labelscan;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.Resource;
-import org.neo4j.kernel.api.index.IndexProgressor;
 
 /**
  * Reader of a label scan store which contains label-->nodes mappings.
@@ -42,20 +41,9 @@ public interface LabelScanReader extends Resource
     /**
      * Sets the client up for a label scan on <code>labelId</code>
      *
-     * @param client the client to communicate with
      * @param labelId label token id
      */
-    IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId );
-
-    /**
-     * Sets the client up for a label scan on <code>labelId</code> in the given range
-     *
-     * @param client the client to communicate with
-     * @param labelId label token id
-     * @param start nodeId starting the scan
-     * @param stop nodeId ending the scan
-     */
-    IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId, long start, long stop );
+    LabelScan nodeLabelScan( int labelId );
 
     /**
      * @param labelIds label token ids.

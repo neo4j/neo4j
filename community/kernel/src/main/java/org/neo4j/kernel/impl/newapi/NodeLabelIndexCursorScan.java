@@ -25,11 +25,11 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.labelscan.LabelScan;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
 import org.neo4j.storageengine.api.txstate.RichLongSet;
@@ -39,7 +39,6 @@ import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
 
 class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
 {
-    private final AtomicLong nextStart;
     private final AtomicInteger nextTxState;
     private final long upperBound;
     private static final int CHUNK_SIZE = Long.SIZE;
@@ -49,13 +48,13 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
     private final LongSet removed;
     private final LabelScanReader labelScanReader;
     private volatile boolean addedNodesConsumed;
+    private final LabelScan labelScan;
 
     NodeLabelIndexCursorScan( Read read, int label, long highestNodeId, LabelScanReader labelScanReader )
     {
         this.read = read;
         this.label = label;
         this.labelScanReader = labelScanReader;
-        this.nextStart = new AtomicLong( 0 );
         this.nextTxState = new AtomicInteger( 0 );
         this.upperBound = roundUp( highestNodeId );
         if ( read.hasTxStateWithChanges() )
@@ -70,6 +69,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
             this.removed = LongSets.immutable.empty();
         }
         this.addedNodesConsumed = addedNodesSet.isEmpty();
+        this.labelScan = labelScanReader.nodeLabelScan( label );
     }
 
     @Override
@@ -98,19 +98,9 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
 
     private boolean reserveStoreBatch( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedNodes )
     {
-        IndexProgressor indexProgressor = IndexProgressor.EMPTY;
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        if ( sizeHint > 0 )
-        {
-            long size = roundUp( sizeHint );
-            long start = nextStart.getAndAdd( size );
-            long stop = Math.min( start + size, upperBound );
-            if ( start < upperBound )
-            {
-                indexProgressor = labelScanReader.nodesWithLabel( indexCursor, label, start, stop );
-            }
-        }
+        IndexProgressor indexProgressor = labelScan.initializeBatch( indexCursor, sizeHint, upperBound );
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedNodes.hasNext() )
         {

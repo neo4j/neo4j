@@ -25,14 +25,17 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.kernel.api.index.IndexProgressor;
+import org.neo4j.kernel.api.labelscan.LabelScan;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 
+import static org.neo4j.kernel.impl.index.labelscan.LabelScanValue.RANGE_SIZE;
 import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanWriter.rangeOf;
 
 /**
@@ -85,38 +88,58 @@ class NativeLabelScanReader implements LabelScanReader
         return new CompositeLabelScanValueIterator( iterators, false );
     }
 
-    @Override
-    public IndexProgressor nodesWithLabel( IndexProgressor.NodeLabelClient client, int labelId )
-    {
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
-        try
-        {
-            cursor = seekerForLabel( 0, labelId );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-
-        return new LabelScanValueIndexProgressor( cursor, client );
-    }
 
     @Override
-    public IndexProgressor nodesWithLabel(  IndexProgressor.NodeLabelClient client, int labelId, long from, long to )
+    public LabelScan nodeLabelScan( int labelId )
     {
-        assert from % LabelScanValue.RANGE_SIZE == 0;
-        assert to % LabelScanValue.RANGE_SIZE == 0;
+        return new LabelScan()
+        {
+            private final AtomicLong nextStart = new AtomicLong( 0 );
 
-        RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
-        try
-        {
-            cursor = seekerForLabel( from, to, labelId );
-        }
-        catch ( IOException e )
-        {
-            throw new UncheckedIOException( e );
-        }
-        return new LabelScanValueIndexProgressor( cursor, client );
+            @Override
+            public IndexProgressor initialize( IndexProgressor.NodeLabelClient client )
+            {
+                return init( client, 0L, Long.MAX_VALUE );
+            }
+
+            @Override
+            public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, long upperBound  )
+            {
+                if ( sizeHint == 0 )
+                {
+                    return IndexProgressor.EMPTY;
+                }
+                long size = roundUp( sizeHint );
+                long start = nextStart.getAndAdd( size );
+                long max = roundUp( upperBound );
+                long stop = Math.min( start + size, max );
+                if ( start >= max )
+                {
+                    return IndexProgressor.EMPTY;
+                }
+                return init( client, start, stop );
+            }
+
+            private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop )
+            {
+                RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+                try
+                {
+                    cursor = seekerForLabel( start, stop, labelId );
+                }
+                catch ( IOException e )
+                {
+                    throw new UncheckedIOException( e );
+                }
+
+                return new LabelScanValueIndexProgressor( cursor, client );
+            }
+
+            private long roundUp( long sizeHint )
+            {
+                return (sizeHint / RANGE_SIZE + 1) * RANGE_SIZE;
+            }
+        };
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )
