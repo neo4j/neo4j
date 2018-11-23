@@ -19,6 +19,8 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
@@ -170,7 +172,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private static String determineOsDistribution()
     {
-        if ( System.getProperties().getProperty( "os.name", "" ).equals( "Linux" ) )
+        if ( SystemUtils.IS_OS_LINUX )
         {
             return searchForPackageSystems();
         }

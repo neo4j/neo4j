@@ -79,7 +79,7 @@ class DatabaseShutdownTest
     {
         GraphDatabaseService database = new TestGraphDatabaseFactory().newEmbeddedDatabase( testDirectory.databaseDir() );
         ShutdownListenerDatabaseEventHandler shutdownHandler = new ShutdownListenerDatabaseEventHandler();
-        database.registerKernelEventHandler( shutdownHandler );
+        database.registerDatabaseEventHandler( shutdownHandler );
         database.shutdown();
 
         assertTrue( shutdownHandler.isShutdownInvoked() );

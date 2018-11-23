@@ -19,21 +19,21 @@
  */
 package org.neo4j.kernel.impl.query;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
-import static org.junit.Assert.assertSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class QueryEngineProviderTest
+class QueryEngineProviderTest
 {
     @Test
-    public void shouldUsePickTheEngineWithLowestPriority()
+    void shouldUsePickTheEngineWithLowestPriority()
     {
         // Given
         QueryEngineProvider provider1 = mock( QueryEngineProvider.class );
@@ -56,7 +56,7 @@ public class QueryEngineProviderTest
     }
 
     @Test
-    public void shouldPickTheOneAndOnlyQueryEngineAvailable()
+    void shouldPickTheOneAndOnlyQueryEngineAvailable()
     {
         // Given
         QueryEngineProvider provider = mock( QueryEngineProvider.class );

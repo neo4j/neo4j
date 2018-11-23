@@ -54,7 +54,7 @@ public class TestShutdownSequence
     public void eventHandlersAreOnlyInvokedOnceDuringShutdown()
     {
         final AtomicInteger counter = new AtomicInteger();
-        graphDb.registerKernelEventHandler( new DatabaseEventHandlerAdapter()
+        graphDb.registerDatabaseEventHandler( new DatabaseEventHandlerAdapter()
         {
             @Override
             public void beforeShutdown()
@@ -80,7 +80,7 @@ public class TestShutdownSequence
     @Test
     public void canInvokeShutdownFromShutdownHandler()
     {
-        graphDb.registerKernelEventHandler( new DatabaseEventHandlerAdapter()
+        graphDb.registerDatabaseEventHandler( new DatabaseEventHandlerAdapter()
         {
             @Override
             public void beforeShutdown()

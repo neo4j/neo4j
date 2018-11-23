@@ -166,9 +166,9 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         /** Execute a cypher statement */
         Result executeQuery( String query, MapValue parameters, TransactionalContext context );
 
-        void registerKernelEventHandler( DatabaseEventHandler handler );
+        void registerDatabaseEventHandler( DatabaseEventHandler handler );
 
-        void unregisterKernelEventHandler( DatabaseEventHandler handler );
+        void unregisterDatabaseEventHandler( DatabaseEventHandler handler );
 
         <T> void registerTransactionEventHandler( TransactionEventHandler<T> handler );
 
@@ -519,26 +519,23 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public DatabaseEventHandler registerKernelEventHandler(
-            DatabaseEventHandler handler )
+    public DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler )
     {
-        spi.registerKernelEventHandler( handler );
+        spi.registerDatabaseEventHandler( handler );
         return handler;
     }
 
     @Override
-    public <T> TransactionEventHandler<T> registerTransactionEventHandler(
-            TransactionEventHandler<T> handler )
+    public <T> TransactionEventHandler<T> registerTransactionEventHandler( TransactionEventHandler<T> handler )
     {
         spi.registerTransactionEventHandler( handler );
         return handler;
     }
 
     @Override
-    public DatabaseEventHandler unregisterKernelEventHandler(
-            DatabaseEventHandler handler )
+    public DatabaseEventHandler unregisterKernelEventHandler( DatabaseEventHandler handler )
     {
-        spi.unregisterKernelEventHandler( handler );
+        spi.unregisterDatabaseEventHandler( handler );
         return handler;
     }
 

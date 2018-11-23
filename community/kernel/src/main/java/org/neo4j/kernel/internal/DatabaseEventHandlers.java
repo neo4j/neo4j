@@ -49,11 +49,11 @@ public class DatabaseEventHandlers extends LifecycleAdapter
         }
     }
 
-    public DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler )
+    public void registerDatabaseEventHandler( DatabaseEventHandler handler )
     {
         if ( this.databaseEventHandlers.contains( handler ) )
         {
-            return handler;
+            return;
         }
 
         // Some algo for putting it in the right place
@@ -64,26 +64,24 @@ public class DatabaseEventHandlers extends LifecycleAdapter
             if ( order == DatabaseEventHandler.ExecutionOrder.BEFORE )
             {
                 this.databaseEventHandlers.add( index, handler );
-                return handler;
+                return;
             }
             else if ( order == DatabaseEventHandler.ExecutionOrder.AFTER )
             {
                 this.databaseEventHandlers.add( index + 1, handler );
-                return handler;
+                return;
             }
         }
 
         this.databaseEventHandlers.add( handler );
-        return handler;
     }
 
-    public DatabaseEventHandler unregisterDatabaseEventHandler( DatabaseEventHandler handler )
+    public void unregisterDatabaseEventHandler( DatabaseEventHandler handler )
     {
         if ( !databaseEventHandlers.remove( handler ) )
         {
             throw new IllegalStateException( handler + " isn't registered" );
         }
-        return handler;
     }
 
     public void kernelPanic( ErrorState error, Throwable cause )

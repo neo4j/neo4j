@@ -47,9 +47,10 @@ import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory.createPageCache;
 
 @ExtendWith( TestDirectoryExtension.class )
@@ -82,9 +83,8 @@ class DatabaseStartupTest
         }
 
         RuntimeException exception = assertThrows( RuntimeException.class, () -> new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir ) );
-        assertTrue( exception.getCause() instanceof LifecycleException );
-        assertTrue( exception.getCause().getCause() instanceof IllegalArgumentException );
-        assertEquals( "Unknown store version 'bad'", exception.getCause().getCause().getMessage() );
+        assertThat( exception.getCause(), instanceOf( IllegalArgumentException.class ) );
+        assertEquals( "Unknown store version 'bad'", exception.getCause().getMessage() );
     }
 
     @Test
@@ -114,8 +114,7 @@ class DatabaseStartupTest
         RuntimeException exception = assertThrows( RuntimeException.class,
                 () -> new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory ).setConfig( GraphDatabaseSettings.allow_upgrade,
                         "true" ).newGraphDatabase() );
-        assertTrue( exception.getCause() instanceof LifecycleException );
-        assertTrue( exception.getCause().getCause() instanceof StoreUpgrader.UnexpectedUpgradingStoreVersionException );
+        assertThat( exception.getCause(), instanceOf( StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
     }
 
     @Test

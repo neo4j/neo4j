@@ -96,13 +96,13 @@ public class ClassicCoreSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public void registerKernelEventHandler( DatabaseEventHandler handler )
+    public void registerDatabaseEventHandler( DatabaseEventHandler handler )
     {
         dataSource.database.getEventHandlers().registerDatabaseEventHandler( handler );
     }
 
     @Override
-    public void unregisterKernelEventHandler( DatabaseEventHandler handler )
+    public void unregisterDatabaseEventHandler( DatabaseEventHandler handler )
     {
         dataSource.database.getEventHandlers().unregisterDatabaseEventHandler( handler );
     }

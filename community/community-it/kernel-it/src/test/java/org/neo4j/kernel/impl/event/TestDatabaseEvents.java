@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith( TestDirectoryExtension.class )
-class TestKernelEvents
+class TestDatabaseEvents
 {
     @Inject
     private TestDirectory testDirectory;
@@ -66,14 +66,14 @@ class TestKernelEvents
 
         assertThrows( IllegalStateException.class, () -> graphDb.unregisterKernelEventHandler( handler1 ) );
 
-        assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
-        assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
+        assertSame( handler1, graphDb.registerDatabaseEventHandler( handler1 ) );
+        assertSame( handler1, graphDb.registerDatabaseEventHandler( handler1 ) );
         assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
 
         assertThrows( IllegalStateException.class, () -> graphDb.unregisterKernelEventHandler( handler1 ) );
 
-        assertSame( handler1, graphDb.registerKernelEventHandler( handler1 ) );
-        assertSame( handler2, graphDb.registerKernelEventHandler( handler2 ) );
+        assertSame( handler1, graphDb.registerDatabaseEventHandler( handler1 ) );
+        assertSame( handler2, graphDb.registerDatabaseEventHandler( handler2 ) );
         assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
         assertSame( handler2, graphDb.unregisterKernelEventHandler( handler2 ) );
 
@@ -108,8 +108,8 @@ class TestKernelEvents
                 return ExecutionOrder.DOESNT_MATTER;
             }
         };
-        graphDb.registerKernelEventHandler( handler1 );
-        graphDb.registerKernelEventHandler( handler2 );
+        graphDb.registerDatabaseEventHandler( handler1 );
+        graphDb.registerDatabaseEventHandler( handler2 );
 
         graphDb.shutdown();
 

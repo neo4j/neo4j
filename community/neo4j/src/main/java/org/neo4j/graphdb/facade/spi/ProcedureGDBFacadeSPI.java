@@ -112,13 +112,13 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
     }
 
     @Override
-    public void registerKernelEventHandler( DatabaseEventHandler handler )
+    public void registerDatabaseEventHandler( DatabaseEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void unregisterKernelEventHandler( DatabaseEventHandler handler )
+    public void unregisterDatabaseEventHandler( DatabaseEventHandler handler )
     {
         throw new UnsupportedOperationException();
     }

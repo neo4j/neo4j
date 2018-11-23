@@ -20,6 +20,7 @@
 package org.neo4j.dmbs.database;
 
 import java.util.List;
+import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseManager;
@@ -44,6 +45,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     private final Procedures procedures;
     private final Logger log;
     private final GraphDatabaseFacade graphDatabaseFacade;
+    private DatabaseModule dataSource;
 
     public DefaultDatabaseManager( PlatformModule platform, AbstractEditionModule edition, Procedures procedures,
             Logger log, GraphDatabaseFacade graphDatabaseFacade )
@@ -66,9 +68,17 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     {
         checkState( database == null, "Database is already created, fail to create another one." );
         log.log( "Creating '%s' database.", databaseName );
-        DatabaseModule dataSource = new DatabaseModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
+        dataSource = new DatabaseModule( databaseName, platform, edition, procedures, graphDatabaseFacade );
         ClassicCoreSPI spi = new ClassicCoreSPI( platform, dataSource, log, dataSource.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
         graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, dataSource.database.getTokenHolders() );
+        try
+        {
+            dataSource.database.start();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         database = graphDatabaseFacade;
         return database;
     }
@@ -100,7 +110,8 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         if ( database != null )
         {
             log.log( "Shutting down '%s' database.", database.databaseLayout().getDatabaseName() );
-            database.shutdown();
+            dataSource.database.stop();
+            dataSource.database.shutdown();
             database = null;
         }
     }

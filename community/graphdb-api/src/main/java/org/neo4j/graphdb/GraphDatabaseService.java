@@ -482,12 +482,12 @@ public interface GraphDatabaseService
      *                in the kernel lifecycle.
      * @return the handler passed in as the argument.
      */
-    DatabaseEventHandler registerKernelEventHandler( DatabaseEventHandler handler );
+    DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler );
 
     /**
      * Unregisters {@code handler} from the list of kernel event handlers.
      * If {@code handler} hasn't been registered with
-     * {@link #registerKernelEventHandler(DatabaseEventHandler)} prior to calling
+     * {@link #registerDatabaseEventHandler(DatabaseEventHandler)} prior to calling
      * this method an {@link IllegalStateException} will be thrown.
      * After a successful call to this method the {@code handler} will no
      * longer receive any kernel events.

@@ -597,9 +597,9 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     }
 
     @Override
-    public DatabaseEventHandler registerKernelEventHandler( DatabaseEventHandler handler )
+    public DatabaseEventHandler registerDatabaseEventHandler( DatabaseEventHandler handler )
     {
-        return database.registerKernelEventHandler( handler );
+        return database.registerDatabaseEventHandler( handler );
     }
 
     @Override

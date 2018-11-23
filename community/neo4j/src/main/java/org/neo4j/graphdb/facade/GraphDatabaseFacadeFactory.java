@@ -194,16 +194,16 @@ public class GraphDatabaseFacadeFactory
                         edition.getTransactionStartTimeout() ) );
         platform.dependencies.satisfyDependency( edition.getSchemaWriteGuard() );
 
-        edition.createDatabases( databaseManager, config );
-
-        String activeDatabase = config.get( GraphDatabaseSettings.active_database );
-        GraphDatabaseFacade databaseFacade = databaseManager.getDatabaseFacade( activeDatabase ).orElseThrow(
-                () -> new IllegalStateException( String.format( "Database %s not found. Please check the logs for startup errors.", activeDatabase ) ) );
-
         RuntimeException error = null;
+        GraphDatabaseFacade databaseFacade = null;
         try
         {
             platform.life.start();
+            edition.createDatabases( databaseManager, config );
+            String activeDatabase = config.get( GraphDatabaseSettings.active_database );
+            databaseFacade = databaseManager.getDatabaseFacade( activeDatabase ).orElseThrow(
+                    () -> new IllegalStateException( String.format( "Database %s not found. Please check the logs for startup errors.", activeDatabase ) ) );
+
         }
         catch ( final Throwable throwable )
         {
