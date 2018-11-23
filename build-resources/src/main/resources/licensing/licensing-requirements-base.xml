@@ -94,6 +94,7 @@
       <aka>ASL</aka>
       <aka>Apache-2.0</aka>
       <aka>Apache2</aka>
+      <aka>Apache License, 2.0</aka>
     </license>
     <license name="BSD License">
       <aka>BSD</aka>
@@ -112,6 +113,7 @@
     <license name="Common Development and Distribution License Version 1.1">
       <aka>CDDL1.1</aka>
       <aka>CDDL 1.1</aka>
+      <aka>Common Development and Distribution License (CDDL), Version 1.1</aka>
     </license>
     <license name="Common Development and Distribution License Version 1.1 and GNU General Public License, version 2 with the Classpath Exception">
       <aka>CDDL1.1-GPL2/CPE</aka>
@@ -125,6 +127,7 @@
     <license name="GNU General Public License, version 2 with the Classpath Exception">
       <aka>GPL2/CPE</aka>
       <aka>GPL2 w/ CPE</aka>
+      <aka>The GNU General Public License (GPL), Version 2, With Classpath Exception</aka>
     </license>
     <license name="GNU General Public License, Version 3">
       <aka>GPL3</aka>
@@ -159,11 +162,28 @@
     <license name="CDDL+GPL-1.1">
       <aka>CDDL+GPL License</aka>
     </license>
+    <license name="Eclipse Public License v2.0">
+      <aka>EPL 2.0</aka>
+    </license>
+    <license name="Unlicense">
+      <aka>Public Domain</aka>
+    </license>
   </coalesced-licenses>
   <dual-licenses>
     <dual-license name="Common Development and Distribution License Version 1.1 and GNU General Public License, version 2 with the Classpath Exception">
       <option>Common Development and Distribution License Version 1.1</option>
       <option>GNU General Public License, version 2 with the Classpath Exception</option>
+    </dual-license>
+    <dual-license name="EPL 2.0, GNU General Public License, version 2 with the Classpath Exception">
+      <option>EPL 2.0</option>
+      <option>GNU General Public License, version 2 with the Classpath Exception</option>
+    </dual-license>
+    <dual-license
+        name="Common Development and Distribution License (CDDL), Version 1.1, Apache License, 2.0, Public Domain, The GNU General Public License (GPL), Version 2, With Classpath Exception">
+      <option>Common Development and Distribution License (CDDL), Version 1.1</option>
+      <option>Apache License, 2.0</option>
+      <option>Public Domain</option>
+      <option>The GNU General Public License (GPL), Version 2, With Classpath Exception</option>
     </dual-license>
   </dual-licenses>
 

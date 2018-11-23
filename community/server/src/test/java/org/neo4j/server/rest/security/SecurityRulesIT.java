@@ -89,9 +89,8 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
                 "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
 
-        assertThat( response.getHeaders().getFirst( "WWW-Authenticate" ),
-                containsString( "Basic realm=\""
-                        + PermanentlyFailingSecurityRule.REALM + "\"" ) );
+        assertThat( (String) response.getHeaders().getFirst( "WWW-Authenticate" ),
+                containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
     @Test
@@ -109,9 +108,8 @@ public class SecurityRulesIT extends ExclusiveServerTestBase
         JaxRsResponse response = gen.get().expectedStatus( 401 ).expectedHeader(
                 "WWW-Authenticate" ).post( functionalTestHelper.nodeUri() ).response();
 
-        assertThat( response.getHeaders().getFirst( "WWW-Authenticate" ),
-                containsString( "Basic realm=\""
-                        + PermanentlyFailingSecurityRule.REALM + "\"" ) );
+        assertThat( (String) response.getHeaders().getFirst( "WWW-Authenticate" ),
+                containsString( "Basic realm=\"" + PermanentlyFailingSecurityRule.REALM + "\"" ) );
     }
 
     @Test

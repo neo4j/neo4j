@@ -67,6 +67,9 @@ MIT License
   Gherkin
   SLF4J API Module
 
+Unlicense
+  Gherkin Repackaged Dependencies
+
 Dependencies with multiple licenses
 -----------------------------------
 
@@ -77,4 +80,8 @@ Eclipse Collections API
 Eclipse Collections Main Library
   Eclipse Distribution License - v 1.0
   Eclipse Public License - v 1.0
+
+Gherkin Repackaged Dependencies
+  Apache Software License, Version 2.0
+  Unlicense
 

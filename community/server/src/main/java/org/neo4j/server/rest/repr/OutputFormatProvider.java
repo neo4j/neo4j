@@ -19,36 +19,29 @@
  */
 package org.neo4j.server.rest.repr;
 
+import java.util.function.Supplier;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.ext.Provider;
 
-import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.api.core.HttpRequestContext;
-
-import org.neo4j.server.database.InjectableProvider;
-
-@Provider
-public final class OutputFormatProvider extends InjectableProvider<OutputFormat>
+public class OutputFormatProvider implements Supplier<OutputFormat>
 {
-    private final RepresentationFormatRepository repository;
+    @Context
+    private RepresentationFormatRepository repository;
 
-    public OutputFormatProvider( RepresentationFormatRepository repository )
-    {
-        super( OutputFormat.class );
-        this.repository = repository;
-    }
+    @Context
+    private ContainerRequestContext requestContext;
 
     @Override
-    public OutputFormat getValue( HttpContext context )
+    public OutputFormat get()
     {
         try
         {
-            HttpRequestContext request = context.getRequest();
-            return repository.outputFormat( request.getAcceptableMediaTypes(),
-                    request.getBaseUri(),
-                    request.getRequestHeaders() );
+            return repository.outputFormat( requestContext.getAcceptableMediaTypes(),
+                    requestContext.getUriInfo().getBaseUri(),
+                    requestContext.getHeaders() );
         }
         catch ( MediaTypeNotSupportedException e )
         {

@@ -20,9 +20,10 @@
 package org.neo4j.server.web;
 
 import java.net.URI;
-
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.PreMatching;
+import javax.ws.rs.core.UriInfo;
 
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_HOST_HEADER_KEY;
 import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
@@ -34,18 +35,20 @@ import static org.neo4j.server.web.XForwardUtil.X_FORWARD_PROTO_HEADER_KEY;
  * In doing so, it means Neo4j server can use those URIs as if they were the
  * actual request URIs.
  */
+@PreMatching
 public class XForwardFilter implements ContainerRequestFilter
 {
     @Override
-    public ContainerRequest filter( ContainerRequest containerRequest )
+    public void filter( ContainerRequestContext requestContext )
     {
-        String xForwardedHost = containerRequest.getHeaderValue( X_FORWARD_HOST_HEADER_KEY );
-        String xForwardedProto = containerRequest.getHeaderValue( X_FORWARD_PROTO_HEADER_KEY );
+        String xForwardedHost = requestContext.getHeaderString( X_FORWARD_HOST_HEADER_KEY );
+        String xForwardedProto = requestContext.getHeaderString( X_FORWARD_PROTO_HEADER_KEY );
 
-        URI externalBaseUri = XForwardUtil.externalUri( containerRequest.getBaseUri(), xForwardedHost, xForwardedProto );
-        URI externalRequestUri = XForwardUtil.externalUri( containerRequest.getRequestUri(), xForwardedHost, xForwardedProto );
+        UriInfo uriInfo = requestContext.getUriInfo();
 
-        containerRequest.setUris( externalBaseUri, externalRequestUri );
-        return containerRequest;
+        URI externalBaseUri = XForwardUtil.externalUri( uriInfo.getBaseUri(), xForwardedHost, xForwardedProto );
+        URI externalRequestUri = XForwardUtil.externalUri( uriInfo.getRequestUri(), xForwardedHost, xForwardedProto );
+
+        requestContext.setRequestUri( externalBaseUri, externalRequestUri );
     }
 }

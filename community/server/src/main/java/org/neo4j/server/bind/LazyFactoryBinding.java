@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.bind;
 
-import javax.ws.rs.ext.Provider;
+import java.util.function.Supplier;
 
-import com.sun.jersey.api.core.HttpContext;
-
-import org.neo4j.server.database.InjectableProvider;
-
-@Provider
-public class NeoServerProvider extends InjectableProvider<NeoServer>
+class LazyFactoryBinding<T>
 {
-    public NeoServer neoServer;
+    private final Class<? extends Supplier<T>> supplierType;
+    private final Class<T> type;
 
-    public NeoServerProvider( NeoServer db )
+    LazyFactoryBinding( Class<? extends Supplier<T>> supplierType, Class<T> type )
     {
-        super( NeoServer.class );
-        this.neoServer = db;
+        this.supplierType = supplierType;
+        this.type = type;
     }
 
-    @Override
-    public NeoServer getValue( HttpContext httpContext )
+    Class<? extends Supplier<T>> supplierType()
     {
-        return neoServer;
+        return supplierType;
+    }
+
+    Class<T> type()
+    {
+        return type;
     }
 }

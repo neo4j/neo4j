@@ -19,110 +19,81 @@
  */
 package org.neo4j.server.web;
 
-import com.sun.jersey.api.core.ClassNamesResourceConfig;
-import com.sun.jersey.api.core.PackagesResourceConfig;
-import com.sun.jersey.api.core.ResourceConfig;
-import com.sun.jersey.spi.container.servlet.ServletContainer;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.servlet.ServletContainer;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Supplier;
 
-import org.neo4j.server.database.InjectableProvider;
+import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.Injectable;
+import org.neo4j.server.rest.transactional.TransactionalContainerFilter;
+
+import static org.glassfish.jersey.server.ServerProperties.WADL_FEATURE_DISABLE;
 
 /**
  * Different {@link ServerModule}s can register services at the same mount point.
  * So this class will collect all packages/classes per mount point and create the {@link ServletHolder}
- * when all modules have registered services, see {@link #create(Collection, boolean)}.
+ * when all modules have registered services, see {@link #create(ComponentsBinder, boolean)}.
  */
-public abstract class JaxRsServletHolderFactory
+public class JaxRsServletHolderFactory
 {
-    private final List<String> items = new ArrayList<>();
+    private final Set<String> packages = new HashSet<>();
+    private final Set<Class<?>> classes = new HashSet<>();
     private final List<Injectable<?>> injectables = new ArrayList<>();
 
-    public void add( List<String> items, Collection<Injectable<?>> injectableProviders )
+    public void addPackages( List<String> packages, Collection<Injectable<?>> injectableProviders )
     {
-        this.items.addAll( items );
+        this.packages.addAll( packages );
         if ( injectableProviders != null )
         {
             this.injectables.addAll( injectableProviders );
         }
     }
 
-    public void remove( List<String> items )
+    public void addClasses( List<Class<?>> classes, Collection<Injectable<?>> injectableProviders )
     {
-        this.items.removeAll( items );
-    }
-
-    public ServletHolder create( Collection<InjectableProvider<?>> defaultInjectables, boolean wadlEnabled )
-    {
-        Collection<InjectableProvider<?>> injectableProviders = mergeInjectables( defaultInjectables, injectables );
-        ServletContainer container = new NeoServletContainer( injectableProviders );
-        ServletHolder servletHolder = new ServletHolder( container );
-        servletHolder.setInitParameter( ResourceConfig.FEATURE_DISABLE_WADL, String.valueOf( !wadlEnabled ) );
-        configure( servletHolder, toCommaSeparatedList( items ) );
-        servletHolder.setInitParameter( ResourceConfig.PROPERTY_CONTAINER_REQUEST_FILTERS, getRequestFilterConfig() );
-        return servletHolder;
-    }
-
-    private String getRequestFilterConfig()
-    {
-        // Ordering of execution of filters goes from left to right
-        return XForwardFilter.class.getName();
-    }
-
-    protected abstract void configure( ServletHolder servletHolder, String commaSeparatedList );
-
-    private Collection<InjectableProvider<?>> mergeInjectables( Collection<InjectableProvider<?>> defaultInjectables,
-            Collection<Injectable<?>> injectables )
-    {
-        Collection<InjectableProvider<?>> injectableProviders = new ArrayList<>();
-        if ( defaultInjectables != null )
+        this.classes.addAll( classes );
+        if ( injectableProviders != null )
         {
-            injectableProviders.addAll( defaultInjectables );
-        }
-        if ( injectables != null )
-        {
-            for ( Injectable<?> injectable : injectables )
-            {
-                injectableProviders.add( new InjectableWrapper( injectable ) );
-            }
-        }
-        return injectableProviders;
-    }
-
-    private String toCommaSeparatedList( List<String> packageNames )
-    {
-        StringBuilder sb = new StringBuilder();
-
-        for ( String str : packageNames )
-        {
-            sb.append( str );
-            sb.append( ", " );
-        }
-
-        String result = sb.toString();
-        return result.substring( 0, result.length() - 2 );
-    }
-
-    public static class Packages extends JaxRsServletHolderFactory
-    {
-        @Override
-        protected void configure( ServletHolder servletHolder, String packages )
-        {
-            servletHolder.setInitParameter( PackagesResourceConfig.PROPERTY_PACKAGES, packages );
+            this.injectables.addAll( injectableProviders );
         }
     }
 
-    public static class Classes extends JaxRsServletHolderFactory
+    public void removePackages( List<String> packages )
     {
-        @Override
-        protected void configure( ServletHolder servletHolder, String classes )
+        this.packages.removeAll( packages );
+    }
+
+    public void removeClasses( List<Class<?>> classes )
+    {
+        this.classes.removeAll( classes );
+    }
+
+    public ServletHolder create( ComponentsBinder binder, boolean wadlEnabled )
+    {
+        for ( Injectable<?> injectable : injectables )
         {
-            servletHolder.setInitParameter( ClassNamesResourceConfig.PROPERTY_CLASSNAMES, classes );
+            Supplier<?> getValue = injectable::getValue;
+            Class<?> type = injectable.getType();
+            binder.addLazyBinding( getValue, type );
         }
+
+        ResourceConfig resourceConfig = new ResourceConfig()
+                .register( binder )
+                .register( XForwardFilter.class )
+                .register( TransactionalContainerFilter.class )
+                .packages( packages.toArray( new String[0] ) )
+                .registerClasses( classes )
+                .property( WADL_FEATURE_DISABLE, String.valueOf( !wadlEnabled ) );
+
+        ServletContainer container = new ServletContainer( resourceConfig );
+        return new ServletHolder( container );
     }
 }

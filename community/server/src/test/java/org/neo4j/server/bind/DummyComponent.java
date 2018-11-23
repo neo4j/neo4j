@@ -17,30 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.web;
+package org.neo4j.server.bind;
 
-import javax.ws.rs.ext.Provider;
-
-import org.neo4j.server.database.InjectableProvider;
-
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class WebServerProvider extends InjectableProvider<WebServer>
+public class DummyComponent
 {
+    static final String VALUE = "42";
 
-    private final WebServer server;
-
-    public WebServerProvider( WebServer server )
+    public String value()
     {
-        super( WebServer.class );
-        this.server = server;
+        return VALUE;
     }
-
-    @Override
-    public WebServer getValue( HttpContext c )
-    {
-        return server;
-    }
-
 }

@@ -81,16 +81,16 @@ public class RESTApiModule implements ServerModule
         return userDataSupplier.get().get( UsageDataKeys.clientNames );
     }
 
-    private List<String> getClassNames()
+    private List<Class<?>> getClassNames()
     {
         return asList(
-                RestfulGraphDatabase.class.getName(),
-                TransactionalService.class.getName(),
-                CypherService.class.getName(),
-                DatabaseMetadataService.class.getName(),
-                ExtensionService.class.getName(),
-                ResourcesService.class.getName(),
-                BatchOperationService.class.getName() );
+                RestfulGraphDatabase.class,
+                TransactionalService.class,
+                CypherService.class,
+                DatabaseMetadataService.class,
+                ExtensionService.class,
+                ResourcesService.class,
+                BatchOperationService.class );
     }
 
     @Override

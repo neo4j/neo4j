@@ -17,28 +17,28 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.web;
+package org.neo4j.server.bind;
 
-import javax.ws.rs.ext.Provider;
+import java.util.function.Supplier;
 
-import com.sun.jersey.api.core.HttpContext;
-import org.neo4j.server.database.InjectableProvider;
-import org.neo4j.server.plugins.Injectable;
-
-@Provider
-public class InjectableWrapper extends InjectableProvider<Object>
+class LazyBinding
 {
-    private final Injectable injectable;
+    private final Supplier<?> supplier;
+    private final Class<?> type;
 
-    public InjectableWrapper( Injectable injectable )
+    LazyBinding( Supplier<?> supplier, Class<?> type )
     {
-        super( injectable.getType() );
-        this.injectable = injectable;
+        this.supplier = supplier;
+        this.type = type;
     }
 
-    @Override
-    public Object getValue( HttpContext c )
+    Supplier<?> supplier()
     {
-        return injectable.getValue();
+        return supplier;
+    }
+
+    Class<?> type()
+    {
+        return type;
     }
 }

@@ -19,20 +19,21 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.api.core.HttpResponseContext;
+import javax.servlet.http.HttpServletResponse;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.repr.RepresentationWriteHandler;
 
+import static javax.ws.rs.core.Response.Status.NO_CONTENT;
+
 public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements RepresentationWriteHandler
 {
-    private final HttpContext httpContext;
+    private final HttpServletResponse response;
     private Transaction transaction;
 
-    public CommitOnSuccessfulStatusCodeRepresentationWriteHandler( HttpContext httpContext, Transaction transaction )
+    public CommitOnSuccessfulStatusCodeRepresentationWriteHandler( HttpServletResponse response, Transaction transaction )
     {
-        this.httpContext = httpContext;
+        this.response = response;
         this.transaction = transaction;
     }
 
@@ -45,9 +46,7 @@ public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements R
     @Override
     public void onRepresentationWritten()
     {
-        HttpResponseContext response = httpContext.getResponse();
-
-        int statusCode = response.getStatus();
+        int statusCode = responseStatus();
         if ( statusCode >= 200 && statusCode < 300 )
         {
             transaction.success();
@@ -68,5 +67,11 @@ public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements R
     public void setTransaction( Transaction transaction )
     {
         this.transaction = transaction;
+    }
+
+    private int responseStatus()
+    {
+        int status = response.getStatus();
+        return status == -1 ? NO_CONTENT.getStatusCode() : status;
     }
 }

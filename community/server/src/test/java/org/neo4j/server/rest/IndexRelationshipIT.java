@@ -99,7 +99,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
         long relationshipId = helper.createRelationship( relationshipType );
         response = httpPostIndexRelationshipNameKeyValue( indexName, relationshipId, key, value );
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
-        String indexUri = response.getHeaders().get( "Location" ).get( 0 );
+        String indexUri = (String) response.getHeaders().getFirst( "Location" );
         assertNotNull( indexUri );
         assertEquals( Arrays.asList( (Long) relationshipId ), helper.getIndexedRelationships( indexName, key, value ) );
         // Get the relationship from the indexed URI (Location in header)
@@ -146,16 +146,16 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
         jsonString = jsonRelationshipCreationSpecification( relationshipName2, endNode, key, value );
         createRelationshipResponse = httpPostCreateRelationship( startNode, jsonString );
         assertEquals( 201, createRelationshipResponse.getStatus() );
-        String relationshipLocation2 = createRelationshipResponse.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
+        String relationshipLocation2 = (String) createRelationshipResponse.getHeaders().getFirst( HttpHeaders.LOCATION );
         String indexName = indexes.newInstance();
         JaxRsResponse indexCreationResponse = httpPostIndexRelationshipRoot( "{\"name\":\"" + indexName + "\"}" );
         assertEquals( 201, indexCreationResponse.getStatus() );
         JaxRsResponse indexedRelationshipResponse = httpPostIndexRelationshipNameKeyValue( indexName,
                 functionalTestHelper.getRelationshipIdFromUri( relationshipLocation1 ), key, value );
-        String indexLocation1 = indexedRelationshipResponse.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
+        String indexLocation1 = (String) indexedRelationshipResponse.getHeaders().getFirst( HttpHeaders.LOCATION );
         indexedRelationshipResponse = httpPostIndexRelationshipNameKeyValue( indexName,
                 functionalTestHelper.getRelationshipIdFromUri( relationshipLocation2 ), key, value );
-        String indexLocation2 = indexedRelationshipResponse.getHeaders().get( HttpHeaders.LOCATION ).get( 0 );
+        String indexLocation2 = (String) indexedRelationshipResponse.getHeaders().getFirst( HttpHeaders.LOCATION );
         Map<String, String> uriToName = new HashMap<>();
         uriToName.put( indexLocation1, relationshipName1 );
         uriToName.put( indexLocation2, relationshipName2 );
@@ -368,7 +368,7 @@ public class IndexRelationshipIT extends AbstractRestFunctionalTestBase
                                 + functionalTestHelper.nodeUri( helper.createNode() ) + "\", \"type\":\""
                                 + MyRelationshipTypes.KNOWS + "\"}" )
                 .post( functionalTestHelper.relationshipIndexUri() + index + "?uniqueness=create_or_fail" );
-        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        MultivaluedMap<String,Object> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         assertEquals( result.get( "indexed" ), headers.getFirst( "Location" ) );
     }

@@ -17,29 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server;
+package org.neo4j.server.bind;
 
-import javax.ws.rs.ext.Provider;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.Response;
 
-import com.sun.jersey.api.core.HttpContext;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import org.neo4j.logging.LogProvider;
-import org.neo4j.server.database.InjectableProvider;
-
-@Provider
-public class LoggingProvider extends InjectableProvider<LogProvider>
+@Path( "/" )
+public class DummyRestResource
 {
-    private final LogProvider logProvider;
+    @Context
+    private DummyComponent component;
 
-    public LoggingProvider( LogProvider logProvider )
+    @GET
+    public Response getComponent()
     {
-        super( LogProvider.class );
-        this.logProvider = logProvider;
-    }
-
-    @Override
-    public LogProvider getValue( HttpContext c )
-    {
-        return logProvider;
+        assertNotNull( component );
+        return Response.ok( component.value() ).build();
     }
 }

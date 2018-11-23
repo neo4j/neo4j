@@ -17,35 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.plugins;
+package org.neo4j.server.bind;
 
-import javax.ws.rs.ext.Provider;
+import java.util.function.Supplier;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.UriInfo;
 
-import org.neo4j.server.AbstractNeoServer;
-import org.neo4j.server.database.InjectableProvider;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-import com.sun.jersey.api.core.HttpContext;
-
-/**
- * @deprecated Server plugins are deprecated for removal in the next major release. Please use unmanaged extensions instead.
- */
-@Deprecated
-@Provider
-public class PluginInvocatorProvider extends InjectableProvider<PluginInvocator>
+public class DummyComponentSupplier implements Supplier<DummyComponent>
 {
-    private final AbstractNeoServer neoServer;
+    @Context
+    private UriInfo uriInfo;
 
-    @Deprecated
-    public PluginInvocatorProvider( AbstractNeoServer neoServer )
-    {
-        super( PluginInvocator.class );
-        this.neoServer = neoServer;
-    }
-
-    @Deprecated
     @Override
-    public PluginInvocator getValue( HttpContext c )
+    public DummyComponent get()
     {
-        return neoServer.getExtensionManager();
+        // verify that container can inject into this class
+        assertNotNull( uriInfo );
+
+        return new DummyComponent();
     }
 }

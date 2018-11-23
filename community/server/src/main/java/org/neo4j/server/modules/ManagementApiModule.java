@@ -49,12 +49,12 @@ public class ManagementApiModule implements ServerModule
         webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
     }
 
-    private List<String> getClassNames()
+    private List<Class<?>> getClassNames()
     {
         return asList(
-                JmxService.class.getName(),
-                RootService.class.getName(),
-                VersionAndEditionService.class.getName() );
+                JmxService.class,
+                RootService.class,
+                VersionAndEditionService.class );
     }
 
     @Override

@@ -20,9 +20,11 @@
 package org.neo4j.server.modules;
 
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.neo4j.kernel.configuration.Config;
@@ -30,8 +32,10 @@ import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.web.WebServer;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyListOf;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -39,6 +43,7 @@ import static org.mockito.Mockito.when;
 
 public class ManagementApiModuleTest
 {
+    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldRegisterASingleUri() throws Exception
     {
@@ -58,6 +63,8 @@ public class ManagementApiModuleTest
         ManagementApiModule module = new ManagementApiModule( webServer, config );
         module.start();
 
-        verify( webServer ).addJAXRSClasses( anyListOf( String.class ), anyString(), any() );
+        ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass( List.class );
+        verify( webServer ).addJAXRSClasses( captor.capture(), anyString(), any() );
+        assertThat( captor.getValue(), not( empty() ) );
     }
 }

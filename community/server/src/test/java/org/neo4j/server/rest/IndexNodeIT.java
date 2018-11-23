@@ -406,8 +406,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                         createJsonStringFor( nodeId, key, value ));
 
         assertEquals( Status.CREATED.getStatusCode(), response.getStatus() );
-        String indexUri = response.getHeaders()
-                .getFirst( "Location" );
+        String indexUri = (String) response.getHeaders().getFirst( "Location" );
 
         response = RestRequest.req()
                 .get( indexUri );
@@ -453,25 +452,21 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
         final RestRequest request = RestRequest.req();
         JaxRsResponse responseToPost = request.post( functionalTestHelper.nodeUri(), "{\"name\":\"" + name1 + "\"}" );
         assertEquals( 201, responseToPost.getStatus() );
-        String location1 = responseToPost.getHeaders()
-                .getFirst( HttpHeaders.LOCATION );
+        String location1 = (String) responseToPost.getHeaders().getFirst( HttpHeaders.LOCATION );
         responseToPost.close();
         responseToPost = request.post( functionalTestHelper.nodeUri(), "{\"name\":\"" + name2 + "\"}" );
         assertEquals( 201, responseToPost.getStatus() );
-        String location2 = responseToPost.getHeaders()
-                .getFirst( HttpHeaders.LOCATION );
+        String location2 = (String) responseToPost.getHeaders().getFirst( HttpHeaders.LOCATION );
         responseToPost.close();
         responseToPost = request.post( functionalTestHelper.indexNodeUri( indexName ),
                 createJsonStringFor( functionalTestHelper.getNodeIdFromUri( location1 ), key, value ) );
         assertEquals( 201, responseToPost.getStatus() );
-        String indexLocation1 = responseToPost.getHeaders()
-                .getFirst( HttpHeaders.LOCATION );
+        String indexLocation1 = (String) responseToPost.getHeaders().getFirst( HttpHeaders.LOCATION );
         responseToPost.close();
         responseToPost = request.post( functionalTestHelper.indexNodeUri( indexName ),
                 createJsonStringFor( functionalTestHelper.getNodeIdFromUri( location2 ), key, value ) );
         assertEquals( 201, responseToPost.getStatus() );
-        String indexLocation2 = responseToPost.getHeaders()
-                .getFirst( HttpHeaders.LOCATION );
+        String indexLocation2 = (String) responseToPost.getHeaders().getFirst( HttpHeaders.LOCATION );
         Map<String, String> uriToName = new HashMap<>();
         uriToName.put( indexLocation1, name1 );
         uriToName.put( indexLocation2, name2 );
@@ -670,7 +665,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                                                        + "\", \"sequence\": 1}}" )
                                      .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=get_or_create" );
 
-        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        MultivaluedMap<String,Object> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         assertEquals( result.get( "indexed" ), headers.getFirst( "Location" ) );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
@@ -693,9 +688,9 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                                                        + "\", \"array\": [1,2,3]}}" )
                                      .post( functionalTestHelper.nodeIndexUri() + index + "?unique" );
 
-        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        MultivaluedMap<String,Object> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
-        String location = headers.getFirst("Location");
+        String location = (String) headers.getFirst( "Location" );
         assertEquals( result.get( "indexed" ), location );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );
         assertEquals( value, data.get( key ) );
@@ -769,7 +764,7 @@ public class IndexNodeIT extends AbstractRestFunctionalTestBase
                                      .post( functionalTestHelper.nodeIndexUri() + index + "?uniqueness=create_or_fail" +
                                             "" );
 
-        MultivaluedMap<String, String> headers = response.response().getHeaders();
+        MultivaluedMap<String,Object> headers = response.response().getHeaders();
         Map<String, Object> result = JsonHelper.jsonToMap( response.entity() );
         assertEquals( result.get( "indexed" ), headers.getFirst( "Location" ) );
         Map<String, Object> data = assertCast( Map.class, result.get( "data" ) );

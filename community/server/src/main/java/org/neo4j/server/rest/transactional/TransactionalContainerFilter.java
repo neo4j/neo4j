@@ -19,10 +19,17 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import com.sun.jersey.api.core.HttpContext;
-import com.sun.jersey.spi.dispatch.RequestDispatcher;
+import org.glassfish.jersey.server.ContainerResponse;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.container.ContainerRequestContext;
+import javax.ws.rs.container.ContainerRequestFilter;
+import javax.ws.rs.container.ContainerResponseContext;
+import javax.ws.rs.container.ContainerResponseFilter;
+import javax.ws.rs.container.ResourceContext;
+import javax.ws.rs.container.ResourceInfo;
+import javax.ws.rs.core.Context;
 
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo;
@@ -42,61 +49,65 @@ import org.neo4j.server.web.JettyHttpConnection;
 
 import static org.neo4j.server.rest.repr.RepresentationWriteHandler.DO_NOTHING;
 
-public class TransactionalRequestDispatcher implements RequestDispatcher
+public class TransactionalContainerFilter implements ContainerRequestFilter, ContainerResponseFilter
 {
-    private final Database database;
-    private final RequestDispatcher requestDispatcher;
+    private static final String PROPERTY_REPRESENTATION_WRITE_HANDLER = "representationWriteHandler";
 
-    public TransactionalRequestDispatcher( Database database, RequestDispatcher requestDispatcher )
-    {
-        this.database = database;
-        this.requestDispatcher = requestDispatcher;
-    }
+    @Context
+    private Database database;
+
+    @Context
+    private ResourceInfo resourceInfo;
+
+    @Context
+    private ResourceContext resourceContext;
+
+    @Context
+    private HttpServletResponse response;
 
     @Override
-    public void dispatch( Object o, final HttpContext httpContext )
+    public void filter( ContainerRequestContext requestContext )
     {
         RepresentationWriteHandler representationWriteHandler = DO_NOTHING;
 
-        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromHttpContext( httpContext );
+        LoginContext loginContext = AuthorizedRequestWrapper.getLoginContextFromContainerRequestContext( requestContext );
         ClientConnectionInfo clientConnection = getConnectionInfo();
 
+        final Object resource = resourceContext.getResource( resourceInfo.getResourceClass() );
         final GraphDatabaseFacade graph = database.getGraph();
-        if ( o instanceof RestfulGraphDatabase )
+        if ( resource instanceof RestfulGraphDatabase )
         {
-            RestfulGraphDatabase restfulGraphDatabase = (RestfulGraphDatabase) o;
+            RestfulGraphDatabase restfulGraphDatabase = (RestfulGraphDatabase) resource;
 
             final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
 
-            restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
-                    CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ));
+            representationWriteHandler = new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( response, transaction );
+            restfulGraphDatabase.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler );
         }
-        else if ( o instanceof BatchOperationService )
+        else if ( resource instanceof BatchOperationService )
         {
-            BatchOperationService batchOperationService = (BatchOperationService) o;
+            BatchOperationService batchOperationService = (BatchOperationService) resource;
 
             final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext, clientConnection );
 
-            batchOperationService.setRepresentationWriteHandler( representationWriteHandler = new
-                    CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
+            representationWriteHandler = new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( response, transaction );
+            batchOperationService.setRepresentationWriteHandler( representationWriteHandler );
         }
-        else if ( o instanceof CypherService )
+        else if ( resource instanceof CypherService )
         {
-            CypherService cypherService = (CypherService) o;
+            CypherService cypherService = (CypherService) resource;
 
             final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.explicit, loginContext, clientConnection );
 
-            cypherService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
-                    CommitOnSuccessfulStatusCodeRepresentationWriteHandler( httpContext, transaction ) );
+            representationWriteHandler = new CommitOnSuccessfulStatusCodeRepresentationWriteHandler( response, transaction );
+            cypherService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler );
         }
-        else if ( o instanceof DatabaseMetadataService )
+        else if ( resource instanceof DatabaseMetadataService )
         {
-            DatabaseMetadataService databaseMetadataService = (DatabaseMetadataService) o;
+            DatabaseMetadataService databaseMetadataService = (DatabaseMetadataService) resource;
 
             final Transaction transaction = graph.beginTransaction( KernelTransaction.Type.implicit, loginContext, clientConnection );
-
-            databaseMetadataService.setRepresentationWriteHandler( representationWriteHandler = new
-                    RepresentationWriteHandler()
+            representationWriteHandler = new RepresentationWriteHandler()
             {
                 @Override
                 public void onRepresentationStartWriting()
@@ -115,13 +126,13 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                 {
                     transaction.close();
                 }
-            } );
+            };
+            databaseMetadataService.setRepresentationWriteHandler( representationWriteHandler );
         }
-        else if ( o instanceof ExtensionService )
+        else if ( resource instanceof ExtensionService )
         {
-            ExtensionService extensionService = (ExtensionService) o;
-            extensionService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler = new
-                    RepresentationWriteHandler()
+            ExtensionService extensionService = (ExtensionService) resource;
+            representationWriteHandler = new RepresentationWriteHandler()
             {
                 Transaction transaction;
 
@@ -145,18 +156,24 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
                         transaction.close();
                     }
                 }
-            } );
+            };
+            extensionService.getOutputFormat().setRepresentationWriteHandler( representationWriteHandler );
         }
 
-        try
-        {
-            requestDispatcher.dispatch( o, httpContext );
-        }
-        catch ( RuntimeException e )
-        {
-            representationWriteHandler.onRepresentationFinal();
+        requestContext.setProperty( PROPERTY_REPRESENTATION_WRITE_HANDLER, representationWriteHandler );
+    }
 
-            throw e;
+    @Override
+    public void filter( ContainerRequestContext requestContext, ContainerResponseContext responseContext )
+    {
+        if ( isCausedByException( responseContext ) )
+        {
+            Object value = requestContext.getProperty( PROPERTY_REPRESENTATION_WRITE_HANDLER );
+            if ( value != null )
+            {
+                RepresentationWriteHandler representationWriteHandler = (RepresentationWriteHandler) value;
+                representationWriteHandler.onRepresentationFinal();
+            }
         }
     }
 
@@ -170,5 +187,11 @@ public class TransactionalRequestDispatcher implements RequestDispatcher
         }
         HttpServletRequest request = httpConnection.getHttpChannel().getRequest();
         return HttpConnectionInfoFactory.create( request );
+    }
+
+    private static boolean isCausedByException( ContainerResponseContext responseContext )
+    {
+        return responseContext instanceof ContainerResponse &&
+               ((ContainerResponse) responseContext).isMappedFromException();
     }
 }

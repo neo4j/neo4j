@@ -19,7 +19,7 @@
  */
 package org.neo4j.server.modules;
 
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -55,27 +55,24 @@ public class DBMSModule implements ServerModule
     public void start()
     {
         webServer.addJAXRSClasses(
-                singletonList( DiscoveryService.class.getName() ), ROOT_PATH,
+                singletonList( DiscoveryService.class ), ROOT_PATH,
                 singletonList( injectable( DiscoverableURIs.class, discoverableURIs.get() ) ) );
-        webServer.addJAXRSClasses( getClassNames(), ROOT_PATH, null );
 
-    }
-
-    private List<String> getClassNames()
-    {
-        List<String> toReturn = new ArrayList<>( 2 );
-
-        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
-        {
-            toReturn.add( UserService.class.getName() );
-        }
-
-        return toReturn;
+        webServer.addJAXRSClasses( getClasses(), ROOT_PATH, null );
     }
 
     @Override
     public void stop()
     {
-        webServer.removeJAXRSClasses( getClassNames(), ROOT_PATH );
+        webServer.removeJAXRSClasses( getClasses(), ROOT_PATH );
+    }
+
+    private List<Class<?>> getClasses()
+    {
+        if ( config.get( GraphDatabaseSettings.auth_enabled ) )
+        {
+            return Collections.singletonList( UserService.class );
+        }
+        return Collections.emptyList();
     }
 }

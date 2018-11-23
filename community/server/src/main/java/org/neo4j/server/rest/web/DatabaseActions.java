@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import com.sun.jersey.api.core.HttpContext;
 import org.apache.lucene.search.Sort;
 
 import java.util.Collection;
@@ -68,7 +67,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.rest.domain.EndNodeNotFoundException;
 import org.neo4j.server.rest.domain.PropertySettingStrategy;
 import org.neo4j.server.rest.domain.RelationshipExpanderBuilder;
@@ -110,23 +108,6 @@ public class DatabaseActions
     private final GraphDatabaseAPI graphDb;
 
     private final PropertySettingStrategy propertySetter;
-
-    public static class Provider extends InjectableProvider<DatabaseActions>
-    {
-        private final DatabaseActions database;
-
-        public Provider( DatabaseActions database )
-        {
-            super( DatabaseActions.class );
-            this.database = database;
-        }
-
-        @Override
-        public DatabaseActions getValue( HttpContext c )
-        {
-            return database;
-        }
-    }
 
     private final Function<ConstraintDefinition,Representation> CONSTRAINT_DEF_TO_REPRESENTATION =
             ConstraintDefinitionRepresentation::new;

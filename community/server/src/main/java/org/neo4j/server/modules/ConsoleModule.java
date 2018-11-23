@@ -45,13 +45,13 @@ public class ConsoleModule implements ServerModule
         if ( config.get( ServerSettings.console_module_enabled ) )
         {
             String serverMountPoint = managementApiUri().toString();
-            webServer.addJAXRSClasses( getClassNames(), serverMountPoint, null );
+            webServer.addJAXRSClasses( getClasses(), serverMountPoint, null );
         }
     }
 
-    private List<String> getClassNames()
+    private List<Class<?>> getClasses()
     {
-        return Collections.singletonList( ConsoleService.class.getName() );
+        return Collections.singletonList( ConsoleService.class );
     }
 
     private URI managementApiUri()

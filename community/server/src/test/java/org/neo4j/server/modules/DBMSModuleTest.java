@@ -21,7 +21,7 @@ package org.neo4j.server.modules;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
+import org.mockito.ArgumentCaptor;
 
 import java.net.URI;
 import java.util.List;
@@ -34,13 +34,15 @@ import org.neo4j.server.rest.discovery.DiscoverableURIs;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.test.rule.SuppressOutput;
 
+import static java.util.stream.Collectors.toList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -50,7 +52,6 @@ public class DBMSModuleTest
     public SuppressOutput suppressOutput = SuppressOutput.suppress( SuppressOutput.System.err,
             SuppressOutput.System.out );
 
-    @SuppressWarnings( "unchecked" )
     @Test
     public void shouldRegisterAtRootByDefault() throws Exception
     {
@@ -86,18 +87,14 @@ public class DBMSModuleTest
         module.start();
 
         verify( webServer ).addJAXRSClasses( anyList(), anyString(), isNull() );
-        verify( webServer, never() ).addJAXRSClasses( argThat( new ArgumentMatcher<List<String>>()
-        {
-            @Override
-            public boolean matches( List<String> argument )
-            {
-                return argument.contains( UserService.class.getName() );
-            }
+        ArgumentCaptor<List<Class<?>>> captor = ArgumentCaptor.forClass( List.class );
+        verify( webServer ).addJAXRSClasses( captor.capture(), anyString(), anyCollection() );
 
-            public String toString()
-            {
-                return "<List containing " + UserService.class.getName() + ">";
-            }
-        } ), anyString(), anyCollection() );
+        List<Class<?>> registeredClasses = captor.getAllValues()
+                .stream()
+                .flatMap( List::stream )
+                .collect( toList() );
+
+        assertThat( registeredClasses, not( contains( UserService.class ) ) );
     }
 }

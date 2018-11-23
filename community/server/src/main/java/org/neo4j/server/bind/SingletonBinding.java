@@ -17,26 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.database;
+package org.neo4j.server.bind;
 
-import javax.ws.rs.ext.Provider;
-
-import com.sun.jersey.api.core.HttpContext;
-
-@Provider
-public class DatabaseProvider extends InjectableProvider<Database>
+class SingletonBinding
 {
-    public Database db;
+    private final Object component;
+    private final Class<?> type;
 
-    public DatabaseProvider( Database db )
+    SingletonBinding( Object component, Class<?> type )
     {
-        super( Database.class );
-        this.db = db;
+        this.component = component;
+        this.type = type;
     }
 
-    @Override
-    public Database getValue( HttpContext httpContext )
+    Object component()
     {
-        return db;
+        return component;
+    }
+
+    Class<?> type()
+    {
+        return type;
     }
 }

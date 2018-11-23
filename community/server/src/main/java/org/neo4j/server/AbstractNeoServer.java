@@ -26,13 +26,13 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Clock;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
 import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.ListenSocketAddress;
@@ -55,25 +55,23 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.server.bind.ComponentsBinder;
 import org.neo4j.server.configuration.ServerSettings;
 import org.neo4j.server.database.CypherExecutor;
-import org.neo4j.server.database.CypherExecutorProvider;
 import org.neo4j.server.database.Database;
-import org.neo4j.server.database.DatabaseProvider;
-import org.neo4j.server.database.GraphDatabaseServiceProvider;
 import org.neo4j.server.database.GraphFactory;
-import org.neo4j.server.database.InjectableProvider;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.modules.RESTApiModule;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.plugins.ConfigAdapter;
-import org.neo4j.server.plugins.PluginInvocatorProvider;
+import org.neo4j.server.plugins.PluginInvocator;
 import org.neo4j.server.plugins.PluginManager;
+import org.neo4j.server.rest.repr.InputFormat;
 import org.neo4j.server.rest.repr.InputFormatProvider;
+import org.neo4j.server.rest.repr.OutputFormat;
 import org.neo4j.server.rest.repr.OutputFormatProvider;
 import org.neo4j.server.rest.repr.RepresentationFormatRepository;
 import org.neo4j.server.rest.transactional.TransactionFacade;
-import org.neo4j.server.rest.transactional.TransactionFilter;
 import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
@@ -81,7 +79,6 @@ import org.neo4j.server.rest.web.DatabaseActions;
 import org.neo4j.server.web.AsyncRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
-import org.neo4j.server.web.WebServerProvider;
 import org.neo4j.ssl.SslPolicy;
 import org.neo4j.time.Clocks;
 import org.neo4j.udc.UsageData;
@@ -94,8 +91,6 @@ import static org.neo4j.server.configuration.ServerSettings.http_log_path;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_enabled;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_keep_number;
 import static org.neo4j.server.configuration.ServerSettings.http_logging_rotation_size;
-import static org.neo4j.server.database.InjectableProvider.providerForSingleton;
-import static org.neo4j.server.database.InjectableProvider.providerFromSupplier;
 import static org.neo4j.server.exception.ServerStartupErrors.translateToServerStartupError;
 
 public abstract class AbstractNeoServer implements NeoServer
@@ -269,7 +264,7 @@ public abstract class AbstractNeoServer implements NeoServer
         webServer.setHttpsAddress( httpsListenAddress );
         webServer.setMaxThreads( config.get( ServerSettings.webserver_max_threads ) );
         webServer.setWadlEnabled( config.get( ServerSettings.wadl_enabled ) );
-        webServer.setDefaultInjectables( createDefaultInjectables() );
+        webServer.setComponentsBinder( createComponentsBinder() );
 
         String sslPolicyName = config.get( ServerSettings.ssl_policy );
         if ( sslPolicyName != null )
@@ -405,38 +400,32 @@ public abstract class AbstractNeoServer implements NeoServer
         return null;
     }
 
-    protected Collection<InjectableProvider<?>> createDefaultInjectables()
+    private ComponentsBinder createComponentsBinder()
     {
-        Collection<InjectableProvider<?>> singletons = new ArrayList<>();
-
         Database database = getDatabase();
 
-        singletons.add( new DatabaseProvider( database ) );
-        singletons.add( new DatabaseActions.Provider( databaseActions ) );
-        singletons.add( new GraphDatabaseServiceProvider( database ) );
-        singletons.add( new NeoServerProvider( this ) );
-        singletons.add( providerForSingleton( new ConfigAdapter( getConfig() ), Configuration.class ) );
-        singletons.add( providerForSingleton( getConfig(), Config.class ) );
+        ComponentsBinder binder = new ComponentsBinder();
 
-        singletons.add( new WebServerProvider( getWebServer() ) );
+        binder.addSingletonBinding( database, Database.class );
+        binder.addSingletonBinding( databaseActions, DatabaseActions.class );
+        binder.addSingletonBinding( database.getGraph(), GraphDatabaseService.class );
+        binder.addSingletonBinding( this, NeoServer.class );
+        binder.addSingletonBinding( new ConfigAdapter( getConfig() ), Configuration.class );
+        binder.addSingletonBinding( getConfig(), Config.class );
+        binder.addSingletonBinding( getWebServer(), WebServer.class );
+        binder.addLazyBinding( this::getExtensionManager, PluginInvocator.class );
+        binder.addSingletonBinding( new RepresentationFormatRepository( this ), RepresentationFormatRepository.class );
+        binder.addLazyBinding( InputFormatProvider.class, InputFormat.class );
+        binder.addLazyBinding( OutputFormatProvider.class, OutputFormat.class );
+        binder.addSingletonBinding( cypherExecutor, CypherExecutor.class );
+        binder.addSingletonBinding( transactionFacade, TransactionFacade.class );
+        binder.addLazyBinding( authManagerSupplier, AuthManager.class );
+        binder.addLazyBinding( userManagerSupplier, UserManagerSupplier.class );
+        binder.addSingletonBinding( userLogProvider, LogProvider.class );
+        binder.addSingletonBinding( userLogProvider.getLog( NeoServer.class ), Log.class );
+        binder.addSingletonBinding( resolveDependency( UsageData.class ), UsageData.class );
 
-        PluginInvocatorProvider pluginInvocatorProvider = new PluginInvocatorProvider( this );
-        singletons.add( pluginInvocatorProvider );
-        RepresentationFormatRepository repository = new RepresentationFormatRepository( this );
-
-        singletons.add( new InputFormatProvider( repository ) );
-        singletons.add( new OutputFormatProvider( repository ) );
-        singletons.add( new CypherExecutorProvider( cypherExecutor ) );
-
-        singletons.add( providerForSingleton( transactionFacade, TransactionFacade.class ) );
-        singletons.add( providerFromSupplier( authManagerSupplier, AuthManager.class ) );
-        singletons.add( providerFromSupplier( userManagerSupplier, UserManagerSupplier.class ) );
-        singletons.add( new TransactionFilter( database ) );
-        singletons.add( new LoggingProvider( userLogProvider ) );
-        singletons.add( providerForSingleton( userLogProvider.getLog( NeoServer.class ), Log.class ) );
-        singletons.add( providerForSingleton( resolveDependency( UsageData.class ), UsageData.class ) );
-
-        return singletons;
+        return binder;
     }
 
     @SuppressWarnings( "unchecked" )
