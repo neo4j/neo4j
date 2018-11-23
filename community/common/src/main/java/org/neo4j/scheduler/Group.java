@@ -66,7 +66,8 @@ public enum Group
     BOLT_WORKER( "BoltWorker" ),
 
     // CAUSAL CLUSTER, TOPOLOGY & BACKUP.
-    RAFT( "Raft" ),
+    RAFT_CLIENT( "RaftClient" ),
+    RAFT_SERVER( "RaftServer" ),
     RAFT_TIMER( "RaftTimer" ),
     RAFT_LOG_PRUNING( "RaftLogPruning" ),
     RAFT_BATCH_HANDLER( "RaftBatchHandler" ),
@@ -77,7 +78,8 @@ public enum Group
     AKKA_TOPOLOGY_WORKER( "AkkaTopologyWorkers", ExecutorServiceFactory.workStealing() ),
     MEMBERSHIP_WAITER( "MembershipWaiter" ),
     DOWNLOAD_SNAPSHOT( "DownloadSnapshot" ),
-    CATCHUP( "Catchup" ),
+    CATCHUP_CLIENT( "CatchupClient" ),
+    CATCHUP_SERVER( "CatchupServer" ),
 
     /** Rolls back idle transactions on the server. */
     SERVER_TRANSACTION_TIMEOUT( "ServerTransactionTimeout" ),
