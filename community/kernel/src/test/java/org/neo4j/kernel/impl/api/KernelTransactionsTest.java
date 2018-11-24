@@ -53,6 +53,7 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -725,7 +726,8 @@ public class KernelTransactionsTest
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
-                mockedTokenHolders(), DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
+                mockedTokenHolders(), DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ),
+                mock( IndexStatisticsStore.class ), new Dependencies() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -791,7 +793,8 @@ public class KernelTransactionsTest
                     storageEngine, procedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
-                    DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), dataSourceDependencies );
+                    DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
+                    dataSourceDependencies );
         }
 
         @Override

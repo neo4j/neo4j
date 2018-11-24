@@ -17,30 +17,47 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.store.counts.keys;
+package org.neo4j.kernel.impl.api.index.stats;
 
-import org.neo4j.kernel.impl.api.CountsVisitor;
+import java.util.Objects;
 
-public final class IndexSampleKey extends IndexKey
+class IndexStatisticsValue
 {
-    IndexSampleKey( long indexId )
+    static final int SIZE = Long.SIZE * 2;
+
+    long first;
+    long second;
+
+    IndexStatisticsValue()
     {
-        super( indexId, CountsKeyType.INDEX_SAMPLE );
+    }
+
+    IndexStatisticsValue( long first, long second )
+    {
+        this.first = first;
+        this.second = second;
     }
 
     @Override
-    public void accept( CountsVisitor visitor, long unique, long size )
+    public int hashCode()
     {
-        visitor.visitIndexSample( indexId(), unique, size );
+        return Objects.hash( first, second );
     }
 
     @Override
-    public int compareTo( CountsKey other )
+    public boolean equals( Object obj )
     {
-        if ( other instanceof IndexSampleKey )
+        if ( obj instanceof IndexStatisticsValue )
         {
-            return super.compareTo( other );
+            IndexStatisticsValue other = (IndexStatisticsValue) obj;
+            return first == other.first && second == other.second;
         }
-        return recordType().compareTo( other.recordType() );
+        return false;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "[first:" + first + ",second:" + second + "]";
     }
 }

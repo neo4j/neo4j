@@ -35,12 +35,10 @@ import org.neo4j.storageengine.api.StorageCommand;
 import static java.util.Objects.requireNonNull;
 import static org.neo4j.kernel.api.StatementConstants.ANY_LABEL;
 import static org.neo4j.kernel.api.StatementConstants.ANY_RELATIONSHIP_TYPE;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater
+public class CountsRecordState implements CountsAccessor, RecordState, CountsAccessor.Updater
 {
     private static final long DEFAULT_FIRST_VALUE = 0;
     private static final long DEFAULT_SECOND_VALUE = 0;
@@ -68,44 +66,12 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
     }
 
     @Override
-    public DoubleLongRegister indexSample( long indexId, DoubleLongRegister target )
-    {
-        counts( indexSampleKey( indexId ) ).copyTo( target );
-        return target;
-    }
-
-    @Override
     public void incrementRelationshipCount( long startLabelId, int typeId, long endLabelId, long delta )
     {
         if ( delta != 0 )
         {
             counts( relationshipKey( startLabelId, typeId, endLabelId ) ).increment( 0L, delta );
         }
-    }
-
-    @Override
-    public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target )
-    {
-        counts( indexStatisticsKey( indexId ) ).copyTo( target );
-        return target;
-    }
-
-    @Override
-    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
-    {
-        counts( indexStatisticsKey( indexId ) ).write( updates, size );
-    }
-
-    @Override
-    public void incrementIndexUpdates( long indexId, long delta )
-    {
-        counts( indexStatisticsKey( indexId ) ).increment( delta, 0L );
-    }
-
-    @Override
-    public void replaceIndexSample( long indexId, long unique, long size )
-    {
-        counts( indexSampleKey( indexId ) ).write( unique, size );
     }
 
     @Override
@@ -280,17 +246,6 @@ public class CountsRecordState implements CountsAccessor, RecordState, CountsAcc
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
             verify( relationshipKey( startLabelId, typeId, endLabelId ), 0, count );
-        }
-        @Override
-        public void visitIndexStatistics( long indexId, long updates, long size )
-        {
-            verify( indexStatisticsKey( indexId ), updates, size );
-        }
-
-        @Override
-        public void visitIndexSample( long indexId, long unique, long size )
-        {
-            verify( indexSampleKey( indexId ), unique, size );
         }
 
         private void verify( CountsKey key, long actualFirst, long actualSecond )

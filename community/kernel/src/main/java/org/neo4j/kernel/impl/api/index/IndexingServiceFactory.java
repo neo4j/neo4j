@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -47,19 +48,20 @@ public class IndexingServiceFactory
                                           LogProvider internalLogProvider,
                                           LogProvider userLogProvider,
                                           IndexingService.Monitor monitor,
-                                          SchemaState schemaState )
+                                          SchemaState schemaState,
+                                          IndexStatisticsStore indexStatisticsStore )
     {
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( config );
         MultiPopulatorFactory multiPopulatorFactory = MultiPopulatorFactory.forConfig( config );
         IndexMapReference indexMapRef = new IndexMapReference();
         IndexSamplingControllerFactory factory =
-                new IndexSamplingControllerFactory( samplingConfig, storeView, scheduler, tokenNameLookup, internalLogProvider );
+                new IndexSamplingControllerFactory( samplingConfig, indexStatisticsStore, scheduler, tokenNameLookup, internalLogProvider );
         IndexSamplingController indexSamplingController = factory.create( indexMapRef );
         IndexProxyCreator proxySetup =
-                new IndexProxyCreator( samplingConfig, storeView, providerMap, tokenNameLookup, internalLogProvider );
+                new IndexProxyCreator( samplingConfig, indexStatisticsStore, providerMap, tokenNameLookup, internalLogProvider );
 
         return new IndexingService( proxySetup, providerMap, indexMapRef, storeView, indexRules,
                 indexSamplingController, tokenNameLookup, scheduler, schemaState,
-                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor );
+                multiPopulatorFactory, internalLogProvider, userLogProvider, monitor, indexStatisticsStore );
     }
 }

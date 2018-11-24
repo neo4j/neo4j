@@ -22,8 +22,6 @@ package org.neo4j.storageengine.api;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
@@ -120,26 +118,6 @@ public interface StorageReader extends AutoCloseable
      */
     long countsForRelationship( int startLabelId, int typeId, int endLabelId );
 
-    /**
-     * Returns size of index, i.e. number of entities in that index.
-     *
-     * @param descriptor {@link SchemaDescriptor} to return size for.
-     * @return number of entities in the given index.
-     * @throws IndexNotFoundKernelException if no such index exists.
-     */
-    long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
-    /**
-     * Returns percentage of values in the given {@code index} are unique. A value of {@code 1.0} means that
-     * all values in the index are unique, e.g. that there are no duplicate values. A value of, say {@code 0.9}
-     * means that 10% of the values are duplicates.
-     *
-     * @param descriptor {@link SchemaDescriptor} to get uniqueness percentage for.
-     * @return percentage of values being unique in this index, max {@code 1.0} for all unique.
-     * @throws IndexNotFoundKernelException if no such index exists.
-     */
-    double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException;
-
     long nodesGetCount();
 
     long relationshipsGetCount();
@@ -149,12 +127,6 @@ public interface StorageReader extends AutoCloseable
     int propertyKeyCount();
 
     int relationshipTypeCount();
-
-    DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException;
-
-    DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException;
 
     boolean nodeExists( long id );
 

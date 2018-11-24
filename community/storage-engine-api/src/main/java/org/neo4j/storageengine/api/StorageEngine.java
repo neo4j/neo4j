@@ -19,6 +19,7 @@
  */
 package org.neo4j.storageengine.api;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.stream.Stream;
 
@@ -112,7 +113,7 @@ public interface StorageEngine
      * all changes applied to this storage engine will be durable.
      * @param limiter The {@link IOLimiter} used to moderate the rate of IO caused by the flush process.
      */
-    void flushAndForce( IOLimiter limiter );
+    void flushAndForce( IOLimiter limiter ) throws IOException;
 
     /**
      * Dump diagnostics about the storage onto {@link DiagnosticsManager}.

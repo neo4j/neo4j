@@ -22,18 +22,18 @@ package org.neo4j.kernel.impl.api.index.updater;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 
 public class UpdateCountingIndexUpdater implements IndexUpdater
 {
-    private final IndexStoreView storeView;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final long indexId;
     private final IndexUpdater delegate;
     private long updates;
 
-    public UpdateCountingIndexUpdater( IndexStoreView storeView, long indexId, IndexUpdater delegate )
+    public UpdateCountingIndexUpdater( IndexStatisticsStore indexStatisticsStore, long indexId, IndexUpdater delegate )
     {
-        this.storeView = storeView;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.indexId = indexId;
         this.delegate = delegate;
     }
@@ -49,6 +49,6 @@ public class UpdateCountingIndexUpdater implements IndexUpdater
     public void close() throws IndexEntryConflictException
     {
         delegate.close();
-        storeView.incrementIndexUpdates( indexId, updates );
+        indexStatisticsStore.incrementIndexUpdates( indexId, updates );
     }
 }

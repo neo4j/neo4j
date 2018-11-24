@@ -22,9 +22,7 @@ package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 import java.util.Iterator;
 import java.util.function.Function;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.StatementConstants;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -33,8 +31,6 @@ import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.register.Register;
-import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageIndexReference;
@@ -55,7 +51,6 @@ public class RecordStorageReader implements StorageReader
 {
     // These token holders should perhaps move to the cache layer.. not really any reason to have them here?
     private final TokenHolders tokenHolders;
-    private final IndexingService indexService;
     private final NodeStore nodeStore;
     private final RelationshipStore relationshipStore;
     private final RelationshipGroupStore relationshipGroupStore;
@@ -66,12 +61,9 @@ public class RecordStorageReader implements StorageReader
 
     private boolean closed;
 
-    RecordStorageReader(
-            TokenHolders tokenHolders, NeoStores neoStores, CountsTracker counts,
-            IndexingService indexService, SchemaCache schemaCache )
+    RecordStorageReader( TokenHolders tokenHolders, NeoStores neoStores, CountsTracker counts, SchemaCache schemaCache )
     {
         this.tokenHolders = tokenHolders;
-        this.indexService = indexService;
         this.nodeStore = neoStores.getNodeStore();
         this.relationshipStore = neoStores.getRelationshipStore();
         this.relationshipGroupStore = neoStores.getRelationshipGroupStore();
@@ -87,7 +79,7 @@ public class RecordStorageReader implements StorageReader
      */
     public RecordStorageReader( NeoStores stores )
     {
-        this( null, stores, null, null, null );
+        this( null, stores, null, null );
     }
 
     @Override
@@ -118,19 +110,6 @@ public class RecordStorageReader implements StorageReader
     public Iterator<StorageIndexReference> indexesGetRelatedToProperty( int propertyId )
     {
         return map( descriptor -> descriptor, schemaCache.indexesByProperty( propertyId ) );
-    }
-
-    @Override
-    public long indexSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        Register.DoubleLongRegister result = indexService.indexUpdatesAndSize( descriptor );
-        return result.readSecond();
-    }
-
-    @Override
-    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexService.indexUniqueValuesPercentage( descriptor );
     }
 
     @Override
@@ -214,25 +193,6 @@ public class RecordStorageReader implements StorageReader
     public int relationshipTypeCount()
     {
         return tokenHolders.relationshipTypeTokens().size();
-    }
-
-    @Override
-    public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException
-    {
-        return counts.indexUpdatesAndSize( tryGetIndexId( descriptor ), target );
-    }
-
-    @Override
-    public DoubleLongRegister indexSample( SchemaDescriptor descriptor, DoubleLongRegister target )
-            throws IndexNotFoundKernelException
-    {
-        return counts.indexSample( tryGetIndexId( descriptor ), target );
-    }
-
-    private long tryGetIndexId( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        return indexService.getIndexId( descriptor );
     }
 
     @Override

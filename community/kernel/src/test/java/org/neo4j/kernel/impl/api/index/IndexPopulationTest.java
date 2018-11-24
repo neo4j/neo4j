@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.values.storable.Values;
@@ -54,12 +55,13 @@ public class IndexPopulationTest
         NullLogProvider logProvider = NullLogProvider.getInstance();
         IndexStoreView storeView = emptyIndexStoreViewThatProcessUpdates();
         IndexPopulator.Adapter populator = emptyPopulatorWithThrowingUpdater();
-        FailedIndexProxy failedProxy = failedIndexProxy( storeView, populator );
-        OnlineIndexProxy onlineProxy = onlineIndexProxy( storeView );
+        IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
+        FailedIndexProxy failedProxy = failedIndexProxy( populator, indexStatisticsStore );
+        OnlineIndexProxy onlineProxy = onlineIndexProxy( indexStatisticsStore );
         FlippableIndexProxy flipper = new FlippableIndexProxy();
         flipper.setFlipTarget( () -> onlineProxy );
         MultipleIndexPopulator multipleIndexPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ) );
+                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation =
                 multipleIndexPopulator.addPopulator( populator, dummyMeta(), flipper, t -> failedProxy, "userDescription" );
@@ -73,15 +75,15 @@ public class IndexPopulationTest
         assertSame( "flipper should have flipped to failing proxy", flipper.getState(), InternalIndexState.FAILED );
     }
 
-    private OnlineIndexProxy onlineIndexProxy( IndexStoreView storeView )
+    private OnlineIndexProxy onlineIndexProxy( IndexStatisticsStore indexStatisticsStore )
     {
-        return new OnlineIndexProxy( dummyMeta(), IndexAccessor.EMPTY, storeView, false );
+        return new OnlineIndexProxy( dummyMeta(), IndexAccessor.EMPTY, indexStatisticsStore, false );
     }
 
-    private FailedIndexProxy failedIndexProxy( IndexStoreView storeView, IndexPopulator.Adapter populator )
+    private FailedIndexProxy failedIndexProxy( IndexPopulator.Adapter populator, IndexStatisticsStore indexStatisticsStore )
     {
         return new FailedIndexProxy( dummyMeta(), "userDescription", populator, IndexPopulationFailure
-                .failure( "failure" ), new IndexCountsRemover( storeView, 0 ), NullLogProvider.getInstance() );
+                .failure( "failure" ), indexStatisticsStore, NullLogProvider.getInstance() );
     }
 
     private IndexPopulator.Adapter emptyPopulatorWithThrowingUpdater()

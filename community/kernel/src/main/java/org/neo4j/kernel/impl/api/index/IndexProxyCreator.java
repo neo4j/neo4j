@@ -26,6 +26,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.LogProvider;
@@ -38,19 +39,19 @@ import static java.lang.String.format;
 class IndexProxyCreator
 {
     private final IndexSamplingConfig samplingConfig;
-    private final IndexStoreView storeView;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final IndexProviderMap providerMap;
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
 
     IndexProxyCreator( IndexSamplingConfig samplingConfig,
-            IndexStoreView storeView,
+            IndexStatisticsStore indexStatisticsStore,
             IndexProviderMap providerMap,
             TokenNameLookup tokenNameLookup,
             LogProvider logProvider )
     {
         this.samplingConfig = samplingConfig;
-        this.storeView = storeView;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.providerMap = providerMap;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
@@ -68,7 +69,7 @@ class IndexProxyCreator
         FailedIndexProxyFactory failureDelegateFactory = new FailedPopulatingIndexProxyFactory( capableIndexDescriptor,
                 populator,
                 indexUserDescription,
-                new IndexCountsRemover( storeView, descriptor.getId() ),
+                indexStatisticsStore,
                 logProvider );
 
         MultipleIndexPopulator.IndexPopulation indexPopulation = populationJob
@@ -82,7 +83,7 @@ class IndexProxyCreator
         {
             monitor.populationCompleteOn( descriptor );
             IndexAccessor accessor = onlineAccessorFromProvider( descriptor, samplingConfig );
-            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( capableIndexDescriptor, accessor, storeView, true );
+            OnlineIndexProxy onlineProxy = new OnlineIndexProxy( capableIndexDescriptor, accessor, indexStatisticsStore, true );
             if ( flipToTentative )
             {
                 return new TentativeConstraintIndexProxy( flipper, onlineProxy );
@@ -107,7 +108,7 @@ class IndexProxyCreator
             IndexAccessor onlineAccessor = onlineAccessorFromProvider( descriptor, samplingConfig );
             CapableIndexDescriptor capableIndexDescriptor = providerMap.withCapabilities( descriptor );
             IndexProxy proxy;
-            proxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessor, storeView, false );
+            proxy = new OnlineIndexProxy( capableIndexDescriptor, onlineAccessor, indexStatisticsStore, false );
             proxy = new ContractCheckingIndexProxy( proxy, true );
             return proxy;
         }
@@ -130,7 +131,7 @@ class IndexProxyCreator
                 indexUserDescription,
                 indexPopulator,
                 populationFailure,
-                new IndexCountsRemover( storeView, descriptor.getId() ),
+                indexStatisticsStore,
                 logProvider );
         proxy = new ContractCheckingIndexProxy( proxy, true );
         return proxy;

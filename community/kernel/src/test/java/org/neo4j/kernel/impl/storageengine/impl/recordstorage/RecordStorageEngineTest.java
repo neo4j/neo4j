@@ -154,7 +154,7 @@ public class RecordStorageEngineTest
     }
 
     @Test
-    public void mustFlushStoresWithGivenIOLimiter()
+    public void mustFlushStoresWithGivenIOLimiter() throws IOException
     {
         IOLimiter limiter = IOLimiter.UNLIMITED;
         FileSystemAbstraction fs = fsRule.get();
@@ -186,8 +186,9 @@ public class RecordStorageEngineTest
         Set<File> allPossibleFiles = databaseLayout.storeFiles();
         allPossibleFiles.remove( databaseLayout.countStoreB() );
         allPossibleFiles.remove( databaseLayout.labelScanStore() );
+        allPossibleFiles.remove( databaseLayout.indexStatisticsStore() );
 
-        assertEquals( currentFiles, allPossibleFiles );
+        assertEquals( allPossibleFiles, currentFiles );
     }
 
     private RecordStorageEngine buildRecordStorageEngine()

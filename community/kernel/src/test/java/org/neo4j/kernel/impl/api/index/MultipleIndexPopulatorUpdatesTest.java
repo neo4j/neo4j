@@ -26,7 +26,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import java.io.IOException;
 import java.util.function.IntPredicate;
 import java.util.function.Supplier;
 
@@ -41,15 +40,10 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
-import org.neo4j.kernel.impl.store.InlineNodeLabels;
-import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.NodeStore;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.StoreViewNodeStoreScan;
 import org.neo4j.kernel.impl.util.Listener;
@@ -72,18 +66,16 @@ public class MultipleIndexPopulatorUpdatesTest
 
     @Test
     public void updateForHigherNodeIgnoredWhenUsingFullNodeStoreScan()
-            throws IndexPopulationFailedKernelException, IOException, IndexEntryConflictException
+            throws IndexPopulationFailedKernelException, IndexEntryConflictException
     {
-        NeoStores neoStores = Mockito.mock( NeoStores.class );
-        NodeStore nodeStore = mock( NodeStore.class );
-        CountsTracker counts = mock( CountsTracker.class );
+        IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
-        when( neoStores.getNodeStore() ).thenReturn( nodeStore );
-
+        StorageReader reader = mock( StorageReader.class );
+        when( reader.allocateNodeCursor() ).thenReturn( mock( StorageNodeCursor.class ) );
         ProcessListenableNeoStoreIndexView
-                storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, neoStores, counts, () -> mock( StorageReader.class ) );
+                storeView = new ProcessListenableNeoStoreIndexView( LockService.NO_LOCK_SERVICE, () -> reader );
         MultipleIndexPopulator indexPopulator =
-                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ) );
+                new MultipleIndexPopulator( storeView, logProvider, EntityType.NODE, mock( SchemaState.class ), indexStatisticsStore );
 
         storeView.setProcessListener( new NodeUpdateProcessListener( indexPopulator ) );
 
@@ -99,31 +91,23 @@ public class MultipleIndexPopulatorUpdatesTest
         Mockito.verify( indexUpdater, never() ).process( any(IndexEntryUpdate.class) );
     }
 
-    private NodeRecord getNodeRecord()
-    {
-        NodeRecord nodeRecord = new NodeRecord( 1L );
-        nodeRecord.initialize( true, 0, false, 1, 0x0000000001L );
-        InlineNodeLabels.putSorted( nodeRecord, new long[]{1}, null, null );
-        return nodeRecord;
-    }
-
     private IndexPopulator createIndexPopulator()
     {
         return mock( IndexPopulator.class );
     }
 
-    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator,
+    private void addPopulator( MultipleIndexPopulator multipleIndexPopulator,
             IndexPopulator indexPopulator, long indexId, IndexDescriptor descriptor )
     {
-        return addPopulator( multipleIndexPopulator, descriptor.withId( indexId ), indexPopulator,
-                             mock( FlippableIndexProxy.class ), mock( FailedIndexProxyFactory.class ) );
+        addPopulator( multipleIndexPopulator, descriptor.withId( indexId ), indexPopulator, mock( FlippableIndexProxy.class ),
+                mock( FailedIndexProxyFactory.class ) );
     }
 
-    private MultipleIndexPopulator.IndexPopulation addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
+    private void addPopulator( MultipleIndexPopulator multipleIndexPopulator, StoreIndexDescriptor descriptor,
             IndexPopulator indexPopulator, FlippableIndexProxy flippableIndexProxy, FailedIndexProxyFactory failedIndexProxyFactory )
     {
-        return multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(),
-                flippableIndexProxy, failedIndexProxyFactory, "userIndexDescription" );
+        multipleIndexPopulator.addPopulator( indexPopulator, descriptor.withoutCapabilities(), flippableIndexProxy, failedIndexProxyFactory,
+                "userIndexDescription" );
     }
 
     private static class NodeUpdateProcessListener implements Listener<StorageNodeCursor>
@@ -150,12 +134,10 @@ public class MultipleIndexPopulatorUpdatesTest
     private class ProcessListenableNeoStoreIndexView extends NeoStoreIndexStoreView
     {
         private Listener<StorageNodeCursor> processListener;
-        private NeoStores neoStores;
 
-        ProcessListenableNeoStoreIndexView( LockService locks, NeoStores neoStores, CountsTracker counts, Supplier<StorageReader> storageReaderSupplier )
+        ProcessListenableNeoStoreIndexView( LockService locks, Supplier<StorageReader> storageReaderSupplier )
         {
-            super( locks, neoStores, counts, storageReaderSupplier );
-            this.neoStores = neoStores;
+            super( locks, storageReaderSupplier );
         }
 
         @Override
@@ -166,7 +148,7 @@ public class MultipleIndexPopulatorUpdatesTest
                 boolean forceStoreScan )
         {
 
-            return new ListenableNodeScanViewNodeStoreScan<>( new RecordStorageReader( neoStores ), locks, labelUpdateVisitor,
+            return new ListenableNodeScanViewNodeStoreScan<>( storageEngine.get(), locks, labelUpdateVisitor,
                     propertyUpdatesVisitor, labelIds, propertyKeyIdFilter, processListener );
         }
 

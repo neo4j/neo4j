@@ -203,9 +203,8 @@ public abstract class GraphStoreFixture extends ConfigurablePageCacheRule implem
             CountsTracker counts = new CountsTracker( logProvider, fileSystem, pageCache, config, databaseLayout(), EmptyVersionContextSupplier.EMPTY );
             storeLife.add( counts );
 
-            IndexStoreView indexStoreView =
-                    new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, nativeStores.getRawNeoStores(), counts,
-                            () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
+            IndexStoreView indexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
+                    () -> new RecordStorageReader( nativeStores.getRawNeoStores() ) );
 
             Monitors monitors = new Monitors();
             LabelScanStore labelScanStore = startLabelScanStore( pageCache, indexStoreView, monitors );

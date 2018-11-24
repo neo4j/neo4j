@@ -424,18 +424,6 @@ public class CountsRotationTest
             {
                 records.add( Pair.of( CountsKeyFactory.relationshipKey( startLabelId, typeId, endLabelId ), count ) );
             }
-
-            @Override
-            public void visitIndexStatistics( long indexId, long updates, long size )
-            {
-                records.add( Pair.of( CountsKeyFactory.indexStatisticsKey( indexId ), size ) );
-            }
-
-            @Override
-            public void visitIndexSample( long indexId, long unique, long size )
-            {
-                records.add( Pair.of( CountsKeyFactory.indexSampleKey( indexId ), size ) );
-            }
         } );
         return records;
     }

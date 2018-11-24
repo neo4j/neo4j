@@ -23,9 +23,7 @@ public enum CountsKeyType
 {
     EMPTY( 0 ),
     ENTITY_NODE( 2 ),
-    ENTITY_RELATIONSHIP( 3 ),
-    INDEX_STATISTICS( 4 ),
-    INDEX_SAMPLE( 5 );
+    ENTITY_RELATIONSHIP( 3 );
 
     public final byte code;
 
@@ -43,9 +41,9 @@ public enum CountsKeyType
         case 3:
             return CountsKeyType.ENTITY_RELATIONSHIP;
         case 4:
-            return CountsKeyType.INDEX_STATISTICS;
         case 5:
-            return CountsKeyType.INDEX_SAMPLE;
+            // These are legacy entries, index statistics and index sample. They now live in IndexStatisticsStore
+            return CountsKeyType.EMPTY;
         default:
             throw new IllegalArgumentException( "Parsed key type from count store deserialization of unknown type." );
         }

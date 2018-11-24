@@ -23,6 +23,7 @@ import org.neo4j.common.EntityType;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.LogProvider;
 
 /**
@@ -37,8 +38,8 @@ public abstract class MultiPopulatorFactory
     {
     }
 
-    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type,
-            SchemaState schemaState );
+    public abstract MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+            IndexStatisticsStore indexStatisticsStore );
 
     public static MultiPopulatorFactory forConfig( Config config )
     {
@@ -49,20 +50,20 @@ public abstract class MultiPopulatorFactory
     private static class SingleThreadedPopulatorFactory extends MultiPopulatorFactory
     {
         @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type,
-                SchemaState schemaState )
+        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+                IndexStatisticsStore indexStatisticsStore )
         {
-            return new MultipleIndexPopulator( storeView, logProvider, type, schemaState );
+            return new MultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore );
         }
     }
 
     private static class MultiThreadedPopulatorFactory extends MultiPopulatorFactory
     {
         @Override
-        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type,
-                SchemaState schemaState )
+        public MultipleIndexPopulator create( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+                IndexStatisticsStore indexStatisticsStore )
         {
-            return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState );
+            return new BatchingMultipleIndexPopulator( storeView, logProvider, type, schemaState, indexStatisticsStore );
         }
     }
 }

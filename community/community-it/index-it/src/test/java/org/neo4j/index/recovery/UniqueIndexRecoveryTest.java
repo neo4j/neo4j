@@ -232,7 +232,7 @@ public class UniqueIndexRecoveryTest
         );
     }
 
-    private void flushAll()
+    private void flushAll() throws IOException
     {
         db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
     }

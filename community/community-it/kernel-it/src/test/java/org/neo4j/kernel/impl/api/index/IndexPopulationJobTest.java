@@ -59,6 +59,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
@@ -123,6 +124,7 @@ public class IndexPopulationJobTest
     private IndexStoreView indexStoreView;
     private DatabaseSchemaState stateHolder;
     private int labelId;
+    private IndexStatisticsStore indexStatisticsStore;
 
     @Before
     public void before() throws Exception
@@ -132,6 +134,7 @@ public class IndexPopulationJobTest
         kernel = db.getDependencyResolver().resolveDependency( Kernel.class );
         stateHolder = new DatabaseSchemaState( NullLogProvider.getInstance() );
         indexStoreView = indexStoreView();
+        indexStatisticsStore = db.getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
 
         try ( Transaction tx = kernel.beginTransaction( implicit, AUTH_DISABLED ) )
         {
@@ -515,7 +518,7 @@ public class IndexPopulationJobTest
         // given
         NullLogProvider logProvider = NullLogProvider.getInstance();
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( IndexStoreView.EMPTY, logProvider, EntityType.NODE,
-                new DatabaseSchemaState( logProvider ) );
+                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ) );
         IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
 
         // when
@@ -563,7 +566,7 @@ public class IndexPopulationJobTest
             }
         };
         TrackingMultipleIndexPopulator populator = new TrackingMultipleIndexPopulator( failingStoreView, logProvider, EntityType.NODE,
-                new DatabaseSchemaState( logProvider ) );
+                new DatabaseSchemaState( logProvider ), mock( IndexStatisticsStore.class ) );
         IndexPopulationJob populationJob = new IndexPopulationJob( populator, NO_MONITOR, false );
 
         // when
@@ -662,7 +665,7 @@ public class IndexPopulationJobTest
             };
         }
 
-        public void setJob( IndexPopulationJob job )
+        void setJob( IndexPopulationJob job )
         {
             this.job = job;
         }
@@ -684,7 +687,7 @@ public class IndexPopulationJobTest
             this.index = SchemaDescriptorFactory.forLabel( label, propertyKeyId );
         }
 
-        public void setJob( IndexPopulationJob job )
+        void setJob( IndexPopulationJob job )
         {
             this.job = job;
         }
@@ -768,7 +771,7 @@ public class IndexPopulationJobTest
         long indexId = 0;
         flipper.setFlipTarget( mock( IndexProxyFactory.class ) );
 
-        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder );
+        MultipleIndexPopulator multiPopulator = new MultipleIndexPopulator( storeView, logProvider, type, stateHolder, indexStatisticsStore );
         IndexPopulationJob job = new IndexPopulationJob( multiPopulator, NO_MONITOR, false );
         job.addPopulator( populator, descriptor.withId( indexId ).withoutCapabilities(),
                 format( ":%s(%s)", FIRST.name(), name ), flipper, failureDelegateFactory );
@@ -840,9 +843,10 @@ public class IndexPopulationJobTest
     {
         private volatile boolean closed;
 
-        TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
+        TrackingMultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+                IndexStatisticsStore indexStatisticsStore )
         {
-            super( storeView, logProvider, type, schemaState );
+            super( storeView, logProvider, type, schemaState, indexStatisticsStore );
         }
 
         @Override

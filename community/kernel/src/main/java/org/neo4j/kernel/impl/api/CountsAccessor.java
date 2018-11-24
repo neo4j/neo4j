@@ -35,18 +35,6 @@ public interface CountsAccessor extends CountsVisitor.Visitable
      */
     DoubleLongRegister relationshipCount( int startLabelId, int typeId, int endLabelId, DoubleLongRegister target );
 
-    /**
-     * @param target a register to store the read values in
-     * @return the input register for convenience
-     */
-    DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister target );
-
-    /**
-     * @param target a register to store the read values in
-     * @return the input register for convenience
-     */
-    DoubleLongRegister indexSample( long indexId, DoubleLongRegister target );
-
     interface Updater extends AutoCloseable
     {
         void incrementNodeCount( long labelId, long delta );
@@ -57,27 +45,13 @@ public interface CountsAccessor extends CountsVisitor.Visitable
         void close();
     }
 
-    interface IndexStatsUpdater extends AutoCloseable
-    {
-        void replaceIndexUpdateAndSize( long indexId, long updates, long size );
-
-        void replaceIndexSample( long indexId, long unique, long size );
-
-        void incrementIndexUpdates( long indexId, long delta );
-
-        @Override
-        void close();
-    }
-
     final class Initializer implements CountsVisitor
     {
         private final Updater updater;
-        private final IndexStatsUpdater stats;
 
-        public Initializer( Updater updater, IndexStatsUpdater stats )
+        public Initializer( Updater updater )
         {
             this.updater = updater;
-            this.stats = stats;
         }
 
         @Override
@@ -90,18 +64,6 @@ public interface CountsAccessor extends CountsVisitor.Visitable
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
         {
             updater.incrementRelationshipCount( startLabelId, typeId, endLabelId, count );
-        }
-
-        @Override
-        public void visitIndexStatistics( long indexId, long updates, long size )
-        {
-            stats.replaceIndexUpdateAndSize( indexId, updates, size );
-        }
-
-        @Override
-        public void visitIndexSample( long indexId, long unique, long size )
-        {
-            stats.replaceIndexSample( indexId, unique, size );
         }
     }
 }

@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -135,7 +136,7 @@ public class OperationsLockTest
         when( engine.newReader() ).thenReturn( storageReader );
         indexingService = mock( IndexingService.class );
         allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( Procedures.class ), mock( SchemaState.class ), indexingService,
-                mock( LabelScanStore.class ), new Dependencies() );
+                mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), new Dependencies() );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         creationContext = mock( CommandCreationContext.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), creationContext,
@@ -482,6 +483,7 @@ public class OperationsLockTest
         IndexProxy indexProxy = mock( IndexProxy.class );
         when( indexProxy.getDescriptor() ).thenReturn( index );
         when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
+        when( storageReader.indexGetForSchema( index.schema() ) ).thenReturn( index );
 
         // when
         operations.indexDrop( index );

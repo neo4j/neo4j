@@ -62,14 +62,6 @@ public interface IndexStoreView
     <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor );
 
-    DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output );
-
-    DoubleLongRegister indexSample( long indexId, DoubleLongRegister output );
-
-    void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize );
-
-    void incrementIndexUpdates( long indexId, long updatesDelta );
-
     NodePropertyAccessor newPropertyAccessor();
 
     @SuppressWarnings( "rawtypes" )
@@ -117,29 +109,6 @@ public interface IndexStoreView
                 Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
         {
             return EMPTY_SCAN;
-        }
-
-        @Override
-        public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements,
-                long indexSize )
-        {
-        }
-
-        @Override
-        public DoubleLongRegister indexUpdatesAndSize( long indexId, DoubleLongRegister output )
-        {
-            return output;
-        }
-
-        @Override
-        public DoubleLongRegister indexSample( long indexId, DoubleLongRegister output )
-        {
-            return output;
-        }
-
-        @Override
-        public void incrementIndexUpdates( long indexId, long updatesDelta )
-        {
         }
 
         @Override

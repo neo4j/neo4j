@@ -73,6 +73,8 @@ public enum DatabaseFile
 
     METADATA_STORE( DatabaseFileNames.METADATA_STORE ),
 
+    INDEX_STATISTICS_STORE( false, DatabaseFileNames.INDEX_STATISTICS_STORE ),
+
     LABEL_SCAN_STORE( false, DatabaseFileNames.LABEL_SCAN_STORE );
 
     private final List<String> names;

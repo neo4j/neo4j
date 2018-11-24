@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -37,6 +38,7 @@ import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -113,10 +115,9 @@ class OnlineIndexUpdatesTest
     private LifeSupport life;
     private PropertyCreator propertyCreator;
     private DirectRecordAccess<PropertyRecord,PrimitiveRecord> recordAccess;
-    private CountsTracker counts;
 
     @BeforeEach
-    void setUp() throws Exception
+    void setUp()
     {
         life = new LifeSupport();
         DatabaseLayout databaseLayout = testDirectory.databaseLayout();
@@ -126,7 +127,8 @@ class OnlineIndexUpdatesTest
                         fileSystem, nullLogProvider, EmptyVersionContextSupplier.EMPTY );
 
         neoStores = storeFactory.openAllNeoStores( true );
-        counts = new CountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
+        CountsTracker counts =
+                new CountsTracker( NullLogProvider.getInstance(), fileSystem, pageCache, config, databaseLayout, EmptyVersionContextSupplier.EMPTY );
         counts.setInitializer( DataInitializer.empty() );
         life.add( counts );
         nodeStore = neoStores.getNodeStore();
@@ -137,10 +139,11 @@ class OnlineIndexUpdatesTest
         dependencies.satisfyDependency( EMPTY );
         DefaultIndexProviderMap providerMap = new DefaultIndexProviderMap( dependencies, config );
         life.add( providerMap );
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, RecoveryCleanupWorkCollector.immediate() );
         indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, providerMap,
-                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, neoStores, counts, () -> new RecordStorageReader( neoStores ) ),
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) ),
                 idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
-                IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ) );
+                IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ), indexStatisticsStore );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );

@@ -52,8 +52,6 @@ import org.neo4j.time.SystemNanoClock;
 
 import static java.lang.String.format;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.counts_store_rotation_timeout;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
@@ -161,26 +159,9 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
         return get( relationshipKey( startLabelId, typeId, endLabelId ), target );
     }
 
-    @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId, Register.DoubleLongRegister target )
-    {
-        return get( indexStatisticsKey( indexId ), target );
-    }
-
-    @Override
-    public Register.DoubleLongRegister indexSample( long indexId, Register.DoubleLongRegister target )
-    {
-        return get( indexSampleKey( indexId ), target );
-    }
-
     public Optional<CountsAccessor.Updater> apply( long txId )
     {
         return updater( txId ).map( CountsUpdater::new );
-    }
-
-    public CountsAccessor.IndexStatsUpdater updateIndexCounts()
-    {
-        return new CountsUpdater( updater() );
     }
 
     public CountsAccessor.Updater reset( long txId )

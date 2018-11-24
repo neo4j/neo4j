@@ -28,7 +28,6 @@ import java.util.function.Function;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.store.record.Record;
-import org.neo4j.register.Register;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
@@ -177,18 +176,6 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public long indexSize( SchemaDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
     public long nodesGetCount()
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
@@ -214,18 +201,6 @@ public class StubStorageCursors implements StorageReader
 
     @Override
     public int relationshipTypeCount()
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor, Register.DoubleLongRegister target )
-    {
-        throw new UnsupportedOperationException( "Not implemented yet" );
-    }
-
-    @Override
-    public Register.DoubleLongRegister indexSample( SchemaDescriptor descriptor, Register.DoubleLongRegister target )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

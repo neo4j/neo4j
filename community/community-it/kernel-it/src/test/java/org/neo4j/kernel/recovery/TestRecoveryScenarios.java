@@ -275,7 +275,7 @@ public class TestRecoveryScenarios
         FORCE_EVERYTHING
                 {
                     @Override
-                    void flush( GraphDatabaseAPI db )
+                    void flush( GraphDatabaseAPI db ) throws IOException
                     {
                         IOLimiter limiter = IOLimiter.UNLIMITED;
                         db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );

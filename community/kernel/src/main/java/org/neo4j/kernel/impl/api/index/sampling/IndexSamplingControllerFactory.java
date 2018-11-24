@@ -23,7 +23,7 @@ import java.util.function.Predicate;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexMapSnapshotProvider;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -35,17 +35,17 @@ import static org.neo4j.register.Registers.newDoubleLongRegister;
 public class IndexSamplingControllerFactory
 {
     private final IndexSamplingConfig config;
-    private final IndexStoreView storeView;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final JobScheduler scheduler;
     private final TokenNameLookup tokenNameLookup;
     private final LogProvider logProvider;
 
-    public IndexSamplingControllerFactory( IndexSamplingConfig config, IndexStoreView storeView,
+    public IndexSamplingControllerFactory( IndexSamplingConfig config, IndexStatisticsStore indexStatisticsStore,
                                            JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                                            LogProvider logProvider )
     {
         this.config = config;
-        this.storeView = storeView;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.scheduler = scheduler;
         this.tokenNameLookup = tokenNameLookup;
         this.logProvider = logProvider;
@@ -53,8 +53,7 @@ public class IndexSamplingControllerFactory
 
     public IndexSamplingController create( IndexMapSnapshotProvider snapshotProvider )
     {
-        OnlineIndexSamplingJobFactory jobFactory =
-                new OnlineIndexSamplingJobFactory( storeView, tokenNameLookup, logProvider );
+        OnlineIndexSamplingJobFactory jobFactory = new OnlineIndexSamplingJobFactory( indexStatisticsStore, tokenNameLookup, logProvider );
         Predicate<Long> samplingUpdatePredicate = createSamplingPredicate();
         IndexSamplingJobQueue<Long> jobQueue = new IndexSamplingJobQueue<>( samplingUpdatePredicate );
         IndexSamplingJobTracker jobTracker = new IndexSamplingJobTracker( config, scheduler );
@@ -74,7 +73,7 @@ public class IndexSamplingControllerFactory
             @Override
             public boolean test( Long indexId )
             {
-                storeView.indexUpdatesAndSize( indexId, output );
+                indexStatisticsStore.indexUpdatesAndSize( indexId, output );
                 long updates = output.readFirst();
                 long size = output.readSecond();
                 long threshold = Math.round( config.updateRatio() * size );
@@ -94,11 +93,10 @@ public class IndexSamplingControllerFactory
             @Override
             public boolean test( StoreIndexDescriptor descriptor )
             {
-                boolean result = storeView.indexSample( descriptor.getId(), register ).readSecond() == 0;
+                boolean result = indexStatisticsStore.indexSample( descriptor.getId(), register ).readSecond() == 0;
                 if ( result )
                 {
-                    log.debug( "Recovering index sampling for index %s",
-                            descriptor.schema().userDescription( tokenNameLookup ) );
+                    log.debug( "Recovering index sampling for index %s", descriptor.schema().userDescription( tokenNameLookup ) );
                 }
                 return result;
             }

@@ -81,8 +81,12 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+=======
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
+>>>>>>> A super-simple concurrent store for index statistics
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -105,7 +109,6 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
-import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
@@ -561,9 +564,6 @@ public class FullCheckIntegrationTest
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );
         Iterator<StoreIndexDescriptor> indexDescriptorIterator =
                 SchemaRuleAccess.getSchemaRuleAccess( fixture.directStoreAccess().nativeStores().getSchemaStore() ).indexesGetAll();
-        NeoStoreIndexStoreView storeView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE,
-                fixture.directStoreAccess().nativeStores().getRawNeoStores(), fixture.directStoreAccess().counts(),
-                () -> new RecordStorageReader( fixture.directStoreAccess().nativeStores().getRawNeoStores() ) );
         while ( indexDescriptorIterator.hasNext() )
         {
             StoreIndexDescriptor indexDescriptor = indexDescriptorIterator.next();

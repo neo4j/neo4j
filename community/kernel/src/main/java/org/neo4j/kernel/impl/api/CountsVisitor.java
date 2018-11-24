@@ -30,10 +30,6 @@ public interface CountsVisitor
 
     void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count );
 
-    void visitIndexStatistics( long indexId, long updates, long size );
-
-    void visitIndexSample( long indexId, long unique, long size );
-
     class Adapter implements CountsVisitor
     {
         @Override
@@ -44,18 +40,6 @@ public interface CountsVisitor
 
         @Override
         public void visitRelationshipCount( int startLabelId, int typeId, int endLabelId, long count )
-        {
-            // override in subclasses
-        }
-
-        @Override
-        public void visitIndexStatistics( long indexId, long updates, long size )
-        {
-            // override in subclasses
-        }
-
-        @Override
-        public void visitIndexSample( long indexId, long unique, long size )
         {
             // override in subclasses
         }
@@ -79,24 +63,6 @@ public interface CountsVisitor
                     for ( CountsVisitor visitor : visitors )
                     {
                         visitor.visitRelationshipCount( startLabelId, typeId, endLabelId, count );
-                    }
-                }
-
-                @Override
-                public void visitIndexStatistics( long indexId, long updates, long size )
-                {
-                    for ( CountsVisitor visitor : visitors )
-                    {
-                        visitor.visitIndexStatistics( indexId, updates, size );
-                    }
-                }
-
-                @Override
-                public void visitIndexSample( long indexId, long unique, long size )
-                {
-                    for ( CountsVisitor visitor : visitors )
-                    {
-                        visitor.visitIndexSample( indexId, unique, size );
                     }
                 }
             };

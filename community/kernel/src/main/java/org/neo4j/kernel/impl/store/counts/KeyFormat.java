@@ -27,8 +27,6 @@ import org.neo4j.kernel.impl.store.kvstore.ReadableBuffer;
 import org.neo4j.kernel.impl.store.kvstore.UnknownKey;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
-
 class KeyFormat implements CountsVisitor
 {
     private static final byte NODE_COUNT = 1;
@@ -82,47 +80,6 @@ class KeyFormat implements CountsVisitor
               .putInt( 12, endLabelId );
     }
 
-    /**
-     * Key format:
-     * <pre>
-     *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-     * [t,0,0,0,i,i,i,i ; 0,0,0,0,0,0,0,k]
-     *  t - index entry marker - "{@link #INDEX}"
-     *  k - entry (sub)type - "{@link #INDEX_STATS}"
-     *  i - index id
-     * </pre>
-     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexUpdateAndSize(long, long, long)}.
-     */
-    @Override
-    public void visitIndexStatistics( long indexId, long updates, long size )
-    {
-        indexKey( INDEX_STATS, indexId );
-    }
-
-    /**
-     * Key format:
-     * <pre>
-     *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-     * [t,0,0,0,i,i,i,i ; 0,0,0,0,0,0,0,k]
-     *  t - index entry marker - "{@link #INDEX}"
-     *  k - entry (sub)type - "{@link #INDEX_SAMPLE}"
-     *  i - index id
-     * </pre>
-     * For value format, see {@link org.neo4j.kernel.impl.store.counts.CountsUpdater#replaceIndexSample(long , long, long)}.
-     */
-    @Override
-    public void visitIndexSample( long indexId, long unique, long size )
-    {
-        indexKey( INDEX_SAMPLE, indexId );
-    }
-
-    private void indexKey( byte indexKey, long indexId )
-    {
-        buffer.putByte( 0, INDEX )
-              .putInt( 4, (int) indexId )
-              .putByte( 15, indexKey );
-    }
-
     public static CountsKey readKey( ReadableBuffer key ) throws UnknownKey
     {
         switch ( key.getByte( 0 ) )
@@ -132,17 +89,7 @@ class KeyFormat implements CountsVisitor
         case KeyFormat.RELATIONSHIP_COUNT:
             return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
         case KeyFormat.INDEX:
-            byte indexKeyByte = key.getByte( 15 );
-            long indexId = key.getInt( 4 );
-            switch ( indexKeyByte )
-            {
-            case KeyFormat.INDEX_STATS:
-                return indexStatisticsKey( indexId );
-            case KeyFormat.INDEX_SAMPLE:
-                return CountsKeyFactory.indexSampleKey( indexId );
-            default:
-                throw new IllegalStateException( "Unknown index key: " + indexKeyByte );
-            }
+            return null;
         default:
             throw new UnknownKey( "Unknown key type: " + key );
         }

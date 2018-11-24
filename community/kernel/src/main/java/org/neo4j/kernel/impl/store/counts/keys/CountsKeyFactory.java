@@ -36,14 +36,4 @@ public class CountsKeyFactory
     {
         return new RelationshipKey( toIntExact( startLabelId ), typeId, toIntExact( endLabelId ) );
     }
-
-    public static IndexStatisticsKey indexStatisticsKey( long indexId )
-    {
-        return new IndexStatisticsKey( indexId );
-    }
-
-    public static IndexSampleKey indexSampleKey( long indexId )
-    {
-        return new IndexSampleKey( indexId );
-    }
 }

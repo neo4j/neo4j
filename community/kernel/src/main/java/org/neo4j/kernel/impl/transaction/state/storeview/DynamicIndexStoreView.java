@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.state.storeview;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
@@ -31,11 +32,9 @@ import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
-import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.register.Register;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -51,15 +50,15 @@ public class DynamicIndexStoreView implements IndexStoreView
     private final LabelScanStore labelScanStore;
     protected final LockService locks;
     private final Log log;
-    private final NeoStores neoStores;
+    protected final Supplier<StorageReader> storageEngine;
 
     public DynamicIndexStoreView( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
-            NeoStores neoStores, LogProvider logProvider )
+            Supplier<StorageReader> storageEngine, LogProvider logProvider )
     {
-        this.neoStores = neoStores;
         this.neoStoreIndexStoreView = neoStoreIndexStoreView;
         this.locks = locks;
         this.labelScanStore = labelScanStore;
+        this.storageEngine = storageEngine;
         this.log = logProvider.getLog( getClass() );
     }
 
@@ -74,7 +73,7 @@ public class DynamicIndexStoreView implements IndexStoreView
             return neoStoreIndexStoreView.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor, labelUpdateVisitor,
                     forceStoreScan );
         }
-        return new LabelScanViewNodeStoreScan<>( new RecordStorageReader( neoStores ), locks, labelScanStore, labelUpdateVisitor,
+        return new LabelScanViewNodeStoreScan<>( storageEngine.get(), locks, labelScanStore, labelUpdateVisitor,
                 propertyUpdatesVisitor, labelIds, propertyKeyIdFilter );
     }
 
@@ -82,31 +81,7 @@ public class DynamicIndexStoreView implements IndexStoreView
     public <FAILURE extends Exception> StoreScan<FAILURE> visitRelationships( int[] relationshipTypeIds, IntPredicate propertyKeyIdFilter,
             Visitor<EntityUpdates,FAILURE> propertyUpdateVisitor )
     {
-        return new RelationshipStoreScan<>( new RecordStorageReader( neoStores ), locks, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter );
-    }
-
-    @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( long indexId, Register.DoubleLongRegister output )
-    {
-        return neoStoreIndexStoreView.indexUpdatesAndSize( indexId, output );
-    }
-
-    @Override
-    public Register.DoubleLongRegister indexSample( long indexId, Register.DoubleLongRegister output )
-    {
-        return neoStoreIndexStoreView.indexSample( indexId, output );
-    }
-
-    @Override
-    public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize )
-    {
-        neoStoreIndexStoreView.replaceIndexCounts( indexId, uniqueElements, maxUniqueElements, indexSize );
-    }
-
-    @Override
-    public void incrementIndexUpdates( long indexId, long updatesDelta )
-    {
-        neoStoreIndexStoreView.incrementIndexUpdates( indexId, updatesDelta );
+        return new RelationshipStoreScan<>( storageEngine.get(), locks, propertyUpdateVisitor, relationshipTypeIds, propertyKeyIdFilter );
     }
 
     private boolean useAllNodeStoreScan( int[] labelIds )

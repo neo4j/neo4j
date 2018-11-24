@@ -25,7 +25,6 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
-import org.neo4j.register.Register;
 
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
@@ -55,34 +54,23 @@ public class CountsOracle
         state.addRelationship( start.labels, type, end.labels );
     }
 
-    public void indexUpdatesAndSize( long indexId, long updates, long size )
-    {
-        state.replaceIndexUpdateAndSize( indexId, updates, size );
-    }
-
-    public void indexSampling( long indexId, long unique, long size )
-    {
-        state.replaceIndexSample( indexId, unique, size );
-    }
-
     public void update( CountsTracker target, long txId )
     {
-        try ( CountsAccessor.Updater updater = target.apply( txId ).get();
-              CountsAccessor.IndexStatsUpdater stats = target.updateIndexCounts() )
+        try ( CountsAccessor.Updater updater = target.apply( txId ).get() )
         {
-            state.accept( new CountsAccessor.Initializer( updater, stats ) );
+            state.accept( new CountsAccessor.Initializer( updater ) );
         }
     }
 
     public void update( CountsOracle target )
     {
-        state.accept( new CountsAccessor.Initializer( target.state, target.state ) );
+        state.accept( new CountsAccessor.Initializer( target.state ) );
     }
 
     public <Tracker extends CountsVisitor.Visitable & CountsAccessor> void verify( final Tracker tracker )
     {
         CountsRecordState seenState = new CountsRecordState();
-        final CountsAccessor.Initializer initializer = new CountsAccessor.Initializer( seenState, seenState );
+        final CountsAccessor.Initializer initializer = new CountsAccessor.Initializer( seenState );
         List<CountsRecordState.Difference> differences = state.verify(
                 verifier -> tracker.accept( CountsVisitor.Adapter.multiplex( initializer, verifier ) ) );
         seenState.accept( new CountsVisitor()
@@ -100,24 +88,6 @@ public class CountsOracle
                 long expected = tracker.relationshipCount(
                         startLabelId, typeId, endLabelId, newDoubleLongRegister() ).readSecond();
                 assertEquals( "Should be able to read visited state.", expected, count );
-            }
-
-            @Override
-            public void visitIndexStatistics( long indexId, long updates, long size )
-            {
-                Register.DoubleLongRegister output =
-                        tracker.indexUpdatesAndSize( indexId, newDoubleLongRegister() );
-                assertEquals( "Should be able to read visited state.", output.readFirst(), updates );
-                assertEquals( "Should be able to read visited state.", output.readSecond(), size );
-            }
-
-            @Override
-            public void visitIndexSample( long indexId, long unique, long size )
-            {
-                Register.DoubleLongRegister output =
-                        tracker.indexSample( indexId, newDoubleLongRegister() );
-                assertEquals( "Should be able to read visited state.", output.readFirst(), unique );
-                assertEquals( "Should be able to read visited state.", output.readSecond(), size );
             }
         } );
         if ( !differences.isEmpty() )

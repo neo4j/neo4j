@@ -25,6 +25,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -36,27 +37,27 @@ public class FailedIndexProxy extends AbstractSwallowingIndexProxy
 {
     protected final IndexPopulator populator;
     private final String indexUserDescription;
-    private final IndexCountsRemover indexCountsRemover;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final Log log;
 
     FailedIndexProxy( CapableIndexDescriptor capableIndexDescriptor,
             String indexUserDescription,
             IndexPopulator populator,
             IndexPopulationFailure populationFailure,
-            IndexCountsRemover indexCountsRemover,
+            IndexStatisticsStore indexStatisticsStore,
             LogProvider logProvider )
     {
         super( capableIndexDescriptor, populationFailure );
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
-        this.indexCountsRemover = indexCountsRemover;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.log = logProvider.getLog( getClass() );
     }
 
     @Override
     public void drop()
     {
-        indexCountsRemover.remove();
+        indexStatisticsStore.removeIndex( getDescriptor().getId() );
         String message = "FailedIndexProxy#drop index on " + indexUserDescription + " dropped due to:\n" +
                      getPopulationFailure().asString();
         log.info( message );

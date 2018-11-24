@@ -57,7 +57,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -100,8 +99,6 @@ public class CountsTrackerTest
             CountsOracle.Node a = oracle.node( 1 );
             CountsOracle.Node b = oracle.node( 1 );
             oracle.relationship( a, 1, b );
-            oracle.indexSampling( indexId, 2, 2 );
-            oracle.indexUpdatesAndSize( indexId, 10, 2 );
         }
 
         // when
@@ -114,16 +111,6 @@ public class CountsTrackerTest
         tracker.rotate( 2 );
 
         // then
-        oracle.verify( tracker );
-
-        // when
-        try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
-        {
-            updater.incrementIndexUpdates( indexId, 2 );
-        }
-
-        // then
-        oracle.indexUpdatesAndSize( indexId, 12, 2 );
         oracle.verify( tracker );
 
         // when
@@ -334,25 +321,6 @@ public class CountsTrackerTest
 
     @Test
     @Resources.Life( STARTED )
-    public void shouldRotateOnDataChangesEvenIfTransactionIsUnchanged() throws Exception
-    {
-        // given
-        CountsTracker tracker = resourceManager.managed( newTracker() );
-        File before = tracker.currentFile();
-        try ( CountsAccessor.IndexStatsUpdater updater = tracker.updateIndexCounts() )
-        {
-            updater.incrementIndexUpdates( 7, 100 );
-        }
-
-        // when
-        tracker.rotate( tracker.txId() );
-
-        // then
-        assertNotEquals( "rotated", before, tracker.currentFile() );
-    }
-
-    @Test
-    @Resources.Life( STARTED )
     public void shouldSupportTransactionsAppliedOutOfOrderOnRotation() throws Exception
     {
         // given
@@ -489,9 +457,6 @@ public class CountsTrackerTest
         oracle.relationship( n1, 1, n3 );
         oracle.relationship( n1, 1, n2 );
         oracle.relationship( n0, 1, n3 );
-        long indexId = 2;
-        oracle.indexUpdatesAndSize( indexId, 0L, 50L );
-        oracle.indexSampling( indexId, 25L, 50L );
         return oracle;
     }
 

@@ -55,12 +55,12 @@ import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.register.Register.DoubleLongRegister;
@@ -229,12 +229,12 @@ public class IndexStatisticsTest
         }
         catch ( IndexNotFoundKernelException e )
         {
-            DoubleLongRegister actual = getCounts().indexSample( indexId, Registers.newDoubleLongRegister() );
+            DoubleLongRegister actual = getIndexingStatisticsStore().indexSample( indexId, Registers.newDoubleLongRegister() );
             assertDoubleLongEquals( 0L, 0L, actual );
         }
 
         // and then index size and index updates are zero on disk
-        DoubleLongRegister actual = getCounts().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
+        DoubleLongRegister actual = getIndexingStatisticsStore().indexUpdatesAndSize( indexId, Registers.newDoubleLongRegister() );
         assertDoubleLongEquals( 0L, 0L, actual );
     }
 
@@ -552,14 +552,14 @@ public class IndexStatisticsTest
         }
     }
 
-    private long indexSize( IndexReference reference ) throws KernelException
+    private long indexSize( IndexReference reference ) throws IndexNotFoundKernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
                                       .indexUpdatesAndSize( reference.schema() ).readSecond();
     }
 
-    private long indexUpdates( IndexReference reference  ) throws KernelException
+    private long indexUpdates( IndexReference reference  ) throws IndexNotFoundKernelException
     {
         return ((GraphDatabaseAPI) db).getDependencyResolver()
                                       .resolveDependency( IndexingService.class )
@@ -578,14 +578,12 @@ public class IndexStatisticsTest
 
     private double getSelectivity( IndexReference reference ) throws IndexNotFoundKernelException
     {
-
         return bridge.getKernelTransactionBoundToThisThread( true ).schemaRead().indexUniqueValuesSelectivity( reference );
     }
 
-    private CountsTracker getCounts()
+    private IndexStatisticsStore getIndexingStatisticsStore()
     {
-        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
-                .testAccessCountsStore();
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
     }
 
     private void createSomePersons() throws KernelException

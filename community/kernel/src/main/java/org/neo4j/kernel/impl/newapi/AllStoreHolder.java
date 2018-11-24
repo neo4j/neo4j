@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.api.IndexReaderCache;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
@@ -70,7 +71,8 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.register.Register;
+import org.neo4j.register.Register.DoubleLongRegister;
+import org.neo4j.register.Registers;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
@@ -98,6 +100,7 @@ public class AllStoreHolder extends Read
     private final SchemaState schemaState;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies dataSourceDependencies;
     private final IndexReaderCache indexReaderCache;
     private LabelScanReader labelScanReader;
@@ -109,6 +112,7 @@ public class AllStoreHolder extends Read
                            SchemaState schemaState,
                            IndexingService indexingService,
                            LabelScanStore labelScanStore,
+                           IndexStatisticsStore indexStatisticsStore,
                            Dependencies dataSourceDependencies )
     {
         super( storageReader, cursors, ktx );
@@ -118,6 +122,7 @@ public class AllStoreHolder extends Read
         this.indexReaderCache = new IndexReaderCache( indexingService );
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.dataSourceDependencies = dataSourceDependencies;
     }
 
@@ -522,7 +527,15 @@ public class AllStoreHolder extends Read
         SchemaDescriptor schema = index.schema();
         acquireSharedSchemaLock( schema );
         ktx.assertOpen();
-        return storageReader.indexUniqueValuesPercentage( schema );
+        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        if ( storageIndex == null )
+        {
+            throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
+        }
+        DoubleLongRegister output = indexStatisticsStore.indexSample( storageIndex.indexReference(), Registers.newDoubleLongRegister() );
+        long unique = output.readFirst();
+        long size = output.readSecond();
+        return size == 0 ? 1.0d : ((double) unique) / ((double) size);
     }
 
     @Override
@@ -532,7 +545,12 @@ public class AllStoreHolder extends Read
         SchemaDescriptor schema = index.schema();
         acquireSharedSchemaLock( schema );
         ktx.assertOpen();
-        return storageReader.indexSize( schema );
+        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        if ( storageIndex == null )
+        {
+            throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
+        }
+        return indexStatisticsStore.indexUpdatesAndSize( storageIndex.indexReference(), Registers.newDoubleLongRegister() ).readSecond();
     }
 
     @Override
@@ -561,22 +579,33 @@ public class AllStoreHolder extends Read
     }
 
     @Override
-    public Register.DoubleLongRegister indexUpdatesAndSize( IndexReference index, Register.DoubleLongRegister target )
+    public DoubleLongRegister indexUpdatesAndSize( IndexReference index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        return storageReader.indexUpdatesAndSize( index.schema(), target );
+        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        if ( storageIndex == null )
+        {
+            throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
+        }
+        return indexStatisticsStore.indexUpdatesAndSize( storageIndex.indexReference(), target );
 
     }
 
     @Override
-    public Register.DoubleLongRegister indexSample( IndexReference index, Register.DoubleLongRegister target )
+    public DoubleLongRegister indexSample( IndexReference index, DoubleLongRegister target )
             throws IndexNotFoundKernelException
     {
         ktx.assertOpen();
         assertValidIndex( index );
-        return storageReader.indexSample( index.schema(), target );
+        StorageIndexReference storageIndex = storageReader.indexGetForSchema( index.schema() );
+        if ( storageIndex == null )
+        {
+            throw new IndexNotFoundKernelException( "No index found for " + index.schema() );
+        }
+
+        return indexStatisticsStore.indexSample( storageIndex.indexReference(), target );
     }
 
     IndexReference indexGetForSchema( SchemaDescriptor descriptor )
@@ -761,7 +790,6 @@ public class AllStoreHolder extends Read
     {
         return callProcedure( id, arguments,
                 new OverriddenAccessMode( ktx.securityContext().mode(), AccessMode.Static.TOKEN_WRITE ) );
-
     }
 
     @Override

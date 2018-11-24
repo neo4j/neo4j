@@ -55,7 +55,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -100,7 +99,6 @@ public class NeoStoreIndexStoreViewTest
     private Node stefan;
     private LockService locks;
     private NeoStores neoStores;
-    private CountsTracker counts;
     private Relationship aKnowsS;
     private Relationship sKnowsA;
     private StorageReader reader;
@@ -116,7 +114,6 @@ public class NeoStoreIndexStoreViewTest
 
         RecordStorageEngine storageEngine = graphDb.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
         neoStores = storageEngine.testAccessNeoStores();
-        counts = storageEngine.testAccessCountsStore();
 
         locks = mock( LockService.class );
         when( locks.acquireNodeLock( anyLong(), any() ) ).thenAnswer(
@@ -130,7 +127,7 @@ public class NeoStoreIndexStoreViewTest
             Long nodeId = invocation.getArgument( 0 );
             return lockMocks.computeIfAbsent( nodeId, k -> mock( Lock.class ) );
         } );
-        storeView = new NeoStoreIndexStoreView( locks, neoStores, counts, storageEngine::newReader );
+        storeView = new NeoStoreIndexStoreView( locks, storageEngine::newReader );
         propertyAccessor = storeView.newPropertyAccessor();
         reader = storageEngine.newReader();
     }
@@ -334,7 +331,7 @@ public class NeoStoreIndexStoreViewTest
         assertThat( Iterables.map( IndexEntryUpdate::indexKey, propertyUpdates.forIndexKeys( indexes ) ), containsInAnyOrder( index1, index2, index3 ) );
     }
 
-    EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
+    private EntityUpdates add( long nodeId, int propertyKeyId, Object value, long[] labels )
     {
         return EntityUpdates.forEntity( nodeId ).withTokens( labels ).added( propertyKeyId, Values.of( value ) ).build();
     }
@@ -389,7 +386,6 @@ public class NeoStoreIndexStoreViewTest
 
     private static class CopyUpdateVisitor implements Visitor<EntityUpdates,RuntimeException>
     {
-
         private EntityUpdates propertyUpdates;
 
         @Override
@@ -399,7 +395,7 @@ public class NeoStoreIndexStoreViewTest
             return true;
         }
 
-        public EntityUpdates getPropertyUpdates()
+        EntityUpdates getPropertyUpdates()
         {
             return propertyUpdates;
         }

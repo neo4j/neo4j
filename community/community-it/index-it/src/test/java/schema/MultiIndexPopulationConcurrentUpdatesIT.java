@@ -68,15 +68,14 @@ import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
@@ -309,14 +308,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     {
         RecordStorageEngine storageEngine = getStorageEngine();
         NeoStores neoStores = getNeoStores();
-        CountsTracker counts = getCounts();
         LabelScanStore labelScanStore = getLabelScanStore();
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
         try ( Transaction transaction = embeddedDatabase.beginTx();
               KernelTransaction ktx = transactionStatementContextBridge.getKernelTransactionBoundToThisThread( true ) )
         {
-            DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, neoStores, counts, storageEngine::newReader, labelScanStore );
+            DynamicIndexStoreView storeView = dynamicIndexStoreViewWrapper( customAction, storageEngine::newReader, labelScanStore );
 
             IndexProviderMap providerMap = getIndexProviderMap();
             JobScheduler scheduler = getJobScheduler();
@@ -325,7 +323,8 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
-                    nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState() );
+                    nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
+                    embeddedDatabase.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ) );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
@@ -335,12 +334,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         }
     }
 
-    private DynamicIndexStoreView dynamicIndexStoreViewWrapper( Runnable customAction, NeoStores neoStores, CountsTracker counts,
+    private DynamicIndexStoreView dynamicIndexStoreViewWrapper( Runnable customAction,
             Supplier<StorageReader> readerSupplier, LabelScanStore labelScanStore )
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
-        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, neoStores, counts, readerSupplier );
-        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, locks, neoStores, customAction );
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( locks, readerSupplier );
+        return new DynamicIndexStoreViewWrapper( neoStoreIndexStoreView, labelScanStore, locks, readerSupplier, customAction );
     }
 
     private void waitAndActivateIndexes( Map<String,Integer> labelsIds, int propertyId )
@@ -470,11 +469,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return getStorageEngine().testAccessNeoStores();
     }
 
-    private CountsTracker getCounts()
-    {
-        return getStorageEngine().testAccessCountsStore();
-    }
-
     private RecordStorageEngine getStorageEngine()
     {
         return embeddedDatabase.resolveDependency( RecordStorageEngine.class );
@@ -503,14 +497,12 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     private class DynamicIndexStoreViewWrapper extends DynamicIndexStoreView
     {
         private final Runnable customAction;
-        private final NeoStores neoStores;
 
         DynamicIndexStoreViewWrapper( NeoStoreIndexStoreView neoStoreIndexStoreView, LabelScanStore labelScanStore, LockService locks,
-                NeoStores neoStores, Runnable customAction )
+                Supplier<StorageReader> storageEngine, Runnable customAction )
         {
-            super( neoStoreIndexStoreView, labelScanStore, locks, neoStores, NullLogProvider.getInstance() );
+            super( neoStoreIndexStoreView, labelScanStore, locks, storageEngine, NullLogProvider.getInstance() );
             this.customAction = customAction;
-            this.neoStores = neoStores;
         }
 
         @Override
@@ -522,7 +514,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         {
             StoreScan<FAILURE> storeScan = super.visitNodes( labelIds, propertyKeyIdFilter, propertyUpdatesVisitor,
                     labelUpdateVisitor, forceStoreScan );
-            return new LabelScanViewNodeStoreWrapper<>( new RecordStorageReader( neoStores ), locks, getLabelScanStore(),
+            return new LabelScanViewNodeStoreWrapper<>( storageEngine.get(), locks, getLabelScanStore(),
                     element -> false, propertyUpdatesVisitor, labelIds, propertyKeyIdFilter,
                     (LabelScanViewNodeStoreScan<FAILURE>) storeScan, customAction );
         }

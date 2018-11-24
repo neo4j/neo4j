@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitor;
@@ -339,6 +340,7 @@ public class Database extends LifecycleAdapter
             life.add( logFiles );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
+            IndexStatisticsStore indexStatisticsStore = dataSourceDependencies.resolveDependency( IndexStatisticsStore.class );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
@@ -346,10 +348,16 @@ public class Database extends LifecycleAdapter
                     buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore, databaseMonitors );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
-            final DatabaseKernelModule kernelModule =
-                    buildKernel( logFiles, transactionLogModule.transactionAppender(), dataSourceDependencies.resolveDependency( IndexingService.class ),
-                            databaseSchemaState, dataSourceDependencies.resolveDependency( LabelScanStore.class ), storageEngine, transactionIdStore,
-                            databaseAvailabilityGuard, clock );
+            final DatabaseKernelModule kernelModule = buildKernel(
+                    logFiles,
+                    transactionLogModule.transactionAppender(),
+                    dataSourceDependencies.resolveDependency( IndexingService.class ),
+                    databaseSchemaState,
+                    dataSourceDependencies.resolveDependency( LabelScanStore.class ),
+                    storageEngine,
+                    transactionIdStore, databaseAvailabilityGuard,
+                    clock,
+                    indexStatisticsStore );
 
             kernelModule.satisfyDependencies( dataSourceDependencies );
 
@@ -359,6 +367,7 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
+            dataSourceDependencies.satisfyDependency( indexProviderMap );
 
             this.executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
@@ -494,7 +503,8 @@ public class Database extends LifecycleAdapter
     private DatabaseKernelModule buildKernel( LogFiles logFiles, TransactionAppender appender,
             IndexingService indexingService, DatabaseSchemaState databaseSchemaState, LabelScanStore labelScanStore,
             StorageEngine storageEngine, TransactionIdStore transactionIdStore,
-            AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock )
+            AvailabilityGuard databaseAvailabilityGuard, SystemNanoClock clock,
+            IndexStatisticsStore indexStatisticsStore )
     {
         AtomicReference<CpuClock> cpuClockRef = setupCpuClockAtomicReference();
         AtomicReference<HeapAllocation> heapAllocationRef = setupHeapAllocationAtomicReference();
@@ -520,7 +530,7 @@ public class Database extends LifecycleAdapter
                         transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore,
-                        dataSourceDependencies ) );
+                        indexStatisticsStore, dataSourceDependencies ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 

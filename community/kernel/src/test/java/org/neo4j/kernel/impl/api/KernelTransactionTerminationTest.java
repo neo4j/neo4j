@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -348,7 +349,7 @@ public class KernelTransactionTerminationTest
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL,
                     LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
                     EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
-                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
+                    mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), new Dependencies() );
 
             this.monitor = monitor;
         }

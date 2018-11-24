@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.function.IntPredicate;
+import java.util.function.Supplier;
 
 import org.neo4j.collection.PrimitiveLongResourceCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
@@ -36,6 +37,7 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
@@ -143,8 +145,9 @@ public class DynamicIndexStoreViewTest
     private DynamicIndexStoreView dynamicIndexStoreView()
     {
         LockService locks = LockService.NO_LOCK_SERVICE;
-        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, neoStores, countStore, () -> mock( StorageReader.class ) ), labelScanStore,
-                locks, neoStores, NullLogProvider.getInstance() );
+        Supplier<StorageReader> storageReaderSupplier = () -> new RecordStorageReader( neoStores );
+        return new DynamicIndexStoreView( new NeoStoreIndexStoreView( locks, storageReaderSupplier ), labelScanStore,
+                locks, storageReaderSupplier, NullLogProvider.getInstance() );
     }
 
     private NodeRecord getNodeRecord()
@@ -159,5 +162,4 @@ public class DynamicIndexStoreViewTest
         Register.DoubleLongRegister register = Registers.newDoubleLongRegister( labelId, labelId );
         when( countStore.nodeCount( eq( labelId ), any( Register.DoubleLongRegister.class ) ) ).thenReturn( register );
     }
-
 }

@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -102,6 +103,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final String currentDatabaseName;
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final Dependencies dataSourceDependencies;
     private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
@@ -144,6 +146,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
             TokenHolders tokenHolders, String currentDatabaseName, IndexingService indexingService, LabelScanStore labelScanStore,
+            IndexStatisticsStore indexStatisticsStore,
             Dependencies dataSourceDependencies )
     {
         this.config = config;
@@ -167,6 +170,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.currentDatabaseName = currentDatabaseName;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.dataSourceDependencies = dataSourceDependencies;
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
@@ -372,7 +376,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, dataSourceDependencies );
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, dataSourceDependencies );
             this.transactions.add( tx );
             return tx;
         }

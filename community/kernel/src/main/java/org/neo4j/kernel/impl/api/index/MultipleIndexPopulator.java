@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -107,9 +108,11 @@ public class MultipleIndexPopulator implements IndexPopulator
     protected final Log log;
     private final EntityType type;
     private final SchemaState schemaState;
+    private final IndexStatisticsStore indexStatisticsStore;
     private StoreScan<IndexPopulationFailedKernelException> storeScan;
 
-    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState )
+    public MultipleIndexPopulator( IndexStoreView storeView, LogProvider logProvider, EntityType type, SchemaState schemaState,
+            IndexStatisticsStore indexStatisticsStore )
     {
         this.storeView = storeView;
         this.propertyAccessor = storeView.newPropertyAccessor();
@@ -117,6 +120,7 @@ public class MultipleIndexPopulator implements IndexPopulator
         this.log = logProvider.getLog( IndexPopulationJob.class );
         this.type = type;
         this.schemaState = schemaState;
+        this.indexStatisticsStore = indexStatisticsStore;
     }
 
     IndexPopulation addPopulator( IndexPopulator populator, CapableIndexDescriptor capableIndexDescriptor, FlippableIndexProxy flipper,
@@ -299,7 +303,7 @@ public class MultipleIndexPopulator implements IndexPopulator
 
     private void resetIndexCountsForPopulation( IndexPopulation indexPopulation )
     {
-        storeView.replaceIndexCounts( indexPopulation.indexId, 0, 0, 0 );
+        indexStatisticsStore.replaceIndexCounts( indexPopulation.indexId, 0, 0, 0 );
     }
 
     void flipAfterPopulation( boolean verifyBeforeFlipping )
@@ -484,7 +488,6 @@ public class MultipleIndexPopulator implements IndexPopulator
         final FlippableIndexProxy flipper;
         private final long indexId;
         private final CapableIndexDescriptor capableIndexDescriptor;
-        private final IndexCountsRemover indexCountsRemover;
         private final FailedIndexProxyFactory failedIndexProxyFactory;
         private final String indexUserDescription;
         private boolean populationOngoing = true;
@@ -501,13 +504,12 @@ public class MultipleIndexPopulator implements IndexPopulator
             this.flipper = flipper;
             this.failedIndexProxyFactory = failedIndexProxyFactory;
             this.indexUserDescription = indexUserDescription;
-            this.indexCountsRemover = new IndexCountsRemover( storeView, indexId );
             this.batchedUpdatesFromScan = new ArrayList<>( BATCH_SIZE_SCAN );
         }
 
         private void flipToFailed( IndexPopulationFailure failure )
         {
-            flipper.flipTo( new FailedIndexProxy( capableIndexDescriptor, indexUserDescription, populator, failure, indexCountsRemover, logProvider ) );
+            flipper.flipTo( new FailedIndexProxy( capableIndexDescriptor, indexUserDescription, populator, failure, indexStatisticsStore, logProvider ) );
         }
 
         void create()
@@ -572,7 +574,7 @@ public class MultipleIndexPopulator implements IndexPopulator
                                 populator.verifyDeferredConstraints( propertyAccessor );
                             }
                             IndexSample sample = populator.sampleResult();
-                            storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
+                            indexStatisticsStore.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                             populator.close( true );
                             schemaState.clear();
                             return true;

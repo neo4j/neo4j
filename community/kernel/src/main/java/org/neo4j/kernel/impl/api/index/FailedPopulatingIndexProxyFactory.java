@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 
@@ -30,19 +31,19 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     private final CapableIndexDescriptor capableIndexDescriptor;
     private final IndexPopulator populator;
     private final String indexUserDescription;
-    private final IndexCountsRemover indexCountsRemover;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final LogProvider logProvider;
 
     FailedPopulatingIndexProxyFactory( CapableIndexDescriptor capableIndexDescriptor,
             IndexPopulator populator,
             String indexUserDescription,
-            IndexCountsRemover indexCountsRemover,
+            IndexStatisticsStore indexStatisticsStore,
             LogProvider logProvider )
     {
         this.capableIndexDescriptor = capableIndexDescriptor;
         this.populator = populator;
         this.indexUserDescription = indexUserDescription;
-        this.indexCountsRemover = indexCountsRemover;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.logProvider = logProvider;
     }
 
@@ -50,6 +51,6 @@ public class FailedPopulatingIndexProxyFactory implements FailedIndexProxyFactor
     public IndexProxy create( Throwable failure )
     {
         return new FailedIndexProxy( capableIndexDescriptor, indexUserDescription, populator, failure( failure ),
-                indexCountsRemover, logProvider );
+                indexStatisticsStore, logProvider );
     }
 }

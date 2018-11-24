@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
@@ -94,7 +95,7 @@ public class KernelTransactionFactory
                         new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
                         new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                         new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
-                        mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
+                        mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ), new Dependencies() );
 
         StatementLocks statementLocks = new SimpleStatementLocks( new NoOpClient() );
 

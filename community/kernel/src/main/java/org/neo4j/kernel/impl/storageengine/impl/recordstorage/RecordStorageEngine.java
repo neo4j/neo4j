@@ -41,9 +41,9 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.diagnostics.providers.NeoStoresDiagnostics.NeoStoreIdUsage;
@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -78,7 +79,6 @@ import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.StoreType;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.store.counts.ReadOnlyCountsTracker;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
@@ -132,7 +132,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
-    private final IndexProviderMap indexProviderMap;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaRuleAccess;
     private final ConstraintSemantics constraintSemantics;
@@ -146,6 +145,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final CountsTracker countsStore;
     private final int denseNodeThreshold;
     private final int recordIdBatchSize;
+    private final IndexStatisticsStore indexStatisticsStore;
 
     public RecordStorageEngine(
             DatabaseLayout databaseLayout,
@@ -189,7 +189,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
 
-            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores, countsStore, this::newReader );
+            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, this::newReader );
             boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.SINGLE;
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
             labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
@@ -198,12 +198,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // We need to load the property tokens here, since we need them before we load the indexes.
             tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
 
-            indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, neoStores, logProvider );
-            this.indexProviderMap = indexProviderMap;
+            indexStoreView = new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, this::newReader, logProvider );
+            indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, recoveryCleanupWorkCollector );
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
                     cast( Iterators.asList( schemaRuleAccess.indexesGetAll() ) ), logProvider, userLogProvider,
-                    indexingServiceMonitor, schemaState );
+                    indexingServiceMonitor, schemaState, indexStatisticsStore );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
@@ -254,7 +254,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public StorageReader newReader()
     {
-        return new RecordStorageReader( tokenHolders, neoStores, countsStore, indexingService, schemaCache );
+        return new RecordStorageReader( tokenHolders, neoStores, countsStore, schemaCache );
     }
 
     @Override
@@ -379,10 +379,10 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public void satisfyDependencies( DependencySatisfier satisfier )
     {
         satisfier.satisfyDependency( cacheAccess );
-        satisfier.satisfyDependency( indexProviderMap );
         satisfier.satisfyDependency( integrityValidator );
         satisfier.satisfyDependency( labelScanStore );
         satisfier.satisfyDependency( indexingService );
+        satisfier.satisfyDependency( indexStatisticsStore );
         satisfier.satisfyDependency( neoStores.getMetaDataStore() );
         satisfier.satisfyDependency( indexStoreView );
     }
@@ -440,19 +440,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void flushAndForce( IOLimiter limiter )
+    public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         indexingService.forceAll( limiter );
         labelScanStore.force( limiter );
-        try
-        {
-            countsStore.rotate( neoStores.getMetaDataStore().getLastCommittedTransactionId() );
-            neoStores.flush( limiter );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Failed to flush", e );
-        }
+        countsStore.rotate( neoStores.getMetaDataStore().getLastCommittedTransactionId() );
+        neoStores.flush( limiter );
     }
 
     @Override

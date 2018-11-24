@@ -28,12 +28,10 @@ import org.neo4j.kernel.impl.store.kvstore.EntryUpdater;
 import org.neo4j.kernel.impl.store.kvstore.ValueUpdate;
 import org.neo4j.kernel.impl.store.kvstore.WritableBuffer;
 
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexSampleKey;
-import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.indexStatisticsKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.nodeKey;
 import static org.neo4j.kernel.impl.store.counts.keys.CountsKeyFactory.relationshipKey;
 
-final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.IndexStatsUpdater, AutoCloseable
+final class CountsUpdater implements CountsAccessor.Updater, AutoCloseable
 {
     private final EntryUpdater<CountsKey> updater;
 
@@ -79,69 +77,6 @@ final class CountsUpdater implements CountsAccessor.Updater, CountsAccessor.Inde
         try
         {
             updater.apply( relationshipKey( startLabelId, typeId, endLabelId ), incrementSecondBy( delta ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    /**
-     * Value format:
-     * <pre>
-     *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-     * [u,u,u,u,u,u,u,u ; s,s,s,s,s,s,s,s]
-     *  u - number of updates
-     *  s - size of index
-     * </pre>
-     * For key format, see {@link KeyFormat#visitIndexStatistics(long, long, long)}
-     */
-    @Override
-    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
-    {
-        try
-        {
-            updater.apply( indexStatisticsKey( indexId ), new Write( updates, size ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    /**
-     * Value format:
-     * <pre>
-     *  0 1 2 3 4 5 6 7   8 9 A B C D E F
-     * [u,u,u,u,u,u,u,u ; s,s,s,s,s,s,s,s]
-     *  u - number of unique values
-     *  s - size of index
-     * </pre>
-     * For key format, see {@link KeyFormat#visitIndexSample(long, long, long)}
-     */
-    @Override
-    public void replaceIndexSample( long indexId, long unique, long size )
-    {
-        try
-        {
-            updater.apply( indexSampleKey( indexId ), new Write( unique, size ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
-    /**
-     * For key format, see {@link KeyFormat#visitIndexStatistics(long, long, long)}
-     * For value format, see {@link CountsUpdater#replaceIndexUpdateAndSize(long, long, long)}
-     */
-    @Override
-    public void incrementIndexUpdates( long indexId, long delta )
-    {
-        try
-        {
-            updater.apply( indexStatisticsKey( indexId ), incrementFirstBy( delta ) );
         }
         catch ( IOException e )
         {

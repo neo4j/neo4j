@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringJoiner;
-import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -67,6 +66,7 @@ import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
@@ -83,6 +83,8 @@ import org.neo4j.values.storable.Value;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.collection.Iterables.asList;
+import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
+import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.internal.kernel.api.InternalIndexState.FAILED;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
 import static org.neo4j.internal.kernel.api.InternalIndexState.POPULATING;
@@ -113,6 +115,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final Iterable<StorageIndexReference> indexDescriptors;
     private final Log internalLog;
     private final Log userLog;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final TokenNameLookup tokenNameLookup;
     private final MultiPopulatorFactory multiPopulatorFactory;
     private final LogProvider internalLogProvider;
@@ -193,7 +196,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             MultiPopulatorFactory multiPopulatorFactory,
             LogProvider internalLogProvider,
             LogProvider userLogProvider,
-            Monitor monitor )
+            Monitor monitor,
+            IndexStatisticsStore indexStatisticsStore )
     {
         this.indexProxyCreator = indexProxyCreator;
         this.providerMap = providerMap;
@@ -209,13 +213,14 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         this.populationJobController = new IndexPopulationJobController( scheduler );
         this.internalLog = internalLogProvider.getLog( getClass() );
         this.userLog = userLogProvider.getLog( getClass() );
+        this.indexStatisticsStore = indexStatisticsStore;
     }
 
     /**
      * Called while the database starts up, before recovery.
      */
     @Override
-    public void init()
+    public void init() throws IOException
     {
         validateDefaultProviderExisting();
 
@@ -259,6 +264,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             logIndexStateSummary( "init", indexStates );
             return indexMap;
         } );
+
+        indexStatisticsStore.init();
     }
 
     private void validateDefaultProviderExisting()
@@ -330,6 +337,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             return indexMap;
         } );
 
+        indexStatisticsStore.start();
         samplingController.recoverIndexSamples();
         samplingController.start();
 
@@ -459,22 +467,24 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         samplingController.stop();
         populationJobController.stop();
+        indexStatisticsStore.stop();
     }
 
     // We need to stop indexing service on shutdown since we can have transactions that are ongoing/finishing
     // after we start stopping components and those transactions should be able to finish successfully
     @Override
-    public void shutdown() throws ExecutionException, InterruptedException
+    public void shutdown() throws IOException
     {
         state = State.STOPPED;
         closeAllIndexes();
+        indexStatisticsStore.shutdown();
     }
 
     public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        storeView.indexUpdatesAndSize( indexId, output );
+        indexStatisticsStore.indexUpdatesAndSize( indexId, output );
         return output;
     }
 
@@ -482,7 +492,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        storeView.indexSample( indexId, output );
+        indexStatisticsStore.indexSample( indexId, output );
         long unique = output.readFirst();
         long size = output.readSecond();
         if ( size == 0 )
@@ -699,8 +709,9 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         getIndexProxy( indexId ).validate();
     }
 
-    public void forceAll( IOLimiter limiter )
+    public void forceAll( IOLimiter limiter ) throws IOException
     {
+        indexStatisticsStore.checkpoint( limiter );
         indexMapRef.indexMapSnapshot().forEachIndexProxy( indexProxyOperation( "force", proxy -> proxy.force( limiter ) ) );
     }
 
@@ -762,6 +773,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     public ResourceIterator<File> snapshotIndexFiles() throws IOException
     {
         Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
+        snapshots.add( asResourceIterator( iterator( indexStatisticsStore.storeFile() ) ) );
         for ( IndexProxy indexProxy : indexMapRef.getAllIndexProxies() )
         {
             snapshots.add( indexProxy.snapshotFiles() );
@@ -771,7 +783,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
 
     private IndexPopulationJob newIndexPopulationJob( EntityType type, boolean verifyBeforeFlipping )
     {
-        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, internalLogProvider, type, schemaState );
+        MultipleIndexPopulator multiPopulator = multiPopulatorFactory.create( storeView, internalLogProvider, type, schemaState, indexStatisticsStore );
         return new IndexPopulationJob( multiPopulator, monitor, verifyBeforeFlipping );
     }
 

@@ -43,6 +43,7 @@ import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.MultipleIndexPopulator.IndexPopulation;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -75,14 +76,17 @@ public class MultipleIndexPopulatorTest
     private LogProvider logProvider;
     private SchemaState schemaState;
     private MultipleIndexPopulator multipleIndexPopulator;
+    private IndexStatisticsStore indexStatisticsStore;
 
     @Before
     public void before()
     {
+        indexStatisticsStore = mock( IndexStatisticsStore.class );
         indexStoreView = mock( IndexStoreView.class );
         when( indexStoreView.newPropertyAccessor() ).thenReturn( mock( NodePropertyAccessor.class ) );
         schemaState = mock( SchemaState.class );
-        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, NullLogProvider.getInstance(), EntityType.NODE, schemaState );
+        logProvider = NullLogProvider.getInstance();
+        multipleIndexPopulator = new MultipleIndexPopulator( indexStoreView, logProvider, EntityType.NODE, schemaState, indexStatisticsStore );
     }
 
     @Test
@@ -333,7 +337,7 @@ public class MultipleIndexPopulatorTest
 
         multipleIndexPopulator.cancel();
 
-        verify( indexStoreView, times( 2 ) ).replaceIndexCounts( anyLong(), eq( 0L ), eq( 0L ), eq( 0L ) );
+        verify( indexStatisticsStore, times( 2 ) ).replaceIndexCounts( anyLong(), eq( 0L ), eq( 0L ), eq( 0L ) );
         verify( indexPopulator1 ).close( false );
         verify( indexPopulator2 ).close( false );
     }
@@ -361,7 +365,7 @@ public class MultipleIndexPopulatorTest
 
         verify( indexPopulator2 ).close( true );
         verify( indexPopulator2 ).sampleResult();
-        verify( indexStoreView ).replaceIndexCounts( anyLong(), anyLong(), anyLong(), anyLong() );
+        verify( indexStatisticsStore ).replaceIndexCounts( anyLong(), anyLong(), anyLong(), anyLong() );
         verify( schemaState ).clear();
     }
 

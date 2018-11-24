@@ -195,6 +195,11 @@ public class DatabaseLayout
         return file( DatabaseFile.LABEL_TOKEN_NAMES_STORE.getName() );
     }
 
+    public File indexStatisticsStore()
+    {
+        return file( DatabaseFile.INDEX_STATISTICS_STORE.getName() );
+    }
+
     public Set<File> idFiles()
     {
         return Arrays.stream( DatabaseFile.values() )

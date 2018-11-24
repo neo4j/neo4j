@@ -67,6 +67,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.api.transaction.trace.TraceProvider;
@@ -202,7 +203,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
-            LabelScanStore labelScanStore, Dependencies dataSourceDependencies )
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dataSourceDependencies )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -225,7 +226,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, procedures, schemaState, indexingService, labelScanStore, dataSourceDependencies );
+                new AllStoreHolder( storageReader, this, cursors, procedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
+                        dataSourceDependencies );
         this.operations =
                 new Operations(
                         allStoreHolder,

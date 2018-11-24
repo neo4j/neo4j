@@ -517,7 +517,7 @@ class DatabaseRecoveryIT
         }
     }
 
-    private static void flush( GraphDatabaseService db )
+    private static void flush( GraphDatabaseService db ) throws IOException
     {
         ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
     }

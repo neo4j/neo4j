@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
@@ -37,23 +35,23 @@ public class OnlineIndexProxyTest
 {
     private final long indexId = 1;
     private final IndexDescriptor descriptor = TestIndexDescriptorFactory.forLabel( 1, 2 );
-    private final IndexProviderDescriptor providerDescriptor = mock( IndexProviderDescriptor.class );
     private final IndexAccessor accessor = mock( IndexAccessor.class );
     private final IndexStoreView storeView = mock( IndexStoreView.class );
+    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
     @Test
-    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
+    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
         CapableIndexDescriptor capableIndexDescriptor = descriptor.withId( indexId ).withoutCapabilities();
-        OnlineIndexProxy index = new OnlineIndexProxy( capableIndexDescriptor, accessor, storeView, false );
+        OnlineIndexProxy index = new OnlineIndexProxy( capableIndexDescriptor, accessor, indexStatisticsStore, false );
 
         // when
         index.drop();
 
         // then
         verify( accessor ).drop();
-        verify( storeView ).replaceIndexCounts( indexId, 0L, 0L, 0L );
+        verify( indexStatisticsStore ).removeIndex( indexId );
         verifyNoMoreInteractions( accessor, storeView );
     }
 }

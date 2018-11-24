@@ -21,14 +21,14 @@ package org.neo4j.kernel.impl.api.index;
 
 import org.junit.Test;
 
-import java.io.IOException;
-
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -42,28 +42,28 @@ public class FailedIndexProxyTest
     private final IndexCapability indexCapability = mock( IndexCapability.class );
     private final IndexPopulator indexPopulator = mock( IndexPopulator.class );
     private final IndexPopulationFailure indexPopulationFailure = mock( IndexPopulationFailure.class );
-    private final IndexCountsRemover indexCountsRemover = mock( IndexCountsRemover.class );
+    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
 
     @Test
-    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped() throws IOException
+    public void shouldRemoveIndexCountsWhenTheIndexItselfIsDropped()
     {
         // given
         String userDescription = "description";
         FailedIndexProxy index =
                 new FailedIndexProxy( forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withId( 1 ).withoutCapabilities(),
-                                      userDescription, indexPopulator, indexPopulationFailure, indexCountsRemover, NullLogProvider.getInstance() );
+                                      userDescription, indexPopulator, indexPopulationFailure, indexStatisticsStore, NullLogProvider.getInstance() );
 
         // when
         index.drop();
 
         // then
         verify( indexPopulator ).drop();
-        verify( indexCountsRemover ).remove();
-        verifyNoMoreInteractions( indexPopulator, indexCountsRemover );
+        verify( indexStatisticsStore ).removeIndex( anyLong() );
+        verifyNoMoreInteractions( indexPopulator, indexStatisticsStore );
     }
 
     @Test
-    public void shouldLogReasonForDroppingIndex() throws IOException
+    public void shouldLogReasonForDroppingIndex()
     {
         // given
         AssertableLogProvider logProvider = new AssertableLogProvider();
@@ -71,7 +71,7 @@ public class FailedIndexProxyTest
         // when
         new FailedIndexProxy( forSchema( forLabel( 0, 0 ), IndexProviderDescriptor.UNDECIDED ).withId( 1 ).withoutCapabilities(),
                               "foo", mock( IndexPopulator.class ), IndexPopulationFailure.failure( "it broke" ),
-                              indexCountsRemover, logProvider ).drop();
+                              indexStatisticsStore, logProvider ).drop();
 
         // then
         logProvider.assertAtLeastOnce(

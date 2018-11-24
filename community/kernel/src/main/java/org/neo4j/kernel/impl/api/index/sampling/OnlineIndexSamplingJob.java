@@ -21,13 +21,13 @@ package org.neo4j.kernel.impl.api.index.sampling;
 
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
+import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.util.DurationLogger;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.kernel.api.index.IndexSample;
-import org.neo4j.kernel.api.index.IndexSampler;
 
 import static java.lang.String.format;
 import static org.neo4j.internal.kernel.api.InternalIndexState.ONLINE;
@@ -36,16 +36,16 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
 {
     private final long indexId;
     private final IndexProxy indexProxy;
-    private final IndexStoreView storeView;
+    private final IndexStatisticsStore indexStatisticsStore;
     private final Log log;
     private final String indexUserDescription;
 
-    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStoreView storeView, String indexUserDescription,
+    OnlineIndexSamplingJob( long indexId, IndexProxy indexProxy, IndexStatisticsStore indexStatisticsStore, String indexUserDescription,
             LogProvider logProvider )
     {
         this.indexId = indexId;
         this.indexProxy = indexProxy;
-        this.storeView = storeView;
+        this.indexStatisticsStore = indexStatisticsStore;
         this.log = logProvider.getLog( getClass() );
         this.indexUserDescription = indexUserDescription;
     }
@@ -71,8 +71,7 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
                     // check again if the index is online before saving the counts in the store
                     if ( indexProxy.getState() == ONLINE )
                     {
-                        storeView.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(),
-                                sample.indexSize() );
+                        indexStatisticsStore.replaceIndexCounts( indexId, sample.uniqueValues(), sample.sampleSize(), sample.indexSize() );
                         durationLogger.markAsFinished();
                         log.debug(
                                 format( "Sampled index %s with %d unique values in sample of avg size %d taken from " +
@@ -93,5 +92,4 @@ class OnlineIndexSamplingJob implements IndexSamplingJob
             }
         }
     }
-
 }

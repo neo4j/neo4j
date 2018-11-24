@@ -17,21 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
+package org.neo4j.kernel.impl.api.index.stats;
 
-public class IndexCountsRemover
+public interface IndexStatisticsVisitor
 {
-    private final IndexStoreView storeView;
-    private final long indexId;
-
-    public IndexCountsRemover( final IndexStoreView storeView, final long indexId )
+    interface Visitable
     {
-        this.storeView = storeView;
-        this.indexId = indexId;
+        void visit( IndexStatisticsVisitor visitor );
     }
 
-    public void remove()
+    default void visitIndexStatistics( long indexId, long updates, long size )
     {
-        storeView.replaceIndexCounts( indexId, 0, 0, 0 );
+    }
+
+    default void visitIndexSample( long indexId, long unique, long size )
+    {
     }
 }

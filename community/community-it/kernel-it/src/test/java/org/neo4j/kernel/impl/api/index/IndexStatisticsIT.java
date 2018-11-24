@@ -35,8 +35,8 @@ import org.neo4j.graphdb.mockfs.UncloseableDelegatingFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -107,15 +107,15 @@ public class IndexStatisticsIT
         restart();
 
         // then we should have re-sampled the index
-        CountsTracker tracker = counts();
+        IndexStatisticsStore indexStatisticsStore = indexStatistics();
         assertEqualRegisters(
                 "Unexpected updates and size for the index",
                 newDoubleLongRegister( 0, 32 ),
-                tracker.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
+                indexStatisticsStore.indexUpdatesAndSize( indexId, newDoubleLongRegister() ) );
         assertEqualRegisters(
             "Unexpected sampling result",
             newDoubleLongRegister( 16, 32 ),
-            tracker.indexSample( indexId, newDoubleLongRegister() )
+            indexStatisticsStore.indexSample( indexId, newDoubleLongRegister() )
         );
 
         // and also
@@ -192,11 +192,7 @@ public class IndexStatisticsIT
 
     private void resetIndexCounts( long indexId )
     {
-        try ( CountsAccessor.IndexStatsUpdater updater = counts().updateIndexCounts() )
-        {
-            updater.replaceIndexSample( indexId, 0, 0 );
-            updater.replaceIndexUpdateAndSize( indexId, 0, 0 );
-        }
+        indexStatistics().replaceIndexCounts( indexId, 0, 0, 0 );
     }
 
     private NeoStores neoStores()
@@ -209,6 +205,11 @@ public class IndexStatisticsIT
     {
         return ( (GraphDatabaseAPI) db ).getDependencyResolver().resolveDependency( RecordStorageEngine.class )
                 .testAccessCountsStore();
+    }
+
+    private IndexStatisticsStore indexStatistics()
+    {
+        return ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( IndexStatisticsStore.class );
     }
 
     private void startDb()

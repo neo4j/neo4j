@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexSampler;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLogProvider;
@@ -48,35 +48,35 @@ public class OnlineIndexSamplingJobTest
     public void shouldSampleTheIndexAndStoreTheValueWhenTheIndexIsOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStoreView, "Foo", logProvider );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider );
         when( indexProxy.getState() ).thenReturn( ONLINE );
 
         // when
         job.run();
 
         // then
-        verify( indexStoreView ).replaceIndexCounts( indexId, indexUniqueValues, indexSize, indexSize );
-        verifyNoMoreInteractions( indexStoreView );
+        verify( indexStatisticsStore ).replaceIndexCounts( indexId, indexUniqueValues, indexSize, indexSize );
+        verifyNoMoreInteractions( indexStatisticsStore );
     }
 
     @Test
     public void shouldSampleTheIndexButDoNotStoreTheValuesIfTheIndexIsNotOnline()
     {
         // given
-        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStoreView, "Foo", logProvider );
+        OnlineIndexSamplingJob job = new OnlineIndexSamplingJob( indexId, indexProxy, indexStatisticsStore, "Foo", logProvider );
         when( indexProxy.getState() ).thenReturn( FAILED );
 
         // when
         job.run();
 
         // then
-        verifyNoMoreInteractions( indexStoreView );
+        verifyNoMoreInteractions( indexStatisticsStore );
     }
 
     private final LogProvider logProvider = NullLogProvider.getInstance();
     private final long indexId = 1;
     private final IndexProxy indexProxy = mock( IndexProxy.class );
-    private final IndexStoreView indexStoreView = mock( IndexStoreView.class );
+    private final IndexStatisticsStore indexStatisticsStore = mock( IndexStatisticsStore.class );
     private final CapableIndexDescriptor indexDescriptor =
             forSchema( forLabel( 1, 2 ), IndexProviderDescriptor.UNDECIDED ).withId( indexId ).withoutCapabilities();
     private final IndexReader indexReader = mock( IndexReader.class );
