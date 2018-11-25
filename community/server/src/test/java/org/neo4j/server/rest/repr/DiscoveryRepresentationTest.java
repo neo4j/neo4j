@@ -39,9 +39,9 @@ public class DiscoveryRepresentationTest
         String dataUri = "/data";
         DiscoveryRepresentation dr = new DiscoveryRepresentation(
                 new DiscoverableURIs.Builder()
-                        .add( "management", managementUri, 0 )
-                        .add( "data", dataUri, 0 )
-                        .add( "bolt", new URI( "bolt://localhost:7687" ), 0 ).build() );
+                        .add( "management", managementUri, DiscoverableURIs.NORMAL )
+                        .add( "data", dataUri, DiscoverableURIs.NORMAL )
+                        .add( "bolt", new URI( "bolt://localhost:7687" ), DiscoverableURIs.NORMAL ).build() );
 
         Map<String,Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 

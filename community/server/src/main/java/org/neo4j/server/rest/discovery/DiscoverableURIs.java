@@ -23,7 +23,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -38,6 +40,12 @@ import org.neo4j.kernel.configuration.ConnectorPortRegister;
  */
 public class DiscoverableURIs
 {
+    public static final int HIGHEST = 5;
+    public static final int HIGH = 4;
+    public static final int NORMAL = 3;
+    public static final int LOW = 2;
+    public static final int LOWEST = 1;
+
     private final Collection<URIEntry> entries;
 
     private DiscoverableURIs( Collection<URIEntry> entries )
@@ -47,9 +55,10 @@ public class DiscoverableURIs
 
     public void forEach( BiConsumer<String,URI> consumer )
     {
-        entries.stream().collect( Collectors.groupingBy( e -> e.key ) ).forEach(
-                ( key, list ) -> list.stream().sorted( ( x, y ) -> Integer.compare( y.precedence, x.precedence ) ).findFirst().ifPresent(
-                        e -> consumer.accept( key, e.uri ) ) );
+        entries.stream().collect( Collectors.groupingBy( e -> e.key ) )
+                .forEach( ( key, list ) -> list.stream()
+                        .max( Comparator.comparing( e -> e.precedence ) )
+                        .ifPresent( e -> consumer.accept( key, e.uri ) ) );
     }
 
     private static class URIEntry
@@ -82,6 +91,14 @@ public class DiscoverableURIs
 
         public Builder add( String key, URI uri, int precedence )
         {
+            Optional<URIEntry> entry = entries.stream().filter( e -> e.key.equals( key ) && e.precedence == precedence ).findFirst();
+
+            if ( entry.isPresent() )
+            {
+                throw new InvalidSettingException(
+                        String.format( "Unable to add two entries with the same precedence using key '%s' and precedence '%d'", key, precedence ) );
+            }
+
             entries.add( new URIEntry( key, uri, precedence ) );
             return this;
         }
@@ -114,10 +131,10 @@ public class DiscoverableURIs
 
         public Builder addBoltConnectorFromConfig( String key, String scheme, Config config, Setting<URI> override, ConnectorPortRegister portRegister )
         {
-            // If an override is configured, add it with the largest precedence
+            // If an override is configured, add it with the HIGHEST precedence
             if ( config.isConfigured( override ) )
             {
-                add( key, config.get( override ), 5 );
+                add( key, config.get( override ), HIGHEST );
             }
 
             config.enabledBoltConnectors().stream().findFirst().ifPresent( c ->
@@ -129,8 +146,8 @@ public class DiscoverableURIs
                     port = portRegister.getLocalAddress( c.key() ).getPort();
                 }
 
-                // If advertised address is explicitly set, set the precedence to 4 - eitherwise set it as 0 (default)
-                add( key, scheme, address.getHostname(), port, config.isConfigured( c.advertised_address ) ? 4 : 0 );
+                // If advertised address is explicitly set, set the precedence to HIGH - eitherwise set it as LOWEST (default)
+                add( key, scheme, address.getHostname(), port, config.isConfigured( c.advertised_address ) ? HIGH : LOWEST );
             } );
 
             return this;
@@ -139,11 +156,11 @@ public class DiscoverableURIs
         public Builder overrideAbsolutesFromRequest( URI requestUri )
         {
             // Find all default entries with absolute URIs and replace the corresponding host name entries with the one from the request uri.
-            List<URIEntry> defaultEntries = entries.stream().filter( e -> e.uri.isAbsolute() && e.precedence == 0 ).collect( Collectors.toList() );
+            List<URIEntry> defaultEntries = entries.stream().filter( e -> e.uri.isAbsolute() && e.precedence == LOWEST ).collect( Collectors.toList() );
 
             for ( URIEntry entry : defaultEntries )
             {
-                add( entry.key, entry.uri.getScheme(), requestUri.getHost(), entry.uri.getPort(), 1 );
+                add( entry.key, entry.uri.getScheme(), requestUri.getHost(), entry.uri.getPort(), LOW );
             }
 
             return this;

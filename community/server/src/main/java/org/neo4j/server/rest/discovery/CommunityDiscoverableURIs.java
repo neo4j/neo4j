@@ -30,8 +30,10 @@ public class CommunityDiscoverableURIs
      */
     public static DiscoverableURIs communityDiscoverableURIs( Config config, ConnectorPortRegister portRegister )
     {
-        return new DiscoverableURIs.Builder().add( "data", config.get( ServerSettings.rest_api_path ).getPath() + "/", 0 ).add( "management",
-                config.get( ServerSettings.management_api_path ).getPath() + "/", 0 ).addBoltConnectorFromConfig( "bolt", "bolt", config,
-                ServerSettings.bolt_discoverable_address, portRegister ).build();
+        return new DiscoverableURIs.Builder()
+                .add( "data", config.get( ServerSettings.rest_api_path ).getPath() + "/", DiscoverableURIs.NORMAL )
+                .add( "management", config.get( ServerSettings.management_api_path ).getPath() + "/", DiscoverableURIs.NORMAL )
+                .addBoltConnectorFromConfig( "bolt", "bolt", config, ServerSettings.bolt_discoverable_address, portRegister )
+                .build();
     }
 }
