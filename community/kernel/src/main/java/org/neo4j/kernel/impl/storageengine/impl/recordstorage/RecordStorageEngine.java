@@ -445,18 +445,18 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     @Override
     public void stop() throws Throwable
     {
-        countsStore.stop();
-        indexingService.stop();
-        labelScanStore.stop();
         idController.stop();
+        labelScanStore.stop();
+        indexingService.stop();
+        countsStore.stop();
     }
 
     @Override
     public void shutdown() throws Throwable
     {
-        countsStore.shutdown();
-        indexingService.shutdown();
         labelScanStore.shutdown();
+        indexingService.shutdown();
+        countsStore.shutdown();
         neoStores.close();
     }
 
