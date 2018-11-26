@@ -49,7 +49,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
-// todo: remove?
 public class JaxRsResponse extends Response
 {
 
