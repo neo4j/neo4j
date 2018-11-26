@@ -38,7 +38,16 @@ public class DiscoveryRepresentation extends MappingRepresentation
     @Override
     protected void serialize( MappingSerializer serializer )
     {
-        uris.forEachRelativeUri(serializer::putRelativeUri);
-        uris.forEachAbsoluteUri( serializer::putAbsoluteUri );
+        uris.forEach( ( key, uri ) ->
+        {
+            if ( uri.isAbsolute() )
+            {
+                serializer.putAbsoluteUri( key, uri );
+            }
+            else
+            {
+                serializer.putRelativeUri( key, uri.toString() );
+            }
+        } );
     }
 }
