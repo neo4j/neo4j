@@ -28,6 +28,9 @@ import static javax.ws.rs.core.Response.Status.NO_CONTENT;
 
 public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements RepresentationWriteHandler
 {
+    private static final int MIN_HTTP_CODE = 100;
+    private static final int MAX_HTTP_CODE = 599;
+
     private final HttpServletResponse response;
     private Transaction transaction;
 
@@ -72,6 +75,10 @@ public class CommitOnSuccessfulStatusCodeRepresentationWriteHandler implements R
     private int responseStatus()
     {
         int status = response.getStatus();
-        return status == -1 ? NO_CONTENT.getStatusCode() : status;
+        if ( status >= MIN_HTTP_CODE && status <= MAX_HTTP_CODE )
+        {
+            return status;
+        }
+        return NO_CONTENT.getStatusCode();
     }
 }
