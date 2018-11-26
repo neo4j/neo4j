@@ -350,8 +350,7 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
   }
 
   override def visitorAccept() = tryCatch(generator) { onSuccess => {
-    using(onSuccess.ifStatement(not(Expression.get(onSuccess.self(), fields.skip)))) { inner =>
-      using(inner.ifStatement(not(invoke(onSuccess.load("visitor"),
+    using(onSuccess.ifStatement(not(invoke(onSuccess.load("visitor"),
                                          visit, onSuccess.load("row"))))) { body =>
         // NOTE: we are in this if-block if the visitor decided to terminate early (by returning false)
         //close all outstanding events
@@ -363,8 +362,6 @@ class GeneratedMethodStructure(val fields: Fields, val generator: CodeBlock, aux
         body.returns()
       }
     }
-    onSuccess.put(onSuccess.self(), fields.skip, constant(false))
-  }
   }(exception = param[Throwable]("e")) { onError =>
     for (event <- events) {
       onError.expression(

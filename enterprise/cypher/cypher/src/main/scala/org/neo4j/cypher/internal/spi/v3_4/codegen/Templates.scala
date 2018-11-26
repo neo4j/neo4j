@@ -119,8 +119,8 @@ object Templates {
       override def accept(innerBody: CodeBlock): Unit = result = happyPath(innerBody)
     }, new Consumer[CodeBlock] {
       override def accept(innerError: CodeBlock): Unit = {
-        innerError.put(innerError.self(), fields.skip, Expression.constant(true))
         result = onFailure(innerError)
+        innerError.continues()
       }
     }, param[EntityNotFoundException]("enf"))
     result
@@ -190,7 +190,6 @@ object Templates {
     put(self(classHandle), typeRef[MapValue], "params", load("params", typeRef[MapValue])).
     put(self(classHandle), typeRef[EmbeddedProxySPI], "proxySpi",
              invoke(load("queryContext", typeRef[QueryContext]), method[QueryContext, EmbeddedProxySPI]("entityAccessor"))).
-    put(self(classHandle), typeRef[Boolean], "skip", Expression.constant(false)).
     build()
 
   def getOrLoadCursors(clazz: ClassGenerator, fields: Fields) = {

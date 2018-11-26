@@ -210,7 +210,6 @@ object GeneratedQueryStructure extends CodeStructure[GeneratedQuery] {
       params = clazz.field(typeRef[MapValue], "params"),
       closeable = clazz.field(typeRef[Completable], "closeable"),
       queryContext = clazz.field(typeRef[QueryContext], "queryContext"),
-      skip = clazz.field(typeRef[Boolean], "skip"),
       cursors = clazz.field(typeRef[CursorFactory], "cursors"),
       nodeCursor = clazz.field(typeRef[NodeCursor], "nodeCursor"),
       relationshipScanCursor = clazz.field(typeRef[RelationshipScanCursor], "relationshipScanCursor"),
