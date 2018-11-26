@@ -109,6 +109,12 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     }
 
     @Override
+    public void continues()
+    {
+        indent().append( "continue;\n" );
+    }
+
+    @Override
     public void declare( LocalVariable local )
     {
         indent().append( local.type().fullName() ).append( ' ' ).append( local.name() ).append( ";\n" );

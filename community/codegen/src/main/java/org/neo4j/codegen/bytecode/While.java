@@ -38,6 +38,11 @@ public class While implements Block
         this.done = done;
     }
 
+    public void continueBlock()
+    {
+        methodVisitor.visitJumpInsn( GOTO, repeat );
+    }
+
     @Override
     public void endBlock()
     {

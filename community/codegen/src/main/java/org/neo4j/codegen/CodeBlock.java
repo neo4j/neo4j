@@ -192,6 +192,11 @@ public class CodeBlock implements AutoCloseable
         emitter.returns( value );
     }
 
+    public void continues()
+    {
+        emitter.continues();
+    }
+
     public void throwException( Expression exception )
     {
         emitter.throwException( exception );
