@@ -23,85 +23,158 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Optional;
+import java.util.Comparator;
+import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
 
 import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.AdvertisedSocketAddress;
-import org.neo4j.helpers.collection.Pair;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
+
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOW;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOWEST;
 
 /**
  * Repository of URIs that the REST API publicly advertises at the root endpoint.
  */
 public class DiscoverableURIs
 {
-    private final Collection<Pair<String,String>> relativeUris = new ArrayList<>();
-    private final Collection<Pair<String,URI>> absoluteUris = new ArrayList<>();
-
-    public DiscoverableURIs addRelative( String key, String uri )
+    public enum Precedence
     {
-        relativeUris.add( Pair.pair( key, uri ) );
-        return this;
+        LOWEST,
+        LOW,
+        NORMAL,
+        HIGH,
+        HIGHEST
     }
 
-    public DiscoverableURIs addAbsolute( String key, URI uri )
+    private final Collection<URIEntry> entries;
+
+    private DiscoverableURIs( Collection<URIEntry> entries )
     {
-        absoluteUris.add( Pair.pair( key, uri ) );
-        return this;
+        this.entries = entries;
     }
 
-    public static Optional<URI> discoverableBoltUri( String scheme, Config config, Setting<URI> override,
-            ConnectorPortRegister connectorPortRegister )
+    public void forEach( BiConsumer<String,URI> consumer )
     {
-        // Note that this whole function would be much cleaner to implement as a default function for the
-        // bolt_discoverable_address setting; however the current config design makes it hard to do
-        // "find any bolt connector", it can only do "find exactly this config key".. Something to refactor
-        // when we refactor config API for 4.0.
-        if ( config.isConfigured( override ) )
+        entries.stream().collect( Collectors.groupingBy( e -> e.key ) )
+                .forEach( ( key, list ) -> list.stream()
+                        .max( Comparator.comparing( e -> e.precedence ) )
+                        .ifPresent( e -> consumer.accept( key, e.uri ) ) );
+    }
+
+    private static class URIEntry
+    {
+        private String key;
+        private Precedence precedence;
+        private URI uri;
+
+        private URIEntry( String key, URI uri, Precedence precedence )
         {
-            return Optional.ofNullable( config.get( override ) );
+            this.key = key;
+            this.uri = uri;
+            this.precedence = precedence;
+        }
+    }
+
+    public static class Builder
+    {
+        private final Collection<URIEntry> entries;
+
+        public Builder()
+        {
+            entries = new ArrayList<>();
         }
 
-        return config.enabledBoltConnectors().stream().findFirst().map( c ->
+        public Builder( DiscoverableURIs copy )
         {
-            AdvertisedSocketAddress advertisedSocketAddress = config.get( c.advertised_address );
+            entries = new ArrayList<>( copy.entries );
+        }
 
-            // If port is 0 it's been assigned a random port from the OS, list this instead
-            if ( advertisedSocketAddress.getPort() == 0 )
+        public Builder add( String key, URI uri, Precedence precedence )
+        {
+            if ( entries.stream().anyMatch( e -> e.key.equals( key ) && e.precedence == precedence ) )
             {
-                int boltPort = connectorPortRegister.getLocalAddress( c.key() ).getPort();
-                return boltURI( scheme, advertisedSocketAddress.getHostname(), boltPort );
+                throw new InvalidSettingException(
+                        String.format( "Unable to add two entries with the same precedence using key '%s' and precedence '%s'", key, precedence ) );
             }
 
-            // Use the config verbatim since it seems sane
-            return boltURI( scheme, advertisedSocketAddress.getHostname(), advertisedSocketAddress.getPort() );
-        } );
-    }
-
-    public void forEachRelativeUri( BiConsumer<String,String> consumer )
-    {
-        relativeUris.forEach( p -> consumer.accept( p.first(), p.other() ) );
-    }
-
-    public void forEachAbsoluteUri( BiConsumer<String,URI> consumer )
-    {
-        absoluteUris.forEach( p -> consumer.accept( p.first(), p.other() ) );
-    }
-
-    private static URI boltURI( String scheme, String host, int port )
-    {
-        try
-        {
-            return new URI( scheme, null, host, port, null, null, null );
+            entries.add( new URIEntry( key, uri, precedence ) );
+            return this;
         }
-        catch ( URISyntaxException e )
+
+        public Builder add( String key, String uri, Precedence precedence )
         {
-            throw new InvalidSettingException(
-                    String.format( "Unable to construct bolt discoverable URI using '%s' as hostname: " + "%s", host,
-                            e.getMessage() ), e );
+            try
+            {
+                return add( key, new URI( uri ), precedence );
+            }
+            catch ( URISyntaxException e )
+            {
+                throw new InvalidSettingException( String.format( "Unable to construct bolt discoverable URI using '%s' as uri: " + "%s", uri, e.getMessage() ),
+                        e );
+            }
+        }
+
+        public Builder add( String key, String scheme, String hostname, int port, Precedence precedence )
+        {
+            try
+            {
+                return add( key, new URI( scheme, null, hostname, port, null, null, null ), precedence );
+            }
+            catch ( URISyntaxException e )
+            {
+                throw new InvalidSettingException(
+                        String.format( "Unable to construct bolt discoverable URI using '%s' as hostname: " + "%s", hostname, e.getMessage() ), e );
+            }
+        }
+
+        public Builder addBoltConnectorFromConfig( String key, String scheme, Config config, Setting<URI> override, ConnectorPortRegister portRegister )
+        {
+            // If an override is configured, add it with the HIGHEST precedence
+            if ( config.isConfigured( override ) )
+            {
+                add( key, config.get( override ), HIGHEST );
+            }
+
+            config.enabledBoltConnectors().stream().findFirst().ifPresent( c ->
+            {
+                AdvertisedSocketAddress address = config.get( c.advertised_address );
+                int port = address.getPort();
+                if ( port == 0 )
+                {
+                    port = portRegister.getLocalAddress( c.key() ).getPort();
+                }
+
+                // If advertised address is explicitly set, set the precedence to HIGH - eitherwise set it as LOWEST (default)
+                add( key, scheme, address.getHostname(), port, config.isConfigured( c.advertised_address ) ? HIGH : LOWEST );
+            } );
+
+            return this;
+        }
+
+        public Builder overrideAbsolutesFromRequest( URI requestUri )
+        {
+            // Find all default entries with absolute URIs and replace the corresponding host name entries with the one from the request uri.
+            List<URIEntry> defaultEntries = entries.stream().filter( e -> e.uri.isAbsolute() && e.precedence == LOWEST ).collect( Collectors.toList() );
+
+            for ( URIEntry entry : defaultEntries )
+            {
+                add( entry.key, entry.uri.getScheme(), requestUri.getHost(), entry.uri.getPort(), LOW );
+            }
+
+            return this;
+        }
+
+        public DiscoverableURIs build()
+        {
+            return new DiscoverableURIs( entries );
         }
     }
+
 }

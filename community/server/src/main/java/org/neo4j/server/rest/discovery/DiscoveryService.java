@@ -55,7 +55,8 @@ public class DiscoveryService
     @Produces( MediaType.APPLICATION_JSON )
     public Response getDiscoveryDocument( @Context UriInfo uriInfo )
     {
-        return outputFormat.ok( new DiscoveryRepresentation( uris ) );
+        return outputFormat.ok(
+                new DiscoveryRepresentation( new DiscoverableURIs.Builder( uris ).overrideAbsolutesFromRequest( uriInfo.getBaseUri() ).build() ) );
     }
 
     @GET

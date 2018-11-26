@@ -62,7 +62,7 @@ public class DBMSModuleTest
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( true );
 
-        DBMSModule module = new DBMSModule( webServer, config, DiscoverableURIs::new );
+        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build() );
 
         module.start();
 
@@ -81,7 +81,7 @@ public class DBMSModuleTest
         when( neoServer.getWebServer() ).thenReturn( webServer );
         when( config.get( GraphDatabaseSettings.auth_enabled ) ).thenReturn( false );
 
-        DBMSModule module = new DBMSModule( webServer, config, DiscoverableURIs::new );
+        DBMSModule module = new DBMSModule( webServer, config, () -> new DiscoverableURIs.Builder().build() );
 
         module.start();
 
