@@ -120,7 +120,7 @@ object Templates {
     }, new Consumer[CodeBlock] {
       override def accept(innerError: CodeBlock): Unit = {
         result = onFailure(innerError)
-        innerError.continues()
+        innerError.continueIfPossible()
       }
     }, param[EntityNotFoundException]("enf"))
     result

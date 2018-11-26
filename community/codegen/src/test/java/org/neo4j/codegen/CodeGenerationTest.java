@@ -605,7 +605,7 @@ public class CodeGenerationTest
 
                     try ( CodeBlock ifBlock = loop.ifStatement( loop.load( "skip" ) ) )
                     {
-                        ifBlock.continues();
+                        ifBlock.continueIfPossible();
                     }
 
                     loop.expression( invoke(
@@ -667,7 +667,7 @@ public class CodeGenerationTest
 
                         try ( CodeBlock ifBlock = inner.ifStatement( inner.load( "skip" ) ) )
                         {
-                            ifBlock.continues();
+                            ifBlock.continueIfPossible();
                         }
 
                         inner.expression( invoke(
@@ -736,7 +736,7 @@ public class CodeGenerationTest
 
                     try ( CodeBlock ifBlock = outer.ifStatement( outer.load( "skipOuter" ) ) )
                     {
-                        ifBlock.continues();
+                        ifBlock.continueIfPossible();
                     }
 
                     try ( CodeBlock inner = outer.whileLoop( invoke( outer.load( "targets" ),
@@ -756,7 +756,7 @@ public class CodeGenerationTest
 
                         try ( CodeBlock ifBlock = inner.ifStatement( inner.load( "skipInner" ) ) )
                         {
-                            ifBlock.continues();
+                            ifBlock.continueIfPossible();
                         }
 
                         inner.expression( invoke(
