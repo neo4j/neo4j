@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
+import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc} //used for the OrderCandidates, if they are moved remove this
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, PropertyKeyName, Variable}
 
 object InterestingOrder {
@@ -126,6 +126,7 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
 }
 
 // TODO put this somewhere else
+// remove the import InterestingOrder.{Asc, ColumnOrder, Desc} since it is only for this part
 trait OrderCandidate {
   def order: Seq[ColumnOrder]
 

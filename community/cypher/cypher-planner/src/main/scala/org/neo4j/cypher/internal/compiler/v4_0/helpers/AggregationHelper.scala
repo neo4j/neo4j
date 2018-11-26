@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
-import org.opencypher.v9_0.expressions.{Expression, FunctionInvocation, Property, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, Property, Variable}
 
 object AggregationHelper {
   private def fetchFunctionParameter(aggregationFunction: FunctionInvocation): Option[String] = {

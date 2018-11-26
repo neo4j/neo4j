@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
