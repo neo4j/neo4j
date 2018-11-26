@@ -337,9 +337,9 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
   // Tests (ASC, min), (DESC, max), (BOTH, min), (BOTH, max) -> interesting and provided order are the same
   val ASCENDING_BOTH = TestOrder(IndexOrderAscending, "ASC", BOTH, Ascending)
-  for ((TestOrder(plannedOrder, _, orderCapability, _), functionName) <- List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))) {
+  for ((TestOrder(plannedOrder, cypherToken, orderCapability, _), functionName) <- List((ASCENDING, "min"), (DESCENDING, "max"), (ASCENDING_BOTH, "min"), (DESCENDING_BOTH, "max"))) {
 
-    test(s"$orderCapability-$functionName: should not plan aggregation with index and range") {
+    test(s"$orderCapability-$functionName: should use provided index order with range") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
@@ -356,7 +356,117 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       )
     }
 
-    test(s"$orderCapability-$functionName: should plan aggregation with exists and index") {
+    test(s"$orderCapability-$functionName: should use provided index order with ORDER BY") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $cypherToken"
+
+      plan._2 should equal(
+        LimitPlan(
+          Projection(
+            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+            Map(s"$functionName(n.prop)" -> prop("n", "prop"))
+          ),
+          SignedDecimalIntegerLiteral("1")(pos),
+          DoNotIncludeTies
+        )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: should use provided index order followed by sort for ORDER BY with reverse order") {
+      val (inverseOrder, inverseSortOrder) = cypherToken match {
+        case "ASC" => ("DESC", Descending)
+        case "DESC" => ("ASC", Ascending)
+      }
+
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $inverseOrder"
+
+      plan._2 should equal(
+        Sort(
+        LimitPlan(
+          Projection(
+            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+            Map(s"$functionName(n.prop)" -> prop("n", "prop"))
+          ),
+          SignedDecimalIntegerLiteral("1")(pos),
+          DoNotIncludeTies
+        ),
+          Seq(inverseSortOrder(s"$functionName(n.prop)"))
+        )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: should use provided index order with additional Limit") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
+
+      plan._2 should equal(
+        LimitPlan(
+          LimitPlan(
+            Projection(
+              IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+              Map(s"$functionName(n.prop)" -> prop("n", "prop"))
+            ),
+            SignedDecimalIntegerLiteral("1")(pos),
+            DoNotIncludeTies
+          ),
+          SignedDecimalIntegerLiteral("2")(pos),
+          DoNotIncludeTies
+        )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: should use provided index order for multiple QueryGraphs") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor
+        s"""MATCH (n:Awesome)
+           |WHERE n.prop > 0
+           |WITH $functionName(n.prop) AS agg
+           |RETURN agg
+           |ORDER BY agg $cypherToken""".stripMargin
+
+      plan._2 should equal(
+        LimitPlan(
+          Projection(
+            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+            Map("agg" -> prop("n", "prop"))
+          ),
+          SignedDecimalIntegerLiteral("1")(pos),
+          DoNotIncludeTies
+        )
+      )
+    }
+
+    test(s"$orderCapability-$functionName: cannot use provided index order for multiple aggregations") {
+      val plan = new given {
+        indexOn("Awesome", "prop").providesOrder(orderCapability)
+      } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
+
+      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
+      plan._2 should equal(
+        Aggregation(
+          IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder),
+          Map.empty,
+          Map(s"$functionName(n.prop)" -> FunctionInvocation(
+            Namespace(List())(pos),
+            FunctionName(functionName)(pos),
+            distinct = false,
+            Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos),
+            "count(n.prop)" -> FunctionInvocation(
+              Namespace(List())(pos),
+              FunctionName("count")(pos),
+              distinct = false,
+              Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+        )
+      )
+    }
+
+    test(s"should plan aggregation with exists and index for $functionName when there is no $orderCapability") {
       val plan = new given {
         indexOn("Awesome", "prop").providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE exists(n.prop) RETURN $functionName(n.prop)"
@@ -379,7 +489,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
   // Tests (ASC, max), (DESC, min) -> interesting and provided order differs
   for ((TestOrder(plannedOrder, _, orderCapability, _), functionName) <- List((ASCENDING, "max"), (DESCENDING, "min"))) {
 
-    test(s"$orderCapability-$functionName: should plan aggregation with index and range") {
+    test(s"$orderCapability-$functionName: cannot use provided index order with range") {
       val plan = new given {
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"

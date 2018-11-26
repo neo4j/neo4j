@@ -31,8 +31,7 @@ object projection {
             projectionsToPlan: Map[String, Expression],
             projectionsToMarkSolved: Map[String, Expression],
             interestingOrder: InterestingOrder,
-            context: LogicalPlanningContext,
-            solve: Boolean = true): LogicalPlan = {
+            context: LogicalPlanningContext): LogicalPlan = {
     val stillToSolveProjection = projectionsLeft(in, projectionsToPlan, context.planningAttributes.solveds)
     val (plan, projectionsMap) = PatternExpressionSolver()(in, stillToSolveProjection, interestingOrder, context)
 
@@ -49,11 +48,7 @@ object projection {
     if (projectionsDiff.isEmpty) {
       context.logicalPlanProducer.planStarProjection(plan, projectionsToMarkSolved, context)
     } else {
-      if (solve) {
-        context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
-      } else {
-        context.logicalPlanProducer.planRegularProjectionWithFakeSolved(plan, projectionsDiff, context)
-      }
+      context.logicalPlanProducer.planRegularProjection(plan, projectionsDiff, projectionsToMarkSolved, context)
     }
   }
 

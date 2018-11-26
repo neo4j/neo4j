@@ -123,19 +123,6 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
       case _ => false
     }
   }
-
-  /**
-    * //Should be removed next commit (fixing review coments) so HEAD doesn't matter
-    */
-  def interestingSatisfiedBy(providedOrder: ProvidedOrder): Boolean = {
-    interestingOrderCandidates.head.order.zipAll(providedOrder.columns, null, null).forall {
-      case (null, _) => true // no interesting order left
-      case (_, null) => false // interesting order left but no provided
-      case (InterestingOrder.Asc(interestingId), ProvidedOrder.Asc(providedId)) => interestingId == providedId
-      case (InterestingOrder.Desc(interestingId), ProvidedOrder.Desc(providedId)) => interestingId == providedId
-      case _ => false
-    }
-  }
 }
 
 // TODO put this somewhere else

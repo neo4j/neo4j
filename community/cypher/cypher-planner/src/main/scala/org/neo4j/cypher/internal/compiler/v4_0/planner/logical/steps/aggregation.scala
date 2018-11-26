@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
+import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder.{Asc, Desc}
 import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.expressions.Expression
 
 object aggregation {
   def apply(plan: LogicalPlan, aggregation: AggregatingQueryProjection, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
@@ -32,32 +33,48 @@ object aggregation {
     val (step1, groupingExpressions) = expressionSolver(plan, aggregation.groupingExpressions, interestingOrder, context)
     val (rewrittenPlan, aggregations) = expressionSolver(step1, aggregation.aggregationExpressions, interestingOrder, context)
 
-    // check if satisfying interesting order for min/max
-    // The interestingOrder.nonEmpty check is only here because an empty interesting order is satisfied by anything.
-    if (interestingOrder.interesting.nonEmpty &&
-      interestingOrder.interestingSatisfiedBy(context.planningAttributes.providedOrders.get(rewrittenPlan.id))) {
-      val projectionMap =
-        aggregations.keys.foldLeft(Map.empty[String, Expression]) {
-          case (_projectionMap, key) =>
-            val value: Expression = aggregations(key)
-            if (isMinOrMax(value))
-              //.head works since min and max always have only one argument
-              _projectionMap ++ Map(key -> value.arguments.head)
-            else
-              _projectionMap
+    val projectionMapForLimit: Map[String, Expression] =
+      if (groupingExpressions.isEmpty && aggregations.size == 1) {
+        val key = aggregations.keys.head // just checked that there is only one key
+        val value: Expression = aggregations(key)
+        val providedOrder = context.planningAttributes.providedOrders.get(rewrittenPlan.id)
+
+        def minFunc(x: String) = {
+          providedOrder.columns.headOption match {
+            case Some(Asc(`x`)) => true
+            case _ => false
+          }
         }
+        def maxFunc(x: String) = {
+          providedOrder.columns.headOption match {
+            case Some(Desc(`x`)) => true
+            case _ => false
+          }
+        }
+        val shouldPlanLimit = AggregationHelper.checkMinOrMax(value, minFunc, maxFunc, false)
 
-      if (projectionMap.nonEmpty) {
-        val projectedPlan = projection(rewrittenPlan, projectionMap, Map.empty, interestingOrder, context, solve = false)
-        val limitedPlan = context.logicalPlanProducer.planLimitWithFakeSolved(projectedPlan,
-          SignedDecimalIntegerLiteral("1")(InputPosition.NONE), context = context)
+        if (shouldPlanLimit)
+          //.head works since min and max always have only one argument
+          Map(key -> value.arguments.head)
+        else
+          Map.empty
+      } else {
+        Map.empty
+      }
 
-        context.logicalPlanProducer.updateSolvedForMinOrMax(
-          limitedPlan,
-          aggregation.groupingExpressions,
-          aggregation.aggregationExpressions,
-          interestingOrder,
+      if (projectionMapForLimit.nonEmpty) {
+        val projectedPlan = context.logicalPlanProducer.planRegularProjectionWithFakeSolved(
+          rewrittenPlan,
+          projectionMapForLimit,
           context
+        )
+
+        context.logicalPlanProducer.planLimitForAggregation(
+          projectedPlan,
+          reportedGrouping = aggregation.groupingExpressions,
+          reportedAggregation = aggregation.aggregationExpressions,
+          interestingOrder = interestingOrder,
+          context = context
         )
       } else {
         context.logicalPlanProducer.planAggregation(
@@ -66,35 +83,7 @@ object aggregation {
           aggregations,
           aggregation.groupingExpressions,
           aggregation.aggregationExpressions,
-          context,
-          None)
+          context)
       }
-    } else {
-      val keepOrder = aggregations.values.foldLeft(false) {
-        case (_keepOrder, value) =>
-          _keepOrder || isMinOrMax(value)
-      }
-      val interestingOrderForAggregation =
-        if (keepOrder)
-          Some(interestingOrder)
-        else
-          None
-
-      context.logicalPlanProducer.planAggregation(
-        rewrittenPlan,
-        groupingExpressions,
-        aggregations,
-        aggregation.groupingExpressions,
-        aggregation.aggregationExpressions,
-        context,
-        interestingOrderForAggregation)
-    }
-  }
-
-  private def isMinOrMax(aggregation: Expression): Boolean = {
-    aggregation match {
-      case f: FunctionInvocation => f.name == "min" || f.name == "max"
-      case _ => false
-    }
   }
 }
