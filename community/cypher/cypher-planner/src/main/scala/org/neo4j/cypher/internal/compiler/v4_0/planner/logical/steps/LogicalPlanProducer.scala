@@ -588,9 +588,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planDistinctStar(left: LogicalPlan, context: LogicalPlanningContext): LogicalPlan = {
-    val returnAll = QueryProjection.forIds(left.availableSymbols) map {
-      case AliasedReturnItem(e, Variable(key)) => key -> e // This smells awful.
-    }
+    val returnAll = left.availableSymbols.map { s => s -> Variable(s)(InputPosition.NONE) }
 
     annotate(Distinct(left, returnAll.toMap), solveds.get(left.id), providedOrders.get(left.id), context)
   }
