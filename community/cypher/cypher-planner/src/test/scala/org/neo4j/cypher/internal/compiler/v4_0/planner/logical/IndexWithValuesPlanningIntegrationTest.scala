@@ -33,7 +33,7 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
 
   // or planner between two indexes
 
-  test("in an OR index plan should not get values for range predicates") {
+  test("in an OR index plan should not use cached values outside union for range predicates") {
     val plan = new given {
       indexOn("Awesome", "prop1").providesValues()
       indexOn("Awesome", "prop2").providesValues()
@@ -43,10 +43,10 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            Selection(Ands(Set(GreaterThan(prop("n", "prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop1)", CanGetValue)),
-            Selection(Ands(Set(GreaterThan(prop("n", "prop2"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop2)", CanGetValue, propIds = Map("prop2" -> 1)))
+            Selection(Ands(Set(GreaterThan(cached("n.prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
+              IndexSeek("n:Awesome(prop1)", GetValue)),
+            Selection(Ands(Set(GreaterThan(cached("n.prop2"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
+              IndexSeek("n:Awesome(prop2)", GetValue, propIds = Map("prop2" -> 1)))
           ),
           Map("n" -> Variable("n")(pos))
         ),
@@ -55,7 +55,28 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
     )
   }
 
-  test("in an OR index plan should not get values for equality predicates") {
+  test("in an OR index plan should use cached values outside union for range predicates if they are on the same property") {
+    val plan = new given {
+      indexOn("Awesome", "prop1").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 > 42 OR n.prop1 < 3 RETURN n.prop1, n.prop2"
+
+    plan._2 should equal(
+      Projection(
+        Distinct(
+          Union(
+            Selection(Ands(Set(GreaterThan(cached("n.prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
+              IndexSeek("n:Awesome(prop1)", GetValue)),
+            Selection(Ands(Set(LessThan(cached("n.prop1"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
+              IndexSeek("n:Awesome(prop1)", GetValue))
+          ),
+          Map("n" -> Variable("n")(pos))
+        ),
+        Map(cachedNodePropertyProj("n", "prop1"), "n.prop2" -> Property(Variable("n")(pos), PropertyKeyName("prop2")(pos))(pos))
+      )
+    )
+  }
+
+  test("in an OR index plan should not use cached values outside union for equality predicates") {
     val plan = new given {
       indexOn("Awesome", "prop1").providesValues()
       indexOn("Awesome", "prop2").providesValues()
@@ -65,8 +86,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            IndexSeek("n:Awesome(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1)),
-            IndexSeek("n:Awesome(prop1 = 42)", CanGetValue, propIds = Map("prop1" -> 0))
+            IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1)),
+            IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Map("prop1" -> 0))
           ),
           Map("n" -> Variable("n")(pos))
         ),
@@ -91,12 +112,12 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
             Union(
               Union(
                 Union(
-                  IndexSeek("n:Awesome(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1)),
-                  IndexSeek("n:Awesome2(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1), labelId = 1)
+                  IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1)),
+                  IndexSeek("n:Awesome2(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1), labelId = 1)
                 ),
-                IndexSeek("n:Awesome(prop1 = 42)", CanGetValue, propIds = Map("prop1" -> 0))
+                IndexSeek("n:Awesome(prop1 = 42)", GetValue, propIds = Map("prop1" -> 0))
               ),
-              IndexSeek("n:Awesome2(prop1 = 42)", CanGetValue, propIds = Map("prop1" -> 0), labelId = 1)
+              IndexSeek("n:Awesome2(prop1 = 42)", GetValue, propIds = Map("prop1" -> 0), labelId = 1)
             ),
             Map("n" -> Variable("n")(pos))
           )

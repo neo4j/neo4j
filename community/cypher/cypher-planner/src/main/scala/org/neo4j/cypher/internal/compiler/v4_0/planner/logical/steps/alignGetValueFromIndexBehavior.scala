@@ -19,13 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LeafPlanUpdater
-import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
-import org.neo4j.cypher.internal.ir.v4_0.Predicate
-import org.neo4j.cypher.internal.ir.v4_0.QueryProjection
+import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, Predicate, QueryProjection}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.logical.plans.Union
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
@@ -155,11 +151,6 @@ object alignGetValueFromIndexBehavior {
     case x: NodeIndexScan =>
       val aligned = alignedProperties(x, usedExpressions, query, solveds).head
       NodeIndexScan(x.idName, x.label, aligned, x.argumentIds, x.indexOrder)(attributes.copy(x.id))
-  },
-    // We don't want to traverse down into union trees, even if that means we will leave the setting at CanGetValue, instead of DoNotGetValue
-    stopper = {
-      case _: Union => true
-      case _ => false
     })
 
   private def alignedProperties(plan: IndexLeafPlan,

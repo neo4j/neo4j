@@ -60,7 +60,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     val operatorName = getValues.getClass.getSimpleName
 
     test(s"should set GetValue on $operatorName with usage of that property in horizon") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
@@ -69,7 +69,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set GetValue on $operatorName with usage of that property nested in horizon") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("stuff" -> listOf(prop("n", "prop")))))
@@ -78,7 +78,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should keep DoNotGetValue on $operatorName with usage of that property in horizon") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(doNotGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
@@ -87,7 +87,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set DoNotGetValue on $operatorName without usage of that property ") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "anotherProp"))))
@@ -96,7 +96,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set DoNotGetValue on $operatorName without usage of that property, if nested") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         val plan = Distinct(canGetValues, Map.empty)
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
@@ -105,40 +105,54 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
       }
     }
 
-    test(s"should stop traversal (leave at CanGetValue) on $operatorName if plan inside a union") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+    test(s"should set GetValue on $operatorName if plan inside a union") {
+      new given().withLogicalPlanningContext { (_, context) =>
         val plan = Union(canGetValues, canGetValues)
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
-        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(plan)
+        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(getValues, getValues))
       }
     }
 
-    test(s"should stop traversal (leave at CanGetValue) on $operatorName if plan inside a selection inside union") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+    test(s"should set DoNotGetValue) on $operatorName without usage of that property, if plan inside a union") {
+      new given().withLogicalPlanningContext { (_, context) =>
+        val plan = Union(canGetValues, canGetValues)
+        context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
+
+        val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "anotherProp"))))
+        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(doNotGetValues, doNotGetValues))
+      }
+    }
+
+    test(s"should set GetValue on $operatorName if plan inside a selection inside union") {
+      new given().withLogicalPlanningContext { (_, context) =>
         val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
         val plan = Union(Selection(ands, canGetValues), Selection(ands, canGetValues))
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
-        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(plan)
+        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(Selection(ands, getValues), Selection(ands, getValues)))
       }
     }
 
-    test(s"should stop traversal (leave at CanGetValue) on $operatorName if plan inside union left deep tree") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+    test(s"should set GetValue on $operatorName if plan inside union left deep tree") {
+      new given().withLogicalPlanningContext { (_, context) =>
         val ands = Ands(Set(ListLiteral(Seq.empty)(pos)))(pos)
         val plan = Union(Union(Selection(ands, canGetValues), canGetValues), Selection(ands, canGetValues))
         context.planningAttributes.solveds.set(plan.id, RegularPlannerQuery())
+        context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(horizon = RegularQueryProjection(Map("foo" -> prop("n", "prop"))))
-        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(plan)
+        alignGetValueFromIndexBehavior(query, plan, context.logicalPlanProducer, context.planningAttributes.solveds, Attributes(idGen)) should equal(Union(Union(Selection(ands, getValues), getValues), Selection(ands, getValues)))
       }
     }
 
     test(s"should set GetValue on $operatorName with usage of that property in another predicate") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(
@@ -149,7 +163,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set DoNotGetValue on $operatorName with only usage of that property in the solved predicate") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         val queryGraph = QueryGraph(selections = Selections(Set(Predicate(Set("n"), prop("n", "prop")))))
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery(queryGraph = queryGraph))
 
@@ -161,7 +175,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set GetValue on $operatorName with usage of that property in the solved predicate and in another predicate") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         val predicate = Predicate(Set("n"), prop("n", "prop"))
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery(queryGraph = QueryGraph(selections = Selections(Set(predicate)))))
 
@@ -173,7 +187,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set GetValue on $operatorName with usage of that property in the next query part (PassthroughAllHorizon)") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(
@@ -185,7 +199,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set GetValue on $operatorName with usage of that property in the next query part (Projection: n AS n)") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(
@@ -197,7 +211,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set GetValue on $operatorName with usage of that property in the next query part (Projection: n AS m)") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(
@@ -209,7 +223,7 @@ class AlignGetValueFromIndexBehaviorTest extends CypherFunSuite with LogicalPlan
     }
 
     test(s"should set GetValue on $operatorName with usage of that property in the second next query part (Projection: n AS m, Projection: m AS o)") {
-      new given().withLogicalPlanningContext { (cfg, context) =>
+      new given().withLogicalPlanningContext { (_, context) =>
         context.planningAttributes.solveds.set(canGetValues.id, RegularPlannerQuery())
 
         val query = RegularPlannerQuery(

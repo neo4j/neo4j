@@ -45,6 +45,7 @@ case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean 
 trait ExecutionContext extends MutableMap[String, AnyValue] {
   def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
+  def copyCachedFrom(input: ExecutionContext): Unit
   def setLongAt(offset: Int, value: Long): Unit
   def getLongAt(offset: Int): Long
 
@@ -98,6 +99,13 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   override def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit = fail()
 
   override def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit = fail()
+
+  def copyCachedFrom(input: ExecutionContext): Unit = input match {
+    case context : MapExecutionContext =>
+      cachedProperties = if (context.cachedProperties == null) null else context.cachedProperties.clone()
+    case _ =>
+      fail()
+  }
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
   override def getLongAt(offset: Int): Long = fail()

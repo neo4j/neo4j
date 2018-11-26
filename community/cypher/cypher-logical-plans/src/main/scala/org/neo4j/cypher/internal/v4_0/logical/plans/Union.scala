@@ -33,7 +33,17 @@ case class Union(left: LogicalPlan, right: LogicalPlan)(implicit idGen: IdGen) e
   override val availableSymbols: Set[String] = left.availableSymbols intersect right.availableSymbols
 
   /**
-    * Union cannot guarantee available properties, even if the children can.
+    * Only cache properties that come from both children and only if they use the same index
     */
-  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = Map.empty
+  override def availableCachedNodeProperties: Map[Property, CachedNodeProperty] = {
+    val indexIntersection = left.indexUsage.intersect(right.indexUsage)
+    if (indexIntersection.nonEmpty) {
+      val lhsCached = left.availableCachedNodeProperties
+      val rhsCached = right.availableCachedNodeProperties
+      lhsCached.keySet.intersect(rhsCached.keySet).map(k => k -> lhsCached(k)).toMap
+    }
+    else {
+      Map.empty
+    }
+  }
 }

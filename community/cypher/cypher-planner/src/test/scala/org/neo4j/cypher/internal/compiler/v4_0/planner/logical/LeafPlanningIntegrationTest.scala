@@ -534,8 +534,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND (n.prop1 = 42 OR n.prop2 = 3) RETURN n "
 
-    val seek1 = IndexSeek("n:Awesome(prop1 = 42)", CanGetValue)
-    val seek2 = IndexSeek("n:Awesome(prop2 = 3)", CanGetValue, propIds = Map("prop2" -> 1))
+    val seek1 = IndexSeek("n:Awesome(prop1 = 42)", GetValue)
+    val seek2 = IndexSeek("n:Awesome(prop2 = 3)", GetValue, propIds = Map("prop2" -> 1))
     val union: Union = Union(seek2, seek1)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
 
@@ -624,8 +624,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 = 42 OR n.prop2 = 'apa' RETURN n")._2
 
-    val seek1 = IndexSeek("n:Awesome(prop1 = 42)", CanGetValue)
-    val seek2 = IndexSeek("n:Awesome(prop2 = 'apa')", CanGetValue, propIds = Map("prop2" -> 1))
+    val seek1 = IndexSeek("n:Awesome(prop1 = 42)", GetValue)
+    val seek2 = IndexSeek("n:Awesome(prop2 = 'apa')", GetValue, propIds = Map("prop2" -> 1))
     val union: Union = Union(seek2, seek1)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
 
@@ -675,8 +675,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val labelPredicate1 = HasLabels(Variable("n")(pos), Seq(LabelName("Label1")(pos)))(pos)
     val labelPredicate2 = HasLabels(Variable("n")(pos), Seq(LabelName("Label2")(pos)))(pos)
 
-    val seek1 = IndexSeek("n:Label1(prop1 = 'val')", CanGetValue)
-    val seek2 = IndexSeek("n:Label2(prop2 = 'val')", CanGetValue, propIds = Map("prop2" -> 1), labelId = 1)
+    val seek1 = IndexSeek("n:Label1(prop1 = 'val')", GetValue)
+    val seek2 = IndexSeek("n:Label2(prop2 = 'val')", GetValue, propIds = Map("prop2" -> 1), labelId = 1)
 
     val union: Union = Union(seek2, seek1)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
@@ -696,10 +696,10 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val labelPredicate1 = HasLabels(Variable("n")(pos), Seq(LabelName("Label1")(pos)))(pos)
     val labelPredicate2 = HasLabels(Variable("n")(pos), Seq(LabelName("Label2")(pos)))(pos)
 
-    val seek1 = IndexSeek("n:Label1(prop1 = 'val')", CanGetValue)
-    val seek2 = IndexSeek("n:Label1(prop2 = 'val')", CanGetValue, propIds = Map("prop2" -> 1))
-    val seek3 = IndexSeek("n:Label2(prop1 = 'val')", CanGetValue, labelId = 1)
-    val seek4 = IndexSeek("n:Label2(prop2 = 'val')", CanGetValue, labelId = 1, propIds = Map("prop2" -> 1))
+    val seek1 = IndexSeek("n:Label1(prop1 = 'val')", GetValue)
+    val seek2 = IndexSeek("n:Label1(prop2 = 'val')", GetValue, propIds = Map("prop2" -> 1))
+    val seek3 = IndexSeek("n:Label2(prop1 = 'val')", GetValue, labelId = 1)
+    val seek4 = IndexSeek("n:Label2(prop2 = 'val')", GetValue, labelId = 1, propIds = Map("prop2" -> 1))
 
     val union: Union = Union( Union( Union(seek2, seek4), seek1), seek3)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
