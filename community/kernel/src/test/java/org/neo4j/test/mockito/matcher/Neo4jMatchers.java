@@ -488,6 +488,11 @@ public class Neo4jMatchers
                     if ( !currentState.equals( expectedState ) )
                     {
                         description.appendValue( current ).appendText( " has state " ).appendValue( currentState );
+                        if ( currentState == Schema.IndexState.FAILED )
+                        {
+                            String indexFailure = db.schema().getIndexFailure( current );
+                            description.appendText( " has failure message: " ).appendText( indexFailure );
+                        }
                         return false;
                     }
                 }

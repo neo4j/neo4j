@@ -45,6 +45,7 @@ import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -58,11 +59,15 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.recovery.Recovery;
+import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
+import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.values.storable.Values;
 
 import static java.time.Duration.ofSeconds;
@@ -80,6 +85,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
+import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceIndexProviderFactory;
 import static org.neo4j.kernel.impl.api.index.TestIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.getIndexes;
@@ -87,17 +93,20 @@ import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasSize;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.haveState;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
-@ExtendWith( EphemeralFileSystemExtension.class )
+@ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class IndexRecoveryIT
 {
     @Inject
-    private EphemeralFileSystemAbstraction fs;
+    private volatile EphemeralFileSystemAbstraction fs;
+    @Inject
+    private TestDirectory testDirectory;
     private GraphDatabaseAPI db;
     private final IndexProvider mockedIndexProvider = mock( IndexProvider.class );
     private final KernelExtensionFactory<?> mockedIndexProviderFactory =
             singleInstanceIndexProviderFactory( PROVIDER_DESCRIPTOR.getKey(), mockedIndexProvider );
     private final String key = "number_of_bananas_owned";
     private final Label myLabel = label( "MyLabel" );
+    private final Monitors monitors = new Monitors();
 
     @BeforeEach
     void setUp()
@@ -124,7 +133,7 @@ class IndexRecoveryIT
             // Given
             startDb();
 
-            Semaphore populationSemaphore = new Semaphore( 1 );
+            Semaphore populationSemaphore = new Semaphore( 0 );
             when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
                     indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
             createIndex( myLabel );
@@ -136,24 +145,34 @@ class IndexRecoveryIT
             killFuture.get();
 
             when( mockedIndexProvider.getInitialState( any( StoreIndexDescriptor.class ) ) ).thenReturn( InternalIndexState.POPULATING );
-            populationSemaphore = new Semaphore( 1 );
-
+            Semaphore recoverySemaphore = new Semaphore( 0 );
             try
             {
                 when( mockedIndexProvider.getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) ) ).thenReturn(
-                        indexPopulatorWithControlledCompletionTiming( populationSemaphore ) );
+                        indexPopulatorWithControlledCompletionTiming( recoverySemaphore ) );
+                monitors.addMonitorListener( new RecoveryMonitor()
+                {
+                    @Override
+                    public void recoveryCompleted( int numberOfRecoveredTransactions )
+                    {
+                        recoverySemaphore.release();
+                    }
+                } );
+                boolean recoveryRequired = Recovery.isRecoveryRequired( fs, testDirectory.databaseLayout(), defaults() );
                 // When
                 startDb();
 
-                // Then
                 assertThat( getIndexes( db, myLabel ), inTx( db, hasSize( 1 ) ) );
                 assertThat( getIndexes( db, myLabel ), inTx( db, haveState( db, Schema.IndexState.POPULATING ) ) );
-                verify( mockedIndexProvider, times( 3 ) ).getPopulator( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
+                // in case if kill was not that fast and killed db after flush there will be no need to do recovery and
+                // we will not gonna need to get index populators during recovery index service start
+                verify( mockedIndexProvider, times( recoveryRequired ? 3 : 2 ) ).getPopulator( any( StoreIndexDescriptor.class ),
+                        any( IndexSamplingConfig.class ) );
                 verify( mockedIndexProvider, never() ).getOnlineAccessor( any( StoreIndexDescriptor.class ), any( IndexSamplingConfig.class ) );
             }
             finally
             {
-                populationSemaphore.release();
+                recoverySemaphore.release();
             }
         } );
     }
@@ -285,7 +304,8 @@ class IndexRecoveryIT
         TestGraphDatabaseFactory factory = new TestGraphDatabaseFactory();
         factory.setFileSystem( fs );
         factory.setKernelExtensions( singletonList( mockedIndexProviderFactory ) );
-        db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder()
+        factory.setMonitors( monitors );
+        db = (GraphDatabaseAPI) factory.newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( default_schema_provider, PROVIDER_DESCRIPTOR.name() ).newGraphDatabase();
     }
 
