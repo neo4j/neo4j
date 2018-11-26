@@ -34,6 +34,12 @@ public class WatchedFile implements WatchedResource
     }
 
     @Override
+    public WatchKey getWatchKey()
+    {
+        return watchKey;
+    }
+
+    @Override
     public void close()
     {
         watchKey.cancel();

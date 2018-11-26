@@ -19,36 +19,46 @@
  */
 package org.neo4j.kernel.impl.util.watcher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
+import java.nio.file.WatchKey;
+
+import org.neo4j.io.fs.watcher.resource.WatchedFile;
+import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 
-public class DefaultFileDeletionEventListenerTest
+import static org.mockito.Mockito.mock;
+import static org.neo4j.helpers.collection.Iterators.asSet;
+
+class DefaultFileDeletionEventListenerTest
 {
+    private final WatchKey key = mock( WatchKey.class );
+    private final WatchedResource watchedResource = new WatchedFile( key );
+
     @Test
-    public void notificationInLogAboutFileDeletion()
+    void notificationInLogAboutFileDeletion()
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
-        listener.fileDeleted( "testFile.db" );
-        listener.fileDeleted( "anotherDirectory" );
+        listener.fileDeleted( key, "testFile.db" );
+        listener.fileDeleted( key, "anotherDirectory" );
 
         internalLogProvider.assertContainsMessageContaining(
-                "'testFile.db' which belongs to the store was deleted while database was running." );
+                "'testFile.db' which belongs to the 'testDatabase' database was deleted while it was running." );
         internalLogProvider.assertContainsMessageContaining(
-                "'anotherDirectory' which belongs to the store was deleted while database was running." );
+                "'anotherDirectory' which belongs to the 'testDatabase' database was deleted while it was running." );
     }
 
     @Test
-    public void noNotificationForTransactionLogs()
+    void noNotificationForTransactionLogs()
     {
         AssertableLogProvider internalLogProvider = new AssertableLogProvider( false );
         DefaultFileDeletionEventListener listener = buildListener( internalLogProvider );
-        listener.fileDeleted( TransactionLogFiles.DEFAULT_NAME + ".0" );
-        listener.fileDeleted( TransactionLogFiles.DEFAULT_NAME + ".1" );
+        listener.fileDeleted( key, TransactionLogFiles.DEFAULT_NAME + ".0" );
+        listener.fileDeleted( key, TransactionLogFiles.DEFAULT_NAME + ".1" );
 
         internalLogProvider.assertNoLoggingOccurred();
     }
@@ -56,7 +66,7 @@ public class DefaultFileDeletionEventListenerTest
     private DefaultFileDeletionEventListener buildListener( AssertableLogProvider internalLogProvider )
     {
         SimpleLogService logService = new SimpleLogService( NullLogProvider.getInstance(), internalLogProvider );
-        return new DefaultFileDeletionEventListener( logService,
+        return new DefaultFileDeletionEventListener( "testDatabase", asSet( watchedResource ), logService,
                 filename -> filename.startsWith( TransactionLogFiles.DEFAULT_NAME ) );
     }
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module;
 
-import java.io.File;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
@@ -29,6 +28,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -116,7 +115,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final VersionContextSupplier versionContextSupplier;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
-    private final Function<File,FileSystemWatcherService> watcherServiceFactory;
+    private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private final DatabaseLayout databaseLayout;
@@ -409,7 +408,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public Function<File,FileSystemWatcherService> getWatcherServiceFactory()
+    public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
     {
         return watcherServiceFactory;
     }

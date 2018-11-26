@@ -19,7 +19,6 @@
  */
 package org.neo4j.test.rule;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.function.Function;
 
@@ -27,6 +26,7 @@ import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -79,7 +79,6 @@ import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -100,7 +99,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_N
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.kernel.api.index.IndexProvider.EMPTY;
 import static org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier.ON_HEAP;
-import static org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService.EMPTY_WATCHER;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
 public class DatabaseRule extends ExternalResource
@@ -169,7 +167,7 @@ public class DatabaseRule extends ExternalResource
                 mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
-                file -> EMPTY_WATCHER, new GraphDatabaseFacade(), Iterables.empty() ) );
+                file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty() ) );
         return database;
     }
 
@@ -238,7 +236,7 @@ public class DatabaseRule extends ExternalResource
         private final VersionContextSupplier versionContextSupplier;
         private final CollectionsFactorySupplier collectionsFactorySupplier;
         private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
-        private final Function<File,FileSystemWatcherService> watcherServiceFactory;
+        private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
         private final GraphDatabaseFacade facade;
         private final Iterable<QueryEngineProvider> engineProviders;
         private final DatabaseAvailability databaseAvailability;
@@ -255,7 +253,7 @@ public class DatabaseRule extends ExternalResource
                 Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
                 SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
-                Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<File,FileSystemWatcherService> watcherServiceFactory,
+                Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
                 GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
         {
             this.databaseName = databaseName;
@@ -542,7 +540,7 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public Function<File,FileSystemWatcherService> getWatcherServiceFactory()
+        public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
         {
             return watcherServiceFactory;
         }

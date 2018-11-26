@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.database;
 
-import java.io.File;
 import java.io.IOException;
 import java.time.Clock;
 import java.util.Optional;
@@ -37,6 +36,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -129,7 +129,6 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -214,7 +213,7 @@ public class Database extends LifecycleAdapter
     private DatabaseTransactionLogModule transactionLogModule;
     private DatabaseKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
-    private final Function<File,FileSystemWatcherService> watcherServiceFactory;
+    private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
 
@@ -303,7 +302,7 @@ public class Database extends LifecycleAdapter
         life.add( initializeExtensions( dataSourceDependencies ) );
         life.add( indexConfigStore );
 
-        FileSystemWatcherService watcherService = watcherServiceFactory.apply( databaseLayout.databaseDirectory() );
+        DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
         life.add( watcherService );
         dataSourceDependencies.satisfyDependency( watcherService );
 

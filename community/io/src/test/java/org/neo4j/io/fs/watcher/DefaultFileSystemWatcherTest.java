@@ -291,13 +291,13 @@ class DefaultFileSystemWatcherTest
         private final List<String> modifiedFileNames = new ArrayList<>();
 
         @Override
-        public void fileDeleted( String fileName )
+        public void fileDeleted( WatchKey key, String fileName )
         {
             deletedFileNames.add( fileName );
         }
 
         @Override
-        public void fileModified( String fileName )
+        public void fileModified( WatchKey key, String fileName )
         {
             modifiedFileNames.add( fileName );
         }

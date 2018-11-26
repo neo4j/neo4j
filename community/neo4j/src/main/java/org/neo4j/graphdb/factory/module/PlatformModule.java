@@ -58,6 +58,8 @@ import org.neo4j.kernel.impl.util.collection.CapacityLimitingBlockAllocatorDecor
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.impl.util.collection.OffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.OffHeapCollectionsFactory;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
+import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.info.JvmChecker;
 import org.neo4j.kernel.info.JvmMetadataRepository;
 import org.neo4j.kernel.internal.Version;
@@ -132,6 +134,7 @@ public class PlatformModule
     public final UsageData usageData;
 
     public final ConnectorPortRegister connectorPortRegister;
+    public final FileSystemWatcherService fileSystemWatcher;
 
     public PlatformModule( File providedStoreDir, Config config, DatabaseInfo databaseInfo,
             GraphDatabaseFacadeFactory.Dependencies externalDependencies )
@@ -200,6 +203,11 @@ public class PlatformModule
         dependencies.satisfyDependency( dbmsDiagnosticsManager );
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
+
+
+        fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, config );
+        life.add( fileSystemWatcher );
+        dependencies.satisfyDependency( fileSystemWatcher );
 
         dependencies.satisfyDependency( dataSourceManager );
 
@@ -270,6 +278,28 @@ public class PlatformModule
     protected FileSystemAbstraction createFileSystemAbstraction()
     {
         return new DefaultFileSystemAbstraction();
+    }
+
+    private FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, LogService logging, JobScheduler jobScheduler,
+            Config config )
+    {
+        if ( !config.get( GraphDatabaseSettings.filewatcher_enabled ) )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.info( "File watcher disabled by configuration." );
+            return FileSystemWatcherService.EMPTY_WATCHER;
+        }
+
+        try
+        {
+            return new DefaultFileSystemWatcherService( jobScheduler, fileSystem.fileWatcher() );
+        }
+        catch ( Exception e )
+        {
+            Log log = logging.getInternalLog( getClass() );
+            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " + "files will be disabled.", e );
+            return FileSystemWatcherService.EMPTY_WATCHER;
+        }
     }
 
     protected LogService createLogService( LogProvider userLogProvider )

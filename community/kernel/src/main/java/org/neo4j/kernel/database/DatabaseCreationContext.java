@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.database;
 
-import java.io.File;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
@@ -56,7 +56,6 @@ import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
@@ -146,7 +145,7 @@ public interface DatabaseCreationContext
 
     Iterable<KernelExtensionFactory<?>> getKernelExtensionFactories();
 
-    Function<File,FileSystemWatcherService> getWatcherServiceFactory();
+    Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory();
 
     GraphDatabaseFacade getFacade();
 

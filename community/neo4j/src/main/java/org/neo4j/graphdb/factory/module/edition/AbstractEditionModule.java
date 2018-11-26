@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb.factory.module.edition;
 
-import java.io.File;
 import java.time.Clock;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -32,8 +31,9 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.helpers.Service;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.watcher.RestartableFileSystemWatcher;
+import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
+import org.neo4j.io.fs.watcher.FileWatcher;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.net.NetworkConnectionTracker;
 import org.neo4j.kernel.api.security.SecurityModule;
@@ -52,13 +52,10 @@ import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
-import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionEventListener;
-import org.neo4j.kernel.impl.util.watcher.DefaultFileSystemWatcherService;
-import org.neo4j.kernel.impl.util.watcher.FileSystemWatcherService;
+import org.neo4j.kernel.impl.util.watcher.DefaultFileDeletionListenerFactory;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.Logger;
 import org.neo4j.logging.internal.LogService;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.udc.UsageData;
 import org.neo4j.udc.UsageDataKeys;
 
@@ -79,38 +76,18 @@ public abstract class AbstractEditionModule
     protected ConstraintSemantics constraintSemantics;
     protected AccessCapability accessCapability;
     protected IOLimiter ioLimiter;
-    protected Function<File, FileSystemWatcherService> watcherServiceFactory;
+    protected Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     protected AvailabilityGuard globalAvailabilityGuard;
     protected SecurityProvider securityProvider;
 
     public abstract EditionDatabaseContext createDatabaseContext( String databaseName );
 
-    protected FileSystemWatcherService createFileSystemWatcherService( FileSystemAbstraction fileSystem, File databaseDirectory,
-            LogService logging, JobScheduler jobScheduler, Config config, Predicate<String> fileNameFilter )
+    protected DatabaseLayoutWatcher createDatabaseFileSystemWatcher( FileWatcher watcher, DatabaseLayout databaseLayout, LogService logging,
+            Predicate<String> fileNameFilter )
     {
-        if ( !config.get( GraphDatabaseSettings.filewatcher_enabled ) )
-        {
-            Log log = logging.getInternalLog( getClass() );
-            log.info( "File watcher disabled by configuration." );
-            return FileSystemWatcherService.EMPTY_WATCHER;
-        }
-
-        try
-        {
-            RestartableFileSystemWatcher watcher = new RestartableFileSystemWatcher( fileSystem.fileWatcher() );
-            watcher.addFileWatchEventListener( new DefaultFileDeletionEventListener( logging, fileNameFilter ) );
-            watcher.watch( databaseDirectory );
-            // register to watch database dir parent folder to see when database dir removed
-            watcher.watch( databaseDirectory.getParentFile() );
-            return new DefaultFileSystemWatcherService( jobScheduler, watcher );
-        }
-        catch ( Exception e )
-        {
-            Log log = logging.getInternalLog( getClass() );
-            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " +
-                    "files will be disabled.", e );
-            return FileSystemWatcherService.EMPTY_WATCHER;
-        }
+        DefaultFileDeletionListenerFactory listenerFactory =
+                new DefaultFileDeletionListenerFactory( databaseLayout.getDatabaseName(), logging, fileNameFilter );
+        return new DatabaseLayoutWatcher( watcher, databaseLayout, listenerFactory );
     }
 
     public void registerProcedures( Procedures procedures, ProcedureConfig procedureConfig ) throws KernelException
@@ -233,7 +210,7 @@ public abstract class AbstractEditionModule
         return accessCapability;
     }
 
-    public Function<File,FileSystemWatcherService> getWatcherServiceFactory()
+    public Function<DatabaseLayout,DatabaseLayoutWatcher> getWatcherServiceFactory()
     {
         return watcherServiceFactory;
     }

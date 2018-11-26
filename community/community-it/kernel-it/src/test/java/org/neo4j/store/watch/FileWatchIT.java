@@ -29,6 +29,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.nio.file.WatchKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -109,7 +110,7 @@ public class FileWatchIT
         deletionListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
-                "'" + fileName + "' which belongs to the store was deleted while database was running." );
+                "'" + fileName + "' which belongs to the '" + storeDir.getName() + "' database was deleted while it was running." );
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -155,8 +156,8 @@ public class FileWatchIT
         deleteStoreDirectory( storeDir, monitoredDirectory );
         deletionListener.awaitDeletionNotification();
 
-        logProvider.assertContainsMessageContaining(
-                "'" + monitoredDirectory + "' which belongs to the store was deleted while database was running." );
+        logProvider.assertContainsMessageContaining( "'" + monitoredDirectory + "' which belongs to the '" + storeDir.getName() +
+                "' database was deleted while it was running." );
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -256,7 +257,7 @@ public class FileWatchIT
         eventListener.awaitDeletionNotification();
 
         logProvider.assertContainsMessageContaining(
-                "'" + storeDirectoryName + "' which belongs to the store was deleted while database was running." );
+                "'" + storeDirectoryName + "' which belongs to the '" + storeDir.getName() + "' database was deleted while it was running." );
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -389,7 +390,7 @@ public class FileWatchIT
         private final List<String> deletedFiles = new ArrayList<>();
 
         @Override
-        public void fileDeleted( String fileName )
+        public void fileDeleted( WatchKey key, String fileName )
         {
             deletedFiles.add( fileName );
         }
@@ -411,7 +412,7 @@ public class FileWatchIT
         }
 
         @Override
-        public void fileModified( String fileName )
+        public void fileModified( WatchKey key, String fileName )
         {
             if ( expectedFileName.equals( fileName ) )
             {
@@ -435,7 +436,7 @@ public class FileWatchIT
         }
 
         @Override
-        public void fileDeleted( String fileName )
+        public void fileDeleted( WatchKey key, String fileName )
         {
             if ( fileName.endsWith( expectedFileName ) )
             {
