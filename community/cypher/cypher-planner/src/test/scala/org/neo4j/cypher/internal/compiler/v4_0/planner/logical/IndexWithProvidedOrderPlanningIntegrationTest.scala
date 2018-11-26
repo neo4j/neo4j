@@ -106,12 +106,14 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("Awesome", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (m:Awesome), (n:Awesome) WHERE n.prop > 'foo' RETURN m.prop ORDER BY m.prop $cypherToken"
 
+      val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
       plan._2 should equal(
         Sort(
           Projection(
             CartesianProduct(
               IndexSeek(
-                "n:Awesome(prop > 'foo')", indexOrder = plannedOrder),
+                "n:Awesome(prop > 'foo')", indexOrder = expectedIndexOrder),
               NodeByLabelScan("m", LabelName("Awesome")(pos), Set.empty)),
             Map("m.prop" -> Property(Variable("m")(pos), PropertyKeyName("prop")(pos))(pos))),
           Seq(sortOrder("m.prop")))
@@ -176,13 +178,15 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         indexOn("B", "prop").providesOrder(orderCapability)
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop > 'foo' AND a.prop = b.prop RETURN a.prop ORDER BY a.prop $cypherToken"
 
+      val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
       plan._2 should equal(
         Projection(
           Apply(
             IndexSeek(
               "a:A(prop > 'foo')", indexOrder = plannedOrder),
             IndexSeek("b:B(prop = ???)",
-              indexOrder = plannedOrder,
+              indexOrder = expectedBIndexOrder,
               paramExpr = Some(prop("a", "prop")),
               labelId = 1,
               argumentIds = Set("a"))
@@ -198,13 +202,15 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
         // This query is very fragile in the sense that the slightest modification will result in a stupid plan
       } getLogicalPlanFor s"MATCH (a:A), (b:B) WHERE a.prop STARTS WITH 'foo' AND b.prop > a.prop RETURN a.prop, b.prop ORDER BY a.prop $cypherToken, b.prop $cypherToken"
 
+      val expectedBIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
+
       plan._2 should equal(
         Sort(
           Projection(
             Apply(
               IndexSeek("a:A(prop STARTS WITH 'foo')", indexOrder = plannedOrder),
               IndexSeek("b:B(prop > ???)",
-                indexOrder = plannedOrder,
+                indexOrder = expectedBIndexOrder,
                 paramExpr = Some(prop("a", "prop")),
                 labelId = 1,
                 argumentIds = Set("a"))

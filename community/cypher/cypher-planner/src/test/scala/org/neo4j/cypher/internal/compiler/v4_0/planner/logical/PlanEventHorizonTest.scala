@@ -19,12 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v4_0.planner.ProcedureCallProjection
+import org.neo4j.cypher.internal.compiler.v4_0.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.ast.AscSortItem
-import org.neo4j.cypher.internal.v4_0.ast.ProcedureResultItem
+import org.neo4j.cypher.internal.v4_0.ast.{AscSortItem, ProcedureResultItem}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
@@ -74,7 +72,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
-      val interestingOrder = InterestingOrder.asc("a")
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a"))
       val horizon = RegularQueryProjection(Map("a" -> Variable("a")(pos), "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "a")
@@ -93,7 +91,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given().withLogicalPlanningContext { (cfg, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
-      val interestingOrder = InterestingOrder.asc("a")
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a"))
       val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes)

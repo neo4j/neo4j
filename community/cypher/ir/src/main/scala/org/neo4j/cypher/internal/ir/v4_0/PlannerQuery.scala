@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.ir.v4_0
 
 import org.neo4j.cypher.internal.v4_0.ast.Hint
-import org.neo4j.cypher.internal.v4_0.expressions.LabelName
-import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Variable}
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 import scala.annotation.tailrec
@@ -241,7 +240,7 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
         queryGraph == that.queryGraph &&
         horizon == that.horizon &&
         tail == that.tail &&
-        interestingOrder.required == that.interestingOrder.required
+        interestingOrder.requiredOrderCandidate.order == that.interestingOrder.requiredOrderCandidate.order
     case _ => false
   }
 
@@ -249,7 +248,7 @@ case class RegularPlannerQuery(queryGraph: QueryGraph = QueryGraph.empty,
 
   override def hashCode(): Int = {
     if (theHashCode == -1) {
-      val state = Seq(queryGraph, horizon, tail, interestingOrder.required)
+      val state = Seq(queryGraph, horizon, tail, interestingOrder.requiredOrderCandidate.order)
       theHashCode = MurmurHash3.seqHash(state)
     }
     theHashCode

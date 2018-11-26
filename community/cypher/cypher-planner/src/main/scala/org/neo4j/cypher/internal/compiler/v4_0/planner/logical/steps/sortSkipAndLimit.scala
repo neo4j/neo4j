@@ -96,9 +96,9 @@ object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
           val columnOrders = newSortItems.map(columnOrder)
 
           val sortedPlan =
-            // The !interestingOrder.isEmpty check is only here because we do not recognize more complex required orders
+            // The interestingOrder.requiredOrderCandidate.nonEmpty check is only here because we do not recognize more complex required orders
             // at the moment and do not want to abort sorting only because an empty required order is satisfied by anything.
-            if (interestingOrder.required.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
+            if (interestingOrder.requiredOrderCandidate.nonEmpty && interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
               // We can't override solved, but right now we want to set it such that it solves ORDER BY
               // on a plan that has already assigned solved.
               // Use query.interestingOrder to mark the original required order as solved.

@@ -157,7 +157,11 @@ object ClauseConverters {
         (extractColumnsFromHorizon(shuffle, groupingExpressions), Seq.empty)
       case _ => (Seq.empty, Seq.empty)
     }
-    InterestingOrder(requiredOrderColumns, interestingOrderColumns)
+
+    if (interestingOrderColumns.isEmpty)
+      InterestingOrder(RequiredOrderCandidate(requiredOrderColumns))
+    else
+      InterestingOrder(RequiredOrderCandidate(requiredOrderColumns), Seq(InterestingOrderCandidate(interestingOrderColumns)))
   }
 
   private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {

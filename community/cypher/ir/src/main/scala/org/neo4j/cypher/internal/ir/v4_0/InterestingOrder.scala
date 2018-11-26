@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
+import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
 import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, PropertyKeyName, Variable}
 
 object InterestingOrder {
@@ -33,12 +34,10 @@ object InterestingOrder {
     override def withId(newId: String): ColumnOrder = Desc(newId)
   }
 
-  val empty = InterestingOrder(Seq.empty, Seq.empty)
+  val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
-  def asc(id: String): InterestingOrder = empty.asc(id)
-  def desc(id: String): InterestingOrder = empty.desc(id)
-  def ascInteresting(id: String): InterestingOrder = empty.ascInteresting(id)
-  def descInteresting(id: String): InterestingOrder = empty.descInteresting(id)
+  def required(candidate: RequiredOrderCandidate): InterestingOrder = InterestingOrder(candidate, Seq.empty)
+  def interested(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq(candidate))
 }
 /**
   * A single PlannerQuery can require an ordering on its results. This ordering can emerge
@@ -48,25 +47,24 @@ object InterestingOrder {
   *
   * Right now this type only encodes strict requirements that emerged because of an ORDER BY.
   *
-  * @param required    a sequence of required sort directions of columns
-  * @param interesting a sequence of interesting sort directions of columns
+  * @param requiredOrderCandidate    a candidate for required sort directions of columns
+  * @param interestingOrderCandidates a sequence of candidates for interesting sort directions of columns
   */
-case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
-                            interesting: Seq[InterestingOrder.ColumnOrder] = Seq.empty) {
+case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
+                            interestingOrderCandidates: Seq[InterestingOrderCandidate] = Seq.empty) {
 
   import InterestingOrder._
 
-  val isEmpty: Boolean = required.isEmpty && interesting.isEmpty
+  val isEmpty: Boolean = requiredOrderCandidate.isEmpty && interestingOrderCandidates.forall(_.isEmpty)
 
-  def asc(id: String): InterestingOrder = InterestingOrder(required :+ Asc(id), interesting)
-  def desc(id: String): InterestingOrder = InterestingOrder(required :+ Desc(id), interesting)
-  def ascInteresting(id: String): InterestingOrder = InterestingOrder(required, interesting :+ Asc(id))
-  def descInteresting(id: String): InterestingOrder = InterestingOrder(required, interesting :+ Desc(id))
+  // TODO maybe merge some candidates
+  def interested(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(requiredOrderCandidate, interestingOrderCandidates :+ candidate)
 
-  def asInteresting: InterestingOrder = InterestingOrder(Seq.empty, required ++ interesting)
-
-  def headOption: Option[InterestingOrder.ColumnOrder] =
-    required.headOption.orElse(interesting.headOption)
+  // TODO maybe merge some candidates
+  def asInteresting: InterestingOrder =
+    if (requiredOrderCandidate.isEmpty) this
+    else InterestingOrder(RequiredOrderCandidate.empty,
+      interestingOrderCandidates :+ requiredOrderCandidate.asInteresting)
 
   def withProjectedColumns(projectExpressions: Map[String, Expression]) : InterestingOrder = {
     def project(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
@@ -85,7 +83,8 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
       }
     }
 
-    InterestingOrder(project(required), project(interesting))
+    InterestingOrder(requiredOrderCandidate.renameColumns(project),
+      interestingOrderCandidates.map(_.renameColumns(project)).filter(!_.isEmpty))
   }
 
   def withReverseProjectedColumns(projectExpressions: Map[String, Expression], argumentIds: Set[String]) : InterestingOrder = {
@@ -108,14 +107,15 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
       }
     }
 
-    InterestingOrder(rename(required), rename(interesting))
+    InterestingOrder(requiredOrderCandidate.renameColumns(rename),
+      interestingOrderCandidates.map(_.renameColumns(rename)).filter(!_.isEmpty))
   }
 
   /**
     * Checks if a RequiredOrder is satisfied by a ProvidedOrder
     */
   def satisfiedBy(providedOrder: ProvidedOrder): Boolean = {
-    required.zipAll(providedOrder.columns, null, null).forall {
+    requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).forall {
       case (null, _) => true // no required order left
       case (_, null) => false // required order left but no provided
       case (InterestingOrder.Asc(requiredId), ProvidedOrder.Asc(providedId)) => requiredId == providedId
@@ -125,10 +125,10 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
   }
 
   /**
-    * Checks if interesting is satisfied by a ProvidedOrder
+    * //Should be removed next commit (fixing review coments) so HEAD doesn't matter
     */
   def interestingSatisfiedBy(providedOrder: ProvidedOrder): Boolean = {
-    interesting.zipAll(providedOrder.columns, null, null).forall {
+    interestingOrderCandidates.head.order.zipAll(providedOrder.columns, null, null).forall {
       case (null, _) => true // no interesting order left
       case (_, null) => false // interesting order left but no provided
       case (InterestingOrder.Asc(interestingId), ProvidedOrder.Asc(providedId)) => interestingId == providedId
@@ -136,6 +136,56 @@ case class InterestingOrder(required: Seq[InterestingOrder.ColumnOrder],
       case _ => false
     }
   }
+}
+
+// TODO put this somewhere else
+trait OrderCandidate {
+  def order: Seq[ColumnOrder]
+
+  def isEmpty: Boolean = order.isEmpty
+
+  def nonEmpty: Boolean = !isEmpty
+
+  def headOption: Option[ColumnOrder] = order.headOption
+
+  def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): OrderCandidate
+
+  def asc(id: String): OrderCandidate
+
+  def desc(id: String): OrderCandidate
+}
+
+case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
+  def asInteresting: InterestingOrderCandidate = InterestingOrderCandidate(order)
+
+  override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): RequiredOrderCandidate = RequiredOrderCandidate(f(order))
+
+  override def asc(id: String): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Asc(id))
+
+  override def desc(id: String): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Desc(id))
+}
+
+object RequiredOrderCandidate {
+  def empty: RequiredOrderCandidate = RequiredOrderCandidate(Seq.empty)
+
+  def asc(id: String): RequiredOrderCandidate = empty.asc(id)
+  def desc(id: String): RequiredOrderCandidate = empty.desc(id)
+}
+
+case class InterestingOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
+  override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): InterestingOrderCandidate = InterestingOrderCandidate(f(order))
+
+  override def asc(id: String): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Asc(id))
+
+  override def desc(id: String): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Desc(id))
+}
+
+object InterestingOrderCandidate {
+  def empty: InterestingOrderCandidate = InterestingOrderCandidate(Seq.empty)
+
+  def asc(id: String): InterestingOrderCandidate = empty.asc(id)
+
+  def desc(id: String): InterestingOrderCandidate = empty.desc(id)
 }
 
 /**

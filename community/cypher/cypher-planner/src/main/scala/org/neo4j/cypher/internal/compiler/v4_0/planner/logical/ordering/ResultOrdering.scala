@@ -45,19 +45,23 @@ object ResultOrdering {
     import InterestingOrder._
 
     val orderTypes: Seq[CypherType] = properties.map(_._2)
-    val firstInterestingOrder: Option[InterestingOrder.ColumnOrder] = interestingOrder.headOption
     val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
-    firstInterestingOrder match {
-      case Some(_:Desc) if indexOrderCapability.desc =>
+
+    val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
+    val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
+      case Some(Desc(colName)) if indexOrderCapability.desc && properties.headOption.exists { _._1 == colName } =>
         toProvidedOrder(properties.map {case (name, _) => Desc(name)})
 
-      case _ if indexOrderCapability.asc =>
+      case Some(Asc(colName)) if indexOrderCapability.asc && properties.headOption.exists { _._1 == colName } =>
         toProvidedOrder(properties.map {case (name, _) => Asc(name)})
+    }
 
-      case _ if indexOrderCapability.desc =>
+    maybeProvidedOrder.getOrElse {
+      if (indexOrderCapability.asc)
+        toProvidedOrder(properties.map {case (name, _) => Asc(name)})
+      else if (indexOrderCapability.desc)
         toProvidedOrder(properties.map {case (name, _) => Desc(name)})
-
-      case _ => ProvidedOrder.empty
+      else  ProvidedOrder.empty
     }
   }
 
