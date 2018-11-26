@@ -126,39 +126,6 @@ object Templates {
     result
   }
 
-  def handleEntityNotFoundAndKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
-                                                (happyPath: CodeBlock => V)(onFailure: CodeBlock => V): V = {
-    var result = null.asInstanceOf[V]
-    generate.tryCatch(new Consumer[CodeBlock] {
-      override def accept(outerBody: CodeBlock): Unit = {
-        outerBody.tryCatch(new Consumer[CodeBlock] {
-          override def accept(innerBody: CodeBlock): Unit =  result = happyPath(innerBody)
-        }, new Consumer[CodeBlock] {
-          override def accept(innerError: CodeBlock): Unit = {
-            innerError.put(innerError.self(), fields.skip, Expression.constant(true))
-            result = onFailure(innerError)
-          }
-        }, param[EntityNotFoundException]("enf"))
-      }
-    },new Consumer[CodeBlock] {
-      override def accept(handle: CodeBlock): Unit = {
-        finalizers.foreach(block => block(false)(handle))
-        handle.throwException(Expression.invoke(
-          Expression.newInstance(typeRef[CypherExecutionException]),
-          MethodReference.constructorReference(typeRef[CypherExecutionException], typeRef[String], typeRef[Throwable]),
-          Expression
-            .invoke(handle.load("e"), method[KernelException, String]("getUserMessage", typeRef[TokenNameLookup]),
-                    Expression.invoke(
-                      Expression.newInstance(typeRef[SilentTokenNameLookup]),
-                      MethodReference
-                        .constructorReference(typeRef[SilentTokenNameLookup], typeRef[TokenRead]),
-                      Expression.get(handle.self(), fields.tokenRead))), handle.load("e")
-        ))
-      }
-    }, param[KernelException]("e"))
-    result
-  }
-
   def handleKernelExceptions[V](generate: CodeBlock, fields: Fields, finalizers: Seq[Boolean => CodeBlock => Unit])
                          (block: CodeBlock => V): V = {
     var result = null.asInstanceOf[V]
