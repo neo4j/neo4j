@@ -23,6 +23,8 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.server.configuration.ServerSettings;
 
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.NORMAL;
+
 public class CommunityDiscoverableURIs
 {
     /**
@@ -31,8 +33,8 @@ public class CommunityDiscoverableURIs
     public static DiscoverableURIs communityDiscoverableURIs( Config config, ConnectorPortRegister portRegister )
     {
         return new DiscoverableURIs.Builder()
-                .add( "data", config.get( ServerSettings.rest_api_path ).getPath() + "/", DiscoverableURIs.NORMAL )
-                .add( "management", config.get( ServerSettings.management_api_path ).getPath() + "/", DiscoverableURIs.NORMAL )
+                .add( "data", config.get( ServerSettings.rest_api_path ).getPath() + "/", NORMAL )
+                .add( "management", config.get( ServerSettings.management_api_path ).getPath() + "/", NORMAL )
                 .addBoltConnectorFromConfig( "bolt", "bolt", config, ServerSettings.bolt_discoverable_address, portRegister )
                 .build();
     }

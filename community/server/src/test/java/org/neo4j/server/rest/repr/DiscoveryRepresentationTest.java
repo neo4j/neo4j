@@ -29,6 +29,7 @@ import org.neo4j.server.rest.discovery.DiscoverableURIs;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.NORMAL;
 
 public class DiscoveryRepresentationTest
 {
@@ -39,9 +40,9 @@ public class DiscoveryRepresentationTest
         String dataUri = "/data";
         DiscoveryRepresentation dr = new DiscoveryRepresentation(
                 new DiscoverableURIs.Builder()
-                        .add( "management", managementUri, DiscoverableURIs.NORMAL )
-                        .add( "data", dataUri, DiscoverableURIs.NORMAL )
-                        .add( "bolt", new URI( "bolt://localhost:7687" ), DiscoverableURIs.NORMAL ).build() );
+                        .add( "management", managementUri, NORMAL )
+                        .add( "data", dataUri, NORMAL )
+                        .add( "bolt", new URI( "bolt://localhost:7687" ), NORMAL ).build() );
 
         Map<String,Object> mapOfUris = RepresentationTestAccess.serialize( dr );
 

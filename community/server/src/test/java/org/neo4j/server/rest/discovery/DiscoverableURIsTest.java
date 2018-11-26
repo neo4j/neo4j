@@ -39,6 +39,11 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOW;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOWEST;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.NORMAL;
 
 public class DiscoverableURIsTest
 {
@@ -59,9 +64,9 @@ public class DiscoverableURIsTest
     {
         DiscoverableURIs discoverables =
                 new DiscoverableURIs.Builder()
-                        .add( "a", "/test", DiscoverableURIs.NORMAL )
-                        .add( "b", "/data", DiscoverableURIs.NORMAL )
-                        .add( "c", "http://www.example.com", DiscoverableURIs.LOW )
+                        .add( "a", "/test", NORMAL )
+                        .add( "b", "/data", NORMAL )
+                        .add( "c", "http://www.example.com", LOW )
                         .build();
 
         discoverables.forEach( consumer );
@@ -78,8 +83,8 @@ public class DiscoverableURIsTest
         {
             DiscoverableURIs discoverables =
                     new DiscoverableURIs.Builder()
-                            .add( "a", "/test", DiscoverableURIs.NORMAL )
-                            .add( "a", "/data", DiscoverableURIs.NORMAL )
+                            .add( "a", "/test", NORMAL )
+                            .add( "a", "/data", NORMAL )
                             .build();
 
             fail( "exception expected" );
@@ -96,12 +101,12 @@ public class DiscoverableURIsTest
     {
         DiscoverableURIs discoverables =
                 new DiscoverableURIs.Builder()
-                        .add( "c", "bolt://localhost:7687", DiscoverableURIs.HIGHEST )
-                        .add( "a", "/test", DiscoverableURIs.NORMAL )
-                        .add( "b", "/data", DiscoverableURIs.NORMAL )
-                        .add( "b", "/data2", DiscoverableURIs.LOWEST )
-                        .add( "a", "/test2", DiscoverableURIs.HIGHEST )
-                        .add( "c", "bolt://localhost:7688", DiscoverableURIs.LOW )
+                        .add( "c", "bolt://localhost:7687", HIGHEST )
+                        .add( "a", "/test", NORMAL )
+                        .add( "b", "/data", NORMAL )
+                        .add( "b", "/data2", LOWEST )
+                        .add( "a", "/test2", HIGHEST )
+                        .add( "c", "bolt://localhost:7688", LOW )
                         .build();
 
         discoverables.forEach( consumer );
@@ -116,11 +121,11 @@ public class DiscoverableURIsTest
     {
         DiscoverableURIs discoverables =
                 new DiscoverableURIs.Builder()
-                        .add( "a", "/test1", DiscoverableURIs.LOWEST )
-                        .add( "a", "/test2", DiscoverableURIs.LOW )
-                        .add( "a", "/data3", DiscoverableURIs.NORMAL )
-                        .add( "a", "/test4", DiscoverableURIs.HIGH )
-                        .add( "a", "/test5", DiscoverableURIs.HIGHEST )
+                        .add( "a", "/test1", LOWEST )
+                        .add( "a", "/test2", LOW )
+                        .add( "a", "/data3", NORMAL )
+                        .add( "a", "/test4", HIGH )
+                        .add( "a", "/test5", HIGHEST )
                         .build();
 
         discoverables.forEach( consumer );
@@ -132,7 +137,7 @@ public class DiscoverableURIsTest
     public void shouldConvertStringIntoURI() throws URISyntaxException
     {
         DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt://localhost:7687", DiscoverableURIs.NORMAL )
+                .add( "a", "bolt://localhost:7687", NORMAL )
                 .build();
 
         empty.forEach( consumer );
@@ -144,7 +149,7 @@ public class DiscoverableURIsTest
     public void shouldConvertSchemeHostPortIntoURI() throws URISyntaxException
     {
         DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt", "www.example.com", 8888, DiscoverableURIs.NORMAL )
+                .add( "a", "bolt", "www.example.com", 8888, NORMAL )
                 .build();
 
         empty.forEach( consumer );
@@ -158,7 +163,7 @@ public class DiscoverableURIsTest
         URI uri = new URI( "bolt://www.example.com:9999" );
 
         DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", uri, DiscoverableURIs.NORMAL )
+                .add( "a", uri, NORMAL )
                 .build();
 
         empty.forEach( consumer );
@@ -171,7 +176,7 @@ public class DiscoverableURIsTest
     {
         URI override = new URI( "http://www.example.com:9999" );
         DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt://localhost:8989", DiscoverableURIs.LOWEST )
+                .add( "a", "bolt://localhost:8989", LOWEST )
                 .overrideAbsolutesFromRequest( override )
                 .build();
 
@@ -185,10 +190,10 @@ public class DiscoverableURIsTest
     {
         URI override = new URI( "http://www.example.com:9999" );
         DiscoverableURIs empty = new DiscoverableURIs.Builder()
-                .add( "a", "bolt://localhost:8989", DiscoverableURIs.LOW )
-                .add( "b", "bolt://localhost:8990", DiscoverableURIs.NORMAL )
-                .add( "c", "bolt://localhost:8991", DiscoverableURIs.HIGH )
-                .add( "d", "bolt://localhost:8992", DiscoverableURIs.HIGHEST )
+                .add( "a", "bolt://localhost:8989", LOW )
+                .add( "b", "bolt://localhost:8990", NORMAL )
+                .add( "c", "bolt://localhost:8991", HIGH )
+                .add( "d", "bolt://localhost:8992", HIGHEST )
                 .overrideAbsolutesFromRequest( override )
                 .build();
 

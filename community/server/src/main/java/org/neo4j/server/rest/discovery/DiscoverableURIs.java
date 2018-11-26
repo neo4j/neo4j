@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -35,16 +34,24 @@ import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGH;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.HIGHEST;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOW;
+import static org.neo4j.server.rest.discovery.DiscoverableURIs.Precedence.LOWEST;
+
 /**
  * Repository of URIs that the REST API publicly advertises at the root endpoint.
  */
 public class DiscoverableURIs
 {
-    public static final int HIGHEST = 5;
-    public static final int HIGH = 4;
-    public static final int NORMAL = 3;
-    public static final int LOW = 2;
-    public static final int LOWEST = 1;
+    public enum Precedence
+    {
+        LOWEST,
+        LOW,
+        NORMAL,
+        HIGH,
+        HIGHEST
+    }
 
     private final Collection<URIEntry> entries;
 
@@ -64,10 +71,10 @@ public class DiscoverableURIs
     private static class URIEntry
     {
         private String key;
-        private int precedence;
+        private Precedence precedence;
         private URI uri;
 
-        private URIEntry( String key, URI uri, int precedence )
+        private URIEntry( String key, URI uri, Precedence precedence )
         {
             this.key = key;
             this.uri = uri;
@@ -89,21 +96,19 @@ public class DiscoverableURIs
             entries = new ArrayList<>( copy.entries );
         }
 
-        public Builder add( String key, URI uri, int precedence )
+        public Builder add( String key, URI uri, Precedence precedence )
         {
-            Optional<URIEntry> entry = entries.stream().filter( e -> e.key.equals( key ) && e.precedence == precedence ).findFirst();
-
-            if ( entry.isPresent() )
+            if ( entries.stream().anyMatch( e -> e.key.equals( key ) && e.precedence == precedence ) )
             {
                 throw new InvalidSettingException(
-                        String.format( "Unable to add two entries with the same precedence using key '%s' and precedence '%d'", key, precedence ) );
+                        String.format( "Unable to add two entries with the same precedence using key '%s' and precedence '%s'", key, precedence ) );
             }
 
             entries.add( new URIEntry( key, uri, precedence ) );
             return this;
         }
 
-        public Builder add( String key, String uri, int precedence )
+        public Builder add( String key, String uri, Precedence precedence )
         {
             try
             {
@@ -116,7 +121,7 @@ public class DiscoverableURIs
             }
         }
 
-        public Builder add( String key, String scheme, String hostname, int port, int precedence )
+        public Builder add( String key, String scheme, String hostname, int port, Precedence precedence )
         {
             try
             {
