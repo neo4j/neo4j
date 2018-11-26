@@ -366,8 +366,9 @@ public class Database extends LifecycleAdapter
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
-            DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore, databaseMonitors );
+            CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
+            DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
+                    scheduler, forceOperation, logEntryReader, transactionIdStore, databaseMonitors );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
             final DatabaseKernelModule kernelModule = buildKernel(
@@ -395,6 +396,7 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( indexStoreView );
             dataSourceDependencies.satisfyDependency( indexStatisticsStore );
             dataSourceDependencies.satisfyDependency( indexProviderMap );
+            dataSourceDependencies.satisfyDependency( forceOperation );
 
             this.executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
@@ -489,7 +491,7 @@ public class Database extends LifecycleAdapter
     }
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,
-            LogProvider logProvider, JobScheduler scheduler, StorageEngine storageEngine,
+            LogProvider logProvider, JobScheduler scheduler, CheckPointerImpl.ForceOperation forceOperation,
             LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, TransactionIdStore transactionIdStore, Monitors monitors )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
@@ -512,7 +514,7 @@ public class Database extends LifecycleAdapter
         CheckPointThreshold threshold = CheckPointThreshold.createThreshold( config, clock, logPruning, logProvider );
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
-                transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
+                transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
                 globalTracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();

@@ -92,6 +92,7 @@ import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
@@ -101,7 +102,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.AdversarialPageCacheGraphDatabaseFactory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -519,7 +519,7 @@ class DatabaseRecoveryIT
 
     private static void flush( GraphDatabaseService db ) throws IOException
     {
-        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
+        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
     private static void checkPoint( GraphDatabaseService db ) throws IOException

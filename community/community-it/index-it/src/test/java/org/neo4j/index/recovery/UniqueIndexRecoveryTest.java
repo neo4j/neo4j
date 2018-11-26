@@ -40,10 +40,10 @@ import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.TestDirectory;
 
@@ -227,13 +227,11 @@ public class UniqueIndexRecoveryTest
     private void rotateLogAndCheckPoint() throws IOException
     {
         db.getDependencyResolver().resolveDependency( LogRotation.class ).rotateLogFile();
-        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint(
-                new SimpleTriggerInfo( "test" )
-        );
+        db.getDependencyResolver().resolveDependency( CheckPointer.class ).forceCheckPoint( new SimpleTriggerInfo( "test" ) );
     }
 
     private void flushAll() throws IOException
     {
-        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( IOLimiter.UNLIMITED );
+        db.getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( IOLimiter.UNLIMITED );
     }
 }

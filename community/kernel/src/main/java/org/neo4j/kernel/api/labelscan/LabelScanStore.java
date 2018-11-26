@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.io.pagecache.IOLimiter;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -131,9 +130,9 @@ public interface LabelScanStore extends Lifecycle
      * rotating the logical log. After completion of this call there cannot be any essential state that
      * hasn't been forced to disk.
      *
-     * @throws UnderlyingStorageException if there was a problem forcing the state to persistent storage.
+     * @throws IOException if there was a problem forcing the state to persistent storage.
      */
-    void force( IOLimiter limiter ) throws UnderlyingStorageException;
+    void force( IOLimiter limiter ) throws IOException;
 
     /**
      * Acquire a reader for all {@link NodeLabelRange node label} ranges.

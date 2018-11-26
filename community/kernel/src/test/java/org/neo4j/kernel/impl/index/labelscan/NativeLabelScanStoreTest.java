@@ -185,7 +185,7 @@ public class NativeLabelScanStoreTest
     }
 
     @Test
-    void forceShouldNotForceWriterOnReadOnlyScanStore()
+    void forceShouldNotForceWriterOnReadOnlyScanStore() throws IOException
     {
         createAndStartReadOnly();
         store.force( IOLimiter.UNLIMITED );

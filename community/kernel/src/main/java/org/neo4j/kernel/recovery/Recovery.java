@@ -41,6 +41,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.DefaultForceOperation;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
@@ -301,9 +302,10 @@ public final class Recovery
                         monitors.newMonitor( RecoveryStartInformationProvider.Monitor.class ), logFiles, storageEngine, transactionStore, logVersionRepository,
                         databaseLayout, failOnCorruptedLogFiles, recoveryLog );
 
+        CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
         CheckPointerImpl checkPointer =
-                new CheckPointerImpl( transactionIdStore, RecoveryThreshold.INSTANCE, storageEngine, LogPruning.NO_PRUNING, transactionAppender, databaseHealth,
-                        logProvider, CheckPointTracer.NULL, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex() );
+                new CheckPointerImpl( transactionIdStore, RecoveryThreshold.INSTANCE, forceOperation, LogPruning.NO_PRUNING, transactionAppender,
+                        databaseHealth, logProvider, CheckPointTracer.NULL, IOLimiter.UNLIMITED, new StoreCopyCheckPointMutex() );
 
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );

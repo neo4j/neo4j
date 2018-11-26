@@ -45,9 +45,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.core.TokenHolder;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
-import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
@@ -278,7 +278,7 @@ public class TestRecoveryScenarios
                     void flush( GraphDatabaseAPI db ) throws IOException
                     {
                         IOLimiter limiter = IOLimiter.UNLIMITED;
-                        db.getDependencyResolver().resolveDependency( StorageEngine.class ).flushAndForce( limiter );
+                        db.getDependencyResolver().resolveDependency( CheckPointerImpl.ForceOperation.class ).flushAndForce( limiter );
                     }
                 },
         FLUSH_PAGE_CACHE
