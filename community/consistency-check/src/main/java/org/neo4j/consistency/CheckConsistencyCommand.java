@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.ZoneId;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -36,7 +34,6 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -204,22 +201,22 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
         if ( additionalConfigFile.isPresent() )
         {
             try
             {
-                return MapUtil.load( additionalConfigFile.get().toFile() );
+                return Config.fromFile( additionalConfigFile.get() ).build();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new IllegalArgumentException(
                         String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
             }
         }
 
-        return new HashMap<>();
+        return Config.defaults();
     }
 
     private static void checkDbState( DatabaseLayout databaseLayout, Config additionalConfiguration ) throws CommandFailed
@@ -244,13 +241,16 @@ public class CheckConsistencyCommand implements AdminCommand
         }
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
-            Map<String,String> additionalConfig )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )
     {
-        additionalConfig.put( GraphDatabaseSettings.active_database.name(), databaseName );
-
-        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) ).withHome( homeDir ).withConnectorsDisabled()
-                .withSettings( additionalConfig ).build();
+        Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+                .withHome( homeDir )
+                .withConnectorsDisabled()
+                .withNoThrowOnFileLoadFailure()
+                .build();
+        config.augment( additionalConfig );
+        config.augment( GraphDatabaseSettings.active_database, databaseName );
+        return config;
     }
 
     public static Arguments arguments()

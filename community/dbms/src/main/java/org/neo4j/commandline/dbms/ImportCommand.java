@@ -22,8 +22,6 @@ package org.neo4j.commandline.dbms;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Optional;
 
 import org.neo4j.commandline.admin.AdminCommand;
@@ -37,7 +35,6 @@ import org.neo4j.commandline.arguments.OptionalNamedArg;
 import org.neo4j.commandline.arguments.OptionalNamedArgWithMetadata;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Validators;
 
@@ -258,31 +255,20 @@ public class ImportCommand implements AdminCommand
         return fileArgument.isPresent() ? parseFileArgumentList( fileArgument.get().toFile() ) : userSupplierArguments;
     }
 
-    private static Map<String,String> loadAdditionalConfig( Optional<Path> additionalConfigFile )
+    private static Config loadAdditionalConfig( Optional<Path> additionalConfigFile )
     {
-        if ( additionalConfigFile.isPresent() )
-        {
-            try
-            {
-                return MapUtil.load( additionalConfigFile.get().toFile() );
-            }
-            catch ( IOException e )
-            {
-                throw new IllegalArgumentException(
-                        String.format( "Could not read configuration file [%s]", additionalConfigFile ), e );
-            }
-        }
-
-        return new HashMap<>();
+        return additionalConfigFile.map( path -> Config.fromFile( path ).build() ).orElseGet( Config::defaults );
     }
 
-    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName,
-            Map<String,String> additionalConfig )
+    private static Config loadNeo4jConfig( Path homeDir, Path configDir, String databaseName, Config additionalConfig )
     {
-        return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
+        Config config = Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
-                .withSetting( GraphDatabaseSettings.active_database, databaseName )
-                .withSettings( additionalConfig )
-                .withConnectorsDisabled().build();
+                .withConnectorsDisabled()
+                .withNoThrowOnFileLoadFailure()
+                .build();
+        config.augment( additionalConfig );
+        config.augment( GraphDatabaseSettings.active_database, databaseName );
+        return config;
     }
 }

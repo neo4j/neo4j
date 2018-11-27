@@ -54,6 +54,7 @@ import org.neo4j.diagnostics.DiagnosticsReporter;
 import org.neo4j.diagnostics.DiagnosticsReporterProgress;
 import org.neo4j.diagnostics.InteractiveProgress;
 import org.neo4j.diagnostics.NonInteractiveProgress;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.helpers.Args;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
@@ -287,7 +288,14 @@ public class DiagnosticsReportCommand implements AdminCommand
         {
             throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
         }
-        return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
+        try
+        {
+            return Config.fromFile( configFile ).withHome( homeDir ).withConnectorsDisabled().build();
+        }
+        catch ( Exception e )
+        {
+            throw new CommandFailed( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+        }
     }
 
     static String describeClassifier( String classifier )

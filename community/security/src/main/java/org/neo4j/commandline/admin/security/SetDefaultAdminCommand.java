@@ -127,6 +127,8 @@ public class SetDefaultAdminCommand implements AdminCommand
     {
         return Config.fromFile( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ) )
                 .withHome( homeDir )
-                .withConnectorsDisabled().build();
+                .withConnectorsDisabled()
+                .withNoThrowOnFileLoadFailure()
+                .build();
     }
 }

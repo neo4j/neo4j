@@ -24,13 +24,11 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.time.ZoneId;
 import java.util.List;
-import java.util.Map;
 
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -172,22 +170,20 @@ public class ConsistencyCheckTool
 
     private static Config readConfiguration( Args arguments ) throws ToolFailureException
     {
-        Map<String,String> specifiedConfig = stringMap();
-
         String configFilePath = arguments.get( CONFIG, null );
         if ( configFilePath != null )
         {
             File configFile = new File( configFilePath );
             try
             {
-                specifiedConfig = MapUtil.load( configFile );
+                return Config.fromFile( configFile ).build();
             }
-            catch ( IOException e )
+            catch ( Exception e )
             {
                 throw new ToolFailureException( format( "Could not read configuration file [%s]", configFilePath ), e );
             }
         }
-        return Config.defaults( specifiedConfig );
+        return Config.defaults();
     }
 
     private String usage()

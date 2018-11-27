@@ -58,7 +58,6 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -71,6 +70,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class ConsistencyCheckToolTest
@@ -193,7 +193,7 @@ class ConsistencyCheckToolTest
 
         ToolFailureException toolException = assertThrows( ToolFailureException.class, () -> runConsistencyCheckToolWith( service, args ) );
         assertThat( toolException.getMessage(), containsString( "Could not read configuration file" ) );
-        assertThat( toolException.getCause(), instanceOf( IOException.class ) );
+        assertThat( toolException.getCause().getMessage(), containsString( "does not exist" ) );
 
         verifyZeroInteractions( service );
     }
@@ -215,7 +215,7 @@ class ConsistencyCheckToolTest
             File customConfigFile = testDirectory.file( "customConfig" );
             Config customConfig = Config.defaults( logical_logs_location, "otherLocation" );
             createGraphDbAndKillIt( customConfig );
-            MapUtil.store( customConfig.getRaw(), customConfigFile );
+            MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
             String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
             runConsistencyCheckToolWith( fs, args );
@@ -231,7 +231,7 @@ class ConsistencyCheckToolTest
             File otherLocation = testDirectory.directory( "otherLocation" );
             Config customConfig = Config.defaults( logical_logs_location, otherLocation.getAbsolutePath() );
             createGraphDbAndKillIt( customConfig );
-            MapUtil.store( customConfig.getRaw(), customConfigFile );
+            MapUtil.store( customConfig.getRaw(), fs.openAsOutputStream( customConfigFile, false ) );
             String[] args = {testDirectory.databaseDir().getPath(), "-config", customConfigFile.getPath()};
 
             runConsistencyCheckToolWith( fs, args );

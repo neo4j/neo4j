@@ -25,6 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InOrder;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -37,6 +39,7 @@ import javax.annotation.Nonnull;
 
 import org.neo4j.configuration.DocumentedDefaultValue;
 import org.neo4j.configuration.Dynamic;
+import org.neo4j.configuration.ExternalSettings;
 import org.neo4j.configuration.Internal;
 import org.neo4j.configuration.LoadableConfig;
 import org.neo4j.configuration.ReplacedBy;
@@ -57,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
+import static org.junit.Assume.assumeTrue;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -135,8 +139,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods()
-            throws Exception
+    void shouldWarnAndDiscardUnknownOptionsInReservedNamespaceAndPassOnBufferedLogInWithMethods() throws Exception
     {
         // Given
         Log log = mock( Log.class );
@@ -157,8 +160,7 @@ class ConfigTest
     }
 
     @Test
-    void shouldLogDeprecationWarnings()
-            throws Exception
+    void shouldLogDeprecationWarnings() throws Exception
     {
         // Given
         Log log = mock( Log.class );
@@ -179,6 +181,98 @@ class ConfigTest
         verify( log ).warn( "%s is deprecated. Replaced by %s", MySettingsWithDefaults.oldHello.name(),
                 MySettingsWithDefaults.hello.name() );
         verify( log ).warn( "%s is deprecated.", MySettingsWithDefaults.oldSetting.name() );
+        verifyNoMoreInteractions( log );
+    }
+
+    @Test
+    void shouldLogIfConfigFileCouldNotBeFound()
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" ); // Note: we don't create the file.
+
+        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
+
+        config.setLogger( log );
+
+        verify( log ).warn( "Config file [%s] does not exist.", confFile );
+    }
+
+    @Test
+    void shouldLogIfConfigFileCouldNotBeRead() throws IOException
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+        assumeTrue( confFile.setReadable( false ) );
+
+        Config config = Config.fromFile( confFile ).withNoThrowOnFileLoadFailure().build();
+
+        config.setLogger( log );
+
+        verify( log ).error( "Unable to load config file [%s]: %s", confFile, confFile + " (Permission denied)" );
+    }
+
+    @Test
+    void mustThrowIfConfigFileCouldNotBeFound()
+    {
+        assertThrows( ConfigLoadIOException.class, () ->
+        {
+            File confFile = testDirectory.file( "test.conf" );
+
+            Config.fromFile( confFile ).build();
+        } );
+    }
+
+    @Test
+    void mustThrowIfConfigFileCoutNotBeRead()
+    {
+        assertThrows( ConfigLoadIOException.class, () ->
+        {
+            File confFile = testDirectory.file( "test.conf" );
+            assertTrue( confFile.createNewFile() );
+            assumeTrue( confFile.setReadable( false ) );
+            Config.fromFile( confFile ).build();
+        } );
+    }
+
+    @Test
+    void mustWarnIfFileContainsDuplicateSettings() throws Exception
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                ExternalSettings.initialHeapSize.name() + "=5g",
+                ExternalSettings.initialHeapSize.name() + "=4g",
+                ExternalSettings.initialHeapSize.name() + "=3g",
+                ExternalSettings.maxHeapSize.name() + "=10g",
+                ExternalSettings.maxHeapSize.name() + "=10g" ) );
+
+        Config config = Config.fromFile( confFile ).build();
+        config.setLogger( log );
+
+        // We should only log the warning once for each.
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+                        "The setting value that will be used is '%s'.",
+                ExternalSettings.initialHeapSize.name(), "5g" );
+        verify( log ).warn( "The '%s' setting is specified more than once. Settings only be specified once, to avoid ambiguity. " +
+                        "The setting value that will be used is '%s'.",
+                ExternalSettings.maxHeapSize.name(), "10g" );
+    }
+
+    @Test
+    void mustNotWarnAboutDuplicateJvmAdditionalSettings() throws Exception
+    {
+        Log log = mock( Log.class );
+        File confFile = testDirectory.createFile( "test.conf" );
+        Files.write( confFile.toPath(), Arrays.asList(
+                ExternalSettings.additionalJvm.name() + "=-Dsysprop=val",
+                ExternalSettings.additionalJvm.name() + "=-XX:+UseG1GC",
+                ExternalSettings.additionalJvm.name() + "=-XX:+AlwaysPreTouch" ) );
+
+        Config config = Config.fromFile( confFile ).build();
+        config.setLogger( log );
+
+        // The ExternalSettings.additionalJvm setting is allowed to be specified more than once.
         verifyNoMoreInteractions( log );
     }
 
