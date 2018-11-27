@@ -225,6 +225,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
             commands.expressions.NestedPlanExpression(e.plan)
         }
       case Exp => commandexpressions.ExpFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Filename => commandexpressions.Filename()
       case Floor => commandexpressions.FloorFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Haversin => commandexpressions.HaversinFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Head =>
@@ -246,6 +247,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           self.toCommandExpression(id, invocation.arguments(1))
         )
       case Length => commandexpressions.LengthFunction(self.toCommandExpression(id, invocation.arguments.head))
+      case Linenumber => commandexpressions.Linenumber()
       case Log => commandexpressions.LogFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Log10 => commandexpressions.Log10Function(self.toCommandExpression(id, invocation.arguments.head))
       case LTrim => commandexpressions.LTrimFunction(self.toCommandExpression(id, invocation.arguments.head))
