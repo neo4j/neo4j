@@ -3721,6 +3721,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
         assertTimeout( ofMillis( SHORT_TIMEOUT_MILLIS ), () ->
         {
             final AtomicInteger writeCounter = new AtomicInteger();
+            AtomicBoolean restrictWrites = new AtomicBoolean( true );
             FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
             {
                 private List<StoreChannel> channels = new CopyOnWriteArrayList<>();
@@ -3733,7 +3734,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                         @Override
                         public void writeAll( ByteBuffer src, long position ) throws IOException
                         {
-                            if ( writeCounter.incrementAndGet() > 10 )
+                            if ( restrictWrites.get() && writeCounter.incrementAndGet() > 10 )
                             {
                                 throw new IOException( "No space left on device" );
                             }
@@ -3770,10 +3771,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             }
             finally
             {
+                restrictWrites.set( false );
+                pagedFile.close();
+                pageCache.close();
                 fs.close();
-                // Unmapping and closing the PageCache will want to flush,
-                // but we can't do that with a full drive.
-                pageCache = null;
             }
         } );
     }
@@ -3786,6 +3787,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
             assertTimeout( ofMillis( SEMI_LONG_TIMEOUT_MILLIS ), () ->
             {
                 final AtomicInteger writeCounter = new AtomicInteger();
+                AtomicBoolean restrictWrites = new AtomicBoolean( true );
                 FileSystemAbstraction fs = new DelegatingFileSystemAbstraction( this.fs )
                 {
                     private final List<StoreChannel> channels = new CopyOnWriteArrayList<>();
@@ -3798,7 +3800,7 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                             @Override
                             public void writeAll( ByteBuffer src, long position ) throws IOException
                             {
-                                if ( writeCounter.incrementAndGet() >= 1 )
+                                if ( restrictWrites.get() && writeCounter.incrementAndGet() >= 1 )
                                 {
                                     throw new IOException( "No space left on device" );
                                 }
@@ -3845,10 +3847,10 @@ public abstract class PageCacheTest<T extends PageCache> extends PageCacheTestSu
                 }
                 finally
                 {
+                    restrictWrites.set( false );
+                    pagedFile.close();
+                    pageCache.close();
                     fs.close();
-                    // Unmapping and closing the PageCache will want to flush,
-                    // but we can't do that with a full drive.
-                    pageCache = null;
                 }
             } );
         }
