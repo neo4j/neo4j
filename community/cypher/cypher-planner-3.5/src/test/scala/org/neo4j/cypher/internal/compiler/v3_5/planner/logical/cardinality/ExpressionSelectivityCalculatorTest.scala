@@ -33,14 +33,14 @@ import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_RANGE_
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_STRING_LENGTH
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics.DEFAULT_TYPE_SELECTIVITY
 import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.LessThan
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.Distance
-import org.opencypher.v9_0.expressions.functions.Exists
-import org.opencypher.v9_0.util._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions.LessThan
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Distance
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
+import org.neo4j.cypher.internal.v3_5.util._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ExpressionSelectivityCalculatorTest extends CypherFunSuite with AstConstructionTestSupport {
 

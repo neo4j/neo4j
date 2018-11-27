@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 
-import org.opencypher.v9_0.util.NonEmptyList
+import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
 import org.neo4j.cypher.internal.ir.v3_5.Predicate
-import org.opencypher.v9_0.expressions.{AndedPropertyInequalities, InequalityExpression, Property, Variable}
+import org.neo4j.cypher.internal.v3_5.expressions.{AndedPropertyInequalities, InequalityExpression, Property, Variable}
 
 // This transforms
 //

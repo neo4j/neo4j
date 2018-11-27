@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
 import org.neo4j.cypher.internal.util.v3_4.symbols.{TypeSpec => TypeSpecV3_4}
 import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.{expressions => expressionsV3_5, util => utilV3_5}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.{expressions => expressionsV3_5, util => utilV3_5}
 
 class SemanticTableConverterTest extends CypherFunSuite {
 

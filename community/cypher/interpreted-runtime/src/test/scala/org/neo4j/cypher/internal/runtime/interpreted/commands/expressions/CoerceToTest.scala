@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 import java.util.{ArrayList => JavaList, HashMap => JavaMap}
 
 import org.neo4j.cypher.internal.runtime.{Counter, QueryContext}
-import org.opencypher.v9_0.util.CypherTypeException
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.PointValue
 import org.neo4j.values.storable.Values._

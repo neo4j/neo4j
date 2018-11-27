@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.ir.v3_5.PlannerQuery
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.attribution.{Id, SequentialIdGen}
-import org.opencypher.v9_0.util.{Cardinality, Cost, InputPosition}
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Cost, InputPosition}
 
 import scala.collection.{immutable, mutable}
 

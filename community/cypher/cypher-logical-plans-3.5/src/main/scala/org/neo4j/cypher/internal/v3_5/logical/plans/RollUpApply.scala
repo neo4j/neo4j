@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * RollUp is the inverse of the Unwind operator. For each left row,

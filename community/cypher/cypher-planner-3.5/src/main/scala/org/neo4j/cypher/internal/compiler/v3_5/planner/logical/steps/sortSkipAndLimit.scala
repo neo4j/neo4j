@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.ast.{AscSortItem, DescSortItem, SortItem}
-import org.opencypher.v9_0.expressions.{Expression, Variable}
-import org.opencypher.v9_0.util.{FreshIdNameGenerator, InternalException}
+import org.neo4j.cypher.internal.v3_5.ast.{AscSortItem, DescSortItem, SortItem}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.v3_5.util.{FreshIdNameGenerator, InternalException}
 
 object sortSkipAndLimit extends PlanTransformerWithRequiredOrder {
 

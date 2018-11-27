@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DurationValue, PointValue, TemporalValue, Values}
 import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
-import org.opencypher.v9_0.util.{CypherTypeException, InvalidArgumentException}
+import org.neo4j.cypher.internal.v3_5.util.{CypherTypeException, InvalidArgumentException}
 
 import scala.util.{Failure, Success, Try}
 

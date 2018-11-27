@@ -24,10 +24,10 @@ import org.neo4j.csv.reader.Configuration.DEFAULT_BUFFER_SIZE_4MB
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v3_5.NoHeaders
 import org.neo4j.cypher.internal.v3_5.logical.plans._
-import org.opencypher.v9_0.expressions.StringLiteral
-import org.opencypher.v9_0.util.attribution.Attributes
-import org.opencypher.v9_0.util.helpers.fixedPoint
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.StringLiteral
+import org.neo4j.cypher.internal.v3_5.util.attribution.Attributes
+import org.neo4j.cypher.internal.v3_5.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

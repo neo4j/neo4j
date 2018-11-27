@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v3_5.planner
 
 import org.neo4j.cypher.internal.compiler.v3_5.{MissingLabelNotification, MissingPropertyNameNotification, MissingRelTypeNotification}
 import org.neo4j.cypher.internal.compiler.v3_5.phases.LogicalPlanState
-import org.opencypher.v9_0.expressions.{LabelName, Property, PropertyKeyName, RelTypeName}
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.opencypher.v9_0.frontend.phases.{BaseContext, VisitorPhase}
-import org.opencypher.v9_0.util.InternalNotification
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, Property, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, VisitorPhase}
+import org.neo4j.cypher.internal.v3_5.util.InternalNotification
 
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.neo4j.values.storable.{DurationFields, PointFields, TemporalValue}

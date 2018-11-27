@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.{CreateNode, CreateRelationship, StrictnessMode}
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /**
   * For each input row, create new nodes and relationships.

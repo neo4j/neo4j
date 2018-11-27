@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v3_4
 import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics => GraphStatisticsV3_4, IndexDescriptor => IndexDescriptorV3_4, InstrumentedGraphStatistics => InstrumentedGraphStatisticsV3_4, MutableGraphStatisticsSnapshot => MutableGraphStatisticsSnapshotV3_4}
 import org.neo4j.cypher.internal.planner.v3_5.spi._
 import org.neo4j.cypher.internal.util.v3_4.{Cardinality => CardinalityV3_4, LabelId => LabelIdV3_4, PropertyKeyId => PropertyKeyIdV3_4, RelTypeId => RelTypeIdV3_4, Selectivity => SelectivityV3_4}
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId, RelTypeId}
 
 /**
   * This class will act as a v3.4 InstrumentedGraphStatistics, but will update instead a map of values

@@ -22,21 +22,21 @@ package org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery
 import org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery.ClauseConverters._
 import org.neo4j.cypher.internal.ir.v3_5.PeriodicCommit
 import org.neo4j.cypher.internal.ir.v3_5.UnionQuery
-import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.And
-import org.opencypher.v9_0.expressions.Or
-import org.opencypher.v9_0.expressions.Pattern
-import org.opencypher.v9_0.expressions.PatternPart
-import org.opencypher.v9_0.util.ASTNode
-import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.InternalException
+import org.neo4j.cypher.internal.v3_5.ast
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions.And
+import org.neo4j.cypher.internal.v3_5.expressions.Or
+import org.neo4j.cypher.internal.v3_5.expressions.Pattern
+import org.neo4j.cypher.internal.v3_5.expressions.PatternPart
+import org.neo4j.cypher.internal.v3_5.util.ASTNode
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.util.InternalException
 
 import scala.collection.mutable.ArrayBuffer
 
 object StatementConverters {
-  import org.opencypher.v9_0.util.Foldable._
+  import org.neo4j.cypher.internal.v3_5.util.Foldable._
 
   def toPlannerQueryBuilder(q: SingleQuery, semanticTable: SemanticTable): PlannerQueryBuilder =
     flattenCreates(q.clauses).foldLeft(PlannerQueryBuilder(semanticTable)) {

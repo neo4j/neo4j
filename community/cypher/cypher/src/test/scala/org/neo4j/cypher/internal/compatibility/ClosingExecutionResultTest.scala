@@ -31,7 +31,7 @@ import org.neo4j.graphdb.{Notification, ResourceIterator, Result}
 import org.neo4j.helpers.collection.Iterators
 import org.neo4j.kernel.api.query.ExecutingQuery
 import org.neo4j.kernel.impl.query.QueryExecutionMonitor
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ClosingExecutionResultTest extends CypherFunSuite {
 

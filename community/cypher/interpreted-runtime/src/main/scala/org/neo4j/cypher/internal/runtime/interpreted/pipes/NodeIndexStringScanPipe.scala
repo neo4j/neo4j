@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expres
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, IndexOrder, IndexedProperty}
 import org.neo4j.internal.kernel.api.{IndexReference, NodeValueIndexCursor}
 import org.neo4j.values.storable.{TextValue, Values}
-import org.opencypher.v9_0.expressions.LabelToken
-import org.opencypher.v9_0.util.CypherTypeException
-import org.opencypher.v9_0.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.expressions.LabelToken
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
 
 abstract class AbstractNodeIndexStringScanPipe(ident: String,
                                                label: LabelToken,

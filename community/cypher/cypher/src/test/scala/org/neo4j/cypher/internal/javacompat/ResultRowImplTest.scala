@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.javacompat
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ResultRowImplTest extends CypherFunSuite {
   test("int can be handled as a Number") {

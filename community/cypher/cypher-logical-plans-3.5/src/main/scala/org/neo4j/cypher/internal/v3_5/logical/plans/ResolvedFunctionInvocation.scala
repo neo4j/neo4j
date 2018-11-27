@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
-import org.opencypher.v9_0.ast.semantics.SemanticCheckResult._
-import org.opencypher.v9_0.ast.semantics._
-import org.opencypher.v9_0.expressions.Expression.SemanticContext
-import org.opencypher.v9_0.expressions.functions.UserDefinedFunctionInvocation
-import org.opencypher.v9_0.expressions.{CoerceTo, Expression, FunctionInvocation}
-import org.opencypher.v9_0.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult._
+import org.neo4j.cypher.internal.v3_5.ast.semantics._
+import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v3_5.expressions.functions.UserDefinedFunctionInvocation
+import org.neo4j.cypher.internal.v3_5.expressions.{CoerceTo, Expression, FunctionInvocation}
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
 
 object ResolvedFunctionInvocation {
 

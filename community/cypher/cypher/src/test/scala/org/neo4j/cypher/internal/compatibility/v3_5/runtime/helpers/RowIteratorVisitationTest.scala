@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.helpers
 
 import org.mockito.Mockito.verifyZeroInteractions
 import org.neo4j.cypher.internal.runtime.RuntimeJavaValueConverter
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{intValue, stringValue}

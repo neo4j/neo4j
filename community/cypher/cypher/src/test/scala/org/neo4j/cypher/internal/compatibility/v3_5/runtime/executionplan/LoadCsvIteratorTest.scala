@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compatibility.v3_5.runtime.executionplan
 
 import java.net.URL
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class LoadCsvIteratorTest extends CypherFunSuite {
 

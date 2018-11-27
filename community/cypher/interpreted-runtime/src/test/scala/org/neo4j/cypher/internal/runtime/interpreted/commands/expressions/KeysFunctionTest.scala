@@ -28,7 +28,7 @@ import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class KeysFunctionTest extends CypherFunSuite {
 

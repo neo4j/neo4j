@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.opencypher.v9_0.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherTestSupport
 
 trait SystemPropertyTestSupport {
   self: CypherTestSupport =>

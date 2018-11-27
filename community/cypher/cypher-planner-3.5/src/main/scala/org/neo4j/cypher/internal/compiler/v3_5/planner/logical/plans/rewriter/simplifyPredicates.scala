@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
-import org.opencypher.v9_0.expressions.{AndedPropertyInequalities, Equals, In, ListLiteral}
+import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.expressions.{AndedPropertyInequalities, Equals, In, ListLiteral}
 
 case object simplifyPredicates extends Rewriter {
   override def apply(input: AnyRef) = instance.apply(input)

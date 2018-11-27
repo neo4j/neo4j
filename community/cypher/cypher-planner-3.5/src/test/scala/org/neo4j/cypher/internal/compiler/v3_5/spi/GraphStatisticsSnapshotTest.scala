@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v3_5.spi
 
 import org.neo4j.cypher.internal.planner.v3_5.spi._
-import org.opencypher.v9_0.util._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.language.reflectiveCalls
 

@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v3_5._
 import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.{Metrics, QueryGraphSolver}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanContext
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.NO_TRACING
-import org.opencypher.v9_0.frontend.phases.{InternalNotificationLogger, Monitors, devNullLogger}
-import org.opencypher.v9_0.util.attribution.{IdGen, SequentialIdGen}
-import org.opencypher.v9_0.util.{CypherException, InputPosition, InternalException}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.NO_TRACING
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{InternalNotificationLogger, Monitors, devNullLogger}
+import org.neo4j.cypher.internal.v3_5.util.attribution.{IdGen, SequentialIdGen}
+import org.neo4j.cypher.internal.v3_5.util.{CypherException, InputPosition, InternalException}
 import org.scalatest.mock.MockitoSugar
 
 object ContextHelper extends MockitoSugar {

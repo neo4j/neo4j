@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.opencypher.v9_0.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.v3_5.util.{DummyPosition, InputPosition}
 import scala.language.implicitConversions
 
 trait ImplicitDummyPos {

@@ -24,7 +24,7 @@ import org.mockito.Mockito.{times, verify, verifyNoMoreInteractions, when}
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.mock.MockitoSugar
 
 class QueryCacheTest extends CypherFunSuite {

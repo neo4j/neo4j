@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.{QueryStateHelper, TestableIterator}
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class NodeRightOuterHashJoinPipeTest extends CypherFunSuite with NodeHashJoinPipeTestSupport {
 

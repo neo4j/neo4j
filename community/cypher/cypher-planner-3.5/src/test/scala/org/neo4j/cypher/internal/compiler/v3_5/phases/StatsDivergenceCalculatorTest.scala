@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
 import org.neo4j.cypher.internal.compiler.v3_5.StatsDivergenceCalculator
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.kernel.configuration.Settings
 

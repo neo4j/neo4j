@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.{FALSE, TRUE}
 import org.neo4j.values.virtual.PathValue
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 

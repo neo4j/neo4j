@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.codegen
 
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.codegen.CompiledCursorUtils.{nodeGetProperty, nodeHasLabel, relationshipGetProperty}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException
 import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, Read, RelationshipScanCursor}
 import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}

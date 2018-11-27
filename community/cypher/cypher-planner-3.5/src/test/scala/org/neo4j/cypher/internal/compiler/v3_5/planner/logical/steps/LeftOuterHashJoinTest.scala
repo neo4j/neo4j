@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v3_5.logical.plans.{AllNodesScan, CachedNodeProperty, LeftOuterHashJoin, LogicalPlan}
-import org.opencypher.v9_0.ast.{Hint, UsingJoinHint}
-import org.opencypher.v9_0.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
-import org.opencypher.v9_0.util.Cost
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.{Hint, UsingJoinHint}
+import org.neo4j.cypher.internal.v3_5.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_5.util.Cost
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class LeftOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

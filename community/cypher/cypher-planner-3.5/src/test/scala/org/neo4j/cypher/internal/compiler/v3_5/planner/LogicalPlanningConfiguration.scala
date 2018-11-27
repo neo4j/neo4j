@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.ir.v3_5.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan, ProcedureSignature}
-import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.symbols.TypeSpec
-import org.opencypher.v9_0.util.{Cardinality, Cost, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.util.symbols.TypeSpec
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Cost, LabelId, PropertyKeyId}
 
 import scala.collection.mutable
 

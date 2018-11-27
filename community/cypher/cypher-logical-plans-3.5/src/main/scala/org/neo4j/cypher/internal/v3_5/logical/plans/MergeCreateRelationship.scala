@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v3_5.logical.plans
 
 import org.neo4j.cypher.internal.ir.v3_5.StrictnessMode
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.expressions.{Expression, RelTypeName}
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression, RelTypeName}
 
 /**
   * For each input row, create a new relationship with the provided type and properties,

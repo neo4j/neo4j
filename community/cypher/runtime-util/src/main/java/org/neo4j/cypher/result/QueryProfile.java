@@ -27,7 +27,7 @@ public interface QueryProfile
     /**
      * Get profile for specific operator.
      *
-     * Note: the operator should really be type as an [[org.opencypher.v9_0.util.attribution.Id]],
+     * Note: the operator should really be type as an [[org.neo4j.cypher.internal.v3_5.util.attribution.Id]],
      * but this is not possible because of a bug with scala `AnyVal`s and inheritance.
      *
      * See https://github.com/lampepfl/dotty/issues/1169 for a discussion of the same issue in Dotty.

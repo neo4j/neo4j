@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical
 
-import org.opencypher.v9_0.util.Rewritable._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{DummyPosition, Rewriter}
+import org.neo4j.cypher.internal.v3_5.util.Rewritable._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{DummyPosition, Rewriter}
 import org.neo4j.cypher.internal.compiler.v3_5.SyntaxExceptionCreator
 import org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery.StatementConverters.toUnionQuery
 import org.neo4j.cypher.internal.compiler.v3_5.planner._
 import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.OptionalMatchRemover.smallestGraphIncluding
-import org.opencypher.v9_0.ast.Query
-import org.opencypher.v9_0.rewriting.rewriters.flattenBooleanOperators
-import org.opencypher.v9_0.ast.semantics.{SemanticChecker, SemanticTable}
+import org.neo4j.cypher.internal.v3_5.ast.Query
+import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.flattenBooleanOperators
+import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticChecker, SemanticTable}
 import org.neo4j.cypher.internal.ir.v3_5._
-import org.opencypher.v9_0.expressions.SemanticDirection.BOTH
-import org.opencypher.v9_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.BOTH
+import org.neo4j.cypher.internal.v3_5.util.helpers.fixedPoint
 
 class OptionalMatchRemoverTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

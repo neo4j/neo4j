@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NullPipeDecorator, QueryState}
 import org.neo4j.values.virtual.VirtualValues
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.attribution.Id
-import org.opencypher.v9_0.util.{CypherException => InternalCypherException}
+import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v3_5.util.{CypherException => InternalCypherException}
 
 import scala.collection.mutable
 

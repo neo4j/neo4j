@@ -32,7 +32,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.opencypher.v9_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random

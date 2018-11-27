@@ -30,8 +30,8 @@ import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContex
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.opencypher.v9_0.util.attribution.{Id, SequentialIdGen}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ProfilerTest extends CypherFunSuite {
 

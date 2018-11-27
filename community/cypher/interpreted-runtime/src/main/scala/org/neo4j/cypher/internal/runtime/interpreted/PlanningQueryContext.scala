@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted
 import org.neo4j.cypher.internal.v3_5.logical.plans.QualifiedName
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.AnyValue
-import org.opencypher.v9_0.util.InternalException
+import org.neo4j.cypher.internal.v3_5.util.InternalException
 
 /**
   * In planning we need the ability to evaluate some expressions, e.g. LIMIT org.foo.computeLimit(). In order to

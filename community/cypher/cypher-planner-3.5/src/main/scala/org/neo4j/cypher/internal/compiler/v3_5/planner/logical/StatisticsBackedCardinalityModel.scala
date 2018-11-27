@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical.cardinality.{Inde
 import org.neo4j.cypher.internal.ir.v3_5._
 import org.neo4j.cypher.internal.planner.v3_5.spi.GraphStatistics
 import org.neo4j.values.storable.NumberValue
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions.IntegerLiteral
-import org.opencypher.v9_0.util.{Cardinality, Multiplier, Selectivity}
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions.IntegerLiteral
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Multiplier, Selectivity}
 
 class StatisticsBackedCardinalityModel(queryGraphCardinalityModel: QueryGraphCardinalityModel, simpleExpressionEvaluator: ExpressionEvaluator) extends CardinalityModel {
 

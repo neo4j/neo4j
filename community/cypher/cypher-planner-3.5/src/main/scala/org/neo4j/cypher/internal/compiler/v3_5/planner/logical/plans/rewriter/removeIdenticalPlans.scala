@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.planner.logical.plans.rewriter
 
-import org.opencypher.v9_0.util.attribution.Attributes
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.util.attribution.Attributes
+import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 
 import scala.collection.mutable

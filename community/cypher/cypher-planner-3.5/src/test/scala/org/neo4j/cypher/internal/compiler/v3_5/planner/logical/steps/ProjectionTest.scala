@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.v3_5.logical.plans.Ascending
 import org.neo4j.cypher.internal.v3_5.logical.plans.ColumnOrder
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v3_5.logical.plans.Projection
-import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast.semantics.ExpressionTypeInfo
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.ast.ASTAnnotationMap
-import org.opencypher.v9_0.ast.AscSortItem
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast
+import org.neo4j.cypher.internal.v3_5.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.v3_5.ast.AscSortItem
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
 

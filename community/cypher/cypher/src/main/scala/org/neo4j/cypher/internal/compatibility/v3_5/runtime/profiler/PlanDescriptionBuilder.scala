@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.runtime.planDescription.{Argument, InternalPlanDescription, LogicalPlan2PlanDescription}
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
-import org.opencypher.v9_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
 
 class PlanDescriptionBuilder(logicalPlan: LogicalPlan,
                              plannerName: PlannerName,

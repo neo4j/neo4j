@@ -36,12 +36,12 @@ import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{DoNotGetValue, FieldSignature, IndexOrderNone, IndexedProperty, ProcedureAccessMode, QualifiedName, UserFunctionSignature, LogicalPlan => LogicalPlanv3_5}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansv3_5}
-import org.opencypher.v9_0.expressions.{LogicalVariable, PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
-import org.opencypher.v9_0.util.Rewritable.RewritableAny
-import org.opencypher.v9_0.util.attribution.IdGen
-import org.opencypher.v9_0.util.symbols.CypherType
-import org.opencypher.v9_0.util.{symbols => symbolsv3_5, _}
-import org.opencypher.v9_0.{expressions => expressionsv3_5, util => utilv3_5}
+import org.neo4j.cypher.internal.v3_5.expressions.{LogicalVariable, PropertyKeyName, Expression => Expressionv3_5, LabelName => LabelNamev3_5, RelTypeName => RelTypeNamev3_5, SemanticDirection => SemanticDirectionv3_5}
+import org.neo4j.cypher.internal.v3_5.util.Rewritable.RewritableAny
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.util.{symbols => symbolsv3_5, _}
+import org.neo4j.cypher.internal.v3_5.{expressions => expressionsv3_5, util => utilv3_5}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
@@ -57,11 +57,11 @@ object LogicalPlanConverter {
   val oldLogicalPlanPackage = "org.neo4j.cypher.internal.v3_4.logical.plans"
   val newLogicalPlanPackage = "org.neo4j.cypher.internal.v3_5.logical.plans"
   val oldASTPackage = "org.neo4j.cypher.internal.frontend.v3_4.ast"
-  val newASTPackage = "org.opencypher.v9_0.ast"
+  val newASTPackage = "org.neo4j.cypher.internal.v3_5.ast"
   val oldExpressionPackage = "org.neo4j.cypher.internal.v3_4.expressions"
-  val newExpressionPackage = "org.opencypher.v9_0.expressions"
+  val newExpressionPackage = "org.neo4j.cypher.internal.v3_5.expressions"
   val oldUtilPackage = "org.neo4j.cypher.internal.util.v3_4"
-  val newUtilPackage = "org.opencypher.v9_0.util"
+  val newUtilPackage = "org.neo4j.cypher.internal.v3_5.util"
   val oldIRPackage = "org.neo4j.cypher.internal.ir.v3_4"
   val newIRPackage = "org.neo4j.cypher.internal.ir.v3_5"
   val oldRewritersPackage = "org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters"

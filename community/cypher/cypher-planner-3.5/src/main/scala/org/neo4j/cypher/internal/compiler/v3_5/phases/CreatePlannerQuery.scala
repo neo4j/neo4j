@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v3_5.phases
 
-import org.opencypher.v9_0.util.InternalException
+import org.neo4j.cypher.internal.v3_5.util.InternalException
 import org.neo4j.cypher.internal.compiler.v3_5.ast.convert.plannerQuery.StatementConverters._
-import org.opencypher.v9_0.ast.Query
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.opencypher.v9_0.frontend.phases.{BaseContext, BaseState, Phase}
+import org.neo4j.cypher.internal.v3_5.ast.Query
+import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, BaseState, Phase}
 import org.neo4j.cypher.internal.ir.v3_5.UnionQuery
 
 

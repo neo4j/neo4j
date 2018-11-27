@@ -17,14 +17,8 @@ Apache Software License, Version 2.0
   json4s-native
   MongoDB Java Driver
   nscala-time
-  openCypher AST for the Cypher Query Language
-  openCypher Expressions
-  openCypher Front End
-  openCypher Parser
-  openCypher Rewriting
   openCypher TCK API
   openCypher TCK Features and Graphs
-  openCypher Utils
   org.apiguardian:apiguardian-api
   parboiled-core
   parboiled-scala

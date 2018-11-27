@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v3_5.planner.logical._
 import org.neo4j.cypher.internal.ir.v3_5.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v3_5.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.FreshIdNameGenerator
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.FreshIdNameGenerator
 
 case object selectPatternPredicates extends CandidateGenerator[LogicalPlan] {
 

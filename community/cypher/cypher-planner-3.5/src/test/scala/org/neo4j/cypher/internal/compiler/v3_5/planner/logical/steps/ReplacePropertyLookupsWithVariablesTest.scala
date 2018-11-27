@@ -24,15 +24,15 @@ import org.neo4j.cypher.internal.compiler.v3_5.phases.PlannerContext
 import org.neo4j.cypher.internal.compiler.v3_5.planner.LogicalPlanConstructionTestSupport
 import org.neo4j.cypher.internal.planner.v3_5.spi.IDPPlannerName
 import org.neo4j.cypher.internal.v3_5.logical.plans.{CachedNodeProperty, LogicalPlan, NodeHashJoin, Selection}
-import org.opencypher.v9_0.ast.ASTAnnotationMap
-import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.ast.semantics.ExpressionTypeInfo
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.frontend.phases.InitialState
-import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v3_5.ast.semantics.ExpressionTypeInfo
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.frontend.phases.InitialState
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ReplacePropertyLookupsWithVariablesTest extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanConstructionTestSupport {
   // Have specific input positions to test semantic table (not DummyPosition)
