@@ -23,8 +23,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
-import org.junit.rules.TestRule;
 
 import java.util.concurrent.ExecutionException;
 
@@ -34,7 +32,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -42,11 +39,8 @@ import static org.junit.Assert.fail;
 
 public class ManualAcquireLockTest
 {
-    public final DbmsRule db = new ImpermanentDbmsRule();
-    public final GraphTransactionRule tx = new GraphTransactionRule( db );
-
     @Rule
-    public final TestRule chain = RuleChain.outerRule( db ).around( tx );
+    public final DbmsRule db = new ImpermanentDbmsRule();
 
     private Worker worker;
 
@@ -66,49 +60,51 @@ public class ManualAcquireLockTest
     public void releaseReleaseManually() throws Exception
     {
         String key = "name";
-        Node node = getGraphDb().createNode();
+        Node node = createNode();
 
-        tx.success();
-        Transaction current = tx.begin();
-        Lock nodeLock = current.acquireWriteLock( node );
-        worker.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
-            worker.setProperty( node, key, "ksjd" );
-            fail( "Shouldn't be able to grab it" );
-        }
-        catch ( Exception ignored )
-        {
-        }
-        nodeLock.release();
-        worker.setProperty( node, key, "yo" );
+            Lock nodeLock = transaction.acquireWriteLock( node );
+            worker.beginTx();
+            try
+            {
+                worker.setProperty( node, key, "ksjd" );
+                fail( "Shouldn't be able to grab it" );
+            }
+            catch ( Exception ignored )
+            {
+            }
+            nodeLock.release();
+            worker.setProperty( node, key, "yo" );
 
-        try
-        {
-            worker.finishTx();
-        }
-        catch ( ExecutionException e )
-        {
-            // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
+            try
+            {
+                worker.finishTx();
+            }
+            catch ( ExecutionException e )
+            {
+                // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
+            }
         }
     }
 
     @Test
     public void canOnlyReleaseOnce()
     {
-        Node node = getGraphDb().createNode();
+        Node node = createNode();
 
-        tx.success();
-        Transaction current = tx.begin();
-        Lock nodeLock = current.acquireWriteLock( node );
-        nodeLock.release();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
+            Lock nodeLock = transaction.acquireWriteLock( node );
             nodeLock.release();
-            fail( "Shouldn't be able to release more than once" );
-        }
-        catch ( IllegalStateException e )
-        { // Good
+            try
+            {
+                nodeLock.release();
+                fail( "Shouldn't be able to release more than once" );
+            }
+            catch ( IllegalStateException e )
+            { // Good
+            }
         }
     }
 
@@ -116,25 +112,25 @@ public class ManualAcquireLockTest
     public void makeSureNodeStaysLockedEvenAfterManualRelease() throws Exception
     {
         String key = "name";
-        Node node = getGraphDb().createNode();
+        Node node = createNode();
 
-        tx.success();
-        Transaction current = tx.begin();
-        Lock nodeLock = current.acquireWriteLock( node );
-        node.setProperty( key, "value" );
-        nodeLock.release();
-
-        worker.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
-            worker.setProperty( node, key, "ksjd" );
-            fail( "Shouldn't be able to grab it" );
-        }
-        catch ( Exception ignored )
-        {
-        }
+            Lock nodeLock = transaction.acquireWriteLock( node );
+            node.setProperty( key, "value" );
+            nodeLock.release();
 
-        tx.success();
+            worker.beginTx();
+            try
+            {
+                worker.setProperty( node, key, "ksjd" );
+                fail( "Shouldn't be able to grab it" );
+            }
+            catch ( Exception ignored )
+            {
+            }
+            transaction.success();
+        }
 
         try
         {
@@ -143,6 +139,16 @@ public class ManualAcquireLockTest
         catch ( ExecutionException e )
         {
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
+        }
+    }
+
+    private Node createNode()
+    {
+        try ( Transaction transaction = db.beginTx() )
+        {
+            Node node = getGraphDb().createNode();
+            transaction.success();
+            return node;
         }
     }
 

@@ -20,11 +20,10 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.rule.DbmsRule;
-import org.neo4j.test.rule.GraphTransactionRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.fail;
@@ -34,13 +33,10 @@ public class GraphPropertiesProxyTest
     @ClassRule
     public static DbmsRule db = new ImpermanentDbmsRule();
 
-    @Rule
-    public GraphTransactionRule tx = new GraphTransactionRule( db );
-
     @Test
     public void testGraphAddPropertyWithNullKey()
     {
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             graphProperties().setProperty( null, "bar" );
             fail( "Null key should result in exception." );
@@ -53,7 +49,7 @@ public class GraphPropertiesProxyTest
     @Test
     public void testGraphAddPropertyWithNullValue()
     {
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             graphProperties().setProperty( "foo", null );
             fail( "Null value should result in exception." );
@@ -61,7 +57,6 @@ public class GraphPropertiesProxyTest
         catch ( IllegalArgumentException ignored )
         {
         }
-        tx.failure();
     }
 
     private GraphProperties graphProperties()
