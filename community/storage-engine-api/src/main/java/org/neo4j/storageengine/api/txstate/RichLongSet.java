@@ -25,7 +25,7 @@ import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 public interface RichLongSet extends LongSet
 {
-    LongIterator rangeIterator( int start, int stop );
+    LongIterator rangeIterator( int start, int size );
 
     @Override
     RichLongSet freeze();

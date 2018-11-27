@@ -72,9 +72,6 @@ class DefaultNodeCursor implements NodeCursor
         this.currentAddedInTx = NO_ID;
         this.hasChanges = hasChanges ? HasChanges.YES : HasChanges.NO;
         this.addedNodes = addedNodes;
-        //TODO we could optimize here if addedNodes is non-empty and sizeHint = 0 which will
-        //happen when there is enough data in the tx state to fill up a complete batch. In this
-        //case we just need to reset the storeCursor since we wont be reading from it anyway.
         boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
         return addedNodes.hasNext() || scanBatch;
     }

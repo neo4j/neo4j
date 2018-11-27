@@ -149,25 +149,30 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         ExecutorService service = Executors.newFixedThreadPool( 4 );
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
+        try
+        {
+            // when
+            Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
 
-        // when
-        Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-        Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-        Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-        Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+            // then
+            List<Long> ids1 = future1.get();
+            List<Long> ids2 = future2.get();
+            List<Long> ids3 = future3.get();
+            List<Long> ids4 = future4.get();
 
-        // then
-        List<Long> ids1 = future1.get();
-        List<Long> ids2 = future2.get();
-        List<Long> ids3 = future3.get();
-        List<Long> ids4 = future4.get();
-
-        assertDistinct( ids1, ids2, ids3, ids4 );
-        List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-        concat.sort( Long::compareTo );
-        assertEquals( NODE_IDS, concat );
+            assertDistinct( ids1, ids2, ids3, ids4 );
+            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
+            concat.sort( Long::compareTo );
+            assertEquals( NODE_IDS, concat );
+        }
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -178,24 +183,30 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        // when
-        Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-        Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-        Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-        Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        try
+        {
+            // when
+            Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
 
-        // then
-        List<Long> ids1 = future1.get();
-        List<Long> ids2 = future2.get();
-        List<Long> ids3 = future3.get();
-        List<Long> ids4 = future4.get();
+            // then
+            List<Long> ids1 = future1.get();
+            List<Long> ids2 = future2.get();
+            List<Long> ids3 = future3.get();
+            List<Long> ids4 = future4.get();
 
-        assertDistinct( ids1, ids2, ids3, ids4 );
-        List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-        concat.sort( Long::compareTo );
-        assertEquals( NODE_IDS, concat );
+            assertDistinct( ids1, ids2, ids3, ids4 );
+            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
+            concat.sort( Long::compareTo );
+            assertEquals( NODE_IDS, concat );
+        }
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -206,22 +217,30 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         Scan<NodeCursor> scan = read.allNodesScan();
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        // when
-        ArrayList<Future<List<Long>>> futures = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
+        try
         {
-            futures.add( service.submit( randomBatchWorker( scan, cursors ) ) );
+            // when
+            ArrayList<Future<List<Long>>> futures = new ArrayList<>();
+            for ( int i = 0; i < 10; i++ )
+            {
+                futures.add( service.submit( randomBatchWorker( scan, cursors ) ) );
+            }
+
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+
+            // then
+            List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+
+            assertDistinct( lists );
+            List<Long> concat = concat( lists );
+            concat.sort( Long::compareTo );
+            assertEquals( NODE_IDS, concat );
         }
-
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
-
-        // then
-        List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
-
-        assertDistinct( lists );
-        List<Long> concat = concat( lists );
-        concat.sort( Long::compareTo );
-        assertEquals( NODE_IDS, concat );
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 }

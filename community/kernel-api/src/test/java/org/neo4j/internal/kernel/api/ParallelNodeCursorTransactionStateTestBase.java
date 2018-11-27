@@ -198,8 +198,6 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
             Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
             Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            service.shutdown();
-            service.awaitTermination( 1, TimeUnit.MINUTES );
 
             // then
             List<Long> ids1 = future1.get();
@@ -213,6 +211,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             concat.sort( Long::compareTo );
             assertEquals( ids, concat );
             tx.failure();
+        }
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
         }
     }
 
@@ -255,9 +258,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             ids.sort( Long::compareTo );
             assertEquals( ids, concat );
         }
-
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -300,9 +305,11 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             assertEquals( ids, concat );
             tx.failure();
         }
-
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -313,38 +320,45 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         ExecutorService threadPool = Executors.newFixedThreadPool( workers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
+        try
         {
-            Set<Long> allNodes = new HashSet<>( existingNodes );
-            try ( Transaction tx = beginTransaction() )
+            for ( int i = 0; i < 1000; i++ )
             {
-                int nodeInTx = random.nextInt( 100 );
-                for ( int j = 0; j < nodeInTx; j++ )
+                Set<Long> allNodes = new HashSet<>( existingNodes );
+                try ( Transaction tx = beginTransaction() )
                 {
-                    allNodes.add( tx.dataWrite().nodeCreate() );
+                    int nodeInTx = random.nextInt( 100 );
+                    for ( int j = 0; j < nodeInTx; j++ )
+                    {
+                        allNodes.add( tx.dataWrite().nodeCreate() );
+                    }
+
+                    Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
+
+                    List<Future<List<Long>>> futures = new ArrayList<>( workers );
+                    for ( int j = 0; j < workers; j++ )
+                    {
+                        futures.add( threadPool.submit( randomBatchWorker( scan, cursors ) ) );
+                    }
+
+                    List<List<Long>> lists =
+                            futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+
+                    assertDistinct( lists );
+                    List<Long> concat = concat( lists );
+                    assertEquals(
+                            String.format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
+                            allNodes, new HashSet<>( concat ) );
+                    assertEquals( String.format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
+                    tx.failure();
                 }
-
-                Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
-
-                List<Future<List<Long>>> futures = new ArrayList<>( workers );
-                for ( int j = 0; j < workers; j++ )
-                {
-                    futures.add( threadPool.submit( randomBatchWorker( scan, cursors ) ) );
-                }
-
-                List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
-
-                assertDistinct( lists );
-                List<Long> concat = concat( lists );
-                assertEquals( String.format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
-                        allNodes, new HashSet<>( concat ) );
-                assertEquals( String.format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
-                tx.failure();
             }
         }
-
-        threadPool.shutdown();
-        threadPool.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            threadPool.shutdown();
+            threadPool.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     private Set<Long> createNodes( int size )

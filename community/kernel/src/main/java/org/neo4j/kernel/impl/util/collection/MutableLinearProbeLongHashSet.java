@@ -381,12 +381,13 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         private int internalPosition = NOT_INITIALIZED;
         private long modCount;
 
-        RangeIterator( int start, int stop )
+        RangeIterator( int start, int size )
         {
+            int sizeOfSet = size();
             Preconditions.requireNonNegative( start );
-            Preconditions.requireNonNegative( stop );
-            Preconditions.requireNonNegative( size() - start );
-            this.stop = Math.min( stop, size() );
+            Preconditions.requireNonNegative( size );
+            Preconditions.requireNonNegative( sizeOfSet - start );
+            this.stop = Math.min( start + size, sizeOfSet );
             this.currentPosition = start;
             this.modCount = MutableLinearProbeLongHashSet.this.modCount;
         }
@@ -490,9 +491,9 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
     }
 
     @Override
-    public LongIterator rangeIterator( int start, int stop )
+    public LongIterator rangeIterator( int start, int size )
     {
-        return new RangeIterator( start, stop );
+        return new RangeIterator( start, size );
     }
 
     class FrozenCopy extends AbstractLinearProbeLongHashSet
@@ -520,9 +521,9 @@ class MutableLinearProbeLongHashSet extends AbstractLinearProbeLongHashSet imple
         }
 
         @Override
-        public LongIterator rangeIterator( int start, int stop )
+        public LongIterator rangeIterator( int start, int size )
         {
-            return new RangeIterator( start, stop );
+            return new RangeIterator( start, size );
         }
 
     }

@@ -47,7 +47,7 @@ final class NodeCursorScan implements Scan<NodeCursor>
         this.hasChanges = read.hasTxStateWithChanges();
         this.addedNodesSet = read.txState().addedAndRemovedNodes().getAdded().freeze();
         this.numberOfAddedNodes = addedNodesSet.size();
-        this.addedNodesConsumed = addedNodesSet.size() == 0;
+        this.addedNodesConsumed = numberOfAddedNodes == 0;
     }
 
     @Override
@@ -63,9 +63,9 @@ final class NodeCursorScan implements Scan<NodeCursor>
             int addedStart = addedChunk.getAndAdd( sizeHint );
             if ( addedStart < numberOfAddedNodes )
             {
-                int addedStop = Math.min( addedStart + sizeHint, numberOfAddedNodes );
-                sizeHint -= addedStop - addedStart;
-                addedNodes = addedNodesSet.rangeIterator( addedStart, addedStop );
+                int batchSize = Math.min( sizeHint, numberOfAddedNodes - addedStart  );
+                sizeHint -= batchSize;
+                addedNodes = addedNodesSet.rangeIterator( addedStart, batchSize );
             }
             else
             {

@@ -20,7 +20,7 @@
 package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.nio.LongBuffer;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class RangeLongIteratorTest
 {
     @Test
-    public void shouldHandleEmptyBuffer()
+    void shouldHandleEmptyBuffer()
     {
         // given
         LongBuffer buffer = buffer();
@@ -49,20 +49,20 @@ class RangeLongIteratorTest
     }
 
     @Test
-    public void shouldIterateOverSubsetOfData()
+    void shouldIterateOverSubsetOfData()
     {
         // given
         LongBuffer buffer = buffer( 1L, 2L, 3L, 4L, 5L );
 
         // when
-        RangeLongIterator iterator = new RangeLongIterator( buffer, 2, 4 );
+        RangeLongIterator iterator = new RangeLongIterator( buffer, 2, 2 );
 
         // then
         assertThat( iteratorAsList( iterator ), equalTo( asList( 3L, 4L ) ) );
     }
 
     @Test
-    public void shouldNotBeAbleToCreateInvalidRanges()
+    void shouldNotBeAbleToCreateInvalidRanges()
     {
         // given
         LongBuffer buffer = buffer( 1L, 2L, 3L, 4L, 5L );
@@ -70,8 +70,7 @@ class RangeLongIteratorTest
         // expect
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, -1, 0 ) );
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 0, -1 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 2, 1 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 10, 12 ) );
+        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 10, 2 ) );
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 0, 12 ) );
     }
 

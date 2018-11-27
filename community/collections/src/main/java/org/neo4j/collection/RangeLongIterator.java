@@ -30,12 +30,12 @@ public class RangeLongIterator implements LongIterator
     private final int stop;
     private int currentPosition;
 
-    public RangeLongIterator( LongBuffer buffer, int start, int stop )
+    public RangeLongIterator( LongBuffer buffer, int start, int size )
     {
-        assertRange( buffer, start, stop );
+        assertRange( buffer, start, size );
         this.buffer = buffer;
         this.currentPosition = start;
-        this.stop = stop;
+        this.stop = start + size;
     }
 
     @Override
@@ -48,15 +48,14 @@ public class RangeLongIterator implements LongIterator
         return buffer.get( currentPosition++ );
     }
 
-    private void assertRange( LongBuffer buffer, int start, int stop )
+    private void assertRange( LongBuffer buffer, int start, int size )
     {
-        int range = stop - start;
         int limit = buffer.limit();
-        if ( start < 0 || stop < 0 || range < 0 || range > buffer.remaining() ||
-             (range != 0 && (start >= limit || stop > limit)) )
+        if ( start < 0 || size < 0 || size > buffer.remaining() ||
+             (size != 0 && start >= limit) )
         {
             throw new IllegalArgumentException(
-                    String.format( "Invalid range, capacity=%d, start=%d, stop=%d", buffer.remaining(), start, stop ) );
+                    String.format( "Invalid range, capacity=%d, start=%d, size=%d", buffer.remaining(), start, size ) );
         }
     }
 

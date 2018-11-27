@@ -320,9 +320,9 @@ public class RichMutableLongHashSet implements RichMutableLongSet
     }
 
     @Override
-    public LongIterator rangeIterator( int start, int stop )
+    public LongIterator rangeIterator( int start, int size )
     {
-        return new RangeLongIterator( LongBuffer.wrap( toArray() ), start, stop );
+        return new RangeLongIterator( LongBuffer.wrap( toArray() ), start, size );
     }
 
     @Override
