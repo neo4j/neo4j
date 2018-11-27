@@ -83,14 +83,9 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
-import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
-import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
 import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
-import org.neo4j.kernel.impl.storemigration.VisibleMigrationProgressMonitor;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
@@ -312,8 +307,7 @@ public class Database extends LifecycleAdapter
             LogVersionUpgradeChecker.check( tailScanner, config );
 
             // Upgrade the store before we begin
-            RecordFormats formats = selectStoreFormats( config, databaseLayout, fs, pageCache, logService );
-            upgradeStore( formats, tailScanner );
+            upgradeStore( tailScanner );
 
             performRecovery( fs, pageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
 
@@ -420,27 +414,12 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private static RecordFormats selectStoreFormats( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-            LogService logService )
+    private void upgradeStore( LogTailScanner tailScanner )
     {
-        LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logging );
-        new RecordFormatPropertyConfigurator( formats, config ).configure();
-        return formats;
-    }
+        final DatabaseMigrator migrator = new DatabaseMigrator(
+            fs, config, logService, indexProviderMap, pageCache, tailScanner, scheduler );
 
-    private void upgradeStore( RecordFormats format, LogTailScanner tailScanner )
-    {
-        VisibleMigrationProgressMonitor progressMonitor =
-                new VisibleMigrationProgressMonitor( logService.getUserLog( StoreMigrator.class ) );
-        new DatabaseMigrator(
-                progressMonitor,
-                fs,
-                config,
-                logService,
-                indexProviderMap,
-                pageCache,
-                format, tailScanner, scheduler ).migrate( databaseLayout );
+        migrator.migrate( databaseLayout );
     }
 
     private StorageEngine buildStorageEngine( SchemaState schemaState, OperationalMode operationalMode, VersionContextSupplier versionContextSupplier,

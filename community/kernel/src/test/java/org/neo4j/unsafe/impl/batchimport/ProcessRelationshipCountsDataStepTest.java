@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.junit.Test;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.unsafe.impl.batchimport.cache.MemoryStatsVisitor;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeLabelsCache;
@@ -34,7 +35,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.mebiBytes;
 import static org.neo4j.io.ByteUnit.tebiBytes;
-import static org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter.INSTANCE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
 
 public class ProcessRelationshipCountsDataStepTest
@@ -88,7 +88,7 @@ public class ProcessRelationshipCountsDataStepTest
         when( config.maxNumberOfProcessors() ).thenReturn( maxProcessors );
         when( config.maxMemoryUsage() ).thenReturn( maxMemory );
         return new ProcessRelationshipCountsDataStep( control, cache, config, highLabelId, highRelationshipTypeId,
-                mock( CountsAccessor.Updater.class ), OFF_HEAP, INSTANCE );
+                mock( CountsAccessor.Updater.class ), OFF_HEAP, ProgressReporter.SILENT );
     }
 
     private NodeLabelsCache nodeLabelsCache( long sizeInBytes )
