@@ -108,7 +108,7 @@ class StoreSizeBeanTest
 
         // Create bean
         KernelData kernelData = new KernelData( fs, mock( PageCache.class ), testDirectory.databaseDir(), config );
-        managementData = new ManagementData( new StoreSizeBean(), kernelData, databaseManager, ManagementSupport.load() );
+        managementData = new ManagementData( new StoreSizeBean(), kernelData, database, ManagementSupport.load() );
         storeSizeBean = StoreSizeBean.createBean( managementData, false, 0, mock( Clock.class ) );
 
         when( indexProvider.directoryStructure() ).thenReturn( mock( IndexDirectoryStructure.class ) );

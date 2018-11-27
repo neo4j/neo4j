@@ -19,8 +19,8 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.spi.KernelContext;
 import org.neo4j.kernel.internal.KernelData;
@@ -38,7 +38,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
 
         LogService getLogService();
 
-        DatabaseManager getDatabaseManager();
+        Database getDatabase();
     }
 
     public static final String KEY = "kernel jmx";
@@ -52,7 +52,7 @@ public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensi
     public Lifecycle newInstance( KernelContext context, Dependencies dependencies )
     {
         return new JmxKernelExtension( dependencies.getKernelData(),
-                dependencies.getDatabaseManager(),
+                dependencies.getDatabase(),
                 dependencies.getLogService().getInternalLogProvider() );
     }
 }

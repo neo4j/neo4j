@@ -21,24 +21,22 @@ package org.neo4j.jmx.impl;
 
 import javax.management.ObjectName;
 
-import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.KernelData;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
 public final class ManagementData
 {
     private final KernelData kernel;
     private final ManagementSupport support;
-    private final DatabaseManager databaseManager;
+    private final Database database;
     final ManagementBeanProvider provider;
 
-    public ManagementData( ManagementBeanProvider provider, KernelData kernel, DatabaseManager databaseManager, ManagementSupport support )
+    public ManagementData( ManagementBeanProvider provider, KernelData kernel, Database database, ManagementSupport support )
     {
         this.provider = provider;
         this.kernel = kernel;
         this.support = support;
-        this.databaseManager = databaseManager;
+        this.database = database;
     }
 
     public KernelData getKernelData()
@@ -46,16 +44,14 @@ public final class ManagementData
         return kernel;
     }
 
-    public DatabaseManager getDatabaseManager()
+    public Database getDatabase()
     {
-        return databaseManager;
+        return database;
     }
 
     public <T> T resolveDependency( Class<T> clazz )
     {
-        return databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME )
-                .orElseThrow( () -> new IllegalStateException( "Default database not found." ) )
-                .getDependencies().resolveDependency( clazz );
+        return database.getDependencyResolver().resolveDependency( clazz );
     }
 
     ObjectName getObjectName( String... extraNaming )

@@ -24,7 +24,6 @@ import org.apache.commons.lang3.mutable.MutableLong;
 import java.io.File;
 import java.time.Clock;
 
-import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -40,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 import static org.neo4j.io.layout.DatabaseFile.COUNTS_STORE_A;
 import static org.neo4j.io.layout.DatabaseFile.COUNTS_STORE_B;
 import static org.neo4j.io.layout.DatabaseFile.LABEL_TOKEN_NAMES_STORE;
@@ -101,7 +99,7 @@ public final class StoreSizeBean extends ManagementBeanProvider
             this.fs = management.getKernelData().getFilesystemAbstraction();
             this.updateInterval = updateInterval;
             this.clock = clock;
-            final StoreSizeProvider dataProvider = new StoreSizeProvider( fs, management.getDatabaseManager() );
+            final StoreSizeProvider dataProvider = new StoreSizeProvider( fs, management.getDatabase() );
             this.delegate = newThrottlingBeanSnapshotProxy( StoreSize.class, dataProvider, updateInterval, clock );
         }
 
@@ -180,10 +178,9 @@ public final class StoreSizeBean extends ManagementBeanProvider
         private final LabelScanStore labelScanStore;
         private final DatabaseLayout databaseLayout;
 
-        private StoreSizeProvider( FileSystemAbstraction fs, DatabaseManager databaseManager )
+        private StoreSizeProvider( FileSystemAbstraction fs, Database database )
         {
-            DependencyResolver databaseResolver = databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ).orElseThrow(
-                    () -> new IllegalStateException( "Default database not found." ) ).getDependencies();
+            DependencyResolver databaseResolver = database.getDependencyResolver();
             this.fs = requireNonNull( fs );
             this.logFiles = databaseResolver.resolveDependency( LogFiles.class );
             this.indexProviderMap = databaseResolver.resolveDependency( IndexProviderMap.class );
