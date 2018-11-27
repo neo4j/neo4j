@@ -23,90 +23,107 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 import scala.collection.mutable
 
-trait TreeBuilder[TO] {
+trait TreeBuilder[T] {
 
-  /*
-Traverses the logical plan tree structure and builds up the corresponding output structure. Given a logical plan such as:
-
-        a
-       / \
-      b   c
-     /   / \
-    d   e   f
-
- populate(a) starts the session, and eagerly adds [a, c, f] to the plan stack. We then immediately pop 'f' from the
- plan stack, we build an output for it add it to the output stack, and pop 'c' from the plan stack. Since we are coming from
- 'f', we add [c, e] to the stack and then pop 'e' out again. This is a leaf, so we build an output for it and add it to the
- output stack. We now pop 'c' from the plan stack again. This time we are coming from 'e', and so we know we can use
- two outputs from the output stack to use when building 'c'. We add this output to the output stack and pop 'a' from the plan
- stack. Since we are coming from 'a's RHS, we add [a,b,d] to the stack. Next step is to pop 'd' out, and build an output
- for it, storing it in the output stack. Pop ut 'b' from the plan stack, one output from the output stack, and build an output for 'b'.
- Next we pop out 'a', and this time we are coming from the LHS, and we can now pop two outputs from the output stack to
- build the output for 'a'. Thanks for reading this far - I didn't think we would make it!
+/*
+ * Traverses the logical plan tree structure and builds up the corresponding output structure.
+ * The traversal order is a kind of depth-first combined in/post-order (left first), in that
+ * we visit (1) the left subtree, (2) the root, (3) the right subtree, and then (4) revisit the root.
+ *
+ * It also has a specific mechanism that allows you to return an optional output at step (2) that
+ * will be passed on as an optional input to step (3). This mechanism uses the same output stack
+ * and that is the only reason why the type T is wrapped in an Option.
+ * This can be used to flatten the output structure, e.g. an Apply plan `a` can be turned into:
+ *   a              a
+ *  / \    ===>    /
+ * b   c          c
+ *               /
+ *              b
+ *
+ * Given a logical plan such as:
+ *
+ *         a
+ *        / \
+ *       b   c
+ *      / \   \
+ *     d   e   f
+ *
+ * The virtual method callbacks will be called in the following sequence:
+ *
+ * D      = onLeaf(d, None)
+ * maybeX = onTwoChildPlanComingFromLeft(b, D)
+ * E      = onLeaf(e, maybeX)
+ * B      = onTwoChildPlanComingFromRight(b, D, E)
+ * maybeY = onTwoChildPlanComingFromLeft(a, B)
+ * F      = onLeaf(f, maybeY)
+ * C      = onOneChildPlan(c, F)
+ * A      = onTwoChildPlanComingFromRight(a, B, C)
  */
-  def create(plan: LogicalPlan): TO = {
+
+  protected def onLeaf(plan: LogicalPlan, source: Option[T]): T
+  protected def onOneChildPlan(plan: LogicalPlan, source: T): T
+  protected def onTwoChildPlanComingFromLeft(plan: LogicalPlan, lhs: T): Option[T]
+  protected def onTwoChildPlanComingFromRight(plan: LogicalPlan, lhs: T, rhs: T): T
+
+  def create(plan: LogicalPlan): T = {
 
     val planStack = new mutable.Stack[LogicalPlan]()
-    val outputStack = new mutable.Stack[TO]()
+    val outputStack = new mutable.Stack[Option[T]]()
     var comingFrom = plan
 
+    /**
+      * Eagerly populate the stack using all the lhs children.
+      */
     def populate(plan: LogicalPlan) = {
       var current = plan
       while (!current.isLeaf) {
         planStack.push(current)
-        (current.lhs, current.rhs) match {
-          case (_, Some(right)) =>
-            current = right
-
-          case (Some(left), None) =>
-            current = left
-
-          case _ => throw new InternalException("This must not be!")
-        }
+        current = current.lhs.getOrElse(throw new InternalException("This must not be!"))
       }
       comingFrom = current
       planStack.push(current)
     }
 
     populate(plan)
+    outputStack.push(None) // Start the first lhs leaf without a source
 
     while (planStack.nonEmpty) {
       val current = planStack.pop()
 
       (current.lhs, current.rhs) match {
         case (None, None) =>
-          val output = build(current)
-          outputStack.push(output)
+          val maybeSource = outputStack.pop() // From onTwoChildPlanComingFromLeft()
+          val output = onLeaf(current, maybeSource)
+          outputStack.push(Some(output))
 
         case (Some(_), None) =>
-          val source = outputStack.pop()
-          val output = build(current, source)
-          outputStack.push(output)
+          val source = outputStack.pop().getOrElse(throw new InternalException("One child plan must have a source"))
+          val output = onOneChildPlan(current, source)
+          outputStack.push(Some(output))
 
-        case (Some(left), Some(_)) if comingFrom eq left =>
-          val arg1 = outputStack.pop()
-          val arg2 = outputStack.pop()
-          val output = build(current, arg1, arg2)
+        case (Some(left), Some(right)) if right == left =>
+          throw new InternalException(s"Tried to map bad logical plan. LHS and RHS must never be the same: op: $current\nfull plan: $plan")
 
-          outputStack.push(output)
+        case (Some(left), Some(right)) if comingFrom eq left =>
+          val leftOutput = outputStack.top.getOrElse(throw new InternalException("Two child plan must have a lhs source"))
+          val maybeSourceToTheRhsLeaf = onTwoChildPlanComingFromLeft(current, leftOutput)
+          outputStack.push(maybeSourceToTheRhsLeaf)
+          planStack.push(current)
+          populate(right)
 
         case (Some(left), Some(right)) if comingFrom eq right =>
-          planStack.push(current)
-          populate(left)
+          val rightOutput = outputStack.pop().getOrElse(throw new InternalException("Two child plan must have a rhs source"))
+          val leftOutput = outputStack.pop().getOrElse(throw new InternalException("Two child plan must have a lhs source"))
+          val output = onTwoChildPlanComingFromRight(current, leftOutput, rightOutput)
+          outputStack.push(Some(output))
       }
 
       comingFrom = current
     }
 
-    val result = outputStack.pop()
+    val result = outputStack.pop().getOrElse(throw new InternalException("We should always have a result"))
     assert(outputStack.isEmpty, "Should have emptied the stack of output by now!")
 
     result
   }
-
-  protected def build(plan: LogicalPlan): TO
-
-  protected def build(plan: LogicalPlan, source: TO): TO
-
-  protected def build(plan: LogicalPlan, lhs: TO, rhs: TO): TO
 }

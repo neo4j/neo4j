@@ -31,10 +31,10 @@ import org.neo4j.cypher.internal.v4_0.util.InternalException
 object LogicalPlan2PlanDescription {
 
   def apply(input: LogicalPlan,
-                     plannerName: PlannerName,
-                     readOnly: Boolean,
-                     cardinalities: Cardinalities,
-                     providedOrders: ProvidedOrders): InternalPlanDescription = {
+            plannerName: PlannerName,
+            readOnly: Boolean,
+            cardinalities: Cardinalities,
+            providedOrders: ProvidedOrders): InternalPlanDescription = {
     new LogicalPlan2PlanDescription(readOnly, cardinalities, providedOrders).create(input)
       .addArgument(Version("CYPHER "+plannerName.version))
       .addArgument(RuntimeVersion("4.0"))
@@ -45,9 +45,12 @@ object LogicalPlan2PlanDescription {
 }
 
 case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardinalities, providedOrders: ProvidedOrders)
-  extends TreeBuilder[InternalPlanDescription] {
+  extends LogicalPlans.Mapper[InternalPlanDescription] {
 
-  override protected def build(plan: LogicalPlan): InternalPlanDescription = {
+  def create(plan: LogicalPlan): InternalPlanDescription =
+    LogicalPlans.map(plan, this)
+
+  override def onLeaf(plan: LogicalPlan): InternalPlanDescription = {
     assert(plan.isLeaf)
 
     val id = plan.id
@@ -154,7 +157,7 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     addPlanningAttributes(result, plan)
   }
 
-  override protected def build(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
+  override def onOneChildPlan(plan: LogicalPlan, source: InternalPlanDescription): InternalPlanDescription = {
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.isEmpty)
 
@@ -323,8 +326,8 @@ case class LogicalPlan2PlanDescription(readOnly: Boolean, cardinalities: Cardina
     addPlanningAttributes(result, plan)
   }
 
-  override protected def build(plan: LogicalPlan, lhs: InternalPlanDescription,
-                               rhs: InternalPlanDescription): InternalPlanDescription = {
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: InternalPlanDescription,
+                              rhs: InternalPlanDescription): InternalPlanDescription = {
     assert(plan.lhs.nonEmpty)
     assert(plan.rhs.nonEmpty)
 

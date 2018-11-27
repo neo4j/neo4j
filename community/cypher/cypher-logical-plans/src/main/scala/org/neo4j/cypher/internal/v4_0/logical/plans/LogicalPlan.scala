@@ -251,12 +251,15 @@ abstract class IndexSeekLeafPlan(idGen: IdGen) extends IndexLeafPlan(idGen) {
     properties.filter(_.getValueFromIndex == GetValue).flatMap(_.asAvailablePropertyMap(idName)).toMap
 }
 
-case object Flattener extends TreeBuilder[Seq[LogicalPlan]] {
-  override protected def build(plan: LogicalPlan): Seq[LogicalPlan] = Seq(plan)
+case object Flattener extends LogicalPlans.Mapper[Seq[LogicalPlan]] {
+  override def onLeaf(plan: LogicalPlan): Seq[LogicalPlan] = Seq(plan)
 
-  override protected def build(plan: LogicalPlan, source: Seq[LogicalPlan]): Seq[LogicalPlan] = plan +: source
+  override def onOneChildPlan(plan: LogicalPlan, source: Seq[LogicalPlan]): Seq[LogicalPlan] = plan +: source
 
-  override protected def build(plan: LogicalPlan, lhs: Seq[LogicalPlan], rhs: Seq[LogicalPlan]): Seq[LogicalPlan] = (plan +: lhs) ++ rhs
+  override def onTwoChildPlan(plan: LogicalPlan, lhs: Seq[LogicalPlan], rhs: Seq[LogicalPlan]): Seq[LogicalPlan] = (plan +: lhs) ++ rhs
+
+  def create(plan: LogicalPlan): Seq[LogicalPlan] =
+    LogicalPlans.map(plan, this)
 }
 
 sealed trait IndexUsage {
