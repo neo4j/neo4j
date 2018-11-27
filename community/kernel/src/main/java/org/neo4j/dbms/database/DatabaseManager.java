@@ -39,8 +39,8 @@ public interface DatabaseManager extends Lifecycle
     void shutdownDatabase( String name );
 
     /**
-     * Return list of known database
-     * @return list of known database names
+     * Return sorted list of known database
+     * @return sorted list of known database names
      */
     List<String> listDatabases();
 }
