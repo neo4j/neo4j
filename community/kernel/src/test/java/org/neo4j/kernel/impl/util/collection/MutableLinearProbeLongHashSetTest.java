@@ -272,47 +272,6 @@ class MutableLinearProbeLongHashSetTest
     }
 
     @Test
-    void emptyRangeIterator()
-    {
-        LongIterator longIterator = set.rangeIterator( 0, 0 );
-        assertFalse( longIterator::hasNext );
-        assertThrows( NoSuchElementException.class, longIterator::next );
-    }
-
-    @Test
-    void rangeIteratorWithZeroAndOne()
-    {
-       set.addAll( 0, 1, 2, 3, 4  );
-        LongSet range1 = drain( set.rangeIterator( 0, 3 ) );
-        LongSet range2 = drain( set.rangeIterator( 3, 6 ) );
-
-       assertDistinct( range1, range2 );
-       assertEquals( newSetWith( 0, 1, 2, 3, 4 ), concat( range1, range2 ) );
-    }
-
-    @Test
-    void rangeIteratorWithZero()
-    {
-        set.addAll( 0, 2, 3, 4, 5  );
-        LongSet range1 = drain( set.rangeIterator( 0, 3 ) );
-        LongSet range2 = drain( set.rangeIterator( 3, 6 ) );
-
-        assertDistinct( range1, range2 );
-        assertEquals( newSetWith( 0,  2, 3, 4, 5 ), concat( range1, range2 ) );
-    }
-
-    @Test
-    void rangeIteratorWithOne()
-    {
-        set.addAll( 1, 2, 3, 4, 5  );
-        LongSet range1 = drain( set.rangeIterator( 0, 3 ) );
-        LongSet range2 = drain( set.rangeIterator( 3, 6 ) );
-
-        assertDistinct( range1, range2 );
-        assertEquals( newSetWith( 1, 2, 3, 4, 5 ), concat( range1, range2 ) );
-    }
-
-    @Test
     void emptyIterator()
     {
         final MutableLongIterator iterator = set.longIterator();
@@ -688,27 +647,6 @@ class MutableLinearProbeLongHashSetTest
             assertThrows( ConcurrentModificationException.class, iterator::hasNext );
             assertThrows( ConcurrentModificationException.class, iterator::next );
         }
-    }
-
-    private static void assertDistinct( LongSet...sets )
-    {
-        final MutableLongSet seen = new LongHashSet();
-        for ( LongSet set : sets )
-        {
-            set.each( l -> {
-                assertTrue( seen.add( l ) );
-            } );
-        }
-    }
-
-    private static LongSet concat( LongSet...sets )
-    {
-        final MutableLongSet all = new LongHashSet();
-        for ( LongSet set : sets )
-        {
-            all.addAll( set );
-        }
-        return all;
     }
 
     private static LongSet drain( LongIterator iter )
