@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 case class DropResultPipe(source: Pipe)(val id: Id = Id.INVALID_ID) extends Pipe {
 

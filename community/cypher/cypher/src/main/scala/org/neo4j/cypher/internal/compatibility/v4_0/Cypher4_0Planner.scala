@@ -42,13 +42,13 @@ import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v3_5.ast.Statement
-import org.neo4j.cypher.internal.v3_5.expressions.Parameter
-import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
-import org.neo4j.cypher.internal.v3_5.frontend.phases._
-import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v4_0.ast.Statement
+import org.neo4j.cypher.internal.v4_0.expressions.Parameter
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 
 case class Cypher4_0Planner(config: CypherPlannerConfiguration,
                             clock: Clock,

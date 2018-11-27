@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.CostBasedPlannerName
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{ExecutionPlanDescription, GraphDatabaseService, QueryExecutionException, Result}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
 

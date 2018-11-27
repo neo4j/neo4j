@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
-import org.neo4j.cypher.internal.v3_5.util.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator.isNamed
 
 import scala.collection.Map
 

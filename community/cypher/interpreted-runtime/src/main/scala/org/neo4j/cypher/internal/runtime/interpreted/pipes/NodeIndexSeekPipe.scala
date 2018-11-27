@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v3_5.expressions.LabelToken
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.expressions.LabelToken
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,

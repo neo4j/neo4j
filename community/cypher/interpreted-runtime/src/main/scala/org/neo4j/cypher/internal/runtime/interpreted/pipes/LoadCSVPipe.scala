@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ArrayBackedMap
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v3_5.util.LoadExternalResourceException
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.LoadExternalResourceException
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values._
 import org.neo4j.values.storable.TextValue
 import org.neo4j.values.storable.Value

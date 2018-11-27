@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.v4_0.logical.plans.NestedPlanExpression
-import org.neo4j.cypher.internal.v3_5.expressions.{functions, _}
-import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.calculateUsingGetDegree
-import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.calculateUsingGetDegree
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 
 case object getDegreeRewriter extends Rewriter {
 

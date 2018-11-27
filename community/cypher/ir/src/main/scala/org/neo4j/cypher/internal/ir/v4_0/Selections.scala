@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.ir.v4_0
 
 import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions._
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def isEmpty = predicates.isEmpty

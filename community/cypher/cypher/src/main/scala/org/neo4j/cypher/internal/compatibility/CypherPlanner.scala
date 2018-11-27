@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.phases.{LogicalPlanState, Planner
 import org.neo4j.cypher.internal.{PreParsedQuery, ReusabilityState}
 import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
-import org.neo4j.cypher.internal.v3_5.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger}
-import org.neo4j.cypher.internal.v3_5.util.InternalNotification
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, InternalNotificationLogger}
+import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 /**
   * Cypher planner, which parses and plans a [[PreParsedQuery]] into a [[LogicalPlanResult]].

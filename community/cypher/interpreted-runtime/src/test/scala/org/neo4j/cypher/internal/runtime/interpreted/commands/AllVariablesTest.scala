@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Variable
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
-import org.neo4j.cypher.internal.v3_5.util.symbols._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class AllVariablesTest extends CypherFunSuite {
   val x = AllVariables()

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.phases
 
-import org.neo4j.cypher.internal.v3_5.ast.Statement
-import org.neo4j.cypher.internal.v3_5.frontend.phases.Condition
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.ast.Statement
+import org.neo4j.cypher.internal.v4_0.frontend.phases.Condition
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 import org.neo4j.cypher.internal.ir.v4_0.UnionQuery
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 

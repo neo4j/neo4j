@@ -26,17 +26,17 @@ import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.ContextHelper
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.IDPPlannerName
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheckResult
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticChecker
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.ast.Query
-import org.neo4j.cypher.internal.v3_5.ast.Statement
-import org.neo4j.cypher.internal.v3_5.frontend.phases.CNFNormalizer
-import org.neo4j.cypher.internal.v3_5.frontend.phases.LateAstRewriting
-import org.neo4j.cypher.internal.v3_5.frontend.phases.Namespacer
-import org.neo4j.cypher.internal.v3_5.frontend.phases.rewriteEqualityToInPredicate
-import org.neo4j.cypher.internal.v3_5.rewriting.rewriters._
-import org.neo4j.cypher.internal.v3_5.util.inSequence
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheckResult
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticChecker
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.ast.Query
+import org.neo4j.cypher.internal.v4_0.ast.Statement
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CNFNormalizer
+import org.neo4j.cypher.internal.v4_0.frontend.phases.LateAstRewriting
+import org.neo4j.cypher.internal.v4_0.frontend.phases.Namespacer
+import org.neo4j.cypher.internal.v4_0.frontend.phases.rewriteEqualityToInPredicate
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.v4_0.util.inSequence
 import org.scalatest.mock.MockitoSugar
 
 trait QueryGraphProducer extends MockitoSugar {

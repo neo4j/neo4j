@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.ast
 
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class QueryTaggerTest extends CypherFunSuite {
 

@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, RegularPlannerQuery}
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.OUTGOING
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans.{NestedPlanExpression, _}
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {

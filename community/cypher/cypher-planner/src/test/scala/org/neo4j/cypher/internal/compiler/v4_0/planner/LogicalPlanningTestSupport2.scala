@@ -42,21 +42,21 @@ import org.neo4j.cypher.internal.planner.v4_0.spi._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.helpers.collection.Visitable
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureVisitor
-import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.expressions.PatternExpression
-import org.neo4j.cypher.internal.v3_5.frontend.phases._
-import org.neo4j.cypher.internal.v3_5.parser.CypherParser
-import org.neo4j.cypher.internal.v3_5.rewriting.{Deprecations, RewriterStepSequencer}
-import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.v3_5.rewriting.rewriters._
-import org.neo4j.cypher.internal.v3_5.util.attribution.Attribute
-import org.neo4j.cypher.internal.v3_5.util.attribution.Attributes
-import org.neo4j.cypher.internal.v3_5.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherTestSupport
-import org.neo4j.cypher.internal.v3_5.util.Cardinality
-import org.neo4j.cypher.internal.v3_5.util.PropertyKeyId
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions.PatternExpression
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.parser.CypherParser
+import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.v4_0.util.attribution.Attribute
+import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
+import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherTestSupport
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.PropertyKeyId
 import org.scalatest.matchers.BeMatcher
 import org.scalatest.matchers.MatchResult
 
@@ -287,7 +287,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     semanticTable.resolvedPropertyKeyNames(label)
 
   def using[T <: LogicalPlan](implicit tag: ClassTag[T]): BeMatcher[LogicalPlan] = new BeMatcher[LogicalPlan] {
-    import org.neo4j.cypher.internal.v3_5.util.Foldable._
+    import org.neo4j.cypher.internal.v4_0.util.Foldable._
     override def apply(actual: LogicalPlan): MatchResult = {
       val matches = actual.treeFold(false) {
         case lp if tag.runtimeClass.isInstance(lp) => acc => (true, None)

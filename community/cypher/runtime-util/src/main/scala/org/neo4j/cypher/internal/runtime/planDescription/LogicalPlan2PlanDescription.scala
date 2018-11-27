@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalit
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
 import org.neo4j.cypher.internal.v4_0.logical.plans
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v3_5.expressions.functions.Point
-import org.neo4j.cypher.internal.v3_5.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
-import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
-import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Point
+import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, FunctionName, LabelToken, MapExpression, Namespace, PropertyKeyToken, Expression => ASTExpression}
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 object LogicalPlan2PlanDescription {
 

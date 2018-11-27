@@ -29,7 +29,7 @@ import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeReference, NodeValue, VirtualValues}
-import org.neo4j.cypher.internal.v3_5.util.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
+import org.neo4j.cypher.internal.v4_0.util.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 
 import scala.collection.JavaConverters._
 import scala.collection.Map

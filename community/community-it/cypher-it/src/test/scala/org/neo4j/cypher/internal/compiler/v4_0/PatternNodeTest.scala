@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.{MatchingPair, PatternNode}
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 class PatternNodeTest extends GraphDatabaseFunSuite {
   test("returns pattern relationships") {

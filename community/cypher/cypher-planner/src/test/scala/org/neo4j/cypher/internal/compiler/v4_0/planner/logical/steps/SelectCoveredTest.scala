@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Selection
-import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.expressions.{Equals, Expression, PatternExpression, SignedDecimalIntegerLiteral}
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.{Equals, Expression, PatternExpression, SignedDecimalIntegerLiteral}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {
   private implicit val planContext = newMockedPlanContext

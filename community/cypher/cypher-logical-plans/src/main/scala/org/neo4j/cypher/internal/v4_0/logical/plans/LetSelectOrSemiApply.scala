@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
   * Like LetSemiApply, but with a precondition 'expr'. If 'expr' is true, 'idName' will to set to true without

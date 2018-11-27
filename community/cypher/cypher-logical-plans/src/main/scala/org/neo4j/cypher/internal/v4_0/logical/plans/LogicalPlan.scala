@@ -23,16 +23,16 @@ import java.lang.reflect.Method
 
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
 import org.neo4j.cypher.internal.ir.v4_0.Strictness
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.util.Foldable._
-import org.neo4j.cypher.internal.v3_5.util.Rewritable._
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
-import org.neo4j.cypher.internal.v3_5.util.attribution.SameId
-import org.neo4j.cypher.internal.v3_5.util.Foldable
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.util.InternalException
-import org.neo4j.cypher.internal.v3_5.util.Rewritable
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.Foldable._
+import org.neo4j.cypher.internal.v4_0.util.Rewritable._
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
+import org.neo4j.cypher.internal.v4_0.util.Foldable
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.internal.v4_0.util.Rewritable
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -196,7 +196,7 @@ abstract class LogicalPlan(idGen: IdGen)
   def flatten: Seq[LogicalPlan] = Flattener.create(this)
 
   def indexUsage: Seq[IndexUsage] = {
-    import org.neo4j.cypher.internal.v3_5.util.Foldable._
+    import org.neo4j.cypher.internal.v4_0.util.Foldable._
     this.fold(Seq.empty[IndexUsage]) {
       case NodeIndexSeek(idName, label, properties, _, _, _) =>
         acc => acc :+ SchemaIndexSeekUsage(idName, label.nameId.id, label.name, properties.map(_.propertyKeyToken.name))

@@ -25,11 +25,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.{MissingLabelNotification, Missin
 import org.neo4j.cypher.internal.planner.v4_0.spi.{IDPPlannerName, PlanningAttributes}
 import org.neo4j.values.storable.TemporalValue.TemporalFields
 import org.neo4j.values.storable.{DurationFields, PointFields}
-import org.neo4j.cypher.internal.v3_5.ast.Query
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.frontend.phases.RecordingNotificationLogger
-import org.neo4j.cypher.internal.v3_5.util._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.ast.Query
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class CheckForUnresolvedTokensTest extends CypherFunSuite with AstRewritingTestSupport with LogicalPlanConstructionTestSupport {
 

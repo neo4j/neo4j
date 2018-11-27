@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QuerySta
 import org.neo4j.cypher.internal.v4_0.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.NodeValue
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
 
 class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 

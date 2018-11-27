@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.v3_5.ast.AstConstructionTestSupport
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Argument, Selection}
 
 class FuseSelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport with AstConstructionTestSupport {

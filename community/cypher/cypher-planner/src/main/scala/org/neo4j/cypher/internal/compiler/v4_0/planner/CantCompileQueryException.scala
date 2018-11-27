@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
-import org.neo4j.cypher.internal.v3_5.util.CypherException
-import org.neo4j.cypher.internal.v3_5.util.spi.MapToPublicExceptions
+import org.neo4j.cypher.internal.v4_0.util.CypherException
+import org.neo4j.cypher.internal.v4_0.util.spi.MapToPublicExceptions
 
 class CantCompileQueryException(message: String = "Internal error - should have used fall back to execute query, but something went horribly wrong", cause:Throwable=null)
   extends CypherException(message, cause) {

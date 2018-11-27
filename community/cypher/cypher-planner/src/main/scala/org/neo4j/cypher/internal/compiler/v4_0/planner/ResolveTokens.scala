@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
 import org.neo4j.cypher.internal.compiler.v4_0.phases._
-import org.neo4j.cypher.internal.v3_5.ast.Query
-import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseState, VisitorPhase}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.ast.Query
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseState, VisitorPhase}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId, RelTypeId}
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId, RelTypeId}
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
 
 object ResolveTokens extends VisitorPhase[PlannerContext, BaseState] {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {

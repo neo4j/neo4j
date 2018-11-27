@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
-import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class InequalityRangeSeekableTest extends CypherFunSuite with AstConstructionTestSupport {

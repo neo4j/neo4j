@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
   * For every source row, the nodes assigned to each of the 'nodesToLock' are locked exclusively.

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticCheck
-import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.expressions.Expression.SemanticContext
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticCheck
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Expression.SemanticContext
 
 case class PrefixSeekRangeWrapper(
                                    range: PrefixRange[Expression]

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compatibility.v4_0.notification
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v3_5.util.InternalNotification
+import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 trait NotificationChecker {
   def apply(plan: LogicalPlan): TraversableOnce[InternalNotification]

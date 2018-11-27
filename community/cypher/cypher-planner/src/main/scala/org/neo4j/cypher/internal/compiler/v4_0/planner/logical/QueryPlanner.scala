@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{LogicalPla
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, Solveds}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
-import org.neo4j.cypher.internal.v3_5.frontend.phases.Phase
-import org.neo4j.cypher.internal.v3_5.util.Cost
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
+import org.neo4j.cypher.internal.v4_0.frontend.phases.Phase
+import org.neo4j.cypher.internal.v4_0.util.Cost
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
   extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {

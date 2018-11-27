@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.values.storable.{FloatingPointValue, NumberValue}
-import org.neo4j.cypher.internal.v3_5.util.ArithmeticException
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.ArithmeticException
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class DivideTest extends CypherFunSuite {
   test("should_throw_arithmetic_exception_for_divide_by_zero") {

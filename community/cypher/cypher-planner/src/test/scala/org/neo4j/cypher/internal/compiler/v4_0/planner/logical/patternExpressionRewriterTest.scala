@@ -25,9 +25,9 @@ import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, LogicalPlan, NestedPlanExpression, Selection}
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.PatternExpressionPatternElementNamer
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class patternExpressionRewriterTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

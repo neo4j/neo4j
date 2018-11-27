@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.neo4j.cypher.internal.v3_5.ast.Hint
-import org.neo4j.cypher.internal.v3_5.expressions.LabelName
-import org.neo4j.cypher.internal.v3_5.expressions.Variable
-import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v4_0.ast.Hint
+import org.neo4j.cypher.internal.v4_0.expressions.LabelName
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 
 import scala.annotation.tailrec
 import scala.collection.GenSeq

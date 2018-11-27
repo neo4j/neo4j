@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, Property, PropertyKeyName, Variable}
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 trait ProjectingPlan extends LogicalPlan {
   val source: LogicalPlan

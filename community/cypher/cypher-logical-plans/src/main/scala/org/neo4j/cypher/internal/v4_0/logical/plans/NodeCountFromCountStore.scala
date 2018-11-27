@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
-import org.neo4j.cypher.internal.v3_5.expressions.LabelName
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.expressions.LabelName
 
 /**
   * Produce a single row with the contents of argument and a new value 'idName'. For each label in 'labelNames' the

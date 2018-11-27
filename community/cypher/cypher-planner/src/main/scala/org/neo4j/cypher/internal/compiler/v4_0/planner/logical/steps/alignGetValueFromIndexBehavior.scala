@@ -26,12 +26,12 @@ import org.neo4j.cypher.internal.ir.v4_0.QueryProjection
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.util.Foldable.FoldableAny
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.util.Rewriter
-import org.neo4j.cypher.internal.v3_5.util.attribution.Attributes
-import org.neo4j.cypher.internal.v3_5.util.topDown
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.util.Rewriter
+import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
+import org.neo4j.cypher.internal.v4_0.util.topDown
 
 /**
   * This updates index leaf plans such that they have the right GetValueFromIndexBehavior.

@@ -31,8 +31,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.EagerReadWriteCallMode
 import org.neo4j.cypher.internal.runtime.LazyReadOnlyCallMode
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v3_5.util.symbols._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.IntValue

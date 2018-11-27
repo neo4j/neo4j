@@ -35,18 +35,18 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, ProvidedOrders, Solveds}
 import org.neo4j.cypher.internal.planner.v4_0.spi.{CostBasedPlannerName, GraphStatistics, PlanContext, PlanningAttributes}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.frontend.phases._
-import org.neo4j.cypher.internal.v3_5.parser.CypherParser
-import org.neo4j.cypher.internal.v3_5.rewriting.{Deprecations, RewriterStepSequencer}
-import org.neo4j.cypher.internal.v3_5.rewriting.RewriterStepSequencer.newPlain
-import org.neo4j.cypher.internal.v3_5.rewriting.rewriters._
-import org.neo4j.cypher.internal.v3_5.util._
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
-import org.neo4j.cypher.internal.v3_5.util.symbols._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.{CypherFunSuite, CypherTestSupport}
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.parser.CypherParser
+import org.neo4j.cypher.internal.v4_0.rewriting.{Deprecations, RewriterStepSequencer}
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer.newPlain
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 
 import scala.collection.mutable
 

@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.planner.v4_0.spi
 
-import org.neo4j.cypher.internal.v3_5.util.Cardinality
-import org.neo4j.cypher.internal.v3_5.util.LabelId
-import org.neo4j.cypher.internal.v3_5.util.RelTypeId
-import org.neo4j.cypher.internal.v3_5.util.Selectivity
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.LabelId
+import org.neo4j.cypher.internal.v4_0.util.RelTypeId
+import org.neo4j.cypher.internal.v4_0.util.Selectivity
 
 object GraphStatistics {
   val DEFAULT_RANGE_SELECTIVITY          = Selectivity(0.3)

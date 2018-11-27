@@ -23,8 +23,8 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{CandidateGenerat
 import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Expand, ExpandAll, LogicalPlan, Selection}
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.util.attribution.SameId
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
 
 object triadicSelectionFinder extends CandidateGenerator[LogicalPlan] {
 

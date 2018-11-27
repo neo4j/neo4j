@@ -39,9 +39,9 @@ import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndex
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
-import org.neo4j.cypher.internal.v3_5.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
-import org.neo4j.cypher.internal.v3_5.util.{InternalNotification, TaskCloser}
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 
 import scala.collection.JavaConverters._
 

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QuerySta
 import org.neo4j.cypher.internal.runtime.{NodeOperations, Operations, QueryContext}
 import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.virtual.NodeValue
 
 class AllNodesScanPipeTest extends CypherFunSuite {

@@ -35,16 +35,16 @@ import org.neo4j.cypher.internal.util.v3_4.{symbols => symbolsV3_4}
 import org.neo4j.cypher.internal.util.{v3_4 => utilv3_4}
 import org.neo4j.cypher.internal.v3_4.logical.{plans => plansV3_4}
 import org.neo4j.cypher.internal.v3_4.{expressions => expressionsv3_4}
-import org.neo4j.cypher.internal.v3_5.expressions.PathExpression
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_5.util.attribution.{SequentialIdGen => SequentialIdGenv4_0}
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
-import org.neo4j.cypher.internal.v3_5.util.{symbols => symbolsv4_0}
-import org.neo4j.cypher.internal.v3_5.{ast => astv4_0}
-import org.neo4j.cypher.internal.v3_5.{util => utilv4_0}
-import org.neo4j.cypher.internal.v3_5.{expressions => expressionsv4_0}
+import org.neo4j.cypher.internal.v4_0.expressions.PathExpression
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.util.attribution.{SequentialIdGen => SequentialIdGenv4_0}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.v4_0.util.{symbols => symbolsv4_0}
+import org.neo4j.cypher.internal.v4_0.{ast => astv4_0}
+import org.neo4j.cypher.internal.v4_0.{util => utilv4_0}
+import org.neo4j.cypher.internal.v4_0.{expressions => expressionsv4_0}
 import org.neo4j.cypher.internal.v4_0.logical.plans.ErrorPlan
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrderNone
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureCall

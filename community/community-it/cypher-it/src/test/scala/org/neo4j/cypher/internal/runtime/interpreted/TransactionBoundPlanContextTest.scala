@@ -31,9 +31,9 @@ import org.neo4j.kernel.impl.coreapi.{InternalTransaction, PropertyContainerLock
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory
 import org.neo4j.test.TestGraphDatabaseFactory
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.cypher.internal.v3_5.frontend.phases.devNullLogger
-import org.neo4j.cypher.internal.v3_5.util._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.frontend.phases.devNullLogger
+import org.neo4j.cypher.internal.v4_0.util._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class TransactionBoundPlanContextTest extends CypherFunSuite {
 

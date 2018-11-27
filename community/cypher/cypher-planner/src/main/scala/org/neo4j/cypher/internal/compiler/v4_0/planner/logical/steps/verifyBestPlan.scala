@@ -24,9 +24,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.{IndexHintUnfulfillableNotificati
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v3_5.ast._
-import org.neo4j.cypher.internal.v3_5.expressions.LabelName
-import org.neo4j.cypher.internal.v3_5.util._
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.LabelName
+import org.neo4j.cypher.internal.v4_0.util._
 
 object verifyBestPlan extends PlanTransformer {
   def apply(plan: LogicalPlan, expected: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {

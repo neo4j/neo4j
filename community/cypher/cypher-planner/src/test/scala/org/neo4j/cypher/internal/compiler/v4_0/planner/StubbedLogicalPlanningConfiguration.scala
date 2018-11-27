@@ -25,9 +25,9 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, ProcedureSignature}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, HasLabels}
-import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Cost, LabelId}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, HasLabels}
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost, LabelId}
 
 class StubbedLogicalPlanningConfiguration(val parent: LogicalPlanningConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {

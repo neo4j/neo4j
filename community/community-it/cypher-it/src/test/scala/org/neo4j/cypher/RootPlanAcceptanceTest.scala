@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.{InterpretedRuntimeName, RuntimeName}
 import org.neo4j.cypher.internal.planner.v4_0.spi.CostBasedPlannerName
 import org.neo4j.graphdb.ExecutionPlanDescription
-import org.neo4j.cypher.internal.v3_5.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
 
 class RootPlanAcceptanceTest extends ExecutionEngineFunSuite {
 

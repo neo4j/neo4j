@@ -29,12 +29,12 @@ import org.neo4j.cypher.internal.runtime.{ExpressionCursors, NodeOperations, Que
 import org.neo4j.graphdb.Node
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.longValue
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.util.{DummyPosition, PropertyKeyId}
-import org.neo4j.cypher.internal.v3_5.{expressions => ast}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, PropertyKeyId}
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 class SetPropertyPipeTest extends CypherFunSuite with PipeTestSupport {
 

@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner
 
-import org.neo4j.cypher.internal.v3_5.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 object SemanticTableBuilder {
   def apply() = new SemanticTableBuilder

@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 
 class UnnestOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {

@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compiler.v4_0.phases
 
 import java.time.Clock
 
-import org.neo4j.cypher.internal.v3_5.util.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition}
 import org.neo4j.cypher.internal.compiler.v4_0._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{ExpressionEvaluator, Metrics, MetricsFactory, QueryGraphSolver}
-import org.neo4j.cypher.internal.v3_5.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticErrorDef
+import org.neo4j.cypher.internal.v4_0.frontend.phases.{BaseContext, InternalNotificationLogger, Monitors}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanContext
-import org.neo4j.cypher.internal.v3_5.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 class PlannerContext(val exceptionCreator: (String, InputPosition) => CypherException,
                      val tracer: CompilationPhaseTracer,

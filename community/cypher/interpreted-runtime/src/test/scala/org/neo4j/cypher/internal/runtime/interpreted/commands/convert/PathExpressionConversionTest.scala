@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.v3_5.util.{DummyPosition, InputPosition}
+import org.neo4j.cypher.internal.v4_0.util.{DummyPosition, InputPosition}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ProjectedPath._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions._
 
 class PathExpressionConversionTest extends CypherFunSuite {
 

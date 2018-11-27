@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.PlanMatchHelp
 import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{Aggregation, LogicalPlan, Projection}
-import org.neo4j.cypher.internal.v3_5.ast.ASTAnnotationMap
-import org.neo4j.cypher.internal.v3_5.ast.semantics.{ExpressionTypeInfo, SemanticTable}
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.ast.ASTAnnotationMap
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{ExpressionTypeInfo, SemanticTable}
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport with PlanMatchHelp {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))

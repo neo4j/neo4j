@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.runtime.planDescription
 
 import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments._
-import org.neo4j.cypher.internal.v3_5.ast.prettifier.ExpressionStringifier
-import org.neo4j.cypher.internal.v3_5.expressions
-import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v3_5.util.UnNamedNameGenerator._
+import org.neo4j.cypher.internal.v4_0.ast.prettifier.ExpressionStringifier
+import org.neo4j.cypher.internal.v4_0.expressions
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.util.UnNamedNameGenerator._
 
 object PlanDescriptionArgumentSerializer {
   private val SEPARATOR = ", "

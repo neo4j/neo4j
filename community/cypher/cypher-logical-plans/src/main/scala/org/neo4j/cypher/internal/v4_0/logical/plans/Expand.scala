@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
 import org.neo4j.cypher.internal.ir.v4_0.VarPatternLength
-import org.neo4j.cypher.internal.v3_5.expressions._
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
 
 /**
   * For every source row, traverse all the relationships of 'from' which fulfill the

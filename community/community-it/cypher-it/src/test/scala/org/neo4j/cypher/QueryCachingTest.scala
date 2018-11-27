@@ -27,7 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.graphdb.{Label, QueryExecutionException}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.scalatest.prop.TableDrivenPropertyChecks
 
 import scala.collection.JavaConversions._

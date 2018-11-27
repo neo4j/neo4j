@@ -32,15 +32,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{values => commandvalues}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandexpressions}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v3_5.expressions.functions._
-import org.neo4j.cypher.internal.v3_5.expressions.DesugaredMapProjection
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v3_5.expressions.functions
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
-import org.neo4j.cypher.internal.v3_5.util.InternalException
-import org.neo4j.cypher.internal.v3_5.util.NonEmptyList
-import org.neo4j.cypher.internal.v3_5.{expressions => ast}
+import org.neo4j.cypher.internal.v4_0.expressions.functions._
+import org.neo4j.cypher.internal.v4_0.expressions.DesugaredMapProjection
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v4_0.expressions.functions
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
 

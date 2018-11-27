@@ -2,13 +2,13 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.neo4j</groupId>
-    <artifactId>neo4j-front-end-parent-3.5</artifactId>
+    <artifactId>neo4j-front-end-parent-4.0</artifactId>
     <version>4.0.0-SNAPSHOT</version>
     <relativePath>../</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <artifactId>neo4j-util-3.5</artifactId>
+  <artifactId>neo4j-util-4.0</artifactId>
   <packaging>jar</packaging>
   <version>4.0.0-SNAPSHOT</version>
   <name>openCypher Utils</name>
@@ -18,7 +18,7 @@
 
   <properties>
     <license-text.header>headers/ASL-2-header.txt</license-text.header>
-    <moduleName>org.neo4j.cypher.internal.v3_5.util</moduleName>
+    <moduleName>org.neo4j.cypher.internal.v4_0.util</moduleName>
   </properties>
 
   <scm>

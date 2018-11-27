@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v3_5.util.attribution.{Attributes, SameId}
-import org.neo4j.cypher.internal.v3_5.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, SameId}
+import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 
 import scala.annotation.tailrec
 

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.ir.v4_0.ProvidedOrder
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription.Arguments.{DbHits, EstimatedRows, Order, Rows}
 import org.neo4j.cypher.internal.runtime.planDescription._
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
-import org.neo4j.cypher.internal.v3_5.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.util.matching.Regex

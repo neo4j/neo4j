@@ -22,14 +22,14 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 import org.neo4j.cypher.internal.planner.v4_0.spi.GraphStatistics
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
 import org.neo4j.kernel.impl.util.dbstructure.DbStructureLookup
-import org.neo4j.cypher.internal.v3_5.util.Cardinality
-import org.neo4j.cypher.internal.v3_5.util.LabelId
-import org.neo4j.cypher.internal.v3_5.util.RelTypeId
-import org.neo4j.cypher.internal.v3_5.util.Selectivity
+import org.neo4j.cypher.internal.v4_0.util.Cardinality
+import org.neo4j.cypher.internal.v4_0.util.LabelId
+import org.neo4j.cypher.internal.v4_0.util.RelTypeId
+import org.neo4j.cypher.internal.v4_0.util.Selectivity
 
 class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatistics {
 
-  import org.neo4j.cypher.internal.v3_5.util.NameId._
+  import org.neo4j.cypher.internal.v4_0.util.NameId._
 
   override def nodesWithLabelCardinality( label: Option[LabelId] ): Cardinality =
     Cardinality(lookup.nodesWithLabelCardinality(label))

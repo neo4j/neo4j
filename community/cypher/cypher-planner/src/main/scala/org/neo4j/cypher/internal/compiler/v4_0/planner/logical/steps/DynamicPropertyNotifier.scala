@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.ir.v4_0.QueryGraph
-import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, Variable}
-import org.neo4j.cypher.internal.v3_5.util.InternalNotification
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, Variable}
+import org.neo4j.cypher.internal.v4_0.util.InternalNotification
 
 object DynamicPropertyNotifier {
 

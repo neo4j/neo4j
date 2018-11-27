@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, QueryGraph}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, IndexOrderCapability}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, ProcedureSignature}
-import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v3_5.util.{Cardinality, Cost}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v4_0.util.{Cardinality, Cost}
 
 case class RealLogicalPlanningConfiguration(cypherCompilerConfig: CypherPlannerConfiguration)
   extends LogicalPlanningConfiguration with LogicalPlanningConfigurationAdHocSemanticTable {

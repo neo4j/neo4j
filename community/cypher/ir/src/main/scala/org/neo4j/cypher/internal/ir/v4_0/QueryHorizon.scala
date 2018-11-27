@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.neo4j.cypher.internal.v3_5.ast.AliasedReturnItem
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression, StringLiteral, Variable}
-import org.neo4j.cypher.internal.v3_5.util.InternalException
+import org.neo4j.cypher.internal.v4_0.ast.AliasedReturnItem
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, StringLiteral, Variable}
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
 
 trait QueryHorizon {

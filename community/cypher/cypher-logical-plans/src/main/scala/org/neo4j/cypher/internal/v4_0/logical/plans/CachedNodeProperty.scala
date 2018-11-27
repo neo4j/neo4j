@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v3_5.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
-import org.neo4j.cypher.internal.v3_5.expressions.{Expression => ASTExpression, PropertyKeyName}
-import org.neo4j.cypher.internal.v3_5.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheck, SemanticCheckResult, SemanticCheckableExpression}
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ASTExpression, PropertyKeyName}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
 
 /**
   * Common super class of CachedNodeProperty

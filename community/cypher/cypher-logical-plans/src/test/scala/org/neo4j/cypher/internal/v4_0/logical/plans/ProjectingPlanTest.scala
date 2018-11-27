@@ -20,14 +20,14 @@
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.logical.plans
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
-import org.neo4j.cypher.internal.v3_5.expressions.Property
-import org.neo4j.cypher.internal.v3_5.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v3_5.expressions.Variable
-import org.neo4j.cypher.internal.v3_5.util.DummyPosition
-import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
-import org.neo4j.cypher.internal.v3_5.util.attribution.SequentialIdGen
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Property
+import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.util.DummyPosition
+import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ProjectingPlanTest extends CypherFunSuite {
   private val pos = DummyPosition(0)

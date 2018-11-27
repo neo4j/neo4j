@@ -64,7 +64,7 @@
 
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-util-3.5</artifactId>
+      <artifactId>neo4j-util-4.0</artifactId>
       <version>${project.version}</version>
     </dependency>
 

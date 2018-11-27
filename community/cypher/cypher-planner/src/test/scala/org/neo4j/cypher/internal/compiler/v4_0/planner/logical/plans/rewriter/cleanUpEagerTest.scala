@@ -25,10 +25,10 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0.NoHeaders
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
-import org.neo4j.cypher.internal.v3_5.expressions.StringLiteral
-import org.neo4j.cypher.internal.v3_5.util.attribution.Attributes
-import org.neo4j.cypher.internal.v3_5.util.helpers.fixedPoint
-import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v4_0.expressions.StringLiteral
+import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
+import org.neo4j.cypher.internal.v4_0.util.helpers.fixedPoint
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class cleanUpEagerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

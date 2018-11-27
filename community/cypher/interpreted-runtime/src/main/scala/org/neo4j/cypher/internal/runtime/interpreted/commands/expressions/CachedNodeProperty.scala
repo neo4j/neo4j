@@ -28,7 +28,7 @@ import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
-import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 
 abstract class AbstractCachedNodeProperty extends Expression {
 

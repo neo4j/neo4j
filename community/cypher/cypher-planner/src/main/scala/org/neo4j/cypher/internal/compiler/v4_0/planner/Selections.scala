@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.ir.v4_0.Selections
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
-import org.neo4j.cypher.internal.v3_5.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 case class unsolvedPreds(solveds: Solveds) extends ((Selections, LogicalPlan) => Seq[Expression]) {
   def apply(s: Selections, l: LogicalPlan): Seq[Expression] =
