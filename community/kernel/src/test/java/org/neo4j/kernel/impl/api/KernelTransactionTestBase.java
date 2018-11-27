@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 import org.junit.Before;
 import org.mockito.Mockito;
@@ -71,7 +72,6 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
-import org.neo4j.storageengine.api.txstate.RichMutableLongSet;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
@@ -192,7 +192,7 @@ public class KernelTransactionTestBase
     {
 
         @Override
-        public RichMutableLongSet newLongSet()
+        public MutableLongSet newLongSet()
         {
             return OnHeapCollectionsFactory.INSTANCE.newLongSet();
         }

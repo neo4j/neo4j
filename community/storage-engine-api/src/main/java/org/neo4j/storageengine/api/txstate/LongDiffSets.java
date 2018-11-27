@@ -20,6 +20,8 @@
 package org.neo4j.storageengine.api.txstate;
 
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 
@@ -46,15 +48,15 @@ public interface LongDiffSets
         }
 
         @Override
-        public RichLongSet getAdded()
+        public LongSet getAdded()
         {
-            return RichLongSet.EMPTY;
+            return LongSets.immutable.empty();
         }
 
         @Override
-        public RichLongSet getRemoved()
+        public LongSet getRemoved()
         {
-            return RichLongSet.EMPTY;
+            return LongSets.immutable.empty();
         }
 
         @Override
@@ -100,13 +102,13 @@ public interface LongDiffSets
      * All elements that added into this collection
      * @return all added elements
      */
-    RichLongSet getAdded();
+    LongSet getAdded();
 
     /**
      * All elements that are removed according to underlying collection
      * @return all removed elements
      */
-    RichLongSet getRemoved();
+    LongSet getRemoved();
 
     /**
      * Check if underlying diff set is empty

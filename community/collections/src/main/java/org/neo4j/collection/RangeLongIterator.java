@@ -21,20 +21,22 @@ package org.neo4j.collection;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import java.nio.LongBuffer;
 import java.util.NoSuchElementException;
+
+import org.neo4j.util.Preconditions;
 
 public class RangeLongIterator implements LongIterator
 {
-    private final LongBuffer buffer;
+    private final long[] array;
     private final int stop;
-    private int currentPosition;
+    private int currentIndex;
 
-    public RangeLongIterator( LongBuffer buffer, int start, int size )
+    public RangeLongIterator( long[] array, int start, int size )
     {
-        assertRange( buffer, start, size );
-        this.buffer = buffer;
-        this.currentPosition = start;
+        Preconditions.requireBetween( start, 0, array.length );
+        Preconditions.requireBetween( size, 0, array.length + 1);
+        this.array = array;
+        this.currentIndex = start;
         this.stop = start + size;
     }
 
@@ -45,23 +47,12 @@ public class RangeLongIterator implements LongIterator
         {
             throw new NoSuchElementException();
         }
-        return buffer.get( currentPosition++ );
-    }
-
-    private void assertRange( LongBuffer buffer, int start, int size )
-    {
-        int limit = buffer.limit();
-        if ( start < 0 || size < 0 || size > buffer.remaining() ||
-             (size != 0 && start >= limit) )
-        {
-            throw new IllegalArgumentException(
-                    String.format( "Invalid range, capacity=%d, start=%d, size=%d", buffer.remaining(), start, size ) );
-        }
+        return array[currentIndex++];
     }
 
     @Override
     public boolean hasNext()
     {
-        return currentPosition < stop;
+        return currentIndex < stop;
     }
 }

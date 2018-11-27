@@ -24,10 +24,10 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.storageengine.api.AllNodeScan;
-import org.neo4j.storageengine.api.txstate.RichLongSet;
 import org.neo4j.util.Preconditions;
 
 final class NodeCursorScan implements Scan<NodeCursor>
@@ -36,8 +36,7 @@ final class NodeCursorScan implements Scan<NodeCursor>
     private final Read read;
     private final boolean hasChanges;
     private volatile boolean addedNodesConsumed;
-    private final RichLongSet addedNodesSet;
-    private final int numberOfAddedNodes;
+    private final long[] addedNodesArray;
     private final AtomicInteger addedChunk = new AtomicInteger( 0 );
 
     NodeCursorScan( AllNodeScan internalScan, Read read )
@@ -45,9 +44,8 @@ final class NodeCursorScan implements Scan<NodeCursor>
         this.allNodeScan = internalScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
-        this.addedNodesSet = read.txState().addedAndRemovedNodes().getAdded().freeze();
-        this.numberOfAddedNodes = addedNodesSet.size();
-        this.addedNodesConsumed = numberOfAddedNodes == 0;
+        this.addedNodesArray = read.txState().addedAndRemovedNodes().getAdded().freeze().toArray();
+        this.addedNodesConsumed =  addedNodesArray.length == 0;
     }
 
     @Override
@@ -61,11 +59,11 @@ final class NodeCursorScan implements Scan<NodeCursor>
             //the idea here is to give each batch an exclusive range of the underlying
             //memory so that each thread can read in parallel without contention.
             int addedStart = addedChunk.getAndAdd( sizeHint );
-            if ( addedStart < numberOfAddedNodes )
+            if ( addedStart < addedNodesArray.length )
             {
-                int batchSize = Math.min( sizeHint, numberOfAddedNodes - addedStart  );
+                int batchSize = Math.min( sizeHint, addedNodesArray.length - addedStart  );
                 sizeHint -= batchSize;
-                addedNodes = addedNodesSet.rangeIterator( addedStart, batchSize );
+                addedNodes = new RangeLongIterator( addedNodesArray, addedStart, batchSize );
             }
             else
             {

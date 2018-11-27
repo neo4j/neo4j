@@ -21,13 +21,12 @@ package org.neo4j.kernel.impl.util.diffsets;
 
 import org.eclipse.collections.api.LongIterable;
 import org.eclipse.collections.api.iterator.LongIterator;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactory;
-import org.neo4j.storageengine.api.txstate.RichLongSet;
-import org.neo4j.storageengine.api.txstate.RichMutableLongHashSet;
-import org.neo4j.storageengine.api.txstate.RichMutableLongSet;
 
 /**
  * Primitive long version of collection that with given a sequence of add and removal operations, tracks
@@ -37,13 +36,13 @@ import org.neo4j.storageengine.api.txstate.RichMutableLongSet;
  */
 public class MutableLongDiffSetsImpl implements MutableLongDiffSets
 {
-    private static final RichMutableLongSet NOT_INITIALIZED = new RichMutableLongHashSet( LongSets.mutable.empty().asUnmodifiable() );
+    private static final MutableLongSet NOT_INITIALIZED = LongSets.mutable.empty().asUnmodifiable();
 
     private final CollectionsFactory collectionsFactory;
-    private RichMutableLongSet added;
-    private RichMutableLongSet removed;
+    private MutableLongSet added;
+    private MutableLongSet removed;
 
-    public MutableLongDiffSetsImpl( RichMutableLongSet added, RichMutableLongSet removed, CollectionsFactory collectionsFactory )
+    public MutableLongDiffSetsImpl( MutableLongSet added, MutableLongSet removed, CollectionsFactory collectionsFactory )
     {
         this.added = added;
         this.removed = removed;
@@ -114,13 +113,13 @@ public class MutableLongDiffSetsImpl implements MutableLongDiffSets
     }
 
     @Override
-    public RichLongSet getAdded()
+    public LongSet getAdded()
     {
         return added;
     }
 
     @Override
-    public RichLongSet getRemoved()
+    public LongSet getRemoved()
     {
         return removed;
     }

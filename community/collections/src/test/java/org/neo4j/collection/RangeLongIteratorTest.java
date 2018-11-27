@@ -22,10 +22,8 @@ package org.neo4j.collection;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
 
-import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -35,27 +33,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class RangeLongIteratorTest
 {
     @Test
-    void shouldHandleEmptyBuffer()
-    {
-        // given
-        LongBuffer buffer = buffer();
-
-        // when
-        RangeLongIterator iterator = new RangeLongIterator( buffer, 0, 0 );
-
-        // then
-        assertThat( iterator.hasNext(), equalTo( false ) );
-        assertThrows( NoSuchElementException.class, iterator::next );
-    }
-
-    @Test
     void shouldIterateOverSubsetOfData()
     {
         // given
-        LongBuffer buffer = buffer( 1L, 2L, 3L, 4L, 5L );
+        long[] array = new long[]{1L, 2L, 3L, 4L, 5L};
 
         // when
-        RangeLongIterator iterator = new RangeLongIterator( buffer, 2, 2 );
+        RangeLongIterator iterator = new RangeLongIterator( array, 2, 2 );
 
         // then
         assertThat( iteratorAsList( iterator ), equalTo( asList( 3L, 4L ) ) );
@@ -65,13 +49,13 @@ class RangeLongIteratorTest
     void shouldNotBeAbleToCreateInvalidRanges()
     {
         // given
-        LongBuffer buffer = buffer( 1L, 2L, 3L, 4L, 5L );
+        long[] array = new long[]{1L, 2L, 3L, 4L, 5L};
 
         // expect
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, -1, 0 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 0, -1 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 10, 2 ) );
-        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 0, 12 ) );
+        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, -1, 0 ) );
+        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 0, -1 ) );
+        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 10, 2 ) );
+        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 0, 12 ) );
     }
 
     private static List<Long> iteratorAsList( LongIterator iterator )
@@ -84,8 +68,4 @@ class RangeLongIteratorTest
         return list;
     }
 
-    private LongBuffer buffer( long... values )
-    {
-        return LongBuffer.wrap( values );
-    }
 }
