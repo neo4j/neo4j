@@ -19,6 +19,11 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -112,7 +117,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     public void scanShouldSeeAddedNodes() throws Exception
     {
         int size = 100;
-        Set<Long> existing = createNodes( size );
+        MutableLongSet existing = createNodes( size );
         Set<Long> added = new HashSet<>( size );
 
         try ( Transaction tx = beginTransaction() )
@@ -181,7 +186,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         ExecutorService service = Executors.newFixedThreadPool( 4 );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
-        List<Long> ids = new ArrayList<>( size );
+        LongArrayList ids = new LongArrayList();
         try ( Transaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
@@ -194,22 +199,20 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
-            Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, size / 4 ) );
 
             // then
-            List<Long> ids1 = future1.get();
-            List<Long> ids2 = future2.get();
-            List<Long> ids3 = future3.get();
-            List<Long> ids4 = future4.get();
+            LongList ids1 = future1.get();
+            LongList ids2 = future2.get();
+            LongList ids3 = future3.get();
+            LongList ids4 = future4.get();
 
             assertDistinct( ids1, ids2, ids3, ids4 );
-            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-            ids.sort( Long::compareTo );
-            concat.sort( Long::compareTo );
-            assertEquals( ids, concat );
+            LongList concat = concat( ids1, ids2, ids3, ids4 );
+            assertEquals( ids.toSortedList(), concat.toSortedList() );
             tx.failure();
         }
         finally
@@ -228,7 +231,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         ExecutorService service = Executors.newFixedThreadPool( 4 );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         int size = 128;
-        List<Long> ids = new ArrayList<>( size );
+        LongArrayList ids = new LongArrayList();
         try ( Transaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
@@ -241,22 +244,20 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             Scan<NodeCursor> scan = read.allNodesScan();
 
             // when
-            Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
 
             // then
-            List<Long> ids1 = future1.get();
-            List<Long> ids2 = future2.get();
-            List<Long> ids3 = future3.get();
-            List<Long> ids4 = future4.get();
+            LongList ids1 = future1.get();
+            LongList ids2 = future2.get();
+            LongList ids3 = future3.get();
+            LongList ids4 = future4.get();
 
             assertDistinct( ids1, ids2, ids3, ids4 );
-            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-            concat.sort( Long::compareTo );
-            ids.sort( Long::compareTo );
-            assertEquals( ids, concat );
+            LongList concat = concat( ids1, ids2, ids3, ids4 );
+            assertEquals( ids.toSortedList(), concat.toSortedList() );
         }
         finally
         {
@@ -273,7 +274,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
         int size = 128;
-        List<Long> ids = new ArrayList<>( size );
+        LongArrayList ids = new LongArrayList();
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -288,21 +289,19 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             CursorFactory cursors = testSupport.kernelToTest().cursors();
 
             // when
-            ArrayList<Future<List<Long>>> futures = new ArrayList<>();
+            ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add( service.submit( randomBatchWorker( scan, cursors ) ) );
             }
 
             // then
-            List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
 
             assertDistinct( lists );
-            List<Long> concat = concat( lists );
-            concat.sort( Long::compareTo );
-            ids.sort( Long::compareTo );
+            LongList concat = concat( lists );
 
-            assertEquals( ids, concat );
+            assertEquals( ids.toSortedList(), concat.toSortedList() );
             tx.failure();
         }
         finally
@@ -315,7 +314,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     @Test
     public void parallelTxStateScanStressTest() throws InvalidTransactionTypeKernelException, TransactionFailureException, InterruptedException
     {
-        Set<Long> existingNodes = createNodes( 77 );
+        LongSet existingNodes = createNodes( 77 );
         int workers = Runtime.getRuntime().availableProcessors();
         ExecutorService threadPool = Executors.newFixedThreadPool( workers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
@@ -324,7 +323,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         {
             for ( int i = 0; i < 1000; i++ )
             {
-                Set<Long> allNodes = new HashSet<>( existingNodes );
+                MutableLongSet allNodes = LongSets.mutable.withAll( existingNodes );
                 try ( Transaction tx = beginTransaction() )
                 {
                     int nodeInTx = random.nextInt( 100 );
@@ -335,20 +334,20 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
 
                     Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
 
-                    List<Future<List<Long>>> futures = new ArrayList<>( workers );
+                    List<Future<LongList>> futures = new ArrayList<>( workers );
                     for ( int j = 0; j < workers; j++ )
                     {
                         futures.add( threadPool.submit( randomBatchWorker( scan, cursors ) ) );
                     }
 
-                    List<List<Long>> lists =
+                    List<LongList> lists =
                             futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
 
                     assertDistinct( lists );
-                    List<Long> concat = concat( lists );
+                    LongList concat = concat( lists );
                     assertEquals(
                             String.format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
-                            allNodes, new HashSet<>( concat ) );
+                            allNodes, LongSets.immutable.withAll( concat ) );
                     assertEquals( String.format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
                     tx.failure();
                 }
@@ -361,10 +360,10 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
         }
     }
 
-    private Set<Long> createNodes( int size )
+    private MutableLongSet createNodes( int size )
             throws TransactionFailureException, InvalidTransactionTypeKernelException
     {
-        HashSet<Long> nodes = new HashSet<>( size );
+        MutableLongSet nodes = LongSets.mutable.empty();
         try ( Transaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();

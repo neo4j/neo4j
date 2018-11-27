@@ -19,16 +19,18 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import java.util.ArrayList;
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
+
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 
@@ -39,41 +41,38 @@ final class TestUtils
         throw new UnsupportedOperationException( "do not instantiate" );
     }
 
-    @SafeVarargs
-    static <T> void assertDistinct( List<T>... lists )
+    static void assertDistinct( LongList... lists )
     {
         assertDistinct( Arrays.asList( lists ) );
     }
 
-    static <T> void assertDistinct( List<List<T>> lists )
+    static void assertDistinct( List<LongList> lists )
     {
-        Set<T> seen = new HashSet<T>();
-        for ( List<T> list : lists )
+        MutableLongSet seen = LongSets.mutable.empty();
+        for ( LongList list : lists )
         {
-            for ( T item : list )
-            {
-                assertTrue( String.format( "%s was seen multiple times", item ), seen.add( item ) );
-            }
+            list.forEach( item -> assertTrue( String.format( "%s was seen multiple times", item ), seen.add( item ) ) );
         }
     }
 
-    @SafeVarargs
-    static <T> List<T> concat( List<T>... lists )
+    static LongList concat( LongList... lists )
     {
         return concat( Arrays.asList( lists ) );
     }
 
-    static <T> List<T> concat( List<List<T>> lists )
+    static LongList concat( List<LongList> lists )
     {
-        return lists.stream().flatMap( Collection::stream ).collect( Collectors.toList());
+        MutableLongList concat = LongLists.mutable.empty();
+        lists.forEach( concat::addAll );
+        return concat;
     }
 
-    static Callable<List<Long>> singleBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory, int sizeHint )
+    static Callable<LongList> singleBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory, int sizeHint )
     {
         return () -> {
             try ( NodeCursor nodes = cursorsFactory.allocateNodeCursor() )
             {
-                List<Long> ids = new ArrayList<>( sizeHint );
+                LongArrayList ids = new LongArrayList();
                 scan.reserveBatch( nodes, sizeHint );
                 while ( nodes.next() )
                 {
@@ -85,7 +84,7 @@ final class TestUtils
         };
     }
 
-    static Callable<List<Long>> randomBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory )
+    static Callable<LongList> randomBatchWorker( Scan<NodeCursor> scan, CursorFactory cursorsFactory )
     {
         return () -> {
             ThreadLocalRandom random = ThreadLocalRandom.current();
@@ -93,7 +92,7 @@ final class TestUtils
             try ( NodeCursor nodes = cursorsFactory.allocateNodeCursor() )
             {
                 int sizeHint = random.nextInt( 1, 5 );
-                List<Long> ids = new ArrayList<>();
+                LongArrayList ids = new LongArrayList();
                 while ( scan.reserveBatch( nodes, sizeHint ) )
                 {
                     while ( nodes.next() )

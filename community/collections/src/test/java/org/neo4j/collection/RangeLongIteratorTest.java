@@ -74,7 +74,7 @@ class RangeLongIteratorTest
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( buffer, 0, 12 ) );
     }
 
-    private List<Long> iteratorAsList( LongIterator iterator )
+    private static List<Long> iteratorAsList( LongIterator iterator )
     {
         List<Long> list = new ArrayList<>();
         while ( iterator.hasNext() )

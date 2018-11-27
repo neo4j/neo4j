@@ -20,6 +20,9 @@
 package org.neo4j.internal.kernel.api;
 
 
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -46,7 +49,7 @@ import static org.neo4j.internal.kernel.api.TestUtils.singleBatchWorker;
 
 public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
-    private static List<Long> NODE_IDS;
+    private static LongList NODE_IDS;
     private static final int NUMBER_OF_NODES = 128;
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -56,12 +59,12 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     {
         try ( Transaction tx = graphDb.beginTx() )
         {
-            NODE_IDS = new ArrayList<>( NUMBER_OF_NODES );
+            MutableLongList list = new LongArrayList( NUMBER_OF_NODES );
             for ( int i = 0; i < NUMBER_OF_NODES; i++ )
             {
-                NODE_IDS.add( graphDb.createNodeId() );
+                list.add( graphDb.createNodeId() );
             }
-
+            NODE_IDS = list;
             tx.success();
         }
     }
@@ -76,11 +79,11 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             assertTrue( scan.reserveBatch( nodes, 3 ) );
 
             assertTrue( nodes.next() );
-            assertEquals( NODE_IDS.get( 0 ).longValue(), nodes.nodeReference() );
+            assertEquals( NODE_IDS.get( 0 ), nodes.nodeReference() );
             assertTrue( nodes.next() );
-            assertEquals( NODE_IDS.get( 1 ).longValue(), nodes.nodeReference() );
+            assertEquals( NODE_IDS.get( 1 ), nodes.nodeReference() );
             assertTrue( nodes.next() );
-            assertEquals( NODE_IDS.get( 2 ).longValue(), nodes.nodeReference() );
+            assertEquals( NODE_IDS.get( 2 ), nodes.nodeReference() );
             assertFalse( nodes.next() );
         }
     }
@@ -94,7 +97,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             Scan<NodeCursor> scan = read.allNodesScan();
             assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2 ) );
 
-            List<Long> ids = new ArrayList<>();
+            LongArrayList ids = new LongArrayList();
             while ( nodes.next() )
             {
                 ids.add( nodes.nodeReference() );
@@ -124,7 +127,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     public void shouldScanAllNodesInBatches()
     {
         // given
-        List<Long> ids = new ArrayList<>();
+        LongArrayList ids = new LongArrayList();
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
         {
             // when
@@ -152,20 +155,19 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-            Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-            Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
-            Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, 32 ) );
 
             // then
-            List<Long> ids1 = future1.get();
-            List<Long> ids2 = future2.get();
-            List<Long> ids3 = future3.get();
-            List<Long> ids4 = future4.get();
+            LongList ids1 = future1.get();
+            LongList ids2 = future2.get();
+            LongList ids3 = future3.get();
+            LongList ids4 = future4.get();
 
             assertDistinct( ids1, ids2, ids3, ids4 );
-            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-            concat.sort( Long::compareTo );
+            LongList concat = concat( ids1, ids2, ids3, ids4 ).toSortedList();
             assertEquals( NODE_IDS, concat );
         }
         finally
@@ -186,20 +188,19 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            Future<List<Long>> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<List<Long>> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<List<Long>> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
-            Future<List<Long>> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future1 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future2 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future3 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
+            Future<LongList> future4 = service.submit( singleBatchWorker( scan, cursors, 100 ) );
 
             // then
-            List<Long> ids1 = future1.get();
-            List<Long> ids2 = future2.get();
-            List<Long> ids3 = future3.get();
-            List<Long> ids4 = future4.get();
+            LongList ids1 = future1.get();
+            LongList ids2 = future2.get();
+            LongList ids3 = future3.get();
+            LongList ids4 = future4.get();
 
             assertDistinct( ids1, ids2, ids3, ids4 );
-            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-            concat.sort( Long::compareTo );
+            LongList concat = concat( ids1, ids2, ids3, ids4 ).toSortedList();
             assertEquals( NODE_IDS, concat );
         }
         finally
@@ -220,7 +221,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
         try
         {
             // when
-            ArrayList<Future<List<Long>>> futures = new ArrayList<>();
+            ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add( service.submit( randomBatchWorker( scan, cursors ) ) );
@@ -230,11 +231,10 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
             service.awaitTermination( 1, TimeUnit.MINUTES );
 
             // then
-            List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
 
             assertDistinct( lists );
-            List<Long> concat = concat( lists );
-            concat.sort( Long::compareTo );
+            LongList concat = concat( lists ).toSortedList();
             assertEquals( NODE_IDS, concat );
         }
         finally
