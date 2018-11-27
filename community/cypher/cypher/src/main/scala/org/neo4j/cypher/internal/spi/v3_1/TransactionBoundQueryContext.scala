@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.spi.v3_1
 
 import java.net.URL
+import java.nio.charset.StandardCharsets.UTF_8
 import java.util.function.Predicate
 
 import org.eclipse.collections.api.iterator.LongIterator
@@ -60,6 +61,7 @@ import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
+import org.neo4j.values.storable.Values.utf8Value
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -285,7 +287,8 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   }
 
   private def indexSeekByPrefixRange(index: IndexDescriptor, prefix: String): scala.Iterator[Node] =
-    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringPrefix(index.propertyId, prefix))
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId),
+         IndexQuery.stringPrefix(index.propertyId, utf8Value(prefix.getBytes(UTF_8 ))))
 
   private def indexSeekByNumericalRange(index: IndexDescriptor, range: InequalitySeekRange[Number]): scala.Iterator[Node] =(range match {
     case rangeLessThan: RangeLessThan[Number] =>
@@ -354,10 +357,10 @@ final class TransactionBoundQueryContext(txContext: TransactionalContextWrapper,
   }
 
   override def indexScanByContains(index: IndexDescriptor, value: String) =
-    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringContains(index.propertyId, value))
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringContains(index.propertyId, utf8Value(value.getBytes(UTF_8))))
 
   override def indexScanByEndsWith(index: IndexDescriptor, value: String) =
-    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringSuffix(index.propertyId, value))
+    seek(txContext.kernelTransaction.schemaRead().indexReferenceUnchecked(index.labelId, index.propertyId), IndexQuery.stringSuffix(index.propertyId, utf8Value(value.getBytes(UTF_8))))
 
   override def lockingUniqueIndexSeek(index: IndexDescriptor, value: Any): Option[Node] = {
     indexSearchMonitor.lockingUniqueIndexSeek(index, value)

@@ -40,6 +40,7 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
@@ -133,7 +134,7 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 expected.add( nodeWithProp( tx, "bully" ) );
                 nodeWithProp( tx, "willow" );
 
-                IndexQuery query = IndexQuery.stringPrefix( prop, "b" );
+                IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "b" ) );
                 tx.dataRead().nodeIndexSeek( index, cursor, indexOrder, true, query );
 
                 assertResultsInOrder( expected, cursor );

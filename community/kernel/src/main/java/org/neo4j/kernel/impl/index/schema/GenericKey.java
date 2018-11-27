@@ -25,6 +25,7 @@ import org.neo4j.kernel.impl.index.schema.config.IndexSpecificSpaceFillingCurveS
 import org.neo4j.string.UTF8;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.PrimitiveArrayWriting;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeZones;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
@@ -178,18 +179,18 @@ public class GenericKey extends NativeIndexKey<GenericKey>
         type.initializeAsHighest( this );
     }
 
-    void initAsPrefixLow( String prefix )
+    void initAsPrefixLow( TextValue prefix )
     {
-        writeString( prefix );
+        prefix.writeTo( this );
         long2 = FALSE;
         inclusion = LOW;
         // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
         // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
     }
 
-    void initAsPrefixHigh( String prefix )
+    void initAsPrefixHigh( TextValue prefix )
     {
-        writeString( prefix );
+        prefix.writeTo( this );
         long2 = TRUE; // ignoreLength
         inclusion = HIGH;
     }
