@@ -39,8 +39,16 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
     }
 
+    /**
+      *  Normally, it is not desirable to join on the argument(s).
+      *  The exception is when all bits that occurs in goal and the IDP table are compacted ones
+      *  (= not registered), because then it will not be possible to find an expand solution anymore.
+      */
+    def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
+    val removeArguments = goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))
+    val argumentsToRemove  = if (removeArguments) qg.argumentIds else Set.empty[String]
+
     val goalSize = goal.size
-    val arguments = qg.argumentIds
     val planProducer = context.logicalPlanProducer
     val builder = Vector.newBuilder[LogicalPlan]
 
@@ -55,9 +63,9 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
       if (optLhs.isDefined && optRhs.isDefined) {
         val lhs = optLhs.get
         val rhs = optRhs.get
-        val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, arguments)
+        val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
         if (overlappingNodes.nonEmpty) {
-          val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, arguments)
+          val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
           if (overlappingSymbols == overlappingNodes) {
             if (VERBOSE) {
               println(s"${show(leftGoal, nodes(lhs, context.planningAttributes.solveds))} overlap ${show(rightGoal, nodes(rhs, context.planningAttributes.solveds))} on ${showNames(overlappingNodes)}")
@@ -73,16 +81,16 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
     builder.result().iterator
   }
 
-  private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, solveds: Solveds, arguments: Set[String]): Set[String] = {
+  private def computeOverlappingNodes(lhs: LogicalPlan, rhs: LogicalPlan, solveds: Solveds, argumentsToRemove: Set[String]): Set[String] = {
     val leftNodes = nodes(lhs, solveds)
     val rightNodes = nodes(rhs, solveds)
-    (leftNodes intersect rightNodes) -- arguments
+    (leftNodes intersect rightNodes) -- argumentsToRemove
   }
 
-  private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, arguments: Set[String]): Set[String] = {
+  private def computeOverlappingSymbols(lhs: LogicalPlan, rhs: LogicalPlan, argumentsToRemove: Set[String]): Set[String] = {
     val leftSymbols = lhs.availableSymbols
     val rightSymbols = rhs.availableSymbols
-    (leftSymbols intersect rightSymbols) -- arguments
+    (leftSymbols intersect rightSymbols) -- argumentsToRemove
   }
 
   private def nodes(plan: LogicalPlan, solveds: Solveds) =
