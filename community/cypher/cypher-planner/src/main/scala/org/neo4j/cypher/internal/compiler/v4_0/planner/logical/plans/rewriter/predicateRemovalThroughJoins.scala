@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
-import org.opencypher.v9_0.expressions.{Ands, Expression}
+import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.expressions.{Ands, Expression}
 import org.neo4j.cypher.internal.ir.v4_0.QueryGraph
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.opencypher.v9_0.util.attribution.{Attributes, SameId}
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Attributes, SameId}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{NodeHashJoin, Selection}
 
 /*

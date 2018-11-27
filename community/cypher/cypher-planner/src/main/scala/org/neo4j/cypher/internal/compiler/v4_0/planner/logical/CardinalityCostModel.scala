@@ -27,12 +27,12 @@ import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
 import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
-import org.opencypher.v9_0.expressions.HasLabels
-import org.opencypher.v9_0.expressions.Property
-import org.opencypher.v9_0.util.Cardinality
-import org.opencypher.v9_0.util.Cost
-import org.opencypher.v9_0.util.CostPerRow
-import org.opencypher.v9_0.util.Multiplier
+import org.neo4j.cypher.internal.v3_5.expressions.HasLabels
+import org.neo4j.cypher.internal.v3_5.expressions.Property
+import org.neo4j.cypher.internal.v3_5.util.Cardinality
+import org.neo4j.cypher.internal.v3_5.util.Cost
+import org.neo4j.cypher.internal.v3_5.util.CostPerRow
+import org.neo4j.cypher.internal.v3_5.util.Multiplier
 
 case class CardinalityCostModel(config: CypherPlannerConfiguration) extends CostModel {
 

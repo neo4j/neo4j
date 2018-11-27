@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.opencypher.v9_0.expressions.{Expression, RelTypeName, SemanticDirection}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression, RelTypeName, SemanticDirection}
 
 /**
   * Create a new relationship with the provided type and properties and assign it to the variable 'idName'.

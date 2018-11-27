@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.rewriting.rewriters.PatternExpressionPatternElementNamer
-import org.opencypher.v9_0.util.InternalException
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.PatternExpressionPatternElementNamer
+import org.neo4j.cypher.internal.v3_5.util.InternalException
 
 trait QueryGraphSolver {
   def plan(queryGraph: QueryGraph, interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan

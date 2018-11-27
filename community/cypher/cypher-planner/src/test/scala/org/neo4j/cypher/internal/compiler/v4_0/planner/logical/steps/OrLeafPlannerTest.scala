@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LeafPlanFromExpr
 import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, QueryGraph, Selections}
 import org.neo4j.cypher.internal.v4_0.logical.plans.Distinct
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
-import org.opencypher.v9_0.expressions.{Ors, Variable}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.{Ors, Variable}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class OrLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

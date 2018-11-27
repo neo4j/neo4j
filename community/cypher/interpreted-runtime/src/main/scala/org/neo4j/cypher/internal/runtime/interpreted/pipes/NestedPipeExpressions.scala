@@ -19,8 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NestedPlanExpression}
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.util.Rewriter
+import org.neo4j.cypher.internal.v3_5.util.bottomUp
+import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.v4_0.logical.plans.NestedPlanExpression
 
 object NestedPipeExpressions {
 

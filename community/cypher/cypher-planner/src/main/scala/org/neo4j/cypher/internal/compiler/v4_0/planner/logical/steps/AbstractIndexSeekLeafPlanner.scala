@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LeafPlanFromExpr
 import org.neo4j.cypher.internal.ir.v4_0.{ProvidedOrder, QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.SemanticTable
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.LabelId
-import org.opencypher.v9_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.LabelId
+import org.neo4j.cypher.internal.v3_5.util.symbols.CypherType
 
 abstract class AbstractIndexSeekLeafPlanner extends LeafPlanner with LeafPlanFromExpressions {
 

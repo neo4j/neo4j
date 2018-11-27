@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, patternExpressionRewriter}
 import org.neo4j.cypher.internal.ir.v4_0.{QueryGraph, InterestingOrder}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.Exists
-import org.opencypher.v9_0.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
-import org.opencypher.v9_0.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions.functions.Exists
+import org.neo4j.cypher.internal.v3_5.rewriting.rewriters.{PatternExpressionPatternElementNamer, projectNamedPaths}
+import org.neo4j.cypher.internal.v3_5.util.{FreshIdNameGenerator, Rewriter, UnNamedNameGenerator, topDown}
 
 import scala.collection.mutable
 import scala.reflect.ClassTag

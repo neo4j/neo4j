@@ -31,13 +31,13 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.{DeleteExpression => DeleteE
 import org.neo4j.cypher.internal.v4_0.logical.plans.Union
 import org.neo4j.cypher.internal.v4_0.logical.plans.UnwindCollection
 import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
-import org.opencypher.v9_0.ast
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.AssertionRunner.Thunk
-import org.opencypher.v9_0.util.Foldable.FoldableAny
-import org.opencypher.v9_0.util.attribution.{Attributes, IdGen}
-import org.opencypher.v9_0.util.{AssertionRunner, ExhaustiveShortestPathForbiddenException, InternalException}
+import org.neo4j.cypher.internal.v3_5.ast
+import org.neo4j.cypher.internal.v3_5.ast._
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.AssertionRunner.Thunk
+import org.neo4j.cypher.internal.v3_5.util.Foldable.FoldableAny
+import org.neo4j.cypher.internal.v3_5.util.attribution.{Attributes, IdGen}
+import org.neo4j.cypher.internal.v3_5.util.{AssertionRunner, ExhaustiveShortestPathForbiddenException, InternalException}
 
 /*
  * The responsibility of this class is to produce the correct solved PlannerQuery when creating logical plans.

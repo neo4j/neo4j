@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListL
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.{QueryContext, RelationshipOperations}
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class DirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 

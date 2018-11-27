@@ -26,8 +26,8 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{InternalQueryType, ProcedureCallMode, QueryContext, SCHEMA_WRITE}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.opencypher.v9_0.expressions.{LabelName, PropertyKeyName, RelTypeName}
-import org.opencypher.v9_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, PropertyKeyName, RelTypeName}
+import org.neo4j.cypher.internal.v3_5.util.{LabelId, PropertyKeyId}
 
 /**
   * This runtime takes on queries that require no planning, such as procedures and schema commands

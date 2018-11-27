@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.QueryGrap
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Cardinalities
 import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, LogicalPlan, RightOuterHashJoin, _}
-import org.opencypher.v9_0.ast.{Hint, UsingJoinHint}
-import org.opencypher.v9_0.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
-import org.opencypher.v9_0.util.Cost
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.ast.{Hint, UsingJoinHint}
+import org.neo4j.cypher.internal.v3_5.expressions.{PatternExpression, PropertyKeyName, SemanticDirection, Variable}
+import org.neo4j.cypher.internal.v3_5.util.Cost
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class RightOuterHashJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.countStoreP
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.verifyBestPlan
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v3_5.util.attribution.IdGen
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of

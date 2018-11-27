@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.hamcrest.CoreMatchers._
 import org.junit.Assert._
-import org.opencypher.v9_0.util.helpers.StringHelper._
+import org.neo4j.cypher.internal.v3_5.util.helpers.StringHelper._
 
 class ErrorMessagesTest extends ExecutionEngineFunSuite {
 

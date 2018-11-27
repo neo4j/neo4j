@@ -25,8 +25,8 @@ import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values._
 import org.neo4j.values.storable.Values.NO_VALUE
 import org.neo4j.values.storable._
-import org.opencypher.v9_0.util.CypherTypeException
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.CypherTypeException
+import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) {
 

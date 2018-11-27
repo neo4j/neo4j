@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.opencypher.v9_0.util.InvalidSemanticsException
+import org.neo4j.cypher.internal.v3_5.util.InvalidSemanticsException
 
 object ExecutionMode {
   def cantMixProfileAndExplain: Nothing =

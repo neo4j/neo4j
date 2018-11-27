@@ -55,9 +55,9 @@ import org.neo4j.storageengine.api.RelationshipVisitor
 import org.neo4j.values.storable.{TextValue, Value, Values, _}
 import org.neo4j.values.virtual._
 import org.neo4j.values.{AnyValue, ValueMapper}
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
-import org.opencypher.v9_0.util.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v3_5.util.{EntityNotFoundException, FailedIndexException}
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._

@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v3_4.Cypher3_4Planner
-import org.neo4j.cypher.internal.compatibility.v4_0.Cypher4_0Planner
-import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
+import org.neo4j.cypher.internal.compatibility._
+import org.neo4j.cypher.internal.compatibility.v3_4.Cypher3_4Planner
+import org.neo4j.cypher.internal.compatibility.v4_0.Cypher4_0Planner
+import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.kernel.GraphDatabaseQueryService
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.Log

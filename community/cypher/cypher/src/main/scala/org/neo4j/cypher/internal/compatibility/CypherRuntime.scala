@@ -28,8 +28,8 @@ import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, Runt
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
 import org.neo4j.internal.kernel.api.SchemaRead
-import org.opencypher.v9_0.frontend.phases.RecordingNotificationLogger
-import org.opencypher.v9_0.util.InternalNotification
+import org.neo4j.cypher.internal.v3_5.frontend.phases.RecordingNotificationLogger
+import org.neo4j.cypher.internal.v3_5.util.InternalNotification
 
 import scala.concurrent.duration.Duration
 import scala.util.Try

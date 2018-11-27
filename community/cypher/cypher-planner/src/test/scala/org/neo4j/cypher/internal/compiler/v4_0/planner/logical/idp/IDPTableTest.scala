@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.collection.immutable.BitSet
 

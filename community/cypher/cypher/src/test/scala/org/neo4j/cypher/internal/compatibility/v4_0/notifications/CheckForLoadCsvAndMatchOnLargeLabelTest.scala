@@ -30,9 +30,9 @@ import org.neo4j.cypher.internal.ir.v4_0.HasHeaders
 import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.opencypher.v9_0.expressions.{LabelName, StringLiteral}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{Cardinality, LabelId}
+import org.neo4j.cypher.internal.v3_5.expressions.{LabelName, StringLiteral}
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality, LabelId}
 
 class CheckForLoadCsvAndMatchOnLargeLabelTest
     extends CypherFunSuite

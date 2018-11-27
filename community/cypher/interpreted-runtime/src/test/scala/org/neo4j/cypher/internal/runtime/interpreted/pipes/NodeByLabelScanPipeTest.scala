@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.opencypher.v9_0.ast.semantics.SemanticTable
+import org.neo4j.cypher.internal.v3_5.ast.semantics.SemanticTable
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.opencypher.v9_0.util.LabelId
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.expressions.LabelName
+import org.neo4j.cypher.internal.v3_5.util.LabelId
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.LabelName
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualValues
 

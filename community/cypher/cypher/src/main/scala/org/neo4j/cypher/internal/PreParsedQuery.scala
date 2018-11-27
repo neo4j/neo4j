@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.neo4j.cypher._
-import org.opencypher.v9_0.util.InputPosition
+import org.neo4j.cypher.internal.v3_5.util.InputPosition
 
 /**
   * Representation a pre-parsed Cypher query.

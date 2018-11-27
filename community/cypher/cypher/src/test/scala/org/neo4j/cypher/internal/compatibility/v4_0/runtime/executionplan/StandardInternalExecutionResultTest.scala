@@ -31,8 +31,8 @@ import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.Result.ResultVisitor
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.opencypher.v9_0.util.TaskCloser
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.TaskCloser
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.collection.JavaConverters._
 

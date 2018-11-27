@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v4_0.RegularPlannerQuery
 import org.neo4j.cypher.internal.v4_0.logical.plans.{AllNodesScan, CartesianProduct, NodeByLabelScan, Selection}
 

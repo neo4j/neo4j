@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime
 
+import org.neo4j.cypher.internal.v3_5.expressions.LabelToken
 import org.neo4j.cypher.internal.v4_0.logical.plans.IndexedProperty
-import org.neo4j.internal.kernel.api.{IndexReference, SchemaRead}
-import org.opencypher.v9_0.expressions.LabelToken
+import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.SchemaRead
 
 import scala.collection.mutable.ArrayBuffer
 

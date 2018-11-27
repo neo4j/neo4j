@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.opencypher.v9_0.util.{CypherTypeException, ParameterWrongTypeException}
+import org.neo4j.cypher.internal.v3_5.util.{CypherTypeException, ParameterWrongTypeException}
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{NO_VALUE, longValue}
 
 class ToIntegerFunctionTest extends CypherFunSuite {

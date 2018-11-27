@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal
 
 import org.mockito.Mockito.{atLeastOnce, verify}
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}

@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.logical.plans.ValueHashJoin
-import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.Cardinality
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.Cardinality
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.scalatest.exceptions.TestFailedException
 
 import scala.collection.immutable

@@ -30,8 +30,8 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.logging.LogProvider
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
-import org.opencypher.v9_0.util.{DeprecatedStartNotification, InternalNotification, SyntaxException => InternalSyntaxException}
+import org.neo4j.cypher.internal.v3_5.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
+import org.neo4j.cypher.internal.v3_5.util.{DeprecatedStartNotification, InternalNotification, SyntaxException => InternalSyntaxException}
 
 object MasterCompiler {
   val DEFAULT_QUERY_CACHE_SIZE: Int = 128

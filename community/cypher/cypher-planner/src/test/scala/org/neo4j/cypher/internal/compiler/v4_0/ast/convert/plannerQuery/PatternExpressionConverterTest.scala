@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.ast.convert.plannerQuery
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions._
 import org.neo4j.cypher.internal.ir.v4_0.helpers.ExpressionConverters._
 
 class PatternExpressionConverterTest extends CypherFunSuite with LogicalPlanningTestSupport {

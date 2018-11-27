@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan
 import java.net.URL
 
 import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.LoadCsvIterator
 
 class LoadCsvPeriodicCommitObserver(batchRowCount: Long, resources: ExternalCSVResource, queryContext: QueryContext)
   extends ExternalCSVResource {

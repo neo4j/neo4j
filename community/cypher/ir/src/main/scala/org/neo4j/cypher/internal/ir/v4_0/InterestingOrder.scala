@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.opencypher.v9_0.expressions.{Expression, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.v3_5.expressions.{Expression, Property, PropertyKeyName, Variable}
 
 object InterestingOrder {
   sealed trait ColumnOrder {

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext, Query
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.util.ParameterNotFoundException
+import org.neo4j.cypher.internal.v3_5.util.ParameterNotFoundException
 
 import scala.collection.mutable
 

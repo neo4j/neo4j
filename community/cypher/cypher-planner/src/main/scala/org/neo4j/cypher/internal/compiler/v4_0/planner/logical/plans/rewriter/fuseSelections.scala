@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans.rewriter
 
-import org.opencypher.v9_0.util.attribution.SameId
+import org.neo4j.cypher.internal.v3_5.util.attribution.SameId
 import org.neo4j.cypher.internal.v4_0.logical.plans.Selection
-import org.opencypher.v9_0.expressions.Ands
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v3_5.expressions.Ands
+import org.neo4j.cypher.internal.v3_5.util.{Rewriter, bottomUp}
 
 case object fuseSelections extends Rewriter {
 

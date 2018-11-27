@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.SumFunction
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 case class Sum(anInner: Expression) extends AggregationWithInnerExpression(anInner) {
   def createAggregationFunction = new SumFunction(anInner)

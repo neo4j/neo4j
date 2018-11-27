@@ -21,16 +21,22 @@ package org.neo4j.cypher.internal.compatibility
 
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime._
 import org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan._
-import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.{InterpretedProfileInformation, Profiler}
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.InterpretedProfileInformation
+import org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler.Profiler
 import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryIndexes}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.{NestedPipeExpressions, PipeTreeBuilder}
-import org.neo4j.cypher.internal.runtime.interpreted.{InterpretedPipeMapper, UpdateCountingQueryContext}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.CommunityExpressionConverter
+import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.ExpressionConverters
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.NestedPipeExpressions
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.PipeTreeBuilder
+import org.neo4j.cypher.internal.runtime.interpreted.InterpretedPipeMapper
+import org.neo4j.cypher.internal.runtime.interpreted.UpdateCountingQueryContext
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.QueryIndexes
+import org.neo4j.cypher.internal.v3_5.util.InternalNotification
+import org.neo4j.cypher.internal.v3_5.util.PeriodicCommitInOpenTransactionException
 import org.neo4j.cypher.result.RuntimeResult
 import org.neo4j.values.virtual.MapValue
-import org.opencypher.v9_0.util.{InternalNotification, PeriodicCommitInOpenTransactionException}
 
 object InterpretedRuntime extends CypherRuntime[RuntimeContext] {
   override def compileToExecutable(state: LogicalPlanState, context: RuntimeContext): ExecutionPlan = {

@@ -23,7 +23,7 @@ import java.util
 import java.util.Arrays.asList
 import java.util.Collections.{emptyList, emptyMap, singletonMap, singleton => singletonSet}
 
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class RuntimeScalaValueConverterTest extends CypherFunSuite {
 

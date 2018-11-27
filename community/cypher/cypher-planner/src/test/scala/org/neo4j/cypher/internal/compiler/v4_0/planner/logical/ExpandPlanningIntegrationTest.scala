@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, RegularPlannerQuery}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
-import org.opencypher.v9_0.util.{Cardinality, LabelId, PropertyKeyId}
+import org.neo4j.cypher.internal.v3_5.expressions._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.{Cardinality, LabelId, PropertyKeyId}
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 

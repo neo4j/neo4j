@@ -25,7 +25,10 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.StatisticsCompletingGraphStati
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 import org.neo4j.kernel.impl.query.TransactionalContext
-import org.opencypher.v9_0.util.{Cardinality, LabelId, RelTypeId, Selectivity}
+import org.neo4j.cypher.internal.v3_5.util.Cardinality
+import org.neo4j.cypher.internal.v3_5.util.LabelId
+import org.neo4j.cypher.internal.v3_5.util.RelTypeId
+import org.neo4j.cypher.internal.v3_5.util.Selectivity
 
 object TransactionBoundGraphStatistics {
   def apply(transactionalContext: TransactionalContext): StatisticsCompletingGraphStatistics =

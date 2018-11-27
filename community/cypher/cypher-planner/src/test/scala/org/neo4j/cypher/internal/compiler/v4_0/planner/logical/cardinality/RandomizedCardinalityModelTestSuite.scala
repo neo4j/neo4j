@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.cardinality
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v4_0.test_helpers.RandomizedTestSupport
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 abstract class RandomizedCardinalityModelTestSuite
   extends CypherFunSuite with RandomizedTestSupport with LogicalPlanningTestSupport with CardinalityModelTestHelper

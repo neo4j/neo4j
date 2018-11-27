@@ -26,10 +26,11 @@ import java.nio.file.Paths
 import java.util.zip.{GZIPInputStream, InflaterInputStream}
 
 import org.neo4j.csv.reader._
+import org.neo4j.cypher.internal.runtime.interpreted.pipes.ExternalCSVResource
+import org.neo4j.cypher.internal.v3_5.util.{LoadExternalResourceException, TaskCloser}
 import org.neo4j.cypher.CypherExecutionException
 import org.neo4j.cypher.internal.runtime.ResourceManager
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, LoadCsvIterator}
-import org.opencypher.v9_0.util.LoadExternalResourceException
 import sun.net.www.protocol.http.HttpURLConnection
 
 import scala.collection.mutable.ArrayBuffer

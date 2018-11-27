@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
 import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.ir.v4_0.QueryGraph
 
 class CachedFunctionTest extends CypherFunSuite {

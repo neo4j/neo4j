@@ -77,9 +77,9 @@
     <!-- neo4j testing -->
 
     <dependency>
-      <groupId>org.opencypher</groupId>
-      <artifactId>util-9.0</artifactId>
-      <version>1.0.0</version>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-util-3.5</artifactId>
+      <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>

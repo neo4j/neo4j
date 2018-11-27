@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering
 import org.neo4j.cypher.internal.ir.v4_0.{ProvidedOrder, InterestingOrder}
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability.{ASC, DESC, BOTH}
-import org.opencypher.v9_0.util.symbols._
-import org.opencypher.v9_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.internal.v3_5.util.symbols._
+import org.neo4j.cypher.internal.v3_5.util.test_helpers.CypherFunSuite
 
 class ResultOrderingTest extends CypherFunSuite {
 

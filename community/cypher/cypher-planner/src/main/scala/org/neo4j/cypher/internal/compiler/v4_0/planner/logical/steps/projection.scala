@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningCo
 import org.neo4j.cypher.internal.ir.v4_0.{QueryProjection, InterestingOrder}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.opencypher.v9_0.expressions._
+import org.neo4j.cypher.internal.v3_5.expressions._
 
 object projection {
 

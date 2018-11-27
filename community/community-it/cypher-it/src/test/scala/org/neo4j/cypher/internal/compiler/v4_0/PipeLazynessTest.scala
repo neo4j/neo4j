@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.True
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode, SortItem}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
 import org.neo4j.graphdb._
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v3_5.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v3_5.util.symbols._
 
 import scala.collection.JavaConverters._
 
