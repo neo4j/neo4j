@@ -22,22 +22,12 @@ package org.neo4j.kernel.impl.store.id;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.impl.util.collection.SimpleBitSet;
 import org.neo4j.test.rule.DatabaseRule;
 import org.neo4j.test.rule.EmbeddedDatabaseRule;
 
-import static java.lang.Math.toIntExact;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
 
 public class ReuseExcessBatchIdsOnRestartIT
 {
@@ -69,61 +59,5 @@ public class ReuseExcessBatchIdsOnRestartIT
 
         // then
         assertEquals( firstNode.getId() + 1, secondNode.getId() );
-    }
-
-    @Test( timeout = 30_000 )
-    public void shouldBeAbleToReuseIdsInConcurrentCommitsWithRestart() throws Exception
-    {
-        // given
-        int threads = Runtime.getRuntime().availableProcessors();
-        int batchSize = Integer.parseInt( GraphDatabaseSettings.record_id_batch_size.getDefaultValue() );
-        ExecutorService executor = Executors.newFixedThreadPool( threads );
-        int idsToAllocate = threads * batchSize;
-        SimpleBitSet usedIds = new SimpleBitSet( idsToAllocate );
-        for ( int i = 0; i < threads; i++ )
-        {
-            executor.submit( () ->
-            {
-                try ( Transaction tx = db.beginTx() )
-                {
-                    for ( int j = 0; j < batchSize / 2; j++ )
-                    {
-                        int index = toIntExact( db.createNode().getId() );
-                        usedIds.put( index );
-                    }
-                    tx.success();
-                }
-            } );
-        }
-        executor.shutdown();
-        while ( !executor.awaitTermination( 1, SECONDS ) )
-        {   // Just wait longer
-        }
-        assertFalse( allSet( usedIds ) );
-
-        // when/then
-        db.restartDatabase();
-        int reusedIds = 0;
-        try ( Transaction tx = db.beginTx() )
-        {
-            while ( toIntExact( db.createNode().getId() ) < idsToAllocate )
-            {
-                reusedIds++;
-            }
-            tx.success();
-        }
-        assertThat( reusedIds, greaterThan( 0 ) );
-    }
-
-    private static boolean allSet( SimpleBitSet bitSet )
-    {
-        for ( int i = 0; i < bitSet.size(); i++ )
-        {
-            if ( !bitSet.contains( i ) )
-            {
-                return false;
-            }
-        }
-        return true;
     }
 }
