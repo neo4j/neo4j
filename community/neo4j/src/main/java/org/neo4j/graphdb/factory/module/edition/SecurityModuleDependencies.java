@@ -29,13 +29,13 @@ import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
 
-class SecurityModuleDependenciesDependencies implements SecurityModule.Dependencies
+class SecurityModuleDependencies implements SecurityModule.Dependencies
 {
     private final PlatformModule platformModule;
     private final AbstractEditionModule editionModule;
     private final Procedures procedures;
 
-    SecurityModuleDependenciesDependencies( PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures )
+    SecurityModuleDependencies( PlatformModule platformModule, AbstractEditionModule editionModule, Procedures procedures )
     {
         this.platformModule = platformModule;
         this.editionModule = editionModule;

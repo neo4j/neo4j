@@ -144,7 +144,7 @@ public abstract class AbstractEditionModule
     protected static SecurityModule setupSecurityModule( PlatformModule platformModule, AbstractEditionModule editionModule, Log log, Procedures procedures,
             String key )
     {
-        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependenciesDependencies( platformModule, editionModule, procedures );
+        SecurityModule.Dependencies securityModuleDependencies = new SecurityModuleDependencies( platformModule, editionModule, procedures );
         Iterable<SecurityModule> candidates = Service.load( SecurityModule.class );
         for ( SecurityModule candidate : candidates )
         {
