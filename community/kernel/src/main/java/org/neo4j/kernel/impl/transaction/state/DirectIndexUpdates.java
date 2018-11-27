@@ -24,10 +24,10 @@ import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 /**

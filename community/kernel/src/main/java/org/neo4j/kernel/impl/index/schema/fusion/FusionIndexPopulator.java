@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider.DropAction;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 import static org.neo4j.kernel.impl.index.schema.fusion.FusionIndexSampler.combineSamples;
 

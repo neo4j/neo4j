@@ -23,32 +23,28 @@ import org.junit.Test;
 
 import java.util.function.Supplier;
 
-import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_PROPERTY;
 import static org.neo4j.kernel.impl.store.record.Record.NO_NEXT_RELATIONSHIP;
 
@@ -59,15 +55,16 @@ public class IndexBatchTransactionApplierTest
     {
         // GIVEN
         IndexingService indexing = mock( IndexingService.class );
-        when( indexing.convertToIndexUpdates( any(), any( StorageReader.class ), eq( EntityType.NODE ) ) ).thenAnswer( o -> Iterables.empty() );
+        IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
         LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
         WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
                 spy( new WorkSync<>( singletonProvider( writer ) ) );
-        WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexing );
+        WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
-        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexing, labelScanSync, indexUpdatesSync, mock( NodeStore.class ),
-                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ), mock( StorageEngine.class ) ) )
+        try ( IndexBatchTransactionApplier applier = new IndexBatchTransactionApplier( indexUpdateListener, labelScanSync, indexUpdatesSync,
+                mock( NodeStore.class ), mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ),
+                mock( StorageEngine.class ), mock( SchemaCache.class ) ) )
         {
             try ( TransactionApplier txApplier = applier.startTx( tx ) )
             {

@@ -44,7 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -52,6 +51,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SimpleNodeValueClient;
 import org.neo4j.test.Race;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
@@ -74,13 +74,13 @@ import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.imme
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesByProvider;
 import static org.neo4j.kernel.api.index.IndexDirectoryStructure.directoriesBySubProvider;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.add;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.change;
-import static org.neo4j.kernel.api.index.IndexEntryUpdate.remove;
 import static org.neo4j.kernel.api.index.IndexProvider.Monitor.EMPTY;
 import static org.neo4j.kernel.api.schema.SchemaDescriptorFactory.forLabel;
 import static org.neo4j.kernel.configuration.Config.defaults;
 import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.add;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.change;
+import static org.neo4j.storageengine.api.IndexEntryUpdate.remove;
 import static org.neo4j.test.Race.throwing;
 
 @RunWith( Parameterized.class )

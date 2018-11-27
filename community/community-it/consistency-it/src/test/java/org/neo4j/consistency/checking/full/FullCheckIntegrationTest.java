@@ -66,7 +66,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexUpdater;
@@ -81,12 +80,6 @@ import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
-<<<<<<< HEAD
-import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
-=======
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
->>>>>>> A super-simple concurrent store for index statistics
 import org.neo4j.kernel.impl.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -112,6 +105,7 @@ import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.string.UTF8;

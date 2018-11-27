@@ -29,7 +29,6 @@ import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
@@ -41,6 +40,7 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.logging.NullLogProvider;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Values;
 
 import static org.junit.Assert.assertSame;

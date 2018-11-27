@@ -32,18 +32,19 @@ import java.util.List;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 import static org.neo4j.io.IOUtils.closeAllUnchecked;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
@@ -61,18 +62,18 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class OnlineIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
-    private final IndexingUpdateService updateService;
+    private final SchemaCache schemaCache;
     private final PropertyPhysicalToLogicalConverter converter;
     private final StorageReader reader;
     private final Collection<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
     private StorageNodeCursor nodeCursor;
     private StorageRelationshipScanCursor relationshipCursor;
 
-    public OnlineIndexUpdates( NodeStore nodeStore, IndexingUpdateService updateService,
+    public OnlineIndexUpdates( NodeStore nodeStore, SchemaCache schemaCache,
             PropertyPhysicalToLogicalConverter converter, StorageReader reader )
     {
         this.nodeStore = nodeStore;
-        this.updateService = updateService;
+        this.schemaCache = schemaCache;
         this.converter = converter;
         this.reader = reader;
     }
@@ -120,29 +121,27 @@ public class OnlineIndexUpdates implements IndexUpdates
 
     private void gatherUpdatesFor( long nodeId, NodeCommand nodeCommand, List<PropertyCommand> propertyCommands )
     {
-        EntityUpdates.Builder nodePropertyUpdate =
-                gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
-
-        EntityUpdates entityUpdates = nodePropertyUpdate.build();
-        // we need to materialize the IndexEntryUpdates here, because when we
-        // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, reader, EntityType.NODE ) )
-        {
-            updates.add( update );
-        }
+        EntityUpdates.Builder nodePropertyUpdate = gatherUpdatesFromCommandsForNode( nodeId, nodeCommand, propertyCommands );
+        eagerlyGatherUpdates( nodePropertyUpdate, EntityType.NODE );
     }
 
     private void gatherUpdatesFor( long relationshipId, RelationshipCommand relationshipCommand, List<PropertyCommand> propertyCommands )
     {
         EntityUpdates.Builder relationshipPropertyUpdate = gatherUpdatesFromCommandsForRelationship( relationshipId, relationshipCommand, propertyCommands );
+        eagerlyGatherUpdates( relationshipPropertyUpdate, EntityType.RELATIONSHIP );
+    }
 
-        EntityUpdates entityUpdates = relationshipPropertyUpdate.build();
+    private void eagerlyGatherUpdates( EntityUpdates.Builder entityUpdatesBuilder, EntityType entityType )
+    {
+        EntityUpdates entityUpdates = entityUpdatesBuilder.build();
+        Iterable<SchemaDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
+                entityUpdates.entityTokensChanged(),
+                entityUpdates.entityTokensUnchanged(),
+                entityUpdates.propertiesChanged(), entityType,
+                SchemaDescriptorSupplier::schema );
         // we need to materialize the IndexEntryUpdates here, because when we
         // consume (later in separate thread) the store might have changed.
-        for ( IndexEntryUpdate<SchemaDescriptor> update : updateService.convertToIndexUpdates( entityUpdates, reader, EntityType.RELATIONSHIP ) )
-        {
-            updates.add( update );
-        }
+        entityUpdates.forIndexKeys( relatedIndexes, reader, entityType ).forEach( updates::add );
     }
 
     private EntityUpdates.Builder gatherUpdatesFromCommandsForNode( long nodeId,

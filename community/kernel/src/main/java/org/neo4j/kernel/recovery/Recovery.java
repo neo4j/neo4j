@@ -258,7 +258,6 @@ public final class Recovery
                 recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
-        Dependencies recoveryDependencies = new Dependencies();
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState,
                         getConstraintSemantics(), LockService.NO_LOCK_SERVICE,
@@ -278,6 +277,7 @@ public final class Recovery
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
                 schemaState, indexStatisticsStore );
 
+        Dependencies recoveryDependencies = new Dependencies();
         storageEngine.satisfyDependencies( recoveryDependencies );
 
         LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
@@ -399,7 +399,6 @@ public final class Recovery
         @Override
         public void addMonitorListener( Object monitorListener, String... tags )
         {
-
         }
     }
 }

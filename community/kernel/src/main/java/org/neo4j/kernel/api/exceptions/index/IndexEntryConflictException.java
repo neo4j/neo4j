@@ -21,6 +21,7 @@ package org.neo4j.kernel.api.exceptions.index;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueTuple;
@@ -31,7 +32,7 @@ import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 /**
  * TODO why isn't this a {@link KernelException}?
  */
-public class IndexEntryConflictException extends Exception
+public class IndexEntryConflictException extends KernelException
 {
     private final ValueTuple propertyValues;
     private final long addedNodeId;
@@ -42,7 +43,7 @@ public class IndexEntryConflictException extends Exception
      */
     public IndexEntryConflictException( String message, Throwable cause )
     {
-        super( message, cause );
+        super( Status.Schema.ConstraintViolation, message, cause );
         propertyValues = null;
         addedNodeId = -1;
         existingNodeId = -1;
@@ -55,7 +56,7 @@ public class IndexEntryConflictException extends Exception
 
     public IndexEntryConflictException( long existingNodeId, long addedNodeId, ValueTuple propertyValues )
     {
-        super( format( "Both node %d and node %d share the property value %s",
+        super( Status.Schema.ConstraintViolation, format( "Both node %d and node %d share the property value %s",
                 existingNodeId, addedNodeId, propertyValues ) );
         this.existingNodeId = existingNodeId;
         this.addedNodeId = addedNodeId;

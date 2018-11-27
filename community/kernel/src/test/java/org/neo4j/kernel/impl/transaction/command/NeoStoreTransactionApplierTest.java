@@ -37,12 +37,12 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.DynamicArrayStore;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.MetaDataStore;
@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -90,6 +91,7 @@ public class NeoStoreTransactionApplierTest
 {
     private final NeoStores neoStores = mock( NeoStores.class );
     private final IndexingService indexingService = mock( IndexingService.class );
+    private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final CacheAccessBackDoor cacheAccess = mock( CacheAccessBackDoor.class );
@@ -104,6 +106,7 @@ public class NeoStoreTransactionApplierTest
     private final LabelTokenStore labelTokenStore = mock( LabelTokenStore.class );
     private final PropertyKeyTokenStore propertyKeyTokenStore = mock( PropertyKeyTokenStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
+    private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final DynamicArrayStore dynamicLabelStore = mock( DynamicArrayStore.class );
 
     private final long transactionId = 55555;
@@ -113,7 +116,7 @@ public class NeoStoreTransactionApplierTest
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork>
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
-    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
+    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
 
     @Before
     public void setup()
@@ -616,7 +619,7 @@ public class NeoStoreTransactionApplierTest
         assertFalse( result );
 
         verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).activateIndex( rule.getId() );
+        verify( indexingService, times( 1 ) ).activateIndex( rule );
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
     }
 
@@ -638,7 +641,7 @@ public class NeoStoreTransactionApplierTest
 
         verify( schemaStore, times( 1 ) ).setHighestPossibleIdInUse( record.getId() );
         verify( schemaStore, times( 1 ) ).updateRecord( record );
-        verify( indexingService, times( 1 ) ).activateIndex( rule.getId() );
+        verify( indexingService, times( 1 ) ).activateIndex( rule );
         verify( cacheAccess, times( 1 ) ).addSchemaRule( rule );
     }
 
@@ -649,7 +652,7 @@ public class NeoStoreTransactionApplierTest
     {
         // given
         final BatchTransactionApplier applier = newIndexApplier( );
-        doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( anyLong() );
+        doThrow( new IndexNotFoundKernelException( "" ) ).when( indexingService ).activateIndex( any() );
 
         final DynamicRecord record = DynamicRecord.dynamicRecord( 21, true );
         final Collection<DynamicRecord> recordsAfter = singletonList( record );
@@ -909,7 +912,7 @@ public class NeoStoreTransactionApplierTest
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
                 indexUpdatesSync, nodeStore, neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ),
-                mock( StorageEngine.class ) );
+                mock( StorageEngine.class ), schemaCache );
     }
 
     // SCHEMA RULE COMMAND

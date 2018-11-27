@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.index.schema.fusion;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 class FusionIndexUpdater extends FusionIndexBase<IndexUpdater> implements IndexUpdater
 {

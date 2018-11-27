@@ -44,7 +44,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelE
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.impl.index.storage.DirectoryFactory;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexQueryHelper;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSampler;
@@ -54,6 +53,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexUpdateMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.concurrent.ThreadingRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 

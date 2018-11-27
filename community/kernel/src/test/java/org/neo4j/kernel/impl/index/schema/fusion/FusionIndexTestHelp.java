@@ -30,8 +30,8 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 import org.neo4j.values.storable.DateValue;

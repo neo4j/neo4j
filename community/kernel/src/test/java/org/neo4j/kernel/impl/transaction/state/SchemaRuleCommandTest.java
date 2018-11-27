@@ -31,11 +31,11 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.command.NeoStoreBatchTransactionApplier
 import org.neo4j.kernel.impl.transaction.command.PhysicalLogCommandReaderV3_0_2;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.PhysicalTransactionRepresentation;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
@@ -79,6 +80,8 @@ public class SchemaRuleCommandTest
     private final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     private final SchemaStore schemaStore = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
+    private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
+    private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final StorageEngine storageEngine = mock( StorageEngine.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
@@ -86,11 +89,11 @@ public class SchemaRuleCommandTest
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE );
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
-    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexes );
+    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final PropertyStore propertyStore = mock( PropertyStore.class );
     private final IndexBatchTransactionApplier indexApplier =
-            new IndexBatchTransactionApplier( indexes, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ), neoStores.getRelationshipStore(),
-                    new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine );
+            new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
+                    neoStores.getRelationshipStore(), new PropertyPhysicalToLogicalConverter( propertyStore ), storageEngine, schemaCache );
     private final BaseCommandReader reader = new PhysicalLogCommandReaderV3_0_2();
     private final StoreIndexDescriptor rule = TestIndexDescriptorFactory.forLabel( labelId, propertyKey ).withId( id );
 
@@ -123,7 +126,7 @@ public class SchemaRuleCommandTest
         visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( indexes ).createIndexes( rule );
+        verify( indexUpdateListener ).createIndexes( rule );
     }
 
     @Test
@@ -176,7 +179,7 @@ public class SchemaRuleCommandTest
         visitSchemaRuleCommand( indexApplier, new SchemaRuleCommand( beforeRecords, afterRecords, rule ) );
 
         // THEN
-        verify( indexes ).dropIndex( rule );
+        verify( indexUpdateListener ).dropIndex( rule );
     }
 
     @Test

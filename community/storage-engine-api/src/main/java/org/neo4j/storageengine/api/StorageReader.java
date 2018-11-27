@@ -57,7 +57,7 @@ public interface StorageReader extends AutoCloseable
     /**
      * Returns all indexes (including unique) related to a property.
      */
-    Iterator<StorageIndexReference> indexesGetRelatedToProperty( int propertyId );
+    Iterator<StorageIndexReference> indexesGetRelatedToNodeProperty( int propertyId );
 
     /**
      * Looks for a stored index by given {@code descriptor}

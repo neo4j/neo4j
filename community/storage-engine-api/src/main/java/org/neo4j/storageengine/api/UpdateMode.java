@@ -17,36 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.index;
-
-import static java.util.Arrays.binarySearch;
+package org.neo4j.storageengine.api;
 
 public enum UpdateMode
 {
-    ADDED
-    {
-        @Override
-        public boolean forLabel( long[] before, long[] after, long label )
-        {
-            return binarySearch( after, label ) >= 0;
-        }
-    },
-    CHANGED
-    {
-        @Override
-        public boolean forLabel( long[] before, long[] after, long label )
-        {
-            return ADDED.forLabel( before, after, label ) && REMOVED.forLabel( before, after, label );
-        }
-    },
+    ADDED,
+    CHANGED,
     REMOVED
-    {
-        @Override
-        public boolean forLabel( long[] before, long[] after, long label )
-        {
-            return binarySearch( before, label ) >= 0;
-        }
-    };
-
-    public abstract boolean forLabel( long[] before, long[] after, long label );
 }

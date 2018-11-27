@@ -28,17 +28,19 @@ import java.util.Iterator;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
+import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -46,6 +48,7 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReader;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.InlineNodeLabels;
 import org.neo4j.kernel.impl.store.NeoStores;
@@ -67,6 +70,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.pagecache.PageCacheExtension;
@@ -75,6 +79,7 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.not;
@@ -110,6 +115,7 @@ class OnlineIndexUpdatesTest
     private NodeStore nodeStore;
     private RelationshipStore relationshipStore;
     private IndexingService indexingService;
+    private SchemaCache schemaCache;
     private PropertyPhysicalToLogicalConverter propertyPhysicalToLogicalConverter;
     private NeoStores neoStores;
     private LifeSupport life;
@@ -144,6 +150,7 @@ class OnlineIndexUpdatesTest
                 new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, () -> new RecordStorageReader( neoStores ) ),
                 idTokenNameLookup, empty(), nullLogProvider, nullLogProvider,
                 IndexingService.NO_MONITOR, new DatabaseSchemaState( nullLogProvider ), indexStatisticsStore );
+        schemaCache = new SchemaCache( new StandardConstraintSemantics(), emptyList() );
         propertyPhysicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
         life.add( indexingService );
         life.add( scheduler );
@@ -163,7 +170,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldContainFedNodeUpdate() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter,
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
 
         int nodeId = 0;
@@ -179,8 +186,7 @@ class OnlineIndexUpdatesTest
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
-        indexingService.createIndexes( indexDescriptor );
-        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
+        createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( propertyCommand ) ), LongObjectMaps.immutable.empty(),
                 LongObjectMaps.immutable.of( nodeId, nodeCommand ), LongObjectMaps.immutable.empty() );
@@ -193,7 +199,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldContainFedRelationshipUpdate() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter,
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
 
         long relId = 0;
@@ -209,8 +215,7 @@ class OnlineIndexUpdatesTest
         Command.PropertyCommand propertyCommand = new Command.PropertyCommand( recordAccess.getIfLoaded( propertyId ).forReadingData(), propertyBlocks );
 
         StoreIndexDescriptor indexDescriptor = forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
-        indexingService.createIndexes( indexDescriptor );
-        indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
+        createIndexes( indexDescriptor );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, singletonList( propertyCommand ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
@@ -223,7 +228,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldDifferentiateNodesAndRelationships() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter,
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
 
         int nodeId = 0;
@@ -240,8 +245,7 @@ class OnlineIndexUpdatesTest
                 new Command.PropertyCommand( recordAccess.getIfLoaded( nodePropertyId ).forReadingData(), nodePropertyBlocks );
 
         StoreIndexDescriptor nodeIndexDescriptor = forSchema( multiToken( ENTITY_TOKENS, NODE, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 0 );
-        indexingService.createIndexes( nodeIndexDescriptor );
-        indexingService.getIndexProxy( nodeIndexDescriptor.schema() ).awaitStoreScanCompleted();
+        createIndexes( nodeIndexDescriptor );
 
         long relId = 0;
         RelationshipRecord inUse = getRelationship( relId, true, ENTITY_TOKEN );
@@ -258,8 +262,7 @@ class OnlineIndexUpdatesTest
 
         StoreIndexDescriptor relationshipIndexDescriptor =
                 forSchema( multiToken( ENTITY_TOKENS, RELATIONSHIP, 1, 4, 6 ), EMPTY.getProviderDescriptor() ).withId( 1 );
-        indexingService.createIndexes( relationshipIndexDescriptor );
-        indexingService.getIndexProxy( relationshipIndexDescriptor.schema() ).awaitStoreScanCompleted();
+        createIndexes( relationshipIndexDescriptor );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.of( nodeId, singletonList( nodePropertyCommand ) ),
                 LongObjectMaps.immutable.of( relId, singletonList( relationshipPropertyCommand ) ), LongObjectMaps.immutable.of( nodeId, nodeCommand ),
@@ -273,7 +276,7 @@ class OnlineIndexUpdatesTest
     @Test
     void shouldUpdateCorrectIndexes() throws Exception
     {
-        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, propertyPhysicalToLogicalConverter,
+        OnlineIndexUpdates onlineIndexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, propertyPhysicalToLogicalConverter,
                 new RecordStorageReader( neoStores ) );
 
         long relId = 0;
@@ -300,10 +303,7 @@ class OnlineIndexUpdatesTest
                 forSchema( multiToken( new int[]{ENTITY_TOKEN, OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 2 );
         StoreIndexDescriptor indexDescriptor3 =
                 forSchema( multiToken( new int[]{OTHER_ENTITY_TOKEN}, RELATIONSHIP, 1 ), EMPTY.getProviderDescriptor() ).withId( 3 );
-        indexingService.createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
-        indexingService.getIndexProxy( indexDescriptor0.schema() ).awaitStoreScanCompleted();
-        indexingService.getIndexProxy( indexDescriptor1.schema() ).awaitStoreScanCompleted();
-        indexingService.getIndexProxy( indexDescriptor2.schema() ).awaitStoreScanCompleted();
+        createIndexes( indexDescriptor0, indexDescriptor1, indexDescriptor2 );
 
         onlineIndexUpdates.feed( LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, asList( propertyCommand, propertyCommand2 ) ),
                 LongObjectMaps.immutable.empty(), LongObjectMaps.immutable.of( relId, relationshipCommand ) );
@@ -312,6 +312,17 @@ class OnlineIndexUpdatesTest
                 IndexEntryUpdate.remove( relId, indexDescriptor1, null, propertyValue2, null ),
                 IndexEntryUpdate.remove( relId, indexDescriptor2, propertyValue ) ) );
         assertThat( onlineIndexUpdates, not( containsInAnyOrder( indexDescriptor3 ) ) ); // This index is only for a different relationship type.
+    }
+
+    private void createIndexes( StoreIndexDescriptor... indexDescriptors )
+            throws IndexPopulationFailedKernelException, InterruptedException, IndexNotFoundKernelException
+    {
+        indexingService.createIndexes( indexDescriptors );
+        for ( StoreIndexDescriptor indexDescriptor : indexDescriptors )
+        {
+            indexingService.getIndexProxy( indexDescriptor.schema() ).awaitStoreScanCompleted();
+            schemaCache.addSchemaRule( indexDescriptor );
+        }
     }
 
     private long createRelationshipProperty( RelationshipRecord relRecord, Value propertyValue, int propertyKey )

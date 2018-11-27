@@ -42,6 +42,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.PageCacheAndDependenciesRule;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;

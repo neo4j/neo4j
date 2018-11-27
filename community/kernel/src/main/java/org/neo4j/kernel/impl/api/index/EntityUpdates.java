@@ -34,7 +34,7 @@ import java.util.Objects;
 import org.neo4j.collection.PrimitiveArrays;
 import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEntityCursor;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
@@ -141,17 +141,17 @@ public class EntityUpdates
         return entityId;
     }
 
-    long[] entityTokensChanged()
+    public long[] entityTokensChanged()
     {
         return PrimitiveArrays.symmetricDifference( entityTokensBefore, entityTokensAfter );
     }
 
-    long[] entityTokensUnchanged()
+    public long[] entityTokensUnchanged()
     {
         return PrimitiveArrays.intersect( entityTokensBefore, entityTokensAfter );
     }
 
-    IntSet propertiesChanged()
+    public IntSet propertiesChanged()
     {
         assert !hasLoadedAdditionalProperties : "Calling propertiesChanged() is not valid after non-changed " +
                                                 "properties have already been loaded.";

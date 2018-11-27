@@ -53,7 +53,6 @@ import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -88,6 +87,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.CommandCreationContext;
 import org.neo4j.storageengine.api.CommandReaderFactory;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageEngine;
@@ -98,6 +99,7 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
 import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
+import org.neo4j.util.Preconditions;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -111,7 +113,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final TokenHolders tokenHolders;
     private final DatabaseHealth databaseHealth;
     private final SchemaCache schemaCache;
-    private final IntegrityValidator integrityValidator;
+    private IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaRuleAccess;
@@ -119,12 +121,16 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
-    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
+    private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final IdController idController;
     private final CountsTracker countsStore;
     private final int denseNodeThreshold;
     private final int recordIdBatchSize;
+
+    // installed later
+    private IndexUpdateListener indexUpdateListener;
+    private NodeLabelUpdateListener nodeLabelUpdateListener;
 
     public RecordStorageEngine(
             DatabaseLayout databaseLayout,
@@ -163,13 +169,12 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // We need to load the property tokens here, since we need them before we load the indexes.
             tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
 
-            integrityValidator = new IntegrityValidator( neoStores, null ); // TODO
+            integrityValidator = new IntegrityValidator( neoStores, null );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
             labelScanStoreSync = null; // TODO new WorkSync<>( labelScanStore::newWriter );
 
             commandReaderFactory = new RecordStorageCommandReaderFactory();
-            indexUpdatesSync = null; // TODO new WorkSync<>( indexingService );
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
             recordIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );
@@ -225,6 +230,22 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     public CommandReaderFactory commandReaderFactory()
     {
         return commandReaderFactory;
+    }
+
+    @Override
+    public void addIndexUpdateListener( IndexUpdateListener indexUpdateListener )
+    {
+        Preconditions.checkState( this.indexUpdateListener == null, "Only supports a single listener" );
+        this.indexUpdateListener = indexUpdateListener;
+        this.indexUpdatesSync = new WorkSync<>( indexUpdateListener );
+        this.integrityValidator = new IntegrityValidator( neoStores, indexUpdateListener );
+    }
+
+    @Override
+    public void addNodeLabelUpdateListener( NodeLabelUpdateListener nodeLabelUpdateListener )
+    {
+        Preconditions.checkState( this.nodeLabelUpdateListener == null, "Only supports a single listener" );
+        this.nodeLabelUpdateListener = nodeLabelUpdateListener;
     }
 
     @SuppressWarnings( "resource" )
@@ -319,9 +340,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             appliers.add( new CountsStoreBatchTransactionApplier( countsStore, mode ) );
 
             // Schema index application
-            appliers.add( new IndexBatchTransactionApplier( null, labelScanStoreSync, indexUpdatesSync, // TODO
+            appliers.add( new IndexBatchTransactionApplier( indexUpdateListener, labelScanStoreSync, indexUpdatesSync,
                     neoStores.getNodeStore(), neoStores.getRelationshipStore(),
-                    indexUpdatesConverter, this ) );
+                    indexUpdatesConverter, this, schemaCache ) );
         }
 
         // Perform the application

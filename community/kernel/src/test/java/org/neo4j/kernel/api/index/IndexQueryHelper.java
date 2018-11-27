@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.internal.kernel.api.IndexQuery;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;

@@ -33,6 +33,7 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueType;
 import org.neo4j.values.storable.Values;

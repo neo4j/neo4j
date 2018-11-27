@@ -26,39 +26,38 @@ import org.junit.rules.RuleChain;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
-import org.neo4j.internal.kernel.api.IndexOrder;
-import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20;
 import org.neo4j.kernel.api.index.IndexProvider;
-import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionQueue;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexProxy;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.schema.NodeValueIterator;
 import org.neo4j.kernel.impl.index.schema.fusion.FusionIndexProvider;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.storageengine.api.CommandCreationContext;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
+import org.neo4j.storageengine.api.UpdateMode;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.RecordStorageEngineRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -67,11 +66,10 @@ import org.neo4j.unsafe.impl.batchimport.cache.idmapping.string.Workers;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static java.util.Collections.emptySet;
 import static java.util.Collections.singletonList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.TimeUtil.parseTimeMillis;
-import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
 import static org.neo4j.kernel.api.impl.schema.NativeLuceneFusionIndexProviderFactory20.DESCRIPTOR;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createIndexRule;
 import static org.neo4j.kernel.impl.transaction.command.Commands.transactionRepresentation;
@@ -104,16 +102,13 @@ public class IndexWorkSyncTransactionApplicationStressIT
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         FusionIndexProvider indexProvider = NativeLuceneFusionIndexProviderFactory20.create( pageCache, directory.databaseDir(), fs,
                 IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE, RecoveryCleanupWorkCollector.immediate() );
+        CollectingIndexUpdateListener index = new CollectingIndexUpdateListener();
         RecordStorageEngine storageEngine = storageEngineRule
                 .getWith( fs, pageCache, directory.databaseLayout() )
                 .indexProvider( indexProvider )
+                .indexUpdateListener( index )
                 .build();
         storageEngine.apply( tx( singletonList( createIndexRule( DESCRIPTOR, 1, descriptor ) ) ), TransactionApplicationMode.EXTERNAL );
-        Dependencies dependencies = new Dependencies();
-        storageEngine.satisfyDependencies( dependencies );
-        IndexProxy index = dependencies.resolveDependency( IndexingService.class )
-                .getIndexProxy( descriptor );
-        awaitOnline( index );
 
         // WHEN
         Workers<Worker> workers = new Workers<>( getClass().getSimpleName() );
@@ -129,14 +124,6 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
         // THEN (assertions as part of the workers applying transactions)
         workers.awaitAndThrowOnError();
-    }
-
-    private void awaitOnline( IndexProxy index ) throws InterruptedException
-    {
-        while ( index.getState() == InternalIndexState.POPULATING )
-        {
-            Thread.sleep( 10 );
-        }
     }
 
     private static Value propertyValue( int id, int progress )
@@ -158,12 +145,12 @@ public class IndexWorkSyncTransactionApplicationStressIT
         private final RecordStorageEngine storageEngine;
         private final NodeStore nodeIds;
         private final int batchSize;
-        private final IndexProxy index;
+        private final CollectingIndexUpdateListener index;
         private final CommandCreationContext commandCreationContext;
         private int i;
         private int base;
 
-        Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, IndexProxy index )
+        Worker( int id, AtomicBoolean end, RecordStorageEngine storageEngine, int batchSize, CollectingIndexUpdateListener index )
         {
             this.id = id;
             this.end = end;
@@ -220,23 +207,14 @@ public class IndexWorkSyncTransactionApplicationStressIT
 
         private void verifyIndex( TransactionToApply tx ) throws Exception
         {
-            try ( IndexReader reader = index.newReader() )
+            NodeVisitor visitor = new NodeVisitor();
+            for ( int i = 0; tx != null; i++ )
             {
-                NodeVisitor visitor = new NodeVisitor();
-                for ( int i = 0; tx != null; i++ )
-                {
-                    tx.transactionRepresentation().accept( visitor.clear() );
+                tx.transactionRepresentation().accept( visitor.clear() );
 
-                    Value propertyValue = propertyValue( id, base + i );
-                    IndexQuery.ExactPredicate query = IndexQuery.exact( descriptor.getPropertyId(), propertyValue );
-                    try ( NodeValueIterator hits = new NodeValueIterator() )
-                    {
-                        reader.query( NULL_CONTEXT, hits, IndexOrder.NONE, false, query );
-                        assertEquals( "Index doesn't contain " + visitor.nodeId + " " + propertyValue, visitor.nodeId, hits.next() );
-                        assertFalse( hits.hasNext() );
-                    }
-                    tx = tx.next();
-                }
+                Value propertyValue = propertyValue( id, base + i );
+                index.assertHasIndexEntry( propertyValue, visitor.nodeId );
+                tx = tx.next();
             }
         }
     }
@@ -259,6 +237,28 @@ public class IndexWorkSyncTransactionApplicationStressIT
         {
             nodeId = -1;
             return this;
+        }
+    }
+
+    private static class CollectingIndexUpdateListener extends IndexUpdateListener.Adapter
+    {
+        // Only one index assumed
+        private final ConcurrentMap<Value,Set<Long>> index = new ConcurrentHashMap<>();
+
+        @Override
+        public void applyUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
+        {
+            updates.forEach( update ->
+            {
+                // Only additions assumed
+                assert update.updateMode() == UpdateMode.ADDED;
+                index.computeIfAbsent( update.values()[0], value -> ConcurrentHashMap.newKeySet() ).add( update.getEntityId() );
+            } );
+        }
+
+        void assertHasIndexEntry( Value value, long entityId )
+        {
+            assertTrue( index.getOrDefault( value, emptySet() ).contains( entityId ) );
         }
     }
 }

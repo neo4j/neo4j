@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.index;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
  * IndexUpdaters are responsible for updating indexes during the commit process. There is one new instance handling

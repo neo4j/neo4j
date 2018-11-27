@@ -20,9 +20,9 @@
 package org.neo4j.kernel.impl.api.index.updater;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 public class UpdateCountingIndexUpdater implements IndexUpdater
 {

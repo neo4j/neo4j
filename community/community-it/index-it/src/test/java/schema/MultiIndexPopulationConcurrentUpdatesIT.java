@@ -38,11 +38,11 @@ import java.util.stream.Collectors;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.TokenRead;
@@ -51,9 +51,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -69,33 +67,36 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.StoreScan;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.NeoStores;
-import org.neo4j.kernel.impl.store.SchemaRuleAccess;
-import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.EntityIdIterator;
 import org.neo4j.kernel.impl.transaction.state.storeview.LabelScanViewNodeStoreScan;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageEngine;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.values.storable.Values;
 
-import static com.sun.jmx.mbeanserver.Util.cast;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterables.cast;
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 
 //[NodePropertyUpdate[0, prop:0 add:Sweden, labelsBefore:[], labelsAfter:[0]]]
 //[NodePropertyUpdate[1, prop:0 add:USA, labelsBefore:[], labelsAfter:[0]]]
@@ -116,6 +117,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
     public EmbeddedDbmsRule embeddedDatabase = new EmbeddedDbmsRule();
     private StoreIndexDescriptor[] rules;
     private StorageEngine storageEngine;
+    private SchemaCache schemaCache;
 
     @Parameterized.Parameters( name = "{0}" )
     public static GraphDatabaseSettings.SchemaIndex[] parameters()
@@ -307,7 +309,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             Runnable customAction ) throws Exception
     {
         RecordStorageEngine storageEngine = getStorageEngine();
-        NeoStores neoStores = getNeoStores();
         LabelScanStore labelScanStore = getLabelScanStore();
         ThreadToStatementContextBridge transactionStatementContextBridge = getTransactionStatementContextBridge();
 
@@ -322,12 +323,13 @@ public class MultiIndexPopulationConcurrentUpdatesIT
 
             NullLogProvider nullLogProvider = NullLogProvider.getInstance();
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
-                    providerMap, storeView, tokenNameLookup, getIndexRules( neoStores ),
+                    providerMap, storeView, tokenNameLookup, initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
                     embeddedDatabase.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ) );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
+            schemaCache = new SchemaCache( new StandardConstraintSemantics(), cast( iterable( rules ) ) );
 
             indexService.createIndexes( rules );
             transaction.success();
@@ -391,11 +393,6 @@ public class MultiIndexPopulationConcurrentUpdatesIT
         return labelNameIdMap.values().stream()
                 .map( index -> IndexDescriptorFactory.forSchema( SchemaDescriptorFactory.forLabel( index, propertyId ), providerDescriptor ).withId( index ) )
                 .toArray( StoreIndexDescriptor[]::new );
-    }
-
-    private List<StorageIndexReference> getIndexRules( NeoStores neoStores )
-    {
-        return cast( Iterators.asList( SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() ).indexesGetAll() ) );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )
@@ -636,13 +633,16 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 {
                     for ( EntityUpdates update : updates )
                     {
-                        Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates =
-                                indexService.convertToIndexUpdates( update, reader, EntityType.NODE );
-                        DirectIndexUpdates directIndexUpdates = new DirectIndexUpdates( entryUpdates );
-                        indexService.apply( directIndexUpdates );
+                        Iterable<SchemaDescriptor> relatedIndexes = schemaCache.getIndexesRelatedTo(
+                                update.entityTokensChanged(),
+                                update.entityTokensUnchanged(),
+                                update.propertiesChanged(), EntityType.NODE,
+                                SchemaDescriptorSupplier::schema );
+                        Iterable<IndexEntryUpdate<SchemaDescriptor>> entryUpdates = update.forIndexKeys( relatedIndexes, reader, EntityType.NODE );
+                        indexService.applyUpdates( entryUpdates );
                     }
                 }
-                catch ( UncheckedIOException | IndexEntryConflictException e )
+                catch ( UncheckedIOException | KernelException e )
                 {
                     throw new RuntimeException( e );
                 }

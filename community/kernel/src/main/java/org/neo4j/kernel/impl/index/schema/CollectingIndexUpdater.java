@@ -23,8 +23,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
  * Collects updates from {@link #process(IndexEntryUpdate)} and passes them to the {@link Applier} on {@link #close()}.

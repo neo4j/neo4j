@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.api.index.updater;
 
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 public final class SwallowingIndexUpdater implements IndexUpdater
 {

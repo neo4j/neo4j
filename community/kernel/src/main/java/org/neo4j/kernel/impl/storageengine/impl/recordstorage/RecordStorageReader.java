@@ -107,9 +107,9 @@ public class RecordStorageReader implements StorageReader
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<StorageIndexReference> indexesGetRelatedToNodeProperty( int propertyId )
     {
-        return map( descriptor -> descriptor, schemaCache.indexesByProperty( propertyId ) );
+        return map( descriptor -> descriptor, schemaCache.indexesByNodeProperty( propertyId ) );
     }
 
     @Override

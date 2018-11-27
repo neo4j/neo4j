@@ -25,17 +25,14 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -44,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.AsyncApply;
@@ -57,25 +55,27 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
  */
 public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
-    private final IndexingService indexingService;
+    private final IndexUpdateListener indexUpdateListener;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
-    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
+    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
     private final StorageEngine storageEngine;
+    private final SchemaCache schemaCache;
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
 
-    public IndexBatchTransactionApplier( IndexingService indexingService, WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-            WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, RelationshipStore relationshipStore,
-            PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageEngine storageEngine )
+    public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener, WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
+            WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, RelationshipStore relationshipStore,
+            PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageEngine storageEngine, SchemaCache schemaCache )
     {
-        this.indexingService = indexingService;
+        this.indexUpdateListener = indexUpdateListener;
         this.labelScanStoreSync = labelScanStoreSync;
         this.indexUpdatesSync = indexUpdatesSync;
         this.indexUpdateConverter = indexUpdateConverter;
         this.storageEngine = storageEngine;
+        this.schemaCache = schemaCache;
         this.transactionApplier = new SingleTransactionApplier( nodeStore, relationshipStore );
     }
 
@@ -164,7 +164,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             // Created pending indexes
             if ( createdIndexes != null )
             {
-                indexingService.createIndexes( createdIndexes.toArray( new StorageIndexReference[0] ) );
+                indexUpdateListener.createIndexes( createdIndexes.toArray( new StorageIndexReference[0] ) );
                 createdIndexes = null;
             }
         }
@@ -173,7 +173,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         {
             if ( indexUpdates == null )
             {
-                indexUpdates = new OnlineIndexUpdates( nodeStore, indexingService, indexUpdateConverter, storageEngine.newReader() );
+                indexUpdates = new OnlineIndexUpdates( nodeStore, schemaCache, indexUpdateConverter, storageEngine.newReader() );
             }
             return indexUpdates;
         }
@@ -241,13 +241,11 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     {
                         try
                         {
-                            indexingService.activateIndex( command.getSchemaRule().getId() );
+                            indexUpdateListener.activateIndex( (StorageIndexReference) command.getSchemaRule() );
                         }
-                        catch ( IndexNotFoundKernelException | IndexActivationFailedKernelException |
-                                IndexPopulationFailedKernelException e )
+                        catch ( KernelException e )
                         {
-                            throw new IllegalStateException(
-                                    "Unable to enable constraint, backing index is not online.", e );
+                            throw new IllegalStateException( "Unable to enable constraint, backing index is not online.", e );
                         }
                     }
                     break;
@@ -257,7 +255,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     createdIndexes.add( (StorageIndexReference) command.getSchemaRule() );
                     break;
                 case DELETE:
-                    indexingService.dropIndex( (StorageIndexReference) command.getSchemaRule() );
+                    indexUpdateListener.dropIndex( (StorageIndexReference) command.getSchemaRule() );
                     break;
                 default:
                     throw new IllegalStateException( command.getMode().name() );

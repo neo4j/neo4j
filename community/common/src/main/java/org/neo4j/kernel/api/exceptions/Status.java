@@ -312,6 +312,8 @@ public interface Status
                 "A constraint imposed by the database was violated." ),
         ConstraintVerificationFailed( ClientError,
                 "Unable to create constraint because data that exists in the database violates it." ),
+        ConstraintViolation( ClientError,
+                "Added or changed index entry would violate constraint" ),
         IndexAlreadyExists( ClientError,
                 "Unable to perform operation because it would clash with a pre-existing index." ),
         IndexNotFound( ClientError,

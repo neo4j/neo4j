@@ -95,7 +95,7 @@ public class IndexTxStateUpdaterTest
                     return filter( hasLabel( argument ), indexes.iterator() );
                 } );
 
-        when( storageReader.indexesGetRelatedToProperty( anyInt() ) )
+        when( storageReader.indexesGetRelatedToNodeProperty( anyInt() ) )
                 .thenAnswer( x ->
                 {
                     Integer argument = x.getArgument( 0 );

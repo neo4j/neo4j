@@ -116,7 +116,7 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
-    public Iterator<StorageIndexReference> indexesGetRelatedToProperty( int propertyId )
+    public Iterator<StorageIndexReference> indexesGetRelatedToNodeProperty( int propertyId )
     {
         throw new UnsupportedOperationException( "Not implemented yet" );
     }

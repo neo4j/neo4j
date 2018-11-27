@@ -125,7 +125,7 @@ public class IndexTxStateUpdater
     {
         assert noSchemaChangedInTx();
         Iterator<? extends IndexDescriptor> indexes =
-                storageReader.indexesGetRelatedToProperty( propertyKeyId );
+                storageReader.indexesGetRelatedToNodeProperty( propertyKeyId );
         NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
@@ -139,7 +139,7 @@ public class IndexTxStateUpdater
     {
         assert noSchemaChangedInTx();
         Iterator<? extends IndexDescriptor> indexes =
-                storageReader.indexesGetRelatedToProperty( propertyKeyId );
+                storageReader.indexesGetRelatedToNodeProperty( propertyKeyId );
         NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {
@@ -152,7 +152,7 @@ public class IndexTxStateUpdater
             Value beforeValue, Value afterValue )
     {
         assert noSchemaChangedInTx();
-        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetRelatedToProperty( propertyKeyId );
+        Iterator<? extends IndexDescriptor> indexes = storageReader.indexesGetRelatedToNodeProperty( propertyKeyId );
         NodeSchemaMatcher.onMatchingSchema( indexes, node, propertyCursor, propertyKeyId,
                 ( index, propertyKeyIds ) ->
                 {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.Matchers;
@@ -40,8 +39,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,6 +50,7 @@ import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -63,10 +63,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.index.IndexAccessor;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -74,6 +72,7 @@ import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
+import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
@@ -86,13 +85,7 @@ import org.neo4j.kernel.impl.index.schema.NodeIdsIndexReaderQueryAnswer;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.storageengine.migration.StoreMigrationParticipant;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
-import org.neo4j.kernel.impl.transaction.state.DirectIndexUpdates;
-import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -100,9 +93,11 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.migration.StoreMigrationParticipant;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.DoubleLatch;
 import org.neo4j.test.rule.SuppressOutput;
@@ -380,10 +375,11 @@ public class IndexingServiceTest
         life.start();
 
         // when
-        indexingService.createIndexes( constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR ) );
+        StoreIndexDescriptor rule = constraintIndexRule( 0, labelId, propertyKeyId, PROVIDER_DESCRIPTOR );
+        indexingService.createIndexes( rule );
         IndexProxy proxy = indexingService.getIndexProxy( 0 );
 
-        indexingService.activateIndex( 0 );
+        indexingService.activateIndex( rule );
 
         // then
         assertEquals( ONLINE, proxy.getState() );
@@ -703,9 +699,11 @@ public class IndexingServiceTest
     {
         // given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
+        StoreIndexDescriptor index = new IndexDescriptor( SchemaDescriptorFactory.forLabel( 0, 0 ),
+                IndexDescriptor.Type.GENERAL, Optional.empty(), PROVIDER_DESCRIPTOR ).withId( 0 );
 
         // when
-        indexingService.activateIndex( 0 );
+        indexingService.activateIndex( index );
 
         // then no exception should be thrown.
     }
@@ -749,8 +747,7 @@ public class IndexingServiceTest
     }
 
     @Test
-    public void applicationOfIndexUpdatesShouldThrowIfServiceIsShutdown()
-            throws IOException, IndexEntryConflictException
+    public void applicationOfIndexUpdatesShouldThrowIfServiceIsShutdown() throws IOException, KernelException
     {
         // Given
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
@@ -760,7 +757,7 @@ public class IndexingServiceTest
         try
         {
             // When
-            indexingService.apply( updates( asSet( add( 1, "foo" ) ) ) );
+            indexingService.applyUpdates( asSet( add( 1, "foo" ) ) );
             fail( "Should have thrown " + IllegalStateException.class.getSimpleName() );
         }
         catch ( IllegalStateException e )
@@ -768,11 +765,6 @@ public class IndexingServiceTest
             // Then
             assertThat( e.getMessage(), startsWith( "Can't apply index updates" ) );
         }
-    }
-
-    private IndexUpdates updates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates )
-    {
-        return new DirectIndexUpdates( updates );
     }
 
     @Test
@@ -788,7 +780,7 @@ public class IndexingServiceTest
         verify( populator, timeout( 10000 ) ).close( true );
 
         // When
-        indexing.apply( updates( asList( add( 1, "foo" ), add( 2, "bar" ) ) ) );
+        indexing.applyUpdates( asList( add( 1, "foo" ), add( 2, "bar" ) ) );
 
         // Then
         InOrder inOrder = inOrder( updater );
@@ -834,9 +826,9 @@ public class IndexingServiceTest
         verify( populator, timeout( 10000 ).times( 2 ) ).close( true );
 
         // When
-        indexing.apply( updates( asList(
+        indexing.applyUpdates( asList(
                 add( 1, "foo", labelId1 ),
-                add( 2, "bar", labelId2 ) ) ) );
+                add( 2, "bar", labelId2 ) ) );
 
         // Then
         verify( updater1 ).close();
@@ -876,39 +868,16 @@ public class IndexingServiceTest
         return true;
     }
 
-    private IndexUpdates nodeIdsAsIndexUpdates( long... nodeIds )
+    private Iterable<IndexEntryUpdate<SchemaDescriptor>> nodeIdsAsIndexUpdates( long... nodeIds )
     {
-        return new IndexUpdates()
+        return () ->
         {
-            @Override
-            public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
+            List<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
+            for ( long nodeId : nodeIds )
             {
-                List<IndexEntryUpdate<SchemaDescriptor>> updates = new ArrayList<>();
-                for ( long nodeId : nodeIds )
-                {
-                    updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
-                }
-                return updates.iterator();
+                updates.add( IndexEntryUpdate.add( nodeId, index.schema(), Values.of( 1 ) ) );
             }
-
-            @Override
-            public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId, LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId,
-                    LongObjectMap<NodeCommand> nodeCommands, LongObjectMap<RelationshipCommand> relationshipCommands )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean hasUpdates()
-            {
-                return nodeIds.length > 0;
-            }
-
-            @Override
-            public void close()
-            {
-                // Nothing to close
-            }
+            return updates.iterator();
         };
     }
 
@@ -944,7 +913,7 @@ public class IndexingServiceTest
         // and WHEN finally creating our index again (at a later point in recovery)
         indexing.createIndexes( storeIndex );
         reset( accessor );
-        indexing.apply( nodeIdsAsIndexUpdates( nodeId ) );
+        indexing.applyUpdates( nodeIdsAsIndexUpdates( nodeId ) );
         // and WHEN starting, i.e. completing recovery
         life.start();
 

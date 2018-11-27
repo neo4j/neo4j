@@ -29,8 +29,8 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.LuceneDocumentStructure;
 import org.neo4j.kernel.api.impl.schema.writer.LuceneIndexWriter;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
  * An {@link IndexPopulator} used to create, populate and mark as online a Lucene schema index.

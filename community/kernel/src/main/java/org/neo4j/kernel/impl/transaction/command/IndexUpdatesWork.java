@@ -19,28 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import org.eclipse.collections.api.map.primitive.LongObjectMap;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.helpers.collection.NestingIterator;
-import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
-import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.transaction.command.Command.PropertyCommand;
 import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.util.concurrent.Work;
 
 /**
  * Combines {@link IndexUpdates} from multiple transactions into one bigger job.
  */
-public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdatesWork>
+public class IndexUpdatesWork implements Work<IndexUpdateListener,IndexUpdatesWork>
 {
     private final List<IndexUpdates> updates = new ArrayList<>();
 
@@ -57,53 +54,26 @@ public class IndexUpdatesWork implements Work<IndexingUpdateService,IndexUpdates
     }
 
     @Override
-    public void apply( IndexingUpdateService material )
+    public void apply( IndexUpdateListener material )
     {
         try
         {
-            material.apply( combinedUpdates() );
+            material.applyUpdates( combinedUpdates() );
         }
-        catch ( IOException | IndexEntryConflictException e )
+        catch ( IOException | KernelException e )
         {
             throw new UnderlyingStorageException( e );
         }
     }
 
-    private IndexUpdates combinedUpdates()
+    private Iterable<IndexEntryUpdate<SchemaDescriptor>> combinedUpdates()
     {
-        return new IndexUpdates()
+        return () -> new NestingIterator<IndexEntryUpdate<SchemaDescriptor>,IndexUpdates>( updates.iterator() )
         {
             @Override
-            public Iterator<IndexEntryUpdate<SchemaDescriptor>> iterator()
+            protected Iterator<IndexEntryUpdate<SchemaDescriptor>> createNestedIterator( IndexUpdates item )
             {
-                return new NestingIterator<IndexEntryUpdate<SchemaDescriptor>,IndexUpdates>( updates.iterator() )
-                {
-                    @Override
-                    protected Iterator<IndexEntryUpdate<SchemaDescriptor>> createNestedIterator( IndexUpdates item )
-                    {
-                        return item.iterator();
-                    }
-                };
-            }
-
-            @Override
-            public void feed( LongObjectMap<List<PropertyCommand>> propCommandsByNodeId,
-                    LongObjectMap<List<PropertyCommand>> propCommandsByRelationshipId, LongObjectMap<NodeCommand> nodeCommands,
-                    LongObjectMap<Command.RelationshipCommand> relationshipCommandPrimitiveLongObjectMap )
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public boolean hasUpdates()
-            {
-                return true;
-            }
-
-            @Override
-            public void close()
-            {
-                // Nothing to close
+                return item.iterator();
             }
         };
     }

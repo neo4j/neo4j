@@ -46,6 +46,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -57,7 +58,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelExceptio
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
@@ -76,8 +76,9 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
 
@@ -105,7 +106,7 @@ import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
  * If, however, it is {@link InternalIndexState#ONLINE}, the index provider is required to
  * also guarantee that the index had been flushed to disk.
  */
-public class IndexingService extends LifecycleAdapter implements IndexingUpdateService, IndexingProvidersService
+public class IndexingService extends LifecycleAdapter implements IndexUpdateListener, IndexingProvidersService
 {
     private final IndexSamplingController samplingController;
     private final IndexProxyCreator indexProxyCreator;
@@ -480,29 +481,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexStatisticsStore.shutdown();
     }
 
-    public DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
+    DoubleLongRegister indexUpdatesAndSize( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
     {
         final long indexId = indexMapRef.getOnlineIndexId( descriptor );
         final DoubleLongRegister output = Registers.newDoubleLongRegister();
         indexStatisticsStore.indexUpdatesAndSize( indexId, output );
         return output;
-    }
-
-    public double indexUniqueValuesPercentage( SchemaDescriptor descriptor ) throws IndexNotFoundKernelException
-    {
-        final long indexId = indexMapRef.getOnlineIndexId( descriptor );
-        final DoubleLongRegister output = Registers.newDoubleLongRegister();
-        indexStatisticsStore.indexSample( indexId, output );
-        long unique = output.readFirst();
-        long size = output.readSecond();
-        if ( size == 0 )
-        {
-            return 1.0d;
-        }
-        else
-        {
-            return ((double) unique) / ((double) size);
-        }
     }
 
     @Override
@@ -532,7 +516,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
      * @throws IndexEntryConflictException potentially thrown from index updating.
      */
     @Override
-    public void apply( IndexUpdates updates ) throws IndexEntryConflictException
+    public void applyUpdates( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates ) throws KernelException
     {
         if ( state == State.NOT_STARTED )
         {
@@ -551,7 +535,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    private void apply( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates, IndexUpdateMode updateMode ) throws IndexEntryConflictException
+    private void apply( Iterable<IndexEntryUpdate<SchemaDescriptor>> updates, IndexUpdateMode updateMode ) throws KernelException
     {
         try ( IndexUpdaterMap updaterMap = indexMapRef.createIndexUpdaterMap( updateMode ) )
         {
@@ -560,18 +544,6 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 processUpdate( updaterMap, indexUpdate );
             }
         }
-    }
-
-    @Override
-    public Iterable<IndexEntryUpdate<SchemaDescriptor>> convertToIndexUpdates( EntityUpdates entityUpdates, StorageReader reader, EntityType type )
-    {
-        Iterable<SchemaDescriptor> relatedIndexes = indexMapRef.getRelatedIndexes(
-                                                entityUpdates.entityTokensChanged(),
-                                                entityUpdates.entityTokensUnchanged(),
-                                                entityUpdates.propertiesChanged(),
-                                                type );
-
-        return entityUpdates.forIndexKeys( relatedIndexes, reader, type );
     }
 
     /**
@@ -667,14 +639,15 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         } );
     }
 
-    public void activateIndex( long indexId ) throws
+    @Override
+    public void activateIndex( StorageIndexReference descriptor ) throws
             IndexNotFoundKernelException, IndexActivationFailedKernelException, IndexPopulationFailedKernelException
     {
         try
         {
             if ( state == State.RUNNING ) // don't do this during recovery.
             {
-                IndexProxy index = getIndexProxy( indexId );
+                IndexProxy index = getIndexProxy( descriptor.indexReference() );
                 index.awaitStoreScanCompleted();
                 index.activate();
                 internalLog.info( "Constraint %s is %s.", index.getDescriptor(), ONLINE.name() );

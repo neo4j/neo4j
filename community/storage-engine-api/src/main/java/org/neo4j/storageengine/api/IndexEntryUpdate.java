@@ -17,11 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.storageengine.api;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.api.index.UpdateMode;
 import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
 import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.Value;
@@ -132,7 +131,7 @@ public class IndexEntryUpdate<INDEX_KEY extends SchemaDescriptorSupplier>
     @Override
     public String toString()
     {
-        return format( "IndexEntryUpdate[id=%d, mode=%s, %s, beforeValues=%s, values=%s]", entityId, updateMode,
+        return String.format( "IndexEntryUpdate[id=%d, mode=%s, %s, beforeValues=%s, values=%s]", entityId, updateMode,
                 indexKey().schema().userDescription( idTokenNameLookup ),
                 Arrays.toString( before ), Arrays.toString( values ) );
     }

@@ -59,13 +59,13 @@ public class DuplicateCheckingCollector extends SimpleCollector
         {
             doCollect( doc );
         }
-        catch ( KernelException e )
-        {
-            throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
-        }
         catch ( IndexEntryConflictException e )
         {
             throw new IOException( e );
+        }
+        catch ( KernelException e )
+        {
+            throw new IllegalStateException( "Indexed node should exist and have the indexed property.", e );
         }
     }
 

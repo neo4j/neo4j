@@ -20,9 +20,9 @@
 package org.neo4j.kernel.api.impl.fulltext;
 
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 /**
  * An implementation of {@link IndexUpdateSink} that does not actually do anything.

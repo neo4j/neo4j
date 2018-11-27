@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.state;
 
+import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
-import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
-import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.TentativeConstraintIndexProxy;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.TransactionRecordState;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.store.record.Record;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.util.Preconditions;
 
 /**
  * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
@@ -39,9 +39,9 @@ import org.neo4j.storageengine.api.SchemaRule;
 public class IntegrityValidator
 {
     private final NeoStores neoStores;
-    private final IndexingService indexes;
+    private final IndexUpdateListener indexes;
 
-    public IntegrityValidator( NeoStores neoStores, IndexingService indexes )
+    public IntegrityValidator( NeoStores neoStores, IndexUpdateListener indexes )
     {
         this.neoStores = neoStores;
         this.indexes = indexes;
@@ -77,8 +77,12 @@ public class IntegrityValidator
         }
     }
 
+    /**
+     * @see TentativeConstraintIndexProxy
+     */
     public void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
+        Preconditions.checkState( indexes != null, "No index validator installed" );
         if ( schemaRule instanceof ConstraintRule )
         {
             ConstraintRule constraintRule = (ConstraintRule) schemaRule;
@@ -88,18 +92,15 @@ public class IntegrityValidator
                 {
                     indexes.validateIndex( constraintRule.getOwnedIndex() );
                 }
-                catch ( UniquePropertyValueValidationException e )
+                catch ( KernelException e )
                 {
-                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e,
-                            "Index validation failed" );
-                }
-                catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
-                {
-                    // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
+                    // This could occur if there were concurrent violating transactions since the index population completed
+                    // but before being activated, e.g. transaction executed on another instance with a dated view of the world.
+                    //
+                    // The other alternative is that this is an unexpected exception and means we're in a very bad state - out of
                     // disk or index corruption, or similar. This will kill the database such that it can be shut down
                     // and have recovery performed. It's the safest bet to avoid loosing data.
-                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e,
-                            "Index population failure" );
+                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index validation failed", e );
                 }
             }
         }

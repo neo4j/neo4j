@@ -26,29 +26,26 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.function.Supplier;
 
-import org.neo4j.common.EntityType;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
+import org.neo4j.storageengine.api.IndexUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
 import static java.util.Collections.singleton;
 import static org.junit.Assert.assertFalse;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -60,19 +57,20 @@ public class NeoTransactionIndexApplierTest
     private static final IndexProviderDescriptor INDEX_DESCRIPTOR = new IndexProviderDescriptor( "in-memory", "1.0" );
 
     private final IndexingService indexingService = mock( IndexingService.class );
+    private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
+    private final SchemaCache schemaCache = mock( SchemaCache.class );
     @SuppressWarnings( "unchecked" )
     private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
             new WorkSync<>( labelScanStore );
-    private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
+    private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
 
     @Before
     public void setup()
     {
         when( transactionToApply.transactionId() ).thenReturn( 1L );
-        when( indexingService.convertToIndexUpdates( any(), any(), eq( EntityType.NODE ) ) ).thenAnswer( o -> Iterables.empty() );
     }
 
     @Test
@@ -103,7 +101,7 @@ public class NeoTransactionIndexApplierTest
     {
         PropertyStore propertyStore = mock( PropertyStore.class );
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer, indexUpdatesSync, mock( NodeStore.class ),
-                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ), mock( StorageEngine.class ) );
+                mock( RelationshipStore.class ), new PropertyPhysicalToLogicalConverter( propertyStore ), mock( StorageEngine.class ), schemaCache );
     }
 
     @Test

@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.internal.kernel.api.IndexQuery;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;

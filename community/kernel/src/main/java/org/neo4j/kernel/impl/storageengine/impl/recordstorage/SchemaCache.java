@@ -19,23 +19,26 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
+import org.eclipse.collections.api.iterator.IntIterator;
+import org.eclipse.collections.api.map.primitive.IntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableIntObjectMap;
 import org.eclipse.collections.api.map.primitive.MutableLongObjectMap;
+import org.eclipse.collections.api.set.primitive.IntSet;
 import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap;
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.StampedLock;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
+import org.neo4j.common.EntityType;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -44,6 +47,7 @@ import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 import static java.util.Collections.emptyIterator;
 
@@ -66,12 +70,12 @@ public class SchemaCache
         return schemaCacheState.indexDescriptors();
     }
 
-    public Iterable<ConstraintRule> constraintRules()
+    Iterable<ConstraintRule> constraintRules()
     {
         return schemaCacheState.constraintRules();
     }
 
-    public boolean hasConstraintRule( Long constraintRuleId )
+    boolean hasConstraintRule( Long constraintRuleId )
     {
         return schemaCacheState.hasConstraintRule( constraintRuleId );
     }
@@ -91,22 +95,22 @@ public class SchemaCache
         return schemaCacheState.constraints();
     }
 
-    public Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
+    Iterator<ConstraintDescriptor> constraintsForLabel( final int label )
     {
         return Iterators.filter( SchemaDescriptorPredicates.hasLabel( label ), constraints() );
     }
 
-    public Iterator<ConstraintDescriptor> constraintsForRelationshipType( final int relTypeId )
+    Iterator<ConstraintDescriptor> constraintsForRelationshipType( final int relTypeId )
     {
         return Iterators.filter( SchemaDescriptorPredicates.hasRelType( relTypeId ), constraints() );
     }
 
-    public Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
+    Iterator<ConstraintDescriptor> constraintsForSchema( SchemaDescriptor descriptor )
     {
         return Iterators.filter( SchemaDescriptor.equalTo( descriptor ), constraints() );
     }
 
-    public <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
+    <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
     {
         return schemaCacheState.getOrCreateDependantState( type, factory, parameter );
     }
@@ -140,7 +144,7 @@ public class SchemaCache
         }
     }
 
-    public void removeSchemaRule( long id )
+    void removeSchemaRule( long id )
     {
         cacheUpdateLock.lock();
         try
@@ -160,19 +164,26 @@ public class SchemaCache
         return schemaCacheState.indexDescriptor( descriptor );
     }
 
-    public Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
+    Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
     {
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
-    public Iterator<StorageIndexReference> indexesByProperty( int propertyId )
+    Iterator<StorageIndexReference> indexesByNodeProperty( int propertyId )
     {
-        return schemaCacheState.indexesByProperty( propertyId );
+        return schemaCacheState.indexesByNodeProperty( propertyId );
     }
 
-    public StorageIndexReference indexDescriptorForName( String name )
+    StorageIndexReference indexDescriptorForName( String name )
     {
         return schemaCacheState.indexDescriptorByName( name );
+    }
+
+    public <INDEX_KEY extends SchemaDescriptorSupplier> Set<INDEX_KEY> getIndexesRelatedTo(
+            long[] changedEntityTokens, long[] unchangedEntityTokens, IntSet properties, EntityType entityType,
+            Function<StorageIndexReference,INDEX_KEY> converter )
+    {
+        return schemaCacheState.getIndexesRelatedTo( changedEntityTokens, unchangedEntityTokens, properties, entityType, converter );
     }
 
     private static class SchemaCacheState
@@ -183,11 +194,11 @@ public class SchemaCache
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
         private final Map<SchemaDescriptor,StorageIndexReference> indexDescriptors;
-        private final MutableIntObjectMap<Set<StorageIndexReference>> indexDescriptorsByLabel;
+        private final EntityDescriptors indexDescriptorsByNode;
+        private final EntityDescriptors indexDescriptorsByRelationship;
         private final Map<String,StorageIndexReference> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
-        private final MutableIntObjectMap<List<StorageIndexReference>> indexByProperty;
 
         SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
         {
@@ -197,10 +208,10 @@ public class SchemaCache
             this.constraintRuleById = new LongObjectHashMap<>();
 
             this.indexDescriptors = new HashMap<>();
-            this.indexDescriptorsByLabel = new IntObjectHashMap<>();
+            this.indexDescriptorsByNode = new EntityDescriptors();
+            this.indexDescriptorsByRelationship = new EntityDescriptors();
             this.indexDescriptorsByName = new HashMap<>();
             this.dependantState = new ConcurrentHashMap<>();
-            this.indexByProperty = new IntObjectHashMap<>();
             load( rules );
         }
 
@@ -212,12 +223,10 @@ public class SchemaCache
             this.constraints = new HashSet<>( schemaCacheState.constraints );
 
             this.indexDescriptors = new HashMap<>( schemaCacheState.indexDescriptors );
-            this.indexDescriptorsByLabel = new IntObjectHashMap<>( schemaCacheState.indexDescriptorsByLabel.size() );
-            schemaCacheState.indexDescriptorsByLabel.forEachKeyValue( ( k, v ) -> indexDescriptorsByLabel.put( k, new HashSet<>( v ) ) );
+            this.indexDescriptorsByNode = new EntityDescriptors( schemaCacheState.indexDescriptorsByNode );
+            this.indexDescriptorsByRelationship = new EntityDescriptors( schemaCacheState.indexDescriptorsByRelationship );
             this.indexDescriptorsByName = new HashMap<>( schemaCacheState.indexDescriptorsByName );
             this.dependantState = new ConcurrentHashMap<>();
-            this.indexByProperty = new IntObjectHashMap<>( schemaCacheState.indexByProperty.size() );
-            schemaCacheState.indexByProperty.forEachKeyValue( ( k, v ) -> indexByProperty.put( k, new ArrayList<>( v ) ) );
         }
 
         private void load( Iterable<SchemaRule> schemaRuleIterator )
@@ -268,16 +277,79 @@ public class SchemaCache
             return indexDescriptorsByName.get( name );
         }
 
-        Iterator<StorageIndexReference> indexesByProperty( int propertyId )
+        Iterator<StorageIndexReference> indexesByNodeProperty( int propertyId )
         {
-            List<StorageIndexReference> indexes = indexByProperty.get( propertyId );
+            Set<StorageIndexReference> indexes = indexDescriptorsByNode.byPropertyKey.get( propertyId );
             return (indexes == null) ? emptyIterator() : indexes.iterator();
         }
 
         Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
         {
-            Set<StorageIndexReference> forLabel = indexDescriptorsByLabel.get( labelId );
+            Set<StorageIndexReference> forLabel = indexDescriptorsByNode.byEntity.get( labelId );
             return forLabel == null ? emptyIterator() : forLabel.iterator();
+        }
+
+        <INDEX_KEY extends SchemaDescriptorSupplier> Set<INDEX_KEY> getIndexesRelatedTo( long[] changedEntityTokens, long[] unchangedEntityTokens,
+                IntSet properties, EntityType entityType, Function<StorageIndexReference,INDEX_KEY> converter )
+        {
+            EntityDescriptors entityDescriptors = descriptorsByEntityType( entityType );
+
+            // Grab all indexes relevant to a changed property.
+            Set<StorageIndexReference> indexesByProperties = extractIndexesByProperties( properties, entityDescriptors.byPropertyKey );
+
+            // Make sure that that index really is relevant by intersecting it with indexes relevant for unchanged entity tokens.
+            Set<StorageIndexReference> indexesByUnchangedEntityTokens = new HashSet<>();
+            visitIndexesByEntityTokens( unchangedEntityTokens, entityDescriptors.byEntity, indexesByUnchangedEntityTokens::add );
+            indexesByProperties.retainAll( indexesByUnchangedEntityTokens );
+
+            // Add the indexes relevant for the changed entity tokens.
+            Set<INDEX_KEY> descriptors = new HashSet<>();
+            visitIndexesByEntityTokens( changedEntityTokens, entityDescriptors.byEntity, index -> descriptors.add( converter.apply( index ) ) );
+            indexesByProperties.forEach( index -> descriptors.add( converter.apply( index ) ) );
+            return descriptors;
+        }
+
+        private EntityDescriptors descriptorsByEntityType( EntityType entityType )
+        {
+            switch ( entityType )
+            {
+            case NODE:
+                return indexDescriptorsByNode;
+            case RELATIONSHIP:
+                return indexDescriptorsByRelationship;
+            default:
+                throw new IllegalArgumentException( entityType.name() );
+            }
+        }
+
+        private void visitIndexesByEntityTokens( long[] entityTokenIds, IntObjectMap<Set<StorageIndexReference>> descriptors,
+                Consumer<StorageIndexReference> visitor )
+        {
+            for ( long label : entityTokenIds )
+            {
+                Set<StorageIndexReference> forLabel = descriptors.get( (int) label );
+                if ( forLabel != null )
+                {
+                    for ( StorageIndexReference match : forLabel )
+                    {
+                        visitor.accept( match );
+                    }
+                }
+            }
+        }
+
+        private Set<StorageIndexReference> extractIndexesByProperties( IntSet properties, IntObjectMap<Set<StorageIndexReference>> descriptorsByProperty )
+        {
+            Set<StorageIndexReference> set = new HashSet<>();
+            for ( IntIterator iterator = properties.intIterator(); iterator.hasNext(); )
+            {
+                Set<StorageIndexReference> forProperty = descriptorsByProperty.get( iterator.next() );
+                if ( forProperty != null )
+                {
+                    set.addAll( forProperty );
+                }
+            }
+            return set;
         }
 
         <P, T> T getOrCreateDependantState( Class<T> type, Function<P,T> factory, P parameter )
@@ -300,16 +372,16 @@ public class SchemaCache
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
                 indexDescriptorsByName.put( rule.getName(), index );
-                for ( int entityTokenId : schemaDescriptor.getEntityTokenIds() )
-                {
-                    Set<StorageIndexReference> forLabel = indexDescriptorsByLabel.getIfAbsentPut( entityTokenId, HashSet::new );
-                    forLabel.add( index );
-                }
 
-                for ( int propertyId : index.schema().getPropertyIds() )
+                // Per entity type
+                EntityDescriptors entityDescriptors = descriptorsByEntityType( schemaDescriptor.entityType() );
+                for ( int entityToken : schemaDescriptor.getEntityTokenIds() )
                 {
-                    List<StorageIndexReference> indexesForProperty = indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
-                    indexesForProperty.add( index );
+                    entityDescriptors.byEntity.getIfAbsentPut( entityToken, HashSet::new ).add( index );
+                }
+                for ( int propertyKeyToken : schemaDescriptor.getPropertyIds() )
+                {
+                    entityDescriptors.byPropertyKey.getIfAbsentPut( propertyKeyToken, HashSet::new ).add( index );
                 }
             }
         }
@@ -328,25 +400,46 @@ public class SchemaCache
                 indexDescriptors.remove( schema );
                 indexDescriptorsByName.remove( index.name(), index );
 
+                EntityDescriptors entityDescriptors = descriptorsByEntityType( schema.entityType() );
                 for ( int entityTokenId : schema.getEntityTokenIds() )
                 {
-                    Set<StorageIndexReference> forLabel = indexDescriptorsByLabel.get( entityTokenId );
+                    Set<StorageIndexReference> forLabel = entityDescriptors.byEntity.get( entityTokenId );
                     forLabel.remove( index );
                     if ( forLabel.isEmpty() )
                     {
-                        indexDescriptorsByLabel.remove( entityTokenId );
+                        entityDescriptors.byEntity.remove( entityTokenId );
                     }
                 }
 
                 for ( int propertyId : index.schema().getPropertyIds() )
                 {
-                    List<StorageIndexReference> forProperty = indexByProperty.get( propertyId );
+                    Set<StorageIndexReference> forProperty = entityDescriptors.byPropertyKey.get( propertyId );
                     forProperty.remove( index );
                     if ( forProperty.isEmpty() )
                     {
-                        indexByProperty.remove( propertyId );
+                        entityDescriptors.byPropertyKey.remove( propertyId );
                     }
                 }
+            }
+        }
+
+        private static class EntityDescriptors
+        {
+            private final MutableIntObjectMap<Set<StorageIndexReference>> byEntity;
+            private final MutableIntObjectMap<Set<StorageIndexReference>> byPropertyKey;
+
+            EntityDescriptors( EntityDescriptors copyFrom )
+            {
+                byEntity = new IntObjectHashMap<>( copyFrom.byEntity.size() );
+                byPropertyKey = new IntObjectHashMap<>( copyFrom.byPropertyKey.size() );
+                copyFrom.byEntity.forEachKeyValue( ( k, v ) -> byEntity.put( k, new HashSet<>( v ) ) );
+                copyFrom.byPropertyKey.forEachKeyValue( ( k, v ) -> byPropertyKey.put( k, new HashSet<>( v ) ) );
+            }
+
+            EntityDescriptors()
+            {
+                byEntity = new IntObjectHashMap<>();
+                byPropertyKey = new IntObjectHashMap<>();
             }
         }
     }

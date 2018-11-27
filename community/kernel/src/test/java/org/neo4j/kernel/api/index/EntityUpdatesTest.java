@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.properties.PropertyKeyValue;
 import org.neo4j.kernel.api.schema.MultiTokenSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.EntityUpdates;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StubStorageCursors;

@@ -28,12 +28,12 @@ import java.util.Collection;
 import org.neo4j.function.ThrowingAction;
 import org.neo4j.kernel.api.impl.index.DatabaseIndex;
 import org.neo4j.kernel.api.impl.schema.populator.LuceneIndexPopulator;
-import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
-import org.neo4j.kernel.api.index.IndexSample;
+import org.neo4j.storageengine.api.IndexEntryUpdate;
 
 public class FulltextIndexPopulator extends LuceneIndexPopulator<DatabaseIndex<FulltextIndexReader>>
 {
