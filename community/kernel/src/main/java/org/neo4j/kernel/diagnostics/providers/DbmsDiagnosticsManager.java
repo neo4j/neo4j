@@ -72,8 +72,8 @@ public class DbmsDiagnosticsManager
 
     public void dump( String databaseName, Log log )
     {
-        getDatabaseManager().getDatabaseFacade( databaseName ).map(
-                facade -> facade.getDependencyResolver().resolveDependency( Database.class ) )
+        getDatabaseManager().getDatabaseContext( databaseName )
+                .map( context -> context.getDependencies().resolveDependency( Database.class ) )
                 .ifPresent( database -> dumpDatabaseDiagnostics( database, log ) );
     }
 
