@@ -145,7 +145,7 @@ class BidirectionalTraverserIterator extends AbstractTraverserIterator
         }
 
         TraversalBranch result;
-        for ( ; ; )
+        while ( true )
         {
             result = selector.next( this );
             if ( result == null )
