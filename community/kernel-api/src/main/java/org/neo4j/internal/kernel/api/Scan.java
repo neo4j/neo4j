@@ -56,7 +56,7 @@ public interface Scan<Cursor extends org.neo4j.internal.kernel.api.Cursor>
      * the underlying data.
      *
      * @param cursor The cursor to be used for reading.
-     * @param sizeHint The approximate size the batch, it is guaranteed to not exceed this value.
+     * @param sizeHint The approximate size the batch, the provided size must be greater than 0.
      * @return <code>true</code> if there are more data to read, otherwise <code>false</code>
      */
     boolean reserveBatch( Cursor cursor, int sizeHint );

@@ -738,5 +738,4 @@ abstract class Read implements TxStateHolder,
     {
         ktx.assertOpen();
     }
-
 }
