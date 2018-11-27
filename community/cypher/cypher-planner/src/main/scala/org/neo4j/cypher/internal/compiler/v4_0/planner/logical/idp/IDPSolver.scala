@@ -54,24 +54,30 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
+      var largestFinishedIteration = 0
       var blockSize = 1
       var keepGoing = true
       val start = System.currentTimeMillis()
 
       while (keepGoing && blockSize <= maxBlockSize) {
+        var foundNoCandidate = true
         blockSize += 1
         val goals = toDo.subsets(blockSize)
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
           if (!table.contains(goal)) {
             val candidates = LazyIterable(generator(registry, goal, table, context))
-            projectingSelector(candidates).foreach(table.put(goal, _))
+            projectingSelector(candidates).foreach { candidate =>
+              foundNoCandidate = false
+              table.put(goal, candidate)
+            }
             keepGoing = blockSize == 2 ||
               (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
           }
         }
+        largestFinishedIteration = if (foundNoCandidate || goals.hasNext) largestFinishedIteration else blockSize
       }
-      blockSize - 1
+      largestFinishedIteration
     }
 
     def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
@@ -98,9 +104,9 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     while (toDo.size > 1) {
       iterations += 1
       monitor.startIteration(iterations)
-      val largestFinished = generateBestCandidates(toDo.size)
-      val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
-      monitor.endIteration(iterations, largestFinished, table.size)
+      val largestBlockSize = generateBestCandidates(toDo.size)
+      val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestBlockSize)
+      monitor.endIteration(iterations, largestBlockSize, table.size)
       compactBlock(bestGoal, bestInBlock)
     }
     monitor.foundPlanAfter(iterations)
