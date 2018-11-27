@@ -101,8 +101,7 @@ public class ThreadToStatementContextBridge implements Supplier<Statement>
         }
         if ( transaction.isTerminated() )
         {
-            Status terminationReason = transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated );
-            throw new TransactionTerminatedException( terminationReason );
+            throw new TransactionTerminatedException( transaction.getReasonIfTerminated().orElse( Status.Transaction.Terminated ) );
         }
     }
 

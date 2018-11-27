@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.transaciton.monitor;
 
 import java.time.Clock;
 import java.util.Set;
 
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
@@ -31,24 +32,29 @@ import org.neo4j.logging.internal.LogService;
  * Transaction monitor that check transactions with a configured timeout for expiration.
  * In case if transaction timed out it will be terminated.
  */
-public class KernelTransactionTimeoutMonitor implements Runnable
+public class KernelTransactionMonitor implements Runnable
 {
     private final KernelTransactions kernelTransactions;
     private final Clock clock;
     private final Log log;
 
-    public KernelTransactionTimeoutMonitor( KernelTransactions kernelTransactions, Clock clock, LogService logService )
+    public KernelTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, LogService logService )
     {
         this.kernelTransactions = kernelTransactions;
         this.clock = clock;
-        this.log = logService.getInternalLog( KernelTransactionTimeoutMonitor.class );
+        this.log = logService.getInternalLog( KernelTransactionMonitor.class );
     }
 
     @Override
     public synchronized void run()
     {
-        Set<KernelTransactionHandle> activeTransactions = kernelTransactions.activeTransactions();
         long now = clock.millis();
+        Set<KernelTransactionHandle> activeTransactions = kernelTransactions.activeTransactions();
+        checkExpiredTransactions( activeTransactions, now );
+    }
+
+    private void checkExpiredTransactions( Set<KernelTransactionHandle> activeTransactions, long now )
+    {
         for ( KernelTransactionHandle activeTransaction : activeTransactions )
         {
             long transactionTimeoutMillis = activeTransaction.timeoutMillis();

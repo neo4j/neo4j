@@ -19,10 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -30,14 +32,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
-public class KernelTransactionMonitorSchedulerTest
+class KernelTransactionMonitorSchedulerTest
 {
-
     private final JobScheduler scheduler = mock( JobScheduler.class );
-    private final KernelTransactionTimeoutMonitor transactionTimeoutMonitor = mock( KernelTransactionTimeoutMonitor.class );
+    private final KernelTransactionMonitor transactionTimeoutMonitor = mock( KernelTransactionMonitor.class );
 
     @Test
-    public void scheduleRecurringMonitorJobIfConfigured()
+    void scheduleRecurringMonitorJobIfConfigured()
     {
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler(1);
         transactionMonitorScheduler.start();
@@ -47,7 +48,7 @@ public class KernelTransactionMonitorSchedulerTest
     }
 
     @Test
-    public void doNotScheduleMonitorJobIfDisabled()
+    void doNotScheduleMonitorJobIfDisabled()
     {
         KernelTransactionMonitorScheduler transactionMonitorScheduler = createMonitorScheduler( 0 );
         transactionMonitorScheduler.start();

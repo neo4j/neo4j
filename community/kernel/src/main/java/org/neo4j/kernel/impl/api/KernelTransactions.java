@@ -124,8 +124,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     // This is the factory that actually builds brand-new instances.
     private final Factory<KernelTransactionImplementation> factory = new KernelTransactionImplementationFactory( allTransactions );
     // Global pool of transactions, wrapped by the thread-local marshland pool and so is not used directly.
-    private final LinkedQueuePool<KernelTransactionImplementation> globalTxPool =
-            new GlobalKernelTransactionPool( allTransactions, factory );
+    private final GlobalKernelTransactionPool globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
     // Pool of unused transactions.
     private final MarshlandPool<KernelTransactionImplementation> localTxPool = new MarshlandPool<>( globalTxPool );
     private final ConstraintSemantics constraintSemantics;

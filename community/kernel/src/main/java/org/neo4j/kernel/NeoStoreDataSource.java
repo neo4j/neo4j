@@ -57,8 +57,6 @@ import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.ExplicitIndexTransactionStateProvider;
 import org.neo4j.kernel.impl.api.KernelAuxTransactionStateManager;
 import org.neo4j.kernel.impl.api.KernelImpl;
-import org.neo4j.kernel.impl.api.KernelTransactionMonitorScheduler;
-import org.neo4j.kernel.impl.api.KernelTransactionTimeoutMonitor;
 import org.neo4j.kernel.impl.api.KernelTransactions;
 import org.neo4j.kernel.impl.api.KernelTransactionsSnapshot;
 import org.neo4j.kernel.impl.api.SchemaState;
@@ -71,6 +69,8 @@ import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -667,8 +667,7 @@ public class NeoStoreDataSource extends LifecycleAdapter
 
     private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
     {
-        KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor =
-                new KernelTransactionTimeoutMonitor( kernelTransactions, clock, logService );
+        KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, logService );
         dataSourceDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
         KernelTransactionMonitorScheduler transactionMonitorScheduler =
                 new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
