@@ -19,19 +19,19 @@
  */
 package org.neo4j.kernel.impl.factory;
 
-public class DatabaseInfo
+public enum DatabaseInfo
 {
-    public static final DatabaseInfo UNKNOWN = new DatabaseInfo( Edition.unknown, OperationalMode.unknown );
-    public static final DatabaseInfo TOOL = new DatabaseInfo( Edition.unknown, OperationalMode.single );
-    public static final DatabaseInfo COMMUNITY = new DatabaseInfo( Edition.community, OperationalMode.single );
-    public static final DatabaseInfo ENTERPRISE = new DatabaseInfo( Edition.enterprise, OperationalMode.single );
-    public static final DatabaseInfo CORE = new DatabaseInfo( Edition.enterprise, OperationalMode.core );
-    public static final DatabaseInfo READ_REPLICA = new DatabaseInfo( Edition.enterprise, OperationalMode.read_replica );
+    UNKNOWN( Edition.UNKNOWN, OperationalMode.UNKNOWN ),
+    TOOL( Edition.UNKNOWN, OperationalMode.SINGLE ),
+    COMMUNITY( Edition.COMMUNITY, OperationalMode.SINGLE ),
+    COMMERCIAL( Edition.COMMERCIAL, OperationalMode.SINGLE ),
+    CORE( Edition.COMMERCIAL, OperationalMode.CORE ),
+    READ_REPLICA( Edition.COMMERCIAL, OperationalMode.READ_REPLICA );
 
     public final Edition edition;
     public final OperationalMode operationalMode;
 
-    private DatabaseInfo( Edition edition, OperationalMode operationalMode )
+    DatabaseInfo( Edition edition, OperationalMode operationalMode )
     {
         this.edition = edition;
         this.operationalMode = operationalMode;

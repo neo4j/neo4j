@@ -39,7 +39,7 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
 {
     protected LuceneIndexStorageBuilder storageBuilder = LuceneIndexStorageBuilder.create();
     private final Config config;
-    private OperationalMode operationalMode = OperationalMode.single;
+    private OperationalMode operationalMode = OperationalMode.SINGLE;
 
     public AbstractLuceneIndexBuilder( Config config )
     {
@@ -111,7 +111,7 @@ public abstract class AbstractLuceneIndexBuilder<T extends AbstractLuceneIndexBu
      */
     protected boolean isReadOnly()
     {
-        return getConfig( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
+        return getConfig( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == operationalMode);
     }
 
     /**

@@ -65,7 +65,7 @@ public class GenericNativeIndexProviderFactory extends AbstractIndexProviderFact
             OperationalMode mode, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
     {
         IndexDirectoryStructure.Factory directoryStructure = directoriesByProvider( storeDir );
-        boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == mode);
+        boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == mode);
         return new GenericNativeIndexProvider( directoryStructure, pageCache, fs, monitor, recoveryCleanupWorkCollector, readOnly, config );
     }
 

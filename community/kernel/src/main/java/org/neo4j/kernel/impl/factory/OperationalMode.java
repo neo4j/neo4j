@@ -22,8 +22,21 @@ package org.neo4j.kernel.impl.factory;
 public enum OperationalMode
 {
     // Note, these are sent verbatim via UDC if UDC is enabled
-    unknown,
-    single,
-    core,
-    read_replica
+    UNKNOWN( "unknown" ),
+    SINGLE( "single" ),
+    CORE( "core" ),
+    READ_REPLICA( "read_replica" );
+
+    private final String description;
+
+    OperationalMode( String description )
+    {
+        this.description = description;
+    }
+
+    @Override
+    public String toString()
+    {
+        return description;
+    }
 }

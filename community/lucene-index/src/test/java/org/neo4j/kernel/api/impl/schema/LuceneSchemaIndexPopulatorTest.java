@@ -92,7 +92,7 @@ class LuceneSchemaIndexPopulatorTest
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( testDir.directory( "folder" ) ),
-                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single );
+                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE );
         indexStoreView = mock( IndexStoreView.class );
         propertyAccessor = mock( NodePropertyAccessor.class );
         IndexSamplingConfig samplingConfig = new IndexSamplingConfig( Config.defaults() );

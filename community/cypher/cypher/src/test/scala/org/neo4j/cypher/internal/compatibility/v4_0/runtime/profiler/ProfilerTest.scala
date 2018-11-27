@@ -43,7 +43,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext()
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DatabaseInfo.COMMERCIAL, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -60,7 +60,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe = ProfilerTestPipe(start, "foo", rows = 10, dbAccess = 20, statisticProvider, hits = 2, misses = 7)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DatabaseInfo.COMMERCIAL, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -100,7 +100,7 @@ class ProfilerTest extends CypherFunSuite {
     val pipe3 = ProfilerTestPipe(pipe2, "baz", rows = 1, dbAccess = 2, statisticProvider, 37, 68)(idGen.id())
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DatabaseInfo.COMMERCIAL, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     //WHEN
@@ -167,7 +167,7 @@ class ProfilerTest extends CypherFunSuite {
 
     val queryContext: QueryContext = prepareQueryContext(statisticProvider)
     val profile = new InterpretedProfileInformation
-    val profiler = new Profiler(DatabaseInfo.ENTERPRISE, profile)
+    val profiler = new Profiler(DatabaseInfo.COMMERCIAL, profile)
     val queryState = QueryStateHelper.emptyWith(query = queryContext, decorator = profiler)
 
     // WHEN we create the results,

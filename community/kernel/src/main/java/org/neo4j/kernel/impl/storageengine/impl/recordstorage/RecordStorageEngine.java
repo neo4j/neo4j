@@ -188,7 +188,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
 
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, neoStores, countsStore, this::newReader );
-            boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.single;
+            boolean readOnly = config.get( GraphDatabaseSettings.read_only ) && operationalMode == OperationalMode.SINGLE;
             monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
             labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
                     readOnly, monitors, recoveryCleanupWorkCollector );

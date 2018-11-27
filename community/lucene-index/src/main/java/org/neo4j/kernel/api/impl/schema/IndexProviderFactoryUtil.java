@@ -39,7 +39,7 @@ class IndexProviderFactoryUtil
 {
     static boolean isReadOnly( Config config, OperationalMode operationalMode )
     {
-        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.single == operationalMode);
+        return config.get( GraphDatabaseSettings.read_only ) && (OperationalMode.SINGLE == operationalMode);
     }
 
     static StringIndexProvider stringProvider( PageCache pageCache, FileSystemAbstraction fs, IndexDirectoryStructure.Factory childDirectoryStructure,

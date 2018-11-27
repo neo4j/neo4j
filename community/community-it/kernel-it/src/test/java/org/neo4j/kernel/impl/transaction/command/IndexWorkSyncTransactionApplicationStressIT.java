@@ -103,7 +103,7 @@ public class IndexWorkSyncTransactionApplicationStressIT
         DefaultFileSystemAbstraction fs = fileSystemRule.get();
         PageCache pageCache = pageCacheRule.getPageCache( fs );
         FusionIndexProvider indexProvider = NativeLuceneFusionIndexProviderFactory20.create( pageCache, directory.databaseDir(), fs,
-                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.single, RecoveryCleanupWorkCollector.immediate() );
+                IndexProvider.Monitor.EMPTY, Config.defaults(), OperationalMode.SINGLE, RecoveryCleanupWorkCollector.immediate() );
         RecordStorageEngine storageEngine = storageEngineRule
                 .getWith( fs, pageCache, directory.databaseLayout() )
                 .indexProvider( indexProvider )

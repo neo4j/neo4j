@@ -74,7 +74,7 @@ class Profiler(databaseInfo: DatabaseInfo,
   }
 
   private def trackPageCacheStats = {
-    databaseInfo.edition != Edition.community
+    databaseInfo.edition != Edition.COMMUNITY
   }
 
   def innerDecorator(owningPipe: Pipe): PipeDecorator = new PipeDecorator {

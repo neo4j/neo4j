@@ -35,7 +35,7 @@ import static org.neo4j.udc.UsageDataKey.key;
 public class UsageDataKeys
 {
     /** Edition of Neo4j running, eg 'community' or 'enterprise' */
-    public static final UsageDataKey<Edition> edition = key( "neo4j.edition", Edition.unknown );
+    public static final UsageDataKey<Edition> edition = key( "neo4j.edition", Edition.UNKNOWN );
 
     /** Version of Neo4j running, eg. 1.2.3-RC1 */
     public static final UsageDataKey<String> version = key( "neo4j.version", "N/A" );
@@ -44,7 +44,7 @@ public class UsageDataKeys
     public static final UsageDataKey<String> revision = key( "neo4j.revision", "N/A" );
 
     /** Operational mode of the database */
-    public static final UsageDataKey<OperationalMode> operationalMode = key( "neo4j.opMode", OperationalMode.unknown );
+    public static final UsageDataKey<OperationalMode> operationalMode = key( "neo4j.opMode", OperationalMode.UNKNOWN );
 
     /** Self-reported names of clients connecting to us. */
     public static final UsageDataKey<RecentK<String>> clientNames = key( "neo4j.clientNames", () -> new RecentK<>( 10 ) );

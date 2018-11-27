@@ -254,7 +254,7 @@ public final class Recovery
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                         scheduler, tokenNameLookup, LockService.NO_LOCK_SERVICE, indexProviderMap, monitors.newMonitor( IndexingService.Monitor.class ),
                         databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), monitors, recoveryCleanupCollector,
-                        OperationalMode.single, EmptyVersionContextSupplier.EMPTY );
+                        OperationalMode.SINGLE, EmptyVersionContextSupplier.EMPTY );
 
         storageEngine.satisfyDependencies( recoveryDependencies );
 

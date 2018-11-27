@@ -149,12 +149,12 @@ class DefaultUdcInformationCollectorTest
     {
         // Given
         usageData.set( UsageDataKeys.version, "1.2.3" );
-        usageData.set( UsageDataKeys.edition, Edition.enterprise );
-        usageData.set( UsageDataKeys.operationalMode, OperationalMode.core );
+        usageData.set( UsageDataKeys.edition, Edition.COMMUNITY );
+        usageData.set( UsageDataKeys.operationalMode, OperationalMode.CORE );
 
         // When & Then
         assertEquals( "1.2.3", collector.getUdcParams().get( UdcConstants.VERSION ) );
-        assertEquals( "enterprise", collector.getUdcParams().get( UdcConstants.EDITION ) );
+        assertEquals( "community", collector.getUdcParams().get( UdcConstants.EDITION ) );
         assertEquals( "core", collector.getUdcParams().get( UdcConstants.DATABASE_MODE ) );
     }
 

@@ -133,6 +133,6 @@ class LuceneIndexProviderTest
                                                         FileSystemAbstraction fs, File graphDbDir )
     {
         return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( graphDbDir ),
-                IndexProvider.Monitor.EMPTY, config, OperationalMode.single );
+                IndexProvider.Monitor.EMPTY, config, OperationalMode.SINGLE );
     }
 }

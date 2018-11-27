@@ -40,7 +40,7 @@ public class FusionIndexProvider20CompatibilitySuiteTest extends IndexProviderCo
     {
         IndexProvider.Monitor monitor = IndexProvider.Monitor.EMPTY;
         Config config = Config.defaults( stringMap( default_schema_provider.name(), NATIVE20.providerName() ) );
-        OperationalMode mode = OperationalMode.single;
+        OperationalMode mode = OperationalMode.SINGLE;
         RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
         return NativeLuceneFusionIndexProviderFactory20.create( pageCache, graphDbDir, fs, monitor, config, mode, recoveryCleanupWorkCollector );
     }

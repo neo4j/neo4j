@@ -158,7 +158,7 @@ public class GraphDatabaseFactory
 
     public String getEdition()
     {
-        return Edition.community.toString();
+        return Edition.COMMUNITY.toString();
     }
 
     private class EmbeddedDatabaseCreator implements GraphDatabaseBuilder.DatabaseCreator

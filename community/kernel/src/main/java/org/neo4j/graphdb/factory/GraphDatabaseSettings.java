@@ -136,7 +136,7 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<String> tracer = setting( "unsupported.dbms.tracer", STRING, NO_DEFAULT );
 
     @Internal
-    public static final Setting<String> editionName = setting( "unsupported.dbms.edition", STRING, Edition.unknown.toString() );
+    public static final Setting<String> editionName = setting( "unsupported.dbms.edition", STRING, Edition.UNKNOWN.toString() );
 
     /**
      * @deprecated This setting is deprecated and will be removed in 4.0.

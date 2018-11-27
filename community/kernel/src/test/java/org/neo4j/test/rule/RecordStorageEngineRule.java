@@ -114,7 +114,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
                 IndexingService.NO_MONITOR, databaseHealth, idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
-                RecoveryCleanupWorkCollector.immediate(), OperationalMode.single ) );
+                RecoveryCleanupWorkCollector.immediate(), OperationalMode.SINGLE ) );
     }
 
     @Override

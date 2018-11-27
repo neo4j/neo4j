@@ -109,10 +109,10 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, VERSION, filterVersionForUDC( usageData.get( UsageDataKeys.version ) ) );
         add( udcFields, REVISION, filterVersionForUDC( usageData.get( UsageDataKeys.revision ) ) );
 
-        add( udcFields, EDITION, usageData.get( UsageDataKeys.edition ).name().toLowerCase() );
+        add( udcFields, EDITION, usageData.get( UsageDataKeys.edition ).toString() );
         add( udcFields, SOURCE, config.get( UdcSettings.udc_source ) );
         add( udcFields, REGISTRATION, config.get( UdcSettings.udc_registration_key ) );
-        add( udcFields, DATABASE_MODE, usageData.get( UsageDataKeys.operationalMode ).name() );
+        add( udcFields, DATABASE_MODE, usageData.get( UsageDataKeys.operationalMode ).toString() );
         add( udcFields, SERVER_ID, usageData.get( UsageDataKeys.serverId ) );
         add( udcFields, USER_AGENTS, toCommaString( usageData.get( UsageDataKeys.clientNames ) ) );
 

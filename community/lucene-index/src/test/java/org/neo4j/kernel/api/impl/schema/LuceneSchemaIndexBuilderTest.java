@@ -52,7 +52,7 @@ class LuceneSchemaIndexBuilderTest
     {
         try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getReadOnlyConfig() )
                 .withFileSystem( fileSystemRule )
-                .withOperationalMode( OperationalMode.single )
+                .withOperationalMode( OperationalMode.SINGLE )
                 .withIndexRootFolder( testDir.directory( "a" ) )
                 .build() )
         {
@@ -65,7 +65,7 @@ class LuceneSchemaIndexBuilderTest
     {
         try ( SchemaIndex schemaIndex = LuceneSchemaIndexBuilder.create( descriptor, getDefaultConfig() )
                 .withFileSystem( fileSystemRule )
-                .withOperationalMode( OperationalMode.single )
+                .withOperationalMode( OperationalMode.SINGLE )
                 .withIndexRootFolder( testDir.directory( "b" ) )
                 .build() )
         {

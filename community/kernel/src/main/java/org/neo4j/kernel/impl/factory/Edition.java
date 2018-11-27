@@ -22,7 +22,20 @@ package org.neo4j.kernel.impl.factory;
 public enum Edition
 {
     // Note, these are sent verbatim via UDC if UDC is enabled
-    unknown,
-    community,
-    enterprise
+    UNKNOWN( "unknown" ),
+    COMMUNITY( "community" ),
+    COMMERCIAL( "commercial" );
+
+    private final String description;
+
+    Edition( String description )
+    {
+        this.description = description;
+    }
+
+    @Override
+    public String toString()
+    {
+        return description;
+    }
 }

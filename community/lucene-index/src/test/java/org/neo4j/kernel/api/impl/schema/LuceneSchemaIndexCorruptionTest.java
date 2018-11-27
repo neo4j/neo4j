@@ -131,7 +131,7 @@ class LuceneSchemaIndexCorruptionTest
         File indexRootFolder = testDirectory.databaseDir();
         AtomicReference<FaultyIndexStorageFactory> reference = new AtomicReference<>();
         return new LuceneIndexProvider( fs, directoryFactory, defaultDirectoryStructure( indexRootFolder ), monitor,
-                Config.defaults(), OperationalMode.single )
+                Config.defaults(), OperationalMode.SINGLE )
         {
             @Override
             protected IndexStorageFactory buildIndexStorageFactory( FileSystemAbstraction fileSystem, DirectoryFactory directoryFactory )

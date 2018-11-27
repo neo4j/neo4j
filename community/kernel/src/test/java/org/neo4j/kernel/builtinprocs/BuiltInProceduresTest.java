@@ -126,7 +126,7 @@ public class BuiltInProceduresTest
         procs.registerType( Relationship.class, NTRelationship );
         procs.registerType( Path.class, NTPath );
 
-        new SpecialBuiltInProcedures( "1.3.37", Edition.enterprise.toString() ).accept( procs );
+        new SpecialBuiltInProcedures( "1.3.37", Edition.COMMUNITY.toString() ).accept( procs );
         procs.registerProcedure( BuiltInProcedures.class );
         procs.registerProcedure( BuiltInDbmsProcedures.class );
 
@@ -337,7 +337,7 @@ public class BuiltInProceduresTest
     {
         // When/Then
         assertThat( call( "dbms.components" ), contains(
-                record( "Neo4j Kernel", singletonList( "1.3.37" ), "enterprise" )
+                record( "Neo4j Kernel", singletonList( "1.3.37" ), "community" )
         ) );
     }
 
