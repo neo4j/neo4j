@@ -116,7 +116,7 @@ public interface StorageEngine
      * Dump diagnostics about the storage onto {@link DiagnosticsManager}.
      *
      * @param diagnosticsManager {@link DiagnosticsManager} to register diagnostics at.
-     * @param log {@link DiagnosticsManager} to register diagnostics at.
+     * @param log {@link Log} to which print diagnostics.
      */
     void dumpDiagnostics( DiagnosticsManager diagnosticsManager, Log log );
 
