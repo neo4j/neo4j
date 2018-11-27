@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.api.transaciton.monitor;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,15 +28,15 @@ import org.neo4j.scheduler.JobScheduler;
 
 public class KernelTransactionMonitorScheduler extends LifecycleAdapter
 {
-    private final KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor;
+    private final KernelTransactionMonitor kernelTransactionMonitor;
     private final JobScheduler scheduler;
     private final long checkIntervalMillis;
     private JobHandle monitorJobHandle;
 
-    public KernelTransactionMonitorScheduler( KernelTransactionTimeoutMonitor kernelTransactionTimeoutMonitor,
+    public KernelTransactionMonitorScheduler( KernelTransactionMonitor kernelTransactionMonitor,
             JobScheduler scheduler, long checkIntervalMillis )
     {
-        this.kernelTransactionTimeoutMonitor = kernelTransactionTimeoutMonitor;
+        this.kernelTransactionMonitor = kernelTransactionMonitor;
         this.scheduler = scheduler;
         this.checkIntervalMillis = checkIntervalMillis;
     }
@@ -46,7 +46,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     {
         if ( checkIntervalMillis > 0 )
         {
-            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, kernelTransactionTimeoutMonitor,
+            monitorJobHandle = scheduler.scheduleRecurring( Group.TRANSACTION_TIMEOUT_MONITOR, kernelTransactionMonitor,
                     checkIntervalMillis, TimeUnit.MILLISECONDS );
         }
     }
