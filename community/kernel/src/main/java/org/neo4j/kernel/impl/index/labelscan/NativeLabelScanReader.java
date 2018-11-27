@@ -58,7 +58,6 @@ class NativeLabelScanReader implements LabelScanReader
         this.index = index;
     }
 
-
     @Override
     public void close()
     {
@@ -87,7 +86,6 @@ class NativeLabelScanReader implements LabelScanReader
         List<PrimitiveLongResourceIterator> iterators = iteratorsForLabels( fromId, labelIds );
         return new CompositeLabelScanValueIterator( iterators, false );
     }
-
 
     @Override
     public LabelScan nodeLabelScan( int labelId )

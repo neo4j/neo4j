@@ -26,13 +26,13 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.labelscan.LabelScan;
-import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.storageengine.api.txstate.RichLongSet;
 import org.neo4j.util.Preconditions;
 
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
@@ -42,34 +42,30 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
     private final AtomicInteger nextTxState;
     private final long upperBound;
     private static final int CHUNK_SIZE = Long.SIZE;
-    private final int label;
     private final Read read;
-    private final RichLongSet addedNodesSet;
+    private final long[] addedNodesArray;
     private final LongSet removed;
-    private final LabelScanReader labelScanReader;
     private volatile boolean addedNodesConsumed;
     private final LabelScan labelScan;
 
-    NodeLabelIndexCursorScan( Read read, int label, long highestNodeId, LabelScanReader labelScanReader )
+    NodeLabelIndexCursorScan( Read read, int label, long highestNodeId, LabelScan labelScan )
     {
         this.read = read;
-        this.label = label;
-        this.labelScanReader = labelScanReader;
         this.nextTxState = new AtomicInteger( 0 );
         this.upperBound = roundUp( highestNodeId );
         if ( read.hasTxStateWithChanges() )
         {
             final LongDiffSets changes = read.txState().nodesWithLabelChanged( label );
-            this.addedNodesSet = changes.getAdded();
+            this.addedNodesArray = changes.getAdded().toArray();
             this.removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
         }
         else
         {
-            this.addedNodesSet = RichLongSet.EMPTY;
+            this.addedNodesArray = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
             this.removed = LongSets.immutable.empty();
         }
-        this.addedNodesConsumed = addedNodesSet.isEmpty();
-        this.labelScan = labelScanReader.nodeLabelScan( label );
+        this.addedNodesConsumed = addedNodesArray.length == 0;
+        this.labelScan = labelScan;
     }
 
     @Override
@@ -81,11 +77,11 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
         if ( read.hasTxStateWithChanges() && !addedNodesConsumed )
         {
             int start = nextTxState.getAndAdd( sizeHint );
-            if ( start < addedNodesSet.size() )
+            if ( start < addedNodesArray.length )
             {
-                int stop = Math.min( start + sizeHint, addedNodesSet.size() );
-                sizeHint -= stop - start;
-                addedNodes = addedNodesSet.rangeIterator( start, stop );
+                int batchSize = Math.min( sizeHint, addedNodesArray.length - start  );
+                sizeHint -= batchSize;
+                addedNodes = new RangeLongIterator( addedNodesArray, start, batchSize );
             }
             else
             {

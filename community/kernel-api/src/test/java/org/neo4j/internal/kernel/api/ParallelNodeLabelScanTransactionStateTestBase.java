@@ -19,6 +19,11 @@
  */
 package org.neo4j.internal.kernel.api;
 
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -31,8 +36,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
@@ -54,7 +59,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         extends KernelAPIWriteTestBase<G>
 {
 
-    private static final Function<NodeLabelIndexCursor,Long> NODE_GET = NodeLabelIndexCursor::nodeReference;
+    private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
 
     @Test
     public void shouldHandleEmptyDatabase()
@@ -127,10 +132,10 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     {
         int size = 64;
         int label = label( "L" );
-        Set<Long> existing = new HashSet<>( createNodesWithLabel( label, size ) );
+        MutableLongSet existing = LongSets.mutable.withAll( createNodesWithLabel( label, size ) );
         try ( Transaction tx = beginTransaction() )
         {
-            Set<Long> added = new HashSet<>( createNodesWithLabel( tx.dataWrite(), label, size ) );
+            MutableLongSet added = LongSets.mutable.withAll( createNodesWithLabel( tx.dataWrite(), label, size ) );
 
             try ( NodeLabelIndexCursor cursor = tx.cursors().allocateNodeLabelIndexCursor() )
             {
@@ -191,38 +196,39 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         try ( Transaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
-            List<Long> ids = createNodesWithLabel( tx.dataWrite(), label, size );
+            LongList ids = createNodesWithLabel( tx.dataWrite(), label, size );
 
             Read read = tx.dataRead();
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
 
             // when
             Supplier<NodeLabelIndexCursor> allocateCursor = cursors::allocateNodeLabelIndexCursor;
-            Future<List<Long>> future1 =
+            Future<LongList> future1 =
                     service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
-            Future<List<Long>> future2 =
+            Future<LongList> future2 =
                     service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
-            Future<List<Long>> future3 =
+            Future<LongList> future3 =
                     service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
-            Future<List<Long>> future4 =
+            Future<LongList> future4 =
                     service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, size / 4 ) );
 
             // then
-            List<Long> ids1 = future1.get();
-            List<Long> ids2 = future2.get();
-            List<Long> ids3 = future3.get();
-            List<Long> ids4 = future4.get();
+            LongList ids1 = future1.get();
+            LongList ids2 = future2.get();
+            LongList ids3 = future3.get();
+            LongList ids4 = future4.get();
 
             assertDistinct( ids1, ids2, ids3, ids4 );
-            List<Long> concat = concat( ids1, ids2, ids3, ids4 );
-            ids.sort( Long::compareTo );
-            concat.sort( Long::compareTo );
-            assertEquals( ids, concat );
+            LongList concat = concat( ids1, ids2, ids3, ids4 );
+            assertEquals( ids.toSortedList(), concat.toSortedList() );
             tx.failure();
 
         }
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -236,14 +242,14 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         try ( Transaction tx = beginTransaction() )
         {
             int label = tx.tokenWrite().labelGetOrCreateForName( "L" );
-            List<Long> ids = createNodesWithLabel( tx.dataWrite(), label, size );
+            LongList ids = createNodesWithLabel( tx.dataWrite(), label, size );
 
             Read read = tx.dataRead();
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
             CursorFactory cursors = testSupport.kernelToTest().cursors();
 
             // when
-            ArrayList<Future<List<Long>>> futures = new ArrayList<>();
+            ArrayList<Future<LongList>> futures = new ArrayList<>();
             for ( int i = 0; i < 10; i++ )
             {
                 futures.add(
@@ -251,19 +257,17 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             }
 
             // then
-            List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
 
             assertDistinct( lists );
-            List<Long> concat = concat( lists );
-            concat.sort( Long::compareTo );
-            ids.sort( Long::compareTo );
-
-            assertEquals( ids, concat );
+            assertEquals( ids.toSortedList(), concat( lists ).toSortedList() );
             tx.failure();
         }
-
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -271,49 +275,55 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
             throws KernelException, InterruptedException
     {
         int label = label( "L" );
-        Set<Long> existingNodes = new HashSet<>( createNodesWithLabel( label, 1000 ) );
+        MutableLongSet existingNodes = LongSets.mutable.withAll( createNodesWithLabel( label, 1000 ) );
 
         int workers = Runtime.getRuntime().availableProcessors();
 
         ExecutorService threadPool = Executors.newFixedThreadPool( workers );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        for ( int i = 0; i < 1000; i++ )
+        try
         {
-            Set<Long> allNodes = new HashSet<>( existingNodes );
-            try ( Transaction tx = beginTransaction() )
+            for ( int i = 0; i < 1000; i++ )
             {
-                int nodeInTx = random.nextInt( 1000 );
-                allNodes.addAll( createNodesWithLabel( tx.dataWrite(), label, nodeInTx ) );
-                Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
-
-                List<Future<List<Long>>> futures = new ArrayList<>( workers );
-                for ( int j = 0; j < workers; j++ )
+                MutableLongSet allNodes = LongSets.mutable.withAll( existingNodes );
+                try ( Transaction tx = beginTransaction() )
                 {
-                    futures.add(
-                            threadPool.submit(
-                                    randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+                    int nodeInTx = random.nextInt( 1000 );
+                    allNodes.addAll( createNodesWithLabel( tx.dataWrite(), label, nodeInTx ) );
+                    Scan<NodeLabelIndexCursor> scan = tx.dataRead().nodeLabelScan( label );
+
+                    List<Future<LongList>> futures = new ArrayList<>( workers );
+                    for ( int j = 0; j < workers; j++ )
+                    {
+                        futures.add(
+                                threadPool.submit(
+                                        randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+                    }
+
+                    List<LongList> lists =
+                            futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+
+                    assertDistinct( lists );
+                    LongList concat = concat( lists );
+                    assertEquals( format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
+                            allNodes, LongSets.immutable.withAll( concat ) );
+                    assertEquals( format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
+                    tx.failure();
                 }
-
-                List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
-
-                assertDistinct( lists );
-                List<Long> concat = concat( lists );
-                assertEquals( format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
-                        allNodes, new HashSet<>( concat ) );
-                assertEquals( format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
-                tx.failure();
             }
         }
-
-        threadPool.shutdown();
-        threadPool.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            threadPool.shutdown();
+            threadPool.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
-    private List<Long> createNodesWithLabel( int label, int size )
+    private LongList createNodesWithLabel( int label, int size )
             throws KernelException
     {
-        List<Long> ids;
+        LongList ids;
         try ( Transaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
@@ -323,10 +333,10 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
         return ids;
     }
 
-    private List<Long> createNodesWithLabel( Write write, int label, int size )
+    private LongList createNodesWithLabel( Write write, int label, int size )
             throws KernelException
     {
-        List<Long> ids = new ArrayList<>( size );
+        MutableLongList ids = LongLists.mutable.empty();
         for ( int i = 0; i < size; i++ )
         {
             long node = write.nodeCreate();

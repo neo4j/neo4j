@@ -20,22 +20,26 @@
 package org.neo4j.internal.kernel.api;
 
 
+import org.eclipse.collections.api.list.primitive.LongList;
+import org.eclipse.collections.api.list.primitive.MutableLongList;
+import org.eclipse.collections.api.set.primitive.LongSet;
+import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.factory.primitive.LongLists;
+import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
@@ -55,10 +59,10 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     private static final int NUMBER_OF_NODES = 1000;
     private static int FOO_LABEL;
     private static int BAR_LABEL;
-    private static Set<Long> FOO_NODES;
-    private static Set<Long> BAR_NODES;
+    private static LongSet FOO_NODES;
+    private static LongSet BAR_NODES;
     private static int[] ALL_LABELS = new int[]{FOO_LABEL, BAR_LABEL};
-    private static final Function<NodeLabelIndexCursor,Long> NODE_GET = NodeLabelIndexCursor::nodeReference;
+    private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
 
     @Rule
     public ExpectedException exception = ExpectedException.none();
@@ -66,8 +70,8 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
     {
-        FOO_NODES = new HashSet<>( NUMBER_OF_NODES / 2 );
-        BAR_NODES = new HashSet<>( NUMBER_OF_NODES / 2 );
+        MutableLongSet fooNodes = LongSets.mutable.empty();
+        MutableLongSet barNodes = LongSets.mutable.empty();
         try ( Transaction tx = beginTransaction() )
         {
             TokenWrite tokenWrite = tx.tokenWrite();
@@ -81,14 +85,17 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
                 if ( i % 2 == 0 )
                 {
                     write.nodeAddLabel( node, FOO_LABEL );
-                    FOO_NODES.add( node );
+                    fooNodes.add( node );
                 }
                 else
                 {
                     write.nodeAddLabel( node, BAR_LABEL );
-                    BAR_NODES.add( node );
+                    barNodes.add( node );
                 }
             }
+
+            FOO_NODES = fooNodes;
+            BAR_NODES = barNodes;
 
             tx.success();
         }
@@ -108,7 +115,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
                 Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( label );
                 assertTrue( scan.reserveBatch( nodes, 11 ) );
 
-                List<Long> found = new ArrayList<>();
+               MutableLongList found = LongLists.mutable.empty();
                 while ( nodes.next() )
                 {
                     found.add( nodes.nodeReference() );
@@ -120,12 +127,12 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
                 {
 
                     assertTrue( FOO_NODES.containsAll( found ) );
-                    assertTrue( found.stream().noneMatch( f -> BAR_NODES.contains( f ) ) );
+                    assertTrue( found.noneSatisfy( f -> BAR_NODES.contains( f ) ) );
                 }
                 else if ( label == BAR_LABEL )
                 {
                     assertTrue( BAR_NODES.containsAll( found ) );
-                    assertTrue( found.stream().noneMatch( f -> FOO_NODES.contains( f ) ) );
+                    assertTrue( found.noneSatisfy( f -> FOO_NODES.contains( f ) ) );
                 }
                 else
                 {
@@ -144,7 +151,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
             assertTrue( scan.reserveBatch( nodes, NUMBER_OF_NODES * 2 ) );
 
-            List<Long> ids = new ArrayList<>();
+            MutableLongList ids = LongLists.mutable.empty();
             while ( nodes.next() )
             {
                 ids.add( nodes.nodeReference() );
@@ -152,7 +159,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
 
             assertEquals( FOO_NODES.size(), ids.size() );
             assertTrue( FOO_NODES.containsAll( ids ) );
-            assertTrue( ids.stream().noneMatch( f -> BAR_NODES.contains( f ) ) );
+            assertTrue( ids.noneSatisfy( f -> BAR_NODES.contains( f ) ) );
         }
     }
 
@@ -180,7 +187,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         {
             // when
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
-            List<Long> ids = new ArrayList<>();
+            MutableLongList ids = LongLists.mutable.empty();
             while ( scan.reserveBatch( nodes, 3 ) )
             {
                 while ( nodes.next() )
@@ -192,7 +199,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
             // then
             assertEquals( FOO_NODES.size(), ids.size() );
             assertTrue( FOO_NODES.containsAll( ids ) );
-            assertTrue( ids.stream().noneMatch( f -> BAR_NODES.contains( f ) ) );
+            assertTrue( ids.noneSatisfy( f -> BAR_NODES.contains( f ) ) );
         }
     }
 
@@ -204,28 +211,33 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( BAR_LABEL );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        // when
-        Supplier<NodeLabelIndexCursor> allocateCursor = cursors::allocateNodeLabelIndexCursor;
-        Future<List<Long>> future1 =
-                service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
-        Future<List<Long>> future2 =
-                service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
-        Future<List<Long>> future3 =
-                service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
-        Future<List<Long>> future4 =
-                service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+        try
+        {
+            // when
+            Supplier<NodeLabelIndexCursor> allocateCursor = cursors::allocateNodeLabelIndexCursor;
+            Future<LongList> future1 =
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+            Future<LongList> future2 =
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+            Future<LongList> future3 =
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
+            Future<LongList> future4 =
+                    service.submit( singleBatchWorker( scan, allocateCursor, NODE_GET, NUMBER_OF_NODES ) );
 
-        // then
-        List<Long> ids1 = future1.get();
-        List<Long> ids2 = future2.get();
-        List<Long> ids3 = future3.get();
-        List<Long> ids4 = future4.get();
+            // then
+            LongList ids1 = future1.get();
+            LongList ids2 = future2.get();
+            LongList ids3 = future3.get();
+            LongList ids4 = future4.get();
 
-        assertDistinct( ids1, ids2, ids3, ids4 );
-        assertEquals( BAR_NODES, new HashSet<>( concat( ids1, ids2, ids3, ids4 ) ) );
-
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+            assertDistinct( ids1, ids2, ids3, ids4 );
+            assertEquals( BAR_NODES, LongSets.immutable.withAll( concat( ids1, ids2, ids3, ids4 ) ) );
+        }
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 
     @Test
@@ -236,20 +248,26 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
         Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
         CursorFactory cursors = testSupport.kernelToTest().cursors();
 
-        // when
-        ArrayList<Future<List<Long>>> futures = new ArrayList<>();
-        for ( int i = 0; i < 10; i++ )
+        try
         {
-            futures.add( service.submit( randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+            // when
+            ArrayList<Future<LongList>> futures = new ArrayList<>();
+            for ( int i = 0; i < 10; i++ )
+            {
+                futures.add(
+                        service.submit( randomBatchWorker( scan, cursors::allocateNodeLabelIndexCursor, NODE_GET ) ) );
+            }
+
+            // then
+            List<LongList> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
+
+            assertDistinct( lists );
+            assertEquals( FOO_NODES, LongSets.immutable.withAll(  concat( lists ) ) );
         }
-
-        // then
-        List<List<Long>> lists = futures.stream().map( TestUtils::unsafeGet ).collect( Collectors.toList() );
-
-        assertDistinct( lists );
-        assertEquals( FOO_NODES, new HashSet<>( concat( lists ) ) );
-
-        service.shutdown();
-        service.awaitTermination( 1, TimeUnit.MINUTES );
+        finally
+        {
+            service.shutdown();
+            service.awaitTermination( 1, TimeUnit.MINUTES );
+        }
     }
 }

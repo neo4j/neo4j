@@ -61,16 +61,16 @@ public class NativeLabelScanReaderTest
                 .thenReturn( cursor );
         // WHEN
         try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
-              PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID ))
+              PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID ) )
         {
             // THEN
-            assertArrayEquals( new long[] {
-                    // base 0*64 = 0
-                    1, 6, 7, 11, 15,
-                    // base 1*64 = 64
-                    64 + 3, 64 + 9,
-                    // base 3*64 = 192
-                    192 + 0, 192 + 5, 192 + 7, 192 + 13 },
+            assertArrayEquals( new long[]{
+                            // base 0*64 = 0
+                            1, 6, 7, 11, 15,
+                            // base 1*64 = 64
+                            64 + 3, 64 + 9,
+                            // base 3*64 = 192
+                            192 + 0, 192 + 5, 192 + 7, 192 + 13},
 
                     closingAsArray( iterator ) );
         }
@@ -95,7 +95,6 @@ public class NativeLabelScanReaderTest
             // first check test invariants
             verify( cursor1, never() ).close();
             verify( cursor2, never() ).close();
-
 
             // getting the second iterator should not have closed the first one
             verify( cursor1, never() ).close();

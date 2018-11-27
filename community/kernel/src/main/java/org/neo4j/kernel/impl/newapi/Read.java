@@ -278,7 +278,8 @@ abstract class Read implements TxStateHolder,
     public final Scan<NodeLabelIndexCursor> nodeLabelScan( int label )
     {
         ktx.assertOpen();
-        return new NodeLabelIndexCursorScan( this, label, storageReader.highestPossibleNodeId(), labelScanReader() );
+        return new NodeLabelIndexCursorScan( this, label, storageReader.highestPossibleNodeId(),
+                labelScanReader().nodeLabelScan( label ) );
     }
 
     @Override

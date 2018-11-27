@@ -156,10 +156,10 @@ public class PrimitiveLongCollections
         }
     }
 
-
     public static long[] closingAsArray( PrimitiveLongResourceIterator iterator )
     {
-        try {
+        try
+        {
             return asArray( iterator );
         }
         finally
