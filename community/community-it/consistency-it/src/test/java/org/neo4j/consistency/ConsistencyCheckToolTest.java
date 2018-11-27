@@ -70,7 +70,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 
 @ExtendWith( {DefaultFileSystemExtension.class, TestDirectoryExtension.class} )
 class ConsistencyCheckToolTest
@@ -260,7 +259,7 @@ class ConsistencyCheckToolTest
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs )
-                .newImpermanentDatabaseBuilder( testDirectory.databaseDir() )
+                .newEmbeddedDatabaseBuilder( testDirectory.databaseDir() )
                 .setConfig( config.getRaw()  )
                 .newGraphDatabase();
 

@@ -38,6 +38,7 @@ import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
 
 import static java.lang.String.format;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.neo4j_home;
 import static org.neo4j.helpers.Args.jarUsage;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -105,7 +106,7 @@ public class ConsistencyCheckTool
         Args arguments = Args.withFlags( VERBOSE ).parse( args );
 
         File storeDir = determineStoreDirectory( arguments );
-        Config tuningConfiguration = readConfiguration( arguments );
+        Config tuningConfiguration = readConfiguration( arguments, storeDir );
         boolean verbose = isVerbose( arguments );
 
         DatabaseLayout databaseLayout = DatabaseLayout.of( storeDir );
@@ -168,7 +169,7 @@ public class ConsistencyCheckTool
         return storeDir;
     }
 
-    private static Config readConfiguration( Args arguments ) throws ToolFailureException
+    private static Config readConfiguration( Args arguments, File databasePath ) throws ToolFailureException
     {
         String configFilePath = arguments.get( CONFIG, null );
         if ( configFilePath != null )
@@ -176,7 +177,9 @@ public class ConsistencyCheckTool
             File configFile = new File( configFilePath );
             try
             {
-                return Config.fromFile( configFile ).build();
+                Config config = Config.fromFile( configFile ).build();
+                config.augment( GraphDatabaseSettings.database_path, databasePath.getAbsolutePath() );
+                return config;
             }
             catch ( Exception e )
             {
