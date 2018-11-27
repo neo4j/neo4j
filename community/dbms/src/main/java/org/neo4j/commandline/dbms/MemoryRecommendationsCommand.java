@@ -31,6 +31,7 @@ import org.neo4j.commandline.admin.IncorrectUsage;
 import org.neo4j.commandline.admin.OutsideWorld;
 import org.neo4j.commandline.arguments.Arguments;
 import org.neo4j.commandline.arguments.OptionalNamedArg;
+import org.neo4j.graphdb.config.InvalidSettingException;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.os.OsBeanUtil;
@@ -323,7 +324,14 @@ public class MemoryRecommendationsCommand implements AdminCommand
         {
             throw new CommandFailed( "Unable to find config file, tried: " + configFile.getAbsolutePath() );
         }
-        return Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).withConnectorsDisabled().build();
+        try
+        {
+            return Config.fromFile( configFile ).withHome( homeDir ).withSetting( active_database, databaseName ).withConnectorsDisabled().build();
+        }
+        catch ( Exception e )
+        {
+            throw new CommandFailed( "Failed to read config file: " + configFile.getAbsolutePath(), e );
+        }
     }
 
     private void print( String text )

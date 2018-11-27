@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,7 +44,6 @@ import org.neo4j.helpers.ArrayUtil;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.collection.IterableWrapper;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -491,7 +491,7 @@ public class ImportTool
         {
             throw andPrintError( "Input error", e, false, err );
         }
-        catch ( IOException e )
+        catch ( IOException | UncheckedIOException e )
         {
             throw andPrintError( "File error", e, false, err );
         }
@@ -657,9 +657,9 @@ public class ImportTool
         return UNLIMITED.equals( value ) ? BadCollector.UNLIMITED_TOLERANCE : Long.parseLong( value );
     }
 
-    private static Config loadDbConfig( File file ) throws IOException
+    private static Config loadDbConfig( File file )
     {
-        return file != null && file.exists() ? Config.defaults( MapUtil.load( file ) ) : Config.defaults();
+        return Config.fromFile( file ).build();
     }
 
     static void printOverview( File storeDir, Collection<Option<File[]>> nodesFiles,
