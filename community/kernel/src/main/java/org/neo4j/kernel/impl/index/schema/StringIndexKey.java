@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.string.UTF8;
+import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
@@ -92,17 +93,17 @@ class StringIndexKey extends NativeIndexSingleValueKey<StringIndexKey>
         bytes = null;
     }
 
-    void initAsPrefixLow( String prefix )
+    void initAsPrefixLow( TextValue prefix )
     {
-        writeString( prefix );
+        prefix.writeTo( this );
         initialize( Long.MIN_VALUE );
         // Don't set ignoreLength = true here since the "low" a.k.a. left side of the range should care about length.
         // This will make the prefix lower than those that matches the prefix (their length is >= that of the prefix)
     }
 
-    void initAsPrefixHigh( String prefix )
+    void initAsPrefixHigh( TextValue prefix )
     {
-        writeString( prefix );
+        prefix.writeTo( this );
         initialize( Long.MAX_VALUE );
         ignoreLength = true;
     }

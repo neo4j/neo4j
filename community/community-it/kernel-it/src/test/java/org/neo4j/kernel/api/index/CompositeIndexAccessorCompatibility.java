@@ -84,6 +84,7 @@ import static org.neo4j.values.storable.Values.longArray;
 import static org.neo4j.values.storable.Values.pointArray;
 import static org.neo4j.values.storable.Values.pointValue;
 import static org.neo4j.values.storable.Values.stringArray;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @Ignore( "Not a test. This is a compatibility suite that provides test cases for verifying" +
         " IndexProvider implementations. Each index provider that is to be tested by this suite" +
@@ -403,14 +404,14 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 add( 9L, descriptor.schema(), "b", "apA" ),
                 add( 10L, descriptor.schema(), "b", "b" ) ) );
 
-        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 1L, 3L, 4L ) ) );
-        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, "A" ) ), equalTo( Collections.singletonList( 2L ) ) );
-        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, "ba" ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, "" ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
-        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, "a" ) ), equalTo( asList( 6L, 8L, 9L ) ) );
-        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, "A" ) ), equalTo( Collections.singletonList( 7L ) ) );
-        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, "ba" ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, "" ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
+        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, stringValue( "a" ) ) ), equalTo( asList( 1L, 3L, 4L ) ) );
+        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, stringValue( "A" )) ), equalTo( Collections.singletonList( 2L ) ) );
+        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, stringValue( "ba") ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, "a" ), IndexQuery.stringPrefix( 1, stringValue( "" )) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L ) ) );
+        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, stringValue( "a" )) ), equalTo( asList( 6L, 8L, 9L ) ) );
+        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, stringValue( "A" )) ), equalTo( Collections.singletonList( 7L ) ) );
+        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, stringValue( "ba") ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( exact( 0, "b" ), IndexQuery.stringPrefix( 1, stringValue( "" ) ) ), equalTo( asList( 6L, 7L, 8L, 9L, 10L ) ) );
     }
 
     @Test
@@ -431,10 +432,10 @@ public abstract class CompositeIndexAccessorCompatibility extends IndexAccessorC
                 add( 10L, descriptor.schema(), "b", false )
         ) );
 
-        assertThat( query( IndexQuery.stringPrefix( 0, "a" ), exists( 1 ) ), equalTo( asList( 1L, 3L, 4L, 6L, 8L, 9L ) ) );
-        assertThat( query( IndexQuery.stringPrefix( 0, "A" ), exists( 1 ) ), equalTo( asList( 2L, 7L) ) );
-        assertThat( query( IndexQuery.stringPrefix( 0, "ba" ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
-        assertThat( query( IndexQuery.stringPrefix( 0, "" ), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 0, stringValue( "a" )), exists( 1 ) ), equalTo( asList( 1L, 3L, 4L, 6L, 8L, 9L ) ) );
+        assertThat( query( IndexQuery.stringPrefix( 0, stringValue( "A" )), exists( 1 ) ), equalTo( asList( 2L, 7L) ) );
+        assertThat( query( IndexQuery.stringPrefix( 0, stringValue( "ba") ), exists( 1 ) ), equalTo( EMPTY_LIST ) );
+        assertThat( query( IndexQuery.stringPrefix( 0, stringValue( "" )), exists( 1 ) ), equalTo( asList( 1L, 2L, 3L, 4L, 5L, 6L, 7L, 8L, 9L, 10L ) ) );
     }
 
     /* testIndexSeekExactWithExists */

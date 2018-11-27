@@ -76,7 +76,7 @@ trait NodeIndexSeeker {
             val expr = range.prefix
             expr(row, state) match {
               case text: TextValue =>
-                Array(Seq(IndexQuery.stringPrefix(propertyIds.head, text.stringValue())))
+                Array(Seq(IndexQuery.stringPrefix(propertyIds.head, text)))
               case Values.NO_VALUE =>
                 Nil
               case other =>

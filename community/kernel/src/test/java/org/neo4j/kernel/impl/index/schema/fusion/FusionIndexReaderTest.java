@@ -71,6 +71,7 @@ import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.SPATIAL;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.STRING;
 import static org.neo4j.kernel.impl.index.schema.fusion.IndexSlot.TEMPORAL;
 import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.forSchema;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( Parameterized.class )
 public class FusionIndexReaderTest
@@ -346,7 +347,7 @@ public class FusionIndexReaderTest
     public void mustSelectStringForStringPrefixPredicate() throws Exception
     {
         // given
-        StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, "abc" );
+        StringPrefixPredicate stringPrefix = IndexQuery.stringPrefix( PROP_KEY, stringValue( "abc" ) );
 
         // then
         verifyQueryWithCorrectReader( expectedForStrings(), stringPrefix );
@@ -356,7 +357,7 @@ public class FusionIndexReaderTest
     public void mustSelectStringForStringSuffixPredicate() throws Exception
     {
         // given
-        StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, "abc" );
+        StringSuffixPredicate stringPrefix = IndexQuery.stringSuffix( PROP_KEY, stringValue( "abc" ) );
 
         // then
         verifyQueryWithCorrectReader( expectedForStrings(), stringPrefix );
@@ -366,7 +367,7 @@ public class FusionIndexReaderTest
     public void mustSelectStringForStringContainsPredicate() throws Exception
     {
         // given
-        StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, "abc" );
+        StringContainsPredicate stringContains = IndexQuery.stringContains( PROP_KEY, stringValue( "abc" ) );
 
         // then
         verifyQueryWithCorrectReader( expectedForStrings(), stringContains );

@@ -31,7 +31,7 @@ import org.neo4j.kernel.api.dbms.DbmsOperations
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Value
+import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.util.EntityNotFoundException
@@ -104,12 +104,12 @@ trait QueryContext extends TokenContext with DbAccess {
   def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            value: String): NodeValueIndexCursor
+                                            value: TextValue): NodeValueIndexCursor
 
   def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                             needsValues: Boolean,
                                             indexOrder: IndexOrder,
-                                            value: String): NodeValueIndexCursor
+                                            value: TextValue): NodeValueIndexCursor
 
   def indexScan[RESULT <: AnyRef](index: IndexReadSession,
                                   needsValues: Boolean,

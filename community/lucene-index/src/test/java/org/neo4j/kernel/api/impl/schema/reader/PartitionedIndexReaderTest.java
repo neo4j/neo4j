@@ -54,6 +54,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.internal.kernel.api.QueryContext.NULL_CONTEXT;
+import static org.neo4j.values.storable.Values.stringValue;
 
 @RunWith( MockitoJUnitRunner.class )
 public class PartitionedIndexReaderTest
@@ -137,7 +138,7 @@ public class PartitionedIndexReaderTest
     public void rangeSeekByPrefixOverPartitions() throws Exception
     {
         PartitionedIndexReader indexReader = createPartitionedReaderFromReaders();
-        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1, "prefix" );
+        IndexQuery.StringPrefixPredicate query = IndexQuery.stringPrefix( 1,  stringValue( "prefix" ) );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 1 ) ).when( indexReader1 ).query( any(), any(), any(), anyBoolean(), any() );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 2 ) ).when( indexReader2 ).query( any(), any(), any(), anyBoolean(), any() );
         doAnswer( new NodeIdsIndexReaderQueryAnswer( schemaIndexDescriptor, 3 ) ).when( indexReader3 ).query( any(), any(), any(), anyBoolean(), any() );

@@ -300,13 +300,13 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
   override def indexSeekByContains[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     value: String): NodeValueIndexCursor =
+                                                     value: TextValue): NodeValueIndexCursor =
     seek(index, needsValues, indexOrder, IndexQuery.stringContains(index.reference().properties()(0), value))
 
   override def indexSeekByEndsWith[RESULT <: AnyRef](index: IndexReadSession,
                                                      needsValues: Boolean,
                                                      indexOrder: IndexOrder,
-                                                     value: String): NodeValueIndexCursor =
+                                                     value: TextValue): NodeValueIndexCursor =
     seek(index, needsValues, indexOrder, IndexQuery.stringSuffix(index.reference().properties()(0), value))
 
   override def lockingUniqueIndexSeek[RESULT](indexReference: IndexReference,
