@@ -21,9 +21,7 @@ package org.neo4j.test.rule;
 
 import java.util.function.Function;
 
-import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
@@ -32,13 +30,10 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.SchemaState;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.factory.OperationalMode;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -53,7 +48,6 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
@@ -92,8 +86,7 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
                                      IndexProvider indexProvider, DatabaseHealth databaseHealth, DatabaseLayout databaseLayout,
-                                     Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
-                                     Monitors monitors )
+                                     Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer )
     {
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
         JobScheduler scheduler = life.add( createScheduler() );
@@ -109,12 +102,11 @@ public class RecordStorageEngineRule extends ExternalResource
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         life.add( indexProviderMap );
         return life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
-                nullLogProvider, nullLogProvider, mockedTokenHolders(),
+                nullLogProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
-                scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
-                IndexingService.NO_MONITOR, databaseHealth, idGeneratorFactory,
-                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
-                RecoveryCleanupWorkCollector.immediate(), OperationalMode.SINGLE ) );
+                new ReentrantLockService(),
+                databaseHealth, idGeneratorFactory,
+                new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
     }
 
     @Override
@@ -135,7 +127,6 @@ public class RecordStorageEngineRule extends ExternalResource
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexProvider indexProvider = IndexProvider.EMPTY;
-        private Monitors monitors = new Monitors();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -163,16 +154,10 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
-        public Builder monitors( Monitors monitors )
-        {
-            this.monitors = monitors;
-            return this;
-        }
-
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout,
-                    transactionApplierTransformer, monitors );
+                    transactionApplierTransformer );
         }
     }
 
@@ -182,17 +167,14 @@ public class RecordStorageEngineRule extends ExternalResource
                 transactionApplierTransformer;
 
         ExtendedRecordStorageEngine( DatabaseLayout databaseLayout, Config config, PageCache pageCache, FileSystemAbstraction fs,
-                LogProvider logProvider, LogProvider userLogProvider, TokenHolders tokenHolders, SchemaState schemaState,
-                ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
-                LockService lockService, IndexProviderMap indexProviderMap,
-                IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
+                LogProvider logProvider, TokenHolders tokenHolders, SchemaState schemaState,
+                ConstraintSemantics constraintSemantics,
+                LockService lockService, DatabaseHealth databaseHealth,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
-                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
-                RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
+                Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer )
         {
-            super( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics, scheduler,
-                    tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
-                    idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
+            super( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState, constraintSemantics,
+                    lockService, databaseHealth, idGeneratorFactory, idController, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

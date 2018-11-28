@@ -45,6 +45,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
@@ -67,8 +68,10 @@ import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitor;
 import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitorScheduler;
@@ -77,7 +80,7 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -121,6 +124,8 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
@@ -139,6 +144,8 @@ import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
 import org.neo4j.storageengine.migration.DatabaseMigrator;
@@ -148,6 +155,7 @@ import org.neo4j.util.VisibleForTesting;
 
 import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
+import static org.neo4j.helpers.collection.Iterators.asList;
 import static org.neo4j.kernel.extension.KernelExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
@@ -335,12 +343,26 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier,
-                    recoveryCleanupWorkCollector, databaseMonitors );
+            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, versionContextSupplier );
             life.add( logFiles );
 
+            // Label index
+            NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
+            databaseMonitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
+            NativeLabelScanStore labelScanStore = new NativeLabelScanStore( databasePageCache, databaseLayout, fs,
+                    new FullLabelStream( neoStoreIndexStoreView ), readOnly, databaseMonitors, recoveryCleanupWorkCollector );
+            life.add( labelScanStore );
+
+            // Schema indexes
+            DynamicIndexStoreView indexStoreView =
+                    new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, logProvider );
+            IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector );
+            IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap, indexStoreView,
+                    tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, userLogProvider,
+                    databaseMonitors.newMonitor( IndexingService.Monitor.class ), databaseSchemaState, indexStatisticsStore );
+            life.add( indexingService );
+
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
-            IndexStatisticsStore indexStatisticsStore = dataSourceDependencies.resolveDependency( IndexStatisticsStore.class );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
@@ -351,11 +373,12 @@ public class Database extends LifecycleAdapter
             final DatabaseKernelModule kernelModule = buildKernel(
                     logFiles,
                     transactionLogModule.transactionAppender(),
-                    dataSourceDependencies.resolveDependency( IndexingService.class ),
+                    indexingService,
                     databaseSchemaState,
-                    dataSourceDependencies.resolveDependency( LabelScanStore.class ),
+                    labelScanStore,
                     storageEngine,
-                    transactionIdStore, databaseAvailabilityGuard,
+                    transactionIdStore,
+                    databaseAvailabilityGuard,
                     clock,
                     indexStatisticsStore );
 
@@ -367,6 +390,10 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
+            dataSourceDependencies.satisfyDependency( labelScanStore );
+            dataSourceDependencies.satisfyDependency( indexingService );
+            dataSourceDependencies.satisfyDependency( indexStoreView );
+            dataSourceDependencies.satisfyDependency( indexStatisticsStore );
             dataSourceDependencies.satisfyDependency( indexProviderMap );
 
             this.executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
@@ -444,16 +471,14 @@ public class Database extends LifecycleAdapter
         databaseMigrator.migrate();
     }
 
-    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, OperationalMode operationalMode,
-            VersionContextSupplier versionContextSupplier, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Monitors monitors )
+    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, VersionContextSupplier versionContextSupplier )
     {
         RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders,
-                        schemaState, constraintSemantics, scheduler,
-                        tokenNameLookup, lockService, indexProviderMap, monitors.newMonitor( IndexingService.Monitor.class ), databaseHealth,
-                        idGeneratorFactory, idController, monitors,
-                        recoveryCleanupWorkCollector,
-                        operationalMode, versionContextSupplier );
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders,
+                        schemaState, constraintSemantics,
+                        lockService, databaseHealth,
+                        idGeneratorFactory, idController,
+                        versionContextSupplier );
 
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which
@@ -748,5 +773,16 @@ public class Database extends LifecycleAdapter
     public LifeSupport getLife()
     {
         return life;
+    }
+
+    public static Iterable<StorageIndexReference> initialSchemaRulesLoader( StorageEngine storageEngine )
+    {
+        return () ->
+        {
+            try ( StorageReader reader = storageEngine.newReader() )
+            {
+                return asList( reader.indexesGetAll() ).iterator();
+            }
+        };
     }
 }

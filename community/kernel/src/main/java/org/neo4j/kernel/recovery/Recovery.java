@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
@@ -38,6 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
+import org.neo4j.kernel.api.index.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -45,12 +47,15 @@ import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
+import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
+import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.factory.OperationalMode;
+import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -76,6 +81,8 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.pruning.LogPruning;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
+import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
+import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
@@ -97,6 +104,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.configuration.Config.defaults;
+import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_LABEL;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
@@ -242,7 +250,7 @@ public final class Recovery
         TokenHolders tokenHolders = new TokenHolders( new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_PROPERTY_KEY ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
-        NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
+        TokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler );
         DatabaseKernelExtensions extensions = instantiateRecoveryExtensions( databaseLayout.databaseDirectory(), fs, config, logService, pageCache, scheduler,
@@ -251,10 +259,23 @@ public final class Recovery
 
         Dependencies recoveryDependencies = new Dependencies();
         RecordStorageEngine storageEngine =
-                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
-                        scheduler, tokenNameLookup, LockService.NO_LOCK_SERVICE, indexProviderMap, monitors.newMonitor( IndexingService.Monitor.class ),
-                        databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), monitors, recoveryCleanupCollector,
-                        OperationalMode.SINGLE, EmptyVersionContextSupplier.EMPTY );
+                new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, tokenHolders, schemaState,
+                        getConstraintSemantics(), LockService.NO_LOCK_SERVICE,
+                        databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), EmptyVersionContextSupplier.EMPTY );
+
+        // Label index
+        NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storageEngine::newReader );
+        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
+        NativeLabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
+                false, monitors, recoveryCleanupCollector );
+
+        // Schema indexes
+        DynamicIndexStoreView indexStoreView =
+                new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, LockService.NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
+        IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, recoveryCleanupCollector );
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap, indexStoreView,
+                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
+                schemaState, indexStatisticsStore );
 
         storageEngine.satisfyDependencies( recoveryDependencies );
 
@@ -289,6 +310,8 @@ public final class Recovery
         recoveryLife.add( extensions );
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
+        recoveryLife.add( labelScanStore );
+        recoveryLife.add( indexingService );
         recoveryLife.add( transactionLogsRecovery );
         recoveryLife.add( logFiles );
         recoveryLife.add( transactionAppender );
