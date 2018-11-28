@@ -39,7 +39,7 @@ class NativeIndexHeaderReaderTest
         nativeIndexHeaderReader.read( emptyBuffer );
         assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
         assertThat( nativeIndexHeaderReader.failureMessage,
-                containsString( "Initial state byte is missing. Index was never fully constructed and need to be recreated." ) );
+                containsString( "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" ) );
     }
 
     @Test
@@ -50,7 +50,7 @@ class NativeIndexHeaderReaderTest
         nativeIndexHeaderReader.read( emptyBuffer );
         assertSame( BYTE_FAILED, nativeIndexHeaderReader.state );
         assertThat( nativeIndexHeaderReader.failureMessage,
-                containsString( "Initial state byte is missing. Index was never fully constructed and need to be recreated." ) );
+                containsString( "Could not read header, most likely caused by index not being fully constructed. Index needs to be recreated. Stacktrace:" ) );
     }
 
     @Test
