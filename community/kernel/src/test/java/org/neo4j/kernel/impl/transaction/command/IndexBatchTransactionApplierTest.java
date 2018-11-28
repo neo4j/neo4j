@@ -24,10 +24,8 @@ import org.junit.Test;
 import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
 import org.neo4j.kernel.impl.store.NodeLabelsField;
@@ -37,6 +35,8 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.NodeCommand;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -54,11 +54,9 @@ public class IndexBatchTransactionApplierTest
     public void shouldProvideLabelScanStoreUpdatesSortedByNodeId() throws Exception
     {
         // GIVEN
-        IndexingService indexing = mock( IndexingService.class );
         IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
-        LabelScanWriter writer = new OrderVerifyingLabelScanWriter( 10, 15, 20 );
-        WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanSync =
-                spy( new WorkSync<>( singletonProvider( writer ) ) );
+        OrderVerifyingUpdateListener listener = new OrderVerifyingUpdateListener( 10, 15, 20 );
+        WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanSync = spy( new WorkSync<>( listener ) );
         WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
         TransactionToApply tx = mock( TransactionToApply.class );
         PropertyStore propertyStore = mock( PropertyStore.class );
@@ -74,6 +72,7 @@ public class IndexBatchTransactionApplierTest
                 txApplier.visitNodeCommand( node( 10 ) );
             }
         }
+        listener.done();
         // THEN all assertions happen inside the LabelScanWriter#write and #close
         verify( labelScanSync ).applyAsync( any() );
     }
@@ -92,25 +91,27 @@ public class IndexBatchTransactionApplierTest
         return new NodeCommand( new NodeRecord( nodeId ), after );
     }
 
-    private static class OrderVerifyingLabelScanWriter implements LabelScanWriter
+    private static class OrderVerifyingUpdateListener implements NodeLabelUpdateListener
     {
         private final long[] expectedNodeIds;
         private int cursor;
 
-        OrderVerifyingLabelScanWriter( long... expectedNodeIds )
+        OrderVerifyingUpdateListener( long... expectedNodeIds )
         {
             this.expectedNodeIds = expectedNodeIds;
         }
 
         @Override
-        public void write( NodeLabelUpdate update )
+        public void applyUpdates( Iterable<NodeLabelUpdate> labelUpdates )
         {
-            assertEquals( expectedNodeIds[cursor], update.getNodeId() );
-            cursor++;
+            for ( NodeLabelUpdate update : labelUpdates )
+            {
+                assertEquals( expectedNodeIds[cursor], update.getNodeId() );
+                cursor++;
+            }
         }
 
-        @Override
-        public void close()
+        void done()
         {
             assertEquals( cursor, expectedNodeIds.length );
         }

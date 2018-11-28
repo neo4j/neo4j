@@ -46,7 +46,10 @@ import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.scan.FullStoreChangeStream;
+import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.iterator;
@@ -73,7 +76,7 @@ import static org.neo4j.helpers.collection.Iterators.iterator;
  * <p>
  * This store is backed by a single store file "neostore.labelscanstore.db".
  */
-public class NativeLabelScanStore implements LabelScanStore
+public class NativeLabelScanStore implements LabelScanStore, NodeLabelUpdateListener
 {
     /**
      * Written in header to indicate native label scan store is clean
@@ -235,6 +238,22 @@ public class NativeLabelScanStore implements LabelScanStore
         }
     }
 
+    @Override
+    public void applyUpdates( Iterable<NodeLabelUpdate> labelUpdates )
+    {
+        try ( LabelScanWriter writer = newWriter() )
+        {
+            for ( NodeLabelUpdate update : labelUpdates )
+            {
+                writer.write( update );
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     /**
      * Forces all changes to {@link PageCache} and creates a checkpoint so that the {@link LabelScanStore}
      * is recoverable from this point, given that the same transactions which will be applied after this point
@@ -346,7 +365,7 @@ public class NativeLabelScanStore implements LabelScanStore
     /**
      * @return true if instantiated tree needs to be rebuilt.
      */
-    private boolean instantiateTree() throws IOException
+    private boolean instantiateTree()
     {
         monitors.addMonitorListener( treeMonitor() );
         GBPTree.Monitor monitor = monitors.newMonitor( GBPTree.Monitor.class );

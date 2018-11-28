@@ -24,7 +24,7 @@ import java.util.List;
 
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 /**
  * Stream of changes used to rebuild a {@link LabelScanStore} from scratch.

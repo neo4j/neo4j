@@ -20,16 +20,14 @@
 package org.neo4j.kernel.impl.transaction.command;
 
 import java.util.List;
-import java.util.function.Supplier;
 
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.impl.store.UnderlyingStorageException;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.util.concurrent.Work;
 
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.SORT_BY_NODE_ID;
+import static org.neo4j.storageengine.api.NodeLabelUpdate.SORT_BY_NODE_ID;
 
-public class LabelUpdateWork implements Work<Supplier<LabelScanWriter>,LabelUpdateWork>
+public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdateWork>
 {
     private final List<NodeLabelUpdate> labelUpdates;
 
@@ -46,10 +44,14 @@ public class LabelUpdateWork implements Work<Supplier<LabelScanWriter>,LabelUpda
     }
 
     @Override
-    public void apply( Supplier<LabelScanWriter> labelScanStore )
+    public void apply( NodeLabelUpdateListener listener )
     {
         labelUpdates.sort( SORT_BY_NODE_ID );
-        try ( LabelScanWriter writer = labelScanStore.get() )
+        listener.applyUpdates( labelUpdates );
+    }
+}
+/*
+        try ( LabelScanWriter writer = listener.get() )
         {
             for ( NodeLabelUpdate update : labelUpdates )
             {
@@ -60,5 +62,4 @@ public class LabelUpdateWork implements Work<Supplier<LabelScanWriter>,LabelUpda
         {
             throw new UnderlyingStorageException( e );
         }
-    }
-}
+*/

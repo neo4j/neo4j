@@ -40,8 +40,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector.immediate;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.api.scan.FullStoreChangeStream.EMPTY;
+import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 public class NativeLabelScanReaderIT
 {

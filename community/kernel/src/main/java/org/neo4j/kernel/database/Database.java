@@ -351,6 +351,7 @@ public class Database extends LifecycleAdapter
             databaseMonitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
             NativeLabelScanStore labelScanStore = new NativeLabelScanStore( databasePageCache, databaseLayout, fs,
                     new FullLabelStream( neoStoreIndexStoreView ), readOnly, databaseMonitors, recoveryCleanupWorkCollector );
+            storageEngine.addNodeLabelUpdateListener( labelScanStore );
             life.add( labelScanStore );
 
             // Schema indexes
@@ -360,6 +361,7 @@ public class Database extends LifecycleAdapter
             IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap, indexStoreView,
                     tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, userLogProvider,
                     databaseMonitors.newMonitor( IndexingService.Monitor.class ), databaseSchemaState, indexStatisticsStore );
+            storageEngine.addIndexUpdateListener( indexingService );
             life.add( indexingService );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );

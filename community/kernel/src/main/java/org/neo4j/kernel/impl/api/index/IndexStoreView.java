@@ -24,8 +24,8 @@ import java.util.function.IntPredicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView

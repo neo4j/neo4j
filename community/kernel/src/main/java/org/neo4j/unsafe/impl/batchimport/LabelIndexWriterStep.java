@@ -28,8 +28,8 @@ import org.neo4j.unsafe.impl.batchimport.staging.ProcessorStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
 
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.get;
+import static org.neo4j.storageengine.api.NodeLabelUpdate.labelChanges;
 
 public class LabelIndexWriterStep extends ProcessorStep<NodeRecord[]>
 {

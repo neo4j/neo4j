@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.index.labelscan;
 
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 class PhysicalToLogicalLabelChanges
 {

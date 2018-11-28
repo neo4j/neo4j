@@ -23,7 +23,7 @@ import org.junit.Test;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
 
 import static org.junit.Assert.assertArrayEquals;
 

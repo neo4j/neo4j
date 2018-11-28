@@ -23,11 +23,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.function.Supplier;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
@@ -42,6 +39,8 @@ import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.AsyncApply;
@@ -56,7 +55,7 @@ import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapter
 {
     private final IndexUpdateListener indexUpdateListener;
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
+    private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final SingleTransactionApplier transactionApplier;
     private final PropertyPhysicalToLogicalConverter indexUpdateConverter;
@@ -66,9 +65,12 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
 
-    public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener, WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
-            WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync, NodeStore nodeStore, RelationshipStore relationshipStore,
-            PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageEngine storageEngine, SchemaCache schemaCache )
+    public IndexBatchTransactionApplier( IndexUpdateListener indexUpdateListener,
+            WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync,
+            WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync,
+            NodeStore nodeStore, RelationshipStore relationshipStore,
+            PropertyPhysicalToLogicalConverter indexUpdateConverter, StorageEngine storageEngine,
+            SchemaCache schemaCache )
     {
         this.indexUpdateListener = indexUpdateListener;
         this.labelScanStoreSync = labelScanStoreSync;

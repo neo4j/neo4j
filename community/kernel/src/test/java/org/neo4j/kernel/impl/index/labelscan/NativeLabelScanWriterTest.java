@@ -35,7 +35,7 @@ import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.index.internal.gbptree.ValueMerger;
 import org.neo4j.index.internal.gbptree.ValueMergers;
 import org.neo4j.index.internal.gbptree.Writer;
-import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.storageengine.api.NodeLabelUpdate;
 import org.neo4j.test.rule.RandomRule;
 
 import static java.lang.Integer.max;

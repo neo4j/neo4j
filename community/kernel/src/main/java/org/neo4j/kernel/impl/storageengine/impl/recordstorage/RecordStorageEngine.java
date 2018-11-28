@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.function.Supplier;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterators;
@@ -39,7 +38,6 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.exceptions.TransactionApplyKernelException;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.api.txstate.TransactionCountingStateVisitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.diagnostics.providers.NeoStoresDiagnostics.NeoStoreIdUsage;
@@ -119,7 +117,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final SchemaRuleAccess schemaRuleAccess;
     private final ConstraintSemantics constraintSemantics;
     private final LockService lockService;
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
+    private WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
     private WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
@@ -171,8 +169,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             integrityValidator = new IntegrityValidator( neoStores, null );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
-
-            labelScanStoreSync = null; // TODO new WorkSync<>( labelScanStore::newWriter );
 
             commandReaderFactory = new RecordStorageCommandReaderFactory();
 
@@ -246,6 +242,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         Preconditions.checkState( this.nodeLabelUpdateListener == null, "Only supports a single listener" );
         this.nodeLabelUpdateListener = nodeLabelUpdateListener;
+        this.labelScanStoreSync = new WorkSync<>( nodeLabelUpdateListener );
     }
 
     @SuppressWarnings( "resource" )

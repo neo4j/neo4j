@@ -24,10 +24,8 @@ import org.junit.Test;
 
 import java.util.Collection;
 import java.util.Collections;
-import java.util.function.Supplier;
 
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.api.labelscan.LabelScanWriter;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionToApply;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -41,6 +39,7 @@ import org.neo4j.kernel.impl.store.RelationshipStore;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.NodeRecord;
 import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -60,10 +59,9 @@ public class NeoTransactionIndexApplierTest
     private final IndexUpdateListener indexUpdateListener = mock( IndexUpdateListener.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     @SuppressWarnings( "unchecked" )
-    private final Supplier<LabelScanWriter> labelScanStore = mock( Supplier.class );
+    private final NodeLabelUpdateListener labelUpdateListener = mock( NodeLabelUpdateListener.class );
     private final Collection<DynamicRecord> emptyDynamicRecords = Collections.emptySet();
-    private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSynchronizer =
-            new WorkSync<>( labelScanStore );
+    private final WorkSync<NodeLabelUpdateListener,LabelUpdateWork> labelScanStoreSynchronizer = new WorkSync<>( labelUpdateListener );
     private final WorkSync<IndexUpdateListener,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexUpdateListener );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
 
@@ -83,9 +81,6 @@ public class NeoTransactionIndexApplierTest
         final NodeRecord after = new NodeRecord( 12 );
         after.setLabelField( 18, emptyDynamicRecords );
         final Command.NodeCommand command = new Command.NodeCommand( before, after );
-
-        LabelScanWriter labelScanWriter = mock( LabelScanWriter.class );
-        when( labelScanStore.get() ).thenReturn( labelScanWriter );
 
         // when
         boolean result;

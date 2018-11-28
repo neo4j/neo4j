@@ -22,6 +22,8 @@ package org.neo4j.kernel.api.labelscan;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.storageengine.api.NodeLabelUpdate;
+
 public interface LabelScanWriter extends Closeable
 {
     /**

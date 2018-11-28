@@ -52,6 +52,8 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.IndexUpdateListener;
+import org.neo4j.storageengine.api.NodeLabelUpdateListener;
 import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
@@ -86,7 +88,8 @@ public class RecordStorageEngineRule extends ExternalResource
 
     private RecordStorageEngine get( FileSystemAbstraction fs, PageCache pageCache,
                                      IndexProvider indexProvider, DatabaseHealth databaseHealth, DatabaseLayout databaseLayout,
-                                     Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer )
+                                     Function<BatchTransactionApplierFacade, BatchTransactionApplierFacade> transactionApplierTransformer,
+                                     IndexUpdateListener indexUpdateListener, NodeLabelUpdateListener nodeLabelUpdateListener )
     {
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
         JobScheduler scheduler = life.add( createScheduler() );
@@ -101,12 +104,15 @@ public class RecordStorageEngineRule extends ExternalResource
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( dependencies, config );
         NullLogProvider nullLogProvider = NullLogProvider.getInstance();
         life.add( indexProviderMap );
-        return life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
+        RecordStorageEngine engine = life.add( new ExtendedRecordStorageEngine( databaseLayout, config, pageCache, fs,
                 nullLogProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
                 new ReentrantLockService(),
                 databaseHealth, idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer ) );
+        engine.addIndexUpdateListener( indexUpdateListener );
+        engine.addNodeLabelUpdateListener( nodeLabelUpdateListener );
+        return engine;
     }
 
     @Override
@@ -127,6 +133,8 @@ public class RecordStorageEngineRule extends ExternalResource
         private Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer =
                 applierFacade -> applierFacade;
         private IndexProvider indexProvider = IndexProvider.EMPTY;
+        private IndexUpdateListener indexUpdateListener = new IndexUpdateListener.Adapter();
+        private NodeLabelUpdateListener nodeLabelUpdateListener = new NodeLabelUpdateListener.Adapter();
 
         public Builder( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout )
         {
@@ -154,10 +162,22 @@ public class RecordStorageEngineRule extends ExternalResource
             return this;
         }
 
+        public Builder indexUpdateListener( IndexUpdateListener indexUpdateListener )
+        {
+            this.indexUpdateListener = indexUpdateListener;
+            return this;
+        }
+
+        public Builder nodeLabelUpdateListener( NodeLabelUpdateListener nodeLabelUpdateListener )
+        {
+            this.nodeLabelUpdateListener = nodeLabelUpdateListener;
+            return this;
+        }
+
         public RecordStorageEngine build()
         {
             return get( fs, pageCache, indexProvider, databaseHealth, databaseLayout,
-                    transactionApplierTransformer );
+                    transactionApplierTransformer, indexUpdateListener, nodeLabelUpdateListener );
         }
     }
 

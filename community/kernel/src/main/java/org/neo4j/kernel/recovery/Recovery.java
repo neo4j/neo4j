@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.index.LoggingMonitor;
+import org.neo4j.kernel.api.labelscan.LoggingMonitor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.DefaultForceOperation;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
@@ -268,6 +268,7 @@ public final class Recovery
         monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
         NativeLabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
                 false, monitors, recoveryCleanupCollector );
+        storageEngine.addNodeLabelUpdateListener( labelScanStore );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
@@ -276,6 +277,7 @@ public final class Recovery
         IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap, indexStoreView,
                 tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
                 schemaState, indexStatisticsStore );
+        storageEngine.addIndexUpdateListener( indexingService );
 
         Dependencies recoveryDependencies = new Dependencies();
         storageEngine.satisfyDependencies( recoveryDependencies );
