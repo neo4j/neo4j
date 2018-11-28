@@ -74,7 +74,7 @@ class GenericNativeIndexAccessor extends NativeIndexAccessor<GenericKey,NativeIn
     @Override
     protected void afterTreeInstantiation( GBPTree<GenericKey,NativeIndexValue> tree )
     {
-        validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), layout, spaceFillingCurveSettings, pageCache.pageSize() );
+        validator = new GenericIndexKeyValidator( tree.keyValueSizeCap(), layout );
     }
 
     @Override

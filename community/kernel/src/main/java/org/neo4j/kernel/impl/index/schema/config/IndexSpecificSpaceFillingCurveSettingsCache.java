@@ -19,19 +19,13 @@
  */
 package org.neo4j.kernel.impl.index.schema.config;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.neo4j.gis.spatial.index.curves.SpaceFillingCurve;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.values.SequenceValue;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
-import org.neo4j.values.storable.PointValue;
-import org.neo4j.values.storable.Value;
-import org.neo4j.values.storable.Values;
 
 /**
  * A combination of {@link ConfiguredSpaceFillingCurveSettingsCache}, which contains all settings from {@link Config},
@@ -87,52 +81,6 @@ public class IndexSpecificSpaceFillingCurveSettingsCache
             specificIndexConfigCache.put( crs, configuredSetting );
         }
         return configuredSetting.curve();
-    }
-
-    /**
-     * Asks if any additional {@link CoordinateReferenceSystem} from {@code additionalValues} would exceed the max number of crs settings.
-     * This method can be called from multiple concurrent threads and so the prediction is not 100% accurate, which is why the supplied
-     * {@code limit} should be lower than the actual max limit.
-     *
-     * @param additionalValues Value[] tuple with values tentatively being indexed if the transaction commits.
-     * @param limit max number of crs settings to compare against.
-     * @return {@code true} if {@code additionalValues} would result in exceeding the limit, otherwise {@code false}.
-     */
-    public boolean additionalValuesCouldExceed( Value[] additionalValues, int limit )
-    {
-        int size = specificIndexConfigCache.size();
-        if ( size < limit - additionalValues.length )
-        {
-            // There's no way the limit can be hit so don't even bother checking the values
-            return false;
-        }
-
-        Set<CoordinateReferenceSystem> crss = new HashSet<>();
-        for ( Value additionalValue : additionalValues )
-        {
-            CoordinateReferenceSystem crs;
-            if ( Values.isGeometryValue( additionalValue ) )
-            {
-                crs = ((PointValue) additionalValue).getCoordinateReferenceSystem();
-            }
-            else if ( Values.isGeometryArray( additionalValue ) )
-            {
-                crs = ((PointValue) ((SequenceValue) additionalValue).value( 0 )).getCoordinateReferenceSystem();
-            }
-            else
-            {
-                continue;
-            }
-
-            if ( !specificIndexConfigCache.containsKey( crs ) )
-            {
-                if ( crss.add( crs ) && size + crss.size() > limit )
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
     }
 
     /**
