@@ -48,6 +48,7 @@ import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaState;
+import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
@@ -105,6 +106,7 @@ public class OperationsLockTest
     private StorageReader storageReader;
     private ConstraintIndexCreator constraintIndexCreator;
     private CommandCreationContext creationContext;
+    private IndexingService indexingService;
 
     @Before
     public void setUp() throws InvalidTransactionTypeKernelException
@@ -131,9 +133,9 @@ public class OperationsLockTest
         when( storageReader.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.newReader() ).thenReturn( storageReader );
-        allStoreHolder =
-                new AllStoreHolder( storageReader, transaction, cursors, mock( Procedures.class ), mock( SchemaState.class ), mock( IndexingService.class ),
-                        mock( LabelScanStore.class ), new Dependencies() );
+        indexingService = mock( IndexingService.class );
+        allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock( Procedures.class ), mock( SchemaState.class ), indexingService,
+                mock( LabelScanStore.class ), new Dependencies() );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         creationContext = mock( CommandCreationContext.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ), creationContext,
@@ -476,8 +478,10 @@ public class OperationsLockTest
     public void shouldAcquireSchemaWriteLockBeforeRemovingIndexRule() throws Exception
     {
         // given
-        CapableIndexDescriptor index =  TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
-        when( storageReader.indexGetForSchema( any() )).thenReturn( index );
+        CapableIndexDescriptor index = TestIndexDescriptorFactory.forLabel( 0, 0 ).withId( 0 ).withoutCapabilities();
+        IndexProxy indexProxy = mock( IndexProxy.class );
+        when( indexProxy.getDescriptor() ).thenReturn( index );
+        when( indexingService.getIndexProxy( index.schema() ) ).thenReturn( indexProxy );
 
         // when
         operations.indexDrop( index );

@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingUpdateService;
 import org.neo4j.kernel.impl.api.index.PropertyCommandsExtractor;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.NodeLabels;
 import org.neo4j.kernel.impl.store.NodeStore;
 import org.neo4j.kernel.impl.store.RelationshipStore;
@@ -46,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.state.IndexUpdates;
 import org.neo4j.kernel.impl.transaction.state.OnlineIndexUpdates;
 import org.neo4j.storageengine.api.CommandsToApply;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.util.concurrent.AsyncApply;
 import org.neo4j.util.concurrent.WorkSync;
 
@@ -141,7 +141,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         private final NodeStore nodeStore;
         private RelationshipStore relationshipStore;
         private final PropertyCommandsExtractor indexUpdatesExtractor = new PropertyCommandsExtractor();
-        private List<StoreIndexDescriptor> createdIndexes;
+        private List<StorageIndexReference> createdIndexes;
 
         SingleTransactionApplier( NodeStore nodeStore, RelationshipStore relationshipStore )
         {
@@ -164,7 +164,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
             // Created pending indexes
             if ( createdIndexes != null )
             {
-                indexingService.createIndexes( createdIndexes.toArray( new StoreIndexDescriptor[0] ) );
+                indexingService.createIndexes( createdIndexes.toArray( new StorageIndexReference[0] ) );
                 createdIndexes = null;
             }
         }
@@ -221,7 +221,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
         @Override
         public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException
         {
-            if ( command.getSchemaRule() instanceof StoreIndexDescriptor )
+            if ( command.getSchemaRule() instanceof StorageIndexReference )
             {
                 // Why apply index updates here? Here's the thing... this is a batch applier, which means that
                 // index updates are gathered throughout the batch and applied in the end of the batch.
@@ -237,7 +237,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case UPDATE:
                     // Shouldn't we be more clear about that we are waiting for an index to come online here?
                     // right now we just assume that an update to index records means wait for it to be online.
-                    if ( ((StoreIndexDescriptor) command.getSchemaRule()).isUnique() )
+                    if ( ((StorageIndexReference) command.getSchemaRule()).isUnique() )
                     {
                         try
                         {
@@ -254,10 +254,10 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                 case CREATE:
                     // Add to list so that all these indexes will be created in one call later
                     createdIndexes = createdIndexes == null ? new ArrayList<>() : createdIndexes;
-                    createdIndexes.add( (StoreIndexDescriptor) command.getSchemaRule() );
+                    createdIndexes.add( (StorageIndexReference) command.getSchemaRule() );
                     break;
                 case DELETE:
-                    indexingService.dropIndex( (StoreIndexDescriptor) command.getSchemaRule() );
+                    indexingService.dropIndex( (StorageIndexReference) command.getSchemaRule() );
                     break;
                 default:
                     throw new IllegalStateException( command.getMode().name() );

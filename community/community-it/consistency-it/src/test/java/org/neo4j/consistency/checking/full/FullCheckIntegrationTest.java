@@ -110,6 +110,7 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.FormattedLog;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.string.UTF8;
 import org.neo4j.test.rule.SuppressOutput;
 import org.neo4j.values.storable.Value;
@@ -1019,7 +1020,7 @@ public class FullCheckIntegrationTest
 
                 schema.setNextBlock( next.schema() ); // Point to a record that isn't in use.
                 StoreIndexDescriptor rule = indexRule( schema.getId(), label1, key1, DESCRIPTOR );
-                schema.setData( SchemaRuleSerialization.serialize( rule ) );
+                schema.setData( SchemaRuleSerialization.serialize( (StorageIndexReference) rule ) );
 
                 tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
             }

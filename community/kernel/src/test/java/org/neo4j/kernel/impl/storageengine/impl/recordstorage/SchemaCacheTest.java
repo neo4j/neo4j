@@ -30,7 +30,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
@@ -63,7 +62,7 @@ public class SchemaCacheTest
     {
         // GIVEN
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
 
         // THEN
         assertEquals( asSet( hans, gretel ), Iterables.asSet( cache.indexDescriptors() ) );
@@ -74,7 +73,7 @@ public class SchemaCacheTest
     public void addRemoveIndexes()
     {
         Collection<SchemaRule> rules = asList( hans, witch, gretel, robot );
-        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules, IndexProviderMap.EMPTY );
+        SchemaCache cache = new SchemaCache( new ConstraintSemantics(), rules );
 
         StoreIndexDescriptor rule1 = newIndexRule( 10, 11, 12 );
         StoreIndexDescriptor rule2 = newIndexRule( 13, 14, 15 );
@@ -360,8 +359,7 @@ public class SchemaCacheTest
     private static SchemaCache newSchemaCache( SchemaRule... rules )
     {
         return new SchemaCache( new ConstraintSemantics(), (rules == null || rules.length == 0)
-                                                           ? Collections.emptyList() : Arrays.asList( rules ),
-                                IndexProviderMap.EMPTY );
+                                                           ? Collections.emptyList() : Arrays.asList( rules ) );
     }
 
     private static class ConstraintSemantics extends StandardConstraintSemantics

@@ -38,7 +38,6 @@ import java.util.function.Function;
 
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
-import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
@@ -55,13 +54,11 @@ import static java.util.Collections.emptyIterator;
 public class SchemaCache
 {
     private final Lock cacheUpdateLock = new StampedLock().asWriteLock();
-    private final IndexProviderMap indexProviderMap;
     private volatile SchemaCacheState schemaCacheState;
 
-    public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules, IndexProviderMap indexProviderMap )
+    public SchemaCache( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> initialRules )
     {
-        this.indexProviderMap = indexProviderMap;
-        this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules, indexProviderMap );
+        this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules );
     }
 
     public Iterable<StorageIndexReference> indexDescriptors()
@@ -120,7 +117,7 @@ public class SchemaCache
         try
         {
             ConstraintSemantics constraintSemantics = schemaCacheState.constraintSemantics;
-            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules, indexProviderMap );
+            this.schemaCacheState = new SchemaCacheState( constraintSemantics, rules );
         }
         finally
         {
@@ -181,7 +178,6 @@ public class SchemaCache
     private static class SchemaCacheState
     {
         private final ConstraintSemantics constraintSemantics;
-        private final IndexProviderMap indexProviderMap;
         private final Set<ConstraintDescriptor> constraints;
         private final MutableLongObjectMap<StorageIndexReference> indexDescriptorById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
@@ -193,10 +189,9 @@ public class SchemaCache
         private final Map<Class<?>,Object> dependantState;
         private final MutableIntObjectMap<List<StorageIndexReference>> indexByProperty;
 
-        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules, IndexProviderMap indexProviderMap )
+        SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules )
         {
             this.constraintSemantics = constraintSemantics;
-            this.indexProviderMap = indexProviderMap;
             this.constraints = new HashSet<>();
             this.indexDescriptorById = new LongObjectHashMap<>();
             this.constraintRuleById = new LongObjectHashMap<>();
@@ -223,7 +218,6 @@ public class SchemaCache
             this.dependantState = new ConcurrentHashMap<>();
             this.indexByProperty = new IntObjectHashMap<>( schemaCacheState.indexByProperty.size() );
             schemaCacheState.indexByProperty.forEachKeyValue( ( k, v ) -> indexByProperty.put( k, new ArrayList<>( v ) ) );
-            this.indexProviderMap = schemaCacheState.indexProviderMap;
         }
 
         private void load( Iterable<SchemaRule> schemaRuleIterator )

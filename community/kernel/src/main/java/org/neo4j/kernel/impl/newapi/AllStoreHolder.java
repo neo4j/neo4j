@@ -291,7 +291,7 @@ public class AllStoreHolder extends Read
             // This means we have invalid label or property ids.
             return IndexReference.NO_INDEX;
         }
-        StorageIndexReference index = storageReader.indexGetForSchema( descriptor );
+        IndexDescriptor index = storageReader.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
             DiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
@@ -299,11 +299,7 @@ public class AllStoreHolder extends Read
             {
                 if ( diffSets.isRemoved( index ) )
                 {
-                    return IndexReference.NO_INDEX;
-                }
-                else
-                {
-                    return indexReference( index );
+                    index = null;
                 }
             }
             else
@@ -312,16 +308,12 @@ public class AllStoreHolder extends Read
                         filter( SchemaDescriptor.equalTo( descriptor ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
-                    return indexReference( fromTxState.next() );
-                }
-                else
-                {
-                    return IndexReference.NO_INDEX;
+                    index = fromTxState.next();
                 }
             }
         }
 
-        return index != null ? indexReference( index ) : IndexReference.NO_INDEX;
+        return indexReference( index );
     }
 
     /**
@@ -334,27 +326,25 @@ public class AllStoreHolder extends Read
     {
         if ( index == null )
         {
-            return null;
-        }
-        if ( index instanceof IndexReference )
-        {
-            // The lower-level descriptor actually implements IndexReference, so just use it directly
-            return (IndexReference) index;
+            // This is OK since storage may not have it and it wasn't added in this tx.
+            return IndexReference.NO_INDEX;
         }
         if ( index instanceof StorageIndexReference )
         {
-            // This is a committed index. We can look up its reference from IndexingService
+            // This is a committed index. We can look up its descriptor from IndexingService
             try
             {
+                acquireSharedSchemaLock( index.schema() );
                 return indexingService.getIndexProxy( index.schema() ).getDescriptor();
             }
             catch ( IndexNotFoundKernelException e )
             {
-                // Will fall out to the exception throwing below
+                throw new IllegalStateException( format( "Wasn't able to convert %s into an %s because it was neither already of that type nor a %s",
+                        index, IndexReference.class, StorageIndexReference.class ) );
             }
         }
-        throw new IllegalStateException( format( "Wasn't able to convert %s into an %s because it was neither already of that type nor a %s",
-                index, IndexReference.class, StorageIndexReference.class ) );
+        // This index isn't committed yet, go for the kernel-version of IndexDescriptor
+        return new org.neo4j.kernel.impl.index.schema.IndexDescriptor( index );
     }
 
     @Override
@@ -370,11 +360,7 @@ public class AllStoreHolder extends Read
             {
                 if ( diffSets.isRemoved( index ) )
                 {
-                    return IndexReference.NO_INDEX;
-                }
-                else
-                {
-                    return indexReference( index );
+                    index = null;
                 }
             }
             else
@@ -383,16 +369,12 @@ public class AllStoreHolder extends Read
                         filter( SchemaDescriptor.equalTo( schema ), diffSets.getAdded().iterator() );
                 if ( fromTxState.hasNext() )
                 {
-                    return indexReference( fromTxState.next() );
-                }
-                else
-                {
-                    return IndexReference.NO_INDEX;
+                    index = fromTxState.next();
                 }
             }
         }
 
-        return index != null ? indexReference( index ) : IndexReference.NO_INDEX;
+        return indexReference( index );
     }
 
     @Override
@@ -447,11 +429,6 @@ public class AllStoreHolder extends Read
             Iterator<IndexDescriptor> indexes = ktx.txState().indexChanges().filterAdded( namePredicate ).apply( Iterators.iterator( index ) );
             index = singleOrNull( indexes );
         }
-        if ( index == null )
-        {
-            return IndexReference.NO_INDEX;
-        }
-        acquireSharedSchemaLock( index.schema() );
         return indexReference( index );
     }
 
@@ -463,14 +440,10 @@ public class AllStoreHolder extends Read
         Iterator<? extends IndexDescriptor> iterator = storageReader.indexesGetAll();
         if ( ktx.hasTxStateWithChanges() )
         {
-            iterator = ktx.txState().indexChanges().apply( storageReader.indexesGetAll() );
+            iterator = ktx.txState().indexChanges().apply( iterator );
         }
 
-        return Iterators.map( index ->
-        {
-            acquireSharedSchemaLock( index.schema() );
-            return indexReference( index );
-        }, iterator );
+        return Iterators.map( this::indexReference, iterator );
     }
 
     @Override

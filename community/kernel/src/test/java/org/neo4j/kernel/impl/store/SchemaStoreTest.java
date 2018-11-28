@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
@@ -95,7 +96,7 @@ public class SchemaStoreTest
 
         // WHEN
         StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -113,7 +114,7 @@ public class SchemaStoreTest
 
         // WHEN
         StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -133,7 +134,8 @@ public class SchemaStoreTest
 
         // WHEN
         StoreIndexDescriptor readIndexRule =
-                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(),
+                        wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -151,8 +153,8 @@ public class SchemaStoreTest
         StoreIndexDescriptor indexRule = forSchema( multiToken( entityTokens, EntityType.NODE, propertyIds ), PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule =
-                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(),
+                wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -169,7 +171,7 @@ public class SchemaStoreTest
 
         // WHEN
         StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize(
-                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+                indexRule.getId(), wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );
@@ -187,8 +189,8 @@ public class SchemaStoreTest
                         PROVIDER_DESCRIPTOR ).withId( store.nextId() );
 
         // WHEN
-        StoreIndexDescriptor readIndexRule =
-                (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(), wrap( SchemaRuleSerialization.serialize( indexRule ) ) );
+        StoreIndexDescriptor readIndexRule = (StoreIndexDescriptor) SchemaRuleSerialization.deserialize( indexRule.getId(),
+                wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) ) );
 
         // THEN
         assertEquals( indexRule.getId(), readIndexRule.getId() );

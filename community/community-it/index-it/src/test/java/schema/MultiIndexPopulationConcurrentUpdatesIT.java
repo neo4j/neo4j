@@ -85,12 +85,14 @@ import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
 import org.neo4j.values.storable.Values;
 
+import static com.sun.jmx.mbeanserver.Util.cast;
 import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -392,9 +394,9 @@ public class MultiIndexPopulationConcurrentUpdatesIT
                 .toArray( StoreIndexDescriptor[]::new );
     }
 
-    private List<StoreIndexDescriptor> getIndexRules( NeoStores neoStores )
+    private List<StorageIndexReference> getIndexRules( NeoStores neoStores )
     {
-        return Iterators.asList( SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() ).indexesGetAll() );
+        return cast( Iterators.asList( SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() ).indexesGetAll() ) );
     }
 
     private Map<String, Integer> getLabelIdsByName( String... names )

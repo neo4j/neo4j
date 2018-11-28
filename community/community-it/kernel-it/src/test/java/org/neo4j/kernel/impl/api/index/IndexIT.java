@@ -237,6 +237,7 @@ public class IndexIT extends KernelIntegrationTest
         {
             SchemaWrite statement = schemaWriteInNewTransaction();
             statement.indexDrop( index );
+            fail( "Expected to fail" );
             commit();
         }
         // then

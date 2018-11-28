@@ -99,6 +99,7 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.AssertableLogProvider.LogMatcherBuilder;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.test.Barrier;
@@ -1152,7 +1153,7 @@ public class IndexingServiceTest
         IndexProviderMap providerMap = life.add( new DefaultIndexProviderMap( buildIndexDependencies( provider ), config ) );
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
-        List<StoreIndexDescriptor> indexes = new ArrayList<>();
+        List<StorageIndexReference> indexes = new ArrayList<>();
         int nextIndexId = 1;
         StoreIndexDescriptor populatingIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
         when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );
@@ -1199,7 +1200,7 @@ public class IndexingServiceTest
         providerMap.init();
         TokenNameLookup mockLookup = mock( TokenNameLookup.class );
 
-        List<StoreIndexDescriptor> indexes = new ArrayList<>();
+        List<StorageIndexReference> indexes = new ArrayList<>();
         int nextIndexId = 1;
         StoreIndexDescriptor populatingIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
         when( provider.getInitialState( populatingIndex ) ).thenReturn( POPULATING );

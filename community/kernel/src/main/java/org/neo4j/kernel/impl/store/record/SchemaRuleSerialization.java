@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
@@ -81,13 +82,13 @@ public class SchemaRuleSerialization
      */
     public static byte[] serialize( SchemaRule schemaRule )
     {
-        if ( schemaRule instanceof StoreIndexDescriptor )
+        if ( schemaRule instanceof StorageIndexReference )
         {
-            return serialize( (StoreIndexDescriptor)schemaRule );
+            return serialize( (StorageIndexReference) schemaRule );
         }
         else if ( schemaRule instanceof ConstraintRule )
         {
-            return serialize( (ConstraintRule)schemaRule );
+            return serialize( (ConstraintRule) schemaRule );
         }
         throw new IllegalStateException( "Unknown schema rule type: " + schemaRule.getClass() );
     }
@@ -126,36 +127,29 @@ public class SchemaRuleSerialization
      * @param indexDescriptor the StoreIndexDescriptor to serialize
      * @throws IllegalStateException if the StoreIndexDescriptor is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( StoreIndexDescriptor indexDescriptor )
+    public static byte[] serialize( StorageIndexReference indexDescriptor )
     {
         ByteBuffer target = ByteBuffer.allocate( lengthOf( indexDescriptor ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );
         target.put( INDEX_RULE );
 
-        IndexProviderDescriptor providerDescriptor = indexDescriptor.providerDescriptor();
-        UTF8.putEncodedStringInto( providerDescriptor.getKey(), target );
-        UTF8.putEncodedStringInto( providerDescriptor.getVersion(), target );
+        UTF8.putEncodedStringInto( indexDescriptor.providerKey(), target );
+        UTF8.putEncodedStringInto( indexDescriptor.providerVersion(), target );
 
-        switch ( indexDescriptor.type() )
+        if ( !indexDescriptor.isUnique() )
         {
-        case GENERAL:
             target.put( GENERAL_INDEX );
-            break;
-
-        case UNIQUE:
+        }
+        else
+        {
             target.put( UNIQUE_INDEX );
 
             // The owning constraint can be null. See IndexRule.getOwningConstraint()
             target.putLong( indexDescriptor.hasOwningConstraintReference() ? indexDescriptor.owningConstraintReference() : NO_OWNING_CONSTRAINT_YET );
-            break;
-
-        default:
-            throw new UnsupportedOperationException( format( "Got unknown index descriptor type '%s'.",
-                    indexDescriptor.type() ) );
         }
 
         indexDescriptor.schema().processWith( new SchemaDescriptorSerializer( target ) );
-        UTF8.putEncodedStringInto( indexDescriptor.getName(), target );
+        UTF8.putEncodedStringInto( indexDescriptor.name(), target );
         return target.array();
     }
 
@@ -202,23 +196,22 @@ public class SchemaRuleSerialization
      * @param indexDescriptor the StoreIndexDescriptor
      * @return the byte size of StoreIndexDescriptor
      */
-    static int lengthOf( StoreIndexDescriptor indexDescriptor )
+    static int lengthOf( StorageIndexReference indexDescriptor )
     {
         int length = 4; // legacy label or relType id
         length += 1;    // schema rule type
 
-        IndexProviderDescriptor providerDescriptor = indexDescriptor.providerDescriptor();
-        length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getKey() );
-        length += UTF8.computeRequiredByteBufferSize( providerDescriptor.getVersion() );
+        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.providerKey() );
+        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.providerVersion() );
 
         length += 1; // index type
-        if ( indexDescriptor.type() == IndexDescriptor.Type.UNIQUE )
+        if ( indexDescriptor.isUnique() )
         {
             length += 8; // owning constraint id
         }
 
         length += indexDescriptor.schema().computeWith( schemaSizeComputer );
-        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.getName() );
+        length += UTF8.computeRequiredByteBufferSize( indexDescriptor.name() );
         return length;
     }
 

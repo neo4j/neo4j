@@ -25,9 +25,9 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingConfig;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingController;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingControllerFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageIndexReference;
 
 /**
  * Factory to create {@link IndexingService}
@@ -43,7 +43,7 @@ public class IndexingServiceFactory
                                           IndexProviderMap providerMap,
                                           IndexStoreView storeView,
                                           TokenNameLookup tokenNameLookup,
-                                          Iterable<StoreIndexDescriptor> indexRules,
+                                          Iterable<StorageIndexReference> indexRules,
                                           LogProvider internalLogProvider,
                                           LogProvider userLogProvider,
                                           IndexingService.Monitor monitor,

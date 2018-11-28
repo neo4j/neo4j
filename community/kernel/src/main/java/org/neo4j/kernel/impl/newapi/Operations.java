@@ -797,7 +797,7 @@ public class Operations implements Write, SchemaWrite
         {
             IndexReference existingIndex = allStoreHolder.indexGetForSchema( schema );
 
-            if ( existingIndex == null )
+            if ( existingIndex == IndexReference.NO_INDEX )
             {
                 throw new NoSuchIndexException( schema );
             }
@@ -952,7 +952,7 @@ public class Operations implements Write, SchemaWrite
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
         IndexReference existingIndex = allStoreHolder.indexGetForSchema( descriptor );
-        if ( existingIndex == null && name.isPresent() )
+        if ( existingIndex == IndexReference.NO_INDEX && name.isPresent() )
         {
             IndexReference indexReference = allStoreHolder.indexGetForName( name.get() );
             if ( indexReference != IndexReference.NO_INDEX )
@@ -960,7 +960,7 @@ public class Operations implements Write, SchemaWrite
                 existingIndex = indexReference;
             }
         }
-        if ( existingIndex != null )
+        if ( existingIndex != IndexReference.NO_INDEX )
         {
             // OK so we found a matching constraint index. We check whether or not it has an owner
             // because this may have been a left-over constraint index from a previously failed

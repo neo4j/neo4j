@@ -117,6 +117,7 @@ import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.WorkSync;
 
+import static com.sun.jmx.mbeanserver.Util.cast;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.RECOVERY;
 import static org.neo4j.storageengine.api.TransactionApplicationMode.REVERSE_RECOVERY;
@@ -183,7 +184,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         try
         {
             indexUpdatesConverter = new PropertyPhysicalToLogicalConverter( neoStores.getPropertyStore() );
-            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList(), indexProviderMap );
+            schemaCache = new SchemaCache( constraintSemantics, Collections.emptyList() );
             schemaRuleAccess = SchemaRuleAccess.getSchemaRuleAccess( neoStores.getSchemaStore() );
 
             countsStore = openCountsStore( fs, pageCache, databaseLayout, config, logProvider, versionContextSupplier );
@@ -201,7 +202,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             this.indexProviderMap = indexProviderMap;
             indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap,
                     indexStoreView, tokenNameLookup,
-                    Iterators.asList( schemaRuleAccess.indexesGetAll() ), logProvider, userLogProvider,
+                    cast( Iterators.asList( schemaRuleAccess.indexesGetAll() ) ), logProvider, userLogProvider,
                     indexingServiceMonitor, schemaState );
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );

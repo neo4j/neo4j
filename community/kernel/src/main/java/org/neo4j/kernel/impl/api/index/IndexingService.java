@@ -43,6 +43,7 @@ import java.util.StringJoiner;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.common.TokenNameLookup;
@@ -75,6 +76,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.register.Registers;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StorageReader;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 import org.neo4j.values.storable.Value;
@@ -108,7 +110,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
     private final IndexStoreView storeView;
     private final IndexProviderMap providerMap;
     private final IndexMapReference indexMapRef;
-    private final Iterable<StoreIndexDescriptor> indexDescriptors;
+    private final Iterable<StorageIndexReference> indexDescriptors;
     private final Log internalLog;
     private final Log userLog;
     private final TokenNameLookup tokenNameLookup;
@@ -183,7 +185,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
             IndexProviderMap providerMap,
             IndexMapReference indexMapRef,
             IndexStoreView storeView,
-            Iterable<StoreIndexDescriptor> indexDescriptors,
+            Iterable<StorageIndexReference> indexDescriptors,
             IndexSamplingController samplingController,
             TokenNameLookup tokenNameLookup,
             JobScheduler scheduler,
@@ -220,10 +222,12 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         indexMapRef.modify( indexMap ->
         {
             Map<InternalIndexState, List<IndexLogRecord>> indexStates = new EnumMap<>( InternalIndexState.class );
-            for ( StoreIndexDescriptor indexDescriptor : indexDescriptors )
+            for ( StorageIndexReference indexReference : indexDescriptors )
             {
                 IndexProxy indexProxy;
 
+                // StorageIndexReference incoming from the store. Convert to StoreIndexDescriptor
+                StoreIndexDescriptor indexDescriptor = new StoreIndexDescriptor( indexReference );
                 IndexProviderDescriptor providerDescriptor = indexDescriptor.providerDescriptor();
                 IndexProvider provider = providerMap.lookup( providerDescriptor );
                 InternalIndexState initialState = provider.getInitialState( indexDescriptor );
@@ -570,7 +574,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
      * {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)} will not be called as part of populating these indexes,
      * instead that will be done by code that activates the indexes later.
      */
-    public void createIndexes( StoreIndexDescriptor... rules )
+    public void createIndexes( StorageIndexReference... rules )
     {
         createIndexes( false, rules );
     }
@@ -585,11 +589,16 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
      * @param verifyBeforeFlipping whether or not to call {@link IndexPopulator#verifyDeferredConstraints(NodePropertyAccessor)}
      * as part of population, before flipping to a successful state.
      */
-    public void createIndexes( boolean verifyBeforeFlipping, StoreIndexDescriptor... rules )
+    public void createIndexes( boolean verifyBeforeFlipping, StorageIndexReference... rules )
     {
-        IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, rules );
+        IndexPopulationStarter populationStarter = new IndexPopulationStarter( verifyBeforeFlipping, toStoreIndexDescriptors( rules ) );
         indexMapRef.modify( populationStarter );
         populationStarter.startPopulation();
+    }
+
+    private StoreIndexDescriptor[] toStoreIndexDescriptors( StorageIndexReference[] rules )
+    {
+        return Stream.of( rules ).map( StoreIndexDescriptor::new ).toArray( StoreIndexDescriptor[]::new );
     }
 
     private void processUpdate( IndexUpdaterMap updaterMap, IndexEntryUpdate<SchemaDescriptor> indexUpdate ) throws IndexEntryConflictException
@@ -601,11 +610,11 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
         }
     }
 
-    public void dropIndex( StoreIndexDescriptor rule )
+    public void dropIndex( StorageIndexReference rule )
     {
         indexMapRef.modify( indexMap ->
         {
-            long indexId = rule.getId();
+            long indexId = rule.indexReference();
             IndexProxy index = indexMap.removeIndexProxy( indexId );
 
             if ( state == State.RUNNING )

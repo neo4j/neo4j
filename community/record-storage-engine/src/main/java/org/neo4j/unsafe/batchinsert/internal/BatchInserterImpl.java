@@ -320,7 +320,7 @@ public class BatchInserterImpl implements BatchInserter
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        schemaCache = new SchemaCache( getConstraintSemantics(), schemaStore, indexProviderMap );
+        schemaCache = new SchemaCache( getConstraintSemantics(), schemaStore );
 
         actions = new BatchSchemaActions();
 
