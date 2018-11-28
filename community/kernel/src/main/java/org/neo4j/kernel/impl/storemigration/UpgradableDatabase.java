@@ -30,8 +30,8 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingSto
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradeMissingStoreFilesException;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UpgradingStoreVersionNotFoundException;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
+import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck.Result;
+import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck.Result.Outcome;
 import org.neo4j.kernel.recovery.LogTailScanner;
 
 /**
@@ -40,11 +40,11 @@ import org.neo4j.kernel.recovery.LogTailScanner;
  */
 public class UpgradableDatabase
 {
-    private final StoreVersionCheck storeVersionCheck;
+    private final RecordStoreVersionCheck storeVersionCheck;
     private final RecordFormats format;
     private final LogTailScanner tailScanner;
 
-    public UpgradableDatabase( StoreVersionCheck storeVersionCheck, RecordFormats format,
+    public UpgradableDatabase( RecordStoreVersionCheck storeVersionCheck, RecordFormats format,
             LogTailScanner tailScanner )
     {
         this.storeVersionCheck = storeVersionCheck;

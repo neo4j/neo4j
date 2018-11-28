@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.storemigration.SchemaIndexMigrator;
@@ -122,7 +122,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreVersionCheck check = new StoreVersionCheck( pageCache );
+        RecordStoreVersionCheck check = new RecordStoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();
@@ -161,7 +161,7 @@ public class StoreUpgraderInterruptionTestIT
         assertConsistentStore( workingDatabaseLayout );
     }
 
-    private UpgradableDatabase getUpgradableDatabase( StoreVersionCheck check ) throws IOException
+    private UpgradableDatabase getUpgradableDatabase( RecordStoreVersionCheck check ) throws IOException
     {
         VersionAwareLogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
         LogFiles logFiles = LogFilesBuilder.logFilesBasedOnlyBuilder( workingDatabaseLayout.databaseDirectory(), fs ).build();
@@ -180,7 +180,7 @@ public class StoreUpgraderInterruptionTestIT
     {
         MigrationTestUtils.prepareSampleLegacyDatabase( version, fs, workingDatabaseLayout.databaseDirectory(), prepareDirectory );
         PageCache pageCache = pageCacheRule.getPageCache( fs );
-        StoreVersionCheck check = new StoreVersionCheck( pageCache );
+        RecordStoreVersionCheck check = new RecordStoreVersionCheck( pageCache );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( check );
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         LogService logService = NullLogService.getInstance();

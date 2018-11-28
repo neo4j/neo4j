@@ -33,7 +33,7 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.impl.muninn.StandalonePageCacheFactory;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
 import org.neo4j.kernel.impl.util.Validators;
 import org.neo4j.scheduler.JobScheduler;
 
@@ -65,7 +65,7 @@ public class StoreInfoCommand implements AdminCommand
                 PageCache pageCache = StandalonePageCacheFactory.createPageCache( fileSystem, jobScheduler ) )
         {
             DatabaseLayout databaseLayout = DatabaseLayout.of( databaseDirectory.toFile() );
-            final String storeVersion = new StoreVersionCheck( pageCache )
+            final String storeVersion = new RecordStoreVersionCheck( pageCache )
                     .getVersion( databaseLayout.metadataStore() )
                     .orElseThrow( () -> new CommandFailed( String.format( "Could not find version metadata in store '%s'", databaseDirectory ) ) );
 

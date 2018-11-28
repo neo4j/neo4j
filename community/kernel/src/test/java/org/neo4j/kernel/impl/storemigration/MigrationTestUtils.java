@@ -104,7 +104,7 @@ public class MigrationTestUtils
         return Unzip.unzip( Legacy23Store.class, "upgradeTest23Db.zip", targetDir );
     }
 
-    public static boolean checkNeoStoreHasDefaultFormatVersion( StoreVersionCheck check, DatabaseLayout databaseLayout )
+    public static boolean checkNeoStoreHasDefaultFormatVersion( RecordStoreVersionCheck check, DatabaseLayout databaseLayout )
     {
         File metadataStore = databaseLayout.metadataStore();
         return check.hasVersion( metadataStore, RecordFormatSelector.defaultFormat().storeVersion() ).outcome.isSuccessful();

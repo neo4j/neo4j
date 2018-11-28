@@ -28,13 +28,13 @@ import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
 
 import static org.neo4j.kernel.impl.store.MetaDataStore.Position.STORE_VERSION;
-import static org.neo4j.kernel.impl.storemigration.StoreVersionCheck.Result.Outcome;
+import static org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck.Result.Outcome;
 
-public class StoreVersionCheck
+public class RecordStoreVersionCheck
 {
     private final PageCache pageCache;
 
-    public StoreVersionCheck( PageCache pageCache )
+    public RecordStoreVersionCheck( PageCache pageCache )
     {
         this.pageCache = pageCache;
     }

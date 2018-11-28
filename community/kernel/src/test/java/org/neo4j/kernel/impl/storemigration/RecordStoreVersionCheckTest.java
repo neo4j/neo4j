@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @PageCacheExtension
-class StoreVersionCheckTest
+class RecordStoreVersionCheckTest
 {
     @Inject
     private TestDirectory testDirectory;
@@ -53,14 +53,14 @@ class StoreVersionCheckTest
     {
         // given
         File missingFile = new File( testDirectory.directory(), "missing-file" );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( missingFile, "version" );
+        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( missingFile, "version" );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.missingStoreFile, result.outcome );
+        assertEquals( RecordStoreVersionCheck.Result.Outcome.missingStoreFile, result.outcome );
         assertNull( result.actualVersion );
     }
 
@@ -69,14 +69,14 @@ class StoreVersionCheckTest
     {
         // given
         File shortFile = fileContaining( fileSystem, "nothing interesting" );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( shortFile, "version" );
+        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( shortFile, "version" );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.storeVersionNotFound, result.outcome );
+        assertEquals( RecordStoreVersionCheck.Result.Outcome.storeVersionNotFound, result.outcome );
         assertNull( result.actualVersion );
     }
 
@@ -87,14 +87,14 @@ class StoreVersionCheckTest
         File neoStore = emptyFile( fileSystem );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V2" );
+        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V2" );
 
         // then
         assertFalse( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.unexpectedStoreVersion, result.outcome );
+        assertEquals( RecordStoreVersionCheck.Result.Outcome.unexpectedStoreVersion, result.outcome );
         assertEquals( "V1", result.actualVersion );
     }
 
@@ -105,14 +105,14 @@ class StoreVersionCheckTest
         File neoStore = emptyFile( fileSystem );
         long v1 = MetaDataStore.versionStringToLong( "V1" );
         MetaDataStore.setRecord( pageCache, neoStore, MetaDataStore.Position.STORE_VERSION, v1 );
-        StoreVersionCheck storeVersionCheck = new StoreVersionCheck( pageCache );
+        RecordStoreVersionCheck storeVersionCheck = new RecordStoreVersionCheck( pageCache );
 
         // when
-        StoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V1" );
+        RecordStoreVersionCheck.Result result = storeVersionCheck.hasVersion( neoStore, "V1" );
 
         // then
         assertTrue( result.outcome.isSuccessful() );
-        assertEquals( StoreVersionCheck.Result.Outcome.ok, result.outcome );
+        assertEquals( RecordStoreVersionCheck.Result.Outcome.ok, result.outcome );
         assertNull( result.actualVersion );
     }
 
