@@ -31,11 +31,13 @@ import static org.hamcrest.Matchers.not;
 
 class ProfilerTest
 {
+    private static final int COMPUTE_WORK_MILLIS = 1000;
+
     @Test
     void profilerMustNoticeWhereTimeGoes() throws Exception
     {
         Profiler profiler = Profiler.profiler();
-        try ( Profiler.ProfiledInterval interval = profiler.profile() )
+        try ( Profiler.ProfiledInterval ignored = profiler.profile() )
         {
             expensiveComputation();
         }
@@ -47,7 +49,7 @@ class ProfilerTest
     void profilerMustLimitItselfToProfiledRegion() throws Exception
     {
         Profiler profiler = Profiler.profiler();
-        try ( Profiler.ProfiledInterval interval = profiler.profile() )
+        try ( Profiler.ProfiledInterval ignored = profiler.profile() )
         {
             expensiveComputation();
         }
@@ -60,8 +62,8 @@ class ProfilerTest
     void profilerMustWaitUntilAfterAnInitialDelay() throws Exception
     {
         Profiler profiler = Profiler.profiler();
-        long initialDelayNanos = TimeUnit.MILLISECONDS.toNanos( 250 );
-        try ( Profiler.ProfiledInterval interval = profiler.profile( Thread.currentThread(), initialDelayNanos ) )
+        long initialDelayNanos = TimeUnit.MILLISECONDS.toNanos( COMPUTE_WORK_MILLIS * 3 );
+        try ( Profiler.ProfiledInterval ignored = profiler.profile( Thread.currentThread(), initialDelayNanos ) )
         {
             expensiveComputation();
         }
@@ -73,22 +75,22 @@ class ProfilerTest
     private String getProfilerOutput( Profiler profiler ) throws InterruptedException
     {
         profiler.finish();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try ( PrintStream out = new PrintStream( baos ) )
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try ( PrintStream out = new PrintStream( buffer ) )
         {
             profiler.printProfile( out, "Profile" );
             out.flush();
         }
-        return baos.toString();
+        return buffer.toString();
     }
 
     private void expensiveComputation() throws InterruptedException
     {
-        Thread.sleep( 50 );
+        Thread.sleep( COMPUTE_WORK_MILLIS );
     }
 
     private void otherIntenseWork() throws InterruptedException
     {
-        Thread.sleep( 50 );
+        Thread.sleep( COMPUTE_WORK_MILLIS );
     }
 }
