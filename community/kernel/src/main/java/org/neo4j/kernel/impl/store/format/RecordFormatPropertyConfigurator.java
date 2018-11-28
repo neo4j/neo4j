@@ -37,21 +37,16 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
  * In case if user already set value of those properties we will keep them, otherwise format specific value will be
  * evaluated and configuration will be adapted.
  */
-public class RecordFormatPropertyConfigurator
+public final class RecordFormatPropertyConfigurator
 {
-    private final RecordFormats recordFormats;
-    private final Config config;
-
-    public RecordFormatPropertyConfigurator( RecordFormats recordFormats, Config config )
+    private RecordFormatPropertyConfigurator()
     {
-        this.recordFormats = recordFormats;
-        this.config = config;
+        // util class
     }
 
-    private static void configureIntegerSetting( Config config, Setting<Integer> setting,
-            int fullBlockSize, int headerSize, Map<String,String> formatConfig )
+    private static void configureIntegerSetting( Config config, Setting<Integer> setting, int fullBlockSize, int headerSize, Map<String,String> formatConfig )
     {
-        Integer defaultValue = Integer.parseInt( setting.getDefaultValue() );
+        int defaultValue = Integer.parseInt( setting.getDefaultValue() );
         int propertyValue = config.get( setting );
         if ( propertyValue == defaultValue )
         {
@@ -72,7 +67,7 @@ public class RecordFormatPropertyConfigurator
         configMap.put( setting.name(), String.valueOf( value ) );
     }
 
-    public void configure()
+    public static void configureRecordFormat( RecordFormats recordFormats, Config config )
     {
         Map<String,String> formatConfig = MapUtil.stringMap();
         int headerSize = recordFormats.dynamic().getRecordHeaderSize();

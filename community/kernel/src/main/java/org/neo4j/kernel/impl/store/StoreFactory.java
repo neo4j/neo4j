@@ -27,11 +27,11 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.logging.LogProvider;
 
+import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForStoreOrConfig;
 
 /**
@@ -68,10 +68,9 @@ public class StoreFactory
         this.versionContextSupplier = versionContextSupplier;
         this.recordFormats = recordFormats;
         this.openOptions = openOptions;
-        new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
-
         this.logProvider = logProvider;
         this.pageCache = pageCache;
+        configureRecordFormat( recordFormats, config );
     }
 
     /**

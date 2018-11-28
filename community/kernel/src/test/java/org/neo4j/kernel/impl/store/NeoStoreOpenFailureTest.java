@@ -63,7 +63,7 @@ class NeoStoreOpenFailureTest
         LogProvider logProvider = NullLogProvider.getInstance();
         VersionContextSupplier versions = EmptyVersionContextSupplier.EMPTY;
         RecordFormats formats = Standard.LATEST_RECORD_FORMATS;
-        new RecordFormatPropertyConfigurator( formats, config ).configure();
+        RecordFormatPropertyConfigurator.configureRecordFormat( formats, config );
         boolean create = true;
         StoreType[] storeTypes = StoreType.values();
         OpenOption[] openOptions = new OpenOption[0];

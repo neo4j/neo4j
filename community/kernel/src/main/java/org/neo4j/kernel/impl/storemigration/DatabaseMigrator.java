@@ -24,13 +24,14 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
-import org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+
+import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
 /**
  * DatabaseMigrator collects all dependencies required for store migration,
@@ -72,8 +73,11 @@ public class DatabaseMigrator
     public void migrate( DatabaseLayout databaseLayout )
     {
         LogProvider logProvider = logService.getInternalLogProvider();
-        final RecordFormats format = selectStoreFormats( config, databaseLayout, fs, pageCache, logService );
+
+        RecordFormats format = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider );
+        configureRecordFormat( format, config );
         UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new RecordStoreVersionCheck( pageCache ), format, tailScanner );
+
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase,
             new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, pageCache, logProvider );
 
@@ -87,14 +91,5 @@ public class DatabaseMigrator
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
         storeUpgrader.addParticipant( countsMigrator );
         storeUpgrader.migrateIfNeeded( databaseLayout );
-    }
-
-    private static RecordFormats selectStoreFormats( Config config, DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache,
-        LogService logService )
-    {
-        LogProvider logging = logService.getInternalLogProvider();
-        RecordFormats formats = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logging );
-        new RecordFormatPropertyConfigurator( formats, config ).configure();
-        return formats;
     }
 }

@@ -44,6 +44,7 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.MINIMAL_BLOCK_SIZE
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.array_block_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.label_block_size;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.string_block_size;
+import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
 public class RecordFormatPropertyConfiguratorTest
 {
@@ -55,7 +56,7 @@ public class RecordFormatPropertyConfiguratorTest
     {
         Config config = Config.defaults( string_block_size, "36" );
         RecordFormats recordFormats = Standard.LATEST_RECORD_FORMATS;
-        new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
+        configureRecordFormat( recordFormats, config );
         assertEquals( "Should keep used specified value", 36, config.get( string_block_size ).intValue() );
     }
 
@@ -66,7 +67,7 @@ public class RecordFormatPropertyConfiguratorTest
         int testHeaderSize = 17;
         ResizableRecordFormats recordFormats = new ResizableRecordFormats( testHeaderSize );
 
-        new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
+        configureRecordFormat( recordFormats, config );
 
         assertEquals( DEFAULT_BLOCK_SIZE - testHeaderSize, config.get( string_block_size ).intValue() );
         assertEquals( DEFAULT_BLOCK_SIZE - testHeaderSize, config.get( array_block_size ).intValue() );
@@ -83,7 +84,7 @@ public class RecordFormatPropertyConfiguratorTest
         expectedException.expect( IllegalArgumentException.class );
         expectedException.expectMessage( "Block size should be bigger then " + MINIMAL_BLOCK_SIZE );
 
-        new RecordFormatPropertyConfigurator( recordFormats, config ).configure();
+        configureRecordFormat( recordFormats, config );
     }
 
     private class ResizableRecordFormats implements RecordFormats
