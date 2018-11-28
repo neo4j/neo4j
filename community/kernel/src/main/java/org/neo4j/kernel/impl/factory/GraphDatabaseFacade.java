@@ -533,7 +533,7 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     }
 
     @Override
-    public DatabaseEventHandler unregisterKernelEventHandler( DatabaseEventHandler handler )
+    public DatabaseEventHandler unregisterDatabaseEventHandler( DatabaseEventHandler handler )
     {
         spi.unregisterDatabaseEventHandler( handler );
         return handler;

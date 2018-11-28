@@ -498,7 +498,7 @@ public interface GraphDatabaseService
      * @throws IllegalStateException if {@code handler} wasn't registered prior
      *                               to calling this method.
      */
-    DatabaseEventHandler unregisterKernelEventHandler( DatabaseEventHandler handler );
+    DatabaseEventHandler unregisterDatabaseEventHandler( DatabaseEventHandler handler );
 
     /**
      * Returns the {@link Schema schema manager} where all things related to schema,

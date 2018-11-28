@@ -64,18 +64,18 @@ class TestDatabaseEvents
             }
         };
 
-        assertThrows( IllegalStateException.class, () -> graphDb.unregisterKernelEventHandler( handler1 ) );
+        assertThrows( IllegalStateException.class, () -> graphDb.unregisterDatabaseEventHandler( handler1 ) );
 
         assertSame( handler1, graphDb.registerDatabaseEventHandler( handler1 ) );
         assertSame( handler1, graphDb.registerDatabaseEventHandler( handler1 ) );
-        assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
+        assertSame( handler1, graphDb.unregisterDatabaseEventHandler( handler1 ) );
 
-        assertThrows( IllegalStateException.class, () -> graphDb.unregisterKernelEventHandler( handler1 ) );
+        assertThrows( IllegalStateException.class, () -> graphDb.unregisterDatabaseEventHandler( handler1 ) );
 
         assertSame( handler1, graphDb.registerDatabaseEventHandler( handler1 ) );
         assertSame( handler2, graphDb.registerDatabaseEventHandler( handler2 ) );
-        assertSame( handler1, graphDb.unregisterKernelEventHandler( handler1 ) );
-        assertSame( handler2, graphDb.unregisterKernelEventHandler( handler2 ) );
+        assertSame( handler1, graphDb.unregisterDatabaseEventHandler( handler1 ) );
+        assertSame( handler2, graphDb.unregisterDatabaseEventHandler( handler2 ) );
 
         graphDb.shutdown();
     }

@@ -20,7 +20,6 @@
 package org.neo4j.dmbs.database;
 
 import java.util.List;
-import java.io.IOException;
 import java.util.Optional;
 
 import org.neo4j.dbms.database.DatabaseContext;
@@ -75,15 +74,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
                 new ClassicCoreSPI( platform, databaseModule, log, databaseModule.getCoreAPIAvailabilityGuard(), edition.getThreadToTransactionBridge() );
         graphDatabaseFacade.init( spi, edition.getThreadToTransactionBridge(), platform.config, database.getTokenHolders() );
 
-        try
-        {
-            database.start();
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        databaseContext = new DatabaseContext( database, database.getDependencyResolver(), graphDatabaseFacade );
+        databaseContext = new DatabaseContext( database, graphDatabaseFacade );
         return databaseContext;
     }
 
@@ -94,7 +85,25 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
+    public void start() throws Throwable
+    {
+        if ( databaseContext != null )
+        {
+            databaseContext.getDatabase().start();
+        }
+    }
+
+    @Override
     public void stop()
+    {
+        if ( databaseContext != null )
+        {
+            databaseContext.getDatabase().stop();
+        }
+    }
+
+    @Override
+    public void shutdown() throws Throwable
     {
         shutdownDatabase();
     }

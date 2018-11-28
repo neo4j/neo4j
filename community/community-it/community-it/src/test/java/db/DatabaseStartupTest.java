@@ -39,7 +39,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -83,8 +82,9 @@ class DatabaseStartupTest
         }
 
         RuntimeException exception = assertThrows( RuntimeException.class, () -> new TestGraphDatabaseFactory().newEmbeddedDatabase( databaseDir ) );
-        assertThat( exception.getCause(), instanceOf( IllegalArgumentException.class ) );
-        assertEquals( "Unknown store version 'bad'", exception.getCause().getMessage() );
+        Throwable throwable = exception.getCause().getCause();
+        assertThat( throwable, instanceOf( IllegalArgumentException.class ) );
+        assertEquals( "Unknown store version 'bad'", throwable.getMessage() );
     }
 
     @Test
@@ -114,7 +114,7 @@ class DatabaseStartupTest
         RuntimeException exception = assertThrows( RuntimeException.class,
                 () -> new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( databaseDirectory ).setConfig( GraphDatabaseSettings.allow_upgrade,
                         "true" ).newGraphDatabase() );
-        assertThat( exception.getCause(), instanceOf( StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
+        assertThat( exception.getCause().getCause(), instanceOf( StoreUpgrader.UnexpectedUpgradingStoreVersionException.class ) );
     }
 
     @Test

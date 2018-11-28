@@ -28,16 +28,13 @@ import static java.util.Objects.requireNonNull;
 public class DatabaseContext
 {
     private final Database database;
-    private final Dependencies dependencies;
     private final GraphDatabaseFacade databaseFacade;
 
-    public DatabaseContext( Database database, Dependencies dependencies, GraphDatabaseFacade databaseFacade )
+    public DatabaseContext( Database database, GraphDatabaseFacade databaseFacade )
     {
         requireNonNull( database );
-        requireNonNull( dependencies );
         requireNonNull( databaseFacade );
         this.database = database;
-        this.dependencies = dependencies;
         this.databaseFacade = databaseFacade;
     }
 
@@ -48,7 +45,7 @@ public class DatabaseContext
 
     public Dependencies getDependencies()
     {
-        return dependencies;
+        return database.getDependencyResolver();
     }
 
     public GraphDatabaseFacade getDatabaseFacade()

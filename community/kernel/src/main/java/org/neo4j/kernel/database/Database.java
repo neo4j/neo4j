@@ -206,6 +206,7 @@ public class Database extends LifecycleAdapter
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
+    private volatile boolean started;
 
     public Database( DatabaseCreationContext context )
     {
@@ -261,91 +262,86 @@ public class Database extends LifecycleAdapter
     // start() does life.init() and life.start(),
     // stop() does life.stop() and life.shutdown().
     @Override
-    public void start() throws IOException
+    public void start()
     {
-        dataSourceDependencies = new Dependencies( dependencyResolver );
-        dataSourceDependencies.satisfyDependency( this );
-        dataSourceDependencies.satisfyDependency( monitors );
-        dataSourceDependencies.satisfyDependency( pageCache );
-        dataSourceDependencies.satisfyDependency( tokenHolders );
-        dataSourceDependencies.satisfyDependency( facade );
-        dataSourceDependencies.satisfyDependency( databaseHealth );
-        dataSourceDependencies.satisfyDependency( storeCopyCheckPointMutex );
-        dataSourceDependencies.satisfyDependency( transactionMonitor );
-        dataSourceDependencies.satisfyDependency( locks );
-        dataSourceDependencies.satisfyDependency( databaseAvailabilityGuard );
-        dataSourceDependencies.satisfyDependency( databaseAvailability );
-        dataSourceDependencies.satisfyDependency( idGeneratorFactory );
-        dataSourceDependencies.satisfyDependency( idController );
-        dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
-
-        RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-        dataSourceDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
-        dataSourceDependencies.satisfyDependency( lockService );
-
-        life = new LifeSupport();
-        life.add( initializeExtensions( dataSourceDependencies ) );
-
-        DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
-        life.add( watcherService );
-        dataSourceDependencies.satisfyDependency( watcherService );
-
-        // Check the tail of transaction logs and validate version
-        final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
-
-        LogFiles logFiles = LogFilesBuilder.builder( databaseLayout, fs )
-                .withLogEntryReader( logEntryReader )
-                .withLogFileMonitor( physicalLogMonitor )
-                .withConfig( config )
-                .withDependencies( dataSourceDependencies ).build();
-
-        monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
-        monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
-        monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
-        LogTailScanner tailScanner = new LogTailScanner( logFiles, logEntryReader, monitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
-        LogVersionUpgradeChecker.check( tailScanner, config );
-
-        // Upgrade the store before we begin
-        RecordFormats formats = selectStoreFormats( config, databaseLayout, fs, pageCache, logService );
-        upgradeStore( formats, tailScanner );
-
-        performRecovery( fs, pageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
-
-        // Build all modules and their services
-        StorageEngine storageEngine = null;
+        if ( started )
+        {
+            return;
+        }
         try
         {
+            dataSourceDependencies = new Dependencies( dependencyResolver );
+            dataSourceDependencies.satisfyDependency( this );
+            dataSourceDependencies.satisfyDependency( monitors );
+            dataSourceDependencies.satisfyDependency( pageCache );
+            dataSourceDependencies.satisfyDependency( tokenHolders );
+            dataSourceDependencies.satisfyDependency( facade );
+            dataSourceDependencies.satisfyDependency( databaseHealth );
+            dataSourceDependencies.satisfyDependency( storeCopyCheckPointMutex );
+            dataSourceDependencies.satisfyDependency( transactionMonitor );
+            dataSourceDependencies.satisfyDependency( locks );
+            dataSourceDependencies.satisfyDependency( databaseAvailabilityGuard );
+            dataSourceDependencies.satisfyDependency( databaseAvailability );
+            dataSourceDependencies.satisfyDependency( idGeneratorFactory );
+            dataSourceDependencies.satisfyDependency( idController );
+            dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
+            dataSourceDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
+            dataSourceDependencies.satisfyDependency( lockService );
+
+            life = new LifeSupport();
+            life.add( initializeExtensions( dataSourceDependencies ) );
+
+            DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
+            life.add( watcherService );
+            dataSourceDependencies.satisfyDependency( watcherService );
+
+            // Check the tail of transaction logs and validate version
+            final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
+
+            LogFiles logFiles =
+                    LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
+                            config ).withDependencies( dataSourceDependencies ).build();
+
+            monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
+            monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
+            monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
+            LogTailScanner tailScanner =
+                    new LogTailScanner( logFiles, logEntryReader, monitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
+            LogVersionUpgradeChecker.check( tailScanner, config );
+
+            // Upgrade the store before we begin
+            RecordFormats formats = selectStoreFormats( config, databaseLayout, fs, pageCache, logService );
+            upgradeStore( formats, tailScanner );
+
+            performRecovery( fs, pageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
+
+            // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
 
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine( databaseSchemaState, databaseInfo.operationalMode,
-                    versionContextSupplier, recoveryCleanupWorkCollector );
+            storageEngine = buildStorageEngine( databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier, recoveryCleanupWorkCollector );
             life.add( logFiles );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
-            DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
-                    scheduler, storageEngine, logEntryReader, transactionIdStore );
+            DatabaseTransactionLogModule transactionLogModule =
+                    buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
-            final DatabaseKernelModule kernelModule = buildKernel(
-                    logFiles,
-                    transactionLogModule.transactionAppender(),
-                    dataSourceDependencies.resolveDependency( IndexingService.class ),
-                    databaseSchemaState,
-                    dataSourceDependencies.resolveDependency( LabelScanStore.class ),
-                    storageEngine,
-                    transactionIdStore, databaseAvailabilityGuard,
-                    clock );
+            final DatabaseKernelModule kernelModule =
+                    buildKernel( logFiles, transactionLogModule.transactionAppender(), dataSourceDependencies.resolveDependency( IndexingService.class ),
+                            databaseSchemaState, dataSourceDependencies.resolveDependency( LabelScanStore.class ), storageEngine, transactionIdStore,
+                            databaseAvailabilityGuard, clock );
 
             kernelModule.satisfyDependencies( dataSourceDependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
-            this.storageEngine = storageEngine;
             this.transactionLogModule = transactionLogModule;
             this.kernelModule = kernelModule;
 
@@ -408,6 +404,7 @@ public class Database extends LifecycleAdapter
          * Standalone instances will have to be restarted by the user, as is proper for all database panics.
          */
         databaseHealth.healed();
+        started = true;
     }
 
     private LifeSupport initializeExtensions( Dependencies dependencies )
@@ -598,7 +595,7 @@ public class Database extends LifecycleAdapter
     @Override
     public synchronized void stop()
     {
-        if ( !life.isRunning() )
+        if ( !started )
         {
             return;
         }
@@ -608,6 +605,7 @@ public class Database extends LifecycleAdapter
         // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
         // Shut down all services in here, effectively making the database unusable for anyone who tries.
         life.shutdown();
+        started = false;
     }
 
     @Override

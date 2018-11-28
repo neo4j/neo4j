@@ -198,8 +198,8 @@ public class GraphDatabaseFacadeFactory
         GraphDatabaseFacade databaseFacade = null;
         try
         {
-            platform.life.start();
             edition.createDatabases( databaseManager, config );
+            platform.life.start();
             String activeDatabase = config.get( GraphDatabaseSettings.active_database );
             databaseFacade = databaseManager.getDatabaseContext( activeDatabase ).orElseThrow( () -> new IllegalStateException(
                     String.format( "Database %s not found. Please check the logs for startup errors.", activeDatabase ) ) ).getDatabaseFacade();
