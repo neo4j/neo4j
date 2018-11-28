@@ -33,7 +33,7 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -58,14 +58,14 @@ class SchemaImplMockTest
         assertThat( e.getMessage(), Matchers.containsString( Exceptions.stringify( cause ) ) );
     }
 
-    private IndexDefinitionImpl mockIndexDefinition()
+    private static IndexDefinitionImpl mockIndexDefinition()
     {
         IndexDefinitionImpl indexDefinition = mock( IndexDefinitionImpl.class );
         when( indexDefinition.getIndexReference() ).thenReturn( IndexReference.NO_INDEX );
         return indexDefinition;
     }
 
-    private KernelTransaction mockKernelTransaction() throws IndexNotFoundKernelException
+    private static KernelTransaction mockKernelTransaction() throws IndexNotFoundKernelException
     {
         SchemaRead schemaRead = mock( SchemaRead.class );
         when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( InternalIndexState.FAILED );
