@@ -28,14 +28,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.values.storable.CoordinateReferenceSystem;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.neo4j.helpers.collection.Iterators.array;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.WGS84;
-import static org.neo4j.values.storable.Values.pointValue;
 
 class IndexSpecificSpaceFillingCurveSettingsCacheTest
 {
@@ -94,21 +90,5 @@ class IndexSpecificSpaceFillingCurveSettingsCacheTest
         ToMapSettingVisitor visitor = new ToMapSettingVisitor();
         indexSettings.visitIndexSpecificSettings( visitor );
         assertEquals( initialSettings, visitor.map );
-    }
-
-    @Test
-    void shouldRecognizeNumberOfSettingsExceedingLimit()
-    {
-        // given
-        IndexSpecificSpaceFillingCurveSettingsCache indexSettings = new IndexSpecificSpaceFillingCurveSettingsCache( globalSettings, new HashMap<>() );
-        indexSettings.forCrs( WGS84, true );
-        int limit = 2;
-
-        // when
-        assertFalse( indexSettings.additionalValuesCouldExceed( array( pointValue( WGS84, 1, 2 ) ), limit ) );
-        boolean exceeds = indexSettings.additionalValuesCouldExceed( array( pointValue( Cartesian, 1, 2 ), pointValue( Cartesian_3D, 1, 2, 3 ) ), limit );
-
-        // then
-        assertTrue( exceeds );
     }
 }
