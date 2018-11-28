@@ -26,7 +26,7 @@ import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 
 import static java.lang.String.format;
 
-public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
+class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
 {
     static final String MESSAGE_STARTED = "Starting upgrade of database";
     static final String MESSAGE_COMPLETED = "Successfully finished upgrade of database";
@@ -35,7 +35,7 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     private int numStages;
     private int currentStage;
 
-    public VisibleMigrationProgressMonitor( Log log )
+    VisibleMigrationProgressMonitor( Log log )
     {
         this.log = log;
     }

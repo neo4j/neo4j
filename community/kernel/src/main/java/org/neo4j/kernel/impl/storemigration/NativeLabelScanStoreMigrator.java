@@ -53,14 +53,14 @@ import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.format.RecordFormatSelector.selectForVersion;
 
-public class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
+class NativeLabelScanStoreMigrator extends AbstractStoreMigrationParticipant
 {
     private final FileSystemAbstraction fileSystem;
     private final PageCache pageCache;
     private final Config config;
     private boolean nativeLabelScanStoreMigrated;
 
-    public NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
+    NativeLabelScanStoreMigrator( FileSystemAbstraction fileSystem, PageCache pageCache, Config config )
     {
         super( "Native label scan index" );
         this.fileSystem = fileSystem;
