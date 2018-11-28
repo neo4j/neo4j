@@ -92,13 +92,14 @@ import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstra
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyDeleter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.PropertyTraverser;
@@ -106,7 +107,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReade
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
 import org.neo4j.kernel.impl.store.NeoStores;

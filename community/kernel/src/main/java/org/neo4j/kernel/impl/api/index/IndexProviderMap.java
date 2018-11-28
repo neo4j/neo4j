@@ -24,8 +24,8 @@ import java.util.function.Consumer;
 import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 
 /**
  * Contains mapping from {@link IndexProviderDescriptor} or provider name to {@link IndexProvider}.

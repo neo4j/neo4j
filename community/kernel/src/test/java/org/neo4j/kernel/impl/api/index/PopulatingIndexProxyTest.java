@@ -25,7 +25,7 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 
 import static org.mockito.Mockito.verify;
 

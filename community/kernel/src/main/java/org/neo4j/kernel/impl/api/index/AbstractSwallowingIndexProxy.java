@@ -24,7 +24,7 @@ import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.impl.api.index.updater.SwallowingIndexUpdater;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 
 public abstract class AbstractSwallowingIndexProxy implements IndexProxy
 {

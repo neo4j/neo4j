@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.SchemaRuleAccess;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageProperty;
@@ -160,7 +161,7 @@ class TransactionToRecordStateVisitor extends TxStateVisitor.Adapter
     @Override
     public void visitAddedIndex( IndexDescriptor index )
     {
-        SchemaRule rule = ((org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor) index).withId( schemaStorage.newRuleId() );
+        SchemaRule rule = ((org.neo4j.kernel.impl.index.schema.IndexDescriptor) index).withId( schemaStorage.newRuleId() );
         recordState.createSchemaRule( rule );
     }
 

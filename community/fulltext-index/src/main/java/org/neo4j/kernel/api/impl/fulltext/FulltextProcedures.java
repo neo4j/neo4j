@@ -54,7 +54,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.builtinprocs.IndexProcedures;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Name;

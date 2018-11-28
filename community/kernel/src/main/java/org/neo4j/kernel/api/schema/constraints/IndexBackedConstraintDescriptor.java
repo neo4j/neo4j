@@ -21,8 +21,8 @@ package org.neo4j.kernel.api.schema.constraints;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.schema.SchemaUtil;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
 

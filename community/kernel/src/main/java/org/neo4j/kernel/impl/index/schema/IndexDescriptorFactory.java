@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
+package org.neo4j.kernel.impl.index.schema;
 
 import java.util.Optional;
 
@@ -25,8 +25,8 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static org.neo4j.kernel.api.index.IndexProviderDescriptor.UNDECIDED;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type.GENERAL;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.GENERAL;
+import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.UNIQUE;
 
 public class IndexDescriptorFactory
 {

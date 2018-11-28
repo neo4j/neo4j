@@ -36,7 +36,7 @@ import org.neo4j.kernel.api.index.IndexPopulator;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
 import org.neo4j.values.storable.Value;
 
 /**

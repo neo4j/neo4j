@@ -42,10 +42,9 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.index.IndexEntryUpdate;
+import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.NodePropertyAccessor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.kernel.api.index.IndexSample;
 import org.neo4j.values.storable.Values;
 
 import static java.util.Arrays.asList;

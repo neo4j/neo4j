@@ -21,16 +21,16 @@ package org.neo4j.kernel.impl.store.record;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.forSchema;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory.uniqueForSchema;
+import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.forSchema;
+import static org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory.uniqueForSchema;
 import static org.neo4j.test.assertion.Assert.assertException;
 
 public class IndexRuleTest extends SchemaRuleTestBase

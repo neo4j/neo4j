@@ -25,7 +25,6 @@ import org.mockito.stubbing.Answer;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.NodeValueIndexProgressor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 
 import static org.neo4j.collection.PrimitiveLongResourceCollections.iterator;
 import static org.neo4j.graphdb.Resource.EMPTY;

@@ -36,12 +36,12 @@ import org.neo4j.kernel.api.schema.constraints.NodeExistenceConstraintDescriptor
 import org.neo4j.kernel.api.schema.constraints.NodeKeyConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.RelExistenceConstraintDescriptor;
 import org.neo4j.kernel.api.schema.constraints.UniquenessConstraintDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaSupplier;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;
-import static org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor.Type.UNIQUE;
+import static org.neo4j.kernel.impl.index.schema.IndexDescriptor.Type.UNIQUE;
 
 public class DbStructureCollector implements DbStructureVisitor
 {

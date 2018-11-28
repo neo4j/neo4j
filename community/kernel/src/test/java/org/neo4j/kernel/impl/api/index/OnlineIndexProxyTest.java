@@ -26,8 +26,8 @@ import java.io.IOException;
 import org.neo4j.kernel.api.index.IndexAccessor;
 import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;

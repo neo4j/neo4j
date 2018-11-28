@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.index.schema;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.values.storable.ValueType;
 
 class SpatialValueCreatorUtil extends ValueCreatorUtil<SpatialIndexKey,NativeIndexValue>
