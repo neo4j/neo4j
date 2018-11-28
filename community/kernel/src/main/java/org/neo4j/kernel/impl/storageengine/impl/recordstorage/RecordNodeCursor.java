@@ -35,7 +35,8 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
     private long next;
     private long highMark;
     private long nextStoreReference;
-    private boolean open, batched;
+    private boolean open;
+    private boolean batched;
 
     RecordNodeCursor( NodeStore read )
     {
@@ -111,8 +112,8 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
         {
             pageCursor = nodePage( start );
         }
-        RecordNodeCursor.this.next = start;
-        RecordNodeCursor.this.highMark = Math.min( stop, max );
+        next = start;
+        highMark = Math.min( stop, max );
         return true;
     }
 
@@ -201,7 +202,8 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             {
                 if ( isSingle() || batched )
                 {
-                    //we are a "single cursor"
+                    //we are a "single cursor" or a "batched scan"
+                    //we don't want to set a new highMark
                     next = NO_ID;
                     return inUse();
                 }
