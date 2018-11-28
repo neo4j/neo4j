@@ -351,58 +351,17 @@ public class PackStream
 
         protected void packBytesHeader( int size ) throws IOException
         {
-            if ( size <= Byte.MAX_VALUE )
-            {
-                out.writeShort( (short) (BYTES_8 << 8 | size) );
-            }
-            else if ( size <= Short.MAX_VALUE )
-            {
-                out.writeByte( BYTES_16 ).writeShort( (short) size );
-            }
-            else
-            {
-                out.writeByte( BYTES_32 ).writeInt( size );
-            }
+            packHeader( size, BYTES_8, BYTES_16, BYTES_32 );
         }
 
-        private void packStringHeader( int size ) throws IOException
+        void packStringHeader( int size ) throws IOException
         {
-            if ( size < 0x10 )
-            {
-                out.writeByte( (byte) (TINY_STRING | size) );
-            }
-            else if ( size <= Byte.MAX_VALUE )
-            {
-                out.writeShort( (short) (STRING_8 << 8 | size) );
-            }
-            else if ( size <= Short.MAX_VALUE )
-            {
-                out.writeByte( STRING_16 ).writeShort( (short) size );
-            }
-            else
-            {
-                out.writeByte( STRING_32 ).writeInt( size );
-            }
+            packHeader( size, TINY_STRING, STRING_8, STRING_16, STRING_32 );
         }
 
         public void packListHeader( int size ) throws IOException
         {
-            if ( size < 0x10 )
-            {
-                out.writeByte( (byte) (TINY_LIST | size) );
-            }
-            else if ( size <= Byte.MAX_VALUE )
-            {
-                out.writeShort( (short) (LIST_8 << 8 | size) );
-            }
-            else if ( size <= Short.MAX_VALUE )
-            {
-                out.writeByte( LIST_16 ).writeShort( (short) size );
-            }
-            else
-            {
-                out.writeByte( LIST_32 ).writeInt( size );
-            }
+            packHeader( size, TINY_LIST, LIST_8, LIST_16, LIST_32 );
         }
 
         public void packListStreamHeader() throws IOException
@@ -412,22 +371,7 @@ public class PackStream
 
         public void packMapHeader( int size ) throws IOException
         {
-            if ( size < 0x10 )
-            {
-                out.writeByte( (byte) (TINY_MAP | size) );
-            }
-            else if ( size <= Byte.MAX_VALUE )
-            {
-                out.writeShort( (short) (MAP_8 << 8 | size) );
-            }
-            else if ( size <= Short.MAX_VALUE )
-            {
-                out.writeByte( MAP_16 ).writeShort( (short) size );
-            }
-            else
-            {
-                out.writeByte( MAP_32 ).writeInt( size );
-            }
+            packHeader( size, TINY_MAP, MAP_8, MAP_16, MAP_32 );
         }
 
         public void packMapStreamHeader() throws IOException
@@ -460,6 +404,39 @@ public class PackStream
             out.writeByte( END_OF_STREAM );
         }
 
+        private void packHeader( int size, byte marker8, byte marker16, byte marker32 ) throws IOException
+        {
+            /*
+            * The code here is on purpose to test against the maximum value of a signed byte rather than a unsigned byte.
+            * We pack values that in range 2^7 ~ 2^8-1 with marker16 instead of marker8
+            * to prevent us from breaking any clients that are reading this size as a signed value.
+            * Similar case applies to Short.MAX_VALUE
+            * */
+            if ( size <= Byte.MAX_VALUE )
+            {
+                out.writeShort( (short) (marker8 << 8 | size) );
+            }
+            else if ( size <= Short.MAX_VALUE )
+            {
+                out.writeByte( marker16 ).writeShort( (short) size );
+            }
+            else
+            {
+                out.writeByte( marker32 ).writeInt( size );
+            }
+        }
+
+        private void packHeader( int size, byte marker4, byte marker8, byte marker16, byte marker32 ) throws IOException
+        {
+            if ( size < 0x10 )
+            {
+                out.writeByte( (byte) (marker4 | size) );
+            }
+            else
+            {
+                packHeader( size, marker8, marker16, marker32 );
+            }
+        }
     }
 
     public static class Unpacker
@@ -519,7 +496,7 @@ public class PackStream
             case LIST_16:
                 return unpackUINT16();
             case LIST_32:
-                return unpackUINT32();
+                return unpackUINT32( PackType.LIST );
             case LIST_STREAM:
                 return UNKNOWN_SIZE;
             default:
@@ -544,7 +521,7 @@ public class PackStream
             case MAP_16:
                 return unpackUINT16();
             case MAP_32:
-                return unpackUINT32();
+                return unpackUINT32( PackType.MAP );
             case MAP_STREAM:
                 return UNKNOWN_SIZE;
             default:
@@ -631,15 +608,7 @@ public class PackStream
                 break;
             case BYTES_32:
             {
-                long longSize = unpackUINT32();
-                if ( longSize <= Integer.MAX_VALUE )
-                {
-                    size = (int) longSize;
-                }
-                else
-                {
-                    throw new Overflow( "BYTES_32 too long for Java" );
-                }
+                size = unpackUINT32( PackType.BYTES );
                 break;
             }
             default:
@@ -672,15 +641,7 @@ public class PackStream
                     break;
                 case STRING_32:
                 {
-                    long longSize = unpackUINT32();
-                    if ( longSize <= Integer.MAX_VALUE )
-                    {
-                        size = (int) longSize;
-                    }
-                    else
-                    {
-                        throw new Overflow( "STRING_32 too long for Java" );
-                    }
+                    size = unpackUINT32( PackType.STRING );
                     break;
                 }
                 default:
@@ -730,6 +691,19 @@ public class PackStream
         private long unpackUINT32() throws IOException
         {
             return in.readInt() & 0xFFFFFFFFL;
+        }
+
+        private int unpackUINT32( PackType type ) throws IOException
+        {
+            long longSize = unpackUINT32();
+            if ( longSize <= Integer.MAX_VALUE )
+            {
+                return (int) longSize;
+            }
+            else
+            {
+                throw new Overflow( String.format( "%s_32 too long for Java", type ) );
+            }
         }
 
         public void unpackEndOfStream() throws IOException
