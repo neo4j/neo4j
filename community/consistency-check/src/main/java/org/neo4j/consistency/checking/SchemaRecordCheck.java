@@ -144,9 +144,9 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         {
             checkSchema( rule, record, records, engine );
 
-            if ( rule.canSupportUniqueConstraint() && rule.getOwningConstraint() != null )
+            if ( rule.isUnique() && rule.hasOwningConstraintReference() )
             {
-                DynamicRecord previousObligation = constraintObligations.put( rule.getOwningConstraint(), record.clone() );
+                DynamicRecord previousObligation = constraintObligations.put( rule.owningConstraintReference(), record.clone() );
                 if ( previousObligation != null )
                 {
                     engine.report().duplicateObligation( previousObligation );
@@ -180,12 +180,12 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
         public void checkIndexRule( StoreIndexDescriptor rule, DynamicRecord record, RecordAccess records,
                                     CheckerEngine<DynamicRecord,ConsistencyReport.SchemaConsistencyReport> engine )
         {
-            if ( rule.canSupportUniqueConstraint() )
+            if ( rule.isUnique() )
             {
                 DynamicRecord obligation = indexObligations.get( rule.getId() );
                 if ( obligation == null ) // no pointer to here
                 {
-                    if ( rule.getOwningConstraint() != null ) // we only expect a pointer if we have an owner
+                    if ( rule.hasOwningConstraintReference() ) // we only expect a pointer if we have an owner
                     {
                         engine.report().missingObligation( SchemaRule.Kind.UNIQUENESS_CONSTRAINT );
                     }
@@ -193,7 +193,7 @@ public class SchemaRecordCheck implements RecordCheck<DynamicRecord, Consistency
                 else
                 {
                     // if someone points to here, it must be our owner
-                    if ( obligation.getId() != rule.getOwningConstraint() )
+                    if ( obligation.getId() != rule.owningConstraintReference() )
                     {
                         engine.report().constraintIndexRuleNotReferencingBack( obligation );
                     }

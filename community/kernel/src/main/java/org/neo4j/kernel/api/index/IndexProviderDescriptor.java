@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api.index;
 
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
+
 public class IndexProviderDescriptor
 {
     /**
@@ -88,5 +90,10 @@ public class IndexProviderDescriptor
     public String toString()
     {
         return "{key=" + key + ", version=" + version + "}";
+    }
+
+    public static IndexProviderDescriptor from( IndexDescriptor descriptor )
+    {
+        return new IndexProviderDescriptor( descriptor.providerKey(), descriptor.providerVersion() );
     }
 }

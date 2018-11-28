@@ -124,7 +124,7 @@ public class PropertyAndNodeIndexedCheck implements RecordCheck<NodeRecord, Cons
                     {
                         long nodeId = record.getId();
 
-                        if ( indexRule.canSupportUniqueConstraint() )
+                        if ( indexRule.isUnique() )
                         {
                             verifyNodeCorrectlyIndexedUniquely( nodeId, values, engine, indexRule, reader );
                         }

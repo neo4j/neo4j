@@ -29,6 +29,12 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
     boolean isUnique();
 
     /**
+     * @return whether or not this descriptor has a user-specified {@link #name()}. Regardless the {@link #name()} method will
+     * return some name, at the very least an automatically generated one.
+     */
+    boolean hasUserSuppliedName();
+
+    /**
      * The unique name for this index - either automatically generated or user supplied at creation.
      */
     String name();
@@ -42,4 +48,8 @@ public interface IndexDescriptor extends SchemaDescriptorSupplier
     boolean isFulltextIndex();
 
     boolean isEventuallyConsistent();
+
+    String providerKey();
+
+    String providerVersion();
 }

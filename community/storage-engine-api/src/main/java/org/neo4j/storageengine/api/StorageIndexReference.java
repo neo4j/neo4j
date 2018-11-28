@@ -23,5 +23,19 @@ import org.neo4j.storageengine.api.schema.IndexDescriptor;
 
 public interface StorageIndexReference extends IndexDescriptor
 {
+    /**
+     * @return reference to this index.
+     */
     long indexReference();
+
+    /**
+     * @return whether or not this index has an owning constraint. This method is only valid to call if this index is {@link #isUnique() unique}.
+     */
+    boolean hasOwningConstraintReference();
+
+    /**
+     * @return reference to the owning constraint, if present.
+     * @throws IllegalStateException if this isn't a {@link #isUnique() unique} index or if this index doesn't have an owning constraint.
+     */
+    long owningConstraintReference();
 }

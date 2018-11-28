@@ -454,7 +454,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
         assertThat( deserialized.providerDescriptor(), equalTo( indexProvider ) );
         assertThat( deserialized.getName(), is( name ) );
-        assertException( deserialized::getOwningConstraint, IllegalStateException.class );
+        assertException( deserialized::hasOwningConstraintReference, IllegalStateException.class );
+        assertException( deserialized::owningConstraintReference, IllegalStateException.class );
     }
 
     private void assertParseUniqueIndexRule( String serialized, String name ) throws MalformedSchemaRuleException
@@ -474,7 +475,8 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
         assertThat( deserialized, equalTo( index ) );
         assertThat( deserialized.schema(), equalTo( index.schema() ) );
         assertThat( deserialized.providerDescriptor(), equalTo( indexProvider ) );
-        assertThat( deserialized.getOwningConstraint(), equalTo( constraintId ) );
+        assertThat( deserialized.hasOwningConstraintReference(), equalTo( true ) );
+        assertThat( deserialized.owningConstraintReference(), equalTo( constraintId ) );
         assertThat( deserialized.getName(), is( name ) );
     }
 

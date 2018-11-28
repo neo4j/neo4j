@@ -146,8 +146,7 @@ public class SchemaRuleSerialization
             target.put( UNIQUE_INDEX );
 
             // The owning constraint can be null. See IndexRule.getOwningConstraint()
-            Long owningConstraint = indexDescriptor.getOwningConstraint();
-            target.putLong( owningConstraint == null ? NO_OWNING_CONSTRAINT_YET : owningConstraint );
+            target.putLong( indexDescriptor.hasOwningConstraintReference() ? indexDescriptor.owningConstraintReference() : NO_OWNING_CONSTRAINT_YET );
             break;
 
         default:

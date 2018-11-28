@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -292,7 +291,7 @@ public class AllStoreHolder extends Read
             // This means we have invalid label or property ids.
             return IndexReference.NO_INDEX;
         }
-        IndexDescriptor index = storageReader.indexGetForSchema( descriptor );
+        StorageIndexReference index = storageReader.indexGetForSchema( descriptor );
         if ( ktx.hasTxStateWithChanges() )
         {
             DiffSets<IndexDescriptor> diffSets = ktx.txState().indexDiffSetsByLabel( label );
@@ -526,9 +525,9 @@ public class AllStoreHolder extends Read
     {
         acquireSharedSchemaLock( index.schema() );
         ktx.assertOpen();
-        if ( index instanceof StoreIndexDescriptor )
+        if ( index instanceof StorageIndexReference )
         {
-            return ((StoreIndexDescriptor) index).getId();
+            return ((StorageIndexReference) index).indexReference();
         }
         else
         {

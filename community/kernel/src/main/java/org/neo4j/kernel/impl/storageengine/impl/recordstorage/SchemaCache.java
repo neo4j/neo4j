@@ -40,10 +40,9 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.schema.CapableIndexDescriptor;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
@@ -65,7 +64,7 @@ public class SchemaCache
         this.schemaCacheState = new SchemaCacheState( constraintSemantics, initialRules, indexProviderMap );
     }
 
-    public Iterable<CapableIndexDescriptor> indexDescriptors()
+    public Iterable<StorageIndexReference> indexDescriptors()
     {
         return schemaCacheState.indexDescriptors();
     }
@@ -159,22 +158,22 @@ public class SchemaCache
         }
     }
 
-    public CapableIndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
+    public StorageIndexReference indexDescriptor( SchemaDescriptor descriptor )
     {
         return schemaCacheState.indexDescriptor( descriptor );
     }
 
-    public Iterator<CapableIndexDescriptor> indexDescriptorsForLabel( int labelId )
+    public Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
     {
         return schemaCacheState.indexDescriptorsForLabel( labelId );
     }
 
-    public Iterator<CapableIndexDescriptor> indexesByProperty( int propertyId )
+    public Iterator<StorageIndexReference> indexesByProperty( int propertyId )
     {
         return schemaCacheState.indexesByProperty( propertyId );
     }
 
-    public CapableIndexDescriptor indexDescriptorForName( String name )
+    public StorageIndexReference indexDescriptorForName( String name )
     {
         return schemaCacheState.indexDescriptorByName( name );
     }
@@ -184,15 +183,15 @@ public class SchemaCache
         private final ConstraintSemantics constraintSemantics;
         private final IndexProviderMap indexProviderMap;
         private final Set<ConstraintDescriptor> constraints;
-        private final MutableLongObjectMap<CapableIndexDescriptor> indexDescriptorById;
+        private final MutableLongObjectMap<StorageIndexReference> indexDescriptorById;
         private final MutableLongObjectMap<ConstraintRule> constraintRuleById;
 
-        private final Map<SchemaDescriptor,CapableIndexDescriptor> indexDescriptors;
-        private final MutableIntObjectMap<Set<CapableIndexDescriptor>> indexDescriptorsByLabel;
-        private final Map<String,CapableIndexDescriptor> indexDescriptorsByName;
+        private final Map<SchemaDescriptor,StorageIndexReference> indexDescriptors;
+        private final MutableIntObjectMap<Set<StorageIndexReference>> indexDescriptorsByLabel;
+        private final Map<String,StorageIndexReference> indexDescriptorsByName;
 
         private final Map<Class<?>,Object> dependantState;
-        private final MutableIntObjectMap<List<CapableIndexDescriptor>> indexByProperty;
+        private final MutableIntObjectMap<List<StorageIndexReference>> indexByProperty;
 
         SchemaCacheState( ConstraintSemantics constraintSemantics, Iterable<SchemaRule> rules, IndexProviderMap indexProviderMap )
         {
@@ -235,7 +234,7 @@ public class SchemaCache
             }
         }
 
-        Iterable<CapableIndexDescriptor> indexDescriptors()
+        Iterable<StorageIndexReference> indexDescriptors()
         {
             return indexDescriptorById.values();
         }
@@ -265,25 +264,25 @@ public class SchemaCache
             return constraints.iterator();
         }
 
-        CapableIndexDescriptor indexDescriptor( SchemaDescriptor descriptor )
+        StorageIndexReference indexDescriptor( SchemaDescriptor descriptor )
         {
             return indexDescriptors.get( descriptor );
         }
 
-        CapableIndexDescriptor indexDescriptorByName( String name )
+        StorageIndexReference indexDescriptorByName( String name )
         {
             return indexDescriptorsByName.get( name );
         }
 
-        Iterator<CapableIndexDescriptor> indexesByProperty( int propertyId )
+        Iterator<StorageIndexReference> indexesByProperty( int propertyId )
         {
-            List<CapableIndexDescriptor> indexes = indexByProperty.get( propertyId );
+            List<StorageIndexReference> indexes = indexByProperty.get( propertyId );
             return (indexes == null) ? emptyIterator() : indexes.iterator();
         }
 
-        Iterator<CapableIndexDescriptor> indexDescriptorsForLabel( int labelId )
+        Iterator<StorageIndexReference> indexDescriptorsForLabel( int labelId )
         {
-            Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.get( labelId );
+            Set<StorageIndexReference> forLabel = indexDescriptorsByLabel.get( labelId );
             return forLabel == null ? emptyIterator() : forLabel.iterator();
         }
 
@@ -300,22 +299,22 @@ public class SchemaCache
                 constraintRuleById.put( constraintRule.getId(), constraintRule );
                 constraints.add( constraintSemantics.readConstraint( constraintRule ) );
             }
-            else if ( rule instanceof StoreIndexDescriptor )
+            else if ( rule instanceof StorageIndexReference )
             {
-                CapableIndexDescriptor index = indexProviderMap.withCapabilities( (StoreIndexDescriptor) rule );
-                indexDescriptorById.put( index.getId(), index );
+                StorageIndexReference index = (StorageIndexReference) rule;
+                indexDescriptorById.put( index.indexReference(), index );
                 SchemaDescriptor schemaDescriptor = index.schema();
                 indexDescriptors.put( schemaDescriptor, index );
                 indexDescriptorsByName.put( rule.getName(), index );
                 for ( int entityTokenId : schemaDescriptor.getEntityTokenIds() )
                 {
-                    Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.getIfAbsentPut( entityTokenId, HashSet::new );
+                    Set<StorageIndexReference> forLabel = indexDescriptorsByLabel.getIfAbsentPut( entityTokenId, HashSet::new );
                     forLabel.add( index );
                 }
 
                 for ( int propertyId : index.schema().getPropertyIds() )
                 {
-                    List<CapableIndexDescriptor> indexesForProperty = indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
+                    List<StorageIndexReference> indexesForProperty = indexByProperty.getIfAbsentPut( propertyId, ArrayList::new );
                     indexesForProperty.add( index );
                 }
             }
@@ -330,14 +329,14 @@ public class SchemaCache
             }
             else if ( indexDescriptorById.containsKey( id ) )
             {
-                CapableIndexDescriptor index = indexDescriptorById.remove( id );
+                StorageIndexReference index = indexDescriptorById.remove( id );
                 SchemaDescriptor schema = index.schema();
                 indexDescriptors.remove( schema );
-                indexDescriptorsByName.remove( index.getName(), index );
+                indexDescriptorsByName.remove( index.name(), index );
 
                 for ( int entityTokenId : schema.getEntityTokenIds() )
                 {
-                    Set<CapableIndexDescriptor> forLabel = indexDescriptorsByLabel.get( entityTokenId );
+                    Set<StorageIndexReference> forLabel = indexDescriptorsByLabel.get( entityTokenId );
                     forLabel.remove( index );
                     if ( forLabel.isEmpty() )
                     {
@@ -347,7 +346,7 @@ public class SchemaCache
 
                 for ( int propertyId : index.schema().getPropertyIds() )
                 {
-                    List<CapableIndexDescriptor> forProperty = indexByProperty.get( propertyId );
+                    List<StorageIndexReference> forProperty = indexByProperty.get( propertyId );
                     forProperty.remove( index );
                     if ( forProperty.isEmpty() )
                     {

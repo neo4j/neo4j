@@ -26,7 +26,6 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.kernel.api.StatementConstants;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.TokenHolders;
-import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.NodeStore;
@@ -167,15 +166,8 @@ public class RecordStorageReader implements StorageReader
     @Override
     public Long indexGetOwningUniquenessConstraintId( StorageIndexReference index )
     {
-        if ( index instanceof StoreIndexDescriptor )
-        {
-            Long owningConstraint = ((StoreIndexDescriptor) index).getOwningConstraint();
-            return schemaCache.hasConstraintRule( owningConstraint ) ? owningConstraint : null;
-        }
-        else
-        {
-            return null;
-        }
+        return index.hasOwningConstraintReference() && schemaCache.hasConstraintRule( index.owningConstraintReference() ) ? index.owningConstraintReference()
+                                                                                                                          : null;
     }
 
     @Override

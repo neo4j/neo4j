@@ -67,7 +67,7 @@ public class IndexCheck implements RecordCheck<IndexEntry,ConsistencyReport.Inde
             engine.comparativeCheck( records.node( id ), nodeChecker );
             break;
         case RELATIONSHIP:
-            if ( indexRule.canSupportUniqueConstraint() )
+            if ( indexRule.isUnique() )
             {
                 engine.report().relationshipConstraintIndex();
             }

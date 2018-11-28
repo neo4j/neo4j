@@ -32,6 +32,7 @@ import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.impl.index.schema.FailingGenericNativeIndexProviderFactory;
+import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -83,8 +84,9 @@ public class DbIndexesFailureMessageIT extends KernelIntegrationTest
         assertFalse( stream.hasNext() );
 
         // Then
+        StoreIndexDescriptor index = (StoreIndexDescriptor) transaction.schemaRead().index( descriptor );
         assertEquals( "INDEX ON :Fail(foo)", result[0] );
-        assertEquals( "Unnamed index", result[1] );
+        assertEquals( "index_" + index.getId(), result[1] );
         assertEquals( Collections.singletonList( "Fail" ), result[2] );
         assertEquals( Collections.singletonList( "foo" ), result[3] );
         assertEquals( "FAILED", result[4] );

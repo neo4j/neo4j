@@ -44,11 +44,11 @@ public class IndexRuleTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
-        assertFalse( indexRule.canSupportUniqueConstraint() );
+        assertFalse( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule, equalTo( descriptor ) );
         assertThat( indexRule.providerDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
-        assertException( indexRule::getOwningConstraint, IllegalStateException.class );
+        assertException( indexRule::owningConstraintReference, IllegalStateException.class );
         assertException( () -> indexRule.withOwningConstraint( RULE_ID_2 ), IllegalStateException.class );
     }
 
@@ -61,15 +61,15 @@ public class IndexRuleTest extends SchemaRuleTestBase
 
         // THEN
         assertThat( indexRule.getId(), equalTo( RULE_ID ) );
-        assertTrue( indexRule.canSupportUniqueConstraint() );
+        assertTrue( indexRule.isUnique() );
         assertThat( indexRule.schema(), equalTo( descriptor.schema() ) );
         assertThat( indexRule, equalTo( descriptor ) );
         assertThat( indexRule.providerDescriptor(), equalTo( PROVIDER_DESCRIPTOR ) );
-        assertThat( indexRule.getOwningConstraint(), equalTo( null ) );
+        assertThat( indexRule.hasOwningConstraintReference(), equalTo( false ) );
 
         StoreIndexDescriptor withConstraint = indexRule.withOwningConstraint( RULE_ID_2 );
-        assertThat( withConstraint.getOwningConstraint(), equalTo( RULE_ID_2 ) );
-        assertThat( indexRule.getOwningConstraint(), equalTo( null ) ); // this is unchanged
+        assertThat( withConstraint.owningConstraintReference(), equalTo( RULE_ID_2 ) );
+        assertThat( indexRule.hasOwningConstraintReference(), equalTo( false ) ); // this is unchanged
     }
 
     @Test
@@ -87,7 +87,7 @@ public class IndexRuleTest extends SchemaRuleTestBase
         IndexDescriptor descriptor = uniqueForLabel( LABEL_ID, PROPERTY_ID_1 );
         StoreIndexDescriptor indexRule = descriptor.withId( RULE_ID );
 
-        assertTrue( indexRule.isIndexWithoutOwningConstraint() );
+        assertTrue( indexRule.isUnique() && !indexRule.hasOwningConstraintReference() );
     }
 
     private void assertEqualityByDescriptor( IndexDescriptor descriptor )

@@ -33,7 +33,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
 {
     private final long id;
     private final Long owningConstraintId;
-    private final String name;
 
     // ** Copy-constructor used by sub-classes.
     protected StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
@@ -41,23 +40,47 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
         super( indexDescriptor );
         this.id = indexDescriptor.id;
         this.owningConstraintId = indexDescriptor.owningConstraintId;
-        this.name = indexDescriptor.name;
     }
 
     // ** General purpose constructors.
-    StoreIndexDescriptor( IndexDescriptor descriptor, long id )
+
+    /**
+     * Convert a {@link StorageIndexReference} to a {@link StoreIndexDescriptor}.
+     */
+    public StoreIndexDescriptor( StorageIndexReference descriptor )
+    {
+        this( descriptor, descriptor.indexReference(), null );
+    }
+
+    /**
+     * Convert a {@link StorageIndexReference} to a {@link StoreIndexDescriptor} having an owning constraint id.
+     */
+    public StoreIndexDescriptor( StorageIndexReference descriptor, Long owningConstraintId )
+    {
+        this( descriptor, descriptor.indexReference(), owningConstraintId );
+    }
+
+    /**
+     * Convert a non-committed {@link org.neo4j.storageengine.api.schema.IndexDescriptor} to a {@link StoreIndexDescriptor},
+     * supplying an id, which effectively makes it act like a committed descriptor.
+     */
+    public StoreIndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor descriptor, long id )
     {
         this( descriptor, id, null );
     }
 
-    StoreIndexDescriptor( IndexDescriptor descriptor, long id, Long owningConstraintId )
+    /**
+     * Convert a non-committed {@link org.neo4j.storageengine.api.schema.IndexDescriptor} to a {@link StoreIndexDescriptor},
+     * supplying an id and owning constraint, which effectively makes it act like a committed descriptor.
+     */
+    public StoreIndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor descriptor, long id, Long owningConstraintId )
     {
         super( descriptor );
 
         this.id = id;
-        this.name = descriptor.userSuppliedName.map( SchemaRule::checkName ).orElse( "index_" + id );
+        userSuppliedName.ifPresent( SchemaRule::checkName );
 
-        if ( descriptor.providerDescriptor() == null )
+        if ( descriptor.providerKey() == null || descriptor.providerVersion() == null )
         {
             throw new IllegalArgumentException( "null provider descriptor prohibited" );
         }
@@ -70,7 +93,29 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
         this.owningConstraintId = owningConstraintId;
     }
 
+    @Override
+    public String name()
+    {
+        // Override the otherwise bland default to provide a bit more information now that we at least know the id
+        return userSuppliedName.orElse( "index_" + id );
+    }
+
     // ** Owning constraint
+
+    @Override
+    public boolean hasOwningConstraintReference()
+    {
+        assertUniqueTypeIndex();
+        return owningConstraintId != null;
+    }
+
+    private void assertUniqueTypeIndex()
+    {
+        if ( !isUnique() )
+        {
+            throw new IllegalStateException( "Can only get owner from constraint indexes." );
+        }
+    }
 
     /**
      * Return the owning constraints of this index.
@@ -83,23 +128,15 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
      * @throws IllegalStateException if this IndexRule cannot support uniqueness constraints (ei. the index is not
      *                               unique)
      */
-    public Long getOwningConstraint()
+    @Override
+    public long owningConstraintReference()
     {
-        if ( !canSupportUniqueConstraint() )
+        assertUniqueTypeIndex();
+        if ( owningConstraintId == null )
         {
-            throw new IllegalStateException( "Can only get owner from constraint indexes." );
+            throw new IllegalStateException( "No owning constraint for this descriptor" );
         }
         return owningConstraintId;
-    }
-
-    public boolean canSupportUniqueConstraint()
-    {
-        return type() == IndexDescriptor.Type.UNIQUE;
-    }
-
-    public boolean isIndexWithoutOwningConstraint()
-    {
-        return canSupportUniqueConstraint() && getOwningConstraint() == null;
     }
 
     /**
@@ -110,11 +147,8 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
      */
     public StoreIndexDescriptor withOwningConstraint( Long constraintId )
     {
-        if ( !canSupportUniqueConstraint() )
-        {
-            throw new IllegalStateException( this + " is not a constraint index" );
-        }
-        return new StoreIndexDescriptor( this, id, constraintId );
+        assertUniqueTypeIndex();
+        return new StoreIndexDescriptor( this, constraintId );
     }
 
     // ** Upgrade to capable
@@ -141,7 +175,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
     public String toString()
     {
         String ownerString = "";
-        if ( canSupportUniqueConstraint() )
+        if ( isUnique() )
         {
             ownerString = ", owner=" + owningConstraintId;
         }
@@ -165,6 +199,6 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
     @Override
     public String getName()
     {
-        return name;
+        return name();
     }
 }

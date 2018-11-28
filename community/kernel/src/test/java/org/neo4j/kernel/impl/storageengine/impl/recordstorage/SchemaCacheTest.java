@@ -28,7 +28,6 @@ import java.util.Set;
 
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
 import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -36,6 +35,7 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.test.Race;
@@ -201,7 +201,7 @@ public class SchemaCacheTest
 
         // When
         LabelSchemaDescriptor schema = forLabel( 1, 3 );
-        IndexReference descriptor = cache.indexDescriptor( schema );
+        StorageIndexReference descriptor = cache.indexDescriptor( schema );
 
         // Then
         assertThat( descriptor.schema(), equalTo( schema ) );
@@ -214,7 +214,7 @@ public class SchemaCacheTest
         SchemaCache schemaCache = newSchemaCache();
 
         // When
-        IndexReference schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
+        StorageIndexReference schemaIndexDescriptor = schemaCache.indexDescriptor( forLabel( 1, 1 ) );
 
         // Then
         assertNull( schemaIndexDescriptor );

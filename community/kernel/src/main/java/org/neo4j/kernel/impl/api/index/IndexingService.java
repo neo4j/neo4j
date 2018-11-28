@@ -873,7 +873,7 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                     indexMap.putIndexProxy( index );
                     continue;
                 }
-                boolean flipToTentative = descriptor.canSupportUniqueConstraint();
+                boolean flipToTentative = descriptor.isUnique();
                 if ( state == State.RUNNING )
                 {
                     if ( descriptor.schema().entityType() == EntityType.NODE )

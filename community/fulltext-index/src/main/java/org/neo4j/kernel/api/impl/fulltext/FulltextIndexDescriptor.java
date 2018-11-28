@@ -23,9 +23,10 @@ import org.apache.lucene.analysis.Analyzer;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.storageengine.api.StorageIndexReference;
+import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-class FulltextIndexDescriptor implements StorageIndexReference
+class FulltextIndexDescriptor implements IndexDescriptor
 {
     private final StorageIndexReference descriptor;
     private final String[] propertyNames;
@@ -70,6 +71,12 @@ class FulltextIndexDescriptor implements StorageIndexReference
     }
 
     @Override
+    public boolean hasUserSuppliedName()
+    {
+        return descriptor.hasUserSuppliedName();
+    }
+
+    @Override
     public String name()
     {
         return descriptor.name();
@@ -88,14 +95,20 @@ class FulltextIndexDescriptor implements StorageIndexReference
     }
 
     @Override
-    public long indexReference()
-    {
-        return descriptor.indexReference();
-    }
-
-    @Override
     public SchemaDescriptor schema()
     {
         return descriptor.schema();
+    }
+
+    @Override
+    public String providerKey()
+    {
+        return descriptor.providerKey();
+    }
+
+    @Override
+    public String providerVersion()
+    {
+        return descriptor.providerVersion();
     }
 }

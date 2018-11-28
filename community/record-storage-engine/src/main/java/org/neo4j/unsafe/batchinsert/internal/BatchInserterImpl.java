@@ -158,6 +158,7 @@ import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.SchemaRule;
+import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;
@@ -551,13 +552,14 @@ public class BatchInserterImpl implements BatchInserter
 
     private StoreIndexDescriptor[] getIndexesNeedingPopulation()
     {
-        List<StoreIndexDescriptor> indexesNeedingPopulation = new ArrayList<>();
-        for ( StoreIndexDescriptor rule : schemaCache.indexDescriptors() )
+        List<StorageIndexReference> indexesNeedingPopulation = new ArrayList<>();
+        for ( StorageIndexReference descriptor : schemaCache.indexDescriptors() )
         {
-            IndexProvider provider = indexProviderMap.lookup( rule.providerDescriptor() );
-            if ( provider.getInitialState( rule ) != InternalIndexState.FAILED )
+            StoreIndexDescriptor storeIndexDescriptor = new StoreIndexDescriptor( descriptor );
+            IndexProvider provider = indexProviderMap.lookup( storeIndexDescriptor.providerDescriptor() );
+            if ( provider.getInitialState( descriptor ) != InternalIndexState.FAILED )
             {
-                indexesNeedingPopulation.add( rule );
+                indexesNeedingPopulation.add( descriptor );
             }
         }
         return indexesNeedingPopulation.toArray( new StoreIndexDescriptor[0] );

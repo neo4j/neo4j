@@ -47,12 +47,12 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     protected final Optional<String> userSuppliedName;
     protected final IndexProviderDescriptor providerDescriptor;
 
-    IndexDescriptor( IndexDescriptor indexDescriptor )
+    public IndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor indexDescriptor )
     {
-        this( indexDescriptor.schema,
-              indexDescriptor.type,
-              indexDescriptor.userSuppliedName,
-              indexDescriptor.providerDescriptor );
+        this( indexDescriptor.schema(),
+              indexDescriptor.isUnique() ? Type.UNIQUE : Type.GENERAL,
+              indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),
+              IndexProviderDescriptor.from( indexDescriptor ) );
     }
 
     public IndexDescriptor( SchemaDescriptor schema,
@@ -101,6 +101,12 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     public String providerVersion()
     {
         return providerDescriptor.getVersion();
+    }
+
+    @Override
+    public boolean hasUserSuppliedName()
+    {
+        return userSuppliedName.isPresent();
     }
 
     @Override
@@ -206,11 +212,6 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
         {
             throw new IllegalArgumentException( "A " + getClass().getSimpleName() + " " + idName + " must be positive, got " + id );
         }
-    }
-
-    public Optional<String> getUserSuppliedName()
-    {
-        return userSuppliedName;
     }
 
     public enum Type

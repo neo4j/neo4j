@@ -149,6 +149,12 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
         }
 
         @Override
+        public boolean hasUserSuppliedName()
+        {
+            return false;
+        }
+
+        @Override
         public String name()
         {
             return UNNAMED_INDEX;

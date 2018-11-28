@@ -777,7 +777,7 @@ public class BatchInsertTest
                 indexRule = (StoreIndexDescriptor) rule1;
             }
             assertEquals( "index should reference constraint",
-                          constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
+                          constraintRule.getId(), indexRule.owningConstraintReference() );
             assertEquals( "constraint should reference index",
                           indexRule.getId(), constraintRule.getOwnedIndex() );
         }
