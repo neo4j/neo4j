@@ -28,6 +28,8 @@ import org.neo4j.storageengine.api.AllNodeScan;
 import org.neo4j.storageengine.api.StorageNodeCursor;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 
+import static java.lang.Math.min;
+
 public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
 {
     private NodeStore read;
@@ -113,7 +115,7 @@ public class RecordNodeCursor extends NodeRecord implements StorageNodeCursor
             pageCursor = nodePage( start );
         }
         next = start;
-        highMark = Math.min( stop, max );
+        highMark = min( stop, max );
         return true;
     }
 

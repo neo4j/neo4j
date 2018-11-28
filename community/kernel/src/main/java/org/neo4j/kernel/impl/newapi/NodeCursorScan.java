@@ -28,7 +28,9 @@ import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.storageengine.api.AllNodeScan;
-import org.neo4j.util.Preconditions;
+
+import static java.lang.Math.min;
+import static org.neo4j.util.Preconditions.requirePositive;
 
 final class NodeCursorScan implements Scan<NodeCursor>
 {
@@ -44,14 +46,14 @@ final class NodeCursorScan implements Scan<NodeCursor>
         this.allNodeScan = internalScan;
         this.read = read;
         this.hasChanges = read.hasTxStateWithChanges();
-        this.addedNodesArray = read.txState().addedAndRemovedNodes().getAdded().freeze().toArray();
+        this.addedNodesArray = read.txState().addedAndRemovedNodes().getAdded().toArray();
         this.addedNodesConsumed =  addedNodesArray.length == 0;
     }
 
     @Override
     public boolean reserveBatch( NodeCursor cursor, int sizeHint )
     {
-        Preconditions.requirePositive( sizeHint );
+        requirePositive( sizeHint );
 
         LongIterator addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         if ( hasChanges && !addedNodesConsumed )
@@ -61,7 +63,7 @@ final class NodeCursorScan implements Scan<NodeCursor>
             int addedStart = addedChunk.getAndAdd( sizeHint );
             if ( addedStart < addedNodesArray.length )
             {
-                int batchSize = Math.min( sizeHint, addedNodesArray.length - addedStart  );
+                int batchSize = min( sizeHint, addedNodesArray.length - addedStart  );
                 sizeHint -= batchSize;
                 addedNodes = new RangeLongIterator( addedNodesArray, addedStart, batchSize );
             }

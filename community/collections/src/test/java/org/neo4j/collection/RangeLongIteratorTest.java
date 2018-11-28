@@ -19,11 +19,7 @@
  */
 package org.neo4j.collection;
 
-import org.eclipse.collections.api.iterator.LongIterator;
 import org.junit.jupiter.api.Test;
-
-import java.util.ArrayList;
-import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,7 +38,7 @@ class RangeLongIteratorTest
         RangeLongIterator iterator = new RangeLongIterator( array, 2, 2 );
 
         // then
-        assertThat( iteratorAsList( iterator ), equalTo( asList( 3L, 4L ) ) );
+        assertThat( PrimitiveLongCollections.asList( iterator ), equalTo( asList( 3L, 4L ) ) );
     }
 
     @Test
@@ -56,16 +52,7 @@ class RangeLongIteratorTest
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 0, -1 ) );
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 10, 2 ) );
         assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 0, 12 ) );
-    }
-
-    private static List<Long> iteratorAsList( LongIterator iterator )
-    {
-        List<Long> list = new ArrayList<>();
-        while ( iterator.hasNext() )
-        {
-            list.add( iterator.next() );
-        }
-        return list;
+        assertThrows( IllegalArgumentException.class, () -> new RangeLongIterator( array, 4, 4 ) );
     }
 
 }

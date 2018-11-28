@@ -23,21 +23,21 @@ import org.eclipse.collections.api.iterator.LongIterator;
 
 import java.util.NoSuchElementException;
 
-import org.neo4j.util.Preconditions;
+import static org.neo4j.util.Preconditions.requireBetween;
 
 public class RangeLongIterator implements LongIterator
 {
     private final long[] array;
-    private final int stop;
+    private final int stopIndex;
     private int currentIndex;
 
     public RangeLongIterator( long[] array, int start, int size )
     {
-        Preconditions.requireBetween( start, 0, array.length );
-        Preconditions.requireBetween( size, 0, array.length + 1);
+        requireBetween( start, 0, array.length );
+        requireBetween( start + size, 0, array.length + 1);
         this.array = array;
         this.currentIndex = start;
-        this.stop = start + size;
+        this.stopIndex = start + size;
     }
 
     @Override
@@ -53,6 +53,6 @@ public class RangeLongIterator implements LongIterator
     @Override
     public boolean hasNext()
     {
-        return currentIndex < stop;
+        return currentIndex < stopIndex;
     }
 }
