@@ -36,7 +36,7 @@ abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationship
     final STORECURSOR storeCursor;
     RelationshipVisitor<RuntimeException> relationshipTxStateDataVisitor = new TxStateDataVisitor();
     // The visitor above will update the fields below
-    long currentAddedInTx;
+    long currentAddedInTx = NO_ID;
     private int txStateTypeId;
     long txStateSourceNodeReference;
     long txStateTargetNodeReference;

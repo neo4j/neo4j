@@ -32,7 +32,6 @@ import static org.junit.Assert.assertTrue;
 public abstract class RelationshipDenseSelectionTestBase<Traverser extends RelationshipDenseSelection>
         extends RelationshipSelectionTestBase
 {
-
     private TestRelationshipChain outA = new TestRelationshipChain( 42L );
 
     private TestRelationshipChain inA = new TestRelationshipChain( 42L )
@@ -186,6 +185,48 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
         assertOutgoing( traverser, 20, typeC );
         assertOutgoing( traverser, 21, typeC );
         assertIncoming( traverser, 22, typeC );
+        assertEmptyAndClosed( traverser );
+    }
+
+    @Test
+    public void shouldSelectNoOutgoingRelationshipsOnSelectingWithZeroLengthTypeIdArray()
+    {
+        // given
+        Traverser traverser = make();
+
+        // when
+        traverser.outgoing( innerGroupCursor, innerRelationshipCursor, new int[0] );
+
+        // then
+        assertEmpty( traverser );
+        assertEmptyAndClosed( traverser );
+    }
+
+    @Test
+    public void shouldSelectNoIncomingRelationshipsOnSelectingWithZeroLengthTypeIdArray()
+    {
+        // given
+        Traverser traverser = make();
+
+        // when
+        traverser.incoming( innerGroupCursor, innerRelationshipCursor, new int[0] );
+
+        // then
+        assertEmpty( traverser );
+        assertEmptyAndClosed( traverser );
+    }
+
+    @Test
+    public void shouldSelectNoRelationshipsOnSelectingWithZeroLengthTypeIdArray()
+    {
+        // given
+        Traverser traverser = make();
+
+        // when
+        traverser.all( innerGroupCursor, innerRelationshipCursor, new int[0] );
+
+        // then
+        assertEmpty( traverser );
         assertEmptyAndClosed( traverser );
     }
 
