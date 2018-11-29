@@ -71,9 +71,12 @@ public class ServerSettings implements LoadableConfig
     public static final Setting<List<String>> security_rules =
             setting( "dbms.security.http_authorization_classes", STRING_LIST, EMPTY );
 
-    @Description( "Number of Neo4j worker threads, your OS might enforce a lower limit than the maximum value " +
-            "specified here." )
-    @DocumentedDefaultValue( "Number of available processors (max 500)." )
+    @Description( "Number of Neo4j worker threads. This setting is only valid for REST, and does not influence bolt-server. " +
+            "It sets the amount of worker threads for the Jetty server used by neo4j-server. " +
+            "This option can be tuned when you plan to execute multiple, concurrent REST requests, " +
+            "with the aim of getting more throughput from the database. " +
+            "Your OS might enforce a lower limit than the maximum value specified here." )
+    @DocumentedDefaultValue( "Number of available processors, or 500 for machines which have more than 500 processors." )
     public static final Setting<Integer> webserver_max_threads = buildSetting( "dbms.threads.worker_count", INTEGER,
             "" + Math.min( Runtime.getRuntime().availableProcessors(), 500 ) ).constraint(
             range( 1, JettyThreadCalculator.MAX_THREADS ) ).build();
