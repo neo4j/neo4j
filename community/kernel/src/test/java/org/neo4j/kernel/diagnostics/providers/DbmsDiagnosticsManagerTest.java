@@ -34,7 +34,6 @@ import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.util.Collections.singletonList;
 import static java.util.Optional.of;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -62,8 +61,8 @@ class DbmsDiagnosticsManagerTest
         dependencies.satisfyDependency( databaseManager );
 
         when( databaseManager.listDatabases() ).thenReturn( singletonList( DEFAULT_DATABASE_NAME ) );
-        DatabaseContext context = mock( DatabaseContext.class, RETURNS_DEEP_STUBS );
-        when( context.getDependencies().resolveDependency( Database.class ) ).thenReturn( defaultDatabase );
+        DatabaseContext context = mock( DatabaseContext.class );
+        when( context.getDatabase() ).thenReturn( defaultDatabase );
         when( databaseManager.getDatabaseContext( DEFAULT_DATABASE_NAME ) ).thenReturn( of( context ) );
 
         diagnosticsManager = new DbmsDiagnosticsManager( dependencies, new SimpleLogService( logProvider ) );
