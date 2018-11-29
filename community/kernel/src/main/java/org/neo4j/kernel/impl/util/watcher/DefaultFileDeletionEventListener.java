@@ -28,8 +28,6 @@ import org.neo4j.io.fs.watcher.resource.WatchedResource;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.internal.LogService;
 
-import static java.lang.String.format;
-
 /**
  * Listener that will print notification about deleted filename into internal log.
  */
@@ -53,7 +51,7 @@ public class DefaultFileDeletionEventListener implements FileWatchEventListener
     {
         if ( isListenedResource( key ) && !fileNameFilter.test( fileName ) )
         {
-            internalLog.error( format( "'%s' which belongs to the '%s' database was deleted while it was running.", fileName, databaseName ) );
+            internalLog.error( "'%s' which belongs to the '%s' database was deleted while it was running.", fileName, databaseName );
         }
     }
 

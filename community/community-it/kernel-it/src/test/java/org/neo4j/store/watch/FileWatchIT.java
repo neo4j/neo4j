@@ -109,7 +109,7 @@ public class FileWatchIT
         deleteFile( testDirectory.storeDir(), fileName );
         deletionListener.awaitDeletionNotification();
 
-        logProvider.assertContainsMessageContaining(
+        logProvider.assertLogStringContains(
                 "'" + fileName + "' which belongs to the '" + storeDir.getName() + "' database was deleted while it was running." );
     }
 
@@ -156,7 +156,7 @@ public class FileWatchIT
         deleteStoreDirectory( storeDir, monitoredDirectory );
         deletionListener.awaitDeletionNotification();
 
-        logProvider.assertContainsMessageContaining( "'" + monitoredDirectory + "' which belongs to the '" + storeDir.getName() +
+        logProvider.assertLogStringContains( "'" + monitoredDirectory + "' which belongs to the '" + storeDir.getName() +
                 "' database was deleted while it was running." );
     }
 
@@ -256,7 +256,7 @@ public class FileWatchIT
 
         eventListener.awaitDeletionNotification();
 
-        logProvider.assertContainsMessageContaining(
+        logProvider.assertLogStringContains(
                 "'" + storeDirectoryName + "' which belongs to the '" + storeDir.getName() + "' database was deleted while it was running." );
     }
 

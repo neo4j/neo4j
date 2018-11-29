@@ -30,7 +30,7 @@ public class DefaultFileDeletionListenerFactory implements FileWatchEventListene
 {
     private final String databaseName;
     private final LogService logService;
-    private final java.util.function.Predicate<String> fileNameFilter;
+    private final Predicate<String> fileNameFilter;
 
     public DefaultFileDeletionListenerFactory( String databaseName, LogService logService, Predicate<String> fileNameFilter )
     {

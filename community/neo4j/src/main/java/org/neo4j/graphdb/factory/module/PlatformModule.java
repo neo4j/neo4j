@@ -204,7 +204,6 @@ public class PlatformModule
 
         dbmsDiagnosticsManager.dumpSystemDiagnostics();
 
-
         fileSystemWatcher = createFileSystemWatcherService( fileSystem, logService, jobScheduler, config );
         life.add( fileSystemWatcher );
         dependencies.satisfyDependency( fileSystemWatcher );
@@ -297,7 +296,7 @@ public class PlatformModule
         catch ( Exception e )
         {
             Log log = logging.getInternalLog( getClass() );
-            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store " + "files will be disabled.", e );
+            log.warn( "Can not create file watcher for current file system. File monitoring capabilities for store files will be disabled.", e );
             return FileSystemWatcherService.EMPTY_WATCHER;
         }
     }
