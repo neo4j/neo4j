@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.builtinprocs;
 
-import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -30,7 +29,6 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.SchemaWrite;
 import org.neo4j.internal.kernel.api.TokenRead;
-import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
@@ -42,10 +40,9 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
-import org.neo4j.register.Register;
-import org.neo4j.register.Registers;
 
 public class IndexProcedures implements AutoCloseable
 {
@@ -235,8 +232,9 @@ public class IndexProcedures implements AutoCloseable
             case ONLINE:
                 return true;
             case FAILED:
+                String cause = getFailure( indexDescription, index );
                 throw new ProcedureException( Status.Schema.IndexCreationFailed,
-                        "Index on %s is in failed state", indexDescription );
+                        IndexPopulationFailure.appendCauseOfFailure( "Index on %s is in failed state.", cause ), indexDescription );
             default:
                 throw new IllegalStateException( "Unknown index state " + state );
         }
@@ -248,6 +246,19 @@ public class IndexProcedures implements AutoCloseable
         try
         {
             return ktx.schemaRead().indexGetState( index );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+        }
+    }
+
+    private String getFailure( IndexSpecifier indexDescription, IndexReference index )
+            throws ProcedureException
+    {
+        try
+        {
+            return ktx.schemaRead().indexGetFailure( index );
         }
         catch ( IndexNotFoundKernelException e )
         {

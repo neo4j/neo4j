@@ -67,4 +67,10 @@ public abstract class IndexPopulationFailure
             }
         };
     }
+
+    public static String appendCauseOfFailure( String message, String causeOfFailure )
+    {
+        return String.format( "%s: Cause of failure:%n" +
+                "==================%n%s%n==================", message, causeOfFailure );
+    }
 }

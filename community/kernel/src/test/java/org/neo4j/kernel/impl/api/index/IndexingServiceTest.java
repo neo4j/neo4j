@@ -43,13 +43,17 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.IntPredicate;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.internal.kernel.api.InternalIndexState;
@@ -107,6 +111,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -172,7 +177,9 @@ public class IndexingServiceTest
     private final SchemaState schemaState = mock( SchemaState.class );
     private final int labelId = 7;
     private final int propertyKeyId = 15;
+    private final int uniquePropertyKeyId = 15;
     private final IndexDescriptor index = forSchema( forLabel( labelId, propertyKeyId ), PROVIDER_DESCRIPTOR );
+    private final IndexDescriptor uniqueIndex = uniqueForSchema( forLabel( labelId, uniquePropertyKeyId ), PROVIDER_DESCRIPTOR );
     private final IndexPopulator populator = mock( IndexPopulator.class );
     private final IndexUpdater updater = mock( IndexUpdater.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
@@ -326,7 +333,7 @@ public class IndexingServiceTest
     public void shouldStillReportInternalIndexStateAsPopulatingWhenConstraintIndexIsDonePopulating() throws Exception
     {
         // given
-        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn(updater);
+        when( accessor.newUpdater( any( IndexUpdateMode.class ) ) ).thenReturn( updater );
 
         IndexingService indexingService = newIndexingServiceWithMockedDependencies( populator, accessor, withData() );
 
@@ -350,8 +357,8 @@ public class IndexingServiceTest
         order.verify( populator ).create();
         order.verify( populator ).close( true );
         order.verify( accessor ).newUpdater( IndexUpdateMode.ONLINE );
-        order.verify(updater).process( add( 10, "foo" ) );
-        order.verify(updater).close();
+        order.verify( updater ).process( add( 10, "foo" ) );
+        order.verify( updater ).close();
     }
 
     @Test
@@ -1061,6 +1068,67 @@ public class IndexingServiceTest
         internalLogProvider.assertNone( inLog( IndexPopulationJob.class ).info(
                 "Index population completed. Index is now online: [%s]",
                 ":TheLabel(propertyKey) [provider: {key=quantum-dex, version=25.0}]" ) );
+    }
+
+    @Test( timeout = 60_000L )
+    public void shouldReportCauseOfPopulationFailureIfPopulationFailsDuringRecovery() throws IOException, IndexNotFoundKernelException, InterruptedException
+    {
+        // given
+        long indexId = 1;
+        StoreIndexDescriptor indexRule = uniqueIndex.withId( indexId );
+        Barrier.Control barrier = new Barrier.Control();
+        CountDownLatch exceptionBarrier = new CountDownLatch( 1 );
+        IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), new IndexingService.MonitorAdapter()
+        {
+            @Override
+            public void awaitingPopulationOfRecoveredIndex( StoreIndexDescriptor descriptor )
+            {
+                barrier.reached();
+            }
+        }, indexRule );
+        when( indexProvider.getInitialState( indexRule ) ).thenReturn( POPULATING );
+
+        life.init();
+        ExecutorService executor = Executors.newSingleThreadExecutor();
+        try
+        {
+            AtomicReference<Throwable> startException = new AtomicReference<>();
+            executor.submit( () -> {
+                try
+                {
+                    life.start();
+                }
+                catch ( Throwable t )
+                {
+                    startException.set( t );
+                    exceptionBarrier.countDown();
+                }
+            } );
+
+            // Thread is just about to start checking index status. We flip to failed proxy to indicate population failure during recovery.
+            barrier.await();
+
+            IndexProxy indexProxy = indexing.getIndexProxy( indexRule.schema() );
+            assertThat( indexProxy, instanceOf( ContractCheckingIndexProxy.class ) );
+            ContractCheckingIndexProxy contractCheckingIndexProxy = (ContractCheckingIndexProxy) indexProxy;
+            IndexProxy delegate = contractCheckingIndexProxy.getDelegate();
+            assertThat( delegate, instanceOf( FlippableIndexProxy.class ) );
+            FlippableIndexProxy flippableIndexProxy = (FlippableIndexProxy) delegate;
+            Exception expectedCause = new Exception( "index was failed on purpose" );
+            IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
+            flippableIndexProxy.flipTo( new FailedIndexProxy( mock( CapableIndexDescriptor.class ), "string", mock( IndexPopulator.class ),
+                    indexFailure, mock( IndexCountsRemover.class ), internalLogProvider ) );
+            barrier.release();
+            exceptionBarrier.await();
+            Throwable actual = startException.get();
+
+            assertThat( actual.getCause(), instanceOf( IllegalStateException.class ) );
+            assertThat( Exceptions.stringify( actual.getCause() ), Matchers.containsString( Exceptions.stringify( expectedCause ) ) );
+        }
+        finally
+        {
+            executor.shutdown();
+        }
     }
 
     @Test
