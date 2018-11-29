@@ -422,7 +422,8 @@ public class IndexingService extends LifecycleAdapter implements IndexingUpdateS
                 return;
             case FAILED:
                 IndexPopulationFailure populationFailure = proxy.getPopulationFailure();
-                String message = String.format( "Index entered %s state while recovery waited for it to be fully populated.", FAILED );
+                String message =
+                        String.format( "Index entered %s state while recovery waited for it to be fully populated. Index: %s.", FAILED, proxy.getDescriptor() );
                 String causeOfFailure = populationFailure.asString();
                 throw new IllegalStateException( IndexPopulationFailure.appendCauseOfFailure( message, causeOfFailure ) );
             case POPULATING:

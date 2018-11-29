@@ -1080,7 +1080,7 @@ public class IndexingServiceTest
     {
         // given
         long indexId = 1;
-        StoreIndexDescriptor indexRule = uniqueIndex.withId( indexId );
+        CapableIndexDescriptor indexRule = uniqueIndex.withId( indexId ).withoutCapabilities();
         Barrier.Control barrier = new Barrier.Control();
         CountDownLatch exceptionBarrier = new CountDownLatch( 1 );
         IndexingService indexing = newIndexingServiceWithMockedDependencies( populator, accessor, withData(), new IndexingService.MonitorAdapter()
@@ -1123,12 +1123,13 @@ public class IndexingServiceTest
             FlippableIndexProxy flippableIndexProxy = (FlippableIndexProxy) delegate;
             Exception expectedCause = new Exception( "index was failed on purpose" );
             IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
-            flippableIndexProxy.flipTo( new FailedIndexProxy( mock( CapableIndexDescriptor.class ), "string", mock( IndexPopulator.class ),
+            flippableIndexProxy.flipTo( new FailedIndexProxy( indexRule, "string", mock( IndexPopulator.class ),
                     indexFailure, mock( IndexCountsRemover.class ), internalLogProvider ) );
             barrier.release();
             exceptionBarrier.await();
             Throwable actual = startException.get();
 
+            assertThat( actual.getMessage(), Matchers.containsString( indexRule.toString() ) );
             assertThat( actual.getCause(), instanceOf( IllegalStateException.class ) );
             assertThat( Exceptions.stringify( actual.getCause() ), Matchers.containsString( Exceptions.stringify( expectedCause ) ) );
         }

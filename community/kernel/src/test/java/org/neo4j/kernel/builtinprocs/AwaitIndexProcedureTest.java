@@ -157,6 +157,7 @@ public class AwaitIndexProcedureTest
         catch ( ProcedureException e )
         {
             assertThat( e.status(), is( Status.Schema.IndexCreationFailed ) );
+            assertThat( e.getMessage(), containsString( ":Person(name)" ) );
             assertThat( e.getMessage(), containsString( "Kilroy was here" ) );
         }
     }

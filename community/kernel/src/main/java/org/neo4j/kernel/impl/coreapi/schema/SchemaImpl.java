@@ -203,7 +203,8 @@ public class SchemaImpl implements Schema
                 return;
             case FAILED:
                 String cause = getIndexFailure( index );
-                String message = IndexPopulationFailure.appendCauseOfFailure( "Index entered a FAILED state. Please see database logs.", cause );
+                String message = IndexPopulationFailure
+                        .appendCauseOfFailure( String.format( "Index entered a %s state. Please see database logs. Index: %s", state, index ), cause );
                 throw new IllegalStateException( message );
             default:
                 try
