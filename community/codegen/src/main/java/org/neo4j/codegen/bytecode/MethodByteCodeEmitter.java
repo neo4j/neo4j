@@ -146,6 +146,20 @@ class MethodByteCodeEmitter implements MethodEmitter
     }
 
     @Override
+    public void continues()
+    {
+        for ( Block block : stateStack )
+        {
+            if ( block instanceof While )
+            {
+                ((While)block).continueBlock();
+                return;
+            }
+        }
+        throw new IllegalStateException( "Found no block to continue" );
+    }
+
+    @Override
     public void assign( LocalVariable variable, Expression value )
     {
         value.accept( expressionVisitor );

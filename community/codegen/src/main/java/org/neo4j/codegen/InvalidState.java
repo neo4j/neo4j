@@ -83,6 +83,12 @@ class InvalidState implements MethodEmitter
     }
 
     @Override
+    public void continues()
+    {
+        throw new IllegalStateException( reason );
+    }
+
+    @Override
     public void assign( LocalVariable variable, Expression value )
     {
         throw new IllegalStateException( reason );
