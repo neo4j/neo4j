@@ -352,8 +352,7 @@ class GBPTreeTest
     void shouldFailWhenTryingToOpenWithDifferentFormatIdentifier() throws Exception
     {
         // GIVEN
-        int pageSize = DEFAULT_PAGE_SIZE;
-        PageCache pageCache = createPageCache( pageSize );
+        PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
         GBPTreeBuilder<MutableLong,MutableLong> builder = index( pageCache );
         try ( GBPTree<MutableLong,MutableLong> ignored = builder.build() )
         {   // Open/close is enough
@@ -718,7 +717,7 @@ class GBPTreeTest
     {
         // given an existing index with only the first page in it
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCache ).build() )
         {   // Just for creating it
         }
         fileSystem.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
@@ -752,7 +751,7 @@ class GBPTreeTest
     {
         // given an existing index with all-zero state pages
         PageCache pageCache = createPageCache( DEFAULT_PAGE_SIZE );
-        try ( GBPTree<MutableLong,MutableLong> tree = index( pageCache ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCache ).build() )
         {   // Just for creating it
         }
         fileSystem.truncate( indexFile, DEFAULT_PAGE_SIZE /*truncate right after the first page*/ );
@@ -1129,7 +1128,7 @@ class GBPTreeTest
         collector.init();
 
         Future<List<CleanupJob>> cleanJob;
-        try ( GBPTree<MutableLong, MutableLong> index = index( pageCache ).with( collector ).build() )
+        try ( GBPTree<MutableLong, MutableLong> ignored = index( pageCache ).with( collector ).build() )
         {
             blockOnNextIO.set( true );
             cleanJob = executor.submit( startAndReturnStartedJobs( collector ) );
@@ -1159,7 +1158,7 @@ class GBPTreeTest
         collector.init();
 
         Future<List<CleanupJob>> cleanJob;
-        try ( GBPTree<MutableLong,MutableLong> index = index( pageCache ).with( collector ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = index( pageCache ).with( collector ).build() )
         {
             blockOnNextIO.set( true );
             cleanJob = executor.submit( startAndReturnStartedJobs( collector ) );
@@ -1176,7 +1175,7 @@ class GBPTreeTest
         assertFailedDueToUnmappedFile( cleanJob );
 
         MonitorDirty monitor = new MonitorDirty();
-        try ( GBPTree<MutableLong,MutableLong> index = index().with( monitor ).build() )
+        try ( GBPTree<MutableLong,MutableLong> ignored = index().with( monitor ).build() )
         {
             assertFalse( monitor.cleanOnStart() );
         }
@@ -1542,8 +1541,7 @@ class GBPTreeTest
     void shouldThrowIfTreeStatePointToRootWithValidSuccessor() throws Exception
     {
         // GIVEN
-        int pageSize = DEFAULT_PAGE_SIZE;
-        try ( PageCache specificPageCache = createPageCache( pageSize ) )
+        try ( PageCache specificPageCache = createPageCache( DEFAULT_PAGE_SIZE ) )
         {
             try ( GBPTree<MutableLong,MutableLong> ignore = index( specificPageCache ).build() )
             {
@@ -1588,7 +1586,7 @@ class GBPTreeTest
         AtomicBoolean throwOnNext = new AtomicBoolean();
         IOException exception = new IOException( "My failure" );
         PageCache pageCache = pageCacheThatThrowExceptionWhenToldTo( exception, throwOnNext );
-        try ( GBPTree<MutableLong, MutableLong> index = index( pageCache ).build() )
+        try ( GBPTree<MutableLong, MutableLong> ignored = index( pageCache ).build() )
         {
             // WHEN
             throwOnNext.set( true );
