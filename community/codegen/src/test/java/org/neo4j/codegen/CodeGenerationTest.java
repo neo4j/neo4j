@@ -579,6 +579,227 @@ public class CodeGenerationTest
     }
 
     @Test
+    public void shouldGenerateWhileLoopContinue() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                                                              param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targets" ),
+                                                              param( TypeReference.parameterizedType( Iterator.class, Boolean.class ), "skipTargets" ) ) )
+            {
+                try ( CodeBlock loop = callEach.whileLoop( invoke( callEach.load( "targets" ),
+                                                                   methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                {
+                    loop.declare( TypeReference.typeReference( Runnable.class ), "target" );
+                    loop.assign( loop.local( "target" ), Expression.cast( Runnable.class,
+                                                                          invoke( callEach.load( "targets" ),
+                                                                                  methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                    loop.declare( TypeReference.BOOLEAN, "skip" );
+                    loop.assign( loop.local( "skip" ), invoke(
+                            Expression.cast( Boolean.class,
+                                             invoke( callEach.load( "skipTargets" ),
+                                                     methodReference( Iterator.class, Object.class, "next" ) ) ),
+                            methodReference( Boolean.class, boolean.class, "booleanValue" ) ) );
+
+                    try ( CodeBlock ifBlock = loop.ifStatement( loop.load( "skip" ) ) )
+                    {
+                        ifBlock.continueIfPossible();
+                    }
+
+                    loop.expression( invoke(
+                            loop.load( "target" ),
+                            methodReference( Runnable.class, void.class, "run" ) ) );
+                }
+            }
+
+            handle = simple.handle();
+        }
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+
+        // when
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "callEach", Iterator.class, Iterator.class );
+        callEach.invoke( Arrays.asList( a, b, c ).iterator(), Arrays.asList( false, true, false ).iterator() );
+
+        // then
+        InOrder order = inOrder( a, b, c );
+        order.verify( a ).run();
+        order.verify( c ).run();
+        verifyNoMoreInteractions( a, b, c );
+    }
+
+    @Test
+    public void shouldGenerateNestedWhileLoopInnerContinue() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                                                              param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targetTargets" ),
+                                                              param( TypeReference.parameterizedType( Iterator.class, Boolean.class ), "skipTargets" ) ) )
+            {
+                try ( CodeBlock outer = callEach.whileLoop( invoke( callEach.load( "targetTargets" ),
+                                                                   methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                {
+                    outer.declare( TypeReference.typeReference( Iterator.class ), "targets" );
+                    outer.assign( outer.local( "targets" ), Expression.cast( Iterator.class,
+                                                                           invoke( callEach.load( "targetTargets" ),
+                                                                                   methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                    try ( CodeBlock inner = outer.whileLoop( invoke( outer.load( "targets" ),
+                                                                    methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                    {
+                        inner.declare( TypeReference.typeReference( Runnable.class ), "target" );
+                        inner.assign( inner.local( "target" ), Expression.cast( Runnable.class,
+                                                                              invoke( outer.load( "targets" ),
+                                                                                      methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                        inner.declare( TypeReference.BOOLEAN, "skip" );
+                        inner.assign( inner.local( "skip" ), invoke(
+                                Expression.cast( Boolean.class,
+                                                 invoke( callEach.load( "skipTargets" ),
+                                                         methodReference( Iterator.class, Object.class, "next" ) ) ),
+                                methodReference( Boolean.class, boolean.class, "booleanValue" ) ) );
+
+                        try ( CodeBlock ifBlock = inner.ifStatement( inner.load( "skip" ) ) )
+                        {
+                            ifBlock.continueIfPossible();
+                        }
+
+                        inner.expression( invoke(
+                                inner.load( "target" ),
+                                methodReference( Runnable.class, void.class, "run" ) ) );
+                    }
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable a = mock( Runnable.class );
+        Runnable b = mock( Runnable.class );
+        Runnable c = mock( Runnable.class );
+        Runnable d = mock( Runnable.class );
+        Runnable e = mock( Runnable.class );
+        Runnable f = mock( Runnable.class );
+
+        // when
+        Iterator<Iterator<Runnable>> input =
+            Arrays.asList(
+                Arrays.asList( a, b ).iterator(),
+                Arrays.asList( c, d ).iterator(),
+                Arrays.asList( e, f ).iterator()
+            ).iterator();
+        Iterator<Boolean> skips = Arrays.asList( false, true, true, false, false, true ).iterator();
+
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "callEach", Iterator.class, Iterator.class );
+        callEach.invoke( input, skips );
+
+        // then
+        InOrder order = inOrder( a, b, c, d, e, f );
+        order.verify( a ).run();
+        order.verify( d ).run();
+        order.verify( e ).run();
+        verifyNoMoreInteractions( a, b, c, d, e, f );
+    }
+
+    @Test
+    public void shouldGenerateNestedWhileLoopDoubleContinue() throws Throwable
+    {
+        // given
+        ClassHandle handle;
+        try ( ClassGenerator simple = generateClass( "SimpleClass" ) )
+        {
+            try ( CodeBlock callEach = simple.generateMethod( void.class, "callEach",
+                                                              param( TypeReference.parameterizedType( Iterator.class, Runnable.class ), "targetTargets" ),
+                                                              param( TypeReference.parameterizedType( Iterator.class, Boolean.class ), "skipOuters" ),
+                                                              param( TypeReference.parameterizedType( Iterator.class, Boolean.class ), "skipInners" ) ) )
+            {
+                try ( CodeBlock outer = callEach.whileLoop( invoke( callEach.load( "targetTargets" ),
+                                                                    methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                {
+                    outer.declare( TypeReference.typeReference( Iterator.class ), "targets" );
+                    outer.assign( outer.local( "targets" ), Expression.cast( Iterator.class,
+                                                                             invoke( callEach.load( "targetTargets" ),
+                                                                                     methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                    outer.declare( TypeReference.BOOLEAN, "skipOuter" );
+                    outer.assign( outer.local( "skipOuter" ), invoke(
+                            Expression.cast( Boolean.class,
+                                             invoke( callEach.load( "skipOuters" ),
+                                                     methodReference( Iterator.class, Object.class, "next" ) ) ),
+                            methodReference( Boolean.class, boolean.class, "booleanValue" ) ) );
+
+                    try ( CodeBlock ifBlock = outer.ifStatement( outer.load( "skipOuter" ) ) )
+                    {
+                        ifBlock.continueIfPossible();
+                    }
+
+                    try ( CodeBlock inner = outer.whileLoop( invoke( outer.load( "targets" ),
+                                                                     methodReference( Iterator.class, boolean.class, "hasNext" ) ) ) )
+                    {
+                        inner.declare( TypeReference.typeReference( Runnable.class ), "target" );
+                        inner.assign( inner.local( "target" ), Expression.cast( Runnable.class,
+                                                                                invoke( outer.load( "targets" ),
+                                                                                        methodReference( Iterator.class, Object.class, "next" ) ) ) );
+
+                        inner.declare( TypeReference.BOOLEAN, "skipInner" );
+                        inner.assign( inner.local( "skipInner" ), invoke(
+                                Expression.cast( Boolean.class,
+                                                 invoke( callEach.load( "skipInners" ),
+                                                         methodReference( Iterator.class, Object.class, "next" ) ) ),
+                                methodReference( Boolean.class, boolean.class, "booleanValue" ) ) );
+
+                        try ( CodeBlock ifBlock = inner.ifStatement( inner.load( "skipInner" ) ) )
+                        {
+                            ifBlock.continueIfPossible();
+                        }
+
+                        inner.expression( invoke(
+                                inner.load( "target" ),
+                                methodReference( Runnable.class, void.class, "run" ) ) );
+                    }
+                }
+            }
+
+            handle = simple.handle();
+        }
+
+        Runnable a1 = mock( Runnable.class );
+        Runnable a2 = mock( Runnable.class );
+        Runnable b1 = mock( Runnable.class );
+        Runnable b2 = mock( Runnable.class );
+        Runnable b3 = mock( Runnable.class );
+        Runnable b4 = mock( Runnable.class );
+        Runnable c1 = mock( Runnable.class );
+
+        // when
+        Iterator<Iterator<Runnable>> input =
+                Arrays.asList(
+                        Arrays.asList( a1, a2 ).iterator(),
+                        Arrays.asList( b1, b2, b3, b4 ).iterator(),
+                        Arrays.asList( c1 ).iterator()
+                ).iterator();
+        Iterator<Boolean> skipOuter = Arrays.asList( true, false, true ).iterator();
+        Iterator<Boolean> skipInner = Arrays.asList( false, true, false, true ).iterator();
+
+        MethodHandle callEach = instanceMethod( handle.newInstance(), "callEach",
+                                                Iterator.class, Iterator.class, Iterator.class );
+        callEach.invoke( input, skipOuter, skipInner );
+
+        // then
+        InOrder order = inOrder( a1, a2, b1, b2, b3, b4, c1 );
+        order.verify( b1 ).run();
+        order.verify( b3 ).run();
+        verifyNoMoreInteractions( a1, a2, b1, b2, b3, b4, c1 );
+    }
+
+    @Test
     public void shouldGenerateForEachLoop() throws Throwable
     {
         // given
