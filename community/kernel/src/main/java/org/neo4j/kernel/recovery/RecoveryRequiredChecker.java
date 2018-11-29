@@ -44,7 +44,7 @@ public class RecoveryRequiredChecker
     private final PageCache pageCache;
     private final Config config;
 
-    public RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
+    RecoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
     {
         this.fs = fs;
         this.pageCache = pageCache;

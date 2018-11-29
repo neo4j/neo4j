@@ -119,6 +119,18 @@ public final class Recovery
     }
 
     /**
+     * Return helper that can be used to check if some database described by {@link DatabaseLayout} requires recovery.
+     * @param fs database filesystem
+     * @param pageCache page cache used to perform database recovery.
+     * @param config custom configuration
+     * @return helper recovery checker
+     */
+    public static RecoveryRequiredChecker recoveryRequiredChecker( FileSystemAbstraction fs, PageCache pageCache, Config config )
+    {
+        return new RecoveryRequiredChecker( fs, pageCache, config );
+    }
+
+    /**
      * Check if recovery is required for a store described by provided layout.
      * Custom transaction logs location can be provided using {@link GraphDatabaseSettings#logical_logs_location} config setting value.
      * @param databaseLayout layout of database to check for recovery
@@ -339,7 +351,7 @@ public final class Recovery
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, Config config,
             Optional<LogTailScanner> logTailScanner ) throws IOException
     {
-        RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache, config );
+        RecoveryRequiredChecker requiredChecker = recoveryRequiredChecker( fs, pageCache, config );
         return logTailScanner.isPresent() ? requiredChecker.isRecoveryRequiredAt( databaseLayout, logTailScanner.get() )
                                           : requiredChecker.isRecoveryRequiredAt( databaseLayout );
     }
