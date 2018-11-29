@@ -24,7 +24,7 @@ import java.util.concurrent.ExecutionException;
 
 public interface JobHandle
 {
-    void cancel( boolean mayInterruptIfRunning );
+    void cancel();
 
     void waitTermination() throws InterruptedException, ExecutionException, CancellationException;
 

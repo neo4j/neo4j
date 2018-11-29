@@ -66,7 +66,7 @@ public class VmPauseMonitor
     {
         monitor.stopped();
         Preconditions.checkState( job != null, "VM pause monitor is not started" );
-        job.cancel( true );
+        job.cancel();
         job = null;
     }
 

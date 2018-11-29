@@ -141,7 +141,7 @@ public class CheckPointScheduler extends LifecycleAdapter
         stopped = true;
         if ( handle != null )
         {
-            handle.cancel( false );
+            handle.cancel();
         }
         waitOngoingCheckpointCompletion();
     }

@@ -220,7 +220,7 @@ public class IndexSamplingController
     {
         if ( backgroundSamplingHandle != null )
         {
-            backgroundSamplingHandle.cancel( true );
+            backgroundSamplingHandle.cancel();
         }
         jobTracker.stopAndAwaitAllJobs();
     }

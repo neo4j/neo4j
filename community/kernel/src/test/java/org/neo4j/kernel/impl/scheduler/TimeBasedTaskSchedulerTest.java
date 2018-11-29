@@ -23,24 +23,24 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.neo4j.scheduler.CancelListener;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.time.FakeClock;
 import org.neo4j.util.concurrent.BinaryLatch;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TimeBasedTaskSchedulerTest
@@ -207,45 +207,45 @@ class TimeBasedTaskSchedulerTest
     @Test
     void delayedTasksMustNotRunIfCancelledFirst()
     {
-        List<Boolean> cancelListener = new ArrayList<>();
+        MonitoredCancelListener cancelListener = new MonitoredCancelListener();
         JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, counter::incrementAndGet, 100, 0 );
-        handle.registerCancelListener( cancelListener::add );
+        handle.registerCancelListener( cancelListener );
         clock.forward( 90, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        handle.cancel( false );
+        handle.cancel();
         clock.forward( 10, TimeUnit.NANOSECONDS );
         scheduler.tick();
         pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 0 ) );
-        assertThat( cancelListener, contains( Boolean.FALSE ) );
+        assertFalse( cancelListener.isCanceled() );
         assertThrows( CancellationException.class, handle::waitTermination );
     }
 
     @Test
     void recurringTasksMustStopWhenCancelled() throws InterruptedException
     {
-        List<Boolean> cancelListener = new ArrayList<>();
+        MonitoredCancelListener cancelListener = new MonitoredCancelListener();
         Runnable recurring = () ->
         {
             counter.incrementAndGet();
             semaphore.release();
         };
         JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, recurring, 100, 100 );
-        handle.registerCancelListener( cancelListener::add );
+        handle.registerCancelListener( cancelListener );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         assertSemaphoreAcquire();
-        handle.cancel( true );
+        handle.cancel();
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
         pools.getThreadPool( Group.STORAGE_MAINTENANCE ).shutDown();
         assertThat( counter.get(), is( 2 ) );
-        assertThat( cancelListener, contains( Boolean.TRUE ) );
+        assertTrue( cancelListener.isCanceled() );
     }
 
     @Test
@@ -263,7 +263,7 @@ class TimeBasedTaskSchedulerTest
         }
         assertThat( counter.get(), is( 1 ) );
 
-        handle.cancel( false );
+        handle.cancel();
         // cancelling doesn't remove from queued tasks
         assertEquals( 1, scheduler.tasksLeft() );
 
@@ -306,6 +306,22 @@ class TimeBasedTaskSchedulerTest
         }
         assertThat( counter.get(), is( 2 ) );
         semaphore.release( Integer.MAX_VALUE );
-        handle.cancel( false );
+        handle.cancel();
+    }
+
+    private static class MonitoredCancelListener implements CancelListener
+    {
+        private boolean canceled;
+
+        @Override
+        public void cancelled()
+        {
+            canceled = true;
+        }
+
+        boolean isCanceled()
+        {
+            return canceled;
+        }
     }
 }

@@ -34,6 +34,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.monitoring.VmPauseMonitor.Monitor.EMPTY;
 
 class VmPauseMonitorTest
@@ -73,8 +74,8 @@ class VmPauseMonitorTest
         monitor.start();
         monitor.stop();
 
-        Mockito.verify( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
-        Mockito.verify( jobHandle ).cancel( ArgumentMatchers.eq( true ) );
+        verify( jobScheduler ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        verify( jobHandle ).cancel();
     }
 
     @Test
@@ -84,8 +85,8 @@ class VmPauseMonitorTest
         monitor.stop();
         monitor.start();
 
-        Mockito.verify( jobScheduler, Mockito.times( 2 ) ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
-        Mockito.verify( jobHandle ).cancel( ArgumentMatchers.eq( true ) );
+        verify( jobScheduler, Mockito.times( 2 ) ).schedule( ArgumentMatchers.any( Group.class ), ArgumentMatchers.any( Runnable.class ) );
+        verify( jobHandle ).cancel();
     }
 
     @Test

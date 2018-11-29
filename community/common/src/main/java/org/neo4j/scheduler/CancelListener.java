@@ -20,14 +20,12 @@
 package org.neo4j.scheduler;
 
 /**
- * Gets notified about calls to {@link JobHandle#cancel(boolean)}.
+ * Gets notified about calls to {@link JobHandle#cancel()}.
  */
 public interface CancelListener
 {
     /**
-     * Notification that {@link JobHandle#cancel(boolean)} was called.
-     *
-     * @param mayInterruptIfRunning argument from {@link JobHandle#cancel(boolean)} call.
+     * Notification that {@link JobHandle#cancel()} was called.
      */
-    void cancelled( boolean mayInterruptIfRunning );
+    void cancelled();
 }

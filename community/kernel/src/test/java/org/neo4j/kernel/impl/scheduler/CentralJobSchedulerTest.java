@@ -122,7 +122,7 @@ class CentralJobSchedulerTest
         awaitFirstInvocation();
 
         // When
-        jobHandle.cancel( false );
+        jobHandle.cancel();
 
         assertThrows( CancellationException.class, jobHandle::waitTermination );
 
@@ -192,7 +192,7 @@ class CentralJobSchedulerTest
                 blockLatch.release();
                 for ( JobHandle handle : handles )
                 {
-                    handle.cancel( false );
+                    handle.cancel();
                 }
                 return;
             }
@@ -218,8 +218,8 @@ class CentralJobSchedulerTest
             }
         };
         JobHandle handle = scheduler.schedule( Group.INDEX_POPULATION, job );
-        handle.registerCancelListener( mayBeInterrupted -> halted.set( true ) );
-        handle.cancel( false );
+        handle.registerCancelListener( () -> halted.set( true ) );
+        handle.cancel();
 
         // THEN
         assertTrue( halted.get() );

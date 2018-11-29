@@ -58,6 +58,6 @@ class KernelTransactionTimeoutMonitorSchedulerTest
                 7, TimeUnit.MILLISECONDS );
 
         monitorScheduler.stop();
-        verify( jobHandle ).cancel( true );
+        verify( jobHandle ).cancel();
     }
 }

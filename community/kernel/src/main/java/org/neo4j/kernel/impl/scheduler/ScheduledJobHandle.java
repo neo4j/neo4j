@@ -111,17 +111,17 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     }
 
     @Override
-    public void cancel( boolean mayInterruptIfRunning )
+    public void cancel()
     {
         set( FAILED );
         JobHandle handle = latestHandle;
         if ( handle != null )
         {
-            handle.cancel( mayInterruptIfRunning );
+            handle.cancel();
         }
         for ( CancelListener cancelListener : cancelListeners )
         {
-            cancelListener.cancelled( mayInterruptIfRunning );
+            cancelListener.cancelled();
         }
         scheduler.cancelTask( this );
         // Release the handle to allow waitTermination() to observe the cancellation.

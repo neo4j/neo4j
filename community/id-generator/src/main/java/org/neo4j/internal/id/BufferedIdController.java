@@ -56,7 +56,7 @@ public class BufferedIdController extends LifecycleAdapter implements IdControll
     {
         if ( jobHandle != null )
         {
-            jobHandle.cancel( false );
+            jobHandle.cancel();
             jobHandle = null;
         }
     }

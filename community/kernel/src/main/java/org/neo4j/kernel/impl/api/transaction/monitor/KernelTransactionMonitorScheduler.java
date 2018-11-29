@@ -56,7 +56,7 @@ public class KernelTransactionMonitorScheduler extends LifecycleAdapter
     {
         if ( monitorJobHandle != null )
         {
-            monitorJobHandle.cancel( true );
+            monitorJobHandle.cancel();
         }
     }
 }

@@ -43,12 +43,12 @@ final class PooledJobHandle implements JobHandle
     }
 
     @Override
-    public void cancel( boolean mayInterruptIfRunning )
+    public void cancel()
     {
-        future.cancel( mayInterruptIfRunning );
+        future.cancel( false );
         for ( CancelListener cancelListener : cancelListeners )
         {
-            cancelListener.cancelled( mayInterruptIfRunning );
+            cancelListener.cancelled();
         }
         registry.remove( registryKey );
     }

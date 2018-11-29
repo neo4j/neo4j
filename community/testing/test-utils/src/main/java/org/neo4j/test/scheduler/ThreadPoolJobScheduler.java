@@ -149,9 +149,9 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
         }
 
         @Override
-        public void cancel( boolean mayInterruptIfRunning )
+        public void cancel()
         {
-            future.cancel( mayInterruptIfRunning );
+            future.cancel( false );
         }
 
         @Override

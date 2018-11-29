@@ -232,7 +232,7 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
         }
 
         @Override
-        public void cancel( boolean mayInterruptIfRunning )
+        public void cancel()
         {
             jobs.remove( this );
         }

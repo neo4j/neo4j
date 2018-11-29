@@ -99,7 +99,7 @@ public class OnDemandJobScheduler extends JobSchedulerAdapter
     private class OnDemandJobHandle implements JobHandle
     {
         @Override
-        public void cancel( boolean mayInterruptIfRunning )
+        public void cancel()
         {
             jobs.clear();
         }
