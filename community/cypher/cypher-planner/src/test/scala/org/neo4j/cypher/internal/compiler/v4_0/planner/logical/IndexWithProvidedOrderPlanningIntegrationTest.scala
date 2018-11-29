@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
-class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport {
+class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 with AstConstructionTestSupport with PlanMatchHelp {
 
   case class TestOrder(indexOrder: IndexOrder, cypherToken: String, indexOrderCapability: IndexOrderCapability, sortOrder: String => ColumnOrder)
   val ASCENDING = TestOrder(IndexOrderAscending, "ASC", ASC, Ascending)
@@ -341,34 +341,38 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
     test(s"$orderCapability-$functionName: should use provided index order with range") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
 
       plan._2 should equal(
-        LimitPlan(
-          Projection(
-            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
-            Map(s"$functionName(n.prop)" -> prop("n", "prop"))
-          ),
-          SignedDecimalIntegerLiteral("1")(pos),
-          DoNotIncludeTies
+        Optional(
+          LimitPlan(
+            Projection(
+              IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+              Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+            ),
+            SignedDecimalIntegerLiteral("1")(pos),
+            DoNotIncludeTies
+          )
         )
       )
     }
 
     test(s"$orderCapability-$functionName: should use provided index order with ORDER BY") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $cypherToken"
 
       plan._2 should equal(
-        LimitPlan(
-          Projection(
-            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
-            Map(s"$functionName(n.prop)" -> prop("n", "prop"))
-          ),
-          SignedDecimalIntegerLiteral("1")(pos),
-          DoNotIncludeTies
+        Optional(
+          LimitPlan(
+            Projection(
+              IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+              Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+            ),
+            SignedDecimalIntegerLiteral("1")(pos),
+            DoNotIncludeTies
+          )
         )
       )
     }
@@ -380,19 +384,20 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
       }
 
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) ORDER BY $functionName(n.prop) $inverseOrder"
 
       plan._2 should equal(
         Sort(
-        LimitPlan(
-          Projection(
-            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
-            Map(s"$functionName(n.prop)" -> prop("n", "prop"))
-          ),
-          SignedDecimalIntegerLiteral("1")(pos),
-          DoNotIncludeTies
-        ),
+          Optional(
+            LimitPlan(
+              Projection(
+                IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+                Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+              ),
+              SignedDecimalIntegerLiteral("1")(pos),
+              DoNotIncludeTies
+            )),
           Seq(inverseSortOrder(s"$functionName(n.prop)"))
         )
       )
@@ -400,19 +405,20 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
     test(s"$orderCapability-$functionName: should use provided index order with additional Limit") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop) LIMIT 2"
 
       plan._2 should equal(
         LimitPlan(
-          LimitPlan(
-            Projection(
-              IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
-              Map(s"$functionName(n.prop)" -> prop("n", "prop"))
-            ),
-            SignedDecimalIntegerLiteral("1")(pos),
-            DoNotIncludeTies
-          ),
+          Optional(
+            LimitPlan(
+              Projection(
+                IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+                Map(s"$functionName(n.prop)" -> cachedNodeProperty("n", "prop"))
+              ),
+              SignedDecimalIntegerLiteral("1")(pos),
+              DoNotIncludeTies
+            )),
           SignedDecimalIntegerLiteral("2")(pos),
           DoNotIncludeTies
         )
@@ -421,7 +427,7 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
     test(s"$orderCapability-$functionName: should use provided index order for multiple QueryGraphs") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor
         s"""MATCH (n:Awesome)
            |WHERE n.prop > 0
@@ -430,38 +436,40 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
            |ORDER BY agg $cypherToken""".stripMargin
 
       plan._2 should equal(
-        LimitPlan(
-          Projection(
-            IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
-            Map("agg" -> prop("n", "prop"))
-          ),
-          SignedDecimalIntegerLiteral("1")(pos),
-          DoNotIncludeTies
+        Optional(
+          LimitPlan(
+            Projection(
+              IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
+              Map("agg" -> cachedNodeProperty("n", "prop"))
+            ),
+            SignedDecimalIntegerLiteral("1")(pos),
+            DoNotIncludeTies
+          )
         )
       )
     }
 
     test(s"$orderCapability-$functionName: cannot use provided index order for multiple aggregations") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop), count(n.prop)"
 
       val expectedIndexOrder = if (orderCapability.asc) IndexOrderAscending else IndexOrderDescending
 
       plan._2 should equal(
         Aggregation(
-          IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder),
+          IndexSeek("n:Awesome(prop > 0)", indexOrder = expectedIndexOrder, getValue = GetValue),
           Map.empty,
           Map(s"$functionName(n.prop)" -> FunctionInvocation(
             Namespace(List())(pos),
             FunctionName(functionName)(pos),
             distinct = false,
-            Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos),
+            Vector(cachedNodeProperty("n", "prop")))(pos),
             "count(n.prop)" -> FunctionInvocation(
               Namespace(List())(pos),
               FunctionName("count")(pos),
               distinct = false,
-              Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+              Vector(cachedNodeProperty("n", "prop")))(pos))
         )
       )
     }
@@ -491,38 +499,16 @@ class IndexWithProvidedOrderPlanningIntegrationTest extends CypherFunSuite with 
 
     test(s"$orderCapability-$functionName: cannot use provided index order with range") {
       val plan = new given {
-        indexOn("Awesome", "prop").providesOrder(orderCapability)
+        indexOn("Awesome", "prop").providesOrder(orderCapability).providesValues()
       } getLogicalPlanFor s"MATCH (n:Awesome) WHERE n.prop > 0 RETURN $functionName(n.prop)"
 
       plan._2 should equal(
         Aggregation(
-          IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder),
+          IndexSeek("n:Awesome(prop > 0)", indexOrder = plannedOrder, getValue = GetValue),
           Map.empty,
-          Map(s"$functionName(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName(functionName)(pos), distinct = false, Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+          Map(s"$functionName(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName(functionName)(pos), distinct = false, Vector(cachedNodeProperty("n", "prop")))(pos))
         )
       )
     }
-  }
-
-  test("Without index: should plan aggregation for min") {
-    val plan = new given {} getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop > 0 RETURN min(n.prop)"
-
-    plan._2 should equal(
-      Aggregation(
-        Selection(
-          Ands(Set(
-            AndedPropertyInequalities(Variable("n")(pos), Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos),
-              NonEmptyList(GreaterThan(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos), SignedDecimalIntegerLiteral("0")(pos))(pos)))
-          ))(pos),
-          NodeByLabelScan(
-            "n",
-            LabelName("Awesome")(pos),
-            Set.empty
-          )
-        ),
-        Map.empty,
-        Map("min(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("min")(pos), distinct = false, Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
-      )
-    )
   }
 }

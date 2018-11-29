@@ -552,7 +552,7 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     val solved = solveds.get(inner.id).updateTailOrSelf(_.withHorizon(
       AggregatingQueryProjection(groupingExpressions = reportedGrouping, aggregationExpressions = reportedAggregation)
     ).withInterestingOrder(interestingOrder))
-    val plan = LimitPlan(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE), ties)
+    val plan = Optional(LimitPlan(inner, SignedDecimalIntegerLiteral("1")(InputPosition.NONE), ties))
     val providedOrder = providedOrders.get(inner.id)
     annotate(plan, solved, providedOrder, context)
   }
