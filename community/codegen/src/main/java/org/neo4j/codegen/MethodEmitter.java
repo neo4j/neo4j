@@ -37,6 +37,8 @@ public interface MethodEmitter
 
     void returns( Expression value );
 
+    void continues();
+
     void assign( LocalVariable local, Expression value );
 
     void beginWhile( Expression test );

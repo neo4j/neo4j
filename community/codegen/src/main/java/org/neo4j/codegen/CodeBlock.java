@@ -33,10 +33,16 @@ public class CodeBlock implements AutoCloseable
     private MethodEmitter emitter;
     private final CodeBlock parent;
     private boolean done;
+    private boolean continuableBlock;
 
     private LocalVariables localVariables = new LocalVariables();
 
     private CodeBlock( CodeBlock parent )
+    {
+        this( parent, parent.continuableBlock );
+    }
+
+    private CodeBlock( CodeBlock parent, boolean continuableBlock )
     {
         this.clazz = parent.clazz;
         this.emitter = parent.emitter;
@@ -44,6 +50,7 @@ public class CodeBlock implements AutoCloseable
         this.parent = parent;
         //copy over local variables from parent
         this.localVariables = copy( parent.localVariables );
+        this.continuableBlock = continuableBlock;
     }
 
     CodeBlock( ClassGenerator clazz, MethodEmitter emitter, Parameter... parameters )
@@ -51,6 +58,7 @@ public class CodeBlock implements AutoCloseable
         this.clazz = clazz;
         this.emitter = emitter;
         this.parent = null;
+        this.continuableBlock = false;
         if ( !emitter.isStatic() )
         {
             localVariables.createNew( clazz.handle(), "this" );
@@ -170,7 +178,7 @@ public class CodeBlock implements AutoCloseable
     public CodeBlock whileLoop( Expression test )
     {
         emitter.beginWhile( test );
-        return new CodeBlock( this );
+        return new CodeBlock( this, true );
     }
 
     public CodeBlock ifStatement( Expression test )
@@ -203,6 +211,14 @@ public class CodeBlock implements AutoCloseable
     public void returns( Expression value )
     {
         emitter.returns( value );
+    }
+
+    public void continueIfPossible()
+    {
+        if ( continuableBlock )
+        {
+            emitter.continues();
+        }
     }
 
     public void throwException( Expression exception )
