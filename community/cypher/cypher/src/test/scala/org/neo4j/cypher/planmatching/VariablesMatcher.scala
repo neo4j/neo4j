@@ -22,6 +22,8 @@ package org.neo4j.cypher.planmatching
 import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.scalatest.matchers.{MatchResult, Matcher}
 
+import scala.util.matching.Regex
+
 /**
   * Asserts that a plan has certain variables
   */
@@ -51,6 +53,21 @@ case class ContainsVariablesMatcher(expected: Set[String]) extends VariablesMatc
       matches = expected.subsetOf(plan.variables),
       rawFailureMessage = s"Expected ${plan.name} to contain variables $expected but got ${plan.variables}.",
       rawNegatedFailureMessage = s"Expected ${plan.name} not to contain variables $expected."
+    )
+  }
+}
+
+/**
+  * Asserts that a plan contains variables matching the provided regex (among others).
+  */
+case class ContainsRegexVariablesMatcher(expectedRegexes: Set[Regex]) extends VariablesMatcher {
+  override val expected: Set[String] = expectedRegexes.map(_.toString())
+
+  override def apply(plan: InternalPlanDescription): MatchResult = {
+    MatchResult(
+      matches = expectedRegexes.forall(regex => plan.variables.exists(variable => regex.pattern.matcher(variable).matches())),
+      rawFailureMessage = s"Expected ${plan.name} to contain variables matching $expected but got ${plan.variables}.",
+      rawNegatedFailureMessage = s"Expected ${plan.name} not to contain variables matching $expected."
     )
   }
 }

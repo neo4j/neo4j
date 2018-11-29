@@ -63,6 +63,8 @@ trait PlanMatcher extends Matcher[InternalPlanDescription] {
 
   def containingVariables(variables: String*): PlanMatcher
 
+  def containingVariablesRegex(variables: Regex*): PlanMatcher
+
   def containingArgument(argument: String*): PlanMatcher
 
   def containingArgumentRegex(argument: Regex*): PlanMatcher
@@ -129,6 +131,8 @@ case class PlanInTree(inner: PlanMatcher) extends PlanMatcher {
 
   override def containingVariables(variables: String*): PlanMatcher = copy(inner = inner.containingVariables(variables: _*))
 
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher = copy(inner = inner.containingVariablesRegex(variables: _*))
+
   override def containingArgument(argument: String*): PlanMatcher = copy(inner = inner.containingArgument(argument: _*))
 
   override def containingArgumentRegex(argument: Regex*): PlanMatcher = copy(inner = inner.containingArgumentRegex(argument: _*))
@@ -189,6 +193,8 @@ case class CountInTree(expectedCount: Int, inner: PlanMatcher, atLeast: Boolean 
   override def withExactVariables(variables: String*): PlanMatcher = copy(inner = inner.withExactVariables(variables: _*))
 
   override def containingVariables(variables: String*): PlanMatcher = copy(inner = inner.containingVariables(variables: _*))
+
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher = copy(inner = inner.containingVariablesRegex(variables: _*))
 
   override def containingArgument(argument: String*): PlanMatcher = copy(inner = inner.containingArgument(argument: _*))
 
@@ -311,6 +317,8 @@ case class ExactPlan(name: Option[PlanNameMatcher] = None,
   override def withExactVariables(variables: String*): PlanMatcher = copy(variables = Some(ExactVariablesMatcher(variables.toSet)))
 
   override def containingVariables(variables: String*): PlanMatcher = copy(variables = Some(ContainsVariablesMatcher(variables.toSet)))
+
+  override def containingVariablesRegex(variables: Regex*): PlanMatcher = copy(variables = Some(ContainsRegexVariablesMatcher(variables.toSet)))
 
   override def containingArgument(argument: String*): PlanMatcher = copy(other = Some(ContainsExactStringArgumentsMatcher(argument.toSet)))
 
