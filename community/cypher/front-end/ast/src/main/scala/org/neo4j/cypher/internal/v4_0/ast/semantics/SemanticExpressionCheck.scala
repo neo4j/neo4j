@@ -122,7 +122,7 @@ object SemanticExpressionCheck extends SemanticAnalysisTooling {
         check(ctx, x.exprs)
 
       case x:Ors =>
-        SemanticCheckResult.success
+        check(ctx, x.exprs)
 
       case x:In =>
         check(ctx, x.lhs) chain

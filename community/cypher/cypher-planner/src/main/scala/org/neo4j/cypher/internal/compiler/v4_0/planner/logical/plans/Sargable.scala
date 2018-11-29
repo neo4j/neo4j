@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticTable
-import org.neo4j.cypher.internal.v4_0.expressions.{functions, _}
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.Last
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 object WithSeekableArgs {
@@ -106,8 +107,16 @@ object AsStringRangeSeekable {
 
 object AsValueRangeSeekable {
   def unapply(v: Any): Option[InequalityRangeSeekable] = v match {
-    case inequalities@AndedPropertyInequalities(ident, prop, innerInequalities) =>
-        Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
+    case inequalities@AndedPropertyInequalities(ident, prop, _) =>
+      Some(InequalityRangeSeekable(ident, prop.propertyKey, inequalities))
+    case inequality@LessThan(property@Property(variable: Variable, propertyKey), _) =>
+      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
+    case inequality@LessThanOrEqual(property@Property(variable: Variable, propertyKey), _) =>
+      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
+    case inequality@GreaterThan(property@Property(variable: Variable, propertyKey), _) =>
+      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
+    case inequality@GreaterThanOrEqual(property@Property(variable: Variable, propertyKey), _) =>
+      Some(InequalityRangeSeekable(variable, propertyKey, AndedPropertyInequalities(variable, property, Last(inequality))))
     case _ =>
       None
   }

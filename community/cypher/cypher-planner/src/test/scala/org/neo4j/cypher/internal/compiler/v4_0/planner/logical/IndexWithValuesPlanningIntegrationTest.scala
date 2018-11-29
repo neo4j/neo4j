@@ -43,10 +43,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            Selection(Ands(Set(GreaterThan(cached("n.prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop1)", GetValue)),
-            Selection(Ands(Set(GreaterThan(cached("n.prop2"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop2)", GetValue, propIds = Map("prop2" -> 1)))
+            IndexSeek("n:Awesome(prop1 > 42)", GetValue),
+            IndexSeek("n:Awesome(prop2 > 3)", GetValue, propIds = Map("prop2" -> 1))
           ),
           Map("n" -> Variable("n")(pos))
         ),
@@ -64,10 +62,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       Projection(
         Distinct(
           Union(
-            Selection(Ands(Set(GreaterThan(cached("n.prop1"), SignedDecimalIntegerLiteral("42")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop1)", GetValue)),
-            Selection(Ands(Set(LessThan(cached("n.prop1"), SignedDecimalIntegerLiteral("3")(pos))(pos)))(pos),
-              IndexSeek("n:Awesome(prop1)", GetValue))
+            IndexSeek("n:Awesome(prop1 > 42)", GetValue),
+            IndexSeek("n:Awesome(prop1 < 3)", GetValue)
           ),
           Map("n" -> Variable("n")(pos))
         ),

@@ -657,8 +657,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       indexOn("Awesome", "prop2")
     } getLogicalPlanFor "MATCH (n:Awesome) WHERE n.prop1 >= 42 OR n.prop2 STARTS WITH 'apa' RETURN n")._2
 
-    val prop1Predicate = GreaterThanOrEqual(prop("n", "prop1"), literalInt(42))(pos)
-    val seek1 = Selection(Seq(prop1Predicate), IndexSeek("n:Awesome(prop1)"))
+    val seek1 = IndexSeek("n:Awesome(prop1 >= 42)")
     val seek2 = IndexSeek("n:Awesome(prop2 STARTS WITH 'apa')", propIds = Map("prop2" -> 1))
     val union = Union(seek1, seek2)
     val distinct = Distinct(union, Map("n" -> varFor("n")))
