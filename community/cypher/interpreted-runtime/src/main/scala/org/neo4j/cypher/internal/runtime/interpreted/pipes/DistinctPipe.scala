@@ -40,7 +40,9 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     // Run the return item expressions, and replace the execution context's with their values
     val result = input.map(ctx => {
       val newMap = Eagerly.mutableMapValues(expressions, (expression: Expression) => expression(ctx, state))
-      executionContextFactory.newExecutionContext(newMap)
+      val newCtx = executionContextFactory.newExecutionContext(newMap)
+      newCtx.copyCachedFrom(ctx)
+      newCtx
     })
 
     /*
