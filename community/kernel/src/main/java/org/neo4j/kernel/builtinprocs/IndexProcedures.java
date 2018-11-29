@@ -41,6 +41,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.sampling.IndexSamplingMode;
 
@@ -244,8 +245,9 @@ public class IndexProcedures implements AutoCloseable
             case ONLINE:
                 return true;
             case FAILED:
+                String cause = getFailure( indexDescription, index );
                 throw new ProcedureException( Status.Schema.IndexCreationFailed,
-                        "Index on %s is in failed state", indexDescription );
+                        IndexPopulationFailure.appendCauseOfFailure( "Index on %s is in failed state.", cause ), indexDescription );
             default:
                 throw new IllegalStateException( "Unknown index state " + state );
         }
@@ -257,6 +259,19 @@ public class IndexProcedures implements AutoCloseable
         try
         {
             return ktx.schemaRead().indexGetState( index );
+        }
+        catch ( IndexNotFoundKernelException e )
+        {
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+        }
+    }
+
+    private String getFailure( IndexSpecifier indexDescription, IndexReference index )
+            throws ProcedureException
+    {
+        try
+        {
+            return ktx.schemaRead().indexGetFailure( index );
         }
         catch ( IndexNotFoundKernelException e )
         {

@@ -77,6 +77,7 @@ import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.RelationTypeSchemaDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.kernel.impl.api.index.IndexPopulationFailure;
 
 import static java.util.Collections.emptyList;
 import static org.neo4j.graphdb.Label.label;
@@ -201,7 +202,9 @@ public class SchemaImpl implements Schema
             case ONLINE:
                 return;
             case FAILED:
-                throw new IllegalStateException( "Index entered a FAILED state. Please see database logs." );
+                String cause = getIndexFailure( index );
+                String message = IndexPopulationFailure.appendCauseOfFailure( "Index entered a FAILED state. Please see database logs.", cause );
+                throw new IllegalStateException( message );
             default:
                 try
                 {
