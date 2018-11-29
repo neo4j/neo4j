@@ -224,13 +224,13 @@ class ConfigTest
     }
 
     @Test
-    void mustThrowIfConfigFileCoutNotBeRead()
+    void mustThrowIfConfigFileCoutNotBeRead() throws IOException
     {
+        File confFile = testDirectory.file( "test.conf" );
+        assertTrue( confFile.createNewFile() );
+        assumeTrue( confFile.setReadable( false ) );
         assertThrows( ConfigLoadIOException.class, () ->
         {
-            File confFile = testDirectory.file( "test.conf" );
-            assertTrue( confFile.createNewFile() );
-            assumeTrue( confFile.setReadable( false ) );
             Config.fromFile( confFile ).build();
         } );
     }
