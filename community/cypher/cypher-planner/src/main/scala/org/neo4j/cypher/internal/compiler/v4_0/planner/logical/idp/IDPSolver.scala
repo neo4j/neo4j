@@ -30,6 +30,12 @@ trait IDPSolverMonitor {
   def foundPlanAfter(iterations: Int)
 }
 
+trait ExtraRequirement[Requirement, Result] {
+  def none: Requirement
+  def is(requirement: Requirement): Boolean
+  def forResult(result: Result): Requirement
+}
+
 /**
  * Based on the main loop of the IDP1 algorithm described in the paper
  *
@@ -37,21 +43,22 @@ trait IDPSolverMonitor {
  *
  * written by Donald Kossmann and Konrad Stocker
  */
-class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Result, Context], // generates candidates at each step
-                         projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
-                         registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
-                         tableFactory: (IdRegistry[Solvable], Seed[Solvable, Result]) => IDPTable[Result] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Result]) => IDPTable(registry, seed),
-                         maxTableSize: Int, // limits computation effort, reducing result quality
-                         iterationDurationLimit: Long, // limits computation effort, reducing result quality
-                         monitor: IDPSolverMonitor) {
+class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep[Solvable, Requirement, Result, Context], // generates candidates at each step
+                                                        projectingSelector: ProjectingSelector[Result], // pick best from a set of candidates
+                                                        registryFactory: () => IdRegistry[Solvable] = () => IdRegistry[Solvable], // maps from Set[S] to BitSet
+                                                        tableFactory: (IdRegistry[Solvable], Seed[Solvable, Requirement, Result]) => IDPTable[Result, Requirement] = (registry: IdRegistry[Solvable], seed: Seed[Solvable, Requirement, Result]) => IDPTable(registry, seed),
+                                                        maxTableSize: Int, // limits computation effort, reducing result quality
+                                                        iterationDurationLimit: Long, // limits computation effort, reducing result quality
+                                                        extraRequirement: ExtraRequirement[Requirement, Result],
+                                                        monitor: IDPSolverMonitor) {
 
-  def apply(seed: Seed[Solvable, Result], initialToDo: Set[Solvable], context: Context): Iterator[(Set[Solvable], Result)] = {
+  def apply(seed: Seed[Solvable, Requirement, Result], initialToDo: Set[Solvable], context: Context): Iterator[((Set[Solvable], Requirement), Result)] = {
     val registry = registryFactory()
     val table = tableFactory(registry, seed)
     var toDo = registry.registerAll(initialToDo)
 
     // utility functions
-    val goalSelector: Selector[(Goal, Result)] = projectingSelector.apply[(Goal, Result)](_._2, _)
+    val goalSelector: Selector[((Goal, Requirement), Result)] = projectingSelector.apply[((Goal, Requirement), Result)](_._2, _)
 
     def generateBestCandidates(maxBlockSize: Int): Int = {
       var largestFinishedIteration = 0
@@ -65,11 +72,17 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
         val goals = toDo.subsets(blockSize)
         while (keepGoing && goals.hasNext) {
           val goal = goals.next()
-          if (!table.contains(goal)) {
+          if (table(goal).isEmpty) {
+            // TODO: Make sure the generator is NOT lazy and repetitive
             val candidates = LazyIterable(generator(registry, goal, table, context))
-            projectingSelector(candidates).foreach { candidate =>
+            val (baseCandidates, extraCandidates) = candidates.partition(candidate => extraRequirement.forResult(candidate) == extraRequirement.none)
+            projectingSelector(baseCandidates).foreach { candidate =>
               foundNoCandidate = false
-              table.put(goal, candidate)
+              table.put(goal, extraRequirement.none, candidate)
+            }
+            projectingSelector(extraCandidates).foreach { candidate =>
+              foundNoCandidate = false
+              table.put(goal, extraRequirement.forResult(candidate), candidate)
             }
             keepGoing = blockSize == 2 ||
               (table.size <= maxTableSize && (System.currentTimeMillis() - start) < iterationDurationLimit)
@@ -80,9 +93,9 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       largestFinishedIteration
     }
 
-    def findBestCandidateInBlock(blockSize: Int): (Goal, Result) = {
-      val blockCandidates: Iterable[(Goal, Result)] = LazyIterable(table.plansOfSize(blockSize)).toIndexedSeq
-      val bestInBlock = goalSelector(blockCandidates)
+    def findBestCandidateInBlock(blockSize: Int): ((Goal, Requirement), Result) = {
+      val blockCandidates: Iterable[((Goal, Requirement), Result)] = LazyIterable(table.plansOfSize(blockSize)).toIndexedSeq
+      val bestInBlock: Option[((Goal, Requirement), Result)] = goalSelector(blockCandidates)
       bestInBlock.getOrElse {
         throw new IllegalStateException(
           s"""Found no solution for block with size $blockSize,
@@ -90,9 +103,12 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
       }
     }
 
-    def compactBlock(original: Goal, candidate: Result): Unit = {
+    def compactBlock(original: Goal): Unit = {
       val newId = registry.compact(original)
-      table.put(BitSet.empty + newId, candidate)
+      table(original).foreach {
+        case (ro, plan) =>
+          table.put(BitSet.empty + newId, ro, plan)
+      }
       toDo = toDo -- original + newId
       table.removeAllTracesOf(original)
     }
@@ -104,14 +120,13 @@ class IDPSolver[Solvable, Result, Context](generator: IDPSolverStep[Solvable, Re
     while (toDo.size > 1) {
       iterations += 1
       monitor.startIteration(iterations)
-      val largestBlockSize = generateBestCandidates(toDo.size)
-      val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestBlockSize)
-      monitor.endIteration(iterations, largestBlockSize, table.size)
-      compactBlock(bestGoal, bestInBlock)
+      val largestFinished = generateBestCandidates(toDo.size)
+      val (bestGoal, bestInBlock) = findBestCandidateInBlock(largestFinished)
+      monitor.endIteration(iterations, largestFinished, table.size)
+      compactBlock(bestGoal._1)
     }
     monitor.foundPlanAfter(iterations)
 
-    table.plans.map { case (k, v) => registry.explode(k) -> v}
+    table.plans.collect { case ((k, o), v) if extraRequirement.is(o) => (registry.explode(k), o) -> v }
   }
 }
-

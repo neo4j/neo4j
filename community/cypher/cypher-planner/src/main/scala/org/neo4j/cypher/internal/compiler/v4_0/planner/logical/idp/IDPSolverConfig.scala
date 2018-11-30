@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 
 /**
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 trait IDPSolverConfig {
   def maxTableSize: Int = 128
   def iterationDurationLimit: Long = 1000
-  def solvers(queryGraph: QueryGraph): Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]]
+  def solvers(queryGraph: QueryGraph): Seq[QueryGraph => IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext]]
 }
 
 /* The Dynamic Programming (DP) approach is IDP with no optimizations */
@@ -73,12 +73,12 @@ case class AdaptiveChainPatternConfig(patternLengthThreshold: Int) extends IDPSo
     Seq(AdaptiveSolverStep(_, (qg, goal) => goal.size >= patternLengthThreshold))
 }
 
-case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => Boolean) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class AdaptiveSolverStep(qg: QueryGraph, predicate: (QueryGraph, Goal) => Boolean) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
 
   private val join = joinSolverStep(qg)
   private val expand = expandSolverStep(qg)
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, InterestingOrder], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     if (!registry.compacted() && predicate(qg, goal))
       expand(registry, goal, table, context)
     else

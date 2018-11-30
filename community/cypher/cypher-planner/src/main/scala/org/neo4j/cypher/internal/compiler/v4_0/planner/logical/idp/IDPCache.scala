@@ -21,11 +21,15 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 // Read-only interface to IDPTable
 //
-trait IDPCache[P] extends (Goal => Option[P]) {
+trait IDPCache[P,O] extends ((Goal, O) => Option[P]) {
   def size: Int
 
-  def contains(goal: Goal): Boolean
+  def apply(goal: Goal): Seq[(O, P)]
 
-  def plansOfSize(k: Int): Iterator[(Goal, P)]
-  def plans: Iterator[(Goal, P)]
+  // TODO: Consider wrapping (Goal,O) in a single type with potentially more efficient hashcode implementation
+  def contains(goal: Goal, o: O): Boolean
+
+  def plansOfSize(k: Int): Iterator[((Goal, O), P)]
+
+  def plans: Iterator[((Goal, O), P)]
 }

@@ -23,36 +23,41 @@ import scala.collection.mutable
 
 // Table used by IDPSolver to record optimal plans found so far
 //
-class IDPTable[P](private val map: mutable.Map[Goal, P] = mutable.Map.empty[Goal, P]) extends IDPCache[P] {
+class IDPTable[P, O](private val map: mutable.Map[(Goal, O), P] = mutable.Map.empty[(Goal, O), P]) extends IDPCache[P, O] {
 
-  def size = map.size
+  def size: Int = map.size
 
-  def put(goal: Goal, product: P): Unit = {
-    map.put(goal, product)
+  def put(goal: Goal, o: O, product: P): Unit = {
+    map.put((goal, o), product)
   }
 
-  def apply(goal: Goal): Option[P] = map.get(goal)
+  def apply(goal: Goal, o: O): Option[P] = map.get((goal, o))
 
-  def contains(goal: Goal): Boolean = map.contains(goal)
+  // TODO: Verify this expensive method is not responsible for any regressions
+  def apply(goal: Goal): Seq[(O, P)] = map.collect {
+    case ((key, o), p) if key == goal => (o, p)
+  }.toSeq
 
-  def plansOfSize(k: Int) = map.iterator.filter(_._1.size == k)
+  def contains(goal: Goal, o: O): Boolean = map.contains((goal, o))
 
-  def plans = map.iterator
+  def plansOfSize(k: Int): Iterator[((Goal, O), P)] = map.iterator.filter(_._1._1.size == k)
 
-  def removeAllTracesOf(goal: Goal) = {
-    val toDrop = map.keysIterator.filter(entry => (entry & goal).nonEmpty)
+  def plans: Iterator[((Goal, O), P)] = map.iterator
+
+  def removeAllTracesOf(goal: Goal): Unit = {
+    val toDrop = map.keysIterator.filter { case (entry, _) => (entry & goal).nonEmpty }
     toDrop.foreach(map.remove)
   }
 
-  override def toString(): String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_.size).max})"
+  override def toString(): String = s"IDPPlanTable(numberOfPlans=$size, largestSolved=${map.keySet.map(_._1.size).max})"
 }
 
 object IDPTable {
-  def apply[X, P](registry: IdRegistry[X], seed: Seed[X, P]) = {
-    val builder = mutable.Map.newBuilder[Goal, P]
+  def apply[X, O, P](registry: IdRegistry[X], seed: Seed[X, O, P]): IDPTable[P, O] = {
+    val builder = mutable.Map.newBuilder[(Goal, O), P]
     if (seed.hasDefiniteSize)
       builder.sizeHint(seed.size)
-    seed.foreach { case (goal, product) => builder += registry.registerAll(goal) -> product }
-    new IDPTable[P](builder.result())
+    seed.foreach { case ((goal, o), product) => builder += (registry.registerAll(goal), o) -> product }
+    new IDPTable[P, O](builder.result())
   }
 }

@@ -19,27 +19,34 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
+import scala.collection.GenTraversableOnce
+
 object IDPSolverStep {
-  def empty[S, P, C] = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
+  def empty[S, O, P, C] = new IDPSolverStep[S, O, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P, O], context: C): Iterator[P] =
       Iterator.empty
   }
 }
 
-trait SolverStep[S, P, C] {
-  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C):  Iterator[P]
+trait SolverStep[S, O, P, C] {
+  def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P, O], context: C): Iterator[P]
 }
 
-trait IDPSolverStep[S, P, C] extends SolverStep[S, P, C] {
+trait IDPSolverStep[S, O, P, C] extends SolverStep[S, O, P, C] {
   self =>
 
-  def map(f: P => P) = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
+  def map(f: P => P): IDPSolverStep[S, O, P, C] = new IDPSolverStep[S, O, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P, O], context: C): Iterator[P] =
       self(registry, goal, cache, context).map(f)
   }
 
-  def ++(next: IDPSolverStep[S, P, C]) = new IDPSolverStep[S, P, C] {
-    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P], context: C): Iterator[P] =
+  def flatMap(f: P => GenTraversableOnce[P]): IDPSolverStep[S, O, P, C] = new IDPSolverStep[S, O, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P, O], context: C): Iterator[P] =
+      self(registry, goal, cache, context).flatMap(f)
+  }
+
+  def ++(next: IDPSolverStep[S, O, P, C]): IDPSolverStep[S, O, P, C] = new IDPSolverStep[S, O, P, C] {
+    override def apply(registry: IdRegistry[S], goal: Goal, cache: IDPCache[P, O], context: C): Iterator[P] =
       self(registry, goal, cache, context) ++ next(registry, goal, cache, context)
   }
 }

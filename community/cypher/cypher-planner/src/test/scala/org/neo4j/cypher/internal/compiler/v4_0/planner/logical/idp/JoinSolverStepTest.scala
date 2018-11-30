@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
+import scala.language.implicitConversions
+
 class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   implicit def converter(s: Symbol): String = s.toString()
@@ -32,10 +34,10 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   val pattern1 = PatternRelationship("r1", ("a", "b"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
   val pattern2 = PatternRelationship("r2", ("b", "c"), SemanticDirection.OUTGOING, Seq.empty, SimplePatternLength)
 
-  val table = new IDPTable[LogicalPlan]()
+  val table = new IDPTable[LogicalPlan, InterestingOrder]()
 
   test("does not join based on empty table") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
@@ -43,7 +45,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("joins plans that solve a single pattern relationship") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
@@ -53,8 +55,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c")
 
-      table.put(register(pattern1), plan1)
-      table.put(register(pattern2), plan2)
+      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern2), InterestingOrder.empty, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
@@ -64,7 +66,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("can produce a join for a single pattern relationship") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes, "a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
@@ -73,8 +75,8 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b")
 
-      table.put(register(pattern1), plan1)
-      table.put(register(pattern2), plan2)
+      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern2), InterestingOrder.empty, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx).toSet should equal(Set(
         NodeHashJoin(Set("b"), plan1, plan2),
@@ -84,7 +86,7 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
   }
 
   test("does not join plans that do not overlap") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes,"a", "r1", "b")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b")))
@@ -93,15 +95,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-      table.put(register(pattern1), plan1)
-      table.put(register(pattern2), plan2)
+      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern2), InterestingOrder.empty, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("does not join plans that overlap on non-nodes") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
 
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes,"a", "r1", "b", "x")
@@ -111,15 +113,15 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d")
 
-      table.put(register(pattern1), plan1)
-      table.put(register(pattern2), plan2)
+      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern2), InterestingOrder.empty, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
   test("does not join plans that overlap on nodes that are arguments") {
-    implicit val registry = IdRegistry[PatternRelationship]
+    implicit val registry: DefaultIdRegistry[PatternRelationship] = IdRegistry[PatternRelationship]
     new given().withLogicalPlanningContext { (cfg, ctx) =>
       val plan1 = fakeLogicalPlanFor(ctx.planningAttributes,"a", "r1", "b", "x")
       ctx.planningAttributes.solveds.set(plan1.id, RegularPlannerQuery(QueryGraph.empty.addPatternNodes("a", "b", 'x).addArgumentIds(Seq('x))))
@@ -128,12 +130,12 @@ class JoinSolverStepTest extends CypherFunSuite with LogicalPlanningTestSupport2
 
       val qg = QueryGraph.empty.addPatternNodes("a", "b", "c", "d").addArgumentIds(Seq('x))
 
-      table.put(register(pattern1), plan1)
-      table.put(register(pattern2), plan2)
+      table.put(register(pattern1), InterestingOrder.empty, plan1)
+      table.put(register(pattern2), InterestingOrder.empty, plan2)
 
       joinSolverStep(qg)(registry, register(pattern1, pattern2), table, ctx) should be(empty)
     }
   }
 
-  def register[X](patRels: X*)(implicit registry: IdRegistry[X]) = registry.registerAll(patRels)
+  def register[X](patRels: X*)(implicit registry: IdRegistry[X]): Goal = registry.registerAll(patRels)
 }

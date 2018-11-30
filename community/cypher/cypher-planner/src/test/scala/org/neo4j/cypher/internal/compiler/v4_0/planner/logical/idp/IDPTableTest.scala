@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
+import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
+import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -27,17 +29,21 @@ import scala.collection.immutable.BitSet
 class IDPTableTest extends CypherFunSuite {
 
   test("removes all traces of a goal") {
-    val table = new IDPTable[LogicalPlan]()
+    val table = new IDPTable[LogicalPlan, InterestingOrder]()
 
-    table.put(BitSet(0), mock[LogicalPlan])
-    table.put(BitSet(1), mock[LogicalPlan])
-    table.put(BitSet(2), mock[LogicalPlan])
-    table.put(BitSet(0, 1), mock[LogicalPlan])
-    table.put(BitSet(1, 2), mock[LogicalPlan])
-    table.put(BitSet(0, 2), mock[LogicalPlan])
+    addTo(table, BitSet(0))
+    addTo(table, BitSet(1))
+    addTo(table, BitSet(2))
+    addTo(table, BitSet(0, 1))
+    addTo(table, BitSet(1, 2))
+    addTo(table, BitSet(0, 2))
 
     table.removeAllTracesOf(BitSet(0, 1))
 
-    table.plans.map(_._1).toSet should equal(Set(BitSet(2)))
+    table.plans.map(_._1._1).toSet should equal(Set(BitSet(2)))
+  }
+
+  private def addTo(table: IDPTable[LogicalPlan, InterestingOrder], goal: idp.Goal): Unit = {
+    table.put(goal, InterestingOrder.empty, mock[LogicalPlan])
   }
 }

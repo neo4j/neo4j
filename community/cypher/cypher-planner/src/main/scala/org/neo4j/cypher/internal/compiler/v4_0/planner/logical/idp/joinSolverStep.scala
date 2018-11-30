@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.joinSolverStep._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
-import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, PatternRelationship, QueryGraph}
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.Solveds
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 
@@ -29,11 +29,11 @@ object joinSolverStep {
   val VERBOSE = false
 }
 
-case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
 
   import LogicalPlanningSupport._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, InterestingOrder], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
 
     if (VERBOSE) {
       println(s"\n>>>> start solving ${show(goal, goalSymbols(goal, registry))}")
@@ -45,24 +45,21 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
       *  (= not registered), because then it will not be possible to find an expand solution anymore.
       */
     def registered: Int => Boolean = nbr => registry.lookup(nbr).isDefined
-    val removeArguments = goal.exists(registered) || table.plans.exists(p => p._1.exists(registered))
+    val removeArguments = goal.exists(registered) || table.plans.exists(p => p._1._1.exists(registered))
     val argumentsToRemove  = if (removeArguments) qg.argumentIds else Set.empty[String]
 
     val goalSize = goal.size
     val planProducer = context.logicalPlanProducer
     val builder = Vector.newBuilder[LogicalPlan]
 
-    for (
-      leftSize <- 1.until(goalSize);
-      leftGoal <- goal.subsets(leftSize);
-      rightSize <- 1.until(goalSize);
+    for {
+      leftSize <- 1.until(goalSize)
+      leftGoal <- goal.subsets(leftSize)
+      rightSize <- 1.until(goalSize)
       rightGoal <- goal.subsets(rightSize) if (leftGoal != rightGoal) && ((leftGoal | rightGoal) == goal)
-    ) {
-      val optLhs = table(leftGoal)
-      val optRhs = table(rightGoal)
-      if (optLhs.isDefined && optRhs.isDefined) {
-        val lhs = optLhs.get
-        val rhs = optRhs.get
+      (_, lhs) <- table(leftGoal)
+      (_, rhs) <- table(rightGoal)
+    } {
         val overlappingNodes = computeOverlappingNodes(lhs, rhs, context.planningAttributes.solveds, argumentsToRemove)
         if (overlappingNodes.nonEmpty) {
           val overlappingSymbols = computeOverlappingSymbols(lhs, rhs, argumentsToRemove)
@@ -76,7 +73,6 @@ case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelations
           }
         }
       }
-    }
 
     builder.result().iterator
   }

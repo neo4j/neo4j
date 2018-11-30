@@ -26,10 +26,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.planner.logical._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.SingleComponentPlanner.planSinglePattern
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.expandSolverStep.{planSinglePatternSide, planSingleProjectEndpoints}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.leafPlanOptions
-import org.neo4j.cypher.internal.ir.v4_0.{PatternRelationship, QueryGraph, InterestingOrder}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{Argument, LogicalPlan}
-import org.neo4j.cypher.internal.v4_0.ast.RelationshipHint
-import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.cypher.internal.ir.v4_0.{InterestingOrder, PatternRelationship, QueryGraph}
+import org.neo4j.cypher.internal.v4_0.ast.{AscSortItem, DescSortItem, RelationshipHint, SortItem}
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, InternalException}
 
 /**
   * This class contains the main IDP loop in the cost planner.
@@ -50,20 +51,30 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
 
         val generators = solverConfig.solvers(qg).map(_ (qg))
         val selectingGenerators = generators.map(_.map(plan => kit.select(plan, qg)))
-        val generator = selectingGenerators.foldLeft(IDPSolverStep.empty[PatternRelationship, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+        val sortingGenerators = selectingGenerators.map(_.flatMap(plan => maybeSortedPlan(plan, interestingOrder, context)))
+        val generator = (selectingGenerators ++ sortingGenerators).foldLeft(IDPSolverStep.empty[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext])(_ ++ _)
+        val orderRequirement = new ExtraRequirement[InterestingOrder, LogicalPlan]() {
+          override def none: InterestingOrder = InterestingOrder.empty
 
-        val solver = new IDPSolver[PatternRelationship, LogicalPlan, LogicalPlanningContext](
+          override def forResult(plan: LogicalPlan): InterestingOrder =
+            if (interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) interestingOrder else InterestingOrder.empty
+
+          override def is(requirement: InterestingOrder): Boolean = requirement == interestingOrder
+        }
+
+        val solver = new IDPSolver[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext](
           generator = generator,
           projectingSelector = kit.pickBest,
           maxTableSize = solverConfig.maxTableSize,
           iterationDurationLimit = solverConfig.iterationDurationLimit,
+          extraRequirement = orderRequirement,
           monitor = monitor
         )
 
         monitor.initTableFor(qg)
-        val seed = initTable(qg, kit, leaves, context)
+        val seed = initTable(qg, kit, leaves, context, interestingOrder)
         monitor.startIDPIterationFor(qg)
-        val solutions = solver(seed, qg.patternRelationships, context)
+        val solutions = solver(seed, qg.patternRelationships, context).filter { case ((k, o), v) => o == interestingOrder }
         val (_, result) = solutions.toSingleOption.getOrElse(throw new AssertionError("Expected a single plan to be left in the plan table"))
         monitor.endIDPIterationFor(qg, result)
 
@@ -88,14 +99,46 @@ case class SingleComponentPlanner(monitor: IDPQueryGraphSolverMonitor,
   private def planFullyCoversQG(qg: QueryGraph, plan: LogicalPlan) =
     (qg.idsWithoutOptionalMatchesOrUpdates -- plan.availableSymbols -- qg.argumentIds).isEmpty
 
-  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext): Set[(Set[PatternRelationship], LogicalPlan)] = {
+  private def initTable(qg: QueryGraph, kit: QueryPlannerKit, leaves: Set[LogicalPlan], context: LogicalPlanningContext, interestingOrder: InterestingOrder): Set[((Set[PatternRelationship], InterestingOrder), LogicalPlan)] = {
     for (pattern <- qg.patternRelationships)
       yield {
-        val plans = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
-        val bestAccessor = kit.pickBest(plans).getOrElse(
-          throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen."))
-        Set(pattern) -> bestAccessor
+        val input = planSinglePattern(qg, pattern, leaves, context).map(plan => kit.select(plan, qg))
+        val plans = if (interestingOrder.requiredOrderCandidate.nonEmpty)
+          input ++ input.flatMap(plan => maybeSortedPlan(plan, interestingOrder, context))
+        else input
+
+        val ordered = plans.filter(plan => interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id)))
+
+        val best = kit.pickBest(plans)
+        val bestWithSort = kit.pickBest(ordered)
+
+        val result = best.map(p => ((Set(pattern), InterestingOrder.empty), p)) ++
+          bestWithSort.map(p => ((Set(pattern), interestingOrder), p))
+
+        if (result.isEmpty)
+          throw new InternalException("Found no access plan for a pattern relationship in a connected component. This must not happen.")
+
+        result
       }
+  }.flatten
+
+  private def maybeSortedPlan(plan: LogicalPlan, interestingOrder: InterestingOrder, context: LogicalPlanningContext): Option[LogicalPlan] = {
+    if (interestingOrder.requiredOrderCandidate.nonEmpty && !interestingOrder.satisfiedBy(context.planningAttributes.providedOrders.get(plan.id))) {
+      val sortItems = interestingOrder.requiredOrderCandidate.order.map {
+        case InterestingOrder.Asc(id) => AscSortItem(Variable(id)(InputPosition.NONE))(InputPosition.NONE)
+        case InterestingOrder.Desc(id) => DescSortItem(Variable(id)(InputPosition.NONE))(InputPosition.NONE)
+      }
+      val columnOrders = sortItems.map(columnOrder)
+      Some(context.logicalPlanProducer.planSort(plan, columnOrders, sortItems, interestingOrder, context))
+    } else {
+      None
+    }
+  }
+
+  private def columnOrder(in: SortItem): ColumnOrder = in match {
+    case AscSortItem(Variable(key)) => Ascending(key)
+    case DescSortItem(Variable(key)) => Descending(key)
+    case _ => throw new InternalException("Sort items expected to only use single variable expression")
   }
 }
 
@@ -105,7 +148,7 @@ trait SingleComponentPlannerTrait {
 
 
 object SingleComponentPlanner {
-  def DEFAULT_SOLVERS: Seq[QueryGraph => IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext]] =
+  def DEFAULT_SOLVERS: Seq[QueryGraph => IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext]] =
     Seq(joinSolverStep(_), expandSolverStep(_))
 
   def planSinglePattern(qg: QueryGraph,

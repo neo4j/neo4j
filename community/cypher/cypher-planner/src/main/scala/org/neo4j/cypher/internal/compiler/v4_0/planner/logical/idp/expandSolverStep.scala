@@ -24,15 +24,16 @@ import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.expressions.{Ands, Expression, LogicalVariable}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{ExpandAll, ExpandInto, LogicalPlan}
 
-case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {
+case class expandSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, InterestingOrder, LogicalPlan, LogicalPlanningContext] {
 
   import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.idp.expandSolverStep._
 
-  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
+  override def apply(registry: IdRegistry[PatternRelationship], goal: Goal, table: IDPCache[LogicalPlan, InterestingOrder], context: LogicalPlanningContext): Iterator[LogicalPlan] = {
     val result: Iterator[Iterator[LogicalPlan]] =
-      for (patternId <- goal.iterator;
-           pattern <- registry.lookup(patternId);
-           plan <- table(goal - patternId)) yield {
+      for {patternId <- goal.iterator
+           (_, plan) <- table(goal - patternId)
+           pattern <- registry.lookup(patternId)
+      } yield {
         if (plan.availableSymbols.contains(pattern.name))
           Iterator(
             planSingleProjectEndpoints(pattern, plan, context)
