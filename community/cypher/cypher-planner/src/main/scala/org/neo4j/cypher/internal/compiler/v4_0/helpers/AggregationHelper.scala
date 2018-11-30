@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, FunctionInvocation, Property, Variable}
+import org.neo4j.cypher.internal.v4_0.expressions._
 
 object AggregationHelper {
   private def fetchFunctionParameter(aggregationFunction: FunctionInvocation): Option[String] = {
@@ -39,12 +39,12 @@ object AggregationHelper {
       case f: FunctionInvocation =>
         f.name match {
           case "min" =>
-            AggregationHelper.fetchFunctionParameter(f) match {
+            fetchFunctionParameter(f) match {
               case Some(param) => minResult(param)
               case _ => otherResult
             }
           case "max" =>
-            AggregationHelper.fetchFunctionParameter(f) match {
+            fetchFunctionParameter(f) match {
               case Some(param) => maxResult(param)
               case _ => otherResult
             }
@@ -52,5 +52,12 @@ object AggregationHelper {
         }
       case _ => otherResult
     }
+  }
+
+  def extractProperties(aggregationExpression: Map[String, Expression]): Set[(String, String)] = {
+    aggregationExpression.values.collect {
+      case FunctionInvocation(_, _, _, Seq(Property(Variable(varName), PropertyKeyName(propName)), _*)) =>
+        (varName, propName)
+    }.toSet
   }
 }

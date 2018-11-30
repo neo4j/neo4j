@@ -46,9 +46,13 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   config: QueryPlannerConfiguration = QueryPlannerConfiguration.default,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,
-                                  planningAttributes: PlanningAttributes) {
+                                  planningAttributes: PlanningAttributes,
+                                  aggregatingProperties: Set[(String, String)] = Set.empty) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))
+
+  def withAggregationProperties(properties: Set[(String, String)]): LogicalPlanningContext =
+    copy(aggregatingProperties = properties)
 
   def withUpdatedCardinalityInformation(plan: LogicalPlan): LogicalPlanningContext =
     copy(input = input.recurse(plan, planningAttributes.solveds, planningAttributes.cardinalities))

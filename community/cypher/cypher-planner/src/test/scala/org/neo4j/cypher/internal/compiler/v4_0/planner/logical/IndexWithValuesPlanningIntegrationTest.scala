@@ -883,4 +883,82 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
       )
     )
   }
+
+  // AGGREGATIONS (=> implicit exists)
+
+  test("should plan scan with GetValue when the property is used in avg function") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN avg(n.prop)"
+
+    plan._2 should equal(
+      Aggregation(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map.empty,
+        Map(s"avg(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("avg")(pos), distinct = false, Vector(CachedNodeProperty("n", PropertyKeyName("prop")(pos))(pos)))(pos))
+      )
+    )
+  }
+
+  test("should plan scan with DoNotGetValue when the property is used in avg function") {
+    val plan = new given {
+      indexOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN avg(n.prop)"
+
+    plan._2 should equal(
+      Aggregation(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map.empty,
+        Map(s"avg(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("avg")(pos), distinct = false, Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+      )
+    )
+  }
+
+  test("should plan scan with GetValue when the property is used in sum function") {
+    val plan = new given {
+      indexOn("Awesome", "prop").providesValues()
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN sum(n.prop)"
+
+    plan._2 should equal(
+      Aggregation(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), GetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map.empty,
+        Map(s"sum(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("sum")(pos), distinct = false, Vector(CachedNodeProperty("n", PropertyKeyName("prop")(pos))(pos)))(pos))
+      )
+    )
+  }
+
+  test("should plan scan with DoNotGetValue when the property is used in sum function") {
+    val plan = new given {
+      indexOn("Awesome", "prop")
+    } getLogicalPlanFor "MATCH (n:Awesome) RETURN sum(n.prop)"
+
+    plan._2 should equal(
+      Aggregation(
+        NodeIndexScan(
+          "n",
+          LabelToken("Awesome", LabelId(0)),
+          IndexedProperty(PropertyKeyToken(PropertyKeyName("prop") _, PropertyKeyId(0)), DoNotGetValue),
+          Set.empty,
+          IndexOrderNone),
+        Map.empty,
+        Map(s"sum(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("sum")(pos), distinct = false, Vector(Property(Variable("n")(pos), PropertyKeyName("prop")(pos))(pos)))(pos))
+      )
+    )
+  }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.v4_0.phases._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
@@ -124,7 +125,17 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, query.interestingOrder, ctx)
+
+    val ctxWithAggrProps = query.horizon match {
+      case aggr: AggregatingQueryProjection if aggr.groupingExpressions.isEmpty =>
+        AggregationHelper.extractProperties(aggr.aggregationExpressions) match {
+          case s: Set[(String, String)] if s.nonEmpty => ctx.withAggregationProperties(s)
+          case _ => ctx
+        }
+      case _ => ctx
+    }
+
+    ctxWithAggrProps.strategy.plan(query.queryGraph, query.interestingOrder, ctxWithAggrProps)
   }
 }
 

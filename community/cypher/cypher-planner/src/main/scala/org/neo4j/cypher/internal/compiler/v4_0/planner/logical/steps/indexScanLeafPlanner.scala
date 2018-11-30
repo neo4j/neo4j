@@ -63,15 +63,24 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
         val plans = produce(name, propertyKeyName, qg, interestingOrder, scannable.property, CTAny, scannable.expr, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         maybeLeafPlans(name, plans)
 
-      // MATCH (n:User) with existence constraint on :User
+      // MATCH (n:User) with existence/node key constraint on :User(prop) or aggregation on n.prop
       case predicate@HasLabels(expr@Variable(name), labels) =>
         val label = labels.head
         val labelName = label.name
         val constrainedProps = context.planContext.getPropertiesWithExistenceConstraint(labelName)
 
-        val plans: Set[LogicalPlan] = constrainedProps.flatMap(propWithIndex => {
-          val property = Property(expr, PropertyKeyName(propWithIndex)(predicate.position))(predicate.position)
-          produceForConstraint(name, propWithIndex, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
+        // Can't currently handle aggregation on more than one variable
+        val aggregatedProps: Set[String] =
+          if (context.aggregatingProperties.forall(prop => prop._1.equals(name)))
+            context.aggregatingProperties.map { prop => prop._2 }
+          else Set.empty
+
+        // Without composite range scans, we cannot handle more than one property
+        val properties = if(aggregatedProps.size == 1) constrainedProps.union(aggregatedProps) else constrainedProps
+
+        val plans: Set[LogicalPlan] = properties.flatMap(prop => {
+          val property = Property(expr, PropertyKeyName(prop)(predicate.position))(predicate.position)
+          produceForConstraintOrAggregation(name, prop, qg, interestingOrder, property, CTAny, predicate, lpp.planNodeIndexScan(_, _, _, _, _, _, _, context), context)
         })
 
         maybeLeafPlans(name, plans)
@@ -125,15 +134,15 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
       }
   }
 
-  private def produceForConstraint(variableName: String,
-                                   propertyKeyName: String,
-                                   qg: QueryGraph,
-                                   interestingOrder: InterestingOrder,
-                                   property: LogicalProperty,
-                                   propertyType: CypherType,
-                                   predicate: HasLabels,
-                                   planProducer: PlanProducer,
-                                   context: LogicalPlanningContext): Option[LogicalPlan] = {
+  private def produceForConstraintOrAggregation(variableName: String,
+                                                propertyKeyName: String,
+                                                qg: QueryGraph,
+                                                interestingOrder: InterestingOrder,
+                                                property: LogicalProperty,
+                                                propertyType: CypherType,
+                                                predicate: HasLabels,
+                                                planProducer: PlanProducer,
+                                                context: LogicalPlanningContext): Option[LogicalPlan] = {
     val semanticTable = context.semanticTable
     val labelName = predicate.labels.head
     val labelId = semanticTable.id(labelName).get
