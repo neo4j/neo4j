@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
 import java.io.IOException;
+
 import org.neo4j.graphdb.Resource;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
@@ -35,11 +36,12 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 
 import static java.lang.System.currentTimeMillis;
-
 import static org.neo4j.helpers.Format.duration;
 
 public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
 {
+    private static final long NO_TRANSACTION_ID = -1;
+
     private final TransactionAppender appender;
     private final TransactionIdStore transactionIdStore;
     private final CheckPointThreshold threshold;
@@ -100,6 +102,31 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     @Override
     public long tryCheckPoint( TriggerInfo info ) throws IOException
     {
+        return tryCheckPoint( info, true );
+    }
+
+    @Override
+    public long tryCheckPointNoWait( TriggerInfo info ) throws IOException
+    {
+        return tryCheckPoint( info, false );
+    }
+
+    @Override
+    public long checkPointIfNeeded( TriggerInfo info ) throws IOException
+    {
+        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
+        {
+            try ( LogCheckPointEvent event = tracer.beginCheckPoint();
+                  Resource lock = mutex.checkPoint() )
+            {
+                return doCheckPoint( info, event );
+            }
+        }
+        return NO_TRANSACTION_ID;
+    }
+
+    private long tryCheckPoint( TriggerInfo info, boolean awaitExistingCheckPoint ) throws IOException
+    {
         ioLimiter.disableLimit();
         try
         {
@@ -113,6 +140,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             }
             else
             {
+                if ( !awaitExistingCheckPoint )
+                {
+                    return NO_TRANSACTION_ID;
+                }
+
                 try ( Resource lock = mutex.checkPoint() )
                 {
                     msgLog.info( info.describe( lastCheckPointedTx ) +
@@ -125,20 +157,6 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         {
             ioLimiter.enableLimit();
         }
-    }
-
-    @Override
-    public long checkPointIfNeeded( TriggerInfo info ) throws IOException
-    {
-        if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
-        {
-            try ( LogCheckPointEvent event = tracer.beginCheckPoint();
-                    Resource lock = mutex.checkPoint() )
-            {
-                return doCheckPoint( info, event );
-            }
-        }
-        return -1;
     }
 
     private long doCheckPoint( TriggerInfo triggerInfo, LogCheckPointEvent logCheckPointEvent ) throws IOException

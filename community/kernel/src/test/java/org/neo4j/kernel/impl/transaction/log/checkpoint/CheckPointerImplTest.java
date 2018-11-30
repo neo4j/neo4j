@@ -179,6 +179,32 @@ public class CheckPointerImplTest
     }
 
     @Test
+    public void shouldCheckPointNoWaitAlwaysWhenThereIsNoRunningCheckPoint() throws Throwable
+    {
+        // Given
+        CheckPointerImpl checkPointing = checkPointer();
+        when( threshold.isCheckPointingNeeded( anyLong(), eq( INFO ) ) ).thenReturn( false );
+        mockTxIdStore();
+
+        checkPointing.start();
+
+        // When
+        long txId = checkPointing.tryCheckPointNoWait( INFO );
+
+        // Then
+        assertEquals( transactionId, txId );
+        verify( storageEngine, times( 1 ) ).flushAndForce( limiter );
+        verify( health, times( 2 ) ).assertHealthy( IOException.class );
+        verify( appender, times( 1 ) ).checkPoint( eq( logPosition ), any( LogCheckPointEvent.class ) );
+        verify( threshold, times( 1 ) ).initialize( initialTransactionId );
+        verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
+        verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
+        verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
+        verifyZeroInteractions( tracer );
+        verifyNoMoreInteractions( storageEngine, health, appender, threshold, tracer );
+    }
+
+    @Test
     public void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
     {
         // Given
@@ -263,6 +289,23 @@ public class CheckPointerImplTest
 
         checkPointing.tryCheckPoint( INFO );
 
+        verifyNoMoreInteractions( appender );
+    }
+
+    @Test
+    public void tryCheckPointNoWaitShouldReturnWhenCheckPointIsAlreadyRunning() throws Throwable
+    {
+        // Given
+        Lock lock = mock( Lock.class );
+        when( lock.tryLock() ).thenReturn( false );
+        CheckPointerImpl checkPointing = checkPointer( mutex( lock ) );
+        mockTxIdStore();
+
+        // When
+        long id = checkPointing.tryCheckPointNoWait( INFO );
+
+        // Then
+        assertEquals( -1, id );
         verifyNoMoreInteractions( appender );
     }
 

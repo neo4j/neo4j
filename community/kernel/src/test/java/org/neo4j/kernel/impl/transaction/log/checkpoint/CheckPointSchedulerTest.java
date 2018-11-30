@@ -185,6 +185,12 @@ public class CheckPointSchedulerTest
             }
 
             @Override
+            public long tryCheckPointNoWait( TriggerInfo triggerInfo )
+            {
+                throw new RuntimeException( "this should have not been called" );
+            }
+
+            @Override
             public long forceCheckPoint( TriggerInfo triggerInfo )
             {
                 throw new RuntimeException( "this should have not been called" );
@@ -332,6 +338,12 @@ public class CheckPointSchedulerTest
         }
 
         @Override
+        public long tryCheckPointNoWait( TriggerInfo triggerInfo )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public long forceCheckPoint( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException();
@@ -400,6 +412,12 @@ public class CheckPointSchedulerTest
 
         @Override
         public long tryCheckPoint( TriggerInfo triggerInfo )
+        {
+            throw new UnsupportedOperationException( "This should have not been called" );
+        }
+
+        @Override
+        public long tryCheckPointNoWait( TriggerInfo triggerInfo )
         {
             throw new UnsupportedOperationException( "This should have not been called" );
         }

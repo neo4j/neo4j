@@ -361,7 +361,7 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( storageEngine );
 
             this.executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
-            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointing(), databaseHealth );
+            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
             dataSourceDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
@@ -679,6 +679,11 @@ public class Database extends LifecycleAdapter
     public Dependencies getDependencyResolver()
     {
         return dataSourceDependencies;
+    }
+
+    public JobScheduler getScheduler()
+    {
+        return scheduler;
     }
 
     private StatementOperationParts buildStatementOperations( AtomicReference<CpuClock> cpuClockRef,
