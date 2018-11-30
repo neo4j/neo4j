@@ -48,6 +48,16 @@ class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConst
     rewriter(before) should equal(after)
   }
 
+  test("should also rewrite TiMeStAmP()") {
+    val before = FunctionInvocation(FunctionName("TiMeStAmP")(pos), distinct = false, IndexedSeq.empty)(pos)
+
+    val after =
+      Property(
+        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty)(pos),
+        PropertyKeyName("epochMillis")(pos))(pos)
+    rewriter(before) should equal(after)
+  }
+
   test("should rewrite extract() in V2") {
     val scope = ExtractScope(varFor("a"), None, None)(pos)
     val before = ExtractExpression(scope, literalFloat(3.0))(pos)
