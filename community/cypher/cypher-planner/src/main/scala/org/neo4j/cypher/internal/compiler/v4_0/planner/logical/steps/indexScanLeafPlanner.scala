@@ -145,14 +145,17 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
                                                 context: LogicalPlanningContext): Option[LogicalPlan] = {
     val semanticTable = context.semanticTable
     val labelName = predicate.labels.head
-    val labelId = semanticTable.id(labelName).get
-    val maybePropId = context.semanticTable.id(property.propertyKey)
-    val maybeIndexDescriptor = context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(propertyKeyName))
-    (maybeIndexDescriptor, maybePropId) match {
-      case (Some(indexDescriptor), Some(_)) =>
-        Some(produceInner(variableName, propertyKeyName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, predicate, labelName, labelId, indexDescriptor))
-      case _ =>
-        None
+    semanticTable.id(labelName) match {
+      case Some(labelId) =>
+        val maybePropId = context.semanticTable.id(property.propertyKey)
+        val maybeIndexDescriptor = context.planContext.indexGetForLabelAndProperties(labelName.name, Seq(propertyKeyName))
+        (maybeIndexDescriptor, maybePropId) match {
+          case (Some(indexDescriptor), Some(_)) =>
+            Some(produceInner(variableName, propertyKeyName, qg, interestingOrder, property, propertyType, predicate, planProducer, semanticTable, predicate, labelName, labelId, indexDescriptor))
+          case _ =>
+            None
+        }
+      case _ => None
     }
   }
 
