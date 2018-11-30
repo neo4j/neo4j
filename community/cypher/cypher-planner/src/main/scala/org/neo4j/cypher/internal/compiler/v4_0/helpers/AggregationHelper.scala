@@ -69,7 +69,7 @@ object AggregationHelper {
       case f @ FunctionInvocation(_, _, _, arguments@ Seq(Variable(name), _*)) if renamings.contains(name) =>
         renamings(name) match {
           case Property(Variable(varName), PropertyKeyName(propName)) => Some((varName, propName))
-          case variable: Variable =>
+          case variable @ Variable(varName) if !varName.equals(name) =>
             extractPropertyForValue(f.copy(args = IndexedSeq(variable) ++ arguments.tail)(f.position), renamings)
           case _ => None
         }
