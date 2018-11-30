@@ -180,7 +180,7 @@ public abstract class SafeLifecycle implements Lifecycle
         return state;
     }
 
-    enum State
+    protected enum State
     {
         PRE,
         IDLE,
