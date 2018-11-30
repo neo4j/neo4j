@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
 import org.neo4j.cypher.internal.v4_0.expressions._
 
+import scala.collection.mutable
+
 object AggregationHelper {
   private def fetchFunctionParameter(aggregationFunction: FunctionInvocation): Option[String] = {
     //.head works since min and max (the only functions we care about) always have one argument
@@ -54,10 +56,24 @@ object AggregationHelper {
     }
   }
 
-  def extractProperties(aggregationExpression: Map[String, Expression]): Set[(String, String)] = {
-    aggregationExpression.values.collect {
-      case FunctionInvocation(_, _, _, Seq(Property(Variable(varName), PropertyKeyName(propName)), _*)) =>
-        (varName, propName)
+  def extractProperties(aggregationExpressions: Map[String, Expression], renamings: mutable.Map[String, Expression]): Set[(String, String)] = {
+    aggregationExpressions.values.flatMap {
+      extractPropertyForValue(_, renamings)
     }.toSet
+  }
+
+  private def extractPropertyForValue(aggregationExpression: Expression, renamings: mutable.Map[String, Expression]): Option[(String, String)] = {
+    aggregationExpression match {
+      case FunctionInvocation(_, _, _, Seq(Property(Variable(varName), PropertyKeyName(propName)), _*)) =>
+        Some((varName, propName))
+      case f @ FunctionInvocation(_, _, _, arguments@ Seq(Variable(name), _*)) if renamings.contains(name) =>
+        renamings(name) match {
+          case Property(Variable(varName), PropertyKeyName(propName)) => Some((varName, propName))
+          case variable: Variable =>
+            extractPropertyForValue(f.copy(args = IndexedSeq(variable) ++ arguments.tail)(f.position), renamings)
+          case _ => None
+        }
+      case _ => None
+    }
   }
 }
