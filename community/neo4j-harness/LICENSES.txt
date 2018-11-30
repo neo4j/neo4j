@@ -13,22 +13,17 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache HttpClient
   Apache HttpCore
-  Bean Validation API
   Caffeine cache
   Commons Lang
   Data Mapper for Jackson
   fastinfoset
   Jackson
-  Javassist
-  javax.inject
   JAX-RS provider for JSON content type
   jersey-container-servlet
   jersey-container-servlet-core
-  jersey-core-client
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  jersey-media-jaxb
   Jetty :: Http Utility
   Jetty :: IO Utility
   Jetty :: Security
@@ -1522,25 +1517,19 @@ venue lying in Santa Clara County, California.
 
 ------------------------------------------------------------------------------
 Common Development and Distribution License Version 1.1
-  aopalliance version 1.0 repackaged as a module
   Extended StAX API
   HK2 API module
   HK2 Implementation Utilities
   istack common utility code runtime
   Java Servlet API
-  javax.annotation API
-  javax.inject:1 as OSGi bundle
   jaxb-api
   jersey-client
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core
-  jersey-core-client
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
-  jersey-media-jaxb
-  OSGi resource locator bundle - used by various API providers that rely on META-INF/services mechanism to locate providers.
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
 
@@ -2281,14 +2270,10 @@ version(s), and exceptions or additional permissions here}."
 
 ------------------------------------------------------------------------------
 GNU General Public License, version 2 with the Classpath Exception
-  aopalliance version 1.0 repackaged as a module
   Extended StAX API
   HK2 API module
   HK2 Implementation Utilities
   Java Servlet API
-  javax.annotation API
-  javax.inject:1 as OSGi bundle
-  OSGi resource locator bundle - used by various API providers that rely on META-INF/services mechanism to locate providers.
   ServiceLocator Default Implementation
 ------------------------------------------------------------------------------
 
@@ -2660,10 +2645,8 @@ version.
 Unlicense
   jersey-container-servlet
   jersey-container-servlet-core
-  jersey-core-client
   jersey-core-common
   jersey-inject-hk2
-  jersey-media-jaxb
 ------------------------------------------------------------------------------
 
 This is free and unencumbered software released into the public domain.
@@ -2720,23 +2703,7 @@ Java Servlet API
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 
-OSGi resource locator bundle - used by various API providers that rely on META-INF/services mechanism to locate providers.
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
 ServiceLocator Default Implementation
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-aopalliance version 1.0 repackaged as a module
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-javax.annotation API
-  Common Development and Distribution License Version 1.1
-  GNU General Public License, version 2 with the Classpath Exception
-
-javax.inject:1 as OSGi bundle
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 
@@ -2746,11 +2713,6 @@ jersey-container-servlet
   Unlicense
 
 jersey-container-servlet-core
-  Apache Software License, Version 2.0
-  Common Development and Distribution License Version 1.1
-  Unlicense
-
-jersey-core-client
   Apache Software License, Version 2.0
   Common Development and Distribution License Version 1.1
   Unlicense
@@ -2765,11 +2727,6 @@ jersey-core-server
   Common Development and Distribution License Version 1.1
 
 jersey-inject-hk2
-  Apache Software License, Version 2.0
-  Common Development and Distribution License Version 1.1
-  Unlicense
-
-jersey-media-jaxb
   Apache Software License, Version 2.0
   Common Development and Distribution License Version 1.1
   Unlicense
