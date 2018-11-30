@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-import org.neo4j.cypher.internal.v4_0.util.InternalException;
-import org.neo4j.cypher.internal.v4_0.util.InvalidSemanticsException;
-
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
+import org.neo4j.cypher.internal.v4_0.util.InternalException;
+import org.neo4j.cypher.internal.v4_0.util.InvalidSemanticsException;
 import org.neo4j.values.AnyValue;
 import org.neo4j.values.AnyValues;
 import org.neo4j.values.Comparison;
@@ -45,6 +44,7 @@ import org.neo4j.values.storable.TextValue;
 import org.neo4j.values.storable.TimeValue;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
+import org.neo4j.values.virtual.ListValue;
 import org.neo4j.values.virtual.MapValue;
 import org.neo4j.values.virtual.PathValue;
 import org.neo4j.values.virtual.VirtualNodeValue;
@@ -216,6 +216,31 @@ public final class CypherBoolean
     public static Value coerceToBoolean( AnyValue value )
     {
         return value.map( BOOLEAN_MAPPER );
+    }
+
+    public static Value in( AnyValue lhs, AnyValue rhs )
+    {
+        assert rhs != NO_VALUE;
+
+        ListValue anyValues = CypherFunctions.makeTraversable( rhs );
+
+        boolean seenUndefined = false;
+        for ( AnyValue value : anyValues )
+        {
+            switch ( lhs.ternaryEquals( value ) )
+            {
+            case TRUE:
+                return Values.TRUE;
+            case UNDEFINED:
+                seenUndefined = true;
+            case FALSE:
+                break;
+            default:
+                throw new IllegalStateException( "Unknown state" );
+            }
+        }
+
+        return seenUndefined ? NO_VALUE : Values.FALSE;
     }
 
     private static boolean isNan( AnyValue value )
