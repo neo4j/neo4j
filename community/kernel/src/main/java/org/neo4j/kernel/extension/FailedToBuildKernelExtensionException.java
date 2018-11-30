@@ -19,32 +19,20 @@
  */
 package org.neo4j.kernel.extension;
 
-import java.io.PrintStream;
-
-public class UnsatisfiedDependencyStrategies
+public class FailedToBuildKernelExtensionException extends RuntimeException
 {
-    private UnsatisfiedDependencyStrategies()
+    public FailedToBuildKernelExtensionException( String message )
     {
+        super( message );
     }
 
-    public static UnsatisfiedDependencyStrategy fail()
+    public FailedToBuildKernelExtensionException( String message, Throwable cause )
     {
-        return ( kernelExtensionFactory, e ) ->
-        {
-            throw e;
-        };
+        super( message, cause );
     }
 
-    public static UnsatisfiedDependencyStrategy ignore()
+    public FailedToBuildKernelExtensionException( Throwable cause )
     {
-        return ( kernelExtensionFactory, e ) ->
-        {   // just ignore
-        };
-    }
-
-    // Perhaps not used, but very useful for debugging kernel extension loading problems
-    public static UnsatisfiedDependencyStrategy print( PrintStream out )
-    {
-        return ( kernelExtensionFactory, e ) -> out.println( kernelExtensionFactory + " missing dep " + e );
+        super( cause );
     }
 }

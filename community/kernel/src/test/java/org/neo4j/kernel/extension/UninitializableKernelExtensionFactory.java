@@ -20,13 +20,21 @@
 package org.neo4j.kernel.extension;
 
 import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class DatabaseKernelExtensions extends AbstractKernelExtensions
+/**
+ * This kernel extension cannot be initialised, because an exception will be thrown we the machinery tries to create a proxy of the UnproxyableDepencies class.
+ */
+public class UninitializableKernelExtensionFactory extends KernelExtensionFactory<UnproxyableDependencies>
 {
-    public DatabaseKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, KernelExtensionFailureStrategy kernelExtensionFailureStrategy )
+    public UninitializableKernelExtensionFactory()
     {
-        super( kernelContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.DATABASE );
+        super( "uninitializable" );
+    }
+
+    @Override
+    public Lifecycle newInstance( KernelContext context, UnproxyableDependencies dependencies )
+    {
+        return null;
     }
 }

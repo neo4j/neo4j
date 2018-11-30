@@ -72,7 +72,7 @@ import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
@@ -307,7 +307,7 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
 
         DatabaseKernelExtensions extensions = life.add( new DatabaseKernelExtensions(
                 new SimpleKernelContext( databaseDirectory, DatabaseInfo.TOOL, deps ),
-                kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() ) );
+                kernelExtensions, deps, KernelExtensionFailureStrategies.ignore() ) );
 
         indexProviderMap = life.add( new DefaultIndexProviderMap( extensions, config ) );
 

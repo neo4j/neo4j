@@ -41,7 +41,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConnectorPortRegister;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
 import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -216,7 +216,7 @@ public class PlatformModule
         engineProviders = externalDependencies.executionEngines();
         globalKernelExtensions = dependencies.satisfyDependency(
                 new GlobalKernelExtensions( new SimpleKernelContext( storeLayout.storeDirectory(), databaseInfo, dependencies ),
-                        kernelExtensionFactories, dependencies, UnsatisfiedDependencyStrategies.fail() ) );
+                        kernelExtensionFactories, dependencies, KernelExtensionFailureStrategies.fail() ) );
 
         urlAccessRule = dependencies.satisfyDependency( URLAccessRules.combined( externalDependencies.urlAccessRules() ) );
 
