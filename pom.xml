@@ -1353,10 +1353,6 @@
             <artifactId>javax.ws.rs-api</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.glassfish.jersey.media</groupId>
-            <artifactId>jersey-media-jaxb</artifactId>
-          </exclusion>
-          <exclusion>
             <groupId>org.glassfish.hk2</groupId>
             <artifactId>osgi-resource-locator</artifactId>
           </exclusion>

@@ -50,6 +50,7 @@ Apache Software License, Version 2.0
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
+  jersey-media-jaxb
   Jetty :: Http Utility
   Jetty :: IO Utility
   Jetty :: Security
@@ -109,6 +110,7 @@ Common Development and Distribution License Version 1.1
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
+  jersey-media-jaxb
   ServiceLocator Default Implementation
 
 Eclipse Distribution License - v 1.0
@@ -136,6 +138,7 @@ Unlicense
   jersey-core-client
   jersey-core-common
   jersey-inject-hk2
+  jersey-media-jaxb
 
 Dependencies with multiple licenses
 -----------------------------------
@@ -197,6 +200,11 @@ jersey-core-server
   Common Development and Distribution License Version 1.1
 
 jersey-inject-hk2
+  Apache Software License, Version 2.0
+  Common Development and Distribution License Version 1.1
+  Unlicense
+
+jersey-media-jaxb
   Apache Software License, Version 2.0
   Common Development and Distribution License Version 1.1
   Unlicense
