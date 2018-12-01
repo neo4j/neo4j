@@ -13,6 +13,7 @@ Apache Software License, Version 2.0
   Apache Commons Text
   Apache HttpClient
   Apache HttpCore
+  Bean Validation API
   Caffeine cache
   Commons Lang
   Data Mapper for Jackson

@@ -29,6 +29,7 @@ Apache Software License, Version 2.0
   Apache Commons Text
   ascli
   aws-sign2
+  Bean Validation API
   bytebuffer
   Caffeine cache
   caseless
