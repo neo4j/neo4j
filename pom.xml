@@ -1361,10 +1361,6 @@
             <artifactId>osgi-resource-locator</artifactId>
           </exclusion>
           <exclusion>
-            <groupId>org.glassfish.jersey.core</groupId>
-            <artifactId>jersey-client</artifactId>
-          </exclusion>
-          <exclusion>
             <groupId>javax.validation</groupId>
             <artifactId>validation-api</artifactId>
           </exclusion>

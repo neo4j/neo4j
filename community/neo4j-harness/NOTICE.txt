@@ -44,6 +44,7 @@ Apache Software License, Version 2.0
   JAX-RS provider for JSON content type
   jersey-container-servlet
   jersey-container-servlet-core
+  jersey-core-client
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
@@ -102,6 +103,7 @@ Common Development and Distribution License Version 1.1
   jersey-container-servlet
   jersey-container-servlet-core
   jersey-core
+  jersey-core-client
   jersey-core-common
   jersey-core-server
   jersey-inject-hk2
@@ -129,6 +131,7 @@ GNU General Public License, version 2 with the Classpath Exception
 Unlicense
   jersey-container-servlet
   jersey-container-servlet-core
+  jersey-core-client
   jersey-core-common
   jersey-inject-hk2
 
@@ -173,6 +176,11 @@ jersey-container-servlet
   Unlicense
 
 jersey-container-servlet-core
+  Apache Software License, Version 2.0
+  Common Development and Distribution License Version 1.1
+  Unlicense
+
+jersey-core-client
   Apache Software License, Version 2.0
   Common Development and Distribution License Version 1.1
   Unlicense
