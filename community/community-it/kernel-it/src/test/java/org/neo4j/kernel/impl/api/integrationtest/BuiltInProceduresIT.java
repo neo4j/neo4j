@@ -249,7 +249,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Triggers an index resample and waits for it to complete, and after that clears query caches." +
                         " After this procedure has finished queries will be planned using the latest database " +
                         "statistics.",
-                        "READ" )
+                        "READ" ),
+                proc( "db.stats.retrieve", "(section :: STRING?) :: (section :: STRING?, data :: MAP?)",
+                      "Retrieve statistical data about the current database.", "READ" ),
+                proc( "db.stats.retrieveAllAnonymized", "(graphToken :: STRING?) :: (section :: STRING?, data :: MAP?)",
+                      "Retrieve all available statistical data about the current database, in an anonymized form.", "READ" )
         ) );
         commit();
     }

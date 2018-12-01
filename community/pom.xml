@@ -86,6 +86,7 @@
     <module>ssl</module>
     <module>spatial-index</module>
     <module>community-it</module>
+    <module>data-collector</module>
   </modules>
 
   <licenses>
