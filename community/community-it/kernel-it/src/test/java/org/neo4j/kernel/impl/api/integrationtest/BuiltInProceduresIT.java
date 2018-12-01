@@ -239,7 +239,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score.", "READ"),
                 proc( "db.index.fulltext.queryRelationships", "(indexName :: STRING?, queryString :: STRING?) :: (relationship :: RELATIONSHIP?, " +
                         "score :: FLOAT?)", "Query the given fulltext index. Returns the matching relationships and their lucene query score, ordered by " +
-                        "score.", "READ" )
+                        "score.", "READ" ),
+                proc( "db.stats.retrieve", "(section :: STRING?) :: (section :: STRING?, data :: MAP?)",
+                      "Retrieve statistical data about the current database.", "READ" ),
+                proc( "db.stats.retrieveAllAnonymized", "(graphToken :: STRING?) :: (section :: STRING?, data :: MAP?)",
+                      "Retrieve all available statistical data about the current database, in an anonymized form.", "READ" )
         ) );
         commit();
     }

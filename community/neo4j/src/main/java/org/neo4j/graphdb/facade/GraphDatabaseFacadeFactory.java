@@ -30,6 +30,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.factory.module.DataCollectorManager;
 import org.neo4j.graphdb.factory.module.DataSourceModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -175,6 +176,9 @@ public class GraphDatabaseFacadeFactory
         DatabaseManager databaseManager = edition.createDatabaseManager( graphDatabaseFacade, platform, edition, procedures, msgLog );
         platform.life.add( databaseManager );
         platform.dependencies.satisfyDependency( databaseManager );
+
+        DataCollectorManager dataCollectorManager = new DataCollectorManager( platform.dataSourceManager, platform.jobScheduler, procedures );
+        platform.life.add( dataCollectorManager );
 
         edition.createSecurityModule( platform, procedures );
         SecurityProvider securityProvider = edition.getSecurityProvider();
