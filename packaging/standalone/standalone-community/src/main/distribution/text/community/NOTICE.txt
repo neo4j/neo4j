@@ -64,6 +64,7 @@ Apache Software License, Version 2.0
   forever-agent
   grpc
   Jackson
+  javax.inject
   JAX-RS provider for JSON content type
   jersey-container-servlet
   jersey-container-servlet-core
