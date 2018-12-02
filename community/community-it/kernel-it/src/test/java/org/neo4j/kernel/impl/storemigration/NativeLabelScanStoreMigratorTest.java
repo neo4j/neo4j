@@ -27,6 +27,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
+import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -49,8 +51,6 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
-import org.neo4j.common.ProgressReporter;
-import org.neo4j.kernel.impl.storemigration.NativeLabelScanStoreMigrator;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;

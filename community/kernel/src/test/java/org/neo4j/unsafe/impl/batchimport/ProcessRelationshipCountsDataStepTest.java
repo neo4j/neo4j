@@ -88,7 +88,7 @@ public class ProcessRelationshipCountsDataStepTest
         when( config.maxNumberOfProcessors() ).thenReturn( maxProcessors );
         when( config.maxMemoryUsage() ).thenReturn( maxMemory );
         return new ProcessRelationshipCountsDataStep( control, cache, config, highLabelId, highRelationshipTypeId,
-                mock( CountsAccessor.Updater.class ), OFF_HEAP, ProgressReporter.SILENT );
+            mock( CountsAccessor.Updater.class ), OFF_HEAP, ProgressReporter.SILENT );
     }
 
     private NodeLabelsCache nodeLabelsCache( long sizeInBytes )

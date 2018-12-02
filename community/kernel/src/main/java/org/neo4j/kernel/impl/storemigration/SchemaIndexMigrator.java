@@ -22,20 +22,20 @@ package org.neo4j.kernel.impl.storemigration;
 import java.io.File;
 import java.io.IOException;
 
+import org.neo4j.common.ProgressReporter;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.impl.store.format.CapabilityType;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
-import org.neo4j.common.ProgressReporter;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 
 /**
  * Migrates schema and label indexes between different neo4j versions.
  * Participates in store upgrade as one of the migration participants.
  * <p>
- * Since index format can be completely incompatible between version should be executed before {@link StoreMigrator}
+ * Since index format can be completely incompatible between version should be executed before org.neo4j.kernel.impl.storemigration.StoreMigrator
  */
 public class SchemaIndexMigrator extends AbstractStoreMigrationParticipant
 {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 
 /**
@@ -28,11 +27,11 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
  * a counts store, which revolves around tokens and their ids. Knowing those high token ids before hand greatly helps
  * the batch importer code do things efficiently, instead of figuring that out as it goes. When doing
  * the migration there are no token stores, although nodes and relationships gets importer with existing
- * token ids in them, so this is a way for the {@link StoreMigrator} to communicate those ids to the
+ * token ids in them, so this is a way for the StoreMigrator to communicate those ids to the
  * {@link ParallelBatchImporter}.
  *
  * When actually writing out the counts store on disk the last committed transaction id at that point is also
- * stored, and that's why the {@link StoreMigrator} needs to communicate that using
+ * stored, and that's why the StoreMigrator needs to communicate that using
  * {@link #lastCommittedTransactionId()} as well.
  */
 public interface AdditionalInitialIds
