@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 import java.util.function.Supplier;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -65,7 +66,7 @@ public class LogFilesBuilder
     private Long rotationThreshold;
     private LogEntryReader logEntryReader;
     private LogFileCreationMonitor logFileCreationMonitor;
-    private Dependencies dependencies;
+    private DependencyResolver dependencies;
     private FileSystemAbstraction fileSystem;
     private LogVersionRepository logVersionRepository;
     private TransactionIdStore transactionIdStore;
@@ -171,7 +172,7 @@ public class LogFilesBuilder
         return this;
     }
 
-    public LogFilesBuilder withDependencies( Dependencies dependencies )
+    public LogFilesBuilder withDependencies( DependencyResolver dependencies )
     {
         this.dependencies = dependencies;
         return this;

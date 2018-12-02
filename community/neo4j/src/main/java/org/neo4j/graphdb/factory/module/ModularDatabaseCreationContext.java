@@ -27,6 +27,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
 import org.neo4j.graphdb.factory.module.id.DatabaseIdContext;
+import org.neo4j.graphdb.internal.DatabaseMigratorFactoryImpl;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -68,6 +69,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.SystemNanoClock;
 
 public class ModularDatabaseCreationContext implements DatabaseCreationContext
@@ -113,6 +115,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final DatabaseLayout databaseLayout;
     private final DatabaseAvailability databaseAvailability;
     private final DatabaseEventHandlers eventHandlers;
+    private final DatabaseMigratorFactory databaseMigratorFactory;
 
     ModularDatabaseCreationContext( String databaseName, PlatformModule platformModule, EditionDatabaseContext editionContext,
             Procedures procedures, GraphDatabaseFacade facade )
@@ -160,6 +163,7 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.watcherServiceFactory = editionContext.getWatcherServiceFactory();
         this.facade = facade;
         this.engineProviders = platformModule.engineProviders;
+        this.databaseMigratorFactory = new DatabaseMigratorFactoryImpl( fs, config, logService, pageCache, scheduler );
     }
 
     @Override
@@ -411,5 +415,11 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public DatabaseEventHandlers getEventHandlers()
     {
         return eventHandlers;
+    }
+
+    @Override
+    public DatabaseMigratorFactory getDatabaseMigratorFactory()
+    {
+        return databaseMigratorFactory;
     }
 }

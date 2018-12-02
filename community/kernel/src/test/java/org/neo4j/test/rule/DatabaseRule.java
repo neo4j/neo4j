@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -73,7 +74,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.exceptions.UnsatisfiedDependencyException;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -85,6 +85,8 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.migration.DatabaseMigrator;
+import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 
@@ -163,7 +165,8 @@ public class DatabaseRule extends ExternalResource
                 mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
-                file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty() ) );
+            file -> mock( DatabaseLayoutWatcher.class ), new GraphDatabaseFacade(), Iterables.empty(),
+            ( ignore1, ignore2 ) -> mock( DatabaseMigrator.class ) ) );
         return database;
     }
 
@@ -235,6 +238,7 @@ public class DatabaseRule extends ExternalResource
         private final DatabaseAvailability databaseAvailability;
         private final CoreAPIAvailabilityGuard coreAPIAvailabilityGuard;
         private final DatabaseEventHandlers eventHandlers;
+        private final DatabaseMigratorFactory databaseMigratorFactory;
 
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
@@ -247,7 +251,7 @@ public class DatabaseRule extends ExternalResource
                 SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
                 Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory,
-                GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders )
+            GraphDatabaseFacade facade, Iterable<QueryEngineProvider> engineProviders, DatabaseMigratorFactory databaseMigratorFactory )
         {
             this.databaseName = databaseName;
             this.databaseLayout = databaseLayout;
@@ -289,6 +293,7 @@ public class DatabaseRule extends ExternalResource
             this.databaseAvailability = new DatabaseAvailability( databaseAvailabilityGuard, mock( TransactionCounters.class ), clock, 0 );
             this.coreAPIAvailabilityGuard = new CoreAPIAvailabilityGuard( databaseAvailabilityGuard, 0 );
             this.eventHandlers = mock( DatabaseEventHandlers.class );
+            this.databaseMigratorFactory = databaseMigratorFactory;
         }
 
         @Override
@@ -539,6 +544,12 @@ public class DatabaseRule extends ExternalResource
         public DatabaseEventHandlers getEventHandlers()
         {
             return eventHandlers;
+        }
+
+        @Override
+        public DatabaseMigratorFactory getDatabaseMigratorFactory()
+        {
+            return databaseMigratorFactory;
         }
     }
 

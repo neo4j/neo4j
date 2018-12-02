@@ -85,7 +85,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngin
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.stats.IdBasedStoreEntityCounters;
-import org.neo4j.kernel.impl.storemigration.DatabaseMigrator;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.BatchingTransactionAppender;
@@ -137,6 +136,8 @@ import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 import org.neo4j.storageengine.api.StoreId;
+import org.neo4j.storageengine.migration.DatabaseMigrator;
+import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
@@ -181,6 +182,7 @@ public class Database extends LifecycleAdapter
     private final Locks locks;
     private final DatabaseAvailability databaseAvailability;
     private final DatabaseEventHandlers eventHandlers;
+    private final DatabaseMigratorFactory databaseMigratorFactory;
 
     private Dependencies dataSourceDependencies;
     private LifeSupport life;
@@ -251,6 +253,7 @@ public class Database extends LifecycleAdapter
         this.pageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
+        this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
     }
 
     // We do our own internal life management:
@@ -307,7 +310,7 @@ public class Database extends LifecycleAdapter
             LogVersionUpgradeChecker.check( tailScanner, config );
 
             // Upgrade the store before we begin
-            upgradeStore( tailScanner );
+            upgradeStore();
 
             performRecovery( fs, pageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
 
@@ -414,12 +417,10 @@ public class Database extends LifecycleAdapter
         return extensionsLife;
     }
 
-    private void upgradeStore( LogTailScanner tailScanner )
+    private void upgradeStore()
     {
-        final DatabaseMigrator migrator = new DatabaseMigrator(
-            fs, config, logService, indexProviderMap, pageCache, tailScanner, scheduler );
-
-        migrator.migrate( databaseLayout );
+        final DatabaseMigrator databaseMigrator = databaseMigratorFactory.createDatabaseMigrator( databaseLayout, dataSourceDependencies );
+        databaseMigrator.migrate();
     }
 
     private StorageEngine buildStorageEngine( SchemaState schemaState, OperationalMode operationalMode, VersionContextSupplier versionContextSupplier,

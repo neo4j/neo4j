@@ -30,6 +30,7 @@ import org.neo4j.kernel.recovery.LogTailScanner;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.internal.LogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.migration.DatabaseMigrator;
 
 import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurator.configureRecordFormat;
 
@@ -40,7 +41,7 @@ import static org.neo4j.kernel.impl.store.format.RecordFormatPropertyConfigurato
  *
  * @see StoreUpgrader
  */
-public class DatabaseMigrator
+public class DatabaseMigratorImpl implements DatabaseMigrator
 {
     private final FileSystemAbstraction fs;
     private final Config config;
@@ -49,12 +50,10 @@ public class DatabaseMigrator
     private final PageCache pageCache;
     private final LogTailScanner tailScanner;
     private final JobScheduler jobScheduler;
+    private final DatabaseLayout databaseLayout;
 
-    public DatabaseMigrator(
-            FileSystemAbstraction fs,
-            Config config, LogService logService, IndexProviderMap indexProviderMap,
-            PageCache pageCache,
-            LogTailScanner tailScanner, JobScheduler jobScheduler )
+    public DatabaseMigratorImpl( FileSystemAbstraction fs, Config config, LogService logService, IndexProviderMap indexProviderMap, PageCache pageCache,
+        LogTailScanner tailScanner, JobScheduler jobScheduler, DatabaseLayout databaseLayout )
     {
         this.fs = fs;
         this.config = config;
@@ -63,29 +62,30 @@ public class DatabaseMigrator
         this.pageCache = pageCache;
         this.tailScanner = tailScanner;
         this.jobScheduler = jobScheduler;
+        this.databaseLayout = databaseLayout;
     }
 
     /**
      * Performs construction of {@link StoreUpgrader} and all of the necessary participants and performs store
      * migration if that is required.
-     * @param databaseLayout database to migrate
      */
-    public void migrate( DatabaseLayout databaseLayout )
+    @Override
+    public void migrate()
     {
         LogProvider logProvider = logService.getInternalLogProvider();
 
         RecordFormats format = RecordFormatSelector.selectNewestFormat( config, databaseLayout, fs, pageCache, logProvider );
         configureRecordFormat( format, config );
-        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new RecordStoreVersionCheck( pageCache ), format, tailScanner );
+        UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new RecordStoreVersionCheck( pageCache ), format, this.tailScanner );
 
         StoreUpgrader storeUpgrader = new StoreUpgrader( upgradableDatabase,
-            new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigrator.class ) ), config, fs, pageCache, logProvider );
+            new VisibleMigrationProgressMonitor( logService.getUserLog( DatabaseMigratorImpl.class ) ), config, fs, pageCache, logProvider );
 
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, jobScheduler );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache, config );
         CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
-        indexProviderMap.accept(
+        this.indexProviderMap.accept(
             provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
         storeUpgrader.addParticipant( storeMigrator );
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
