@@ -53,7 +53,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final CheckPointTracer tracer;
     private final StoreCopyCheckPointMutex mutex;
 
-    private long lastCheckPointedTx;
+    private volatile long lastCheckPointedTx;
 
     public CheckPointerImpl(
             TransactionIdStore transactionIdStore,
