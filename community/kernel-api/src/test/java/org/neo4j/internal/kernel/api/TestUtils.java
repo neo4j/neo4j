@@ -19,8 +19,6 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.eclipse.collections.api.block.function.primitive.LongObjectToLongFunction;
-import org.eclipse.collections.api.block.function.primitive.LongToObjectFunction;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
@@ -33,12 +31,8 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.function.Function;
-import java.util.function.LongFunction;
-import java.util.function.LongUnaryOperator;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertTrue;
 

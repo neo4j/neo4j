@@ -81,54 +81,7 @@ class NativeLabelScanReader implements LabelScanReader
     @Override
     public LabelScan nodeLabelScan( int labelId )
     {
-        return new LabelScan()
-        {
-            private final AtomicLong nextStart = new AtomicLong( 0 );
-
-            @Override
-            public IndexProgressor initialize( IndexProgressor.NodeLabelClient client )
-            {
-                return init( client, 0L, Long.MAX_VALUE );
-            }
-
-            @Override
-            public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, long upperBound  )
-            {
-                if ( sizeHint == 0 )
-                {
-                    return IndexProgressor.EMPTY;
-                }
-                long size = roundUp( sizeHint );
-                long start = nextStart.getAndAdd( size );
-                long max = roundUp( upperBound );
-                long stop = Math.min( start + size, max );
-                if ( start >= max )
-                {
-                    return IndexProgressor.EMPTY;
-                }
-                return init( client, start, stop );
-            }
-
-            private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop )
-            {
-                RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
-                try
-                {
-                    cursor = seekerForLabel( start, stop, labelId );
-                }
-                catch ( IOException e )
-                {
-                    throw new UncheckedIOException( e );
-                }
-
-                return new LabelScanValueIndexProgressor( cursor, client );
-            }
-
-            private long roundUp( long sizeHint )
-            {
-                return (sizeHint / RANGE_SIZE + 1) * RANGE_SIZE;
-            }
-        };
+        return new NativeLabelScan( labelId );
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )
@@ -162,5 +115,61 @@ class NativeLabelScanReader implements LabelScanReader
         LabelScanKey to = new LabelScanKey( labelId, rangeOf( stopId ) );
 
         return index.seek( from, to );
+    }
+
+    private class NativeLabelScan implements LabelScan
+    {
+        private final AtomicLong nextStart;
+        private final int labelId;
+
+        NativeLabelScan( int labelId )
+        {
+            this.labelId = labelId;
+            nextStart = new AtomicLong( 0 );
+        }
+
+        @Override
+        public IndexProgressor initialize( IndexProgressor.NodeLabelClient client )
+        {
+            return init( client, 0L, Long.MAX_VALUE );
+        }
+
+        @Override
+        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, long upperBound  )
+        {
+            if ( sizeHint == 0 )
+            {
+                return IndexProgressor.EMPTY;
+            }
+            long size = roundUp( sizeHint );
+            long start = nextStart.getAndAdd( size );
+            long max = roundUp( upperBound );
+            long stop = Math.min( start + size, max );
+            if ( start >= max )
+            {
+                return IndexProgressor.EMPTY;
+            }
+            return init( client, start, stop );
+        }
+
+        private IndexProgressor init( IndexProgressor.NodeLabelClient client, long start, long stop )
+        {
+            RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor;
+            try
+            {
+                cursor = seekerForLabel( start, stop, labelId );
+            }
+            catch ( IOException e )
+            {
+                throw new UncheckedIOException( e );
+            }
+
+            return new LabelScanValueIndexProgressor( cursor, client );
+        }
+
+        private long roundUp( long sizeHint )
+        {
+            return (sizeHint / RANGE_SIZE + 1) * RANGE_SIZE;
+        }
     }
 }

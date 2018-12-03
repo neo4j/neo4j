@@ -47,6 +47,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
     private final long[] addedNodesArray;
     private final LongSet removed;
     private volatile boolean addedNodesConsumed;
+    private final boolean hasChanges;
     private final LabelScan labelScan;
 
     NodeLabelIndexCursorScan( Read read, int label, long highestNodeId, LabelScan labelScan )
@@ -54,7 +55,8 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
         this.read = read;
         this.nextTxState = new AtomicInteger( 0 );
         this.upperBound = roundUp( highestNodeId );
-        if ( read.hasTxStateWithChanges() )
+        this.hasChanges = read.hasTxStateWithChanges();
+        if ( hasChanges )
         {
             final LongDiffSets changes = read.txState().nodesWithLabelChanged( label );
             this.addedNodesArray = changes.getAdded().toArray();
@@ -75,7 +77,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
         requirePositive( sizeHint );
 
         LongIterator addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-        if ( read.hasTxStateWithChanges() && !addedNodesConsumed )
+        if ( hasChanges && !addedNodesConsumed )
         {
             int start = nextTxState.getAndAdd( sizeHint );
             if ( start < addedNodesArray.length )

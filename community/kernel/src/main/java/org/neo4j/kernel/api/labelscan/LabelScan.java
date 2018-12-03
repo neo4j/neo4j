@@ -27,7 +27,7 @@ import org.neo4j.kernel.api.index.IndexProgressor;
 public interface LabelScan
 {
     /**
-     * Intialize the client for scanning for label
+     * Initialize the client for scanning for label
      *
      * @param client the client used for consuming data
      * @return a progressor used for reading data
@@ -35,7 +35,7 @@ public interface LabelScan
     IndexProgressor initialize( IndexProgressor.NodeLabelClient client );
 
     /**
-     * Intialize the client for reading a batch of labels.
+     * Initialize the client for reading a batch of labels.
      *
      * @param client the client used for consuming data
      * @param sizeHint the approximate size of the batch
