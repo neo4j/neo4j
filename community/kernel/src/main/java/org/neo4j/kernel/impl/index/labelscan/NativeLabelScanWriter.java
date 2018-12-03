@@ -62,14 +62,14 @@ class NativeLabelScanWriter implements LabelScanWriter
     /**
      * {@link ValueMerger} used for adding label->node mappings, see {@link LabelScanValue#add(LabelScanValue)}.
      */
-    private static final ValueMerger<LabelScanKey,LabelScanValue> ADD_MERGER =
-            ( existingKey, newKey, existingValue, newValue ) -> existingValue.add( newValue );
+    private final ValueMerger<LabelScanKey,LabelScanValue> addMerger;
 
     /**
      * {@link ValueMerger} used for removing label->node mappings, see {@link LabelScanValue#remove(LabelScanValue)}.
      */
-    private static final ValueMerger<LabelScanKey,LabelScanValue> REMOVE_MERGER =
-            ( existingKey, newKey, existingValue, newValue ) -> existingValue.remove( newValue );
+    private final ValueMerger<LabelScanKey,LabelScanValue> removeMerger;
+
+    private final WriteMonitor monitor;
 
     /**
      * {@link Writer} acquired when acquiring this {@link NativeLabelScanWriter},
@@ -118,9 +118,63 @@ class NativeLabelScanWriter implements LabelScanWriter
      */
     private long lowestLabelId;
 
-    NativeLabelScanWriter( int batchSize )
+    interface WriteMonitor
+    {
+        default void range( long range, int labelId )
+        {
+        }
+
+        default void prepareAdd( long txId, int offset )
+        {
+        }
+
+        default void prepareRemove( long txId, int offset )
+        {
+        }
+
+        default void mergeAdd( LabelScanValue existingValue, LabelScanValue newValue )
+        {
+        }
+
+        default void mergeRemove( LabelScanValue existingValue, LabelScanValue newValue )
+        {
+        }
+
+        default void flushPendingUpdates()
+        {
+        }
+
+        default void writeSessionEnded()
+        {
+        }
+
+        default void force()
+        {
+        }
+
+        default void close()
+        {
+        }
+    }
+
+    static WriteMonitor EMPTY = new WriteMonitor()
+    {
+    };
+
+    NativeLabelScanWriter( int batchSize, WriteMonitor monitor )
     {
         this.pendingUpdates = new NodeLabelUpdate[batchSize];
+        this.addMerger = ( existingKey, newKey, existingValue, newValue ) ->
+        {
+            monitor.mergeAdd( existingValue, newValue );
+            return existingValue.add( newValue );
+        };
+        this.removeMerger = ( existingKey, newKey, existingValue, newValue ) ->
+        {
+            monitor.mergeRemove( existingValue, newValue );
+            return existingValue.remove( newValue );
+        };
+        this.monitor = monitor;
     }
 
     NativeLabelScanWriter initialize( Writer<LabelScanKey,LabelScanValue> writer )
@@ -161,7 +215,7 @@ class NativeLabelScanWriter implements LabelScanWriter
     private void flushPendingChanges() throws IOException
     {
         Arrays.sort( pendingUpdates, 0, pendingUpdatesCursor, UPDATE_SORTER );
-
+        monitor.flushPendingUpdates();
         long currentLabelId = lowestLabelId;
         value.clear();
         key.clear();
@@ -172,8 +226,8 @@ class NativeLabelScanWriter implements LabelScanWriter
             {
                 NodeLabelUpdate update = pendingUpdates[i];
                 long nodeId = update.getNodeId();
-                nextLabelId = extractChange( update.getLabelsAfter(), currentLabelId, nodeId, nextLabelId, true );
-                nextLabelId = extractChange( update.getLabelsBefore(), currentLabelId, nodeId, nextLabelId, false );
+                nextLabelId = extractChange( update.getLabelsAfter(), currentLabelId, nodeId, nextLabelId, true, update.getTxId() );
+                nextLabelId = extractChange( update.getLabelsBefore(), currentLabelId, nodeId, nextLabelId, false, update.getTxId() );
             }
             currentLabelId = nextLabelId;
         }
@@ -181,7 +235,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         pendingUpdatesCursor = 0;
     }
 
-    private long extractChange( long[] labels, long currentLabelId, long nodeId, long nextLabelId, boolean addition )
+    private long extractChange( long[] labels, long currentLabelId, long nodeId, long nextLabelId, boolean addition, long txId )
             throws IOException
     {
         long foundNextLabelId = nextLabelId;
@@ -196,7 +250,7 @@ class NativeLabelScanWriter implements LabelScanWriter
             // Have this check here so that we can pick up the next labelId in our change set
             if ( labelId == currentLabelId )
             {
-                change( currentLabelId, nodeId, addition );
+                change( currentLabelId, nodeId, addition, txId );
 
                 // We can do a little shorter check for next labelId here straight away,
                 // we just check the next if it's less than what we currently think is next labelId
@@ -224,7 +278,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         return foundNextLabelId;
     }
 
-    private void change( long currentLabelId, long nodeId, boolean add ) throws IOException
+    private void change( long currentLabelId, long nodeId, boolean add, long txId ) throws IOException
     {
         int labelId = toIntExact( currentLabelId );
         long idRange = rangeOf( nodeId );
@@ -236,9 +290,19 @@ class NativeLabelScanWriter implements LabelScanWriter
             key.labelId = labelId;
             key.idRange = idRange;
             addition = add;
+            monitor.range( idRange, labelId );
         }
 
-        value.set( toIntExact( nodeId % RANGE_SIZE ) );
+        int offset = toIntExact( nodeId % RANGE_SIZE );
+        value.set( offset );
+        if ( addition )
+        {
+            monitor.prepareAdd( txId, offset );
+        }
+        else
+        {
+            monitor.prepareRemove( txId, offset );
+        }
     }
 
     private void flushPendingRange() throws IOException
@@ -246,7 +310,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         if ( value.bits != 0 )
         {
             // There are changes in the current range, flush them
-            writer.merge( key, value, addition ? ADD_MERGER : REMOVE_MERGER );
+            writer.merge( key, value, addition ? addMerger : removeMerger );
             // TODO: after a remove we could check if the tree value is empty and if so remove it from the index
             // hmm, or perhaps that could be a feature of ValueAmender?
             value.clear();
@@ -268,6 +332,7 @@ class NativeLabelScanWriter implements LabelScanWriter
         try
         {
             flushPendingChanges();
+            monitor.writeSessionEnded();
         }
         finally
         {

@@ -63,6 +63,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
 
     private List<NodeLabelUpdate> labelUpdates;
     private IndexUpdates indexUpdates;
+    private long txId;
 
     public IndexBatchTransactionApplier( IndexingService indexingService,
             WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync,
@@ -80,6 +81,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
     @Override
     public TransactionApplier startTx( CommandsToApply transaction )
     {
+        txId = transaction.transactionId();
         return transactionApplier;
     }
 
@@ -190,7 +192,7 @@ public class IndexBatchTransactionApplier extends BatchTransactionApplier.Adapte
                     {
                         labelUpdates = new ArrayList<>();
                     }
-                    labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
+                    labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter, txId ) );
                 }
             }
 
