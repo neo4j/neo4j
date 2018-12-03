@@ -1423,12 +1423,10 @@ public class BatchInsertTest
 
     private void assertLabelScanStoreContains( LabelScanStore labelScanStore, int labelId, long... nodes )
     {
-        try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
-        {
-            List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
-            List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
-            assertEquals( expectedNodeIds, actualNodeIds );
-        }
+        LabelScanReader labelScanReader = labelScanStore.newReader();
+        List<Long> actualNodeIds = extractPrimitiveLongIteratorAsList( labelScanReader.nodesWithLabel( labelId ) );
+        List<Long> expectedNodeIds = Arrays.stream( nodes ).boxed().collect( Collectors.toList() );
+        assertEquals( expectedNodeIds, actualNodeIds );
     }
 
     private List<Long> extractPrimitiveLongIteratorAsList( PrimitiveLongResourceIterator longIterator )

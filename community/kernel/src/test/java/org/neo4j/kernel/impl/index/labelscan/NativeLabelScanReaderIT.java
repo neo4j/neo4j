@@ -93,8 +93,8 @@ public class NativeLabelScanReaderIT
         // when
         long fromId = random.nextInt( highNodeId );
         int nextExpectedId = expected.nextSetBit( toIntExact( fromId + 1 ) );
-        try ( LabelScanReader reader = store.newReader();
-              PrimitiveLongResourceIterator ids = reader.nodesWithAnyOfLabels( fromId, new int[] {labelId} ) )
+        LabelScanReader reader = store.newReader();
+        try ( PrimitiveLongResourceIterator ids = reader.nodesWithAnyOfLabels( fromId, new int[] {labelId} ) )
         {
             // then
             while ( nextExpectedId != -1 )

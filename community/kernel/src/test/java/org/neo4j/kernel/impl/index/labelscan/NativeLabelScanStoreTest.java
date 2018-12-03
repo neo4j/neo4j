@@ -43,6 +43,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import org.neo4j.collection.PrimitiveLongCollections;
+import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Iterators;
@@ -80,6 +81,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.single;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
@@ -460,12 +462,12 @@ public class NativeLabelScanStoreTest
         // WHEN
         Set<Long> nodeSet = new TreeSet<>();
         LabelScanReader reader = store.newReader();
-        LongIterator nodes = reader.nodesWithLabel( labelId );
+        PrimitiveLongResourceIterator nodes = reader.nodesWithLabel( labelId );
         while ( nodes.hasNext() )
         {
             nodeSet.add( nodes.next() );
         }
-        reader.close();
+        nodes.close();
 
         // THEN
         assertEquals( nodeCount, nodeSet.size(), "Found gaps in node id range: " + gaps( nodeSet, nodeCount ) );
@@ -493,18 +495,16 @@ public class NativeLabelScanStoreTest
                 labelChanges( 9, EMPTY_LONG_ARRAY, new long[] {                    labelId3} ) ) );
 
         // THEN
-        try ( LabelScanReader reader = store.newReader() )
-        {
-            assertArrayEquals(
-                    new long[] {1, 2, 3, 4, 5, 6, 7},
-                    PrimitiveLongCollections.closingAsArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2} ) ) );
-            assertArrayEquals(
-                    new long[] {1, 2, 3, 4, 5, 8, 9},
-                    PrimitiveLongCollections.closingAsArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId3} ) ) );
-            assertArrayEquals(
-                    new long[] {1, 2, 3, 4, 5, 6, 7, 8, 9},
-                    PrimitiveLongCollections.closingAsArray( reader.nodesWithAnyOfLabels( new int[] {labelId1, labelId2, labelId3} ) ) );
-        }
+        LabelScanReader reader = store.newReader();
+        assertArrayEquals(
+                new long[]{1, 2, 3, 4, 5, 6, 7},
+                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2} ) ) );
+        assertArrayEquals(
+                new long[]{1, 2, 3, 4, 5, 8, 9},
+                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId3} ) ) );
+        assertArrayEquals(
+                new long[]{1, 2, 3, 4, 5, 6, 7, 8, 9},
+                closingAsArray( reader.nodesWithAnyOfLabels( new int[]{labelId1, labelId2, labelId3} ) ) );
     }
 
     private LabelScanStore createLabelScanStore( FileSystemAbstraction fileSystemAbstraction, DatabaseLayout databaseLayout,

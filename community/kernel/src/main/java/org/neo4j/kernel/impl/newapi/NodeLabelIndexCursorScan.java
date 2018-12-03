@@ -26,22 +26,23 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.labelscan.LabelScan;
 import org.neo4j.storageengine.api.txstate.LongDiffSets;
-import org.neo4j.util.Preconditions;
 
+import static java.lang.Math.min;
+import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
+import static org.neo4j.util.Preconditions.requirePositive;
 
 class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
 {
+    private static final int CHUNK_SIZE = Long.SIZE;
     private final AtomicInteger nextTxState;
     private final long upperBound;
-    private static final int CHUNK_SIZE = Long.SIZE;
     private final Read read;
     private final long[] addedNodesArray;
     private final LongSet removed;
@@ -61,7 +62,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
         }
         else
         {
-            this.addedNodesArray = PrimitiveLongCollections.EMPTY_LONG_ARRAY;
+            this.addedNodesArray = EMPTY_LONG_ARRAY;
             this.removed = LongSets.immutable.empty();
         }
         this.addedNodesConsumed = addedNodesArray.length == 0;
@@ -71,7 +72,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
     @Override
     public boolean reserveBatch( NodeLabelIndexCursor cursor, int sizeHint )
     {
-        Preconditions.requirePositive( sizeHint );
+        requirePositive( sizeHint );
 
         LongIterator addedNodes = ImmutableEmptyLongIterator.INSTANCE;
         if ( read.hasTxStateWithChanges() && !addedNodesConsumed )
@@ -79,7 +80,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
             int start = nextTxState.getAndAdd( sizeHint );
             if ( start < addedNodesArray.length )
             {
-                int batchSize = Math.min( sizeHint, addedNodesArray.length - start  );
+                int batchSize = min( sizeHint, addedNodesArray.length - start  );
                 sizeHint -= batchSize;
                 addedNodes = new RangeLongIterator( addedNodesArray, start, batchSize );
             }

@@ -25,7 +25,6 @@ import org.junit.Test;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -44,6 +43,7 @@ import org.neo4j.test.rule.RandomRule;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 
 public class NativeLabelScanStoreStartupIT
 {
@@ -115,10 +115,7 @@ public class NativeLabelScanStoreStartupIT
 
     private long[] readNodesForLabel( LabelScanStore labelScanStore )
     {
-        try ( LabelScanReader reader = labelScanStore.newReader() )
-        {
-            return PrimitiveLongCollections.closingAsArray( reader.nodesWithLabel( labelId ) );
-        }
+        return closingAsArray( labelScanStore.newReader().nodesWithLabel( labelId ) );
     }
 
     private Node createTestNode()
@@ -163,9 +160,8 @@ public class NativeLabelScanStoreStartupIT
         {
             labelScanWriter.write( NodeLabelUpdate.labelChanges( 1, new long[]{}, new long[]{labelId} ) );
         }
-        try ( LabelScanReader labelScanReader = labelScanStore.newReader();
-              PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId )
-        )
+        LabelScanReader labelScanReader = labelScanStore.newReader();
+        try ( PrimitiveLongResourceIterator iterator = labelScanReader.nodesWithLabel( labelId ) )
         {
             assertEquals( 1, iterator.next() );
         }

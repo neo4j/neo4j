@@ -43,7 +43,7 @@ import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.rules.RuleChain.outerRule;
-import static org.neo4j.collection.PrimitiveLongCollections.asArray;
+import static org.neo4j.collection.PrimitiveLongCollections.closingAsArray;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 public class NativeLabelScanStoreIT
@@ -87,14 +87,12 @@ public class NativeLabelScanStoreIT
 
     private void verifyReads( long[] expected )
     {
-        try ( LabelScanReader reader = store.newReader() )
+        LabelScanReader reader = store.newReader();
+        for ( int i = 0; i < LABEL_COUNT; i++ )
         {
-            for ( int i = 0; i < LABEL_COUNT; i++ )
-            {
-                long[] actualNodes = asArray( reader.nodesWithLabel( i ) );
-                long[] expectedNodes = nodesWithLabel( expected, i );
-                assertArrayEquals( expectedNodes, actualNodes );
-            }
+            long[] actualNodes = closingAsArray( reader.nodesWithLabel( i ) );
+            long[] expectedNodes = nodesWithLabel( expected, i );
+            assertArrayEquals( expectedNodes, actualNodes );
         }
     }
 

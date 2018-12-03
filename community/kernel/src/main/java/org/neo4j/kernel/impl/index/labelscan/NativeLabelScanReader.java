@@ -42,9 +42,6 @@ import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanWriter.rangeO
  * {@link LabelScanReader} for reading data from {@link NativeLabelScanStore}.
  * Each {@link LongIterator} returned from each of the methods is backed by {@link RawCursor}
  * directly from {@link GBPTree#seek(Object, Object)}.
- * <p>
- * The returned {@link LongIterator} aren't closable so the cursors retrieved are managed
- * inside of this reader and closed between each new query and on {@link #close()}.
  */
 class NativeLabelScanReader implements LabelScanReader
 {
@@ -56,12 +53,6 @@ class NativeLabelScanReader implements LabelScanReader
     NativeLabelScanReader( GBPTree<LabelScanKey,LabelScanValue> index )
     {
         this.index = index;
-    }
-
-    @Override
-    public void close()
-    {
-      //nothing to close
     }
 
     @Override

@@ -56,8 +56,7 @@ abstract class LabelScanValueIndexAccessor
      */
     protected boolean closed;
 
-    LabelScanValueIndexAccessor(
-            RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
+    LabelScanValueIndexAccessor( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> cursor )
     {
         this.cursor = cursor;
     }

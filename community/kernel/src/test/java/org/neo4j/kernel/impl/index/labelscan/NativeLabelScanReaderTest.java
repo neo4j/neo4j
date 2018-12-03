@@ -60,8 +60,8 @@ public class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) )
                 .thenReturn( cursor );
         // WHEN
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
-              PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID ) )
+        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithLabel( LABEL_ID ) )
         {
             // THEN
             assertArrayEquals( new long[]{
@@ -88,8 +88,8 @@ public class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
-              PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID );
+        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        try ( PrimitiveLongResourceIterator first = reader.nodesWithLabel( LABEL_ID );
               PrimitiveLongResourceIterator second = reader.nodesWithLabel( LABEL_ID ) )
         {
             // first check test invariants
@@ -124,8 +124,8 @@ public class NativeLabelScanReaderTest
         when( index.seek( any( LabelScanKey.class ), any( LabelScanKey.class ) ) ).thenReturn( cursor1, cursor2 );
 
         // WHEN
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
-              PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID );
+        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        try ( PrimitiveLongResourceIterator ignore1 = reader.nodesWithLabel( LABEL_ID );
               PrimitiveLongResourceIterator ignore2 = reader.nodesWithLabel( LABEL_ID )
         )
         {
@@ -158,8 +158,8 @@ public class NativeLabelScanReaderTest
 
         // when
         long fromId = LabelScanValue.RANGE_SIZE + 3;
-        try ( NativeLabelScanReader reader = new NativeLabelScanReader( index );
-              PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, LABEL_ID ) )
+        NativeLabelScanReader reader = new NativeLabelScanReader( index );
+        try ( PrimitiveLongResourceIterator iterator = reader.nodesWithAnyOfLabels( fromId, LABEL_ID ) )
         {
             // then
             assertArrayEquals( new long[] {

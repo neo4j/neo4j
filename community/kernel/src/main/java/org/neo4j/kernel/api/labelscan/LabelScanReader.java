@@ -20,12 +20,11 @@
 package org.neo4j.kernel.api.labelscan;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.graphdb.Resource;
 
 /**
  * Reader of a label scan store which contains label-->nodes mappings.
  */
-public interface LabelScanReader extends Resource
+public interface LabelScanReader
 {
     /**
      * Used as a marker to ignore the "fromId" in calls to {@link #nodesWithAnyOfLabels(long, int[])}.

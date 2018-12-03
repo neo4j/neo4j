@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Paths;
 
-import org.neo4j.collection.PrimitiveLongCollections;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
@@ -66,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.collection.PrimitiveLongCollections.countAndClose;
 import static org.neo4j.kernel.impl.store.MetaDataStore.versionStringToLong;
 
 @PageCacheExtension
@@ -179,11 +179,10 @@ class NativeLabelScanStoreMigratorTest
             lifespan.add( labelScanStore );
             for ( int labelId = 0; labelId < 10; labelId++ )
             {
-                try ( LabelScanReader labelScanReader = labelScanStore.newReader() )
-                {
-                    int nodeCount = PrimitiveLongCollections.countAndClose( labelScanReader.nodesWithLabel( labelId ) );
-                    assertEquals( 1, nodeCount, format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ) );
-                }
+                LabelScanReader labelScanReader = labelScanStore.newReader();
+                int nodeCount = countAndClose( labelScanReader.nodesWithLabel( labelId ) );
+                assertEquals( 1, nodeCount,
+                        format( "Expected to see only one node for label %d but was %d.", labelId, nodeCount ) );
             }
         }
     }
@@ -225,11 +224,9 @@ class NativeLabelScanStoreMigratorTest
         {
             NativeLabelScanStore nativeLabelScanStore = getNativeLabelScanStore( databaseLayout, true );
             lifespan.add( nativeLabelScanStore );
-            try ( LabelScanReader labelScanReader = nativeLabelScanStore.newReader() )
-            {
-                int count = PrimitiveLongCollections.countAndClose( labelScanReader.nodesWithLabel( 1 ) );
-                assertEquals( 0, count );
-            }
+            LabelScanReader labelScanReader = nativeLabelScanStore.newReader();
+            int count = countAndClose( labelScanReader.nodesWithLabel( 1 ) );
+            assertEquals( 0, count );
         }
     }
 
