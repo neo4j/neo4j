@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.transaction.log.entry.CheckPoint;
 import org.neo4j.kernel.impl.transaction.log.entry.InvalidLogEntryHandler;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntry;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommand;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.storageengine.api.StorageCommand;
@@ -77,16 +78,38 @@ public class DumpLogicalLog
     {
         TransactionLogAnalyzer.analyze( fileSystem, new File( filenameOrDirectory ), invalidLogEntryHandler, new Monitor()
         {
+            private File file;
+            private LogEntryCommit firstTx;
+            private LogEntryCommit lastTx;
+
             @Override
             public void logFile( File file, long logVersion ) throws IOException
             {
+                this.file = file;
                 LogHeader logHeader = LogHeaderReader.readLogHeader( fileSystem, file );
                 out.println( "=== " + file.getAbsolutePath() + "[" + logHeader + "] ===" );
             }
 
             @Override
+            public void endLogFile()
+            {
+                if ( lastTx != null )
+                {
+                    out.println( "=== END " + file.getAbsolutePath() + ", firstTx=" + firstTx + ", lastTx=" + lastTx + " ===" );
+                    firstTx = null;
+                    lastTx = null;
+                }
+            }
+
+            @Override
             public void transaction( LogEntry[] transactionEntries )
             {
+                lastTx = (LogEntryCommit) transactionEntries[transactionEntries.length - 1];
+                if ( firstTx == null )
+                {
+                    firstTx = lastTx;
+                }
+
                 if ( filter == null || filter.test( transactionEntries ) )
                 {
                     for ( LogEntry entry : transactionEntries )
@@ -161,10 +184,7 @@ public class DumpLogicalLog
         {
             if ( logEntry instanceof LogEntryCommand )
             {
-                if ( matches( ((LogEntryCommand)logEntry).getCommand() ) )
-                {
-                    return true;
-                }
+                return matches( ((LogEntryCommand) logEntry).getCommand() );
             }
             return false;
         }
