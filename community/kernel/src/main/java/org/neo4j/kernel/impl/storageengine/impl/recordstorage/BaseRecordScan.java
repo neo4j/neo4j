@@ -17,29 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.eclipse.collections.api.iterator.LongIterator;
+import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.kernel.impl.store.record.PrimitiveRecord;
 
-final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
+/**
+ * Maintains state when performing batched scans, potentially from multiple threads.
+ * <p>
+ * Will break up the scan in ranges depending on the provided size hint.
+ */
+abstract class BaseRecordScan<C extends PrimitiveRecord>
 {
-    NodeCursorScan( AllNodeScan allNodeScan, Read read )
+    private final AtomicLong nextStart = new AtomicLong( 0 );
+
+    boolean scanBatch( int sizeHint, C cursor )
     {
-        super( allNodeScan, read );
+        long start = nextStart.getAndAdd( sizeHint );
+        long stopInclusive = start + sizeHint - 1;
+        return scanRange( cursor, start, stopInclusive );
     }
 
-    @Override
-    protected long[] addedInTransaction()
-    {
-        return read.txState().addedAndRemovedNodes().getAdded().toArray();
-    }
-
-    @Override
-    protected boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
-    {
-        return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
-    }
+    abstract boolean scanRange( C cursor, long start, long stopInclusive );
 }

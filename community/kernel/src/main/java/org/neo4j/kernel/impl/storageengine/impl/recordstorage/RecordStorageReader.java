@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.register.Register;
 import org.neo4j.register.Register.DoubleLongRegister;
 import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.StoragePropertyCursor;
 import org.neo4j.storageengine.api.StorageReader;
@@ -263,6 +264,12 @@ public class RecordStorageReader implements StorageReader
     public AllNodeScan allNodeScan()
     {
         return new RecordNodeScan();
+    }
+
+    @Override
+    public AllRelationshipsScan allRelationshipScan()
+    {
+        return new RecordRelationshipScan();
     }
 
     @Override

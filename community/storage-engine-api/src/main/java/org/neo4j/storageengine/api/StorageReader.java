@@ -169,6 +169,12 @@ public interface StorageReader extends AutoCloseable
     AllNodeScan allNodeScan();
 
     /**
+     * Batched all relationship scan
+     * @return a new AllRelationship maintaining the state of the batched all-relationship scan
+     */
+    AllRelationshipsScan allRelationshipScan();
+
+    /**
      * @return a new {@link StorageNodeCursor} capable of reading node data from the underlying storage.
      */
     StorageNodeCursor allocateNodeCursor();

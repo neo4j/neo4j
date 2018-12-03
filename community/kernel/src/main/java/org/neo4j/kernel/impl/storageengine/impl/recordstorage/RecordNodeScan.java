@@ -19,23 +19,13 @@
  */
 package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import java.util.concurrent.atomic.AtomicLong;
-
 import org.neo4j.storageengine.api.AllNodeScan;
 
-/**
- * Maintains state when performing batched all-node scans, potentially from multiple threads.
- * <p>
- * Will break up the scan in ranges depending on the provided size hint.
- */
-final class RecordNodeScan implements AllNodeScan
+final class RecordNodeScan extends BaseRecordScan<RecordNodeCursor> implements AllNodeScan
 {
-    private final AtomicLong nextStart = new AtomicLong( 0 );
-
-    boolean scanBatch( int sizeHint, RecordNodeCursor cursor )
+    @Override
+    boolean scanRange( RecordNodeCursor cursor, long start, long stopInclusive )
     {
-        long start = nextStart.getAndAdd( sizeHint );
-        long stopInclusive = start + sizeHint - 1;
         return cursor.scanRange( start, stopInclusive );
     }
 }

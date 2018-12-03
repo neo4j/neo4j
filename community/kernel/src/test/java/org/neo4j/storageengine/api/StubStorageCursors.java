@@ -255,6 +255,12 @@ public class StubStorageCursors implements StorageReader
     }
 
     @Override
+    public AllRelationshipsScan allRelationshipScan()
+    {
+        throw new UnsupportedOperationException( "not implemented yet" );
+    }
+
+    @Override
     public StorageNodeCursor allocateNodeCursor()
     {
         return new StubStorageNodeCursor();

@@ -202,7 +202,7 @@ class DefaultNodeCursor implements NodeCursor
     @Override
     public boolean isDense()
     {
-        return currentAddedInTx != NO_ID ? false : storeCursor.isDense();
+        return currentAddedInTx == NO_ID && storeCursor.isDense();
     }
 
     @Override

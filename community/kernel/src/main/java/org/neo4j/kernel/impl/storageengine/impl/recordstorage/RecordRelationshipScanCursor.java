@@ -27,6 +27,8 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
+import static java.lang.Math.min;
+
 class RecordRelationshipScanCursor extends RecordRelationshipCursor implements StorageRelationshipScanCursor
 {
     private int filterType;
@@ -35,6 +37,7 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     private long nextStoreReference;
     private PageCursor pageCursor;
     private boolean open;
+    private boolean batched;
 
     RecordRelationshipScanCursor( RelationshipStore relationshipStore, RelationshipGroupStore groupStore )
     {
@@ -86,9 +89,38 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
     @Override
     public boolean scanBatch( AllRelationshipsScan scan, int sizeHint )
     {
-        throw new UnsupportedOperationException(  );
+        if ( getId() != NO_ID )
+        {
+            reset();
+        }
+        this.batched = true;
+        this.open = true;
+        this.nextStoreReference = NO_ID;
+
+        return ((RecordRelationshipScan) scan).scanBatch( sizeHint , this);
     }
 
+    boolean scanRange( long start, long stop )
+    {
+        long max = relationshipHighMark();
+        if ( start > max )
+        {
+            reset();
+            return false;
+        }
+        if ( start > stop )
+        {
+            reset();
+            return true;
+        }
+        if ( pageCursor == null )
+        {
+            pageCursor = relationshipPage( start );
+        }
+        next = start;
+        highMark = min( stop, max );
+        return true;
+    }
     @Override
     public boolean next()
     {
@@ -114,9 +146,10 @@ class RecordRelationshipScanCursor extends RecordRelationshipCursor implements S
 
             if ( next > highMark )
             {
-                if ( isSingle() )
+                if ( isSingle() || batched )
                 {
-                    //we are a "single cursor"
+                    //we are a "single cursor" or a "batched scan"
+                    //we don't want to set a new highMark
                     next = NO_ID;
                     return inUse();
                 }

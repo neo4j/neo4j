@@ -19,27 +19,13 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.internal.kernel.api.ParallelRelationshipCursorTestBase;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.storageengine.api.AllNodeScan;
-
-final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
+public class ParallelRelationshipCursorTest extends ParallelRelationshipCursorTestBase<ReadTestSupport>
 {
-    NodeCursorScan( AllNodeScan allNodeScan, Read read )
-    {
-        super( allNodeScan, read );
-    }
-
     @Override
-    protected long[] addedInTransaction()
+    public ReadTestSupport newTestSupport()
     {
-        return read.txState().addedAndRemovedNodes().getAdded().toArray();
-    }
-
-    @Override
-    protected boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
-    {
-        return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
+        return new ReadTestSupport();
     }
 }

@@ -320,7 +320,7 @@ abstract class Read implements TxStateHolder,
     public final Scan<RelationshipScanCursor> allRelationshipsScan()
     {
         ktx.assertOpen();
-        throw new UnsupportedOperationException( "not implemented" );
+        return new RelationshipCursorScan( storageReader.allRelationshipScan(), this );
     }
 
     @Override

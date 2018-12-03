@@ -21,25 +21,27 @@ package org.neo4j.kernel.impl.newapi;
 
 import org.eclipse.collections.api.iterator.LongIterator;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.storageengine.api.AllNodeScan;
+import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 
-final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
+final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor,AllRelationshipsScan>
 {
-    NodeCursorScan( AllNodeScan allNodeScan, Read read )
+
+    RelationshipCursorScan( AllRelationshipsScan allRelationshipsScan, Read read )
     {
-        super( allNodeScan, read );
+        super( allRelationshipsScan, read );
     }
 
     @Override
     protected long[] addedInTransaction()
     {
-        return read.txState().addedAndRemovedNodes().getAdded().toArray();
+        return read.txState().addedAndRemovedRelationships().getAdded().toArray();
     }
 
     @Override
-    protected boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
+    protected boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems )
     {
-        return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
+        return ((DefaultRelationshipScanCursor) cursor)
+                .scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
     }
 }

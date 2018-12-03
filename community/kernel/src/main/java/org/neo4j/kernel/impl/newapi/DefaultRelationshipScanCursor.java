@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
 
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 import org.neo4j.storageengine.api.StorageRelationshipScanCursor;
 
 import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
@@ -48,6 +49,19 @@ class DefaultRelationshipScanCursor extends DefaultRelationshipCursor<StorageRel
         this.single = NO_ID;
         init( read );
         this.addedRelationships = ImmutableEmptyLongIterator.INSTANCE;
+    }
+
+    boolean scanBatch( Read read, AllRelationshipsScan scan, int sizeHint, LongIterator addedRelationships, boolean hasChanges )
+    {
+        this.read = read;
+        this.single = NO_ID;
+        this.type = -1;
+        this.currentAddedInTx = NO_ID;
+        this.addedRelationships = addedRelationships;
+        this.hasChanges = hasChanges;
+        this.checkHasChanges = false;
+        boolean scanBatch = storeCursor.scanBatch( scan, sizeHint );
+        return addedRelationships.hasNext() || scanBatch;
     }
 
     void single( long reference, Read read )

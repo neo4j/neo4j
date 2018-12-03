@@ -17,29 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.newapi;
+package org.neo4j.kernel.impl.storageengine.impl.recordstorage;
 
-import org.eclipse.collections.api.iterator.LongIterator;
+import org.neo4j.storageengine.api.AllRelationshipsScan;
 
-import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.storageengine.api.AllNodeScan;
-
-final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
+final class RecordRelationshipScan extends BaseRecordScan<RecordRelationshipScanCursor> implements AllRelationshipsScan
 {
-    NodeCursorScan( AllNodeScan allNodeScan, Read read )
-    {
-        super( allNodeScan, read );
-    }
-
     @Override
-    protected long[] addedInTransaction()
+    boolean scanRange( RecordRelationshipScanCursor cursor, long start, long stopInclusive )
     {
-        return read.txState().addedAndRemovedNodes().getAdded().toArray();
-    }
-
-    @Override
-    protected boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
-    {
-        return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
+        return cursor.scanRange( start, stopInclusive );
     }
 }
