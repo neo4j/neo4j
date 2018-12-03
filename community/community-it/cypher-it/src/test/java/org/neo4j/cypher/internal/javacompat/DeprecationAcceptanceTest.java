@@ -57,7 +57,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedToInt()
     {
-        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN toInt('1') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -65,7 +65,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedUpper()
     {
-        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN upper('foo') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -73,7 +73,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedLower()
     {
-        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN RETURN lower('BAR') AS one",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -81,7 +81,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     @Test
     public void deprecatedRels()
     {
-        Stream.of( "CYPHER 3.4", "CYPHER 4.0" )
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0" )
                 .forEach( version -> assertNotifications( version + " EXPLAIN MATCH p = ()-->() RETURN rels(p) AS r",
                                                           containsItem( deprecatedFeatureWarning ) ) );
     }
@@ -104,7 +104,7 @@ public class DeprecationAcceptanceTest extends NotificationTestSupport
     public void deprecatedProcedureCalls() throws Exception
     {
         db().getDependencyResolver().provideDependency( Procedures.class ).get().registerProcedure( TestProcedures.class );
-        Stream.of( "CYPHER 3.4", "CYPHER 4.0" ).forEach( version ->
+        Stream.of( "CYPHER 3.5", "CYPHER 4.0" ).forEach( version ->
                                                          {
                                                              assertNotifications( version + "explain CALL oldProc()",
                                                                                   containsItem( deprecatedProcedureWarning ) );

@@ -17,64 +17,67 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_4
+package org.neo4j.cypher.internal.spi.v3_5
 
 import java.util.Optional
 
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.OrderCapability
+import org.neo4j.cypher.internal.planner.v3_5.spi.IndexDescriptor.ValueCapability
+import org.neo4j.values.storable.ValueCategory
+
 import org.neo4j.cypher.MissingIndexException
-import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_4.spi._
-import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
-import org.neo4j.cypher.internal.util.v3_4.{CypherExecutionException, symbols}
-import org.neo4j.cypher.internal.v3_4.logical.plans._
+import org.neo4j.cypher.internal.planner.v3_5.spi._
+import org.neo4j.cypher.internal.v3_5.logical.plans._
 import org.neo4j.exceptions.KernelException
+import org.neo4j.internal.kernel.api
+import org.neo4j.internal.kernel.api.IndexReference
+import org.neo4j.internal.kernel.api.InternalIndexState
+import org.neo4j.internal.kernel.api.procs
+import org.neo4j.internal.kernel.api.procs.DefaultParameterValue
+import org.neo4j.internal.kernel.api.procs.Neo4jTypes
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
-import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
 import org.neo4j.kernel.api.KernelTransaction
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.CapableIndexDescriptor
 import org.neo4j.procedure.Mode
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.opencypher.v9_0.util.symbols
+import org.opencypher.v9_0.util.symbols.CypherType
+import org.opencypher.v9_0.util.CypherExecutionException
+import org.opencypher.v9_0.util.LabelId
+import org.opencypher.v9_0.util.PropertyKeyId
+import org.opencypher.v9_0.util.{symbols => types}
 
 import scala.collection.JavaConverters._
 
 class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: InternalNotificationLogger, graphStatistics: GraphStatistics)
   extends TransactionBoundTokenContext(txSupplier) with PlanContext with IndexDescriptorCompatibility {
 
-  def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+  override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     txSupplier().schemaRead().indexesGetForLabel(labelId).asScala
         .filterNot(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 
-  def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(txSupplier().schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
-  }
-
-  def indexExistsForLabel(labelName: String): Boolean = {
-    try {
-      val labelId = getLabelId(labelName)
-      val onlineIndexDescriptors = txSupplier().schemaRead.indexesGetForLabel(labelId).asScala
-        .filterNot(_.isUnique)
-        .flatMap(getOnlineIndex)
-
-      onlineIndexDescriptors.nonEmpty
-    } catch {
-      case _: KernelException => false
-    }
-  }
-
-  def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
+  override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = {
     txSupplier().schemaRead.indexesGetForLabel(labelId).asScala
       .filter(_.isUnique)
       .flatMap(getOnlineIndex)
   }
 
-  def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
-    val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
-    getOnlineIndex(txSupplier().schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+  override def indexExistsForLabel(labelId: Int): Boolean = txSupplier().schemaRead.indexesGetForLabel(labelId).asScala.flatMap(getOnlineIndex).nonEmpty
+
+  override def indexGetForLabelAndProperties(labelName: String,
+                                             propertyKeys: Seq[String]): Option[IndexDescriptor] = evalOrNone {
+    try {
+      val descriptor = toLabelSchemaDescriptor(this, labelName, propertyKeys)
+      getOnlineIndex(txSupplier().schemaRead.index(descriptor.getLabelId, descriptor.getPropertyIds:_*))
+    } catch {
+      case _: KernelException => None
+    }
   }
+
+  override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+    indexGetForLabelAndProperties(labelName, propertyKey).isDefined
 
   private def evalOrNone[T](f: => Option[T]): Option[T] =
     try {
@@ -85,13 +88,61 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
 
   private def getOnlineIndex(reference: IndexReference): Option[IndexDescriptor] =
     txSupplier().schemaRead.indexGetState(reference) match {
-      case InternalIndexState.ONLINE => reference match {
-        case ref if ref.isFulltextIndex || ref.isEventuallyConsistent => None
-        case cir: CapableIndexDescriptor => Some(IndexDescriptor(cir.schema().getEntityTokenIds()(0), cir.properties, cir.limitations().map(kernelToCypher).toSet))
-        case _ => Some(IndexDescriptor(reference.schema().getEntityTokenIds()(0), reference.properties))
-      }
+      case InternalIndexState.ONLINE =>
+        val label = LabelId(reference.schema().getEntityTokenIds()(0))
+        val properties = reference.properties().map(PropertyKeyId)
+        val limitations = reference.limitations().map(kernelToCypher).toSet
+        val orderCapability: OrderCapability = tps => {
+          reference.orderCapability(tps.map(typeToValueCategory): _*) match {
+            case Array() => IndexOrderCapability.NONE
+            case Array(api.IndexOrder.ASCENDING, api.IndexOrder.DESCENDING) => IndexOrderCapability.BOTH
+            case Array(api.IndexOrder.DESCENDING, api.IndexOrder.ASCENDING) => IndexOrderCapability.BOTH
+            case Array(api.IndexOrder.ASCENDING) => IndexOrderCapability.ASC
+            case Array(api.IndexOrder.DESCENDING) => IndexOrderCapability.DESC
+            case _ => IndexOrderCapability.NONE
+          }
+        }
+        val valueCapability: ValueCapability = tps => {
+          reference.valueCapability(tps.map(typeToValueCategory): _*) match {
+            // As soon as the kernel provides an array of IndexValueCapability, this mapping can change
+            case api.IndexValueCapability.YES => tps.map(_ => CanGetValue)
+            case api.IndexValueCapability.PARTIAL => tps.map(_ => DoNotGetValue)
+            case api.IndexValueCapability.NO => tps.map(_ => DoNotGetValue)
+          }
+        }
+        if (reference.isFulltextIndex || reference.isEventuallyConsistent) {
+          // Ignore fulltext indexes for now, because we don't know how to correctly plan for and query them. Not yet, anyway.
+          // Also, ignore eventually consistent indexes. Those are for explicit querying via procesures.
+          None
+        } else {
+          Some(IndexDescriptor(label, properties, limitations, orderCapability, valueCapability))
+        }
       case _ => None
     }
+
+  /**
+    * Translate a Cypher Type to a ValueCategory that IndexReference can handle
+    */
+  private def typeToValueCategory(in: CypherType): ValueCategory = in match {
+    case _: types.IntegerType |
+         _: types.FloatType =>
+      ValueCategory.NUMBER
+
+    case _: types.StringType =>
+      ValueCategory.TEXT
+
+    case _: types.GeometryType | _: types.PointType =>
+      ValueCategory.GEOMETRY
+
+    case _: types.DateTimeType | _: types.LocalDateTimeType | _: types.DateType | _: types.TimeType | _: types.LocalTimeType | _: types.DurationType =>
+      ValueCategory.TEMPORAL
+
+    // For everything else, we don't know
+    case _ =>
+      ValueCategory.UNKNOWN
+  }
+
+
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = {
     try {
       val labelId = getLabelId(labelName)
@@ -103,25 +154,18 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
     }
   }
 
-  def checkNodeIndex(idxName: String) {
+  override def checkNodeIndex(idxName: String) {
     throw new MissingIndexException(idxName)
   }
 
-  def checkRelIndex(idxName: String) {
+  override def checkRelIndex(idxName: String) {
     throw new MissingIndexException(idxName)
   }
 
-  def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
-    val javaCreator = new java.util.function.Function[Any, T]() {
-      def apply(key: Any) = f
-    }
-    txSupplier().schemaRead.schemaStateGetOrCreate(key, javaCreator)
-  }
+  override val statistics: GraphStatistics = graphStatistics
 
-  val statistics: GraphStatistics = graphStatistics
-
-  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_4/Compatibility
-  def txIdProvider: () => Long = ???
+  // This should never be used in 3.5 code, because the txIdProvider will be used from 3.5 context in v3_4/Compatibility
+  override def txIdProvider: () => Long = ???
 
   override def procedureSignature(name: QualifiedName) = {
     val kn = new procs.QualifiedName(name.namespace.asJava, name.name)
@@ -162,8 +206,6 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
                                  signature.allowed(), description, isAggregate = aggregation))
     }
   }
-
-  override def twoLayerTransactionState(): Boolean = false
 
   private def asOption[T](optional: Optional[T]): Option[T] = if (optional.isPresent) Some(optional.get()) else None
 

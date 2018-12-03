@@ -36,22 +36,9 @@ import org.neo4j.kernel.impl.query.TransactionalContext
 
 case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTransactionalContext {
 
-  def getOrBeginNewIfClosed(): TransactionalContextWrapper = TransactionalContextWrapper(tc.getOrBeginNewIfClosed())
-
-  def isOpen: Boolean = tc.isOpen
-
   def kernelTransaction: KernelTransaction = tc.kernelTransaction()
 
   def graph: GraphDatabaseQueryService = tc.graph()
-
-  def statement: Statement = tc.statement()
-
-  def stateView: TxStateHolder = tc.stateView()
-
-  def cleanForReuse(): Unit = tc.cleanForReuse()
-
-  // needed only for compatibility with 2.3
-  def acquireWriteLock(p: PropertyContainer): Lock = tc.acquireWriteLock(p)
 
   override def transaction: Transaction = tc.kernelTransaction
 
@@ -73,17 +60,9 @@ case class TransactionalContextWrapper(tc: TransactionalContext) extends QueryTr
 
   override def close(success: Boolean) { tc.close(success) }
 
-  def restrictCurrentTransaction(context: SecurityContext): Revertable = tc.restrictCurrentTransaction(context)
-
-  def securityContext: SecurityContext = tc.securityContext
-
-  def notifyCompilationCompleted(compilerInfo: CompilerInfo): Unit = tc.executingQuery().compilationCompleted(compilerInfo)
-
-  def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
+  override def kernelStatisticProvider: KernelStatisticProvider = new ProfileKernelStatisticProvider(tc.kernelStatisticProvider())
 
   override def databaseInfo: DatabaseInfo = tc.graph().getDependencyResolver.resolveDependency(classOf[DatabaseInfo])
-
-  def resourceTracker: ResourceTracker = tc.resourceTracker
 
   def getOrCreateFromSchemaState[T](key: SchemaStateKey, f: => T): T = {
     val javaCreator = new java.util.function.Function[SchemaStateKey, T]() {

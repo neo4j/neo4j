@@ -2034,7 +2034,7 @@ public class FulltextProceduresTest
         {
             assertNoIndexSeeks( result );
         }
-        try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        try ( Result result = db.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
             assertNoIndexSeeks( result );
         }
@@ -2069,7 +2069,7 @@ public class FulltextProceduresTest
         {
             assertNoIndexSeeks( result );
         }
-        try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
+        try ( Result result = db.execute( "cypher 3.5 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
             assertNoIndexSeeks( result );
         }

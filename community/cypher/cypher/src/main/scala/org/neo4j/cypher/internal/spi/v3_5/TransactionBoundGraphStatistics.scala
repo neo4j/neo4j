@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_4
+package org.neo4j.cypher.internal.spi.v3_5
 
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
-import org.neo4j.cypher.internal.util.v3_4._
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor, StatisticsCompletingGraphStatistics}
+import org.opencypher.v9_0.util._
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException
 import org.neo4j.internal.kernel.api.{Read, SchemaRead}
 
@@ -31,7 +31,7 @@ object TransactionBoundGraphStatistics {
 
     import NameId._
 
-    def indexSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    override def uniqueValueSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
 
@@ -47,7 +47,7 @@ object TransactionBoundGraphStatistics {
         case _: IndexNotFoundKernelException => None
       }
 
-    def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
+    override def indexPropertyExistsSelectivity(index: IndexDescriptor): Option[Selectivity] =
       try {
         val labeledNodes = read.countsForNodeWithoutTxState( index.label ).toDouble
 
@@ -61,10 +61,10 @@ object TransactionBoundGraphStatistics {
         case _: IndexNotFoundKernelException => None
       }
 
-    def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
+    override def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
       atLeastOne(read.countsForNodeWithoutTxState(labelId))
 
-    def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
+    override def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
       atLeastOne(read.countsForRelationshipWithoutTxState(fromLabel, relTypeId, toLabel))
 
     /**

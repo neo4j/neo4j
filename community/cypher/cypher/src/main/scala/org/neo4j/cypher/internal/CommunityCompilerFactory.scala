@@ -24,7 +24,7 @@ import org.neo4j.cypher.CypherRuntimeOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
 import org.neo4j.cypher.internal.compatibility._
-import org.neo4j.cypher.internal.compatibility.v3_4.Cypher3_4Planner
+import org.neo4j.cypher.internal.compatibility.v3_5.Cypher3_5Planner
 import org.neo4j.cypher.internal.compatibility.v4_0.Cypher4_0Planner
 import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -51,10 +51,10 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
                              ): Compiler = {
 
     (cypherVersion, cypherPlanner) match {
-        // 3.4
-      case (CypherVersion.v3_4, _) =>
+        // 3.5
+      case (CypherVersion.`v3_5`, _) =>
         CypherCurrentCompiler(
-          Cypher3_4Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
+          Cypher3_5Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
             cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
           CommunityRuntimeFactory.getRuntime(cypherRuntime, plannerConfig.useErrorsOverWarnings),
           CommunityRuntimeContextCreator(plannerConfig),

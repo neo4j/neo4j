@@ -17,17 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, QueryGraph, QueryHorizon, InterestingOrder}
-import org.neo4j.cypher.internal.ir.{v3_4 => irV3_4, v4_0 => irv4_0}
+import org.opencypher.v9_0.frontend.phases.Monitors
+import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 
-class PlannerQueryWrapper(pq: irV3_4.PlannerQuery) extends irv4_0.PlannerQuery {
-  override val queryGraph = null
-  override val interestingOrder = null
-  override val horizon = null
-  override val tail = null
-  override def dependencies = ???
-  override protected def copy(queryGraph: QueryGraph, interestingOrder: InterestingOrder, horizon: QueryHorizon, tail: Option[PlannerQuery]) = ???
-  override lazy val readOnly = pq.readOnly
+import scala.reflect.ClassTag
+
+case class WrappedMonitors(kernelMonitors: KernelMonitors) extends Monitors {
+  def addMonitorListener[T](monitor: T, tags: String*) {
+    kernelMonitors.addMonitorListener(monitor, tags: _*)
+  }
+
+  def newMonitor[T <: AnyRef : ClassTag](tags: String*): T = {
+    val clazz = implicitly[ClassTag[T]].runtimeClass.asInstanceOf[Class[T]]
+    kernelMonitors.newMonitor(clazz, tags: _*)
+  }
 }

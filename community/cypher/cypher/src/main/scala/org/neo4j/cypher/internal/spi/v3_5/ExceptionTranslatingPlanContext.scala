@@ -17,25 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.spi.v3_4
+package org.neo4j.cypher.internal.spi.v3_5
 
-import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.planner.v3_4.spi.{GraphStatistics, IndexDescriptor, PlanContext}
-import org.neo4j.cypher.internal.v3_4.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
+import org.opencypher.v9_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.planner.v3_5.spi.{GraphStatistics, IndexDescriptor, PlanContext}
+import org.neo4j.cypher.internal.v3_5.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(inner.indexesGetForLabel(labelId))
 
-  override def indexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(inner.indexGet(labelName, propertyKeys))
-
   override def uniqueIndexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =
     translateException(inner.uniqueIndexesGetForLabel(labelId))
-
-  override def uniqueIndexGet(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
-    translateException(inner.uniqueIndexGet(labelName, propertyKeys))
 
   override def statistics: GraphStatistics =
     translateException(inner.statistics)
@@ -43,7 +37,7 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def checkNodeIndex(idxName: String): Unit =
     translateException(inner.checkNodeIndex(idxName))
 
-  // This should never be used in 3.4 code, because the txIdProvider will be used from 3.4 context in v3_4/Compatibility
+  // This should never be used in 3.5 code, because the txIdProvider will be used from 3.5 context in v3_5/Compatibility
   override def txIdProvider: () => Long = ???
 
   override def procedureSignature(name: QualifiedName): ProcedureSignature =
@@ -52,17 +46,14 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def functionSignature(name: QualifiedName): Option[UserFunctionSignature] =
     translateException(inner.functionSignature(name))
 
-  override def indexExistsForLabel(labelName: String): Boolean =
-    translateException(inner.indexExistsForLabel(labelName))
+  override def indexExistsForLabel(labelId: Int): Boolean =
+    translateException(inner.indexExistsForLabel(labelId))
 
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean =
     translateException(inner.hasPropertyExistenceConstraint(labelName, propertyKey))
 
   override def checkRelIndex(idxName: String): Unit =
     translateException(inner.checkRelIndex(idxName))
-
-  override def getOrCreateFromSchemaState[T](key: Any, f: => T): T =
-    translateException(inner.getOrCreateFromSchemaState(key, f))
 
   override def getOptRelTypeId(relType: String): Option[Int] =
     translateException(inner.getOptRelTypeId(relType))
@@ -94,6 +85,9 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
   override def notificationLogger(): InternalNotificationLogger =
     translateException(inner.notificationLogger())
 
-  override def twoLayerTransactionState(): Boolean =
-    translateException(inner.twoLayerTransactionState())
+  override def indexGetForLabelAndProperties(labelName: String, propertyKeys: Seq[String]): Option[IndexDescriptor] =
+    translateException(inner.indexGetForLabelAndProperties(labelName, propertyKeys))
+
+  override def indexExistsForLabelAndProperties(labelName: String, propertyKey: Seq[String]): Boolean =
+    translateException(inner.indexExistsForLabelAndProperties(labelName, propertyKey))
 }

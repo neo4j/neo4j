@@ -17,30 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.neo4j.cypher.internal.v3_4.logical.plans.{LogicalPlan => LogicalPlanV3_4}
-import org.neo4j.cypher.internal.v4_0.util.attribution._
+import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, QueryGraph, QueryHorizon, InterestingOrder}
+import org.neo4j.cypher.internal.ir.{v3_5 => irV3_5, v4_0 => irv4_0}
 
-trait IdConverter {
-  def convertId(plan:LogicalPlanV3_4): IdGen
-}
-
-/**
-  * Converts ids while keeping track of the maximum encountered id. This id can
-  * then be used to create a new IdGen which continues with the next available id.
-  */
-class MaxIdConverter extends IdConverter {
-
-  private var _maxId: Int = 0
-
-  def maxId: Int = _maxId
-
-  override def convertId(plan: LogicalPlanV3_4): IdGen = {
-    val id = plan.id.x
-    _maxId = math.max(_maxId, id)
-    SameId(Id(id))
-  }
-
-  def idGenFromMax: IdGen = new SequentialIdGen(_maxId + 1)
+class PlannerQueryWrapper(pq: irV3_5.PlannerQuery) extends irv4_0.PlannerQuery {
+  override val queryGraph = null
+  override val interestingOrder = null
+  override val horizon = null
+  override val tail = null
+  override def dependencies = ???
+  override protected def copy(queryGraph: QueryGraph, interestingOrder: InterestingOrder, horizon: QueryHorizon, tail: Option[PlannerQuery]) = ???
+  override lazy val readOnly = pq.readOnly
 }

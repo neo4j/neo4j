@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_5
 
 import org.neo4j.cypher.exceptionHandler.{RunSafely, mapToCypher}
 import org.neo4j.cypher.internal.compatibility.ExceptionHandler
-import org.neo4j.cypher.internal.util.v3_4.spi.MapToPublicExceptions
-import org.neo4j.cypher.internal.util.v3_4.{CypherException => InternalCypherExceptionV3_4}
+import org.opencypher.v9_0.util.spi.MapToPublicExceptions
+import org.opencypher.v9_0.util.{CypherException => InternalCypherExceptionV3_5}
 import org.neo4j.cypher.{exceptionHandler => exceptionHandlerv4_0, _}
 import org.neo4j.values.utils.ValuesException
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherExceptionv4_0}
@@ -32,9 +32,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def arithmeticException(message: String, cause: Throwable) = new ArithmeticException(message, cause)
 
-  override def profilerStatisticsNotReadyException(cause: Throwable) = {
-    throw new ProfilerStatisticsNotReadyException(cause)
-  }
+  override def profilerStatisticsNotReadyException(cause: Throwable) = throw new ProfilerStatisticsNotReadyException(cause)
 
   override def incomparableValuesException(details: Option[String], lhs: String, rhs: String, cause: Throwable) = new IncomparableValuesException(details, lhs, rhs, cause)
 
@@ -48,7 +46,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def internalException(message: String, cause: Exception) = new InternalException(message, cause)
 
-  override def loadCsvStatusWrapCypherException(extraInfo: String, cause: InternalCypherExceptionV3_4) =
+  override def loadCsvStatusWrapCypherException(extraInfo: String, cause: InternalCypherExceptionV3_5) =
     new LoadCsvStatusWrapCypherException(extraInfo, cause.mapToPublic(exceptionHandler))
 
   override def loadExternalResourceException(message: String, cause: Throwable) = throw new LoadExternalResourceException(message, cause)
@@ -85,8 +83,7 @@ object exceptionHandler extends MapToPublicExceptions[CypherException] {
 
   override def periodicCommitInOpenTransactionException(cause: Throwable) = throw new PeriodicCommitInOpenTransactionException(cause)
 
-  // TODO pass along failureMessage as soon as we depend on the next 3.4
-  override def failedIndexException(indexName: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, null, cause)
+  override def failedIndexException(indexName: String, failureMessage: String, cause: Throwable): CypherException = throw new FailedIndexException(indexName, failureMessage, cause)
 
 }
 
@@ -96,7 +93,7 @@ object runSafely extends RunSafely {
       body
     }
     catch {
-      case e: InternalCypherExceptionV3_4 =>
+      case e: InternalCypherExceptionV3_5 =>
         f(e)
         throw e.mapToPublic(exceptionHandler)
       case e: InternalCypherExceptionv4_0 =>

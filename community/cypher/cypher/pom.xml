@@ -146,8 +146,8 @@
     <!-- neo4j-cypher -->
     <dependency>
       <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-cypher-planner-3.4</artifactId>
-      <version>${cypher.compatibility.34}</version>
+      <artifactId>neo4j-cypher-planner-3.5</artifactId>
+      <version>${cypher.compatibility.35}</version>
       <exclusions>
         <exclusion>
           <groupId>org.neo4j</groupId>

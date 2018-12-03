@@ -19,26 +19,35 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0
 
-import java.time.{Clock, Instant, ZoneOffset}
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 
 import org.neo4j.cypher
 import org.neo4j.cypher._
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
-import org.neo4j.cypher.internal.compatibility.v3_4.Cypher3_4Planner
-import org.neo4j.cypher.internal.compatibility.{CommunityRuntimeContextCreator, CypherCurrentCompiler, CypherPlanner, RuntimeContext}
-import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, StatsDivergenceCalculator}
-import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
 import org.neo4j.cypher.internal._
+import org.neo4j.cypher.internal.compatibility.CommunityRuntimeContextCreator
+import org.neo4j.cypher.internal.compatibility.CypherCurrentCompiler
+import org.neo4j.cypher.internal.compatibility.CypherPlanner
+import org.neo4j.cypher.internal.compatibility.RuntimeContext
+import org.neo4j.cypher.internal.compatibility.v3_5.Cypher3_5Planner
+import org.neo4j.cypher.internal.compiler.v4_0.CypherPlannerConfiguration
+import org.neo4j.cypher.internal.compiler.v4_0.StatsDivergenceCalculator
+import org.neo4j.cypher.internal.runtime.interpreted.CSVResources
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
+import org.neo4j.cypher.internal.v4_0.util.DummyPosition
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.configuration.Config
 import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.logging.AssertableLogProvider
 import org.neo4j.logging.AssertableLogProvider.inLog
-import org.neo4j.logging.{AssertableLogProvider, Log, NullLog, NullLogProvider}
-import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
-import org.neo4j.cypher.internal.v4_0.util.DummyPosition
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.logging.Log
+import org.neo4j.logging.NullLog
+import org.neo4j.logging.NullLogProvider
 
 import scala.collection.Map
 
@@ -115,15 +124,15 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
 
   var counter: CacheCounter = _
   var compiler: CypherCurrentCompiler[RuntimeContext] = _
-  var compiler3_4: CypherCurrentCompiler[RuntimeContext] = _
+  var compiler3_5: CypherCurrentCompiler[RuntimeContext] = _
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
     counter = new CacheCounter()
     compiler = createCompiler(plannerConfig())
 
-    val config3_4 = plannerConfig()
-    val planner3_4 = Cypher3_4Planner(config3_4,
+    val config3_5 = plannerConfig()
+    val planner3_5 = Cypher3_5Planner(config3_5,
       Clock.systemUTC(),
       kernelMonitors,
       NullLog.getInstance,
@@ -131,7 +140,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
       CypherUpdateStrategy.default,
       () => 1)
 
-    compiler3_4 = createCompiler(planner3_4, config3_4)
+    compiler3_5 = createCompiler(planner3_5, config3_5)
 
     kernelMonitors.addMonitorListener(counter)
 
@@ -306,11 +315,11 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
     counter.counts should equal(CacheCounts(hits = 0, misses = 2, flushes = 1))
   }
 
-  test("should find query in cache with different parameter types in 3.4") {
+  test("should find query in cache with different parameter types in 3.5") {
     val map1: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> new Integer(42))
     val map2: scala.Predef.Map[String, AnyRef] = scala.Predef.Map("number" -> "nope")
-    runQuery("return $number", params = map1, cypherCompiler = compiler3_4)
-    runQuery("return $number", params = map2, cypherCompiler = compiler3_4)
+    runQuery("return $number", params = map1, cypherCompiler = compiler3_5)
+    runQuery("return $number", params = map2, cypherCompiler = compiler3_5)
 
     counter.counts should equal(CacheCounts(hits = 1, misses = 1, flushes = 1))
   }

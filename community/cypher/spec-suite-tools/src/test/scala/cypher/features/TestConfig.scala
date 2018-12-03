@@ -39,4 +39,4 @@ case object CostCompiledTestConfig extends TestConfig(Some("cost-compiled.txt"),
 
 case object CostInterpretedTestConfig extends TestConfig(Some("cost-interpreted.txt"),"CYPHER planner=cost runtime=interpreted")
 
-case object Compatibility34TestConfig extends TestConfig(Some("compatibility-34.txt"),"CYPHER 3.4")
+case object Compatibility3_5TestConfig extends TestConfig(Some("compatibility-35.txt"),"CYPHER 3.5")

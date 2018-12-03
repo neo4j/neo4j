@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compatibility.v3_4
+package org.neo4j.cypher.internal.compatibility.v3_5
 
-import org.neo4j.cypher.internal.compatibility.v3_4.SemanticTableConverter.ExpressionMapping4To5
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{ExpressionTypeInfo => ExpressionTypeInfoV3_4, SemanticTable => SemanticTableV3_4}
-import org.neo4j.cypher.internal.frontend.v3_4.{ast => astV3_4}
-import org.neo4j.cypher.internal.util.v3_4.symbols.{TypeSpec => TypeSpecV3_4}
-import org.neo4j.cypher.internal.util.v3_4.{InputPosition => InputPositionV3_4}
-import org.neo4j.cypher.internal.v3_4.{expressions => expressionsV3_4}
+import org.neo4j.cypher.internal.compatibility.v3_5.SemanticTableConverter.ExpressionMapping4To5
+import org.opencypher.v9_0.ast.semantics.{ExpressionTypeInfo => ExpressionTypeInfoV3_5, SemanticTable => SemanticTableV3_5}
+import org.opencypher.v9_0.{ast => astV3_5}
+import org.opencypher.v9_0.util.symbols.{TypeSpec => TypeSpecV3_5}
+import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5}
+import org.opencypher.v9_0.{expressions => expressionsV3_5}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.{expressions => expressionsv4_0, util => utilv4_0}
 
@@ -32,10 +32,10 @@ class SemanticTableConverterTest extends CypherFunSuite {
 
   test("should handle converting variable with same names but different position") {
     // given
-    val typeInfo = ExpressionTypeInfoV3_4(TypeSpecV3_4.all)
-    val variable1 = expressionsV3_4.Variable("A")(InputPositionV3_4(1,1,1))
-    val variable2 = expressionsV3_4.Variable("A")(InputPositionV3_4(2,2,2))
-    val table = SemanticTableV3_4(types = astV3_4.ASTAnnotationMap((variable1, typeInfo), (variable2, typeInfo)))
+    val typeInfo = ExpressionTypeInfoV3_5(TypeSpecV3_5.all)
+    val variable1 = expressionsV3_5.Variable("A")(InputPositionV3_5(1,1,1))
+    val variable2 = expressionsV3_5.Variable("A")(InputPositionV3_5(2,2,2))
+    val table = SemanticTableV3_5(types = astV3_5.ASTAnnotationMap((variable1, typeInfo), (variable2, typeInfo)))
     val mapping: ExpressionMapping4To5 = Map(
       (variable1, variable1.position) -> expressionsv4_0.Variable("A")(utilv4_0.InputPosition(1, 1, 1)),
       (variable2, variable2.position) -> expressionsv4_0.Variable("A")(utilv4_0.InputPosition(2, 2, 2))
