@@ -22,14 +22,13 @@ package org.neo4j.internal.kernel.api;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
+import org.eclipse.collections.impl.block.procedure.checked.primitive.CheckedLongProcedure;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -79,8 +78,8 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     void scanShouldNotSeeDeletedNode() throws Exception
     {
         int size = 100;
-        Set<Long> created = new HashSet<>( size );
-        Set<Long> deleted = new HashSet<>( size );
+        MutableLongSet created = LongSets.mutable.empty();
+        MutableLongSet deleted =  LongSets.mutable.empty();
         try ( Transaction tx = beginTransaction() )
         {
             Write write = tx.dataWrite();
@@ -94,15 +93,19 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
 
         try ( Transaction tx = beginTransaction() )
         {
-            for ( long delete : deleted )
+            deleted.each( new CheckedLongProcedure()
             {
-                tx.dataWrite().nodeDelete( delete );
-            }
+                @Override
+                public void safeValue( long item ) throws Exception
+                {
+                    tx.dataWrite().nodeDelete( item );
+                }
+            } );
 
             try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
-                Set<Long> seen = new HashSet<>();
+                MutableLongSet seen =  LongSets.mutable.empty();
                 while ( scan.reserveBatch( cursor, 17 ) )
                 {
                     while ( cursor.next() )
@@ -123,7 +126,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     {
         int size = 100;
         MutableLongSet existing = createNodes( size );
-        Set<Long> added = new HashSet<>( size );
+        MutableLongSet added = LongSets.mutable.empty();
 
         try ( Transaction tx = beginTransaction() )
         {
@@ -135,7 +138,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
             try ( NodeCursor cursor = tx.cursors().allocateNodeCursor() )
             {
                 Scan<NodeCursor> scan = tx.dataRead().allNodesScan();
-                Set<Long> seen = new HashSet<>();
+                MutableLongSet seen = LongSets.mutable.empty();
                 while ( scan.reserveBatch( cursor, 17 ) )
                 {
                     while ( cursor.next() )
