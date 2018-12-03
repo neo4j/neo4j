@@ -25,21 +25,40 @@ import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 class ReplaceAliasedFunctionInvocationsTest extends CypherFunSuite with AstConstructionTestSupport {
 
   private val rewriter = replaceAliasedFunctionInvocations(Deprecations.V1)
+  private val deprecatedNameMap = Map(
+    "toInt" -> "toInteger",
+    "upper" -> "toUpper",
+    "lower" -> "toLower",
+    "rels" -> "relationships")
 
-  test("should rewrite toInt()") {
-    val before = FunctionInvocation(FunctionName("toInt")(pos), literalInt(1))(pos)
-
-    rewriter(before) should equal(before.copy(functionName = FunctionName("toInteger")(pos))(pos))
+  test("should rewrite deprecated names regardless of casing") {
+    for ((oldName, newName) <- deprecatedNameMap ) {
+      rewriter(function(oldName, varFor("arg"))) should equal(function(oldName, varFor("arg")).copy(functionName = FunctionName(newName)(pos))(pos))
+      rewriter(function(oldName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+      rewriter(function(oldName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+    }
   }
 
-  test("doesn't touch toInteger()") {
-    val before = FunctionInvocation(FunctionName("toInteger")(pos), literalInt(1))(pos)
-
-    rewriter(before) should equal(before)
+  test("should not touch new names of regardless of casing") {
+    for (newName <- deprecatedNameMap.values ) {
+      rewriter(function(newName, varFor("arg"))) should equal(function(newName, varFor("arg")))
+      rewriter(function(newName.toLowerCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+      rewriter(function(newName.toUpperCase(), varFor("arg"))) should equal(function(newName, varFor("arg")))
+    }
   }
 
   test("should rewrite timestamp()") {
     val before = FunctionInvocation(FunctionName("timestamp")(pos), distinct = false, IndexedSeq.empty)(pos)
+
+    val after =
+      Property(
+        FunctionInvocation(Namespace()(pos), FunctionName("datetime")(pos), distinct = false, IndexedSeq.empty)(pos),
+        PropertyKeyName("epochMillis")(pos))(pos)
+    rewriter(before) should equal(after)
+  }
+
+  test("should also rewrite TiMeStAmP()") {
+    val before = FunctionInvocation(FunctionName("TiMeStAmP")(pos), distinct = false, IndexedSeq.empty)(pos)
 
     val after =
       Property(

@@ -29,17 +29,17 @@ trait AstConstructionTestSupport extends CypherTestSupport {
 
   def varFor(name: String): Variable = Variable(name)(pos)
 
-  def lblName(s: String) = LabelName(s)(pos)
+  def lblName(s: String): LabelName = LabelName(s)(pos)
 
-  def hasLabels(v: String, label: String) =
+  def hasLabels(v: String, label: String): HasLabels =
     HasLabels(varFor(v), Seq(lblName(label)))(pos)
 
-  def prop(variable: String, propKey: String) = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
+  def prop(variable: String, propKey: String): Property = Property(varFor(variable), PropertyKeyName(propKey)(pos))(pos)
 
-  def propEquality(variable: String, propKey: String, intValue: Int) =
+  def propEquality(variable: String, propKey: String, intValue: Int): Equals =
     Equals(prop(variable, propKey), literalInt(intValue))(pos)
 
-  def propLessThan(variable: String, propKey: String, intValue: Int) =
+  def propLessThan(variable: String, propKey: String, intValue: Int): LessThan =
     LessThan(prop(variable, propKey), literalInt(intValue))(pos)
 
   def literalInt(intValue: Int): SignedDecimalIntegerLiteral =
@@ -69,4 +69,7 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   })(pos)
 
   def TRUE: Expression = True()(pos)
+
+  def function(name: String, args: Expression*): FunctionInvocation =  FunctionInvocation(FunctionName(name)(pos),
+                                                                                          distinct = false, args.toIndexedSeq)(pos)
 }
