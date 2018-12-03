@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.ListenSocketAddress;
 
 /**
  * Connector tracker that keeps information about local address that any configured connector get during bootstrapping.
@@ -34,12 +35,27 @@ public class ConnectorPortRegister
 
     public void register( String connectorKey, InetSocketAddress localAddress )
     {
-        HostnamePort hostnamePort = new HostnamePort( localAddress.getHostString(), localAddress.getPort() );
-        connectorsInfo.put( connectorKey, hostnamePort );
+        register( connectorKey, localAddress.getHostString(), localAddress.getPort() );
+    }
+
+    public void register( String connectorKey, ListenSocketAddress localAddress )
+    {
+        register( connectorKey, localAddress.getHostname(), localAddress.getPort() );
+    }
+
+    public void deregister( String connectorKey )
+    {
+        connectorsInfo.remove( connectorKey );
     }
 
     public HostnamePort getLocalAddress( String connectorKey )
     {
         return connectorsInfo.get( connectorKey );
+    }
+
+    private void register( String connectorKey, String hostname, int port )
+    {
+        HostnamePort hostnamePort = new HostnamePort( hostname, port );
+        connectorsInfo.put( connectorKey, hostnamePort );
     }
 }
