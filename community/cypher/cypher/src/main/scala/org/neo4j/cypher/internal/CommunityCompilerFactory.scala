@@ -52,7 +52,7 @@ class CommunityCompilerFactory(graph: GraphDatabaseQueryService,
 
     (cypherVersion, cypherPlanner) match {
         // 3.5
-      case (CypherVersion.`v3_5`, _) =>
+      case (CypherVersion.v3_5, _) =>
         CypherCurrentCompiler(
           Cypher3_5Planner(plannerConfig, MasterCompiler.CLOCK, kernelMonitors, log,
             cypherPlanner, cypherUpdateStrategy, LastCommittedTxIdProvider(graph)),
