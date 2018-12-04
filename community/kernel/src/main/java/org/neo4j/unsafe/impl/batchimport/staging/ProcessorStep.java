@@ -26,6 +26,7 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.executor.DynamicTaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.executor.TaskExecutor;
 import org.neo4j.unsafe.impl.batchimport.stats.StatsProvider;
+import org.neo4j.util.VisibleForTesting;
 import org.neo4j.util.concurrent.AsyncApply;
 
 import static java.lang.System.currentTimeMillis;
@@ -200,6 +201,12 @@ public abstract class ProcessorStep<T> extends AbstractStep<T>
 
     protected void lastCallForEmittingOutstandingBatches( BatchSender sender )
     {   // Nothing to emit, subclasses might have though
+    }
+
+    @VisibleForTesting
+    public int getMaxProcessors()
+    {
+        return maxProcessors;
     }
 
     private class Sender implements BatchSender
