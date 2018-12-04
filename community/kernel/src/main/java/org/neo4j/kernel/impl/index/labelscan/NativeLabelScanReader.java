@@ -97,7 +97,7 @@ class NativeLabelScanReader implements LabelScanReader
         try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
                 new LabelScanKey( labelId, 0 ) ) )
         {
-            return seeker.next() ? seeker.get().key().idRange * RANGE_SIZE : 0;
+            return seeker.next() ? (seeker.get().key().idRange + 1) * RANGE_SIZE : 0;
         }
     }
 
