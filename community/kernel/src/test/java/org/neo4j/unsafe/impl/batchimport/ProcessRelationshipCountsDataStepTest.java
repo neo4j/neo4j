@@ -33,6 +33,7 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.io.ByteUnit.mebiBytes;
+import static org.neo4j.io.ByteUnit.tebiBytes;
 import static org.neo4j.kernel.impl.util.monitoring.SilentProgressReporter.INSTANCE;
 import static org.neo4j.unsafe.impl.batchimport.cache.NumberArrayFactory.OFF_HEAP;
 
@@ -43,6 +44,16 @@ public class ProcessRelationshipCountsDataStepTest
     {
         // given
         ProcessRelationshipCountsDataStep step = instantiateStep( 10, 10, 10_000, 4, mebiBytes( 10 ) );
+
+        // then
+        assertEquals( 0, step.getMaxProcessors() );
+    }
+
+    @Test
+    public void shouldNotOverflowWhenTooMuchMemoryAvailable()
+    {
+        // given
+        ProcessRelationshipCountsDataStep step = instantiateStep( 1, 1, 10_000, 64, tebiBytes( 10 ) );
 
         // then
         assertEquals( 0, step.getMaxProcessors() );
