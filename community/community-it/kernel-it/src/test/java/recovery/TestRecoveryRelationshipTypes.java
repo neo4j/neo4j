@@ -51,7 +51,7 @@ class TestRecoveryRelationshipTypes
     private TestDirectory testDirectory;
 
     @Test
-    void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
+    void recoverNeoAndHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
         // Given (create transactions and kill process, leaving it needing for recovery)
         File storeDir = testDirectory.storeDir();

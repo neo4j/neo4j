@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.spi.v3_4
 
 import java.util.Optional
 
+import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.frontend.v3_4.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.planner.v3_4.spi._
 import org.neo4j.cypher.internal.util.v3_4.symbols.CypherType
@@ -103,11 +104,11 @@ class TransactionBoundPlanContext(txSupplier: () => KernelTransaction, logger: I
   }
 
   def checkNodeIndex(idxName: String) {
-    // empty
+    throw new MissingIndexException(idxName)
   }
 
   def checkRelIndex(idxName: String) {
-    // empty
+    throw new MissingIndexException(idxName)
   }
 
   def getOrCreateFromSchemaState[T](key: Any, f: => T): T = {
