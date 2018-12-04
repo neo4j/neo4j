@@ -58,6 +58,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.io.NullOutputStream.NULL_OUTPUT_STREAM;
 
 @ExtendWith( {TestDirectoryExtension.class, SuppressOutputExtension.class} )
 class ImportCommandTest
@@ -167,18 +168,26 @@ class ImportCommandTest
     }
 
     @Test
-    void failIfDestinationDatabaseAlreadyExists() throws Exception
+    void letImporterDecideAboutDatabaseExistence() throws Exception
     {
-        try ( NullOutsideWorld outsideWorld = new NullOutsideWorld() )
-        {
-            Path homeDir = testDir.directory( "home" ).toPath();
-            ImportCommand importCommand = new ImportCommand( homeDir, testDir.directory( "conf" ).toPath(), outsideWorld );
+        Path homeDir = testDir.directory( "home" ).toPath();
+        PrintStream nullOutput = new PrintStream( NULL_OUTPUT_STREAM );
+        OutsideWorld outsideWorld = new RealOutsideWorld( nullOutput, nullOutput, new ByteArrayInputStream( new byte[0] ) );
+        Path confPath = testDir.directory( "conf" ).toPath();
+        ImportCommand importCommand = new ImportCommand( homeDir, confPath, outsideWorld );
+        File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
+        String[] arguments = {"--mode=csv", "--database=existing.db", "--nodes=" + nodesFile.getAbsolutePath()};
 
-            putStoreInDirectory( homeDir.resolve( "data" ).resolve( "databases" ).resolve( "existing.db" ) );
-            String[] arguments = {"--mode=csv", "--database=existing.db"};
-            Exception exception = assertThrows( Exception.class, () -> importCommand.execute( arguments ) );
-            assertThat( exception.getMessage(), containsString( "already contains a database" ) );
-        }
+        // First run an import so that a database gets created
+        importCommand.execute( arguments );
+
+        // When
+        ImporterFactory importerFactory = mock( ImporterFactory.class );
+        Importer importer = mock( Importer.class );
+        when( importerFactory.getImporterForMode( any(), any(), any(), any() ) ).thenReturn( importer );
+        new ImportCommand( homeDir, confPath, outsideWorld, importerFactory ).execute( arguments );
+
+        // Then no exception about database existence should be thrown
     }
 
     @Test
