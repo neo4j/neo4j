@@ -39,8 +39,7 @@ public interface LabelScan
      *
      * @param client the client used for consuming data
      * @param sizeHint the approximate size of the batch
-     * @param upperBound the highest node id to look for
      * @return a progressor used for reading data
      */
-    IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, long upperBound );
+    IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint );
 }

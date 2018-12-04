@@ -359,10 +359,4 @@ public class RecordStorageReader implements StorageReader
     {
         return new RecordPropertyCursor( propertyStore, metaDataStore );
     }
-
-    @Override
-    public long highestPossibleNodeId()
-    {
-        return nodeStore.getHighestPossibleIdInUse();
-    }
 }

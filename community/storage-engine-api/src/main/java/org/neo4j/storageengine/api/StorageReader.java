@@ -232,9 +232,4 @@ public interface StorageReader extends AutoCloseable
      * @return a new {@link StorageRelationshipScanCursor} capable of reading relationship data from the underlying storage.
      */
     StorageRelationshipScanCursor allocateRelationshipScanCursor();
-
-    /**
-     * @return the highest possible node id in the store
-     */
-    long highestPossibleNodeId();
 }

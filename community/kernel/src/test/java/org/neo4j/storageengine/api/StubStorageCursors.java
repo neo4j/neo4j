@@ -326,12 +326,6 @@ public class StubStorageCursors implements StorageReader
         return new StubStorageRelationshipScanCursor();
     }
 
-    @Override
-    public long highestPossibleNodeId()
-    {
-        throw new UnsupportedOperationException( "not implemented yet" );
-    }
-
     public class Data<SELF>
     {
         boolean inUse = true;

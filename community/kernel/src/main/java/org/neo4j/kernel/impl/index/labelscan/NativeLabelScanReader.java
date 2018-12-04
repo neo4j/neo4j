@@ -81,7 +81,24 @@ class NativeLabelScanReader implements LabelScanReader
     @Override
     public LabelScan nodeLabelScan( int labelId )
     {
-        return new NativeLabelScan( labelId );
+        try
+        {
+            long highestNodeIdForLabel = highestNodeIdForLabel( labelId );
+            return new NativeLabelScan( labelId, highestNodeIdForLabel );
+        }
+        catch ( IOException e )
+        {
+            throw new UncheckedIOException( e );
+        }
+    }
+
+    private long highestNodeIdForLabel( int labelId ) throws IOException
+    {
+        try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
+                new LabelScanKey( labelId, 0 ) ) )
+        {
+            return seeker.next() ? seeker.get().key().idRange * RANGE_SIZE : 0;
+        }
     }
 
     private List<PrimitiveLongResourceIterator> iteratorsForLabels( long fromId, int[] labelIds )
@@ -121,10 +138,12 @@ class NativeLabelScanReader implements LabelScanReader
     {
         private final AtomicLong nextStart;
         private final int labelId;
+        private final long max;
 
-        NativeLabelScan( int labelId )
+        NativeLabelScan( int labelId, long max )
         {
             this.labelId = labelId;
+            this.max = max;
             nextStart = new AtomicLong( 0 );
         }
 
@@ -135,7 +154,7 @@ class NativeLabelScanReader implements LabelScanReader
         }
 
         @Override
-        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint, long upperBound  )
+        public IndexProgressor initializeBatch( IndexProgressor.NodeLabelClient client, int sizeHint )
         {
             if ( sizeHint == 0 )
             {
@@ -143,7 +162,6 @@ class NativeLabelScanReader implements LabelScanReader
             }
             long size = roundUp( sizeHint );
             long start = nextStart.getAndAdd( size );
-            long max = roundUp( upperBound );
             long stop = Math.min( start + size, max );
             if ( start >= max )
             {

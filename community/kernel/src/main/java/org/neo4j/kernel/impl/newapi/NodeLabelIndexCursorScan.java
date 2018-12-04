@@ -40,9 +40,7 @@ import static org.neo4j.util.Preconditions.requirePositive;
 
 class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
 {
-    private static final int CHUNK_SIZE = Long.SIZE;
     private final AtomicInteger nextTxState;
-    private final long upperBound;
     private final Read read;
     private final long[] addedNodesArray;
     private final LongSet removed;
@@ -50,11 +48,10 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
     private final boolean hasChanges;
     private final LabelScan labelScan;
 
-    NodeLabelIndexCursorScan( Read read, int label, long highestNodeId, LabelScan labelScan )
+    NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan )
     {
         this.read = read;
         this.nextTxState = new AtomicInteger( 0 );
-        this.upperBound = roundUp( highestNodeId );
         this.hasChanges = read.hasTxStateWithChanges();
         if ( hasChanges )
         {
@@ -99,7 +96,7 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        IndexProgressor indexProgressor = labelScan.initializeBatch( indexCursor, sizeHint, upperBound );
+        IndexProgressor indexProgressor = labelScan.initializeBatch( indexCursor, sizeHint );
 
         if ( indexProgressor == IndexProgressor.EMPTY && !addedNodes.hasNext() )
         {
@@ -110,10 +107,5 @@ class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
             indexCursor.scan( indexProgressor, addedNodes, removed );
             return true;
         }
-    }
-
-    private long roundUp( long sizeHint )
-    {
-        return (sizeHint / CHUNK_SIZE + 1) * CHUNK_SIZE;
     }
 }
