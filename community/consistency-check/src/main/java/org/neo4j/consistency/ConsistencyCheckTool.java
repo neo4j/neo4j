@@ -37,7 +37,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
-import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.LogProvider;
@@ -46,6 +46,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static org.neo4j.helpers.Args.jarUsage;
 import static org.neo4j.helpers.Strings.joinAsLines;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker.assertRecoveryIsNotRequired;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class ConsistencyCheckTool
@@ -140,19 +141,11 @@ public class ConsistencyCheckTool
         try ( JobScheduler jobScheduler = createInitialisedScheduler();
               PageCache pageCache = ConfigurableStandalonePageCacheFactory.createPageCache( fs, tuningConfiguration, jobScheduler ) )
         {
-            RecoveryRequiredChecker requiredChecker = new RecoveryRequiredChecker( fs, pageCache,
-                    tuningConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
-            {
-                throw new ToolFailureException( Strings.joinAsLines(
-                        "Active logical log detected, this might be a source of inconsistencies.",
-                        "Please recover database before running the consistency check.",
-                        "To perform recovery please start database and perform clean shutdown." ) );
-            }
+            assertRecoveryIsNotRequired( fs, pageCache, tuningConfiguration, databaseLayout, new Monitors() );
         }
-        catch ( ToolFailureException tfe )
+        catch ( RecoveryRequiredException rre )
         {
-            throw tfe;
+            throw new ToolFailureException( rre.getMessage() );
         }
         catch ( Exception e )
         {

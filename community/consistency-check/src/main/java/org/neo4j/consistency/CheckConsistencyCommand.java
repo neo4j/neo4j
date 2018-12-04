@@ -34,7 +34,7 @@ import org.neo4j.commandline.arguments.common.OptionalCanonicalPath;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
 import org.neo4j.consistency.checking.full.ConsistencyFlags;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Strings;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -42,7 +42,7 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.pagecache.ConfigurableStandalonePageCacheFactory;
-import org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker;
+import org.neo4j.kernel.impl.recovery.RecoveryRequiredException;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -50,6 +50,7 @@ import org.neo4j.scheduler.JobScheduler;
 import static java.lang.String.format;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
+import static org.neo4j.kernel.impl.recovery.RecoveryRequiredChecker.assertRecoveryIsNotRequired;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createInitialisedScheduler;
 
 public class CheckConsistencyCommand implements AdminCommand
@@ -231,19 +232,11 @@ public class CheckConsistencyCommand implements AdminCommand
               PageCache pageCache = ConfigurableStandalonePageCacheFactory
                       .createPageCache( fileSystem, additionalConfiguration, jobScheduler ) )
         {
-            RecoveryRequiredChecker requiredChecker =
-                    new RecoveryRequiredChecker( fileSystem, pageCache, additionalConfiguration, new Monitors() );
-            if ( requiredChecker.isRecoveryRequiredAt( databaseLayout ) )
-            {
-                throw new CommandFailed(
-                        Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.",
-                                "Please recover database before running the consistency check.",
-                                "To perform recovery please start database and perform clean shutdown." ) );
-            }
+            assertRecoveryIsNotRequired( fileSystem, pageCache, additionalConfiguration, databaseLayout, new Monitors() );
         }
-        catch ( CommandFailed cf )
+        catch ( RecoveryRequiredException rre )
         {
-            throw cf;
+            throw new CommandFailed( rre.getMessage() );
         }
         catch ( Exception e )
         {
