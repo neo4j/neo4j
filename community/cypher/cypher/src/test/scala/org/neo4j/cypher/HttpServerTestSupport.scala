@@ -19,12 +19,11 @@
  */
 package org.neo4j.cypher
 
-import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
-import java.net.{InetAddress, InetSocketAddress}
 import java.io.IOException
+import java.net.{InetAddress, InetSocketAddress}
 import java.util.concurrent.Executors
 
-import org.neo4j.ports.allocation.PortAuthority
+import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 
 import scala.collection.mutable
 
@@ -35,7 +34,6 @@ trait HttpServerTestSupport {
 }
 
 class HttpServerTestSupportBuilder {
-  private val port = PortAuthority.allocatePort
   private var allowedMethods: Set[String] = Set()
   private val mapping = new mutable.HashMap[String, (HttpExchange => Unit)]()
   private val filters = new mutable.HashMap[String, (HttpExchange => Boolean)]()
@@ -68,7 +66,8 @@ class HttpServerTestSupportBuilder {
   }
 
   def build(): HttpServerTestSupport = {
-    new HttpServerTestSupportImpl(port, allowedMethods, mapping.toMap, filters.toMap, transformations.toMap)
+    // Passing port=0 asks bind() to find a free port, use boundInfo to lookup the port later
+    new HttpServerTestSupportImpl(0, allowedMethods, mapping.toMap, filters.toMap, transformations.toMap)
   }
 
   private class HttpServerTestSupportImpl(port: Int, allowedMethods: Set[String],
