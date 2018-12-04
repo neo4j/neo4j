@@ -1101,7 +1101,7 @@ public class IndexingServiceTest
             Exception expectedCause = new Exception( "index was failed on purpose" );
             IndexPopulationFailure indexFailure = IndexPopulationFailure.failure( expectedCause );
             flippableIndexProxy.flipTo( new FailedIndexProxy( mock( CapableIndexDescriptor.class ), "string", mock( IndexPopulator.class ),
-                    indexFailure, mock( IndexCountsRemover.class ), internalLogProvider ) );
+                    indexFailure, mock( IndexStatisticsStore.class ), internalLogProvider ) );
             barrier.release();
             exceptionBarrier.await();
             Throwable actual = startException.get();

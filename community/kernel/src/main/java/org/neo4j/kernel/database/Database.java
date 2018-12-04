@@ -67,6 +67,7 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
+import org.neo4j.kernel.impl.api.index.IndexStoreView;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
@@ -348,21 +349,14 @@ public class Database extends LifecycleAdapter
 
             // Label index
             NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( lockService, storageEngine::newReader );
-            databaseMonitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-            NativeLabelScanStore labelScanStore = new NativeLabelScanStore( databasePageCache, databaseLayout, fs,
-                    new FullLabelStream( neoStoreIndexStoreView ), readOnly, databaseMonitors, recoveryCleanupWorkCollector );
-            storageEngine.addNodeLabelUpdateListener( labelScanStore );
-            life.add( labelScanStore );
+            LabelScanStore labelScanStore =
+                    buildLabelIndex( databasePageCache, recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, databaseMonitors );
 
             // Schema indexes
             DynamicIndexStoreView indexStoreView =
                     new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, lockService, storageEngine::newReader, logProvider );
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector );
-            IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap, indexStoreView,
-                    tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, userLogProvider,
-                    databaseMonitors.newMonitor( IndexingService.Monitor.class ), databaseSchemaState, indexStatisticsStore );
-            storageEngine.addIndexUpdateListener( indexingService );
-            life.add( indexingService );
+            IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
 
@@ -490,6 +484,77 @@ public class Database extends LifecycleAdapter
         storageEngine.satisfyDependencies( dataSourceDependencies );
 
         return life.add( storageEngine );
+    }
+
+    /**
+     * Builds an {@link IndexingService} and adds it to this database's {@link LifeSupport}.
+     */
+    private IndexingService buildIndexingService(
+            StorageEngine storageEngine,
+            DatabaseSchemaState databaseSchemaState,
+            DynamicIndexStoreView indexStoreView,
+            IndexStatisticsStore indexStatisticsStore )
+    {
+        return life.add( buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore, config, scheduler, indexProviderMap,
+                tokenNameLookup, logProvider, userLogProvider, databaseMonitors.newMonitor( IndexingService.Monitor.class ) ) );
+    }
+
+    /**
+     * Convenience method for building am {@link IndexingService}. Doesn't add it to a {@link LifeSupport}.
+     */
+    public static IndexingService buildIndexingService(
+            StorageEngine storageEngine,
+            DatabaseSchemaState databaseSchemaState,
+            DynamicIndexStoreView indexStoreView,
+            IndexStatisticsStore indexStatisticsStore,
+            Config config,
+            JobScheduler jobScheduler,
+            IndexProviderMap indexProviderMap,
+            TokenNameLookup tokenNameLookup,
+            LogProvider internalLogProvider,
+            LogProvider userLogProvider,
+            IndexingService.Monitor indexingServiceMonitor )
+    {
+        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, jobScheduler, indexProviderMap, indexStoreView,
+                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), internalLogProvider, userLogProvider, indexingServiceMonitor,
+                databaseSchemaState, indexStatisticsStore );
+        storageEngine.addIndexUpdateListener( indexingService );
+        return indexingService;
+    }
+
+    /**
+     * Builds a {@link LabelScanStore} and adds it to this database's {@link LifeSupport}.
+     */
+    private LabelScanStore buildLabelIndex(
+            PageCache pageCache,
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            StorageEngine storageEngine,
+            NeoStoreIndexStoreView neoStoreIndexStoreView,
+            Monitors monitors )
+    {
+        return life.add( buildLabelIndex( recoveryCleanupWorkCollector, storageEngine, neoStoreIndexStoreView, monitors, logProvider,
+                pageCache, databaseLayout, fs, readOnly ) );
+    }
+
+    /**
+     * Convenience method for building a {@link LabelScanStore}. Doesn't add it to a {@link LifeSupport}.
+     */
+    public static LabelScanStore buildLabelIndex(
+            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector,
+            StorageEngine storageEngine,
+            IndexStoreView indexStoreView,
+            Monitors monitors,
+            LogProvider logProvider,
+            PageCache pageCache,
+            DatabaseLayout databaseLayout,
+            FileSystemAbstraction fs,
+            boolean readOnly )
+    {
+        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
+        NativeLabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( indexStoreView ),
+                readOnly, monitors, recoveryCleanupWorkCollector );
+        storageEngine.addNodeLabelUpdateListener( labelScanStore );
+        return labelScanStore;
     }
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,

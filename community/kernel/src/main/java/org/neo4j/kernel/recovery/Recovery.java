@@ -39,8 +39,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.labelscan.LoggingMonitor;
+import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.database.DefaultForceOperation;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -48,15 +49,12 @@ import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.IndexingServiceFactory;
 import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
-import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.DelegatingTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -105,7 +103,6 @@ import static java.util.Objects.requireNonNull;
 import static java.util.stream.Collectors.toList;
 import static org.neo4j.helpers.collection.Iterables.stream;
 import static org.neo4j.kernel.configuration.Config.defaults;
-import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
 import static org.neo4j.kernel.impl.constraints.ConstraintSemantics.getConstraintSemantics;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_LABEL;
 import static org.neo4j.kernel.impl.core.TokenHolder.TYPE_PROPERTY_KEY;
@@ -265,19 +262,15 @@ public final class Recovery
 
         // Label index
         NeoStoreIndexStoreView neoStoreIndexStoreView = new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, storageEngine::newReader );
-        monitors.addMonitorListener( new LoggingMonitor( logProvider.getLog( NativeLabelScanStore.class ) ) );
-        NativeLabelScanStore labelScanStore = new NativeLabelScanStore( pageCache, databaseLayout, fs, new FullLabelStream( neoStoreIndexStoreView ),
-                false, monitors, recoveryCleanupCollector );
-        storageEngine.addNodeLabelUpdateListener( labelScanStore );
+        LabelScanStore labelScanStore = Database.buildLabelIndex( recoveryCleanupCollector, storageEngine, neoStoreIndexStoreView, monitors,
+                logProvider, pageCache, databaseLayout, fs, false );
 
         // Schema indexes
         DynamicIndexStoreView indexStoreView =
                 new DynamicIndexStoreView( neoStoreIndexStoreView, labelScanStore, LockService.NO_LOCK_SERVICE, storageEngine::newReader, logProvider );
         IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( pageCache, databaseLayout, recoveryCleanupCollector );
-        IndexingService indexingService = IndexingServiceFactory.createIndexingService( config, scheduler, indexProviderMap, indexStoreView,
-                tokenNameLookup, initialSchemaRulesLoader( storageEngine ), logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ),
-                schemaState, indexStatisticsStore );
-        storageEngine.addIndexUpdateListener( indexingService );
+        IndexingService indexingService = Database.buildIndexingService( storageEngine, schemaState, indexStoreView, indexStatisticsStore,
+                config, scheduler, indexProviderMap, tokenNameLookup, logProvider, logProvider, monitors.newMonitor( IndexingService.Monitor.class ) );
 
         Dependencies recoveryDependencies = new Dependencies();
         storageEngine.satisfyDependencies( recoveryDependencies );
