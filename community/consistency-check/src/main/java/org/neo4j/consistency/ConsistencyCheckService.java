@@ -36,6 +36,7 @@ import org.neo4j.consistency.statistics.Statistics;
 import org.neo4j.consistency.statistics.VerboseStatistics;
 import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Strings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -77,6 +78,7 @@ import static org.neo4j.io.file.Files.createOrOpenAsOutputStream;
 import static org.neo4j.kernel.configuration.Settings.FALSE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.impl.factory.DatabaseInfo.TOOL;
+import static org.neo4j.kernel.recovery.Recovery.isRecoveryRequired;
 
 public class ConsistencyCheckService
 {
@@ -222,6 +224,7 @@ public class ConsistencyCheckService
             final boolean verbose, File reportDir, ConsistencyFlags consistencyFlags )
             throws ConsistencyCheckIncompleteException
     {
+        assertRecovered( databaseLayout, config, fileSystem, pageCache );
         Log log = logProvider.getLog( getClass() );
         config.augment( GraphDatabaseSettings.read_only, TRUE );
         config.augment( GraphDatabaseSettings.pagecache_warmup_enabled, FALSE );
@@ -301,6 +304,24 @@ public class ConsistencyCheckService
         return Result.success( reportFile );
     }
 
+    private void assertRecovered( DatabaseLayout databaseLayout, Config config, FileSystemAbstraction fileSystem, PageCache pageCache )
+            throws ConsistencyCheckIncompleteException
+    {
+        try
+        {
+            if ( isRecoveryRequired( fileSystem, databaseLayout, config ) )
+            {
+                throw new IllegalStateException(
+                        Strings.joinAsLines( "Active logical log detected, this might be a source of inconsistencies.", "Please recover database.",
+                                "To perform recovery please start database in single mode and perform clean shutdown." ) );
+            }
+        }
+        catch ( Exception e )
+        {
+            throw new ConsistencyCheckIncompleteException( e );
+        }
+    }
+
     private static Suppliers.Lazy<PrintWriter> getReportWriterSupplier( FileSystemAbstraction fileSystem, File reportFile )
     {
         return Suppliers.lazySingleton( () ->
@@ -326,6 +347,7 @@ public class ConsistencyCheckService
         if ( tuningConfiguration.get( GraphDatabaseSettings.neo4j_home ) == null )
         {
             tuningConfiguration.augment( GraphDatabaseSettings.neo4j_home, storeDir.getAbsolutePath() );
+            tuningConfiguration.augment( GraphDatabaseSettings.database_path, storeDir.getAbsolutePath() );
         }
 
         return tuningConfiguration.get( GraphDatabaseSettings.logs_directory );
