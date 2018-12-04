@@ -310,37 +310,6 @@
                   <code>java.class.nonPublicPartOfAPI</code>
                 </item>
                 <item>
-                  <code>java.class.noLongerImplementsInterface</code>
-                  <class>org.neo4j.graphalgo.WeightedPath</class>
-                  <justification>Cleanup accidental Path exposure as a Resource.</justification>
-                </item>
-                <item>
-                  <code>java.class.removed</code>
-                  <old>interface org.neo4j.management.Cache</old>
-                  <classSimpleName>Cache</classSimpleName>
-                  <package>org.neo4j.management</package>
-                  <elementKind>interface</elementKind>
-                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
-                </item>
-                <item>
-                  <code>java.method.removed</code>
-                  <classSimpleName>Neo4jManager</classSimpleName>
-                  <methodName>getCacheBeans</methodName>
-                  <package>org.neo4j.management</package>
-                  <elementKind>method</elementKind>
-                  <justification>The implemented class was removed in 3.0, but this interface lingered on.</justification>
-                </item>
-                <item>
-                  <code>java.class.removed</code>
-                  <class>org.neo4j.helpers.FailableConcurrentTransfer</class>
-                  <justification>Class is never used</justification>
-                </item>
-                <item>
-                  <code>java.field.nowFinal</code>
-                  <old>field org.neo4j.graphdb.InputPosition.empty</old>
-                  <justification>Changes to this field should not be allowed</justification>
-                </item>
-                <item>
                   <code>java.class.externalClassExposedInAPI</code>
                   <new>class org.neo4j.helpers.HostnamePort</new>
                   <package>org.neo4j.helpers</package>
@@ -366,7 +335,7 @@
             <dependency>
               <groupId>org.revapi</groupId>
               <artifactId>revapi-java</artifactId>
-              <version>0.18.1</version>
+              <version>0.18.2</version>
             </dependency>
             <dependency>
               <groupId>org.revapi</groupId>
