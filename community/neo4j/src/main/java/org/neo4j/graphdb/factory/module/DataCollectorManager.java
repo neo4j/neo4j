@@ -22,28 +22,32 @@ package org.neo4j.graphdb.factory.module;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.collector.DataCollectorModule;
 import org.neo4j.io.IOUtils;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.proc.Procedures;
-import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
 
 public class DataCollectorManager extends LifecycleAdapter
 {
-    private final DataSourceManager dataSourceManager;
+    private final DatabaseManager databaseManager;
     private final JobScheduler jobScheduler;
     private final Procedures procedures;
+    private final Config config;
     private final List<AutoCloseable> dataCollectors;
 
-    public DataCollectorManager( DataSourceManager dataSourceManager,
+    public DataCollectorManager( DatabaseManager databaseManager,
                                  JobScheduler jobScheduler,
-                                 Procedures procedures )
+                                 Procedures procedures, Config config )
     {
-        this.dataSourceManager = dataSourceManager;
+        this.databaseManager = databaseManager;
         this.jobScheduler = jobScheduler;
         this.procedures = procedures;
+        this.config = config;
         this.dataCollectors = new ArrayList<>();
     }
 
@@ -51,8 +55,8 @@ public class DataCollectorManager extends LifecycleAdapter
     public void start() throws Throwable
     {
         // When we have multiple dbs, this has to be suitably modified to get the right kernel and procedures
-        Database dataSource = dataSourceManager.getDataSource();
-        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, dataSource.getKernel() ) );
+        Database databaseContext = databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) ).get().getDatabase();
+        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, databaseContext.getKernel() ) );
     }
 
     @Override

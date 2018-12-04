@@ -31,8 +31,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.DataCollectorManager;
+import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
 import org.neo4j.graphdb.security.URLAccessRule;
@@ -177,7 +177,7 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( databaseManager );
         platform.dependencies.satisfyDependency( databaseManager );
 
-        DataCollectorManager dataCollectorManager = new DataCollectorManager( platform.dataSourceManager, platform.jobScheduler, procedures );
+        DataCollectorManager dataCollectorManager = new DataCollectorManager( databaseManager, platform.jobScheduler, procedures, config );
         platform.life.add( dataCollectorManager );
 
         edition.createSecurityModule( platform, procedures );
