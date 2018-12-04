@@ -95,7 +95,7 @@ class NativeLabelScanReader implements LabelScanReader
     private long highestNodeIdForLabel( int labelId ) throws IOException
     {
         try ( RawCursor<Hit<LabelScanKey,LabelScanValue>,IOException> seeker = index.seek( new LabelScanKey( labelId, Long.MAX_VALUE ),
-                new LabelScanKey( labelId, 0 ) ) )
+                new LabelScanKey( labelId, Long.MIN_VALUE ) ) )
         {
             return seeker.next() ? (seeker.get().key().idRange + 1) * RANGE_SIZE : 0;
         }
