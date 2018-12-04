@@ -285,12 +285,14 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
 
   def planNodeHashJoin(nodes: Set[String], left: LogicalPlan, right: LogicalPlan, hints: Seq[UsingJoinHint], context: LogicalPlanningContext): LogicalPlan = {
     val plannerQuery = solveds.get(left.id) ++ solveds.get(right.id)
+    // TODO Interesting order from right
     val solved = plannerQuery.amendQueryGraph(_.addHints(hints))
     annotate(NodeHashJoin(nodes, left, right), solved, providedOrders.get(right.id), context)
   }
 
   def planValueHashJoin(left: LogicalPlan, right: LogicalPlan, join: Equals, originalPredicate: Equals, context: LogicalPlanningContext): LogicalPlan = {
     val plannerQuery = solveds.get(left.id) ++ solveds.get(right.id)
+    // TODO Interesting order from right
     val solved = plannerQuery.amendQueryGraph(_.addPredicates(originalPredicate))
     annotate(ValueHashJoin(left, right, join), solved, providedOrders.get(right.id), context)
   }
@@ -481,10 +483,9 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
     * The only purpose of this method is to set the solved correctly for something that is already sorted.
     */
   def updateSolvedForSortedItems(inner: LogicalPlan,
-                                 items: Seq[ast.SortItem],
                                  interestingOrder: InterestingOrder,
                                  context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(items))).withInterestingOrder(interestingOrder))
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     val providedOrder = providedOrders.get(inner.id)
     annotate(inner.copyPlanWithIdGen(idGen), solved, providedOrder, context)
   }
@@ -560,7 +561,8 @@ case class LogicalPlanProducer(cardinalityModel: CardinalityModel, planningAttri
   }
 
   def planSort(inner: LogicalPlan, sortColumns: Seq[ColumnOrder], reportedSortItems: Seq[ast.SortItem], interestingOrder: InterestingOrder, context: LogicalPlanningContext): LogicalPlan = {
-    val solved = solveds.get(inner.id).updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSortItems(reportedSortItems))).withInterestingOrder(interestingOrder))
+    // TODO: Use reported sort items in the solved interesting order
+    val solved = solveds.get(inner.id).updateTailOrSelf(_.withInterestingOrder(interestingOrder))
     val providedOrder = ProvidedOrder(sortColumns.map(sortColumnToProvided))
     annotate(Sort(inner, sortColumns), solved, providedOrder, context)
   }

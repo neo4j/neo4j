@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.v4_0.util.attribution.Attributes
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Attributes, IdGen}
 
 /*
 This class ties together disparate query graphs through their event horizons. It does so by using Apply,
@@ -34,28 +33,30 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
                         planUpdates: UpdatesPlanner = PlanUpdates)
   extends TailPlanner {
 
-  override def apply(lhs: LogicalPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
-    remaining match {
+  override def apply(lhs: LogicalPlan, in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
+    // TODO this is needed while still comparing id for solved interestingOrder
+    val sortedLhs = PlannerHelper.maybeSortedPlanWithSolved(lhs, in.interestingOrder, context)
+    in.tail match {
       case Some(plannerQuery) =>
         val attributes = context.planningAttributes.asAttributes(idGen)
-        val lhsContext = context.withUpdatedCardinalityInformation(lhs)
+        val lhsContext = context.withUpdatedCardinalityInformation(sortedLhs)
 
         val partPlan = planPart(plannerQuery, lhsContext)
         val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
 
         // Mark properties from indexes to be fetched, if the properties are used later in the query
         val alignedPlan = alignGetValueFromIndexBehavior(plannerQuery, planWithUpdates, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
-        val applyPlan = newContext.logicalPlanProducer.planTailApply(lhs, alignedPlan, context)
+        val applyPlan = newContext.logicalPlanProducer.planTailApply(sortedLhs, alignedPlan, context)
 
         val applyContext = newContext.withUpdatedCardinalityInformation(applyPlan)
         val projectedPlan = planEventHorizon(plannerQuery, applyPlan, applyContext)
         val projectedContext = applyContext.withUpdatedCardinalityInformation(projectedPlan)
 
-        this.apply(projectedPlan, plannerQuery.tail, projectedContext, idGen)
+        this.apply(projectedPlan, plannerQuery, projectedContext, idGen)
 
       case None =>
         val attributes = Attributes(idGen, context.planningAttributes.cardinalities, context.planningAttributes.providedOrders)
-        (lhs.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)), context)
+        (sortedLhs.endoRewrite(Eagerness.unnestEager(context.planningAttributes.solveds, attributes)), context)
     }
   }
 }

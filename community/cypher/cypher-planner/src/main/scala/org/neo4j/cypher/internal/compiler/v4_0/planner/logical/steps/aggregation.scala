@@ -39,13 +39,13 @@ object aggregation {
         val value: Expression = aggregations(key)
         val providedOrder = context.planningAttributes.providedOrders.get(rewrittenPlan.id)
 
-        def minFunc(x: String) = {
+        def minFunc(x: String, e: Expression) = {
           providedOrder.columns.headOption match {
             case Some(Asc(`x`)) => true
             case _ => false
           }
         }
-        def maxFunc(x: String) = {
+        def maxFunc(x: String, e: Expression) = {
           providedOrder.columns.headOption match {
             case Some(Desc(`x`)) => true
             case _ => false

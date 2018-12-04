@@ -127,6 +127,11 @@ class IDPSolver[Solvable, Requirement, Result, Context](generator: IDPSolverStep
     }
     monitor.foundPlanAfter(iterations)
 
-    table.plans.collect { case ((k, o), v) if extraRequirement.is(o) => (registry.explode(k), o) -> v }
+    // TODO this can be solved better if we always return best sorted and best unsorted
+    val maybeSorted = table.plans.collect { case ((k, o), v) if extraRequirement.is(o) => (registry.explode(k), o) -> v }
+    if (maybeSorted.hasNext)
+      maybeSorted
+    else
+      table.plans.collect { case ((k, o), v) => (registry.explode(k), o) -> v }
   }
 }

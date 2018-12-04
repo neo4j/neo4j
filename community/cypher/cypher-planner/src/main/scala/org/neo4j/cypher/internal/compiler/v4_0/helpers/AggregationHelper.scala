@@ -25,32 +25,26 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 
 object AggregationHelper {
-  private def fetchFunctionParameter(aggregationFunction: FunctionInvocation): Option[String] = {
+  private def check[T](aggregationFunction: FunctionInvocation, result: (String, Expression) => T, otherResult: T): T = {
     //.head works since min and max (the only functions we care about) always have one argument
     aggregationFunction.args.head match {
       case prop: Property =>
-        Some(prop.asCanonicalStringVal)
+        result(prop.asCanonicalStringVal, prop)
       case variable: Variable =>
-        Some(variable.name)
+        result(variable.name, variable)
       case _ =>
-        None
+        otherResult
     }
   }
 
-  def checkMinOrMax[T](aggregation: Expression, minResult: String => T, maxResult: String => T, otherResult: T): T = {
+  def checkMinOrMax[T](aggregation: Expression, minResult: (String, Expression) => T, maxResult: (String, Expression) => T, otherResult: T): T = {
     aggregation match {
       case f: FunctionInvocation =>
         f.name match {
           case "min" =>
-            fetchFunctionParameter(f) match {
-              case Some(param) => minResult(param)
-              case _ => otherResult
-            }
+            check(f, minResult, otherResult)
           case "max" =>
-            fetchFunctionParameter(f) match {
-              case Some(param) => maxResult(param)
-              case _ => otherResult
-            }
+            check(f, maxResult, otherResult)
           case _ => otherResult
         }
       case _ => otherResult

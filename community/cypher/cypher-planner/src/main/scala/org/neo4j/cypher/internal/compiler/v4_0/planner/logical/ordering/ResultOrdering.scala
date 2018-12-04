@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ordering
 
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexOrderCapability
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, Variable}
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 
 /**
@@ -44,30 +45,37 @@ object ResultOrdering {
 
     import InterestingOrder._
 
+    def satisfies(properties: Seq[(String, CypherType)], expression: Expression, projections: Map[String, Expression]): Boolean = {
+      val reverseProjected: String = expression match {
+        case Property(v@Variable(varName), propertyKeyName) => s"${projections.getOrElse(varName, v).asCanonicalStringVal}.${propertyKeyName.name}"
+        case Variable(varName) if projections.contains(varName) => projections(varName).asCanonicalStringVal
+        case _ => ""
+      }
+
+      properties.headOption match {
+        case Some((propertyId, _)) => reverseProjected == propertyId
+        case _ => false
+      }
+    }
+
     val orderTypes: Seq[CypherType] = properties.map(_._2)
     val indexOrderCapability: IndexOrderCapability = capabilityLookup(orderTypes)
 
     val candidates = interestingOrder.requiredOrderCandidate +: interestingOrder.interestingOrderCandidates
     val maybeProvidedOrder = candidates.map(_.headOption).collectFirst {
-      case Some(Desc(colName)) if indexOrderCapability.desc && properties.headOption.exists { _._1 == colName } =>
-        toProvidedOrder(properties.map {case (name, _) => Desc(name)})
+      case Some(Desc(_, expression, projection)) if indexOrderCapability.desc && satisfies(properties, expression, projection) =>
+        ProvidedOrder(properties.map {case (name, _) => ProvidedOrder.Desc(name)})
 
-      case Some(Asc(colName)) if indexOrderCapability.asc && properties.headOption.exists { _._1 == colName } =>
-        toProvidedOrder(properties.map {case (name, _) => Asc(name)})
+      case Some(Asc(_, expression, projection)) if indexOrderCapability.asc && satisfies(properties, expression, projection) =>
+        ProvidedOrder(properties.map {case (name, _) => ProvidedOrder.Asc(name)})
     }
 
     maybeProvidedOrder.getOrElse {
       if (indexOrderCapability.asc)
-        toProvidedOrder(properties.map {case (name, _) => Asc(name)})
+        ProvidedOrder(properties.map { case (name, _) => ProvidedOrder.Asc(name) })
       else if (indexOrderCapability.desc)
-        toProvidedOrder(properties.map {case (name, _) => Desc(name)})
-      else  ProvidedOrder.empty
+        ProvidedOrder(properties.map { case (name, _) => ProvidedOrder.Desc(name) })
+      else ProvidedOrder.empty
     }
   }
-
-  private def toProvidedOrder(orderColumns: Seq[InterestingOrder.ColumnOrder]): ProvidedOrder =
-    ProvidedOrder(orderColumns.map {
-      case InterestingOrder.Asc(name) => ProvidedOrder.Asc(name)
-      case InterestingOrder.Desc(name) => ProvidedOrder.Desc(name)
-    })
 }

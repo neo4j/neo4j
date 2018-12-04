@@ -65,11 +65,6 @@ object ClauseConverters {
     map(_.expression.asPredicates).
     getOrElse(Set.empty))
 
-  private def asQueryShuffle(optOrderBy: Option[OrderBy]) = {
-    val sortItems: Seq[SortItem] = optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
-    QueryShuffle(sortItems, None, None)
-  }
-
   private def asQueryProjection(distinct: Boolean, items: Seq[ReturnItem]): QueryProjection = {
     val (aggregatingItems: Seq[ReturnItem], groupingKeys: Seq[ReturnItem]) =
       items.partition(item => IsAggregate(item.expression))
@@ -94,16 +89,13 @@ object ClauseConverters {
                                           clause: Return): PlannerQueryBuilder = clause match {
     case Return(distinct, ReturnItems(star, items), optOrderBy, skip, limit, _) if !star =>
 
-      val shuffle = asQueryShuffle(optOrderBy).
-        withSkip(skip).
-        withLimit(limit)
+      val shuffle = QueryShuffle().withSkip(skip).withLimit(limit)
 
-      val projection = asQueryProjection(distinct, items).
-        withShuffle(shuffle)
+      val projection = asQueryProjection(distinct, items).withShuffle(shuffle)
       val returns = items.collect {
         case AliasedReturnItem(_, variable) => variable.name
       }
-      val requiredOrder = findRequiredOrder(projection)
+      val requiredOrder = findRequiredOrder(projection, optOrderBy)
 
       acc.
         withHorizon(projection).
@@ -113,26 +105,27 @@ object ClauseConverters {
       throw new InternalException("AST needs to be rewritten before it can be used for planning. Got: " + clause)
   }
 
-  def findRequiredOrder(horizon: QueryHorizon): InterestingOrder = {
+  def findRequiredOrder(horizon: QueryHorizon, optOrderBy: Option[OrderBy]): InterestingOrder = {
     import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
     import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
 
+    val sortItems = if(optOrderBy.isDefined) optOrderBy.get.sortItems else Seq.empty
     val (requiredOrderColumns, interestingOrderColumns) = horizon match {
-      case RegularQueryProjection(projections, shuffle, _) =>
-        (extractColumnsFromHorizon(shuffle, projections), Seq.empty)
+      case RegularQueryProjection(projections, _, _) =>
+        (extractColumnsFromHorizon(sortItems, projections), Seq.empty)
       case AggregatingQueryProjection(groupingExpressions, aggregationExpressions, shuffle, _) =>
         val interestingColumnOrders: Seq[ColumnOrder] =
           if (groupingExpressions.isEmpty && aggregationExpressions.size == 1) {
             // just checked that there is only one key
             val value = aggregationExpressions(aggregationExpressions.keys.head)
-            AggregationHelper.checkMinOrMax(value, x => Seq(Asc(x)), x => Seq(Desc(x)), Seq.empty)
+            AggregationHelper.checkMinOrMax(value, (x, e) => Seq(Asc(x, e)), (x, e) => Seq(Desc(x, e)), Seq.empty)
           } else {
             Seq.empty
           }
 
-        (extractColumnsFromHorizon(shuffle, groupingExpressions), interestingColumnOrders)
+        (extractColumnsFromHorizon(sortItems, groupingExpressions), interestingColumnOrders)
       case DistinctQueryProjection(groupingExpressions, shuffle, _) =>
-        (extractColumnsFromHorizon(shuffle, groupingExpressions), Seq.empty)
+        (extractColumnsFromHorizon(sortItems, groupingExpressions), Seq.empty)
       case _ => (Seq.empty, Seq.empty)
     }
 
@@ -142,41 +135,55 @@ object ClauseConverters {
       InterestingOrder(RequiredOrderCandidate(requiredOrderColumns), Seq(InterestingOrderCandidate(interestingOrderColumns)))
   }
 
-  private def extractColumnsFromHorizon(shuffle: QueryShuffle, projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
+  private def extractColumnsFromHorizon(sortItems: Seq[SortItem], projections: Map[String, Expression]): Seq[InterestingOrder.ColumnOrder] = {
 
     import InterestingOrder._
 
-    shuffle.sortItems.foldLeft((Seq.empty[ColumnOrder], true))({
-      case ((seq, true), AscSortItem(Property(LogicalVariable(varName), propName))) =>
+    // TODO: Keep all sortItems (filter for index-backed order-by elsewhere)
+    sortItems.map {
+      // RETURN a AS b ORDER BY b.prop
+      case AscSortItem(e@Property(LogicalVariable(varName), propName)) =>
         projections.get(varName) match {
-          case Some(LogicalVariable(originalVarName)) => (seq :+ Asc(s"$originalVarName.${propName.name}"), true)
-          case Some(_) => (Seq.empty, false)
-          case None => (seq :+ Asc(s"$varName.${propName.name}"), true)
+          case Some(v@LogicalVariable(originalVarName)) => Asc(s"$originalVarName.${propName.name}", e, Map(varName -> v))
+          case Some(_) => throw new IllegalStateException("Cannot sort on property lookup of non-variable property container")
+          case None => Asc(s"$varName.${propName.name}", e)
         }
-      case ((seq, true), DescSortItem(Property(LogicalVariable(varName), propName))) =>
+      case DescSortItem(e@Property(LogicalVariable(varName), propName)) =>
         projections.get(varName) match {
-          case Some(LogicalVariable(originalVarName)) => (seq :+ Desc(s"$originalVarName.${propName.name}"), true)
-          case Some(_) => (Seq.empty, false)
-          case None => (seq :+ Desc(s"$varName.${propName.name}"), true)
+          case Some(v@LogicalVariable(originalVarName)) => Desc(s"$originalVarName.${propName.name}", e, Map(varName -> v))
+          case Some(_) => throw new IllegalStateException("Cannot sort on property lookup of non-variable property container")
+          case None => Desc(s"$varName.${propName.name}", e)
         }
 
-      case ((seq, true), AscSortItem(LogicalVariable(name))) =>
+      // RETURN n.prop as foo ORDER BY foo
+      case AscSortItem(e@LogicalVariable(name)) =>
         projections.get(name) match {
-          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ Asc(s"$varName.${propName.name}"), true)
-          case Some(Variable(oldName)) => (seq :+ Asc(oldName), true)
-          case Some(_) => (Seq.empty, false)
-          case None => (seq :+ Asc(name), true)
+          case Some(prop@Property(LogicalVariable(varName), propName)) => Asc(s"$varName.${propName.name}", e, Map(name -> prop))
+          case Some(v@Variable(oldName)) => Asc(oldName, e, Map(name -> v))
+          case Some(expression) => Asc(name, e, Map(name -> expression))
+          case None => Asc(name, e)
         }
-      case ((seq, true), DescSortItem(LogicalVariable(name))) =>
+      case DescSortItem(e@LogicalVariable(name)) =>
         projections.get(name) match {
-          case Some(Property(LogicalVariable(varName), propName)) => (seq :+ Desc(s"$varName.${propName.name}"), true)
-          case Some(Variable(oldName)) => (seq :+ Desc(oldName), true)
-          case Some(_) => (Seq.empty, false)
-          case None => (seq :+ Desc(name), true)
+          case Some(prop@Property(LogicalVariable(varName), propName)) => Desc(s"$varName.${propName.name}", e, Map(name -> prop))
+          case Some(v@Variable(oldName)) => Desc(oldName, e, Map(name -> v))
+          case Some(expression) => Desc(name, e, Map(name -> expression))
+          case None => Desc(name, e)
         }
 
-      case _ => (Seq.empty, false)
-    })._1
+      //  RETURN n.prop AS foo ORDER BY foo * 2
+      //  RETURN n.prop * 2 ORDER BY n.prop * 2
+      case AscSortItem(expression) =>
+        val depNames = expression.dependencies.map(_.name)
+        val orderProjections = projections.filter(p => depNames.contains(p._1))
+        Asc(expression.asCanonicalStringVal, expression, orderProjections)
+      case DescSortItem(expression) =>
+        val depNames = expression.dependencies.map(_.name)
+        val orderProjections = projections.filter(p => depNames.contains(p._1))
+        Desc(expression.asCanonicalStringVal, expression, orderProjections)
+
+      case sortItem => throw new IllegalStateException("Cannot sort on something that is not Ascending or Descending: " + sortItem)
+    }
   }
 
   private def addSetClauseToLogicalPlanInput(acc: PlannerQueryBuilder, clause: SetClause): PlannerQueryBuilder =
@@ -473,17 +480,14 @@ object ClauseConverters {
       val selections = asSelections(where)
       val returnItems = asReturnItems(builder.currentQueryGraph, projection)
 
-      val shuffle =
-        asQueryShuffle(orderBy).
-          withLimit(limit).
-          withSkip(skip)
+      val shuffle = QueryShuffle().withLimit(limit).withSkip(skip)
 
       val queryProjection =
         asQueryProjection(distinct, returnItems).
           withShuffle(shuffle).
           withSelection(selections)
 
-      val requiredOrder = findRequiredOrder(queryProjection)
+      val requiredOrder = findRequiredOrder(queryProjection, orderBy)
 
       builder.
         withHorizon(queryProjection).

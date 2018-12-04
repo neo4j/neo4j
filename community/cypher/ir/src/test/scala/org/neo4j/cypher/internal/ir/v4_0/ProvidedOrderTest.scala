@@ -19,9 +19,13 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
+import org.neo4j.cypher.internal.v4_0.expressions.Variable
+import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ProvidedOrderTest extends CypherFunSuite {
+
+  private val pos = DummyPosition(0)
 
   test("should append provided order") {
     val left = ProvidedOrder.asc("a").asc("b")
@@ -64,22 +68,22 @@ class ProvidedOrderTest extends CypherFunSuite {
   }
 
   test("Single property required order satisfied by matching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc("x")).satisfiedBy(ProvidedOrder.asc("x")) should be(true)
+    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("x")) should be(true)
   }
 
   test("Single property required order satisfied by longer provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc("x")).satisfiedBy(ProvidedOrder.asc("x").asc("y")) should be(true)
-    InterestingOrder.required(RequiredOrderCandidate.asc("x")).satisfiedBy(ProvidedOrder.asc("x").desc("y")) should be(true)
+    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("x").asc("y")) should be(true)
+    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("x").desc("y")) should be(true)
   }
 
   test("Single property required order not satisfied by mismatching provided order") {
-    InterestingOrder.required(RequiredOrderCandidate.asc("x")).satisfiedBy(ProvidedOrder.asc("y")) should be(false)
-    InterestingOrder.required(RequiredOrderCandidate.asc("x")).satisfiedBy(ProvidedOrder.desc("x")) should be(false)
-    InterestingOrder.required(RequiredOrderCandidate.asc("x")).satisfiedBy(ProvidedOrder.asc("y").asc("x")) should be(false)
+    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("y")) should be(false)
+    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.desc("x")) should be(false)
+    InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x"))).satisfiedBy(ProvidedOrder.asc("y").asc("x")) should be(false)
   }
 
   test("Multi property required order satisfied only be matching provided order") {
-    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("x").desc("y").asc("z"))
+    val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("x", varFor("x")).desc("y", varFor("y")).asc("z", varFor("z")))
 
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x")) should be(false)
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x").desc("y")) should be(false)
@@ -88,4 +92,6 @@ class ProvidedOrderTest extends CypherFunSuite {
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x").desc("y").desc("z")) should be(false)
     interestingOrder.satisfiedBy(ProvidedOrder.asc("x").asc("y").desc("z")) should be(false)
   }
+
+  private def varFor(name: String) = Variable(name)(pos)
 }

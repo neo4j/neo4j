@@ -19,26 +19,36 @@
  */
 package org.neo4j.cypher.internal.ir.v4_0
 
-import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc} //used for the OrderCandidates, if they are moved remove this
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Property, PropertyKeyName, Variable}
+import org.neo4j.cypher.internal.ir.v4_0.InterestingOrder.{Asc, ColumnOrder, Desc}
+import org.neo4j.cypher.internal.v4_0.expressions._
 
 object InterestingOrder {
+
   sealed trait ColumnOrder {
     def id: String
-    def withId(newId: String): ColumnOrder
+
+    def expression: Expression
+
+    def projected(newExpression: Expression, newProjections: Map[String, Expression]): ColumnOrder
+
+    def projections: Map[String, Expression]
   }
-  case class Asc(id: String) extends ColumnOrder {
-    override def withId(newId: String): ColumnOrder = Asc(newId)
+
+  case class Asc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
+    override def projected(newExpression: Expression, newProjections: Map[String, Expression]): ColumnOrder = Asc(id, newExpression, newProjections)
   }
-  case class Desc(id: String) extends ColumnOrder {
-    override def withId(newId: String): ColumnOrder = Desc(newId)
+
+  case class Desc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty) extends ColumnOrder {
+    override def projected(newExpression: Expression, newProjections: Map[String, Expression]): ColumnOrder = Desc(id, newExpression, newProjections)
   }
 
   val empty = InterestingOrder(RequiredOrderCandidate.empty, Seq.empty)
 
   def required(candidate: RequiredOrderCandidate): InterestingOrder = InterestingOrder(candidate, Seq.empty)
+
   def interested(candidate: InterestingOrderCandidate): InterestingOrder = InterestingOrder(RequiredOrderCandidate.empty, Seq(candidate))
 }
+
 /**
   * A single PlannerQuery can require an ordering on its results. This ordering can emerge
   * from an ORDER BY, or even from distinct or aggregation. The requirement on the ordering can
@@ -47,7 +57,7 @@ object InterestingOrder {
   *
   * Right now this type only encodes strict requirements that emerged because of an ORDER BY.
   *
-  * @param requiredOrderCandidate    a candidate for required sort directions of columns
+  * @param requiredOrderCandidate     a candidate for required sort directions of columns
   * @param interestingOrderCandidates a sequence of candidates for interesting sort directions of columns
   */
 case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
@@ -66,60 +76,68 @@ case class InterestingOrder(requiredOrderCandidate: RequiredOrderCandidate,
     else InterestingOrder(RequiredOrderCandidate.empty,
       interestingOrderCandidates :+ requiredOrderCandidate.asInteresting)
 
-  def withProjectedColumns(projectExpressions: Map[String, Expression]) : InterestingOrder = {
-    def project(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
-      columns.map {
-        case column@StringPropertyLookup(varName, propName) =>
-          projectExpressions.collectFirst {
-            case (newId, Property(Variable(`varName`), PropertyKeyName(`propName`))) => column.withId(newId)
-            case (newId, Variable(`varName`)) => column.withId(newId + "." + propName)
-          }.getOrElse(column)
-
-        case column: ColumnOrder =>
-          val varName = column.id
-          projectExpressions.collectFirst {
-            case (newId, Variable(`varName`)) => column.withId(newId)
-          }.getOrElse(column)
-      }
+  def withReverseProjectedColumns(projectExpressions: Map[String, Expression], argumentIds: Set[String]): InterestingOrder = {
+    def columnIfArgument(expression: Expression, column: ColumnOrder): Option[ColumnOrder] = {
+      if (argumentIds.contains(expression.asCanonicalStringVal)) Some(column) else None
     }
 
-    InterestingOrder(requiredOrderCandidate.renameColumns(project),
-      interestingOrderCandidates.map(_.renameColumns(project)).filter(!_.isEmpty))
-  }
-
-  def withReverseProjectedColumns(projectExpressions: Map[String, Expression], argumentIds: Set[String]) : InterestingOrder = {
-    def columnIfArgument(column: ColumnOrder): Option[ColumnOrder] =
-      if (argumentIds.contains(column.id)) Some(column) else None
-
     def rename(columns: Seq[ColumnOrder]): Seq[ColumnOrder] = {
-      columns.flatMap {
-        case column@StringPropertyLookup(varName, propName) =>
-          projectExpressions.collectFirst {
-            case (`varName`, Variable(newVarName)) => column.withId(newVarName + "." + propName)
-          }.orElse(columnIfArgument(column))
-
-        case column: ColumnOrder =>
-          val varName = column.id
-          projectExpressions.collectFirst {
-            case (`varName`, Property(Variable(prevVarName), PropertyKeyName(prevPropName))) => column.withId(prevVarName + "." + prevPropName)
-            case (`varName`, Variable(prevVarName)) => column.withId(prevVarName)
-          }.orElse(columnIfArgument(column))
+      columns.flatMap { column: ColumnOrder =>
+        // expression with all incoming projections applied
+        val projected = projectExpression(column.expression, column.projections)
+        projected match {
+          case Property(Variable(prevVarName), _) if projectExpressions.contains(prevVarName) =>
+            Some(column.projected(projected, Map(prevVarName -> projectExpressions(prevVarName))))
+          case Variable(prevVarName) if projectExpressions.contains(prevVarName) =>
+            Some(column.projected(projected, Map(prevVarName -> projectExpressions(prevVarName))))
+          case _ =>
+            columnIfArgument(projected, column)
+        }
       }
+
     }
 
     InterestingOrder(requiredOrderCandidate.renameColumns(rename),
       interestingOrderCandidates.map(_.renameColumns(rename)).filter(!_.isEmpty))
   }
 
+  private def projectExpression(expression: Expression, projections: Map[String, Expression]): Expression = {
+    expression match {
+      case Variable(varName) =>
+        projections.getOrElse(varName, expression)
+
+      case Property(Variable(varName), propertyKeyName) =>
+        if (projections.contains(expression.asCanonicalStringVal))
+          projections(expression.asCanonicalStringVal)
+        else if (projections.contains(varName))
+          Property(projections(varName), propertyKeyName)(expression.position)
+        else
+          expression
+
+      // TODO handle generic case e.g Add(a, b)
+      case _ => expression
+    }
+  }
+
   /**
     * Checks if a RequiredOrder is satisfied by a ProvidedOrder
     */
   def satisfiedBy(providedOrder: ProvidedOrder): Boolean = {
+    def satisfied(providedId: String, requiredOrder: Expression, projections: Map[String, Expression]): Boolean = {
+      val projected = projectExpression(requiredOrder, projections)
+      if (providedId == requiredOrder.asCanonicalStringVal || providedId == projected.asCanonicalStringVal)
+        true
+      else if (projected != requiredOrder) {
+        satisfied(providedId, projected, projections)
+      }
+      else
+        false
+    }
     requiredOrderCandidate.order.zipAll(providedOrder.columns, null, null).forall {
       case (null, _) => true // no required order left
       case (_, null) => false // required order left but no provided
-      case (InterestingOrder.Asc(requiredId), ProvidedOrder.Asc(providedId)) => requiredId == providedId
-      case (InterestingOrder.Desc(requiredId), ProvidedOrder.Desc(providedId)) => requiredId == providedId
+      case (InterestingOrder.Asc(_, e, projections), ProvidedOrder.Asc(providedId)) => satisfied(providedId, e, projections)
+      case (InterestingOrder.Desc(_, e, projections), ProvidedOrder.Desc(providedId)) => satisfied(providedId, e, projections)
       case _ => false
     }
   }
@@ -138,9 +156,9 @@ trait OrderCandidate {
 
   def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): OrderCandidate
 
-  def asc(id: String): OrderCandidate
+  def asc(id: String, expression: Expression, projections: Map[String, Expression]): OrderCandidate
 
-  def desc(id: String): OrderCandidate
+  def desc(id: String, expression: Expression, projections: Map[String, Expression]): OrderCandidate
 }
 
 case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
@@ -148,32 +166,33 @@ case class RequiredOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidat
 
   override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): RequiredOrderCandidate = RequiredOrderCandidate(f(order))
 
-  override def asc(id: String): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Asc(id))
+  override def asc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Asc(id, expression, projections))
 
-  override def desc(id: String): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Desc(id))
+  override def desc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = RequiredOrderCandidate(order :+ Desc(id, expression, projections))
 }
 
 object RequiredOrderCandidate {
   def empty: RequiredOrderCandidate = RequiredOrderCandidate(Seq.empty)
 
-  def asc(id: String): RequiredOrderCandidate = empty.asc(id)
-  def desc(id: String): RequiredOrderCandidate = empty.desc(id)
+  def asc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = empty.asc(id, expression, projections)
+
+  def desc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): RequiredOrderCandidate = empty.desc(id, expression, projections)
 }
 
 case class InterestingOrderCandidate(order: Seq[ColumnOrder]) extends OrderCandidate {
   override def renameColumns(f: Seq[ColumnOrder] => Seq[ColumnOrder]): InterestingOrderCandidate = InterestingOrderCandidate(f(order))
 
-  override def asc(id: String): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Asc(id))
+  override def asc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Asc(id, expression, projections))
 
-  override def desc(id: String): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Desc(id))
+  override def desc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = InterestingOrderCandidate(order :+ Desc(id, expression, projections))
 }
 
 object InterestingOrderCandidate {
   def empty: InterestingOrderCandidate = InterestingOrderCandidate(Seq.empty)
 
-  def asc(id: String): InterestingOrderCandidate = empty.asc(id)
+  def asc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = empty.asc(id, expression, projections)
 
-  def desc(id: String): InterestingOrderCandidate = empty.desc(id)
+  def desc(id: String, expression: Expression, projections: Map[String, Expression] = Map.empty): InterestingOrderCandidate = empty.desc(id, expression, projections)
 }
 
 /**

@@ -40,8 +40,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection, query.interestingOrder, context)
         // aggregation is the only case where sort happens after the projection. The provided order of the aggretion plan will include
         // renames of the projection, thus we need to rename this as well for the required order before considering planning a sort.
-        val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(aggregatingProjection.groupingExpressions)
-        val sorted = sortSkipAndLimit(aggregationPlan, query, interestingOrderWithRenames, context)
+        val sorted = sortSkipAndLimit(aggregationPlan, query, query.interestingOrder, context)
         if (aggregatingProjection.selections.isEmpty) {
           sorted
         } else {
@@ -68,8 +67,7 @@ case object PlanEventHorizon extends EventHorizonPlanner {
 
       case distinctProjection: DistinctQueryProjection =>
         val distinctPlan = distinct(selectedPlan, distinctProjection, query.interestingOrder, context)
-        val interestingOrderWithRenames = query.interestingOrder.withProjectedColumns(distinctProjection.groupingKeys)
-        val sorted = sortSkipAndLimit(distinctPlan, query, interestingOrderWithRenames, context)
+        val sorted = sortSkipAndLimit(distinctPlan, query, query.interestingOrder, context)
         if (distinctProjection.selections.isEmpty) {
           sorted
         } else {
@@ -80,16 +78,20 @@ case object PlanEventHorizon extends EventHorizonPlanner {
 
       case UnwindProjection(variable, expression) =>
         val (inner, projectionsMap) = PatternExpressionSolver()(selectedPlan, Seq(expression), query.interestingOrder, context)
-        context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
+        val projected = context.logicalPlanProducer.planUnwind(inner, variable, projectionsMap.head, expression, context)
+        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case ProcedureCallProjection(call) =>
-        context.logicalPlanProducer.planCallProcedure(plan, call, call, context)
+        val projected = context.logicalPlanProducer.planCallProcedure(plan, call, call, context)
+        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case LoadCSVProjection(variableName, url, format, fieldTerminator) =>
-        context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
+        val projected = context.logicalPlanProducer.planLoadCSV(plan, variableName, url, format, fieldTerminator, context)
+        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case PassthroughAllHorizon() =>
-        context.logicalPlanProducer.planPassAll(plan, context)
+        val projected = context.logicalPlanProducer.planPassAll(plan, context)
+        PlannerHelper.sortedPlanWithSolved(projected, query.interestingOrder, context)
 
       case _ =>
         throw new InternalException(s"Received QG with unknown horizon type: ${query.horizon}")

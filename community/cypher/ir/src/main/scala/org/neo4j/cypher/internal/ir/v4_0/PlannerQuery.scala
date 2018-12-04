@@ -82,6 +82,7 @@ trait PlannerQuery {
         case None => (plannerQuery.copy(interestingOrder = interestingOrder), interestingOrder.asInteresting)
         case Some(q) =>
           val (newTail, tailOrder) = f(q)
+          // TODO Should allow merging of interesting order from multiple tails - and consider that if a projection is missing a variable, all orders after that should be erased (current code only erases the single part)
           if (plannerQuery.interestingOrder.isEmpty) {
             val reverseProjected =
               plannerQuery.horizon match {
@@ -138,6 +139,7 @@ trait PlannerQuery {
       case (a: RegularQueryProjection, b: RegularQueryProjection) =>
         RegularPlannerQuery(
           horizon = a ++ b,
+          interestingOrder = interestingOrder,
           queryGraph = queryGraph ++ other.queryGraph,
           tail = either(tail, other.tail)
         )

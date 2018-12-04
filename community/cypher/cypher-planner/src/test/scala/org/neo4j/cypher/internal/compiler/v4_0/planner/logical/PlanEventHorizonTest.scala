@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.{LogicalPlanningTestSupport2, ProcedureCallProjection}
 import org.neo4j.cypher.internal.ir.v4_0._
-import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.ast.{AscSortItem, ProcedureResultItem}
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
@@ -31,7 +31,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should do projection if necessary") {
     // Given
-    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
       val pq = RegularPlannerQuery(horizon = RegularQueryProjection(Map("a" -> literal)))
       val inputPlan = Argument()
@@ -46,7 +46,7 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan procedure calls") {
     // Given
-    new given().withLogicalPlanningContextWithFakeAttributes { (cfg, context) =>
+    new given().withLogicalPlanningContextWithFakeAttributes { (_, context) =>
       val ns = Namespace(List("my", "proc"))(pos)
       val name = ProcedureName("foo")(pos)
       val qualifiedName = QualifiedName(ns.parts, name.name)
@@ -69,11 +69,11 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan entire projection if there is no pre-projection") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context) =>
+    new given().withLogicalPlanningContext { (_, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
-      val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
-      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a"))
-      val horizon = RegularQueryProjection(Map("a" -> Variable("a")(pos), "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
+      val sortItems = Seq(AscSortItem(varFor("a"))(pos))
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a", varFor("a"), Map("a" -> varFor("a"))))
+      val horizon = RegularQueryProjection(Map("a" -> varFor("a"), "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes, "a")
       context.planningAttributes.solveds.set(inputPlan.id, PlannerQuery.empty)
@@ -88,10 +88,10 @@ class PlanEventHorizonTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should plan partial projection if there is a pre-projection for sorting") {
     // Given
-    new given().withLogicalPlanningContext { (cfg, context) =>
+    new given().withLogicalPlanningContext { (_, context) =>
       val literal = SignedDecimalIntegerLiteral("42")(pos)
-      val sortItems = Seq(AscSortItem(Variable("a")(pos))(pos))
-      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a"))
+      val sortItems = Seq(AscSortItem(varFor("a"))(pos))
+      val interestingOrder = InterestingOrder.required(RequiredOrderCandidate.asc("a", varFor("a"), Map("a" -> literal)))
       val horizon = RegularQueryProjection(Map("a" -> literal, "b" -> literal, "c" -> literal), QueryShuffle(sortItems))
       val pq = RegularPlannerQuery(interestingOrder = interestingOrder, horizon = horizon)
       val inputPlan = fakeLogicalPlanFor(context.planningAttributes)

@@ -124,7 +124,25 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, query.interestingOrder, ctx)
+    ctx.strategy.plan(query.queryGraph, interestingInterestingOrderForPart(query), ctx)
+  }
+
+  // TODO probably not be needed if returning sorted and unsorted
+  // If the required order has dependency on argument, then it should not solve the ordering here
+  private def interestingInterestingOrderForPart(query: PlannerQuery) = {
+    val interestingOrder = query.interestingOrder
+    query.horizon match {
+      case _: AggregatingQueryProjection | _: DistinctQueryProjection =>
+        interestingOrder.asInteresting
+
+      case _ =>
+        val orderCandidate = interestingOrder.requiredOrderCandidate.order
+        val dependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
+        if (dependencies.exists(dep => query.queryGraph.argumentIds.contains(dep.name)))
+          interestingOrder.asInteresting
+        else
+          interestingOrder
+    }
   }
 }
 
