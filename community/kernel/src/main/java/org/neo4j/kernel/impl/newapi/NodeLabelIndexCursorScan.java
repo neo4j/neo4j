@@ -22,89 +22,55 @@ package org.neo4j.kernel.impl.newapi;
 import org.eclipse.collections.api.iterator.LongIterator;
 import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.eclipse.collections.impl.iterator.ImmutableEmptyLongIterator;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.collection.RangeLongIterator;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
-import org.neo4j.internal.kernel.api.Scan;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.labelscan.LabelScan;
-import org.neo4j.storageengine.api.txstate.LongDiffSets;
+import org.neo4j.kernel.api.txstate.TransactionState;
 
-import static java.lang.Math.min;
-import static org.neo4j.collection.PrimitiveLongCollections.EMPTY_LONG_ARRAY;
 import static org.neo4j.collection.PrimitiveLongCollections.mergeToSet;
-import static org.neo4j.util.Preconditions.requirePositive;
 
-class NodeLabelIndexCursorScan implements Scan<NodeLabelIndexCursor>
+class NodeLabelIndexCursorScan extends BaseCursorScan<NodeLabelIndexCursor,LabelScan>
 {
-    private final AtomicInteger nextTxState;
-    private final Read read;
-    private final long[] addedNodesArray;
     private final LongSet removed;
-    private volatile boolean addedNodesConsumed;
-    private final boolean hasChanges;
-    private final LabelScan labelScan;
+    private final int label;
 
     NodeLabelIndexCursorScan( Read read, int label, LabelScan labelScan )
     {
-        this.read = read;
-        this.nextTxState = new AtomicInteger( 0 );
-        this.hasChanges = read.hasTxStateWithChanges();
+        super( labelScan, read );
         if ( hasChanges )
         {
-            final LongDiffSets changes = read.txState().nodesWithLabelChanged( label );
-            this.addedNodesArray = changes.getAdded().toArray();
-            this.removed = mergeToSet( read.txState().addedAndRemovedNodes().getRemoved(), changes.getRemoved() );
+            TransactionState txState = read.txState();
+            this.removed = mergeToSet( txState.addedAndRemovedNodes().getRemoved(),
+                    txState.nodesWithLabelChanged( label ).getRemoved() );
         }
         else
         {
-            this.addedNodesArray = EMPTY_LONG_ARRAY;
             this.removed = LongSets.immutable.empty();
         }
-        this.addedNodesConsumed = addedNodesArray.length == 0;
-        this.labelScan = labelScan;
+        this.label = label;
     }
 
     @Override
-    public boolean reserveBatch( NodeLabelIndexCursor cursor, int sizeHint )
+    protected long[] addedInTransaction()
     {
-        requirePositive( sizeHint );
-
-        LongIterator addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-        if ( hasChanges && !addedNodesConsumed )
-        {
-            int start = nextTxState.getAndAdd( sizeHint );
-            if ( start < addedNodesArray.length )
-            {
-                int batchSize = min( sizeHint, addedNodesArray.length - start  );
-                sizeHint -= batchSize;
-                addedNodes = new RangeLongIterator( addedNodesArray, start, batchSize );
-            }
-            else
-            {
-                addedNodesConsumed = true;
-            }
-        }
-
-        return reserveStoreBatch( cursor, sizeHint, addedNodes );
+        return read.txState().nodesWithLabelChanged( label ).getAdded().toArray();
     }
 
-    private boolean reserveStoreBatch( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedNodes )
+    @Override
+    protected boolean scanStore( NodeLabelIndexCursor cursor, int sizeHint, LongIterator addedItems )
     {
         DefaultNodeLabelIndexCursor indexCursor = (DefaultNodeLabelIndexCursor) cursor;
         indexCursor.setRead( read );
-        IndexProgressor indexProgressor = labelScan.initializeBatch( indexCursor, sizeHint );
+        IndexProgressor indexProgressor = storageScan.initializeBatch( indexCursor, sizeHint );
 
-        if ( indexProgressor == IndexProgressor.EMPTY && !addedNodes.hasNext() )
+        if ( indexProgressor == IndexProgressor.EMPTY && !addedItems.hasNext() )
         {
             return false;
         }
         else
         {
-            indexCursor.scan( indexProgressor, addedNodes, removed );
+            indexCursor.scan( indexProgressor, addedItems, removed );
             return true;
         }
     }
