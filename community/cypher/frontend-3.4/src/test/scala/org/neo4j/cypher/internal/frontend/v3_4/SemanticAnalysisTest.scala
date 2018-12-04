@@ -16,11 +16,14 @@
  */
 package org.neo4j.cypher.internal.frontend.v3_4
 
+import org.neo4j.cypher.internal.frontend.v3_4.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.frontend.v3_4.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.frontend.v3_4.phases._
 import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.util.v3_4.symbols._
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 class SemanticAnalysisTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -31,26 +34,37 @@ class SemanticAnalysisTest extends CypherFunSuite with AstConstructionTestSuppor
     val query = "RETURN name AS name"
     val startState = initStartState(query, Map("name" -> CTString))
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors shouldBe empty
+    context.errors shouldBe empty
   }
 
   test("can inject starting semantic state for larger query") {
     val query = "MATCH (n:Label {name: name}) WHERE n.age > age RETURN n.name AS name"
 
     val startState = initStartState(query, Map("name" -> CTString, "age" -> CTInteger))
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    context.errors shouldBe empty
+  }
 
-    ErrorCollectingContext.errors shouldBe empty
+  test("should fail for max() with no arguments") {
+    val query = "RETURN max() AS max"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context should failWith("Insufficient parameters for function 'max'")
   }
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
 
-object ErrorCollectingContext extends BaseContext {
+class ErrorCollectingContext extends BaseContext {
 
   var errors: Seq[SemanticErrorDef] = Seq.empty
 
@@ -62,6 +76,16 @@ object ErrorCollectingContext extends BaseContext {
     errors = errs
 }
 
+object ErrorCollectingContext {
+  def failWith(errorMessages: String*): Matcher[ErrorCollectingContext] = new Matcher[ErrorCollectingContext] {
+    override def apply(context: ErrorCollectingContext): MatchResult = {
+      MatchResult(
+        matches = context.errors.map(_.msg) == errorMessages,
+        rawFailureMessage = s"Expected errors: $errorMessages but got ${context.errors}",
+        rawNegatedFailureMessage = s"Did not expect errors: $errorMessages.")
+    }
+  }
+}
 object NoPlannerName extends PlannerName {
   override def name = "no planner"
   override def toTextOutput = "no planner"
