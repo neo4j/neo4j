@@ -37,11 +37,11 @@ class ExecutionEngineIT extends CypherFunSuite with GraphIcing {
     }
   }
 
-  test("by default when using cypher 3.4 some queries should default to COST") {
+  test("by default when using cypher 3.5 some queries should default to COST") {
     //given
     db = new TestGraphDatabaseFactory()
       .newImpermanentDatabaseBuilder()
-      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.4").newGraphDatabase()
+      .setConfig(GraphDatabaseSettings.cypher_parser_version, "3.5").newGraphDatabase()
     val service = new GraphDatabaseCypherService(db)
 
     //when
