@@ -31,8 +31,6 @@ import org.neo4j.server.rest.domain.StartNodeNotFoundException;
 import org.neo4j.server.rest.repr.BadInputException;
 import org.neo4j.server.rest.repr.ConstraintDefinitionRepresentation;
 import org.neo4j.server.rest.repr.IndexDefinitionRepresentation;
-import org.neo4j.server.rest.repr.IndexRepresentation;
-import org.neo4j.server.rest.repr.IndexedEntityRepresentation;
 import org.neo4j.server.rest.repr.ListRepresentation;
 import org.neo4j.server.rest.repr.NodeRepresentation;
 import org.neo4j.server.rest.repr.PathRepresentation;
@@ -151,17 +149,6 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
     }
 
     @Override
-    public IndexRepresentation createNodeIndex( Map<String, Object> indexSpecification )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            IndexRepresentation indexRepresentation = super.createNodeIndex( indexSpecification );
-            transaction.success();
-            return indexRepresentation;
-        }
-    }
-
-    @Override
     public RelationshipRepresentation createRelationship( long startNodeId, long endNodeId, String type, Map<String,
             Object> properties ) throws StartNodeNotFoundException, EndNodeNotFoundException, PropertyValueException
     {
@@ -249,48 +236,6 @@ public class TransactionWrappedDatabaseActions extends DatabaseActions
         try ( Transaction transaction = graph.beginTx() )
         {
             super.removeRelationshipProperty( relationshipId, key );
-            transaction.success();
-        }
-    }
-
-    @Override
-    public IndexedEntityRepresentation addToNodeIndex( String indexName, String key, String value, long nodeId )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            IndexedEntityRepresentation indexedEntityRepresentation = super.addToNodeIndex( indexName, key, value,
-                    nodeId );
-            transaction.success();
-            return indexedEntityRepresentation;
-        }
-    }
-
-    @Override
-    public void removeFromNodeIndex( String indexName, String key, String value, long id )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            super.removeFromNodeIndex( indexName, key, value, id );
-            transaction.success();
-        }
-    }
-
-    @Override
-    public void removeFromNodeIndexNoValue( String indexName, String key, long id )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            super.removeFromNodeIndexNoValue( indexName, key, id );
-            transaction.success();
-        }
-    }
-
-    @Override
-    public void removeFromNodeIndexNoKeyValue( String indexName, long id )
-    {
-        try ( Transaction transaction = graph.beginTx() )
-        {
-            super.removeFromNodeIndexNoKeyValue( indexName, id );
             transaction.success();
         }
     }

@@ -47,7 +47,6 @@ object PlanDescriptionArgumentSerializer {
       }.mkString("{", ", ", "}")
       case UpdateActionName(action) => action
       case MergePattern(startPoint) => s"MergePattern($startPoint)"
-      case ExplicitIndex(index) => index
       case Index(label, properties) => s":$label(${properties.mkString(",")})"
       case PrefixIndex(label, property, p) => s":$label($property STARTS WITH ${asPrettyString(p)})"
       case InequalityIndex(label, property, bounds) => bounds.map(bound => s":$label($property) $bound").mkString(" AND ")

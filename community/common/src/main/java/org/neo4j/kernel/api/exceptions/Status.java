@@ -368,27 +368,6 @@ public interface Status
         }
     }
 
-    enum LegacyIndex implements Status
-    {
-        LegacyIndexNotFound( ClientError,
-                "The request (directly or indirectly) referred to an explicit index that does not exist." )
-
-        ;
-
-        private final Code code;
-
-        @Override
-        public Code code()
-        {
-            return code;
-        }
-
-        LegacyIndex( Classification classification, String description )
-        {
-            this.code = new Code( classification, this, description );
-        }
-    }
-
     enum Procedure implements Status
     {
         ProcedureRegistrationFailed( ClientError,

@@ -21,18 +21,12 @@ package org.neo4j.cypher.internal.v4_0.logical.plans
 
 import java.lang.reflect.Method
 
-import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
-import org.neo4j.cypher.internal.ir.v4_0.Strictness
+import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
+import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
-import org.neo4j.cypher.internal.v4_0.util.Foldable
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.internal.v4_0.util.Rewritable
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId}
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -268,5 +262,3 @@ sealed trait IndexUsage {
 
 final case class SchemaIndexSeekUsage(identifier: String, labelId : Int, label: String, propertyKeys: Seq[String]) extends IndexUsage
 final case class SchemaIndexScanUsage(identifier: String, labelId : Int, label: String, propertyKey: String) extends IndexUsage
-final case class ExplicitNodeIndexUsage(identifier: String, index: String) extends IndexUsage
-final case class ExplicitRelationshipIndexUsage(identifier: String, index: String) extends IndexUsage

@@ -21,13 +21,9 @@ package org.neo4j.graphdb.schema;
 
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.index.IndexManager;
 
 /**
  * Definition for an index.
- * <p>
- * NOTE: This is part of the index API introduced in Neo4j 2.0.
- * The explicit index API lives in {@link IndexManager}.
  */
 public interface IndexDefinition
 {

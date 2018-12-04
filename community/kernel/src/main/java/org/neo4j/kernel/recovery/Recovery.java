@@ -43,7 +43,6 @@ import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
-import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -52,7 +51,6 @@ import org.neo4j.kernel.impl.core.ReadOnlyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
@@ -80,13 +78,11 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.impl.util.monitoring.LogProgressReporter;
 import org.neo4j.kernel.impl.util.monitoring.ProgressReporter;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycles;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
@@ -240,8 +236,6 @@ public final class Recovery
         DatabaseSchemaState schemaState = new DatabaseSchemaState( logProvider );
         JobScheduler scheduler = JobSchedulerFactory.createInitialisedScheduler();
 
-        SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering = new SynchronizedArrayIdOrderingQueue();
-
         DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( new DatabaseEventHandlers( recoveryLog ) );
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, recoveryLog );
 
@@ -249,21 +243,17 @@ public final class Recovery
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_LABEL ),
                 new DelegatingTokenHolder( new ReadOnlyTokenCreator(), TYPE_RELATIONSHIP_TYPE ) );
         NonTransactionalTokenNameLookup tokenNameLookup = new NonTransactionalTokenNameLookup( tokenHolders );
-        DefaultExplicitIndexProvider explicitIndexProviderLookup = new DefaultExplicitIndexProvider();
 
         RecoveryCleanupWorkCollector recoveryCleanupCollector = new GroupingRecoveryCleanupWorkCollector( scheduler );
-        IndexConfigStore indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         DatabaseKernelExtensions extensions = instantiateRecoveryExtensions( databaseLayout.databaseDirectory(), fs, config, logService, pageCache, scheduler,
-                recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, explicitIndexProviderLookup, indexConfigStore,
-                recoveryCleanupCollector, extensionFactories );
+                recoveryCleanupCollector, DatabaseInfo.TOOL, monitors, tokenHolders, recoveryCleanupCollector, extensionFactories );
         DefaultIndexProviderMap indexProviderMap = new DefaultIndexProviderMap( extensions, config );
 
         Dependencies recoveryDependencies = new Dependencies();
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, logProvider, tokenHolders, schemaState, getConstraintSemantics(),
                         scheduler, tokenNameLookup, LockService.NO_LOCK_SERVICE, indexProviderMap, monitors.newMonitor( IndexingService.Monitor.class ),
-                        databaseHealth, explicitIndexProviderLookup, indexConfigStore, explicitIndexTransactionOrdering,
-                        new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), monitors, recoveryCleanupCollector,
+                        databaseHealth, new DefaultIdGeneratorFactory( fs ), new DefaultIdController(), monitors, recoveryCleanupCollector,
                         OperationalMode.single, EmptyVersionContextSupplier.EMPTY );
 
         storageEngine.satisfyDependencies( recoveryDependencies );
@@ -283,7 +273,7 @@ public final class Recovery
         PhysicalLogicalTransactionStore transactionStore = new PhysicalLogicalTransactionStore( logFiles, metadataCache, logEntryReader, monitors,
                 failOnCorruptedLogFiles );
         BatchingTransactionAppender transactionAppender = new BatchingTransactionAppender( logFiles, LogRotation.NO_ROTATION, metadataCache,
-                transactionIdStore, explicitIndexTransactionOrdering, databaseHealth );
+                transactionIdStore, databaseHealth );
 
         TransactionLogsRecovery transactionLogsRecovery =
                 transactionLogRecovery( fs, transactionIdStore, logTailScanner, monitors.newMonitor( RecoveryMonitor.class ),
@@ -296,9 +286,7 @@ public final class Recovery
 
         recoveryLife.add( scheduler );
         recoveryLife.add( recoveryCleanupCollector );
-        recoveryLife.add( indexConfigStore );
         recoveryLife.add( extensions );
-        recoveryLife.add( Lifecycles.multiple( explicitIndexProviderLookup.allIndexProviders() ) );
         recoveryLife.add( indexProviderMap );
         recoveryLife.add( storageEngine );
         recoveryLife.add( transactionLogsRecovery );
@@ -333,8 +321,8 @@ public final class Recovery
 
     private static DatabaseKernelExtensions instantiateRecoveryExtensions( File databaseDirectory, FileSystemAbstraction fileSystem, Config config,
             LogService logService, PageCache pageCache, JobScheduler jobScheduler, RecoveryCleanupWorkCollector recoveryCollector, DatabaseInfo databaseInfo,
-            Monitors monitors, TokenHolders tokenHolders, DefaultExplicitIndexProvider explicitIndexProviderLookup, IndexConfigStore indexConfigStore,
-            RecoveryCleanupWorkCollector recoveryCleanupCollector, Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            Monitors monitors, TokenHolders tokenHolders, RecoveryCleanupWorkCollector recoveryCleanupCollector,
+            Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         List<KernelExtensionFactory<?>> recoveryExtensions = stream( kernelExtensions )
                         .filter( extension -> extension.getClass().isAnnotationPresent( RecoveryExtension.class ) )
@@ -343,7 +331,7 @@ public final class Recovery
         Dependencies deps = new Dependencies();
         NonListenableMonitors nonListenableMonitors = new NonListenableMonitors( monitors );
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
-                tokenHolders, explicitIndexProviderLookup, indexConfigStore, recoveryCleanupCollector );
+                tokenHolders, recoveryCleanupCollector );
         KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );
         return new DatabaseKernelExtensions( kernelContext, recoveryExtensions, deps, UnsatisfiedDependencyStrategies.fail() );
     }

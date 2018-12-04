@@ -30,7 +30,6 @@ import java.util.Set;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.cursor.RawCursor;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Hit;
 import org.neo4j.kernel.api.index.IndexProgressor;
@@ -49,7 +48,7 @@ import static org.neo4j.kernel.impl.index.labelscan.NativeLabelScanWriter.rangeO
 class NativeLabelScanReader implements LabelScanReader
 {
     /**
-     * {@link Index} which is queried when calling the methods below.
+     * Index which is queried when calling the methods below.
      */
     private final GBPTree<LabelScanKey,LabelScanValue> index;
 

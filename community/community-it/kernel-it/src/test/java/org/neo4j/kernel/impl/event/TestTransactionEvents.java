@@ -64,10 +64,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.graphdb.RelationshipType.withName;
-import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.hasProperty;
 import static org.neo4j.test.mockito.matcher.Neo4jMatchers.inTx;
 
@@ -1056,12 +1053,6 @@ public class TestTransactionEvents
         try ( Transaction tx = dbRule.beginTx() )
         {
             dbRule.schema().constraintFor( label ).assertPropertyIsUnique( "otherkey" ).create();
-            tx.success();
-        }
-        // ... or even an explicit index
-        try ( Transaction tx = dbRule.beginTx() )
-        {
-            dbRule.index().forNodes( "some index", stringMap( PROVIDER, IDENTIFIER ) );
             tx.success();
         }
 

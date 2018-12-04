@@ -45,20 +45,11 @@ import static org.neo4j.test.proc.ProcessUtil.getClassPath;
 import static org.neo4j.test.proc.ProcessUtil.getJavaExecutable;
 
 @ExtendWith( TestDirectoryExtension.class )
-class TestRecoveryMultipleDataSources
+class TestRecoveryRelationshipTypes
 {
     @Inject
     private TestDirectory testDirectory;
 
-    /**
-     * Tests an issue where loading all relationship types and property indexes after
-     * the neostore data source had been started internally. The db would be in a
-     * state where it would need recovery for the neostore data source, as well as some
-     * other data source. This would fail since eventually TxManager#getTransaction()
-     * would be called, which would fail since it hadn't as of yet recovered fully.
-     * Whereas that failure would happen in a listener and merely be logged, one effect
-     * of it would be that there would seem to be no relationship types in the database.
-     */
     @Test
     void recoverNeoAndIndexHavingAllRelationshipTypesAfterRecovery() throws Exception
     {
@@ -100,12 +91,6 @@ class TestRecoveryMultipleDataSources
 
         CheckPointer checkPointer = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( CheckPointer.class );
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "test" ) );
-
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.index().forNodes( "index" ).add( db.createNode(), storeDir.getAbsolutePath(), db.createNode() );
-            tx.success();
-        }
 
         exit( 0 );
     }

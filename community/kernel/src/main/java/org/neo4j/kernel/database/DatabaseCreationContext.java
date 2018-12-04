@@ -29,13 +29,11 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
@@ -44,7 +42,6 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -106,12 +103,6 @@ public interface DatabaseCreationContext
     TransactionHeaderInformationFactory getTransactionHeaderInformationFactory();
 
     CommitProcessFactory getCommitProcessFactory();
-
-    AutoIndexing getAutoIndexing();
-
-    IndexConfigStore getIndexConfigStore();
-
-    ExplicitIndexProvider getExplicitIndexProvider();
 
     PageCache getPageCache();
 

@@ -25,7 +25,6 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.Predicates;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.id.IdContextFactory;
@@ -53,7 +52,6 @@ import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.ReadOnly;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.LocksFactory;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
@@ -150,10 +148,7 @@ public class CommunityEditionModule extends DefaultEditionModule
 
     static Predicate<String> communityFileWatcherFileNameFilter()
     {
-        return Predicates.any(
-                fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME ),
-                fileName -> fileName.startsWith( IndexConfigStore.INDEX_DB_FILE_NAME )
-        );
+        return fileName -> fileName.startsWith( TransactionLogFiles.DEFAULT_NAME );
     }
 
     protected ConstraintSemantics createSchemaRuleVerifier()

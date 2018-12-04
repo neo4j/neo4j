@@ -23,21 +23,14 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
-import java.util.concurrent.Executors;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.neo4j.helpers.collection.Iterables.firstOrNull;
@@ -60,58 +53,6 @@ public class IndexConstraintsTest
     public void shutdown()
     {
         graphDb.shutdown();
-    }
-
-    @Test
-    public void testMultipleCreate() throws InterruptedException
-    {
-        final int numThreads = 25;
-        final String uuid = UUID.randomUUID().toString();
-
-        final Node commonNode;
-        try ( Transaction tx = graphDb.beginTx() )
-        {
-            commonNode = graphDb.createNode();
-            tx.success();
-        }
-
-        ExecutorCompletionService<Node> ecs = new ExecutorCompletionService<>(
-                Executors.newFixedThreadPool( numThreads ) );
-        for ( int i = 0; i < numThreads; i++ )
-        {
-            ecs.submit( () ->
-            {
-                try ( Transaction tx = graphDb.beginTx() )
-                {
-                    final Node node = graphDb.createNode();
-                    // Acquire lock
-                    tx.acquireWriteLock( commonNode );
-                    Index<Node> index = graphDb.index().forNodes( "uuids" );
-                    final Node existing = index.get( "uuid", uuid ).getSingle();
-                    if ( existing != null )
-                    {
-                        throw new RuntimeException( "Node already exists" );
-                    }
-                    node.setProperty( "uuid", uuid );
-                    index.add( node, "uuid", uuid );
-                    tx.success();
-                    return node;
-                }
-            } );
-        }
-        int numSucceeded = 0;
-        for ( int i = 0; i < numThreads; i++ )
-        {
-            try
-            {
-                ecs.take().get();
-                ++numSucceeded;
-            }
-            catch ( ExecutionException ignored )
-            {
-            }
-        }
-        assertEquals( 1, numSucceeded );
     }
 
     // The following tests verify that multiple interacting schema commands can be applied in the same transaction.

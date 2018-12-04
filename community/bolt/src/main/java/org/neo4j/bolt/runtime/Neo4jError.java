@@ -129,8 +129,6 @@ public class Neo4jError
         {
         case "Schema":
             return Status.Schema.valueOf( error );
-        case "LegacyIndex":
-            return Status.LegacyIndex.valueOf( error );
         case "General":
             return Status.General.valueOf( error );
         case "Statement":

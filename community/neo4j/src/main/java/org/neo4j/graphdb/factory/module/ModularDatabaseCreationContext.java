@@ -33,18 +33,14 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.DefaultExplicitIndexProvider;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
@@ -53,7 +49,6 @@ import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -96,9 +91,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final LogFileCreationMonitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
-    private final AutoIndexing autoIndexing;
-    private final IndexConfigStore indexConfigStore;
-    private final ExplicitIndexProvider explicitIndexProvider;
     private final PageCache pageCache;
     private final ConstraintSemantics constraintSemantics;
     private final Monitors monitors;
@@ -149,9 +141,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.databaseHealth = new DatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ), logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
         this.commitProcessFactory = editionContext.getCommitProcessFactory();
-        this.autoIndexing = new InternalAutoIndexing( platformModule.config, tokenHolders.propertyKeyTokens() );
-        this.indexConfigStore = new IndexConfigStore( databaseLayout, fs );
-        this.explicitIndexProvider = new DefaultExplicitIndexProvider();
         this.pageCache = new DatabasePageCache( platformModule.pageCache );
         this.constraintSemantics = editionContext.getConstraintSemantics();
         this.tracers = platformModule.tracers;
@@ -291,24 +280,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public CommitProcessFactory getCommitProcessFactory()
     {
         return commitProcessFactory;
-    }
-
-    @Override
-    public AutoIndexing getAutoIndexing()
-    {
-        return autoIndexing;
-    }
-
-    @Override
-    public IndexConfigStore getIndexConfigStore()
-    {
-        return indexConfigStore;
-    }
-
-    @Override
-    public ExplicitIndexProvider getExplicitIndexProvider()
-    {
-        return explicitIndexProvider;
     }
 
     @Override

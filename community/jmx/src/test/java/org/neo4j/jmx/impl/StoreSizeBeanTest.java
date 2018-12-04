@@ -19,7 +19,6 @@
  */
 package org.neo4j.jmx.impl;
 
-import org.junit.Assert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,7 +42,6 @@ import org.neo4j.kernel.api.index.IndexProviderDescriptor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
@@ -51,7 +49,6 @@ import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.internal.KernelData;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.test.extension.EphemeralFileSystemExtension;
 import org.neo4j.test.extension.Inject;
@@ -59,11 +56,9 @@ import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
-import static org.neo4j.helpers.collection.Iterables.iterable;
 
 @ExtendWith( {EphemeralFileSystemExtension.class, TestDirectoryExtension.class} )
 class StoreSizeBeanTest
@@ -72,7 +67,6 @@ class StoreSizeBeanTest
     private EphemeralFileSystemAbstraction fs;
     @Inject
     private TestDirectory testDirectory;
-    private final ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
     private final IndexProvider indexProvider = mockedIndexProvider( "provider1" );
     private final IndexProvider indexProvider2 = mockedIndexProvider( "provider2" );
     private final LabelScanStore labelScanStore = mock( LabelScanStore.class );
@@ -101,7 +95,6 @@ class StoreSizeBeanTest
         dependencies.satisfyDependency( fs );
         dependencies.satisfyDependencies( dataSourceManager );
         dependencies.satisfyDependency( logFiles );
-        dependencies.satisfyDependency( explicitIndexProviderLookup );
         dependencies.satisfyDependency( indexProviderMap );
         dependencies.satisfyDependency( labelScanStore );
         when( db.getDependencyResolver() ).thenReturn( dependencies );
@@ -247,14 +240,6 @@ class StoreSizeBeanTest
     @Test
     void shouldCountAllIndexFiles() throws Exception
     {
-        // Explicit index file
-        File explicitIndex = testDirectory.databaseLayout().file( "explicitIndex" );
-        createFileOfSize( explicitIndex, 1 );
-
-        IndexImplementation indexImplementation = mock( IndexImplementation.class );
-        when( indexImplementation.getIndexImplementationDirectory( any() ) ).thenReturn( explicitIndex );
-        when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( iterable( indexImplementation ) );
-
         // Schema index files
         File schemaIndex = testDirectory.databaseLayout().file( "schemaIndex" );
         createFileOfSize( schemaIndex, 2 );
@@ -274,7 +259,7 @@ class StoreSizeBeanTest
         when( labelScanStore.getLabelScanStoreFile() ).thenReturn( labelScan );
 
         // Count all files
-        assertEquals( 10, storeSizeBean.getIndexStoreSize() );
+        assertEquals( 9, storeSizeBean.getIndexStoreSize() );
     }
 
     @Test
@@ -287,16 +272,16 @@ class StoreSizeBeanTest
         createFileOfSize( logFiles.getLogFileForVersion( 0 ), 1 );
         createFileOfSize( logFiles.getLogFileForVersion( 1 ), 2 );
 
-        Assert.assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
+        assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
 
         createFileOfSize( logFiles.getLogFileForVersion( 2 ), 3 );
         createFileOfSize( logFiles.getLogFileForVersion( 3 ), 4 );
 
-        Assert.assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
+        assertEquals( 3L, storeSizeBean.getTransactionLogsSize() );
 
         when( clock.millis() ).thenReturn( 200L );
 
-        Assert.assertEquals( 10L, storeSizeBean.getTransactionLogsSize() );
+        assertEquals( 10L, storeSizeBean.getTransactionLogsSize() );
     }
 
     private void createFileOfSize( File file, int size ) throws IOException

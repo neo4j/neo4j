@@ -39,8 +39,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
     private DefaultNodeValueIndexCursor nodeValueIndexCursor;
     private DefaultNodeLabelIndexCursor nodeLabelIndexCursor;
     private DefaultRelationshipIndexCursor relationshipIndexCursor;
-    private DefaultNodeExplicitIndexCursor nodeExplicitIndexCursor;
-    private DefaultRelationshipExplicitIndexCursor relationshipExplicitIndexCursor;
 
     public DefaultPooledCursors( StorageReader storageReader )
     {
@@ -264,61 +262,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         relationshipIndexCursor = cursor;
     }
 
-    @Override
-    public DefaultNodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
-    {
-        if ( nodeExplicitIndexCursor == null )
-        {
-            return trace( new DefaultNodeExplicitIndexCursor( this::accept ) );
-        }
-
-        try
-        {
-            return nodeExplicitIndexCursor;
-        }
-        finally
-        {
-            nodeExplicitIndexCursor = null;
-        }
-    }
-
-    public void accept( DefaultNodeExplicitIndexCursor cursor )
-    {
-        if ( nodeExplicitIndexCursor != null )
-        {
-            nodeExplicitIndexCursor.release();
-        }
-        nodeExplicitIndexCursor = cursor;
-    }
-
-    @Override
-    public DefaultRelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
-    {
-        if ( relationshipExplicitIndexCursor == null )
-        {
-            return trace( new DefaultRelationshipExplicitIndexCursor( new DefaultRelationshipScanCursor( null,
-                    storageReader.allocateRelationshipScanCursor() ), this::accept ) );
-        }
-
-        try
-        {
-            return relationshipExplicitIndexCursor;
-        }
-        finally
-        {
-            relationshipExplicitIndexCursor = null;
-        }
-    }
-
-    public void accept( DefaultRelationshipExplicitIndexCursor cursor )
-    {
-        if ( relationshipExplicitIndexCursor != null )
-        {
-            relationshipExplicitIndexCursor.release();
-        }
-        relationshipExplicitIndexCursor = cursor;
-    }
-
     public void release()
     {
         if ( nodeCursor != null )
@@ -355,16 +298,6 @@ public class DefaultPooledCursors extends DefaultCursors implements CursorFactor
         {
             nodeLabelIndexCursor.release();
             nodeLabelIndexCursor = null;
-        }
-        if ( nodeExplicitIndexCursor != null )
-        {
-            nodeExplicitIndexCursor.release();
-            nodeExplicitIndexCursor = null;
-        }
-        if ( relationshipExplicitIndexCursor != null )
-        {
-            relationshipExplicitIndexCursor.release();
-            relationshipExplicitIndexCursor = null;
         }
     }
 }

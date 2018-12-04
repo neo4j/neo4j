@@ -21,7 +21,6 @@ package org.neo4j.internal.kernel.api;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.values.storable.Value;
 
@@ -55,7 +54,7 @@ public interface Write
      * @param node the internal id of the node to delete
      * @return returns true if it deleted a node or false if no node was found for this id
      */
-    boolean nodeDelete( long node ) throws AutoIndexingKernelException;
+    boolean nodeDelete( long node );
 
     /**
      * Deletes the node and all relationships connecting the node
@@ -80,7 +79,7 @@ public interface Write
      *
      * @param relationship the internal id of the relationship to delete
      */
-    boolean relationshipDelete( long relationship ) throws AutoIndexingKernelException;
+    boolean relationshipDelete( long relationship );
 
     /**
      * Add a label to a node
@@ -119,7 +118,7 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the node did not have the property before
      */
-    Value nodeRemoveProperty( long node, int propertyKey ) throws EntityNotFoundException, AutoIndexingKernelException;
+    Value nodeRemoveProperty( long node, int propertyKey ) throws EntityNotFoundException;
 
     /**
      * Set a property on a relationship
@@ -129,8 +128,7 @@ public interface Write
      * @param value the value to set
      * @return The replaced value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipSetProperty( long relationship, int propertyKey, Value value )
-            throws EntityNotFoundException, AutoIndexingKernelException;
+    Value relationshipSetProperty( long relationship, int propertyKey, Value value ) throws EntityNotFoundException;
 
     /**
      * Remove a property from a relationship
@@ -139,8 +137,7 @@ public interface Write
      * @param propertyKey the property key id
      * @return The removed value, or Values.NO_VALUE if the relationship did not have the property before
      */
-    Value relationshipRemoveProperty( long relationship, int propertyKey )
-            throws EntityNotFoundException, AutoIndexingKernelException;
+    Value relationshipRemoveProperty( long relationship, int propertyKey ) throws EntityNotFoundException;
 
     /**
      * Set a property on the graph

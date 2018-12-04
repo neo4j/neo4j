@@ -135,12 +135,6 @@ public class TransactionToApply implements CommandsToApply, AutoCloseable
         return transactionRepresentation;
     }
 
-    @Override
-    public boolean requiresApplicationOrdering()
-    {
-        return commitment.hasExplicitIndexChanges();
-    }
-
     public void commitment( Commitment commitment, long transactionId )
     {
         this.commitment = commitment;

@@ -21,11 +21,8 @@ package org.neo4j.kernel.api.impl.schema.reader;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.neo4j.collection.PrimitiveLongResourceCollections;
-import org.neo4j.collection.PrimitiveLongResourceIterator;
 import org.neo4j.helpers.TaskCoordinator;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
@@ -144,13 +141,5 @@ public class PartitionedIndexReader extends AbstractIndexReader
         {
             throw new IndexReaderCloseException( e );
         }
-    }
-
-    private PrimitiveLongResourceIterator partitionedOperation(
-            Function<SimpleIndexReader,PrimitiveLongResourceIterator> readerFunction )
-    {
-        return PrimitiveLongResourceCollections.concat( indexReaders.parallelStream()
-                .map( readerFunction )
-                .collect( Collectors.toList() ) );
     }
 }

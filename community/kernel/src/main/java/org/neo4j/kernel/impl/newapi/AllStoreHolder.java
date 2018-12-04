@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.newapi;
 
 import java.util.Iterator;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.Set;
@@ -35,7 +34,6 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -46,7 +44,6 @@ import org.neo4j.internal.kernel.api.procs.UserAggregator;
 import org.neo4j.internal.kernel.api.procs.UserFunctionHandle;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.ExplicitIndex;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -68,8 +65,6 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.security.OverriddenAccessMode;
 import org.neo4j.kernel.impl.api.security.RestrictedAccessMode;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
-import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptorFactory;
@@ -99,7 +94,6 @@ import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
 public class AllStoreHolder extends Read
 {
     private final StorageReader storageReader;
-    private final ExplicitIndexStore explicitIndexStore;
     private final Procedures procedures;
     private final SchemaState schemaState;
     private final IndexingService indexingService;
@@ -111,7 +105,6 @@ public class AllStoreHolder extends Read
     public AllStoreHolder( StorageReader storageReader,
                            KernelTransactionImplementation ktx,
                            DefaultPooledCursors cursors,
-                           ExplicitIndexStore explicitIndexStore,
                            Procedures procedures,
                            SchemaState schemaState,
                            IndexingService indexingService,
@@ -120,7 +113,6 @@ public class AllStoreHolder extends Read
     {
         super( storageReader, cursors, ktx );
         this.storageReader = storageReader;
-        this.explicitIndexStore = explicitIndexStore;
         this.procedures = procedures;
         this.schemaState = schemaState;
         this.indexReaderCache = new IndexReaderCache( indexingService );
@@ -282,64 +274,6 @@ public class AllStoreHolder extends Read
             labelScanReader = labelScanStore.newReader();
         }
         return labelScanReader;
-    }
-
-    @Override
-    ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        return explicitIndexTxState().nodeChanges( indexName );
-    }
-
-    @Override
-    ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        return explicitIndexTxState().relationshipChanges( indexName );
-    }
-
-    @Override
-    public String[] nodeExplicitIndexesGetAll()
-    {
-        ktx.assertOpen();
-        return explicitIndexStore.getAllNodeIndexNames();
-    }
-
-    @Override
-    public boolean nodeExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
-    {
-        ktx.assertOpen();
-        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Node, indexName, customConfiguration  );
-    }
-
-    @Override
-    public Map<String,String> nodeExplicitIndexGetConfiguration( String indexName )
-            throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        return explicitIndexStore.getNodeIndexConfiguration( indexName );
-    }
-
-    @Override
-    public String[] relationshipExplicitIndexesGetAll()
-    {
-        ktx.assertOpen();
-        return explicitIndexStore.getAllRelationshipIndexNames();
-    }
-
-    @Override
-    public boolean relationshipExplicitIndexExists( String indexName, Map<String,String> customConfiguration )
-    {
-        ktx.assertOpen();
-        return explicitIndexTxState().checkIndexExistence( IndexEntityType.Relationship, indexName, customConfiguration  );
-    }
-
-    @Override
-    public Map<String,String> relationshipExplicitIndexGetConfiguration( String indexName )
-            throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        return explicitIndexStore.getRelationshipIndexConfiguration( indexName );
     }
 
     @Override
@@ -778,16 +712,6 @@ public class AllStoreHolder extends Read
         return storageReader.nodeExists( id );
     }
 
-    void getOrCreateNodeIndexConfig( String indexName, Map<String,String> customConfig )
-    {
-        explicitIndexStore.getOrCreateNodeIndexConfig( indexName, customConfig );
-    }
-
-    void getOrCreateRelationshipIndexConfig( String indexName, Map<String,String> customConfig )
-    {
-        explicitIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
-    }
-
     @Override
     public UserFunctionHandle functionGet( QualifiedName name )
     {
@@ -1042,11 +966,6 @@ public class AllStoreHolder extends Read
     public void schemaStateFlush()
     {
         schemaState.clear();
-    }
-
-    ExplicitIndexStore explicitIndexStore()
-    {
-        return explicitIndexStore;
     }
 
     private RawIterator<Object[],ProcedureException> callProcedure(

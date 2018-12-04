@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.api.impl.index.collector;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
-import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.ReaderUtil;
@@ -50,12 +48,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.PrimitiveLongResourceIterator;
-import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.index.impl.lucene.explicit.EmptyIndexHits;
 import org.neo4j.kernel.api.index.IndexProgressor;
-import org.neo4j.kernel.impl.api.explicitindex.AbstractIndexHits;
 import org.neo4j.util.VisibleForTesting;
 import org.neo4j.values.storable.Value;
 
@@ -69,8 +64,6 @@ import org.neo4j.values.storable.Value;
  */
 public class DocValuesCollector extends SimpleCollector
 {
-    private static final EmptyIndexHits<Document> EMPTY_INDEX_HITS = new EmptyIndexHits<>();
-
     private LeafReaderContext context;
     private int segmentHits;
     private int totalHits;
@@ -130,33 +123,6 @@ public class DocValuesCollector extends SimpleCollector
         TopDocs topDocs = getTopDocs( sort, size );
         LeafReaderContext[] contexts = getLeafReaderContexts( getMatchingDocs() );
         return new TopDocsValuesIterator( topDocs, contexts, field );
-    }
-
-    /**
-     * Replay the search and collect every hit into TopDocs. One {@code ScoreDoc} is allocated
-     * for every hit and the {@code Document} instance is loaded lazily with on every iteration step.
-     *
-     * @param sort how to sort the iterator. If this is null, results will be in index-order.
-     * @return an indexhits iterator over all matches
-     * @throws IOException if an exception occurs while querying the index.
-     */
-    public IndexHits<Document> getIndexHits( Sort sort ) throws IOException
-    {
-        List<MatchingDocs> matchingDocs = getMatchingDocs();
-        int size = getTotalHits();
-        if ( size == 0 )
-        {
-            return EMPTY_INDEX_HITS;
-        }
-
-        if ( sort == null || sort == Sort.INDEXORDER )
-        {
-            return new DocsInIndexOrderIterator( matchingDocs, size, isKeepScores() );
-        }
-
-        TopDocs topDocs = getTopDocs( sort, size );
-        LeafReaderContext[] contexts = getLeafReaderContexts( matchingDocs );
-        return new TopDocsIterator( topDocs, contexts );
     }
 
     /**
@@ -673,89 +639,6 @@ public class DocValuesCollector extends SimpleCollector
 
     }
 
-    private static final class DocsInIndexOrderIterator extends AbstractIndexHits<Document>
-    {
-        private final Iterator<MatchingDocs> docs;
-        private final int size;
-        private final boolean keepScores;
-        private DocIdSetIterator currentIdIterator;
-        private Scorer currentScorer;
-        private LeafReader currentReader;
-
-        private DocsInIndexOrderIterator( List<MatchingDocs> docs, int size, boolean keepScores )
-        {
-            this.size = size;
-            this.keepScores = keepScores;
-            this.docs = docs.iterator();
-        }
-
-        @Override
-        public int size()
-        {
-            return size;
-        }
-
-        @Override
-        public float currentScore()
-        {
-            try
-            {
-                return currentScorer.score();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
-
-        @Override
-        protected Document fetchNextOrNull()
-        {
-            if ( ensureValidDisi() )
-            {
-                try
-                {
-                    int doc = currentIdIterator.nextDoc();
-                    if ( doc == DocIdSetIterator.NO_MORE_DOCS )
-                    {
-                        currentIdIterator = null;
-                        currentScorer = null;
-                        currentReader = null;
-                        return fetchNextOrNull();
-                    }
-                    return currentReader.document( doc );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-            else
-            {
-                return null;
-            }
-        }
-
-        private boolean ensureValidDisi()
-        {
-            while ( currentIdIterator == null && docs.hasNext() )
-            {
-                MatchingDocs matchingDocs = docs.next();
-                currentIdIterator = matchingDocs.docIdSet;
-                if ( keepScores )
-                {
-                    currentScorer = new ReplayingScorer( matchingDocs.scores );
-                }
-                else
-                {
-                    currentScorer = new ConstantScoreScorer( null, Float.NaN, currentIdIterator );
-                }
-                currentReader = matchingDocs.context.reader();
-            }
-            return currentIdIterator != null;
-        }
-    }
-
     private abstract static class ScoreDocsIterator extends PrefetchingIterator<ScoreDoc>
     {
         private final Iterator<ScoreDoc> iterator;
@@ -798,61 +681,6 @@ public class DocValuesCollector extends SimpleCollector
         }
 
         protected abstract void onNextDoc( int localDocID, LeafReaderContext context );
-    }
-
-    private static final class TopDocsIterator extends AbstractIndexHits<Document>
-    {
-        private final int size;
-        private final ScoreDocsIterator scoreDocs;
-        private Document currentDoc;
-
-        private TopDocsIterator( TopDocs docs, LeafReaderContext[] contexts )
-        {
-            scoreDocs = new ScoreDocsIterator( docs, contexts )
-            {
-                @Override
-                protected void onNextDoc( int localDocID, LeafReaderContext context )
-                {
-                    updateCurrentDocument( localDocID, context.reader() );
-                }
-            };
-            this.size = docs.scoreDocs.length;
-        }
-
-        @Override
-        public int size()
-        {
-            return size;
-        }
-
-        @Override
-        public float currentScore()
-        {
-            return scoreDocs.getCurrentDoc().score;
-        }
-
-        @Override
-        protected Document fetchNextOrNull()
-        {
-            if ( !scoreDocs.hasNext() )
-            {
-                return null;
-            }
-            scoreDocs.next();
-            return currentDoc;
-        }
-
-        private void updateCurrentDocument( int docID, LeafReader reader )
-        {
-            try
-            {
-                currentDoc = reader.document( docID );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-        }
     }
 
     private static final class TopDocsValuesIterator extends ValuesIterator.Adapter

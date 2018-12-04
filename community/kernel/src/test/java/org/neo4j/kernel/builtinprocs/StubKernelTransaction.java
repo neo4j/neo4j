@@ -24,8 +24,6 @@ import java.util.Optional;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
-import org.neo4j.internal.kernel.api.ExplicitIndexRead;
-import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.Procedures;
@@ -87,18 +85,6 @@ public class StubKernelTransaction implements KernelTransaction
 
     @Override
     public Write dataWrite()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ExplicitIndexRead indexRead()
-    {
-        throw new UnsupportedOperationException( "not implemented" );
-    }
-
-    @Override
-    public ExplicitIndexWrite indexWrite()
     {
         throw new UnsupportedOperationException( "not implemented" );
     }

@@ -34,7 +34,6 @@ import org.neo4j.test.TestData.Title;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class GetOnRootIT extends AbstractRestFunctionalTestBase
 {
@@ -67,14 +66,6 @@ public class GetOnRootIT extends AbstractRestFunctionalTestBase
             assertEquals( 200, response.getStatus() );
             response.close();
         }
-        response = RestRequest.req().get( (String) map.get( "node_index" ) );
-        assertTrue( response.getStatus() == 200 || response.getStatus() == 204 );
-        response.close();
-
-        response = RestRequest.req().get(
-                (String) map.get( "relationship_index" ) );
-        assertTrue( response.getStatus() == 200 || response.getStatus() == 204 );
-        response.close();
 
         response = RestRequest.req().get( (String) map.get( "extensions_info" ) );
         assertEquals( 200, response.getStatus() );

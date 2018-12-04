@@ -91,7 +91,6 @@ import org.neo4j.kernel.impl.coreapi.schema.NodePropertyExistenceConstraintDefin
 import org.neo4j.kernel.impl.coreapi.schema.RelationshipPropertyExistenceConstraintDefinition;
 import org.neo4j.kernel.impl.coreapi.schema.UniquenessConstraintDefinition;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -180,11 +179,10 @@ import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 import static org.neo4j.kernel.impl.store.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.store.PropertyStore.encodeString;
 
-public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvider
+public class BatchInserterImpl implements BatchInserter
 {
     private final LifeSupport life;
     private final NeoStores neoStores;
-    private final IndexConfigStore indexStore;
     private final DatabaseLayout databaseLayout;
     private final TokenHolders tokenHolders;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -321,7 +319,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
         labelTokenHolder.setInitialTokens( labelTokenStore.getTokens() );
         tokenHolders = new TokenHolders( propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder );
 
-        indexStore = life.add( new IndexConfigStore( this.databaseLayout, fileSystem ) );
         schemaCache = new SchemaCache( getConstraintSemantics(), schemaStore, indexProviderMap );
 
         actions = new BatchSchemaActions();
@@ -1064,12 +1061,6 @@ public class BatchInserterImpl implements BatchInserter, IndexConfigStoreProvide
     public String getStoreDir()
     {
         return databaseLayout.databaseDirectory().getPath();
-    }
-
-    @Override
-    public IndexConfigStore getIndexStore()
-    {
-        return this.indexStore;
     }
 
     private static void dumpConfiguration( Map<String,String> config, PrintStream out )

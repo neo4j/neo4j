@@ -28,9 +28,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.kernel.impl.index.DummyIndexExtensionFactory;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
@@ -44,7 +41,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TransactionRepresentationCommitProcessIT
 {
@@ -58,14 +54,6 @@ public class TransactionRepresentationCommitProcessIT
     @Test( timeout = 15000 )
     public void commitDuringContinuousCheckpointing() throws Exception
     {
-        final Index<Node> index;
-        try ( Transaction tx = db.beginTx() )
-        {
-            index = db.index().forNodes( INDEX_NAME, stringMap(
-                    IndexManager.PROVIDER, DummyIndexExtensionFactory.IDENTIFIER ) );
-            tx.success();
-        }
-
         final AtomicBoolean done = new AtomicBoolean();
         Workers<Runnable> workers = new Workers<>( getClass().getSimpleName() );
         for ( int i = 0; i < TOTAL_ACTIVE_THREADS; i++ )
@@ -82,7 +70,6 @@ public class TransactionRepresentationCommitProcessIT
                         try ( Transaction tx = db.beginTx() )
                         {
                             Node node = db.createNode();
-                            index.add( node, "key", node.getId() );
                             tx.success();
                         }
                         randomSleep();

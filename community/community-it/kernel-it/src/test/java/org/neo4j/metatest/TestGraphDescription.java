@@ -35,12 +35,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphDescription.NODE;
 import org.neo4j.test.GraphDescription.PROP;
-import org.neo4j.test.GraphDescription.REL;
 import org.neo4j.test.GraphHolder;
 import org.neo4j.test.TestData;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -115,63 +113,6 @@ public class TestGraphDescription implements GraphHolder
             assertTrue( "Person label missing", a.hasLabel( label( "Person" ) ) );
             assertTrue( "Banana label missing", b.hasLabel( label( "Banana" ) ) );
             assertTrue( "Apple label missing", b.hasLabel( label( "Apple" ) ) );
-        }
-    }
-
-    @Test
-    @Graph( value = {"I know you"}, autoIndexNodes = true )
-    public void canAutoIndexNodes()
-    {
-        data.get();
-
-        try ( Transaction ignored = graphdb.beginTx() )
-        {
-            try ( IndexHits<Node> indexHits = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
-            {
-                assertTrue( "can't look up node.", indexHits.hasNext() );
-            }
-        }
-    }
-
-    @Test
-    @Graph( nodes = {@NODE( name = "I", setNameProperty = true, properties = {
-            @PROP( key = "name", value = "I" )} )}, autoIndexNodes = true )
-    public void canAutoIndexNodesExplicitProps()
-    {
-        data.get();
-
-        try ( Transaction ignored = graphdb.beginTx();
-              IndexHits<Node> nodes = graphdb().index().getNodeAutoIndexer().getAutoIndex().get( "name", "I" ) )
-        {
-            assertTrue( "can't look up node.", nodes.hasNext() );
-        }
-    }
-
-    @Test
-    @Graph( nodes = {
-            @NODE( name = "I", properties = {
-                    @PROP( key = "name", value = "me" ),
-                    @PROP( key = "bool", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ),
-            @NODE( name = "you", setNameProperty = true ) },
-                   relationships = { @REL( start = "I", end = "you", type = "knows",
-                           properties = {
-                    @PROP( key = "name", value = "relProp" ),
-                    @PROP( key = "valid", value = "true", type = GraphDescription.PropType.BOOLEAN ) } ) },
-            autoIndexRelationships = true )
-    public void canCreateMoreInvolvedGraphWithPropertiesAndAutoIndex()
-    {
-        data.get();
-        verifyIKnowYou( "knows", "me" );
-        try ( Transaction ignored = graphdb.beginTx() )
-        {
-            assertEquals( true, data.get().get( "I" ).getProperty( "bool" ) );
-            assertFalse( "node autoindex enabled.", graphdb().index().getNodeAutoIndexer().isEnabled() );
-            try ( IndexHits<Relationship> relationships = graphdb().index()
-                    .getRelationshipAutoIndexer().getAutoIndex().get( "name", "relProp" ) )
-            {
-                assertTrue( "can't look up rel.", relationships.hasNext() );
-            }
-            assertTrue( "relationship autoindex enabled.", graphdb().index().getRelationshipAutoIndexer().isEnabled() );
         }
     }
 

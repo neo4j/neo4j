@@ -32,16 +32,16 @@ import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalit
 import org.neo4j.cypher.internal.runtime.interpreted.TransactionBoundQueryContext.IndexSearchMonitor
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionBoundQueryContext, TransactionalContextWrapper}
 import org.neo4j.cypher.internal.runtime.{ExecutableQuery => _, _}
+import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.{CypherException, CypherExecutionMode, CypherExpressionEngineOption}
+import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
+import org.neo4j.cypher.{CypherException, CypherExecutionMode}
 import org.neo4j.graphdb.{Notification, Result}
-import org.neo4j.kernel.api.query.{CompilerInfo, ExplicitIndexUsage, SchemaIndexUsage}
+import org.neo4j.kernel.api.query.{CompilerInfo, SchemaIndexUsage}
 import org.neo4j.kernel.impl.query.{QueryExecutionMonitor, TransactionalContext}
 import org.neo4j.kernel.monitoring.{Monitors => KernelMonitors}
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v4_0.frontend.PlannerName
-import org.neo4j.cypher.internal.v4_0.frontend.phases.{CompilationPhaseTracer, RecordingNotificationLogger}
-import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, TaskCloser}
 
 import scala.collection.JavaConverters._
 
@@ -118,8 +118,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
     new CompilerInfo(plannerName.name, runtimeName.name, logicalPlan.indexUsage.map {
       case SchemaIndexSeekUsage(identifier, labelId, label, propertyKeys) => new SchemaIndexUsage(identifier, labelId, label, propertyKeys: _*)
       case SchemaIndexScanUsage(identifier, labelId, label, propertyKey) => new SchemaIndexUsage(identifier, labelId, label, propertyKey)
-      case ExplicitNodeIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "NODE", index)
-      case ExplicitRelationshipIndexUsage(identifier, index) => new ExplicitIndexUsage(identifier, "RELATIONSHIP", index)
     }.asJava)
 
   private def getQueryType(planState: LogicalPlanState): InternalQueryType = {

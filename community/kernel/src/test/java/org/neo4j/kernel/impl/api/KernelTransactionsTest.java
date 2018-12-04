@@ -47,7 +47,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.availability.AvailabilityGuard;
@@ -60,7 +59,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
 import org.neo4j.kernel.impl.factory.CanWrite;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocksFactory;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -719,12 +717,10 @@ public class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard, Config config )
     {
         return new KernelTransactions( config, statementLocksFactory, null, statementOperations,
-                null, DEFAULT, commitProcess, mock( ExplicitIndexTransactionStateProvider.class ), new TransactionHooks(),
+                null, DEFAULT, commitProcess, new TransactionHooks(),
                 mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
                 new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ),
-                new CanWrite(),
-                AutoIndexing.UNSUPPORTED,
-                mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
+                new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
     }
@@ -735,9 +731,8 @@ public class KernelTransactionsTest
             SystemNanoClock clock, AvailabilityGuard databaseAvailabilityGuard )
     {
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess,
-                mock( ExplicitIndexTransactionStateProvider.class ), new TransactionHooks(),
-                mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(), transactionIdStore, clock,
-                new CanWrite(), AutoIndexing.UNSUPPORTED, EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies() );
+                new TransactionHooks(), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(),
+                transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -782,16 +777,16 @@ public class KernelTransactionsTest
         TestKernelTransactions( StatementLocksFactory statementLocksFactory,
                 ConstraintIndexCreator constraintIndexCreator, StatementOperationParts statementOperations,
                 SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
-                TransactionCommitProcess transactionCommitProcess, ExplicitIndexTransactionStateProvider explicitIndexTransactionStateProvider,
+                TransactionCommitProcess transactionCommitProcess,
                 TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
-                AutoIndexing autoIndexing, VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
+                VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
-                    transactionCommitProcess, explicitIndexTransactionStateProvider, hooks, transactionMonitor, databaseAvailabilityGuard, tracers,
+                    transactionCommitProcess, hooks, transactionMonitor, databaseAvailabilityGuard, tracers,
                     storageEngine, procedures, transactionIdStore, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
-                    new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability, autoIndexing, mock( ExplicitIndexStore.class ),
+                    new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), dataSourceDependencies );
         }

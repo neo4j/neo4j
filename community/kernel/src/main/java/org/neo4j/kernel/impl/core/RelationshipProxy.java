@@ -41,7 +41,6 @@ import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
@@ -146,11 +145,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( AutoIndexingKernelException e )
-        {
-            throw new IllegalStateException( "Auto indexing encountered a failure while deleting the relationship: "
-                                             + e.getMessage(), e );
         }
     }
 
@@ -443,12 +437,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         {
             throw new ConstraintViolationException( e.getMessage(), e );
         }
-        catch ( AutoIndexingKernelException e )
-        {
-            throw new IllegalStateException( "Auto indexing encountered a failure while setting property: "
-                                             + e.getMessage(), e );
-        }
-
     }
 
     @Override
@@ -471,11 +459,6 @@ public class RelationshipProxy implements Relationship, RelationshipVisitor<Runt
         catch ( InvalidTransactionTypeKernelException e )
         {
             throw new ConstraintViolationException( e.getMessage(), e );
-        }
-        catch ( AutoIndexingKernelException e )
-        {
-            throw new IllegalStateException( "Auto indexing encountered a failure while removing property: "
-                                             + e.getMessage(), e );
         }
     }
 

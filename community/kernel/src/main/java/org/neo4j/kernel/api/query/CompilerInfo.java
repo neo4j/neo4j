@@ -20,16 +20,15 @@
 package org.neo4j.kernel.api.query;
 
 import java.util.List;
-
 import javax.annotation.Nonnull;
 
 public class CompilerInfo
 {
     private final String planner;
     private final String runtime;
-    private final List<IndexUsage> indexes;
+    private final List<SchemaIndexUsage> indexes;
 
-    public CompilerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<IndexUsage> indexes )
+    public CompilerInfo( @Nonnull String planner, @Nonnull String runtime, @Nonnull List<SchemaIndexUsage> indexes )
     {
         this.planner = planner;
         this.runtime = runtime;
@@ -46,7 +45,7 @@ public class CompilerInfo
         return runtime.toLowerCase();
     }
 
-    public List<IndexUsage> indexes()
+    public List<SchemaIndexUsage> indexes()
     {
         return indexes;
     }

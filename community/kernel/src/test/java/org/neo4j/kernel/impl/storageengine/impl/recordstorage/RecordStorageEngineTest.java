@@ -27,11 +27,9 @@ import org.mockito.ArgumentCaptor;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import org.neo4j.exceptions.KernelException;
@@ -46,7 +44,6 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplier;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.TransactionToApply;
-import org.neo4j.kernel.impl.store.StoreType;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.CountsTracker;
 import org.neo4j.kernel.impl.transaction.TransactionRepresentation;
@@ -67,7 +64,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -88,12 +84,6 @@ public class RecordStorageEngineTest
             .around( pageCacheRule )
             .around( testDirectory )
             .around( storageEngineRule );
-
-    private static final Function<Optional<StoreType>,StoreType> assertIsPresentAndGet = optional ->
-    {
-        assertTrue( "Expected optional to be present", optional.isPresent() );
-        return optional.get();
-    };
 
     @Test( timeout = 30_000 )
     public void shutdownRecordStorageEngineAfterFailedTransaction() throws Throwable
@@ -234,7 +224,6 @@ public class RecordStorageEngineTest
         long txId = ThreadLocalRandom.current().nextLong( 0, 1000 );
         TransactionToApply txToApply = new TransactionToApply( transaction );
         FakeCommitment commitment = new FakeCommitment( txId, mock( TransactionIdStore.class ) );
-        commitment.setHasExplicitIndexChanges( false );
         txToApply.commitment( commitment, txId );
         return txToApply;
     }

@@ -36,14 +36,12 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -346,10 +344,10 @@ public class KernelTransactionTerminationTest
         {
             super( Config.defaults(), mock( StatementOperationParts.class ), mock( SchemaWriteGuard.class ), new TransactionHooks(),
                     mock( ConstraintIndexCreator.class ), new Procedures(), TransactionHeaderInformationFactory.DEFAULT, mock( TransactionCommitProcess.class ),
-                    monitor, () -> null, mock( Pool.class ), Clocks.fakeClock(),
+                    monitor, mock( Pool.class ), Clocks.fakeClock(),
                     new AtomicReference<>( CpuClock.NOT_AVAILABLE ), new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL,
-                    LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(), AutoIndexing.UNSUPPORTED,
-                    mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
+                    LockTracer.NONE, PageCursorTracerSupplier.NULL, mock( StorageEngine.class, RETURNS_MOCKS ), new CanWrite(),
+                    EmptyVersionContextSupplier.EMPTY, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ),
                     mockedTokenHolders(), mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
 
             this.monitor = monitor;

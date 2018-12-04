@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,7 +38,6 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
@@ -58,7 +56,6 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.Iterators.asResourceIterator;
-import static org.neo4j.kernel.impl.index.IndexConfigStore.INDEX_DB_FILE_NAME;
 
 public class DatabaseFileListingTest
 {
@@ -125,15 +122,13 @@ public class DatabaseFileListingTest
         // Given
         LabelScanStore labelScanStore = mock( LabelScanStore.class );
         IndexingService indexingService = mock( IndexingService.class );
-        ExplicitIndexProvider explicitIndexes = mock( ExplicitIndexProvider.class );
-        when( explicitIndexes.allIndexProviders() ).thenReturn( Collections.emptyList() );
         DatabaseLayout databaseLayout = mock( DatabaseLayout.class );
         when( databaseLayout.metadataStore() ).thenReturn( mock( File.class ) );
         LogFiles logFiles = mock( LogFiles.class );
         filesInStoreDirAre( databaseLayout, STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
         StorageEngine storageEngine = mock( StorageEngine.class );
         DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore,
-                indexingService, explicitIndexes, storageEngine );
+                indexingService, storageEngine );
 
         ResourceIterator<File> scanSnapshot = scanStoreFilesAre( labelScanStore,
                 new String[]{"blah/scan.store", "scan.more"} );
@@ -203,7 +198,6 @@ public class DatabaseFileListingTest
         ResourceIterator<StoreFileMetadata> storeFiles = database.listStoreFiles( false );
         Set<File> listedStoreFiles = storeFiles.stream()
                 .map( StoreFileMetadata::file )
-                .filter( file -> !file.getName().equals( INDEX_DB_FILE_NAME ) )
                 .collect( Collectors.toSet() );
         assertEquals( expectedFiles, listedStoreFiles );
     }

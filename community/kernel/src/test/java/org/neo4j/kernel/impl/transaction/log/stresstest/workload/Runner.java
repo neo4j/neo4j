@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -112,7 +111,7 @@ public class Runner implements Callable<Long>
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, log );
         LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFiles, databaseHealth );
         return new BatchingTransactionAppender( logFiles, logRotation,
-                transactionMetadataCache, transactionIdStore, IdOrderingQueue.BYPASS, databaseHealth );
+                transactionMetadataCache, transactionIdStore, databaseHealth );
     }
 
     private LogFiles createLogFiles( TransactionIdStore transactionIdStore,

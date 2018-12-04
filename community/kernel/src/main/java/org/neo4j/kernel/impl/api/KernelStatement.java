@@ -38,7 +38,6 @@ import org.neo4j.kernel.api.QueryRegistryOperations;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.query.ExecutingQuery;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -113,12 +112,6 @@ public class KernelStatement extends CloseableResourceManager implements TxState
     public TransactionState txState()
     {
         return txStateHolder.txState();
-    }
-
-    @Override
-    public ExplicitIndexTransactionState explicitIndexTxState()
-    {
-        return txStateHolder.explicitIndexTxState();
     }
 
     @Override

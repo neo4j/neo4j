@@ -35,12 +35,9 @@ import org.neo4j.internal.kernel.api.LabelSet;
 import org.neo4j.internal.kernel.api.Write;
 import org.neo4j.internal.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.AutoIndexingKernelException;
 import org.neo4j.internal.kernel.api.helpers.StubNodeCursor;
 import org.neo4j.internal.kernel.api.helpers.TestRelationshipChain;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
-import org.neo4j.kernel.api.explicitindex.AutoIndexOperations;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory;
 import org.neo4j.kernel.api.schema.constraints.ConstraintDescriptorFactory;
@@ -56,7 +53,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxState;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -127,22 +123,18 @@ public class OperationsLockTest
         when( cursors.allocateNodeCursor() ).thenReturn( nodeCursor );
         when( cursors.allocatePropertyCursor() ).thenReturn( propertyCursor );
         when( cursors.allocateRelationshipScanCursor() ).thenReturn( relationshipCursor );
-        AutoIndexing autoindexing = mock( AutoIndexing.class );
-        AutoIndexOperations autoIndexOperations = mock( AutoIndexOperations.class );
-        when( autoindexing.nodes() ).thenReturn( autoIndexOperations );
-        when( autoindexing.relationships() ).thenReturn( autoIndexOperations );
         StorageEngine engine = mock( StorageEngine.class );
         storageReader = mock( StorageReader.class );
         when( storageReader.nodeExists( anyLong() ) ).thenReturn( true );
         when( storageReader.constraintsGetForLabel( anyInt() )).thenReturn( Collections.emptyIterator() );
         when( storageReader.constraintsGetAll() ).thenReturn( Collections.emptyIterator() );
         when( engine.newReader() ).thenReturn( storageReader );
-        allStoreHolder = new AllStoreHolder( storageReader, transaction, cursors, mock(
-                ExplicitIndexStore.class ), mock( Procedures.class ), mock( SchemaState.class ), mock( IndexingService.class ), mock( LabelScanStore.class ),
-                new Dependencies() );
+        allStoreHolder =
+                new AllStoreHolder( storageReader, transaction, cursors, mock( Procedures.class ), mock( SchemaState.class ), mock( IndexingService.class ),
+                        mock( LabelScanStore.class ), new Dependencies() );
         constraintIndexCreator = mock( ConstraintIndexCreator.class );
         operations = new Operations( allStoreHolder, mock( IndexTxStateUpdater.class ),storageReader,
-                 transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors, autoindexing,
+                 transaction, new KernelToken( storageReader, transaction, mockedTokenHolders() ), cursors,
                 constraintIndexCreator, mock( ConstraintSemantics.class ), mock( IndexingProvidersService.class ), Config.defaults() );
         operations.initialize();
 
@@ -365,7 +357,6 @@ public class OperationsLockTest
 
     @Test
     public void shouldAcquireEntityWriteLockBeforeDeletingNode()
-            throws AutoIndexingKernelException
     {
         // GIVEN
         when( nodeCursor.next() ).thenReturn( true );
@@ -536,7 +527,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquiredSharedLabelLocksWhenDeletingNode() throws AutoIndexingKernelException
+    public void shouldAcquiredSharedLabelLocksWhenDeletingNode()
     {
         // given
         long nodeId = 1L;
@@ -602,7 +593,7 @@ public class OperationsLockTest
     }
 
     @Test
-    public void shouldAcquiredSharedLabelLocksWhenRemovingNodeProperty() throws AutoIndexingKernelException, EntityNotFoundException
+    public void shouldAcquiredSharedLabelLocksWhenRemovingNodeProperty() throws EntityNotFoundException
     {
         // given
         long nodeId = 1L;

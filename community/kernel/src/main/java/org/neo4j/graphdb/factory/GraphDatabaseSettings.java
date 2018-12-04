@@ -59,7 +59,6 @@ import static org.neo4j.kernel.configuration.Settings.LONG;
 import static org.neo4j.kernel.configuration.Settings.NO_DEFAULT;
 import static org.neo4j.kernel.configuration.Settings.PATH;
 import static org.neo4j.kernel.configuration.Settings.STRING;
-import static org.neo4j.kernel.configuration.Settings.STRING_LIST;
 import static org.neo4j.kernel.configuration.Settings.TIMEZONE;
 import static org.neo4j.kernel.configuration.Settings.TRUE;
 import static org.neo4j.kernel.configuration.Settings.buildSetting;
@@ -550,36 +549,6 @@ public class GraphDatabaseSettings implements LoadableConfig
                   "let the checkpointer flush data as fast as the hardware will go. " +
                   "Set this to -1 to disable the IOPS limit." )
     public static final Setting<Integer> check_point_iops_limit = setting( "dbms.checkpoint.iops.limit", INTEGER, "300" );
-
-    // Auto Indexing
-    @Description( "Controls the auto indexing feature for nodes. Setting it to `false` shuts it down, " +
-            "while `true` enables it by default for properties listed in the dbms.auto_index.nodes.keys setting." )
-    @Internal
-    @Deprecated
-    public static final Setting<Boolean> node_auto_indexing = setting( "dbms.auto_index.nodes.enabled", BOOLEAN,
-            FALSE );
-
-    @Description( "A list of property names (comma separated) that will be indexed by default. This applies to " +
-            "_nodes_ only." )
-    @Internal
-    @Deprecated
-    public static final Setting<List<String>> node_keys_indexable = setting( "dbms.auto_index.nodes.keys",
-            STRING_LIST, "" );
-
-    @Description( "Controls the auto indexing feature for relationships. Setting it to `false` shuts it down, " +
-            "while `true` enables it by default for properties listed in the dbms.auto_index.relationships.keys " +
-            "setting." )
-    @Internal
-    @Deprecated
-    public static final Setting<Boolean> relationship_auto_indexing =
-            setting( "dbms.auto_index.relationships.enabled", BOOLEAN, FALSE );
-
-    @Description( "A list of property names (comma separated) that will be indexed by default. This applies to " +
-            "_relationships_ only." )
-    @Internal
-    @Deprecated
-    public static final Setting<List<String>> relationship_keys_indexable =
-            setting( "dbms.auto_index.relationships.keys", STRING_LIST, "" );
 
     // Index sampling
     @Description( "Enable or disable background index sampling" )

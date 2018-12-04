@@ -24,7 +24,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
@@ -508,16 +507,6 @@ public interface GraphDatabaseService
      * @return the {@link Schema schema manager} for this database.
      */
     Schema schema();
-
-    /**
-     * Returns the {@link IndexManager} paired with this graph database service
-     * and is the entry point for managing indexes coupled with this database.
-     *
-     * @return the {@link IndexManager} for this database.
-     * @deprecated The {@link IndexManager} based indexes will be removed in the next major release. Please consider using schema indexes instead.
-     */
-    @Deprecated
-    IndexManager index();
 
     /**
      * Factory method for unidirectional traversal descriptions.

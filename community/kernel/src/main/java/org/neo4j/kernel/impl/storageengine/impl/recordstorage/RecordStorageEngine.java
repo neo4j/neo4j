@@ -54,9 +54,6 @@ import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
 import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsRecordState;
 import org.neo4j.kernel.impl.api.CountsStoreBatchTransactionApplier;
-import org.neo4j.kernel.impl.api.ExplicitBatchIndexApplier;
-import org.neo4j.kernel.impl.api.ExplicitIndexApplierLookup;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.api.TransactionApplierFacade;
@@ -70,7 +67,6 @@ import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.labelscan.NativeLabelScanStore;
 import org.neo4j.kernel.impl.locking.LockGroup;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -99,11 +95,9 @@ import org.neo4j.kernel.impl.transaction.state.IntegrityValidator;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
 import org.neo4j.kernel.impl.transaction.state.storeview.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.scheduler.JobScheduler;
@@ -131,23 +125,19 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final NeoStores neoStores;
     private final TokenHolders tokenHolders;
     private final DatabaseHealth databaseHealth;
-    private final IndexConfigStore indexConfigStore;
     private final SchemaCache schemaCache;
     private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final LabelScanStore labelScanStore;
     private final IndexProviderMap indexProviderMap;
-    private final ExplicitIndexApplierLookup explicitIndexApplierLookup;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaRuleAccess;
     private final ConstraintSemantics constraintSemantics;
-    private final IdOrderingQueue explicitIndexTransactionOrdering;
     private final LockService lockService;
     private final WorkSync<Supplier<LabelScanWriter>,LabelUpdateWork> labelScanStoreSync;
     private final CommandReaderFactory commandReaderFactory;
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync;
     private final IndexStoreView indexStoreView;
-    private final ExplicitIndexProvider explicitIndexProviderLookup;
     private final PropertyPhysicalToLogicalConverter indexUpdatesConverter;
     private final IdController idController;
     private final CountsTracker countsStore;
@@ -170,9 +160,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             IndexProviderMap indexProviderMap,
             IndexingService.Monitor indexingServiceMonitor,
             DatabaseHealth databaseHealth,
-            ExplicitIndexProvider explicitIndexProvider,
-            IndexConfigStore indexConfigStore,
-            IdOrderingQueue explicitIndexTransactionOrdering,
             IdGeneratorFactory idGeneratorFactory,
             IdController idController,
             Monitors monitors,
@@ -184,10 +171,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
         this.schemaState = schemaState;
         this.lockService = lockService;
         this.databaseHealth = databaseHealth;
-        this.explicitIndexProviderLookup = explicitIndexProvider;
-        this.indexConfigStore = indexConfigStore;
         this.constraintSemantics = constraintSemantics;
-        this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
         this.idController = idController;
 
         StoreFactory factory = new StoreFactory( databaseLayout, config, idGeneratorFactory, pageCache, fs, logProvider,
@@ -220,8 +204,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
             integrityValidator = new IntegrityValidator( neoStores, indexingService );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
-
-            explicitIndexApplierLookup = new ExplicitIndexApplierLookup.Direct( explicitIndexProvider );
 
             labelScanStoreSync = new WorkSync<>( labelScanStore::newWriter );
 
@@ -375,12 +357,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
                     neoStores.getNodeStore(), neoStores.getRelationshipStore(),
                     indexUpdatesConverter, this ) );
-
-            // Explicit index application
-            appliers.add(
-                    new ExplicitBatchIndexApplier( indexConfigStore, explicitIndexApplierLookup,
-                            explicitIndexTransactionOrdering,
-                            mode ) );
         }
 
         // Perform the application
@@ -395,7 +371,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
 
     public void satisfyDependencies( DependencySatisfier satisfier )
     {
-        satisfier.satisfyDependency( explicitIndexApplierLookup );
         satisfier.satisfyDependency( cacheAccess );
         satisfier.satisfyDependency( indexProviderMap );
         satisfier.satisfyDependency( integrityValidator );
@@ -462,10 +437,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         indexingService.forceAll( limiter );
         labelScanStore.force( limiter );
-        for ( IndexImplementation index : explicitIndexProviderLookup.allIndexProviders() )
-        {
-            index.force();
-        }
         try
         {
             countsStore.rotate( neoStores.getMetaDataStore().getLastCommittedTransactionId() );

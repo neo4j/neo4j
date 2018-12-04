@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.api.impl.index.collector;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.ConstantScoreScorer;
 import org.apache.lucene.search.DocIdSetIterator;
@@ -34,7 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.kernel.api.impl.index.IndexReaderStub;
@@ -252,113 +250,6 @@ final class DocValuesCollectorTest
         float[] scores = new float[42];
         Arrays.fill( scores, 1.0f );
         assertArrayEquals( scores, matchingDocs.scores, 0.001f );
-    }
-
-    @Test
-    void shouldReturnIndexHitsInIndexOrderWhenNoSortIsGiven() throws Exception
-    {
-        // given
-        DocValuesCollector collector = new DocValuesCollector();
-        IndexReaderStub readerStub = indexReaderWithMaxDocs( 42 );
-
-        // when
-        collector.doSetNextReader( readerStub.getContext() );
-        collector.collect( 1 );
-        collector.collect( 2 );
-
-        // then
-        IndexHits<Document> indexHits = collector.getIndexHits( null );
-        assertEquals( 2, indexHits.size() );
-        assertEquals( "1", indexHits.next().get( "id" ) );
-        assertEquals( "2", indexHits.next().get( "id" ) );
-        assertFalse( indexHits.hasNext() );
-    }
-
-    @Test
-    void shouldReturnIndexHitsOrderedByRelevance() throws Exception
-    {
-        // given
-        DocValuesCollector collector = new DocValuesCollector( true );
-        IndexReaderStub readerStub = indexReaderWithMaxDocs( 42 );
-
-        // when
-        collector.doSetNextReader( readerStub.getContext() );
-        collector.setScorer( constantScorer( 1.0f ) );
-        collector.collect( 1 );
-        collector.setScorer( constantScorer( 2.0f ) );
-        collector.collect( 2 );
-
-        // then
-        IndexHits<Document> indexHits = collector.getIndexHits( Sort.RELEVANCE );
-        assertEquals( 2, indexHits.size() );
-        assertEquals( "2", indexHits.next().get( "id" ) );
-        assertEquals( 2.0f, indexHits.currentScore(), 0.001f );
-        assertEquals( "1", indexHits.next().get( "id" ) );
-        assertEquals( 1.0f, indexHits.currentScore(), 0.001f );
-        assertFalse( indexHits.hasNext() );
-    }
-
-    @Test
-    void shouldReturnIndexHitsInGivenSortOrder() throws Exception
-    {
-        // given
-        DocValuesCollector collector = new DocValuesCollector( false );
-        IndexReaderStub readerStub = indexReaderWithMaxDocs( 43 );
-
-        // when
-        collector.doSetNextReader( readerStub.getContext() );
-        collector.collect( 1 );
-        collector.collect( 3 );
-        collector.collect( 37 );
-        collector.collect( 42 );
-
-        // then
-        Sort byIdDescending = new Sort( new SortField( "id", SortField.Type.LONG, true ) );
-        IndexHits<Document> indexHits = collector.getIndexHits( byIdDescending );
-        assertEquals( 4, indexHits.size() );
-        assertEquals( "42", indexHits.next().get( "id" ) );
-        assertEquals( "37", indexHits.next().get( "id" ) );
-        assertEquals( "3", indexHits.next().get( "id" ) );
-        assertEquals( "1", indexHits.next().get( "id" ) );
-        assertFalse( indexHits.hasNext() );
-    }
-
-    @Test
-    void shouldSilentlyMergeAllSegments() throws Exception
-    {
-        // given
-        DocValuesCollector collector = new DocValuesCollector( false );
-        IndexReaderStub readerStub = indexReaderWithMaxDocs( 42 );
-
-        // when
-        collector.doSetNextReader( readerStub.getContext() );
-        collector.collect( 1 );
-        collector.doSetNextReader( readerStub.getContext() );
-        collector.collect( 2 );
-
-        // then
-        IndexHits<Document> indexHits = collector.getIndexHits( null );
-        assertEquals( 2, indexHits.size() );
-        assertEquals( "1", indexHits.next().get( "id" ) );
-        assertEquals( "2", indexHits.next().get( "id" ) );
-        assertFalse( indexHits.hasNext() );
-    }
-
-    @Test
-    void shouldReturnEmptyIteratorWhenNoHits() throws Exception
-    {
-        // given
-        DocValuesCollector collector = new DocValuesCollector( false );
-        IndexReaderStub readerStub = indexReaderWithMaxDocs( 42 );
-
-        // when
-        collector.doSetNextReader( readerStub.getContext() );
-
-        // then
-        IndexHits<Document> indexHits = collector.getIndexHits( null );
-        assertEquals( 0, indexHits.size() );
-        assertEquals( Float.NaN, indexHits.currentScore(), 0.001f );
-        assertFalse( indexHits.hasNext() );
     }
 
     @Test

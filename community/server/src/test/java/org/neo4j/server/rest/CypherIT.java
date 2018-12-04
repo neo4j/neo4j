@@ -152,7 +152,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     @Test
     @Title( "Use parameters" )
     @Documented( "Cypher supports queries with parameters which are submitted as JSON." )
-    @Graph( value = {"I know you"}, autoIndexNodes = true )
+    @Graph( value = {"I know you"} )
     public void send_queries_with_parameters() throws Exception
     {
         data.get();
@@ -252,7 +252,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     @Title( "Syntax errors" )
     @Documented( "Sending a query with syntax errors will give a bad request (HTTP 400) response together with " +
             "an error message." )
-    @Graph( value = {"I know you"}, autoIndexNodes = true )
+    @Graph( value = {"I know you"} )
     public void send_queries_with_syntax_errors() throws Exception
     {
         data.get();
@@ -269,7 +269,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     @Test
     @Documented( "When sending queries that\n" + "return nested results like list and maps,\n" +
             "these will get serialized into nested JSON representations\n" + "according to their types." )
-    @Graph( value = {"I know you"}, autoIndexNodes = true )
+    @Graph( value = {"I know you"} )
     public void nested_results() throws Exception
     {
         data.get();
@@ -311,7 +311,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     }
 
     @Test
-    @Graph( value = {"I know you"}, autoIndexNodes = false )
+    @Graph( value = {"I know you"} )
     public void array_property()
     {
         setProperty( "I", "array1", new int[]{1, 2, 3} );
@@ -340,7 +340,7 @@ public class CypherIT extends AbstractRestFunctionalTestBase
     @Test
     @Title( "Send queries with errors" )
     @Documented( "This example shows what happens if you misspell an identifier." )
-    @Graph( value = {"I know you"}, autoIndexNodes = true )
+    @Graph( value = {"I know you"} )
     public void send_queries_with_errors() throws Exception
     {
         data.get();

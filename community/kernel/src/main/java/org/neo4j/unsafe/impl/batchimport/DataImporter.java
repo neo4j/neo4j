@@ -19,8 +19,6 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
-import org.apache.lucene.util.NamedThreadFactory;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,6 +31,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.function.Supplier;
 
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.unsafe.impl.batchimport.DataStatistics.RelationshipTypeCount;
 import org.neo4j.unsafe.impl.batchimport.cache.idmapping.IdMapper;
 import org.neo4j.unsafe.impl.batchimport.input.Collector;

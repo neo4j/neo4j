@@ -49,11 +49,6 @@ public interface Commitment
             return false;
         }
 
-        @Override
-        public boolean hasExplicitIndexChanges()
-        {
-            return false;
-        }
     };
 
     /**
@@ -70,9 +65,4 @@ public interface Commitment
      * @return whether or not {@link #publishAsCommitted()} have been called.
      */
     boolean markedAsCommitted();
-
-    /**
-     * @return whether or not this transaction contains explicit index changes.
-     */
-    boolean hasExplicitIndexChanges();
 }

@@ -33,9 +33,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.IOUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.util.MultiResource;
@@ -49,21 +47,18 @@ public class DatabaseFileListing
     private final DatabaseLayout databaseLayout;
     private final LogFiles logFiles;
     private final StorageEngine storageEngine;
-    private static final Function<File,StoreFileMetadata> toNotAStoreTypeFile =
-            file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
     private static final Function<File, StoreFileMetadata> logFileMapper =
             file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE, true );
     private final NeoStoreFileIndexListing neoStoreFileIndexListing;
     private final Collection<StoreFileProvider> additionalProviders;
 
     public DatabaseFileListing( DatabaseLayout databaseLayout, LogFiles logFiles,
-            LabelScanStore labelScanStore, IndexingService indexingService,
-            ExplicitIndexProvider explicitIndexProviders, StorageEngine storageEngine )
+            LabelScanStore labelScanStore, IndexingService indexingService, StorageEngine storageEngine )
     {
         this.databaseLayout = databaseLayout;
         this.logFiles = logFiles;
         this.storageEngine = storageEngine;
-        this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService, explicitIndexProviders );
+        this.neoStoreFileIndexListing = new NeoStoreFileIndexListing( labelScanStore, indexingService );
         this.additionalProviders = new CopyOnWriteArraySet<>();
     }
 
@@ -112,14 +107,6 @@ public class DatabaseFileListing
 
     private void gatherNonRecordStores( Collection<StoreFileMetadata> files, boolean includeLogs )
     {
-        File[] indexFiles = databaseLayout.listDatabaseFiles( ( dir, name ) -> name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ) );
-        if ( indexFiles != null )
-        {
-            for ( File file : indexFiles )
-            {
-                files.add( toNotAStoreTypeFile.apply( file ) );
-            }
-        }
         if ( includeLogs )
         {
             File[] logFiles = this.logFiles.logFiles();
@@ -137,7 +124,6 @@ public class DatabaseFileListing
         private boolean excludeNeoStoreFiles;
         private boolean excludeLabelScanStoreFiles;
         private boolean excludeSchemaIndexStoreFiles;
-        private boolean excludeExplicitIndexStoreFiles;
         private boolean excludeAdditionalProviders;
 
         private StoreFileListingBuilder()
@@ -146,11 +132,12 @@ public class DatabaseFileListing
 
         private void excludeAll( boolean initiateInclusive )
         {
-            this.excludeLogFiles =
-            this.excludeNonRecordStoreFiles =
-            this.excludeNeoStoreFiles =
-            this.excludeLabelScanStoreFiles =
-                    this.excludeSchemaIndexStoreFiles = this.excludeAdditionalProviders = this.excludeExplicitIndexStoreFiles = initiateInclusive;
+            this.excludeLogFiles = initiateInclusive;
+            this.excludeNonRecordStoreFiles = initiateInclusive;
+            this.excludeNeoStoreFiles = initiateInclusive;
+            this.excludeLabelScanStoreFiles = initiateInclusive;
+            this.excludeSchemaIndexStoreFiles = initiateInclusive;
+            this.excludeAdditionalProviders = initiateInclusive;
         }
 
         public StoreFileListingBuilder excludeAll()
@@ -195,12 +182,6 @@ public class DatabaseFileListing
             return this;
         }
 
-        public StoreFileListingBuilder excludeExplicitIndexStoreFiles()
-        {
-            excludeExplicitIndexStoreFiles = true;
-            return this;
-        }
-
         public StoreFileListingBuilder excludeAdditionalProviders()
         {
             excludeAdditionalProviders = true;
@@ -237,12 +218,6 @@ public class DatabaseFileListing
             return this;
         }
 
-        public StoreFileListingBuilder includeExplicitIndexStoreStoreFiles()
-        {
-            excludeExplicitIndexStoreFiles = false;
-            return this;
-        }
-
         public StoreFileListingBuilder includeAdditionalProviders()
         {
             excludeAdditionalProviders = false;
@@ -270,10 +245,6 @@ public class DatabaseFileListing
                 if ( !excludeSchemaIndexStoreFiles )
                 {
                     resources.add( neoStoreFileIndexListing.gatherSchemaIndexFiles( files ) );
-                }
-                if ( !excludeExplicitIndexStoreFiles )
-                {
-                    resources.add( neoStoreFileIndexListing.gatherExplicitIndexFiles( files ) );
                 }
                 if ( !excludeAdditionalProviders )
                 {

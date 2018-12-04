@@ -61,9 +61,9 @@ public class CompactJsonIT extends AbstractRestFunctionalTestBase
     private void createTheMatrix()
     {
         // Create the matrix example
-        thomasAnderson = createAndIndexNode( "Thomas Anderson" );
-        trinity = createAndIndexNode( "Trinity" );
-        long tank = createAndIndexNode( "Tank" );
+        thomasAnderson = createNode( "Thomas Anderson" );
+        trinity = createNode( "Trinity" );
+        long tank = createNode( "Tank" );
 
         long knowsRelationshipId = helper.createRelationship( "KNOWS", thomasAnderson, trinity );
         thomasAndersonLovesTrinity = helper.createRelationship( "LOVES", thomasAnderson, trinity );
@@ -72,20 +72,12 @@ public class CompactJsonIT extends AbstractRestFunctionalTestBase
         helper.createRelationship( "KNOWS", thomasAnderson, tank );
         helper.createRelationship( "KNOWS", trinity, tank );
 
-        // index a relationship
-        helper.createRelationshipIndex( "relationships" );
-        helper.addRelationshipToIndex( "relationships", "key", "value", knowsRelationshipId );
-
-        // index a relationship
-        helper.createRelationshipIndex( "relationships2" );
-        helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
     }
 
-    private long createAndIndexNode( String name )
+    private long createNode( String name )
     {
         long id = helper.createNode();
         helper.setNodeProperties( id, Collections.singletonMap( "name", name ) );
-        helper.addNodeToIndex( "node", "name", name, id );
         return id;
     }
 

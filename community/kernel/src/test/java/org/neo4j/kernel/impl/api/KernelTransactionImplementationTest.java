@@ -397,7 +397,6 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
     {
         // GIVEN a transaction starting at one point in time
         long startingTime = clock.millis();
-        when( explicitIndexState.hasChanges() ).thenReturn( true );
         doAnswer( invocation ->
         {
             @SuppressWarnings( "unchecked" )
@@ -416,12 +415,7 @@ public class KernelTransactionImplementationTest extends KernelTransactionTestBa
             SimpleStatementLocks statementLocks = new SimpleStatementLocks( mock( Locks.Client.class ) );
             transaction.initialize( 5L, BASE_TX_COMMIT_TIMESTAMP, statementLocks, KernelTransaction.Type.implicit,
                     SecurityContext.AUTH_DISABLED, 0L, 1L, EMBEDDED_CONNECTION );
-            transaction.txState();
-            try ( KernelStatement statement = transaction.acquireStatement() )
-            {
-                statement.explicitIndexTxState(); // which will pull it from the supplier and the mocking above
-                // will have it say that it has changes.
-            }
+            transaction.txState().nodeDoCreate( 1L );
             // WHEN committing it at a later point
             clock.forward( 5, MILLISECONDS );
             // ...and simulating some other transaction being committed

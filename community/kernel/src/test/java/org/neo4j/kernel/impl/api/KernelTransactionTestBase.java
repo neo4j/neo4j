@@ -37,14 +37,11 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.factory.CanWrite;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.SimpleStatementLocks;
@@ -95,7 +92,6 @@ public class KernelTransactionTestBase
     protected final MetaDataStore metaDataStore = mock( MetaDataStore.class );
     protected final StorageReader readLayer = mock( StorageReader.class );
     protected final TransactionHooks hooks = new TransactionHooks();
-    protected final ExplicitIndexTransactionState explicitIndexState = mock( ExplicitIndexTransactionState.class );
     protected final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
     protected final CapturingCommitProcess commitProcess = new CapturingCommitProcess();
     protected final TransactionHeaderInformation headerInformation = mock( TransactionHeaderInformation.class );
@@ -167,9 +163,9 @@ public class KernelTransactionTestBase
     public KernelTransactionImplementation newNotInitializedTransaction()
     {
         return new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks, null, null, headerInformationFactory,
-                commitProcess, transactionMonitor, () -> explicitIndexState, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
+                commitProcess, transactionMonitor, txPool, clock, new AtomicReference<>( CpuClock.NOT_AVAILABLE ),
                 new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), TransactionTracer.NULL, LockTracer.NONE, PageCursorTracerSupplier.NULL, storageEngine,
-                new CanWrite(), AutoIndexing.UNSUPPORTED, mock( ExplicitIndexStore.class ), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
+                new CanWrite(), EmptyVersionContextSupplier.EMPTY, () -> collectionsFactory,
                 new StandardConstraintSemantics(), mock( SchemaState.class ), mockedTokenHolders(),
                 mock( IndexingService.class ), mock( LabelScanStore.class ), new Dependencies() );
     }

@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v4_0.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.ir.v4_0._
+import org.neo4j.cypher.internal.v4_0.ast._
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class QueryGraphConnectedComponentsTest
   extends CypherFunSuite with AstConstructionTestSupport with LogicalPlanningTestSupport {
@@ -201,14 +201,6 @@ class QueryGraphConnectedComponentsTest
       QueryGraph(patternNodes = Set(A), argumentIds = Set(C)),
       QueryGraph(patternNodes = Set(B), argumentIds = Set(C))
     ))
-  }
-
-  test("a pattern node with a hint") {
-    val graph = QueryGraph.empty.
-      addPatternNodes(A).
-      addHints(Set(NodeByIdentifiedIndex(varFor("a"), "index", "key", mock[Expression])(pos)))
-
-    graph.connectedComponents should equal(Seq(graph))
   }
 
   test("nodes solved by argument should be in the same component") {

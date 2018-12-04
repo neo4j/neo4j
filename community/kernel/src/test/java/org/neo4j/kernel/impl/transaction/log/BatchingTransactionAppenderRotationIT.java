@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
-import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
@@ -79,11 +78,9 @@ public class BatchingTransactionAppenderRotationIT
         LogRotationImpl logRotation =
                 new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFiles, databaseHealth );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
-        SynchronizedArrayIdOrderingQueue idOrderingQueue = new SynchronizedArrayIdOrderingQueue();
 
         BatchingTransactionAppender transactionAppender =
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore,
-                        idOrderingQueue, databaseHealth );
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth );
 
         life.add( transactionAppender );
 

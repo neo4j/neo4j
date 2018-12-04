@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.api.CommandVisitor;
 import org.neo4j.kernel.impl.transaction.command.Command;
 import org.neo4j.kernel.impl.transaction.command.NeoCommandType;
@@ -35,7 +34,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString
 
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.
- * Contains all the different types of commands that an {@link Index} need
+ * Contains all the different types of commands that an indexes need
  * to support.
  */
 public abstract class IndexCommand extends Command

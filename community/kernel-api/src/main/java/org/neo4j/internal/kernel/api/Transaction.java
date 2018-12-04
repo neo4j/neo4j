@@ -103,16 +103,6 @@ public interface Transaction extends AutoCloseable
     Write dataWrite() throws InvalidTransactionTypeKernelException;
 
     /**
-     * @return The explicit index read operations of the graph.
-     */
-    ExplicitIndexRead indexRead();
-
-    /**
-     * @return The explicit index write operations of the graph.
-     */
-    ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException;
-
-    /**
      * @return Token read operations
      */
     TokenRead tokenRead();

@@ -22,6 +22,7 @@ package org.neo4j.cypher
 import java.io.File
 
 import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.graphdb._
 import org.neo4j.graphdb.config.Setting
 import org.neo4j.internal.kernel.api.helpers.Indexes
@@ -33,7 +34,6 @@ import org.neo4j.kernel.api.proc._
 import org.neo4j.kernel.monitoring.Monitors
 import org.neo4j.kernel.{GraphDatabaseQueryService, monitoring}
 import org.neo4j.test.TestGraphDatabaseFactory
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, CypherTestSupport}
 import org.scalatest.matchers.{MatchResult, Matcher}
 
 import scala.collection.JavaConverters._
@@ -112,14 +112,6 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
       ktx.success()
       ktx.close()
     }
-  }
-
-  def indexNode(n: Node, idxName: String, key: String, value: String) {
-    graph.inTx(n.getGraphDatabase.index.forNodes(idxName).add(n, key, value))
-  }
-
-  def indexRel(r: Relationship, idxName: String, key: String, value: String) {
-    graph.inTx(r.getGraphDatabase.index.forRelationships(idxName).add(r, key, value))
   }
 
   def nodeId(n: Node) = graph.inTx {

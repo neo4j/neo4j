@@ -39,8 +39,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.configuration.Config;
@@ -56,11 +54,6 @@ public class DbRepresentation
 
     public static DbRepresentation of( GraphDatabaseService db )
     {
-        return of( db, true );
-    }
-
-    public static DbRepresentation of( GraphDatabaseService db, boolean includeIndexes )
-    {
         int retryCount = 5;
         while ( true )
         {
@@ -69,7 +62,7 @@ public class DbRepresentation
                 DbRepresentation result = new DbRepresentation();
                 for ( Node node : db.getAllNodes() )
                 {
-                    NodeRep nodeRep = new NodeRep( db, node, includeIndexes );
+                    NodeRep nodeRep = new NodeRep( node );
                     result.nodes.put( node.getId(), nodeRep );
                     result.highestNodeId = Math.max( node.getId(), result.highestNodeId );
                     result.highestRelationshipId =
@@ -98,15 +91,10 @@ public class DbRepresentation
 
     public static DbRepresentation of( File storeDir )
     {
-        return of( storeDir, true, Config.defaults() );
+        return of( storeDir, Config.defaults() );
     }
 
     public static DbRepresentation of( File storeDir, Config config )
-    {
-        return of( storeDir, true, config );
-    }
-
-    public static DbRepresentation of( File storeDir, boolean includeIndexes, Config config )
     {
         GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir );
         builder.setConfig( config.getRaw() );
@@ -114,7 +102,7 @@ public class DbRepresentation
         GraphDatabaseService db = builder.newGraphDatabase();
         try
         {
-            return of( db, includeIndexes );
+            return of( db );
         }
         finally
         {
@@ -216,9 +204,8 @@ public class DbRepresentation
         private final Map<Long,PropertiesRep> outRelationships = new HashMap<>();
         private final long highestRelationshipId;
         private final long id;
-        private final Map<String,Map<String,Serializable>> index;
 
-        NodeRep( GraphDatabaseService db, Node node, boolean includeIndexes )
+        NodeRep( Node node )
         {
             id = node.getId();
             properties = new PropertiesRep( node, node.getId() );
@@ -229,87 +216,6 @@ public class DbRepresentation
                 highestRel = Math.max( highestRel, rel.getId() );
             }
             this.highestRelationshipId = highestRel;
-            this.index = includeIndexes ? checkIndex( db ) : null;
-        }
-
-        private Map<String,Map<String,Serializable>> checkIndex( GraphDatabaseService db )
-        {
-            Map<String,Map<String,Serializable>> result = new HashMap<>();
-            for ( String indexName : db.index().nodeIndexNames() )
-            {
-                Map<String,Serializable> thisIndex = new HashMap<>();
-                Index<Node> tempIndex = db.index().forNodes( indexName );
-                for ( Map.Entry<String,Serializable> property : properties.props.entrySet() )
-                {
-                    try ( IndexHits<Node> content = tempIndex.get( property.getKey(), property.getValue() ) )
-                    {
-                        if ( content.hasNext() )
-                        {
-                            for ( Node hit : content )
-                            {
-                                if ( hit.getId() == id )
-                                {
-                                    thisIndex.put( property.getKey(), property.getValue() );
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-                result.put( indexName, thisIndex );
-            }
-            return result;
-        }
-
-        /*
-         * Yes, this is not the best way to do it - hash map does a deep equals. However,
-         * if things go wrong, this way give the ability to check where the inequality
-         * happened. If you feel strongly about this, feel free to change.
-         * Admittedly, the implementation could use some cleanup.
-         */
-        private void compareIndex( NodeRep other, DiffReport diff )
-        {
-            if ( other.index == index )
-            {
-                return;
-            }
-            Collection<String> allIndexes = new HashSet<>();
-            allIndexes.addAll( index.keySet() );
-            allIndexes.addAll( other.index.keySet() );
-            for ( String indexName : allIndexes )
-            {
-                if ( !index.containsKey( indexName ) )
-                {
-                    diff.add( this + " isn't indexed in " + indexName + " for mine" );
-                    continue;
-                }
-                if ( !other.index.containsKey( indexName ) )
-                {
-                    diff.add( this + " isn't indexed in " + indexName + " for other" );
-                    continue;
-                }
-
-                Map<String,Serializable> thisIndex = index.get( indexName );
-                Map<String,Serializable> otherIndex = other.index.get( indexName );
-
-                if ( thisIndex.size() != otherIndex.size() )
-                {
-                    diff.add( "other index had a different mapping count than me for node " + this + " mine:" +
-                            thisIndex + ", other:" + otherIndex );
-                    continue;
-                }
-
-                for ( Map.Entry<String,Serializable> indexEntry : thisIndex.entrySet() )
-                {
-                    if ( !indexEntry.getValue().equals(
-                            otherIndex.get( indexEntry.getKey() ) ) )
-                    {
-                        diff.add( "other index had a different value indexed for " + indexEntry.getKey() + "=" +
-                                indexEntry.getValue() + ", namely " + otherIndex.get( indexEntry.getKey() ) +
-                                " for " + this );
-                    }
-                }
-            }
         }
 
         void compareWith( NodeRep other, DiffReport diff )
@@ -319,10 +225,6 @@ public class DbRepresentation
                 diff.add( "Id differs mine:" + id + ", other:" + other.id );
             }
             properties.compareWith( other.properties, diff );
-            if ( index != null && other.index != null )
-            {
-                compareIndex( other, diff );
-            }
             compareRelationships( other, diff );
         }
 
@@ -355,10 +257,6 @@ public class DbRepresentation
             result += properties.hashCode() * 7;
             result += outRelationships.hashCode() * 13;
             result += id * 17;
-            if ( index != null )
-            {
-                result += index.hashCode() * 19;
-            }
             return result;
         }
 
@@ -375,14 +273,13 @@ public class DbRepresentation
             }
             NodeRep nodeRep = (NodeRep) o;
             return id == nodeRep.id && Objects.equals( properties, nodeRep.properties ) &&
-                    Objects.equals( outRelationships, nodeRep.outRelationships ) &&
-                    Objects.equals( index, nodeRep.index );
+                    Objects.equals( outRelationships, nodeRep.outRelationships );
         }
 
         @Override
         public String toString()
         {
-            return "<id: " + id + " props: " + properties + ", rels: " + outRelationships + ", index: " + index + ">";
+            return "<id: " + id + " props: " + properties + ", rels: " + outRelationships;
         }
     }
 

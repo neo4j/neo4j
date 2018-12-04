@@ -19,28 +19,25 @@
  */
 package org.neo4j.cypher.internal.spi.v4_0
 
-import java.util
 import java.util.Optional
 
-import org.neo4j.cypher.MissingIndexException
 import org.neo4j.cypher.internal.LastCommittedTxIdProvider
 import org.neo4j.cypher.internal.planner.v4_0.spi.IndexDescriptor.{OrderCapability, ValueCapability}
 import org.neo4j.cypher.internal.planner.v4_0.spi._
 import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
 import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
 import org.neo4j.exceptions.KernelException
 import org.neo4j.internal.kernel.api
-import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.procs.Neo4jTypes.AnyType
 import org.neo4j.internal.kernel.api.procs.{DefaultParameterValue, Neo4jTypes}
-import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs}
+import org.neo4j.internal.kernel.api.{IndexReference, InternalIndexState, procs, _}
 import org.neo4j.kernel.api.schema.SchemaDescriptorFactory
 import org.neo4j.procedure.Mode
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor
 import org.neo4j.values.storable.ValueCategory
-import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
-import org.neo4j.cypher.internal.v4_0.util.symbols._
-import org.neo4j.cypher.internal.v4_0.util.{CypherExecutionException, LabelId, PropertyKeyId, symbols => types}
 
 import scala.collection.JavaConverters._
 
@@ -170,18 +167,6 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       distinctPropertyIds.map(id => tc.tokenRead.propertyKeyName(id))
     } catch {
       case _: KernelException => Set.empty
-    }
-  }
-
-  override def checkNodeIndex(idxName: String) {
-    if (!tc.kernelTransaction.indexRead().nodeExplicitIndexesGetAll().contains(idxName)) {
-      throw new MissingIndexException(idxName)
-    }
-  }
-
-  override def checkRelIndex(idxName: String) {
-    if (!tc.kernelTransaction.indexRead().relationshipExplicitIndexesGetAll().contains(idxName)) {
-      throw new MissingIndexException(idxName)
     }
   }
 

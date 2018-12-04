@@ -23,7 +23,6 @@ import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.index.internal.gbptree.RecoveryCleanupWorkCollector;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
@@ -32,7 +31,6 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.BatchTransactionApplierFacade;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -41,7 +39,6 @@ import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.OperationalMode;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
@@ -53,8 +50,6 @@ import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
-import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -67,7 +62,6 @@ import org.neo4j.storageengine.api.TransactionApplicationMode;
 import org.neo4j.test.impl.EphemeralIdGenerator;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.scheduler.JobSchedulerFactory.createScheduler;
 import static org.neo4j.test.MockedNeoStores.mockedTokenHolders;
 
@@ -102,9 +96,6 @@ public class RecordStorageEngineRule extends ExternalResource
                                      Monitors monitors )
     {
         IdGeneratorFactory idGeneratorFactory = new EphemeralIdGenerator.Factory();
-        ExplicitIndexProvider explicitIndexProviderLookup = mock( ExplicitIndexProvider.class );
-        when( explicitIndexProviderLookup.allIndexProviders() ).thenReturn( Iterables.empty() );
-        IndexConfigStore indexConfigStore = new IndexConfigStore( databaseLayout, fs );
         JobScheduler scheduler = life.add( createScheduler() );
         Config config = Config.defaults( GraphDatabaseSettings.default_schema_provider, indexProvider.getProviderDescriptor().name() );
 
@@ -121,8 +112,7 @@ public class RecordStorageEngineRule extends ExternalResource
                 nullLogProvider, nullLogProvider, mockedTokenHolders(),
                 mock( SchemaState.class ), new StandardConstraintSemantics(),
                 scheduler, mock( TokenNameLookup.class ), new ReentrantLockService(), indexProviderMap,
-                IndexingService.NO_MONITOR, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
-                new SynchronizedArrayIdOrderingQueue(), idGeneratorFactory,
+                IndexingService.NO_MONITOR, databaseHealth, idGeneratorFactory,
                 new BufferedIdController( bufferingIdGeneratorFactory, scheduler ), transactionApplierTransformer, monitors,
                 RecoveryCleanupWorkCollector.immediate(), OperationalMode.single ) );
     }
@@ -196,16 +186,13 @@ public class RecordStorageEngineRule extends ExternalResource
                 ConstraintSemantics constraintSemantics, JobScheduler scheduler, TokenNameLookup tokenNameLookup,
                 LockService lockService, IndexProviderMap indexProviderMap,
                 IndexingService.Monitor indexingServiceMonitor, DatabaseHealth databaseHealth,
-                ExplicitIndexProvider explicitIndexProviderLookup,
-                IndexConfigStore indexConfigStore, IdOrderingQueue explicitIndexTransactionOrdering,
                 IdGeneratorFactory idGeneratorFactory, IdController idController,
                 Function<BatchTransactionApplierFacade,BatchTransactionApplierFacade> transactionApplierTransformer, Monitors monitors,
                 RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, OperationalMode operationalMode )
         {
             super( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders, schemaState, constraintSemantics, scheduler,
-                    tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth, explicitIndexProviderLookup, indexConfigStore,
-                    explicitIndexTransactionOrdering, idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector, operationalMode,
-                    EmptyVersionContextSupplier.EMPTY );
+                    tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
+                    idGeneratorFactory, idController, monitors, recoveryCleanupWorkCollector, operationalMode, EmptyVersionContextSupplier.EMPTY );
             this.transactionApplierTransformer = transactionApplierTransformer;
         }
 

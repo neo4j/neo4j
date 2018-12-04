@@ -90,14 +90,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
-  test("twoIndexQueriesInSameStart") {
-    expectSyntaxError(
-      "start a = node:node_auto_index(name=\"sebastian\",name=\"magnus\") return a",
-      "Invalid input ',': expected whitespace or ')' (line 1, column 48 (offset: 47))",
-      47
-    )
-  }
-
   test("badMatch2") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p-[:IS_A]>dude return dude.name",
@@ -163,14 +155,6 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
       "start r = node() return r",
       "Invalid input ')': expected whitespace, an unsigned integer, a parameter or '*' (line 1, column 16 (offset: 15))",
       15
-    )
-  }
-
-  test("start expression without variable") {
-    expectSyntaxError(
-      "start a = node:node_auto_index(name=\"magnus\"),node:node_auto_index(name=\"sebastian) return b,c",
-      "Invalid input ':': expected an identifier character, whitespace or '=' (line 1, column 51 (offset: 50))",
-      50
     )
   }
 

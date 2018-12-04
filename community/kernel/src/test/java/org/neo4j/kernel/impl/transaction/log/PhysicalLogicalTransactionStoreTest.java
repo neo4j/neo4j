@@ -65,7 +65,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class PhysicalLogicalTransactionStoreTest
 {
@@ -134,8 +133,7 @@ public class PhysicalLogicalTransactionStoreTest
                 .withLogVersionRepository( mock( LogVersionRepository.class ) ).build();
         life.add( logFiles );
 
-        life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, BYPASS,
-                DATABASE_HEALTH ) );
+        life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, DATABASE_HEALTH ) );
 
         try
         {
@@ -187,7 +185,7 @@ public class PhysicalLogicalTransactionStoreTest
                 new VersionAwareLogEntryReader<>(), monitors, true );
 
         life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, DATABASE_HEALTH ) );
+                transactionIdStore, DATABASE_HEALTH ) );
         CorruptedLogsTruncator logPruner = new CorruptedLogsTruncator( databaseDirectory, logFiles, fileSystemRule.get() );
         life.add( new TransactionLogsRecovery( new RecoveryService()
         {
@@ -369,7 +367,7 @@ public class PhysicalLogicalTransactionStoreTest
                                            long latestCommittedTxWhenStarted, long timeCommitted ) throws IOException
     {
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, DATABASE_HEALTH ) );
+                transactionIdStore, DATABASE_HEALTH ) );
         PhysicalTransactionRepresentation transaction =
                 new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
         transaction.setHeader( additionalHeader, masterId, authorId, timeStarted, latestCommittedTxWhenStarted,

@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v4_0
 
 import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, IndexDescriptor, PlanContext}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 class NotImplementedPlanContext extends PlanContext {
   override def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] = ???
@@ -37,10 +37,6 @@ class NotImplementedPlanContext extends PlanContext {
   override def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean = ???
 
   override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] = ???
-
-  override def checkNodeIndex(idxName: String): Unit = ???
-
-  override def checkRelIndex(idxName: String): Unit = ???
 
   override def txIdProvider: () => Long = ???
 

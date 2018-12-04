@@ -55,9 +55,9 @@ public class HtmlIT extends AbstractRestFunctionalTestBase
     public void setupTheDatabase()
     {
         // Create the matrix example
-        thomasAnderson = createAndIndexNode( "Thomas Anderson" );
-        trinity = createAndIndexNode( "Trinity" );
-        long tank = createAndIndexNode( "Tank" );
+        thomasAnderson = createNode( "Thomas Anderson" );
+        trinity = createNode( "Trinity" );
+        long tank = createNode( "Tank" );
 
         long knowsRelationshipId = helper.createRelationship( "KNOWS", thomasAnderson, trinity );
         thomasAndersonLovesTrinity = helper.createRelationship( "LOVES", thomasAnderson, trinity );
@@ -65,21 +65,12 @@ public class HtmlIT extends AbstractRestFunctionalTestBase
                 Collections.singletonMap( "strength", 100 ) );
         helper.createRelationship( "KNOWS", thomasAnderson, tank );
         helper.createRelationship( "KNOWS", trinity, tank );
-
-        // index a relationship
-        helper.createRelationshipIndex( "relationships" );
-        helper.addRelationshipToIndex( "relationships", "key", "value", knowsRelationshipId );
-
-        // index a relationship
-        helper.createRelationshipIndex( "relationships2" );
-        helper.addRelationshipToIndex( "relationships2", "key2", "value2", knowsRelationshipId );
     }
 
-    private long createAndIndexNode( String name )
+    private long createNode( String name )
     {
         long id = helper.createNode();
         helper.setNodeProperties( id, Collections.singletonMap( "name", name ) );
-        helper.addNodeToIndex( "node", "name", name, id );
         return id;
     }
 
@@ -99,37 +90,6 @@ public class HtmlIT extends AbstractRestFunctionalTestBase
                 HTTP.withHeaders( "Accept", MediaType.TEXT_HTML ).GET( functionalTestHelper.dataUri() );
         assertEquals( Status.OK.getStatusCode(), response.status() );
         assertValidHtml( response.rawContent() );
-    }
-
-    @Test
-    public void shouldGetNodeIndexRoot()
-    {
-        JaxRsResponse response = RestRequest.req().get( functionalTestHelper.nodeIndexUri(), MediaType.TEXT_HTML_TYPE );
-        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        assertValidHtml( response.getEntity() );
-        response.close();
-    }
-
-    @Test
-    public void shouldGetRelationshipIndexRoot()
-    {
-        JaxRsResponse response =
-                RestRequest.req().get( functionalTestHelper.relationshipIndexUri(), MediaType.TEXT_HTML_TYPE );
-        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        assertValidHtml( response.getEntity() );
-        response.close();
-    }
-
-    @Test
-    public void shouldGetTrinityWhenSearchingForHer()
-    {
-        JaxRsResponse response = RestRequest.req()
-                .get( functionalTestHelper.indexNodeUri( "node", "name", "Trinity" ), MediaType.TEXT_HTML_TYPE );
-        assertEquals( Status.OK.getStatusCode(), response.getStatus() );
-        String entity = response.getEntity();
-        assertTrue( entity.contains( "Trinity" ) );
-        assertValidHtml( entity );
-        response.close();
     }
 
     @Test

@@ -28,7 +28,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Path;
 import java.nio.file.WatchKey;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,12 +41,10 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
-import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.fs.watcher.FileWatchEventListener;
 import org.neo4j.io.fs.watcher.FileWatcher;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointer;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
@@ -131,33 +128,6 @@ public class FileWatchIT
         {
             shutdownDatabaseSilently( db );
         }
-    }
-
-    @Test( timeout = TEST_TIMEOUT )
-    public void notifyAboutExplicitIndexFolderRemoval() throws InterruptedException, IOException
-    {
-        String monitoredDirectory = getExplicitIndexDirectory( testDirectory.databaseLayout() );
-
-        FileWatcher fileWatcher = getFileWatcher( database );
-        CheckPointer checkPointer = getCheckpointer( database );
-        DeletionLatchEventListener deletionListener = new DeletionLatchEventListener( monitoredDirectory );
-        String metadataStore = testDirectory.databaseLayout().metadataStore().getName();
-        ModificationEventListener modificationEventListener = new ModificationEventListener( metadataStore );
-        fileWatcher.addFileWatchEventListener( deletionListener );
-        fileWatcher.addFileWatchEventListener( modificationEventListener );
-
-        do
-        {
-            createNode( database );
-            forceCheckpoint( checkPointer );
-        }
-        while ( !modificationEventListener.awaitModificationNotification() );
-
-        deleteStoreDirectory( storeDir, monitoredDirectory );
-        deletionListener.awaitDeletionNotification();
-
-        logProvider.assertLogStringContains( "'" + monitoredDirectory + "' which belongs to the '" + storeDir.getName() +
-                "' database was deleted while it was running." );
     }
 
     @Test( timeout = TEST_TIMEOUT )
@@ -327,13 +297,6 @@ public class FileWatchIT
         checkPointer.forceCheckPoint( new SimpleTriggerInfo( "testForceCheckPoint" ) );
     }
 
-    private static String getExplicitIndexDirectory( DatabaseLayout databaseLayout )
-    {
-        File schemaIndexDirectory = LuceneDataSource.getLuceneIndexStoreDirectory( databaseLayout );
-        Path relativeIndexPath = databaseLayout.databaseDirectory().toPath().relativize( schemaIndexDirectory.toPath() );
-        return relativeIndexPath.getName( 0 ).toString();
-    }
-
     private static void createNode( GraphDatabaseService database, String propertyName, Label testLabel )
     {
         try ( Transaction transaction = database.beginTx() )
@@ -359,12 +322,6 @@ public class FileWatchIT
     {
         File metadataStore = new File( storeDir, fileName );
         FileUtils.deleteFile( metadataStore );
-    }
-
-    private static void deleteStoreDirectory( File storeDir, String directoryName ) throws IOException
-    {
-        File directory = new File( storeDir, directoryName );
-        FileUtils.deleteRecursively( directory );
     }
 
     private static void createNode( GraphDatabaseService database )

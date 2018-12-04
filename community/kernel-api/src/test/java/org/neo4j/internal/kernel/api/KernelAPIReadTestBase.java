@@ -50,7 +50,6 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected static KernelAPIReadTestSupport testSupport;
     protected Transaction tx;
     protected Read read;
-    protected ExplicitIndexRead indexRead;
     protected SchemaRead schemaRead;
     protected Token token;
     protected ManagedTestCursors cursors;
@@ -102,7 +101,6 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
         tx = beginTransaction( kernel );
         token = tx.token();
         read = tx.dataRead();
-        indexRead = tx.indexRead();
         schemaRead = tx.schemaRead();
         cursors = new ManagedTestCursors( tx.cursors() );
     }

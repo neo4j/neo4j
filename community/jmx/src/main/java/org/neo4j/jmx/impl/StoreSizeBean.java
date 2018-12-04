@@ -33,12 +33,10 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.jmx.StoreSize;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexProviderMap;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.util.VisibleForTesting;
 
 import static java.util.Objects.requireNonNull;
@@ -259,7 +257,6 @@ public final class StoreSizeBean extends ManagementBeanProvider
     {
         private final FileSystemAbstraction fs;
         private final LogFiles logFiles;
-        private final ExplicitIndexProvider explicitIndexProviderLookup;
         private final IndexProviderMap indexProviderMap;
         private final LabelScanStore labelScanStore;
         private final DatabaseLayout databaseLayout;
@@ -269,7 +266,6 @@ public final class StoreSizeBean extends ManagementBeanProvider
             final DependencyResolver deps = ds.getDependencyResolver();
             this.fs = requireNonNull( fs );
             this.logFiles = deps.resolveDependency( LogFiles.class );
-            this.explicitIndexProviderLookup = deps.resolveDependency( ExplicitIndexProvider.class );
             this.indexProviderMap = deps.resolveDependency( IndexProviderMap.class );
             this.labelScanStore = deps.resolveDependency( LabelScanStore.class );
             this.databaseLayout = ds.getDatabaseLayout();
@@ -335,12 +331,6 @@ public final class StoreSizeBean extends ManagementBeanProvider
         public long getIndexStoreSize()
         {
             long size = 0L;
-
-            // Add explicit indices
-            for ( IndexImplementation index : explicitIndexProviderLookup.allIndexProviders() )
-            {
-                size += FileUtils.size( fs, index.getIndexImplementationDirectory( databaseLayout ) );
-            }
 
             // Add schema index
             MutableLong schemaSize = new MutableLong();

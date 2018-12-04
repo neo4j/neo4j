@@ -26,16 +26,11 @@ import org.hamcrest.TypeSafeMatcher;
 
 import java.net.URI;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.server.NeoServer;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.GraphDbHelper;
-import org.neo4j.server.rest.web.RestfulGraphDatabase;
-
-import static org.neo4j.server.rest.web.RestfulGraphDatabase.PATH_AUTO_INDEX;
 
 public final class FunctionalTestHelper
 {
@@ -172,26 +167,6 @@ public final class FunctionalTestHelper
                 .toString() + "db/manage";
     }
 
-    public String indexNodeUri( String indexName )
-    {
-        return nodeIndexUri() + indexName;
-    }
-
-    public String indexNodeUri( String indexName, String key, Object value )
-    {
-        return indexNodeUri( indexName ) + "/" + key + "/" + value;
-    }
-
-    public String indexRelationshipUri( String indexName )
-    {
-        return relationshipIndexUri() + indexName;
-    }
-
-    public String indexRelationshipUri( String indexName, String key, Object value )
-    {
-        return indexRelationshipUri( indexName ) + "/" + key + "/" + value;
-    }
-
     public String extensionUri()
     {
         return dataUri() + "ext";
@@ -210,23 +185,6 @@ public final class FunctionalTestHelper
     public long getRelationshipIdFromUri( String relationshipUri )
     {
         return getNodeIdFromUri( relationshipUri );
-    }
-
-    public Map<String, Object> removeAnyAutoIndex( Map<String, Object> map )
-    {
-        Map<String, Object> result = new HashMap<>();
-        for ( Map.Entry<String, Object> entry : map.entrySet() )
-        {
-            Map<?, ?> innerMap = (Map<?,?>) entry.getValue();
-            String template = innerMap.get( "template" ).toString();
-            if ( !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.NODE_AUTO_INDEX_TYPE) ) &&
-                 !template.contains( PATH_AUTO_INDEX.replace("{type}", RestfulGraphDatabase.RELATIONSHIP_AUTO_INDEX_TYPE) ) &&
-                 !template.contains( "_auto_" ) )
-            {
-                result.put( entry.getKey(), entry.getValue() );
-            }
-        }
-        return result;
     }
 
     public URI baseUri()

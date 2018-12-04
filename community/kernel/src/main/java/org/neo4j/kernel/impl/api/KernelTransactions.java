@@ -41,9 +41,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.KernelTransactionHandle;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -51,7 +49,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
 import org.neo4j.kernel.impl.proc.Procedures;
@@ -87,7 +84,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final TransactionCommitProcess transactionCommitProcess;
-    private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
     private final TransactionHooks hooks;
     private final TransactionMonitor transactionMonitor;
     private final AvailabilityGuard databaseAvailabilityGuard;
@@ -102,8 +98,6 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final VersionContextSupplier versionContextSupplier;
     private final ReentrantReadWriteLock newTransactionsLock = new ReentrantReadWriteLock();
     private final MonotonicCounter userTransactionIdCounter = MonotonicCounter.newAtomicMonotonicCounter();
-    private final AutoIndexing autoIndexing;
-    private final ExplicitIndexStore explicitIndexStore;
     private final TokenHolders tokenHolders;
     private final String currentDatabaseName;
     private final IndexingService indexingService;
@@ -144,14 +138,12 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
 
     public KernelTransactions( Config config, StatementLocksFactory statementLocksFactory, ConstraintIndexCreator constraintIndexCreator,
             StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard, TransactionHeaderInformationFactory txHeaderFactory,
-            TransactionCommitProcess transactionCommitProcess, ExplicitIndexTransactionStateProvider explicitIndexTransactionStateProvider,
-            TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
-            StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
-            AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability,
-            AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
+            TransactionCommitProcess transactionCommitProcess, TransactionHooks hooks, TransactionMonitor transactionMonitor,
+            AvailabilityGuard databaseAvailabilityGuard, Tracers tracers, StorageEngine storageEngine, Procedures procedures,
+            TransactionIdStore transactionIdStore, SystemNanoClock clock, AtomicReference<CpuClock> cpuClockRef,
+            AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            TokenHolders tokenHolders, String currentDatabaseName,
-            IndexingService indexingService, LabelScanStore labelScanStore,
+            TokenHolders tokenHolders, String currentDatabaseName, IndexingService indexingService, LabelScanStore labelScanStore,
             Dependencies dataSourceDependencies )
     {
         this.config = config;
@@ -171,14 +163,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.cpuClockRef = cpuClockRef;
         this.heapAllocationRef = heapAllocationRef;
         this.accessCapability = accessCapability;
-        this.autoIndexing = autoIndexing;
-        this.explicitIndexStore = explicitIndexStore;
         this.tokenHolders = tokenHolders;
         this.currentDatabaseName = currentDatabaseName;
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.dataSourceDependencies = dataSourceDependencies;
-        this.explicitIndexTxStateSupplier = explicitIndexTransactionStateProvider::createNewExplicitIndexTransactionState;
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
@@ -379,11 +368,10 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks,
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
-                            transactionCommitProcess, transactionMonitor, explicitIndexTxStateSupplier, localTxPool,
+                            transactionCommitProcess, transactionMonitor, localTxPool,
                             clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
                             tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
-                            autoIndexing,
-                            explicitIndexStore, versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
+                            versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, dataSourceDependencies );
             this.transactions.add( tx );
             return tx;

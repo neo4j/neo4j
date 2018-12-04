@@ -27,29 +27,23 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.QueryContext;
-import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 import org.neo4j.internal.kernel.api.Scan;
-import org.neo4j.internal.kernel.api.exceptions.explicitindex.ExplicitIndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.security.AccessMode;
 import org.neo4j.kernel.api.AssertOpen;
-import org.neo4j.kernel.api.ExplicitIndex;
-import org.neo4j.kernel.api.ExplicitIndexHits;
 import org.neo4j.kernel.api.exceptions.schema.IndexBrokenKernelException;
 import org.neo4j.kernel.api.index.IndexProgressor;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
@@ -75,7 +69,6 @@ import static org.neo4j.values.storable.ValueGroup.NUMBER;
 
 abstract class Read implements TxStateHolder,
         org.neo4j.internal.kernel.api.Read,
-        org.neo4j.internal.kernel.api.ExplicitIndexRead,
         org.neo4j.internal.kernel.api.SchemaRead,
         org.neo4j.internal.kernel.api.Procedures,
         org.neo4j.internal.kernel.api.Locks,
@@ -441,100 +434,9 @@ abstract class Read implements TxStateHolder,
         ((DefaultPropertyCursor) cursor).initGraph( this, ktx );
     }
 
-    @Override
-    public final void nodeExplicitIndexLookup(
-            NodeExplicitIndexCursor cursor, String index, String key, Object value )
-            throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex( (DefaultNodeExplicitIndexCursor) cursor,
-                explicitNodeIndex( index ).get( key, value ) );
-    }
-
-    @Override
-    public final void nodeExplicitIndexQuery(
-            NodeExplicitIndexCursor cursor, String index, Object query )
-            throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex( (DefaultNodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
-                query instanceof Value ? ((Value) query).asObject() : query ) );
-    }
-
-    @Override
-    public final void nodeExplicitIndexQuery(
-            NodeExplicitIndexCursor cursor, String index, String key, Object query )
-            throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        ((DefaultNodeExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex( (DefaultNodeExplicitIndexCursor) cursor, explicitNodeIndex( index ).query(
-                key, query instanceof Value ? ((Value) query).asObject() : query ) );
-    }
-
-    @Override
-    public void relationshipExplicitIndexLookup(
-            RelationshipExplicitIndexCursor cursor,
-            String index,
-            String key,
-            Object value,
-            long source,
-            long target ) throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex(
-                (DefaultRelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index ).get( key, value, source, target ) );
-    }
-
-    @Override
-    public void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor,
-            String index,
-            Object query,
-            long source,
-            long target ) throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex(
-                (DefaultRelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index )
-                        .query( query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
-    }
-
-    @Override
-    public void relationshipExplicitIndexQuery(
-            RelationshipExplicitIndexCursor cursor,
-            String index,
-            String key,
-            Object query,
-            long source,
-            long target ) throws ExplicitIndexNotFoundKernelException
-    {
-        ktx.assertOpen();
-        ((DefaultRelationshipExplicitIndexCursor) cursor).setRead( this );
-        explicitIndex(
-                (DefaultRelationshipExplicitIndexCursor) cursor,
-                explicitRelationshipIndex( index ).query(
-                        key, query instanceof Value ? ((Value) query).asObject() : query, source, target ) );
-    }
-
-    private static void explicitIndex( IndexProgressor.ExplicitClient client, ExplicitIndexHits hits )
-    {
-        client.initialize( new ExplicitIndexProgressor( hits, client ), hits.size() );
-    }
-
     public abstract IndexReader indexReader( IndexReference index, boolean fresh ) throws IndexNotFoundKernelException;
 
     abstract LabelScanReader labelScanReader();
-
-    abstract ExplicitIndex explicitNodeIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
-
-    abstract ExplicitIndex explicitRelationshipIndex( String indexName ) throws ExplicitIndexNotFoundKernelException;
 
     @Override
     public abstract IndexReference index( int label, int... properties );
@@ -543,12 +445,6 @@ abstract class Read implements TxStateHolder,
     public TransactionState txState()
     {
         return ktx.txState();
-    }
-
-    @Override
-    public ExplicitIndexTransactionState explicitIndexTxState()
-    {
-        return ktx.explicitIndexTxState();
     }
 
     @Override

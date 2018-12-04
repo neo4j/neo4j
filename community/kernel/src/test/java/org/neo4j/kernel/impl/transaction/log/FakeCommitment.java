@@ -26,7 +26,6 @@ public class FakeCommitment implements Commitment
     private final long id;
     private final TransactionIdStore transactionIdStore;
     private boolean committed;
-    private boolean hasExplicitIndexChanges;
 
     public FakeCommitment( long id, TransactionIdStore transactionIdStore )
     {
@@ -59,14 +58,4 @@ public class FakeCommitment implements Commitment
         return committed;
     }
 
-    public void setHasExplicitIndexChanges( boolean hasExplicitIndexChanges )
-    {
-        this.hasExplicitIndexChanges = hasExplicitIndexChanges;
-    }
-
-    @Override
-    public boolean hasExplicitIndexChanges()
-    {
-        return hasExplicitIndexChanges;
-    }
 }

@@ -26,11 +26,9 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
 
 import org.neo4j.common.EntityType;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.function.Suppliers;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,7 +47,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -84,7 +81,6 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TokenAccess;
 import org.neo4j.kernel.impl.core.EmbeddedProxySPI;
@@ -94,15 +90,9 @@ import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
-import org.neo4j.kernel.impl.coreapi.AutoIndexerFacade;
-import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
-import org.neo4j.kernel.impl.coreapi.IndexProviderImpl;
 import org.neo4j.kernel.impl.coreapi.InternalTransaction;
 import org.neo4j.kernel.impl.coreapi.PlaceboTransaction;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
-import org.neo4j.kernel.impl.coreapi.ReadOnlyIndexFacade;
-import org.neo4j.kernel.impl.coreapi.ReadOnlyRelationshipIndexFacade;
-import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerFacade;
 import org.neo4j.kernel.impl.coreapi.TopLevelTransaction;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
 import org.neo4j.kernel.impl.query.Neo4jTransactionalContextFactory;
@@ -122,8 +112,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_timeou
 import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.internal.kernel.api.connectioninfo.ClientConnectionInfo.EMBEDDED_CONNECTION;
 import static org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED;
-import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.NODE_AUTO_INDEX;
-import static org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing.RELATIONSHIP_AUTO_INDEX;
 import static org.neo4j.values.storable.Values.utf8Value;
 
 /**
@@ -136,7 +124,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
     private static final PropertyContainerLocker locker = new PropertyContainerLocker();
 
     private Schema schema;
-    private Supplier<IndexManager> indexManager;
     private ThreadToStatementContextBridge statementContext;
     private SPI spi;
     private TransactionalContextFactory contextFactory;
@@ -179,8 +166,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         /** Execute a cypher statement */
         Result executeQuery( String query, MapValue parameters, TransactionalContext context );
 
-        AutoIndexing autoIndexing();
-
         void registerKernelEventHandler( DatabaseEventHandler handler );
 
         void unregisterKernelEventHandler( DatabaseEventHandler handler );
@@ -210,21 +195,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
         this.schema = new SchemaImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
         this.statementContext = txBridge;
         this.tokenHolders = tokenHolders;
-        this.indexManager = Suppliers.lazySingleton( () ->
-        {
-            IndexProviderImpl idxProvider = new IndexProviderImpl( this, () -> txBridge.getKernelTransactionBoundToThisThread( true ) );
-            AutoIndexerFacade<Node> nodeAutoIndexer = new AutoIndexerFacade<>(
-                    () -> new ReadOnlyIndexFacade<>( idxProvider.getOrCreateNodeIndex( NODE_AUTO_INDEX, null ) ),
-                    spi.autoIndexing().nodes() );
-            RelationshipAutoIndexerFacade relAutoIndexer = new RelationshipAutoIndexerFacade(
-                    () -> new ReadOnlyRelationshipIndexFacade(
-                            idxProvider.getOrCreateRelationshipIndex( RELATIONSHIP_AUTO_INDEX, null ) ),
-                    spi.autoIndexing().relationships() );
-
-            return new IndexManagerImpl( () -> txBridge.getKernelTransactionBoundToThisThread( true ), idxProvider,
-                    nodeAutoIndexer, relAutoIndexer );
-        } );
-
         this.contextFactory = Neo4jTransactionalContextFactory.create( spi, txBridge, locker );
     }
 
@@ -331,13 +301,6 @@ public class GraphDatabaseFacade implements GraphDatabaseAPI, EmbeddedProxySPI
             }
             return newRelationshipProxy( id );
         }
-    }
-
-    @Deprecated
-    @Override
-    public IndexManager index()
-    {
-        return indexManager.get();
     }
 
     @Override

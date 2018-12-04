@@ -32,11 +32,8 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.store.format.RecordFormat;
-import org.neo4j.kernel.impl.util.MultiResource;
-import org.neo4j.kernel.spi.explicitindex.IndexImplementation;
 import org.neo4j.storageengine.api.StoreFileMetadata;
 
 import static org.neo4j.helpers.collection.Iterators.resourceIterator;
@@ -45,15 +42,13 @@ public class NeoStoreFileIndexListing
 {
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
-    private final ExplicitIndexProvider explicitIndexProviders;
 
     private static final Function<File,StoreFileMetadata> toStoreFileMetatadata = file -> new StoreFileMetadata( file, RecordFormat.NO_RECORD_SIZE );
 
-    NeoStoreFileIndexListing( LabelScanStore labelScanStore, IndexingService indexingService, ExplicitIndexProvider explicitIndexProviders )
+    NeoStoreFileIndexListing( LabelScanStore labelScanStore, IndexingService indexingService )
     {
         this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
-        this.explicitIndexProviders = explicitIndexProviders;
     }
 
     public LongSet getIndexIds()
@@ -77,20 +72,6 @@ public class NeoStoreFileIndexListing
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.
         return snapshot;
-    }
-
-    Resource gatherExplicitIndexFiles( Collection<StoreFileMetadata> files ) throws IOException
-    {
-        final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
-        for ( IndexImplementation indexProvider : explicitIndexProviders.allIndexProviders() )
-        {
-            ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
-            snapshots.add( snapshot );
-            getSnapshotFilesMetadata( snapshot, files );
-        }
-        // Intentionally don't close the snapshot here, return it for closing by the consumer of
-        // the targetFiles list.
-        return new MultiResource( snapshots );
     }
 
     private void getSnapshotFilesMetadata( ResourceIterator<File> snapshot, Collection<StoreFileMetadata> targetFiles )

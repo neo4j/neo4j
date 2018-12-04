@@ -36,7 +36,6 @@ import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.GraphDatabaseQueryService;
 import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
@@ -110,12 +109,6 @@ public class ProcedureGDBFacadeSPI implements GraphDatabaseFacade.SPI
         {
             throw e.asUserException();
         }
-    }
-
-    @Override
-    public AutoIndexing autoIndexing()
-    {
-        return sourceModule.database.getAutoIndexing();
     }
 
     @Override

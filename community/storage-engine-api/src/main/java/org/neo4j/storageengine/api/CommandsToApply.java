@@ -36,13 +36,6 @@ public interface CommandsToApply extends CommandStream
     CommandsToApply next();
 
     /**
-     * @return {@code true} if applying this group of commands requires that any group chronologically
-     * before it also needing ordering have been fully applied. This is a way to force serial application
-     * of some groups and in extension their whole batches.
-     */
-    boolean requiresApplicationOrdering();
-
-    /**
      * @return A string describing the contents of this batch of commands.
      */
     @Override

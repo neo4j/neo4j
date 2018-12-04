@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.transaction.log;
 
 class TransactionCommitment implements Commitment
 {
-    private final boolean hasExplicitIndexChanges;
     private final long transactionId;
     private final long transactionChecksum;
     private final long transactionCommitTimestamp;
@@ -29,10 +28,9 @@ class TransactionCommitment implements Commitment
     private final TransactionIdStore transactionIdStore;
     private boolean markedAsCommitted;
 
-    TransactionCommitment( boolean hasExplicitIndexChanges, long transactionId, long transactionChecksum,
+    TransactionCommitment( long transactionId, long transactionChecksum,
             long transactionCommitTimestamp, LogPosition logPosition, TransactionIdStore transactionIdStore )
     {
-        this.hasExplicitIndexChanges = hasExplicitIndexChanges;
         this.transactionId = transactionId;
         this.transactionChecksum = transactionChecksum;
         this.transactionCommitTimestamp = transactionCommitTimestamp;
@@ -62,11 +60,5 @@ class TransactionCommitment implements Commitment
     public boolean markedAsCommitted()
     {
         return markedAsCommitted;
-    }
-
-    @Override
-    public boolean hasExplicitIndexChanges()
-    {
-        return hasExplicitIndexChanges;
     }
 }

@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 import org.neo4j.collection.pool.Pool;
@@ -37,8 +36,6 @@ import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.TransactionTerminatedException;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
-import org.neo4j.internal.kernel.api.ExplicitIndexRead;
-import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
@@ -65,9 +62,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.SilentTokenNameLookup;
 import org.neo4j.kernel.api.exceptions.ConstraintViolationTransactionFailureException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.api.txstate.ExplicitIndexTransactionState;
 import org.neo4j.kernel.api.txstate.TransactionState;
 import org.neo4j.kernel.api.txstate.TxStateHolder;
 import org.neo4j.kernel.configuration.Config;
@@ -79,7 +74,6 @@ import org.neo4j.kernel.impl.api.transaction.trace.TransactionInitializationTrac
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
-import org.neo4j.kernel.impl.index.ExplicitIndexStore;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
@@ -144,7 +138,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StorageEngine storageEngine;
     private final TransactionTracer transactionTracer;
     private final Pool<KernelTransactionImplementation> pool;
-    private final Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier;
 
     // For committing
     private final TransactionHeaderInformationFactory headerInformationFactory;
@@ -160,7 +153,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     // State that needs to be reset between uses. Most of these should be cleared or released in #release(),
     // whereas others, such as timestamp or txId when transaction starts, even locks, needs to be set in #initialize().
     private TxState txState;
-    private ExplicitIndexTransactionState explicitIndexTransactionState;
     private TransactionWriteState writeState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final KernelStatement currentStatement;
@@ -203,13 +195,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation( Config config, StatementOperationParts statementOperations, SchemaWriteGuard schemaWriteGuard,
             TransactionHooks hooks, ConstraintIndexCreator constraintIndexCreator, Procedures procedures,
             TransactionHeaderInformationFactory headerInformationFactory, TransactionCommitProcess commitProcess, TransactionMonitor transactionMonitor,
-            Supplier<ExplicitIndexTransactionState> explicitIndexTxStateSupplier, Pool<KernelTransactionImplementation> pool, Clock clock,
+            Pool<KernelTransactionImplementation> pool, Clock clock,
             AtomicReference<CpuClock> cpuClockRef, AtomicReference<HeapAllocation> heapAllocationRef, TransactionTracer transactionTracer,
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
-            AutoIndexing autoIndexing, ExplicitIndexStore explicitIndexStore, VersionContextSupplier versionContextSupplier,
-            CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
-            TokenHolders tokenHolders, IndexingService indexingService, LabelScanStore labelScanStore,
-            Dependencies dataSourceDependencies )
+            VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
+            ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
+            LabelScanStore labelScanStore, Dependencies dataSourceDependencies )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -217,7 +208,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.headerInformationFactory = headerInformationFactory;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
-        this.explicitIndexTxStateSupplier = explicitIndexTxStateSupplier;
         this.storageReader = storageEngine.newReader();
         this.storageEngine = storageEngine;
         this.pool = pool;
@@ -232,8 +222,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.constraintSemantics = constraintSemantics;
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         this.allStoreHolder =
-                new AllStoreHolder( storageReader, this, cursors, explicitIndexStore,
-                        procedures, schemaState, indexingService, labelScanStore, dataSourceDependencies );
+                new AllStoreHolder( storageReader, this, cursors, procedures, schemaState, indexingService, labelScanStore, dataSourceDependencies );
         this.operations =
                 new Operations(
                         allStoreHolder,
@@ -241,7 +230,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         this,
                         new KernelToken( storageReader, this, tokenHolders ),
                         cursors,
-                        autoIndexing,
                         constraintIndexCreator,
                         constraintSemantics,
                         indexingService,
@@ -480,13 +468,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public ExplicitIndexTransactionState explicitIndexTxState()
-    {
-        return explicitIndexTransactionState != null ? explicitIndexTransactionState :
-               (explicitIndexTransactionState = explicitIndexTxStateSupplier.get());
-    }
-
-    @Override
     public boolean hasTxStateWithChanges()
     {
         return txState != null && txState.hasChanges();
@@ -545,12 +526,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     private boolean hasChanges()
     {
-        return hasTxStateWithChanges() || hasExplicitIndexChanges();
-    }
-
-    private boolean hasExplicitIndexChanges()
-    {
-        return explicitIndexTransactionState != null && explicitIndexTransactionState.hasChanges();
+        return hasTxStateWithChanges();
     }
 
     private boolean hasDataChanges()
@@ -673,10 +649,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         commitLocks,
                         lastTransactionIdWhenStarted,
                         this::enforceConstraints );
-                if ( hasExplicitIndexChanges() )
-                {
-                    explicitIndexTransactionState.extractCommands( extractedCommands );
-                }
 
                 /* Here's the deal: we track a quick-to-access hasChanges in transaction state which is true
                  * if there are any changes imposed by this transaction. Some changes made inside a transaction undo
@@ -814,24 +786,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
-    public ExplicitIndexRead indexRead()
-    {
-        assertAllows( AccessMode::allowsReads, "Read" );
-
-        return operations.indexRead();
-    }
-
-    @Override
-    public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
-    {
-        accessCapability.assertCanWrite();
-        assertAllows( AccessMode::allowsWrites, "Write" );
-        upgradeToDataWrites();
-
-        return operations;
-    }
-
-    @Override
     public SchemaRead schemaRead()
     {
         assertAllows( AccessMode::allowsReads, "Read" );
@@ -950,7 +904,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             type = null;
             securityContext = null;
             transactionEvent = null;
-            explicitIndexTransactionState = null;
             txState = null;
             collectionsFactory.release();
             hooksState = null;

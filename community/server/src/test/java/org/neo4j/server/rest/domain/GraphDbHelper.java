@@ -19,8 +19,6 @@
  */
 package org.neo4j.server.rest.domain;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -30,16 +28,12 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.Index;
-import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.graphdb.schema.ConstraintCreator;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.graphdb.schema.ConstraintType;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.security.AnonymousContext;
@@ -204,106 +198,6 @@ public class GraphDbHelper
         }
     }
 
-    public void addNodeToIndex( String indexName, String key, Object value, long id )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
-        {
-            database.getGraph().index().forNodes( indexName ).add( database.getGraph().getNodeById( id ), key, value );
-            tx.success();
-        }
-    }
-
-    public Collection<Long> queryIndexedNodes( String indexName, String key, Object value )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
-        {
-            Collection<Long> result = new ArrayList<>();
-            for ( Node node : database.getGraph().index().forNodes( indexName ).query( key, value ) )
-            {
-                result.add( node.getId() );
-            }
-            tx.success();
-            return result;
-        }
-    }
-
-    public Collection<Long> getIndexedNodes( String indexName, String key, Object value )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
-        {
-            Collection<Long> result = new ArrayList<>();
-            for ( Node node : database.getGraph().index().forNodes( indexName ).get( key, value ) )
-            {
-                result.add( node.getId() );
-            }
-            tx.success();
-            return result;
-        }
-    }
-
-    public Collection<Long> getIndexedRelationships( String indexName, String key, Object value )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
-        {
-            Collection<Long> result = new ArrayList<>();
-            for ( Relationship relationship : database.getGraph().index().forRelationships( indexName ).get( key, value ) )
-            {
-                result.add( relationship.getId() );
-            }
-            tx.success();
-            return result;
-        }
-    }
-
-    public void addRelationshipToIndex( String indexName, String key, String value, long relationshipId )
-    {
-        try ( Transaction tx = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
-        {
-            Index<Relationship> index = database.getGraph().index().forRelationships( indexName );
-            index.add( database.getGraph().getRelationshipById( relationshipId ), key, value );
-            tx.success();
-        }
-
-    }
-
-    public String[] getNodeIndexes()
-    {
-        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
-        {
-            return database.getGraph().index().nodeIndexNames();
-        }
-    }
-
-    public Index<Node> createNodeFullTextIndex( String named )
-    {
-        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
-        {
-            Index<Node> index = database.getGraph().index()
-                    .forNodes( named, MapUtil.stringMap( IndexManager.PROVIDER, "lucene", "type", "fulltext" ) );
-            transaction.success();
-            return index;
-        }
-    }
-
-    public Index<Node> createNodeIndex( String named )
-    {
-        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
-        {
-            Index<Node> nodeIndex = database.getGraph().index()
-                    .forNodes( named );
-            transaction.success();
-            return nodeIndex;
-        }
-    }
-
-    public String[] getRelationshipIndexes()
-    {
-        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AnonymousContext.read() ) )
-        {
-            return database.getGraph().index().relationshipIndexNames();
-        }
-    }
-
     public long getFirstNode()
     {
         try ( Transaction tx = database.getGraph().beginTransaction( implicit, AnonymousContext.write() ) )
@@ -321,17 +215,6 @@ public class GraphDbHelper
                 tx.success();
                 return newNode.getId();
             }
-        }
-    }
-
-    public Index<Relationship> createRelationshipIndex( String named )
-    {
-        try ( Transaction transaction = database.getGraph().beginTransaction( implicit, AUTH_DISABLED ) )
-        {
-            RelationshipIndex relationshipIndex = database.getGraph().index()
-                    .forRelationships( named );
-            transaction.success();
-            return relationshipIndex;
         }
     }
 

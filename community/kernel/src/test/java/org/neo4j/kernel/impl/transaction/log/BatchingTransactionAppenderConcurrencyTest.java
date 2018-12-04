@@ -58,7 +58,6 @@ import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
-import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
@@ -111,7 +110,6 @@ public class BatchingTransactionAppenderConcurrencyTest
     private final TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
     private final TransactionIdStore transactionIdStore = new SimpleTransactionIdStore();
     private final SimpleLogVersionRepository logVersionRepository = new SimpleLogVersionRepository();
-    private final IdOrderingQueue explicitIndexTransactionOrdering = IdOrderingQueue.BYPASS;
     private final DatabaseHealth databaseHealth = mock( DatabaseHealth.class );
     private final Semaphore forceSemaphore = new Semaphore( 0 );
 
@@ -227,8 +225,7 @@ public class BatchingTransactionAppenderConcurrencyTest
                 .build();
         life.add( logFiles );
         final BatchingTransactionAppender appender = life.add(
-                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore,
-                        explicitIndexTransactionOrdering, databaseHealth ) );
+                new BatchingTransactionAppender( logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
         life.start();
 
         // WHEN
@@ -306,7 +303,7 @@ public class BatchingTransactionAppenderConcurrencyTest
     private BatchingTransactionAppender createTransactionAppender()
     {
         return new BatchingTransactionAppender( logFiles, logRotation,
-                transactionMetadataCache, transactionIdStore, explicitIndexTransactionOrdering, databaseHealth );
+                transactionMetadataCache, transactionIdStore, databaseHealth );
     }
 
     private enum ChannelCommand

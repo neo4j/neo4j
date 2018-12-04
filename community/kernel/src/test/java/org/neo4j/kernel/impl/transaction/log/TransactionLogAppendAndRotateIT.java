@@ -69,7 +69,6 @@ import static org.neo4j.kernel.impl.transaction.command.Commands.createNode;
 import static org.neo4j.kernel.impl.transaction.command.Commands.createProperty;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent.NULL;
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class TransactionLogAppendAndRotateIT
 {
@@ -97,8 +96,7 @@ public class TransactionLogAppendAndRotateIT
         monitoring.setLogFile( logFiles.getLogFile() );
         DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
         LogRotation rotation = new LogRotationImpl( monitoring, logFiles, health );
-        final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache,
-                txIdStore, BYPASS, health ) );
+        final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache, txIdStore, health ) );
 
         // WHEN
         Race race = new Race();

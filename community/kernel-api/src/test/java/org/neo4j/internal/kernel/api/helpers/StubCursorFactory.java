@@ -25,11 +25,9 @@ import java.util.Queue;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -46,8 +44,6 @@ public class StubCursorFactory implements CursorFactory
     private Queue<NodeValueIndexCursor> nodeValueIndexCursors = new LinkedList<>();
     private Queue<NodeLabelIndexCursor> nodeLabelIndexCursors = new LinkedList<>();
     private Queue<RelationshipIndexCursor> relationshipIndexCursors = new LinkedList<>();
-    private Queue<NodeExplicitIndexCursor> nodeExplicitIndexCursors = new LinkedList<>();
-    private Queue<RelationshipExplicitIndexCursor> relationshipExplicitIndexCursors = new LinkedList<>();
 
     public StubCursorFactory()
     {
@@ -105,18 +101,6 @@ public class StubCursorFactory implements CursorFactory
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         return poll( relationshipIndexCursors );
-    }
-
-    @Override
-    public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
-    {
-        return poll( nodeExplicitIndexCursors );
-    }
-
-    @Override
-    public RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
-    {
-        return poll( relationshipExplicitIndexCursors );
     }
 
     public StubCursorFactory withGroupCursors( RelationshipGroupCursor...cursors )

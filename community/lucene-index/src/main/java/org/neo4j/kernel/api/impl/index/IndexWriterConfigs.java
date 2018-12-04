@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.core.KeywordAnalyzer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.lucene54.Lucene54Codec;
@@ -29,7 +30,6 @@ import org.apache.lucene.index.LogByteSizeMergePolicy;
 import org.apache.lucene.index.PooledConcurrentMergeScheduler;
 import org.apache.lucene.index.SnapshotDeletionPolicy;
 
-import org.neo4j.index.impl.lucene.explicit.LuceneDataSource;
 import org.neo4j.util.FeatureToggles;
 
 /**
@@ -37,6 +37,8 @@ import org.neo4j.util.FeatureToggles;
  */
 public final class IndexWriterConfigs
 {
+    private static final Analyzer KEYWORD_ANALYZER = new KeywordAnalyzer();
+
     private static final int MAX_BUFFERED_DOCS =
             FeatureToggles.getInteger( IndexWriterConfigs.class, "max_buffered_docs", 100000 );
     private static final int POPULATION_MAX_BUFFERED_DOCS =
@@ -72,8 +74,7 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig standard()
     {
-        Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
-        return standard( analyzer );
+        return standard( KEYWORD_ANALYZER );
     }
 
     public static IndexWriterConfig standard( Analyzer analyzer )
@@ -110,8 +111,7 @@ public final class IndexWriterConfigs
 
     public static IndexWriterConfig population()
     {
-        Analyzer analyzer = LuceneDataSource.KEYWORD_ANALYZER;
-        return population( analyzer );
+        return population( KEYWORD_ANALYZER );
     }
 
     public static IndexWriterConfig population( Analyzer analyzer )

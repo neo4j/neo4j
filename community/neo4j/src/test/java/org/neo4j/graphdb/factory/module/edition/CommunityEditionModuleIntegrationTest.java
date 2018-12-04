@@ -27,7 +27,6 @@ import java.util.function.Predicate;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.layout.DatabaseLayout;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.BufferedIdController;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.id.IdController;
 import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
@@ -76,7 +75,6 @@ class CommunityEditionModuleIntegrationTest
         assertFalse( filter.test( layout.metadataStore().getName() ) );
         assertFalse( filter.test( layout.nodeStore().getName() ) );
         assertTrue( filter.test( TransactionLogFiles.DEFAULT_NAME + ".1" ) );
-        assertTrue( filter.test( IndexConfigStore.INDEX_DB_FILE_NAME + ".any" ) );
     }
 
 }

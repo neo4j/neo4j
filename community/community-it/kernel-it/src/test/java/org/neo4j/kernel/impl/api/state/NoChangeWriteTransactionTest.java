@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestLabels;
@@ -33,9 +32,6 @@ import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.index.DummyIndexExtensionFactory.IDENTIFIER;
 
 public class NoChangeWriteTransactionTest
 {
@@ -61,41 +57,6 @@ public class NoChangeWriteTransactionTest
         // THEN it should not have been committed
         assertEquals( "Expected last txId to be what it started at + 2 (1 for the empty node, and one for the label)",
                 startTxId + 2, txIdStore.getLastCommittedTransactionId() );
-    }
-
-    @Test
-    public void shouldDetectNoChangesInCommitsAlsoForTheIndexes()
-    {
-        // GIVEN a transaction that has seen some changes, where all those changes result in a net 0 change set
-        // a good way of producing such state is to add a label to an existing node, and then remove it.
-        GraphDatabaseAPI db = dbr.getGraphDatabaseAPI();
-        TransactionIdStore txIdStore = db.getDependencyResolver().resolveDependency( TransactionIdStore.class );
-        long startTxId = txIdStore.getLastCommittedTransactionId();
-        Node node = createEmptyNode( db );
-        Index<Node> index = createNodeIndex( db );
-        try ( Transaction tx = db.beginTx() )
-        {
-            node.addLabel( TestLabels.LABEL_ONE );
-            node.removeLabel( TestLabels.LABEL_ONE );
-            index.add( node, "key", "value" );
-            index.remove( node, "key", "value" );
-            tx.success();
-        } // WHEN closing that transaction
-
-        // THEN it should not have been committed
-        assertEquals( "Expected last txId to be what it started at + 3 " +
-                      "(1 for the empty node, 1 for index, and one for the label)",
-                startTxId + 3, txIdStore.getLastCommittedTransactionId() );
-    }
-
-    private Index<Node> createNodeIndex( GraphDatabaseAPI db )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            Index<Node> index = db.index().forNodes( "test", stringMap( PROVIDER, IDENTIFIER ) );
-            tx.success();
-            return index;
-        }
     }
 
     private Node createEmptyNode( GraphDatabaseService db )

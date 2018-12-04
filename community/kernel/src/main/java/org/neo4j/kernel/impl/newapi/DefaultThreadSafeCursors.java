@@ -23,11 +23,9 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.NodeCursor;
-import org.neo4j.internal.kernel.api.NodeExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.NodeLabelIndexCursor;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
-import org.neo4j.internal.kernel.api.RelationshipExplicitIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipGroupCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -100,21 +98,6 @@ public class DefaultThreadSafeCursors extends DefaultCursors implements CursorFa
     public RelationshipIndexCursor allocateRelationshipIndexCursor()
     {
         return new DefaultRelationshipIndexCursor( DefaultRelationshipIndexCursor::release );
-    }
-
-    @Override
-    public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
-    {
-        return trace( new DefaultNodeExplicitIndexCursor(
-                DefaultNodeExplicitIndexCursor::release ) );
-    }
-
-    @Override
-    public RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
-    {
-        return trace( new DefaultRelationshipExplicitIndexCursor(
-                new DefaultRelationshipScanCursor( null, storageReader.allocateRelationshipScanCursor() ),
-                DefaultRelationshipExplicitIndexCursor::release ) );
     }
 
     public void close()

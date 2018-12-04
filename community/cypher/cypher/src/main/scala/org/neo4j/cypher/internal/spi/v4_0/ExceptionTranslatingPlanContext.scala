@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.spi.v4_0
 
 import org.neo4j.cypher.internal.compatibility.v4_0.ExceptionTranslationSupport
 import org.neo4j.cypher.internal.planner.v4_0.spi.{GraphStatistics, IndexDescriptor, PlanContext}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext with ExceptionTranslationSupport {
 
@@ -40,9 +40,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def statistics: GraphStatistics =
     translateException(inner.statistics)
-
-  override def checkNodeIndex(idxName: String): Unit =
-    translateException(inner.checkNodeIndex(idxName))
 
   override def txIdProvider: () => Long = {
     val innerTxProvider = translateException(inner.txIdProvider)
@@ -63,9 +60,6 @@ class ExceptionTranslatingPlanContext(inner: PlanContext) extends PlanContext wi
 
   override def getPropertiesWithExistenceConstraint(labelName: String): Set[String] =
     translateException(inner.getPropertiesWithExistenceConstraint(labelName))
-
-  override def checkRelIndex(idxName: String): Unit =
-    translateException(inner.checkRelIndex(idxName))
 
   override def getOptRelTypeId(relType: String): Option[Int] =
     translateException(inner.getOptRelTypeId(relType))

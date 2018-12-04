@@ -59,8 +59,6 @@ trait GraphIcing {
 
     def getAllRelationshipTypes() = graph.getAllRelationshipTypes
 
-    def index() = graph.index
-
     def schema() = graph.schema
 
     def shutdown() = graph.shutdown()

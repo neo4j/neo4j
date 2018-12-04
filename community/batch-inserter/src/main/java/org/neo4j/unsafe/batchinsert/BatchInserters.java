@@ -29,7 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.unsafe.batchinsert.internal.BatchInserterImpl;
 import org.neo4j.unsafe.batchinsert.internal.FileSystemClosingBatchInserter;
-import org.neo4j.unsafe.batchinsert.internal.IndexConfigStoreProvider;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -49,7 +48,7 @@ public final class BatchInserters
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
         BatchInserter batchInserter = inserter( databaseDirectory, fileSystem, stringMap() );
-        return new FileSystemClosingBatchInserter( batchInserter, (IndexConfigStoreProvider) batchInserter, fileSystem );
+        return new FileSystemClosingBatchInserter( batchInserter, fileSystem );
     }
 
     public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fs ) throws IOException
@@ -61,7 +60,7 @@ public final class BatchInserters
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
         BatchInserter inserter = inserter( databaseDirectory, fileSystem, config, loadKernelExtension() );
-        return new FileSystemClosingBatchInserter( inserter, (IndexConfigStoreProvider) inserter, fileSystem );
+        return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fs, Map<String,String> config ) throws IOException
@@ -74,7 +73,7 @@ public final class BatchInserters
     {
         DefaultFileSystemAbstraction fileSystem = createFileSystem();
         BatchInserterImpl inserter = new BatchInserterImpl( databaseDirectory, fileSystem, config, kernelExtensions );
-        return new FileSystemClosingBatchInserter( inserter, inserter, fileSystem );
+        return new FileSystemClosingBatchInserter( inserter, fileSystem );
     }
 
     public static BatchInserter inserter( File databaseDirectory, FileSystemAbstraction fileSystem, Map<String,String> config,

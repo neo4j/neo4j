@@ -111,20 +111,4 @@ public class ManagedTestCursors implements CursorFactory
         allCursors.add( n );
         return n;
     }
-
-    @Override
-    public NodeExplicitIndexCursor allocateNodeExplicitIndexCursor()
-    {
-        NodeExplicitIndexCursor n = cursors.allocateNodeExplicitIndexCursor();
-        allCursors.add( n );
-        return n;
-    }
-
-    @Override
-    public RelationshipExplicitIndexCursor allocateRelationshipExplicitIndexCursor()
-    {
-        RelationshipExplicitIndexCursor n = cursors.allocateRelationshipExplicitIndexCursor();
-        allCursors.add( n );
-        return n;
-    }
 }

@@ -39,8 +39,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.CursorFactory;
 import org.neo4j.internal.kernel.api.ExecutionStatistics;
-import org.neo4j.internal.kernel.api.ExplicitIndexRead;
-import org.neo4j.internal.kernel.api.ExplicitIndexWrite;
 import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.Locks;
 import org.neo4j.internal.kernel.api.NodeCursor;
@@ -583,18 +581,6 @@ public class QueryExecutionLocksIT
         public Write dataWrite() throws InvalidTransactionTypeKernelException
         {
             return internal.dataWrite();
-        }
-
-        @Override
-        public ExplicitIndexRead indexRead()
-        {
-            return internal.indexRead();
-        }
-
-        @Override
-        public ExplicitIndexWrite indexWrite() throws InvalidTransactionTypeKernelException
-        {
-            return internal.indexWrite();
         }
 
         @Override

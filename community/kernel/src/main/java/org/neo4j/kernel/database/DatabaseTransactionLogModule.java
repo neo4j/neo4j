@@ -26,7 +26,6 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.util.Dependencies;
-import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
 
 class DatabaseTransactionLogModule
 {
@@ -35,19 +34,16 @@ class DatabaseTransactionLogModule
     private final LogRotation logRotation;
     private final CheckPointerImpl checkPointer;
     private final TransactionAppender appender;
-    private final SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering;
 
     DatabaseTransactionLogModule( LogicalTransactionStore logicalTransactionStore,
             LogFiles logFiles, LogRotation logRotation,
-            CheckPointerImpl checkPointer, TransactionAppender appender,
-            SynchronizedArrayIdOrderingQueue explicitIndexTransactionOrdering )
+            CheckPointerImpl checkPointer, TransactionAppender appender )
     {
         this.logicalTransactionStore = logicalTransactionStore;
         this.logFiles = logFiles;
         this.logRotation = logRotation;
         this.checkPointer = checkPointer;
         this.appender = appender;
-        this.explicitIndexTransactionOrdering = explicitIndexTransactionOrdering;
     }
 
     public LogicalTransactionStore logicalTransactionStore()
@@ -70,7 +66,6 @@ class DatabaseTransactionLogModule
         dependencies.satisfyDependencies( checkPointer,
                                           logFiles,
                                           logFiles.getLogFileInformation(),
-                                          explicitIndexTransactionOrdering,
                                           logicalTransactionStore,
                                           logRotation,
                                           appender );

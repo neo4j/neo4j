@@ -31,8 +31,6 @@ import java.util.concurrent.TimeUnit;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -44,7 +42,6 @@ import org.neo4j.test.rule.TestDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.default_schema_provider;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -157,71 +154,6 @@ class IndexValuesValidationTest
                         "java.lang.IllegalArgumentException: Index key-value size it to large. Please see index documentation for limitations." ) );
             }
         }
-    }
-
-    @Test
-    void validateExplicitIndexedNodeProperties()
-    {
-        setUp();
-        Label label = Label.label( "explicitIndexedNodePropertiesTestLabel" );
-        String propertyName = "explicitIndexedNodeProperties";
-        String explicitIndexedNodeIndex = "explicitIndexedNodeIndex";
-
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node node = database.createNode( label );
-            database.index().forNodes( explicitIndexedNodeIndex )
-                    .add( node, propertyName, "shortString" );
-            transaction.success();
-        }
-
-        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class, () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                Node node = database.createNode( label );
-                String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
-                database.index().forNodes( explicitIndexedNodeIndex ).add( node, propertyName, longValue );
-                transaction.success();
-            }
-        } );
-        assertEquals( "Property value size is too large for index. Please see index documentation for limitations.",
-                argumentException.getMessage() );
-    }
-
-    @Test
-    void validateExplicitIndexedRelationshipProperties()
-    {
-        setUp();
-        Label label = Label.label( "explicitIndexedRelationshipPropertiesTestLabel" );
-        String propertyName = "explicitIndexedRelationshipProperties";
-        String explicitIndexedRelationshipIndex = "explicitIndexedRelationshipIndex";
-        RelationshipType indexType = RelationshipType.withName( "explicitIndexType" );
-
-        try ( Transaction transaction = database.beginTx() )
-        {
-            Node source = database.createNode( label );
-            Node destination = database.createNode( label );
-            Relationship relationship = source.createRelationshipTo( destination, indexType );
-            database.index().forRelationships( explicitIndexedRelationshipIndex )
-                    .add( relationship, propertyName, "shortString" );
-            transaction.success();
-        }
-
-        IllegalArgumentException argumentException = assertThrows( IllegalArgumentException.class, () ->
-        {
-            try ( Transaction transaction = database.beginTx() )
-            {
-                Node source = database.createNode( label );
-                Node destination = database.createNode( label );
-                Relationship relationship = source.createRelationshipTo( destination, indexType );
-                String longValue = StringUtils.repeat( "a", IndexWriter.MAX_TERM_LENGTH + 1 );
-                database.index().forRelationships( explicitIndexedRelationshipIndex ).add( relationship, propertyName, longValue );
-                transaction.success();
-            }
-        } );
-        assertEquals( "Property value size is too large for index. Please see index documentation for limitations.",
-                argumentException.getMessage() );
     }
 
     private IndexDefinition createIndex( Label label, String propertyName )

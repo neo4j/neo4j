@@ -70,7 +70,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.kernel.impl.transaction.log.rotation.LogRotation.NO_ROTATION;
-import static org.neo4j.kernel.impl.util.IdOrderingQueue.BYPASS;
 
 public class BatchingTransactionAppenderTest
 {
@@ -158,7 +157,7 @@ public class BatchingTransactionAppenderTest
         long nextTxId = 15;
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( nextTxId );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache,
-                transactionIdStore, BYPASS, databaseHealth ) );
+                transactionIdStore, databaseHealth ) );
 
         // WHEN
         final byte[] additionalHeader = new byte[]{1, 2, 5};
@@ -291,7 +290,7 @@ public class BatchingTransactionAppenderTest
         when( transactionIdStore.nextCommittingTransactionId() ).thenReturn( txId );
         Mockito.reset( databaseHealth );
         TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, NO_ROTATION,
-                metadataCache, transactionIdStore, BYPASS, databaseHealth ) );
+                metadataCache, transactionIdStore, databaseHealth ) );
 
         // WHEN
         TransactionRepresentation transaction = mock( TransactionRepresentation.class );
@@ -384,7 +383,7 @@ public class BatchingTransactionAppenderTest
 
     private BatchingTransactionAppender createTransactionAppender()
     {
-        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, BYPASS, databaseHealth );
+        return new BatchingTransactionAppender( logFiles, NO_ROTATION, positionCache, transactionIdStore, databaseHealth );
     }
 
     private TransactionRepresentation transaction( Collection<StorageCommand> commands, byte[] additionalHeader,

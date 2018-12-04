@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.planner.v4_0.spi
 
-import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.InternalNotificationLogger
+import org.neo4j.cypher.internal.v4_0.logical.plans.{ProcedureSignature, QualifiedName, UserFunctionSignature}
 
 /**
  * PlanContext is an internal access layer to the graph that is solely used during plan building
@@ -59,10 +59,6 @@ trait PlanContext extends TokenContext with ProcedureSignatureResolver {
   def hasPropertyExistenceConstraint(labelName: String, propertyKey: String): Boolean
 
   def getPropertiesWithExistenceConstraint(labelName: String): Set[String]
-
-  def checkNodeIndex(idxName: String)
-
-  def checkRelIndex(idxName: String)
 
   def txIdProvider: () => Long
 

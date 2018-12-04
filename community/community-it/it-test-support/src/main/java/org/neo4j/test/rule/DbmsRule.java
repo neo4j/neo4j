@@ -45,7 +45,6 @@ import org.neo4j.graphdb.event.DatabaseEventHandler;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.security.URLAccessValidationError;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
@@ -241,13 +240,6 @@ public abstract class DbmsRule extends ExternalResource implements GraphDatabase
     public Node getNodeById( long id )
     {
         return getGraphDatabaseAPI().getNodeById( id );
-    }
-
-    @Deprecated
-    @Override
-    public IndexManager index()
-    {
-        return getGraphDatabaseAPI().index();
     }
 
     @Override

@@ -31,7 +31,6 @@ import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
-import org.neo4j.kernel.api.explicitindex.AutoIndexing;
 import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
@@ -41,9 +40,7 @@ import org.neo4j.kernel.database.DatabaseCreationContext;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
-import org.neo4j.kernel.impl.api.ExplicitIndexProvider;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.explicitindex.InternalAutoIndexing;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
@@ -56,7 +53,6 @@ import org.neo4j.kernel.impl.factory.CanWrite;
 import org.neo4j.kernel.impl.factory.CommunityCommitProcessFactory;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.factory.GraphDatabaseFacade;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.StatementLocks;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
@@ -162,8 +158,8 @@ public class DatabaseRule extends ExternalResource
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
                 mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor, databaseHealth,
                 mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
-                mock( InternalAutoIndexing.class ), mock( IndexConfigStore.class ), mock( ExplicitIndexProvider.class ), pageCache,
-                new StandardConstraintSemantics(), monitors, new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
+                pageCache, new StandardConstraintSemantics(), monitors,
+                new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
                 new BufferedIdController( new BufferingIdGeneratorFactory( idGeneratorFactory, IdReuseEligibility.ALWAYS, idConfigurationProvider ),
                         jobScheduler ), DatabaseInfo.COMMUNITY, new TransactionVersionContextSupplier(), ON_HEAP, Collections.emptyList(),
@@ -218,9 +214,6 @@ public class DatabaseRule extends ExternalResource
         private final LogFileCreationMonitor physicalLogMonitor;
         private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
         private final CommitProcessFactory commitProcessFactory;
-        private final AutoIndexing autoIndexing;
-        private final IndexConfigStore indexConfigStore;
-        private final ExplicitIndexProvider explicitIndexProvider;
         private final PageCache pageCache;
         private final ConstraintSemantics constraintSemantics;
         private final Monitors monitors;
@@ -248,8 +241,8 @@ public class DatabaseRule extends ExternalResource
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
                 TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
                 TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth, LogFileCreationMonitor physicalLogMonitor,
-                TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory, AutoIndexing autoIndexing,
-                IndexConfigStore indexConfigStore, ExplicitIndexProvider explicitIndexProvider, PageCache pageCache, ConstraintSemantics constraintSemantics,
+                TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory,
+                PageCache pageCache, ConstraintSemantics constraintSemantics,
                 Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
                 SystemNanoClock clock, AccessCapability accessCapability, StoreCopyCheckPointMutex storeCopyCheckPointMutex, IdController idController,
                 DatabaseInfo databaseInfo, VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
@@ -275,9 +268,6 @@ public class DatabaseRule extends ExternalResource
             this.physicalLogMonitor = physicalLogMonitor;
             this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
             this.commitProcessFactory = commitProcessFactory;
-            this.autoIndexing = autoIndexing;
-            this.indexConfigStore = indexConfigStore;
-            this.explicitIndexProvider = explicitIndexProvider;
             this.pageCache = pageCache;
             this.constraintSemantics = constraintSemantics;
             this.monitors = monitors;
@@ -423,24 +413,6 @@ public class DatabaseRule extends ExternalResource
         public CommitProcessFactory getCommitProcessFactory()
         {
             return commitProcessFactory;
-        }
-
-        @Override
-        public AutoIndexing getAutoIndexing()
-        {
-            return autoIndexing;
-        }
-
-        @Override
-        public IndexConfigStore getIndexConfigStore()
-        {
-            return indexConfigStore;
-        }
-
-        @Override
-        public ExplicitIndexProvider getExplicitIndexProvider()
-        {
-            return explicitIndexProvider;
         }
 
         @Override
