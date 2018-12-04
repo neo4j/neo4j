@@ -48,6 +48,10 @@ import org.neo4j.register.Register.DoubleLongRegister;
  */
 public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.Visitable
 {
+    // Used in GBPTree.seek. Please don't use for writes
+    private static final IndexStatisticsKey LOWEST_KEY = new IndexStatisticsKey( Byte.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE );
+    private static final IndexStatisticsKey HIGHEST_KEY = new IndexStatisticsKey( Byte.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE );
+
     private static final byte TYPE_STATISTICS = 1;
     private static final byte TYPE_SAMPLE = 2;
 
@@ -141,10 +145,10 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
         replaceIndexUpdateAndSize( indexId, 0L, indexSize );
     }
 
-    public void removeIndex( long indeId )
+    public void removeIndex( long indexId )
     {
-        cache.remove( new IndexStatisticsKey( TYPE_STATISTICS, indeId, 0 ) );
-        cache.remove( new IndexStatisticsKey( TYPE_SAMPLE, indeId, 0 ) );
+        cache.remove( new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 ) );
+        cache.remove( new IndexStatisticsKey( TYPE_SAMPLE, indexId, 0 ) );
     }
 
     public void incrementIndexUpdates( long indexId, long delta )
@@ -200,9 +204,7 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
 
     private void scanTree( BiConsumer<IndexStatisticsKey,IndexStatisticsValue> consumer ) throws IOException
     {
-        try ( RawCursor<Hit<IndexStatisticsKey,IndexStatisticsValue>,IOException> seek = tree.seek(
-                new IndexStatisticsKey( Byte.MIN_VALUE, Long.MIN_VALUE, Long.MIN_VALUE ),
-                new IndexStatisticsKey( Byte.MAX_VALUE, Long.MAX_VALUE, Long.MAX_VALUE ) ) )
+        try ( RawCursor<Hit<IndexStatisticsKey,IndexStatisticsValue>,IOException> seek = tree.seek( LOWEST_KEY, HIGHEST_KEY ) )
         {
             while ( seek.next() )
             {
@@ -224,8 +226,8 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
         {
             for ( IndexStatisticsKey key : keys )
             {
-                IndexStatisticsValue removedValue = writer.remove( key );
-                assert removedValue != null;
+                // Idempotent operation
+                writer.remove( key );
             }
         }
     }

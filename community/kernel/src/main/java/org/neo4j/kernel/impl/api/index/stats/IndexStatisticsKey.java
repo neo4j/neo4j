@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
-import java.util.Objects;
+import static java.util.Objects.hash;
 
 class IndexStatisticsKey
 {
@@ -43,7 +43,7 @@ class IndexStatisticsKey
     @Override
     public int hashCode()
     {
-        return Objects.hash( type, first, second );
+        return hash( type, first, second );
     }
 
     @Override
