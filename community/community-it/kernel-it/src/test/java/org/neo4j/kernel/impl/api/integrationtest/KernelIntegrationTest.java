@@ -207,7 +207,7 @@ public abstract class KernelIntegrationTest
         db.shutdown();
     }
 
-    void restartDb() throws TransactionFailureException
+    public void restartDb() throws TransactionFailureException
     {
         stopDb();
         startDb();
@@ -282,7 +282,7 @@ public abstract class KernelIntegrationTest
         return result;
     }
 
-    static int countRelationships( Transaction transaction )
+    public static int countRelationships( Transaction transaction )
     {
         int result = 0;
         try ( RelationshipScanCursor cursor = transaction.cursors().allocateRelationshipScanCursor() )

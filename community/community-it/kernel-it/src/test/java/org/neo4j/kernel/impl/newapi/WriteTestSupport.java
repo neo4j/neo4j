@@ -32,7 +32,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.GraphDatabaseServiceCleaner;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-class WriteTestSupport implements KernelAPIWriteTestSupport
+public class WriteTestSupport implements KernelAPIWriteTestSupport
 {
     private GraphDatabaseService db;
 

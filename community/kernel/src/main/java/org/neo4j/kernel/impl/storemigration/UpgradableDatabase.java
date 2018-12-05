@@ -149,7 +149,7 @@ public class UpgradableDatabase
         return directoryLayout.file( result.storeFilename ).getAbsolutePath();
     }
 
-    boolean hasCurrentVersion( DatabaseLayout dbDirectoryLayout )
+    public boolean hasCurrentVersion( DatabaseLayout dbDirectoryLayout )
     {
         File neoStore = dbDirectoryLayout.metadataStore();
         Result result = storeVersionCheck.hasVersion( neoStore, format.storeVersion() );

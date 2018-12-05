@@ -296,7 +296,7 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreVersionException extends UnableToUpgradeException
     {
-        static final String MESSAGE =
+        public static final String MESSAGE =
                 "Not possible to upgrade a store with version '%s' to current store version `%s` (Neo4j %s).";
 
         UnexpectedUpgradingStoreVersionException( String fileVersion, String currentVersion )
@@ -317,7 +317,7 @@ public class StoreUpgrader
 
     public static class UnexpectedUpgradingStoreFormatException extends UnableToUpgradeException
     {
-        protected static final String MESSAGE =
+        public static final String MESSAGE =
                 "This is an enterprise-only store. Please configure '%s' to open.";
 
         UnexpectedUpgradingStoreFormatException()

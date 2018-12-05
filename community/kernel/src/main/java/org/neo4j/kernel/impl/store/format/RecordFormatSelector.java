@@ -140,7 +140,7 @@ public class RecordFormatSelector
      * found or can't be read
      */
     @Nullable
-    static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
+    public static RecordFormats selectForStore( DatabaseLayout databaseLayout, FileSystemAbstraction fs, PageCache pageCache, LogProvider logProvider )
     {
         File neoStoreFile = databaseLayout.metadataStore();
         if ( fs.fileExists( neoStoreFile ) )

@@ -143,7 +143,7 @@ public class CountsMigrator extends AbstractStoreMigrationParticipant
         return "Kernel Node Count Rebuilder";
     }
 
-    static boolean countStoreRebuildRequired( String versionToMigrateFrom )
+    public static boolean countStoreRebuildRequired( String versionToMigrateFrom )
     {
         return StandardV2_3.STORE_VERSION.equals( versionToMigrateFrom ) ||
                StandardV3_0.STORE_VERSION.equals( versionToMigrateFrom ) ||

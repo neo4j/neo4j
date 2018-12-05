@@ -54,7 +54,7 @@ public class MigrationTestUtils
     {
     }
 
-    static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
+    public static void changeVersionNumber( FileSystemAbstraction fileSystem, File storeFile, String versionString )
             throws IOException
     {
         byte[] versionBytes = UTF8.encode( versionString );
@@ -78,7 +78,7 @@ public class MigrationTestUtils
         workingFs.copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
+    public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
     {
         if ( StandardV2_3.STORE_VERSION.equals( version ) )
         {
