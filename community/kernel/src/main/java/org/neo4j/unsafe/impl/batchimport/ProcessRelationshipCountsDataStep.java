@@ -83,8 +83,8 @@ public class ProcessRelationshipCountsDataStep extends ProcessorStep<Relationshi
 
         long availableMem = config.maxMemoryUsage() - memVisitor.getTotalUsage();
         long threadMem = RelationshipCountsProcessor.calculateMemoryUsage( highLabelId, highRelationshipTypeId );
-        int possibleThreads = toIntExact( availableMem / threadMem );
-        return possibleThreads >= config.maxNumberOfProcessors() ? 0 : max( 1, possibleThreads );
+        long possibleThreads = availableMem / threadMem;
+        return possibleThreads >= config.maxNumberOfProcessors() ? 0 : toIntExact( max( 1, possibleThreads ) );
     }
 
     @Override
