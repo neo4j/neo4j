@@ -31,7 +31,7 @@ public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdate
 {
     private final List<NodeLabelUpdate> labelUpdates;
 
-    public LabelUpdateWork( List<NodeLabelUpdate> labelUpdates )
+    LabelUpdateWork( List<NodeLabelUpdate> labelUpdates )
     {
         this.labelUpdates = labelUpdates;
     }
@@ -50,16 +50,3 @@ public class LabelUpdateWork implements Work<NodeLabelUpdateListener,LabelUpdate
         listener.applyUpdates( labelUpdates );
     }
 }
-/*
-        try ( LabelScanWriter writer = listener.get() )
-        {
-            for ( NodeLabelUpdate update : labelUpdates )
-            {
-                writer.write( update );
-            }
-        }
-        catch ( Exception e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-*/

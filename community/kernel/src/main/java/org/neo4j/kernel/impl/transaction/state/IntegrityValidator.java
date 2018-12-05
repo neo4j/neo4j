@@ -39,12 +39,18 @@ import org.neo4j.util.Preconditions;
 public class IntegrityValidator
 {
     private final NeoStores neoStores;
-    private final IndexUpdateListener indexes;
+    private IndexUpdateListener indexValidator;
 
-    public IntegrityValidator( NeoStores neoStores, IndexUpdateListener indexes )
+    public IntegrityValidator( NeoStores neoStores )
     {
         this.neoStores = neoStores;
-        this.indexes = indexes;
+    }
+
+    public void setIndexValidator( IndexUpdateListener validator )
+    {
+        Preconditions.checkState( this.indexValidator == null,
+                "Only supports a single validator. Tried to add " + validator + ", but " + this.indexValidator + " has already been added" );
+        this.indexValidator = validator;
     }
 
     public void validateNodeRecord( NodeRecord record ) throws TransactionFailureException
@@ -82,15 +88,16 @@ public class IntegrityValidator
      */
     public void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
-        Preconditions.checkState( indexes != null, "No index validator installed" );
+        Preconditions.checkState( indexValidator != null, "No index validator installed" );
         if ( schemaRule instanceof ConstraintRule )
         {
             ConstraintRule constraintRule = (ConstraintRule) schemaRule;
             if ( constraintRule.getConstraintDescriptor().enforcesUniqueness() )
             {
+                long ownedIndex = constraintRule.getOwnedIndex();
                 try
                 {
-                    indexes.validateIndex( constraintRule.getOwnedIndex() );
+                    indexValidator.validateIndex( ownedIndex );
                 }
                 catch ( KernelException e )
                 {
@@ -100,7 +107,8 @@ public class IntegrityValidator
                     // The other alternative is that this is an unexpected exception and means we're in a very bad state - out of
                     // disk or index corruption, or similar. This will kill the database such that it can be shut down
                     // and have recovery performed. It's the safest bet to avoid loosing data.
-                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e, "Index validation failed", e );
+                    throw new TransactionFailureException( Status.Transaction.TransactionValidationFailed, e,
+                            "Index validation of " + schemaRule + " failed, specifically for its owned index " + ownedIndex, e );
                 }
             }
         }

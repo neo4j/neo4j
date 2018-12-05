@@ -19,9 +19,14 @@
  */
 package org.neo4j.kernel.impl.api.index.stats;
 
+import org.neo4j.index.internal.gbptree.GBPTree;
 import org.neo4j.index.internal.gbptree.Layout;
 import org.neo4j.io.pagecache.PageCursor;
 
+/**
+ * {@link GBPTree} layout in {@link IndexStatisticsStore}, using {@link IndexStatisticsKey} and {@link IndexStatisticsValue}.
+ * Basically a 1B type + 16B key and a 16B value.
+ */
 class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStatisticsValue>
 {
     @Override

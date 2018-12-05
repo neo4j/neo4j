@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.api.index.stats;
 
 import static java.util.Objects.hash;
 
+/**
+ * Keys in {@link IndexStatisticsStore}, having a type and 16B key.
+ */
 class IndexStatisticsKey
 {
     static final int SIZE = Byte.SIZE + Long.SIZE * 2;

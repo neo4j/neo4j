@@ -82,9 +82,9 @@ public class SchemaRuleSerialization
      */
     public static byte[] serialize( SchemaRule schemaRule )
     {
-        if ( schemaRule instanceof StorageIndexReference )
+        if ( schemaRule instanceof StoreIndexDescriptor )
         {
-            return serialize( (StorageIndexReference) schemaRule );
+            return serialize( (StoreIndexDescriptor) schemaRule );
         }
         else if ( schemaRule instanceof ConstraintRule )
         {
@@ -127,7 +127,7 @@ public class SchemaRuleSerialization
      * @param indexDescriptor the StoreIndexDescriptor to serialize
      * @throws IllegalStateException if the StoreIndexDescriptor is of type unique, but the owning constrain has not been set
      */
-    public static byte[] serialize( StorageIndexReference indexDescriptor )
+    public static byte[] serialize( StoreIndexDescriptor indexDescriptor )
     {
         ByteBuffer target = ByteBuffer.allocate( lengthOf( indexDescriptor ) );
         target.putInt( LEGACY_LABEL_OR_REL_TYPE_ID );

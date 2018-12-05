@@ -111,7 +111,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     private final TokenHolders tokenHolders;
     private final DatabaseHealth databaseHealth;
     private final SchemaCache schemaCache;
-    private IntegrityValidator integrityValidator;
+    private final IntegrityValidator integrityValidator;
     private final CacheAccessBackDoor cacheAccess;
     private final SchemaState schemaState;
     private final SchemaRuleAccess schemaRuleAccess;
@@ -167,7 +167,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // We need to load the property tokens here, since we need them before we load the indexes.
             tokenHolders.propertyKeyTokens().setInitialTokens( neoStores.getPropertyKeyTokenStore().getTokens() );
 
-            integrityValidator = new IntegrityValidator( neoStores, null );
+            integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
             commandReaderFactory = new RecordStorageCommandReaderFactory();
@@ -229,20 +229,22 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public void addIndexUpdateListener( IndexUpdateListener indexUpdateListener )
+    public void addIndexUpdateListener( IndexUpdateListener listener )
     {
-        Preconditions.checkState( this.indexUpdateListener == null, "Only supports a single listener" );
-        this.indexUpdateListener = indexUpdateListener;
-        this.indexUpdatesSync = new WorkSync<>( indexUpdateListener );
-        this.integrityValidator = new IntegrityValidator( neoStores, indexUpdateListener );
+        Preconditions.checkState( this.indexUpdateListener == null,
+                "Only supports a single listener. Tried to add " + listener + ", but " + this.indexUpdateListener + " has already been added" );
+        this.indexUpdateListener = listener;
+        this.indexUpdatesSync = new WorkSync<>( listener );
+        this.integrityValidator.setIndexValidator( listener );
     }
 
     @Override
-    public void addNodeLabelUpdateListener( NodeLabelUpdateListener nodeLabelUpdateListener )
+    public void addNodeLabelUpdateListener( NodeLabelUpdateListener listener )
     {
-        Preconditions.checkState( this.nodeLabelUpdateListener == null, "Only supports a single listener" );
-        this.nodeLabelUpdateListener = nodeLabelUpdateListener;
-        this.labelScanStoreSync = new WorkSync<>( nodeLabelUpdateListener );
+        Preconditions.checkState( this.nodeLabelUpdateListener == null,
+                "Only supports a single listener. Tried to add " + listener + ", but " + this.nodeLabelUpdateListener + " has already been added" );
+        this.nodeLabelUpdateListener = listener;
+        this.labelScanStoreSync = new WorkSync<>( listener );
     }
 
     @SuppressWarnings( "resource" )

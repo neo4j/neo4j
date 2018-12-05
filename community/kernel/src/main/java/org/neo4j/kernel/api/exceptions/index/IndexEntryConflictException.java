@@ -29,9 +29,6 @@ import org.neo4j.values.storable.ValueTuple;
 import static java.lang.String.format;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
-/**
- * TODO why isn't this a {@link KernelException}?
- */
 public class IndexEntryConflictException extends KernelException
 {
     private final ValueTuple propertyValues;

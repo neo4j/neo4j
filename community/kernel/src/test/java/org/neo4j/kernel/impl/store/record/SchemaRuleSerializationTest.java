@@ -36,7 +36,6 @@ import org.neo4j.kernel.api.schema.index.TestIndexDescriptorFactory;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.StoreIndexDescriptor;
 import org.neo4j.storageengine.api.SchemaRule;
-import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -603,7 +602,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
 
     private SchemaRule serialiseAndDeserialise( StoreIndexDescriptor indexRule ) throws MalformedSchemaRuleException
     {
-        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( indexRule ) );
         return SchemaRuleSerialization.deserialize( indexRule.getId(), buffer );
     }
 
@@ -619,7 +618,7 @@ public class SchemaRuleSerializationTest extends SchemaRuleTestBase
     private void assertCorrectLength( StoreIndexDescriptor indexRule )
     {
         // GIVEN
-        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( (StorageIndexReference) indexRule ) );
+        ByteBuffer buffer = ByteBuffer.wrap( SchemaRuleSerialization.serialize( indexRule ) );
 
         // THEN
         assertThat( SchemaRuleSerialization.lengthOf( indexRule ), equalTo( buffer.capacity() ) );

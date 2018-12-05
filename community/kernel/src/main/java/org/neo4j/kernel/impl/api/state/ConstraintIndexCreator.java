@@ -27,7 +27,6 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
-import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -195,16 +194,8 @@ public class ConstraintIndexCreator
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
-            transaction.schemaWrite().indexDrop( index );
+            ((KernelTransactionImplementation)transaction).addIndexDoDropToTxState( index );
             transaction.success();
-        }
-        catch ( SchemaKernelException e )
-        {
-            throw new TransactionFailureException( "Unable to drop index " + index, e );
-        }
-        catch ( InvalidTransactionTypeKernelException e )
-        {
-            throw new TransactionFailureException( "Unable to drop index " + index + " due to not supported by this transaction", e );
         }
     }
 

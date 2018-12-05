@@ -91,6 +91,12 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
     }
 
     /**
+     * The provided {@code target} will be filled with:
+     * <ol>
+     *     <li>{@link DoubleLongRegister#readFirst()}: Number of updates made to this index</li>
+     *     <li>{@link DoubleLongRegister#readSecond()}: Total size of the index</li>
+     * </ol>
+     *
      * @param target a register to store the read values in
      * @return the input register for convenience
      */
@@ -100,6 +106,12 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
     }
 
     /**
+     * The provided {@code target} will be filled with:
+     * <ol>
+     *     <li>{@link DoubleLongRegister#readFirst()}: Number of unique values in the last sample set made of this index</li>
+     *     <li>{@link DoubleLongRegister#readSecond()}: Total size of the index</li>
+     * </ol>
+     *
      * @param target a register to store the read values in
      * @return the input register for convenience
      */
@@ -122,14 +134,14 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
         return target;
     }
 
-    public void replaceIndexUpdateAndSize( long indexId, long updates, long size )
+    void replaceIndexUpdateAndSize( long indexId, long updates, long size )
     {
         IndexStatisticsKey key = new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 );
         IndexStatisticsValue value = new IndexStatisticsValue( updates, size );
         cache.put( key, value );
     }
 
-    public void replaceIndexSample( long indexId, long unique, long size )
+    void replaceIndexSample( long indexId, long unique, long size )
     {
         IndexStatisticsKey key = new IndexStatisticsKey( TYPE_SAMPLE, indexId, 0 );
         IndexStatisticsValue value = new IndexStatisticsValue( unique, size );

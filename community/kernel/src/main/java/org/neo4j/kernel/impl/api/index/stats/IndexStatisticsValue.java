@@ -21,6 +21,9 @@ package org.neo4j.kernel.impl.api.index.stats;
 
 import java.util.Objects;
 
+/**
+ * Values in {@link IndexStatisticsStore}, having 16B of data.
+ */
 class IndexStatisticsValue
 {
     static final int SIZE = Long.SIZE * 2;

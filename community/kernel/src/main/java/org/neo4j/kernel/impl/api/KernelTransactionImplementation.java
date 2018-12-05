@@ -1061,6 +1061,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return storageEngine.newReader();
     }
 
+    public void addIndexDoDropToTxState( IndexReference index )
+    {
+        txState().indexDoDrop( allStoreHolder.storageIndexDescriptor( index ) );
+    }
+
     public static class Statistics
     {
         private volatile long cpuTimeNanosWhenQueryStarted;
