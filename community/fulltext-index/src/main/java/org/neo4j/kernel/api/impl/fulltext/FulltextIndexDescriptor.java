@@ -23,10 +23,9 @@ import org.apache.lucene.analysis.Analyzer;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.storageengine.api.StorageIndexReference;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
-class FulltextIndexDescriptor implements IndexDescriptor
+class FulltextIndexDescriptor implements StorageIndexReference
 {
     private final StorageIndexReference descriptor;
     private final String[] propertyNames;
@@ -110,5 +109,23 @@ class FulltextIndexDescriptor implements IndexDescriptor
     public String providerVersion()
     {
         return descriptor.providerVersion();
+    }
+
+    @Override
+    public long indexReference()
+    {
+        return descriptor.indexReference();
+    }
+
+    @Override
+    public boolean hasOwningConstraintReference()
+    {
+        return descriptor.hasOwningConstraintReference();
+    }
+
+    @Override
+    public long owningConstraintReference()
+    {
+        return descriptor.owningConstraintReference();
     }
 }
