@@ -31,7 +31,7 @@ import org.neo4j.kernel.impl.store.record.ConstraintRule;
 import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 public interface SchemaRuleAccess
 {
@@ -54,13 +54,13 @@ public interface SchemaRuleAccess
     Iterator<StoreIndexDescriptor> indexesGetAll();
 
     /**
-     * Find the IndexRule that matches the given IndexDescriptor.
+     * Find the IndexRule that matches the given {@link SchemaDescriptorSupplier}.
      *
      * @return  the matching IndexRule, or null if no matching IndexRule was found
      * @throws  IllegalStateException if more than one matching rule.
      * @param index the target {@link IndexReference}
      */
-    StoreIndexDescriptor indexGetForSchema( IndexDescriptor index );
+    StoreIndexDescriptor indexGetForSchema( SchemaDescriptorSupplier index );
 
     /**
      * Get the constraint rule that matches the given ConstraintDescriptor

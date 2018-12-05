@@ -40,7 +40,7 @@ import static java.lang.String.format;
  * user-supplied name. On commit the descriptor is upgraded to a {@link StoreIndexDescriptor} using
  * {@link IndexDescriptor#withId(long)} or {@link IndexDescriptor#withIds(long, long)}.
  */
-public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
+public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference, org.neo4j.storageengine.api.schema.IndexDescriptor
 {
     protected final SchemaDescriptor schema;
     protected final IndexDescriptor.Type type;

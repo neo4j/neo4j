@@ -34,7 +34,7 @@ import org.neo4j.kernel.impl.store.record.DynamicRecord;
 import org.neo4j.kernel.impl.store.record.RecordLoad;
 import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 public class SchemaStorage implements SchemaRuleAccess
 {
@@ -73,7 +73,7 @@ public class SchemaStorage implements SchemaRuleAccess
     }
 
     @Override
-    public StoreIndexDescriptor indexGetForSchema( final IndexDescriptor index )
+    public StoreIndexDescriptor indexGetForSchema( final SchemaDescriptorSupplier index )
     {
         Iterator<StoreIndexDescriptor> indexes = loadAllSchemaRules( index::equals, StoreIndexDescriptor.class, false );
 

@@ -75,6 +75,7 @@ import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingProvidersService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
+import org.neo4j.kernel.impl.index.schema.IndexDescriptor;
 import org.neo4j.kernel.impl.index.schema.IndexDescriptorFactory;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.storageengine.api.CommandCreationContext;
@@ -768,7 +769,7 @@ public class Operations implements Write, SchemaWrite
         assertIndexDoesNotExist( SchemaKernelException.OperationContext.INDEX_CREATION, descriptor, name );
 
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexReference index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
+        IndexDescriptor index = IndexDescriptorFactory.forSchema( descriptor, name, providerDescriptor );
         ktx.txState().indexDoAdd( index );
         return index;
     }
@@ -777,7 +778,7 @@ public class Operations implements Write, SchemaWrite
     public IndexReference indexUniqueCreate( SchemaDescriptor schema, String provider )
     {
         IndexProviderDescriptor providerDescriptor = indexProviders.indexProviderByName( provider );
-        IndexReference index =
+        IndexDescriptor index =
                 IndexDescriptorFactory.uniqueForSchema( schema,
                         Optional.empty(),
                         providerDescriptor );
@@ -814,7 +815,7 @@ public class Operations implements Write, SchemaWrite
         {
             throw new DropIndexFailureException( schema, e );
         }
-        ktx.txState().indexDoDrop( indexReference );
+        ktx.txState().indexDoDrop( allStoreHolder.storageIndexDescriptor( indexReference ) );
     }
 
     @Override

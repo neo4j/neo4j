@@ -327,7 +327,7 @@ public class AllStoreHolder extends Read
      * @param index committed, transaction-added or even null.
      * @return an {@link IndexReference} for the given {@link IndexDescriptor}.
      */
-    private IndexReference indexReference( IndexDescriptor index )
+    public IndexReference indexReference( IndexDescriptor index )
     {
         if ( index == null )
         {
@@ -350,6 +350,23 @@ public class AllStoreHolder extends Read
         }
         // This index isn't committed yet, go for the kernel-version of IndexDescriptor
         return new org.neo4j.kernel.impl.index.schema.IndexDescriptor( index );
+    }
+
+    /**
+     * And then there's this method for mapping from {@link IndexReference} --> {@link IndexDescriptor}, for those places where
+     * we need to go back to storage land when we have an {@link IndexReference}.
+     * @param index an index reference to get {@link IndexDescriptor} for.
+     * @return the {@link IndexDescriptor} for the {@link IndexReference}.
+     */
+    public IndexDescriptor storageIndexDescriptor( IndexReference index )
+    {
+        if ( index instanceof org.neo4j.kernel.impl.index.schema.IndexDescriptor )
+        {
+            // Fast path for when this is, as in most cases it is, a kernel IndexDescriptor
+            return (IndexDescriptor) index;
+        }
+        // Go and look this up by schema from storage.
+        return storageReader.indexGetForSchema( index.schema() );
     }
 
     @Override
@@ -461,7 +478,7 @@ public class AllStoreHolder extends Read
         // If index is in our state, then return populating
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( index, ktx.txState().indexDiffSetsBySchema( schema ) ) )
+            if ( checkIndexState( storageIndexDescriptor( index ), ktx.txState().indexDiffSetsBySchema( schema ) ) )
             {
                 return InternalIndexState.POPULATING;
             }
@@ -480,7 +497,7 @@ public class AllStoreHolder extends Read
 
         if ( ktx.hasTxStateWithChanges() )
         {
-            if ( checkIndexState( index, ktx.txState().indexDiffSetsBySchema( index.schema() ) ) )
+            if ( checkIndexState( storageIndexDescriptor( index ), ktx.txState().indexDiffSetsBySchema( index.schema() ) ) )
             {
                 return PopulationProgress.NONE;
             }

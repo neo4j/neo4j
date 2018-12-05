@@ -457,7 +457,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             for ( IndexDescriptor createdConstraintIndex : txState().constraintIndexesCreatedInTx() )
             {
                 // TODO logically, which statement should this operation be performed on?
-                constraintIndexCreator.dropUniquenessConstraintIndex( createdConstraintIndex );
+
+                // Since txState refers to storage IndexDescriptor we need to convert to IndexReference to call this method.
+                constraintIndexCreator.dropUniquenessConstraintIndex( allStoreHolder.indexReference( createdConstraintIndex ) );
             }
         }
     }

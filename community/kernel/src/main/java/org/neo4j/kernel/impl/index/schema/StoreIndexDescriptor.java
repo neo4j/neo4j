@@ -37,9 +37,7 @@ public class StoreIndexDescriptor extends IndexDescriptor implements SchemaRule,
     // ** Copy-constructor used by sub-classes.
     protected StoreIndexDescriptor( StoreIndexDescriptor indexDescriptor )
     {
-        super( indexDescriptor );
-        this.id = indexDescriptor.id;
-        this.owningConstraintId = indexDescriptor.owningConstraintId;
+        this( indexDescriptor, indexDescriptor.id, indexDescriptor.owningConstraintId );
     }
 
     // ** General purpose constructors.

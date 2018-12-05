@@ -24,22 +24,21 @@ import java.util.List;
 
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.helpers.collection.Iterators;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 import org.neo4j.values.storable.ValueCategory;
 
 /**
  * Reference to a specific index together with it's capabilities. This reference is valid until the schema of the database changes
  * (that is a create/drop of an index or constraint occurs).
  */
-public interface IndexReference extends IndexCapability, IndexDescriptor
+public interface IndexReference extends IndexCapability, SchemaDescriptorSupplier
 {
     String UNNAMED_INDEX = "Unnamed index";
 
     /**
      * Returns true if this index only allows one value per key.
      */
-    @Override
     boolean isUnique();
 
     /**
@@ -50,7 +49,6 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
     /**
      * Returns the schema of this index.
      */
-    @Override
     SchemaDescriptor schema();
 
     /**
@@ -66,14 +64,12 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
     /**
      * The unique name for this index - either automatically generated or user supplied - or the {@link #UNNAMED_INDEX} constant.
      */
-    @Override
     String name();
 
     /**
      * @param tokenNameLookup used for looking up names for token ids.
      * @return a user friendly description of what this index indexes.
      */
-    @Override
     String userDescription( TokenNameLookup tokenNameLookup );
 
     /**
@@ -146,12 +142,6 @@ public interface IndexReference extends IndexCapability, IndexDescriptor
         public String providerVersion()
         {
             return null;
-        }
-
-        @Override
-        public boolean hasUserSuppliedName()
-        {
-            return false;
         }
 
         @Override

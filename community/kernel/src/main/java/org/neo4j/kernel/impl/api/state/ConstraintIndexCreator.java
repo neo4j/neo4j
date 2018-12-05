@@ -27,6 +27,7 @@ import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.SchemaRead;
 import org.neo4j.internal.kernel.api.TokenRead;
 import org.neo4j.internal.kernel.api.Transaction;
+import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -50,8 +51,8 @@ import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAccessor;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
-import org.neo4j.storageengine.api.schema.IndexDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
+import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
@@ -188,14 +189,22 @@ public class ConstraintIndexCreator
     /**
      * You MUST hold a schema write lock before you call this method.
      */
-    public void dropUniquenessConstraintIndex( IndexDescriptor index )
+    public void dropUniquenessConstraintIndex( IndexReference index )
             throws TransactionFailureException
     {
         try ( Transaction transaction = kernelSupplier.get().beginTransaction( implicit, AUTH_DISABLED );
               Statement ignore = ((KernelTransaction)transaction).acquireStatement() )
         {
-            ((KernelTransactionImplementation) transaction).txState().indexDoDrop( index );
+            transaction.schemaWrite().indexDrop( index );
             transaction.success();
+        }
+        catch ( SchemaKernelException e )
+        {
+            throw new TransactionFailureException( "Unable to drop index " + index, e );
+        }
+        catch ( InvalidTransactionTypeKernelException e )
+        {
+            throw new TransactionFailureException( "Unable to drop index " + index + " due to not supported by this transaction", e );
         }
     }
 
@@ -244,7 +253,7 @@ public class ConstraintIndexCreator
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
         }
-        IndexDescriptor indexDescriptor = createConstraintIndex( schema, provider );
+        SchemaDescriptorSupplier indexDescriptor = createConstraintIndex( schema, provider );
         IndexProxy indexProxy = indexingService.getIndexProxy( indexDescriptor.schema() );
         return indexProxy.getDescriptor();
     }
