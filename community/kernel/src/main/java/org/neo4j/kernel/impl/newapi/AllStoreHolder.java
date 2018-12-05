@@ -407,8 +407,7 @@ public class AllStoreHolder extends Read
         {
             iterator = ktx.txState().indexDiffSetsByLabel( labelId ).apply( iterator );
         }
-        //noinspection unchecked
-        return (Iterator) iterator;
+        return Iterators.map( this::indexReference, iterator );
     }
 
     @Override
