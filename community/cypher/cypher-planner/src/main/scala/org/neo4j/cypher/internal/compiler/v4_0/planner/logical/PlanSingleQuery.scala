@@ -19,12 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.countStorePlanner
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.verifyBestPlan
-import org.neo4j.cypher.internal.ir.v4_0.PlannerQuery
+import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, PlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+import scala.collection.mutable
 
 /*
 This coordinates PlannerQuery planning and delegates work to the classes that do the actual planning of
@@ -37,25 +40,49 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
   extends SingleQueryPlanner {
 
   override def apply(in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
-    val (completePlan, ctx) =
-      countStorePlanner(in, context) match {
-        case Some(plan) =>
-          (plan, context.withUpdatedCardinalityInformation(plan))
-        case None =>
-          val attributes = context.planningAttributes.asAttributes(idGen)
+    val updatedContext = addAggregatedPropertiesToContext(in, context, hasFoundMutatingPatterns = false)
 
-          val partPlan = planPart(in, context)
-          val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, context)
+    val (completePlan, ctx) =
+      countStorePlanner(in, updatedContext) match {
+        case Some(plan) =>
+          (plan, updatedContext.withUpdatedCardinalityInformation(plan))
+        case None =>
+          val attributes = updatedContext.planningAttributes.asAttributes(idGen)
+
+          val partPlan = planPart(in, updatedContext)
+          val (planWithUpdates, contextAfterUpdates) = planUpdates(in, partPlan, firstPlannerQuery = true, updatedContext)
           val projectedPlan = planEventHorizon(in, planWithUpdates, contextAfterUpdates)
           val projectedContext = contextAfterUpdates.withUpdatedCardinalityInformation(projectedPlan)
 
           // Mark properties from indexes to be fetched, if the properties are used later in the query
-          val alignedPlan = alignGetValueFromIndexBehavior(in, projectedPlan, context.logicalPlanProducer, context.planningAttributes.solveds, attributes)
+          val alignedPlan = alignGetValueFromIndexBehavior(in, projectedPlan, updatedContext.logicalPlanProducer, updatedContext.planningAttributes.solveds, attributes)
           (alignedPlan, projectedContext)
       }
 
     val (finalPlan, finalContext) = planWithTail(completePlan, in.tail, ctx, idGen)
     (verifyBestPlan(finalPlan, in, finalContext), finalContext)
+  }
+
+  val renamings: mutable.Map[String, Expression] = mutable.Map.empty
+
+  def addAggregatedPropertiesToContext(currentQuery: PlannerQuery, context: LogicalPlanningContext, hasFoundMutatingPatterns: Boolean): LogicalPlanningContext = {
+    val hasMutatingPatterns = hasFoundMutatingPatterns || currentQuery.queryGraph.mutatingPatterns.nonEmpty
+
+    currentQuery.horizon match {
+      case proj: RegularQueryProjection if proj.projections.nonEmpty =>
+        currentQuery.tail match {
+          case Some(tail) if !hasMutatingPatterns =>
+            renamings ++= proj.projections
+            addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
+          case _ => context
+        }
+      case aggr: AggregatingQueryProjection if aggr.groupingExpressions.isEmpty && !hasMutatingPatterns =>
+        AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
+          case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
+          case _ => context
+        }
+      case _ => context
+    }
   }
 }
 

@@ -19,20 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.v4_0.phases._
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.Metrics.{CostModel, QueryGraphSolverInput}
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.{LogicalPlanProducer, SystemOutCostLogger, devNullListener}
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities, Solveds}
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.LOGICAL_PLANNING
 import org.neo4j.cypher.internal.v4_0.frontend.phases.Phase
 import org.neo4j.cypher.internal.v4_0.util.Cost
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-
-import scala.collection.mutable
 
 case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
   extends Phase[PlannerContext, LogicalPlanState, LogicalPlanState] {
@@ -128,29 +124,7 @@ case object planPart extends PartPlanner {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-
-    val renamings: mutable.Map[String, Expression] = mutable.Map.empty
-
-    def addAggregatedPropertiesToCtx(currentQuery: PlannerQuery, horizon: QueryHorizon): LogicalPlanningContext = {
-      horizon match {
-        case proj: RegularQueryProjection if proj.projections.nonEmpty =>
-          currentQuery.tail match {
-            case Some(tail) =>
-              renamings ++= proj.projections
-              addAggregatedPropertiesToCtx(tail, tail.horizon)
-            case _ => ctx
-          }
-        case aggr: AggregatingQueryProjection if aggr.groupingExpressions.isEmpty =>
-          AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
-            case s: Set[(String, String)] if s.nonEmpty => ctx.withAggregationProperties(s)
-            case _ => ctx
-          }
-        case _ => ctx
-      }
-    }
-
-    val ctxWithAggrProps = addAggregatedPropertiesToCtx(query, query.horizon)
-    ctxWithAggrProps.strategy.plan(query.queryGraph, query.interestingOrder, ctxWithAggrProps)
+    ctx.strategy.plan(query.queryGraph, query.interestingOrder, ctx)
   }
 }
 
