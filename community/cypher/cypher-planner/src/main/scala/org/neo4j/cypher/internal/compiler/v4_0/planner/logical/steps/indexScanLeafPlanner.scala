@@ -75,7 +75,7 @@ object indexScanLeafPlanner extends LeafPlanner with LeafPlanFromExpression {
             context.aggregatingProperties.map { prop => prop._2 }
           else Set.empty
 
-        // Without composite range scans, we cannot handle more than one property
+        // Can't currently handle aggregation on more than one property
         val properties = if(aggregatedProps.size == 1) constrainedProps.union(aggregatedProps) else constrainedProps
 
         val plans: Set[LogicalPlan] = properties.flatMap(prop => {
