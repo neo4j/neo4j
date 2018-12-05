@@ -72,8 +72,9 @@ class LiteralTest extends SemanticFunSuite {
     assert(decimalDouble("-134e233").value === -134E233)
     assert(decimalDouble("1E-99").value === 1E-99)
     assert(decimalDouble("1e-99").value === 1E-99)
-    assert(decimalDouble("-4E-593").value === -4E-593)
-    assert(decimalDouble("-4e-593").value === -4E-593)
+    // In scala 2.11 we could handle E-593, but in scala 2.12 we can only handle E-323
+    assert(decimalDouble("-4E-323").value === -4E-323)
+    assert(decimalDouble("-4e-323").value === -4E-323)
     assert(decimalDouble("3.42E34").value === 3.42E34)
     assert(decimalDouble("3.42e34").value === 3.42E34)
     assert(decimalDouble("-65.342546547E33").value === -65.342546547E33)

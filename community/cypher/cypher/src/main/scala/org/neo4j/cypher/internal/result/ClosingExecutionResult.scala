@@ -93,7 +93,7 @@ class ClosingExecutionResult private(val query: ExecutingQuery,
 
         def close(): Unit = self.close()
 
-        def remove(): Unit = safely {
+        override def remove(): Unit = safely {
           innerIterator.remove()
         }
       }

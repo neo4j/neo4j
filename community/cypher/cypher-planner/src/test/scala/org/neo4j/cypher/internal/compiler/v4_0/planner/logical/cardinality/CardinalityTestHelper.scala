@@ -249,8 +249,8 @@ trait CardinalityCustomMatchers {
         expected.size == other.size && expected.foldLeft(true) {
           case (acc, (key, value)) =>
             import Cardinality._
-            import org.scalautils.Tolerance._
-            import org.scalautils.TripleEquals._
+            import org.scalactic.Tolerance._
+            import org.scalactic.TripleEquals._
             acc && other.contains(key) && other(key) === value +- tolerance
         },
         s"""$other did not equal "$expected" wrt a tolerance of $tolerance""",

@@ -239,5 +239,5 @@ class CartesianProductsOrValueJoinsTest extends CypherFunSuite with LogicalPlann
   }
 
   private def testThis(graph: QueryGraph, input: PlanningAttributes => Set[PlannedComponent], expectedPlans: LogicalPlan*): Unit =
-    testThis(graph, input, (result: LogicalPlan) => expectedPlans should contain(result))
+    testThis(graph, input, (result: LogicalPlan) => {expectedPlans should contain(result);()})
 }

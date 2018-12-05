@@ -65,7 +65,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
   }
 
   private trait WrappingResourceIterator[T] extends ResourceIterator[T] {
-    def remove() { throw new UnsupportedOperationException("remove") }
+    override def remove() { throw new UnsupportedOperationException("remove") }
     def close() { self.close() }
   }
 

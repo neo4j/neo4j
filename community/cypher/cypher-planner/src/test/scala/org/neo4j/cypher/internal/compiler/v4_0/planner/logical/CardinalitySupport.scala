@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.v4_0.util.Cardinality
-import org.scalautils.{Equality, Tolerance, TripleEquals}
+import org.scalactic.{Equality, Tolerance, TripleEquals}
 
 object CardinalitySupport {
 

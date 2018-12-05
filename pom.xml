@@ -88,8 +88,8 @@
         <license-text.header>headers/AGPL-3-header.txt</license-text.header>
 
         <scala-maven-plugin.version>3.4.4</scala-maven-plugin.version>
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
+        <scala.version>2.12.7</scala.version>
+        <scala.binary.version>2.12</scala.binary.version>
         <asm.version>7.0</asm.version>
         <metrics.version>4.0.2</metrics.version>
         <scala.target.vm>1.8</scala.target.vm>
@@ -1296,7 +1296,7 @@
             <dependency>
                 <groupId>org.scalatest</groupId>
                 <artifactId>scalatest_${scala.binary.version}</artifactId>
-                <version>2.2.5</version>
+                <version>3.0.5</version>
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>
@@ -1328,13 +1328,13 @@
             <dependency>
                 <groupId>org.scalacheck</groupId>
                 <artifactId>scalacheck_${scala.binary.version}</artifactId>
-                <version>1.12.5</version>
+                <version>1.14.0</version>
                 <scope>test</scope>
             </dependency>
             <dependency>
-                <groupId>com.novus</groupId>
+                <groupId>com.github.salat</groupId>
                 <artifactId>salat-core_${scala.binary.version}</artifactId>
-                <version>1.9.9</version>
+                <version>1.11.2</version>
                 <scope>test</scope>
                 <exclusions>
                     <exclusion>

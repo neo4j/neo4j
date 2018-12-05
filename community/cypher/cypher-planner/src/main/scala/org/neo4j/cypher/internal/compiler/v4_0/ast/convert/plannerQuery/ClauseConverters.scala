@@ -199,6 +199,7 @@ object ClauseConverters {
       case EveryPath(NodePattern(Some(id), labels, props, _)) =>
         nodes += CreateNode(id.name, labels, props)
         seenPatternNodes += id.name
+        ()
 
       //CREATE (n)-[r: R]->(m)
       case EveryPath(pattern: RelationshipChain) =>
@@ -221,8 +222,9 @@ object ClauseConverters {
         nodes ++= nodesToCreate
         seenPatternNodes ++= nodesToCreate.map(_.idName)
         relationships ++= currentRelationships
+        ()
 
-      case x => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
+      case _ => throw new InternalException(s"Received an AST-clause that has no representation the QG: $clause")
     }
 
     builder.amendQueryGraph(_.addMutatingPatterns(CreatePattern(nodes, relationships)))

@@ -39,10 +39,11 @@
 
     <dependencies>
 
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-        </dependency>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>${scala.version}</version>
+    </dependency>
 
         <dependency>
             <groupId>org.scalatest</groupId>
@@ -52,40 +53,40 @@
 
     </dependencies>
 
-    <build>
-        <resources>
-            <resource>
-                <directory>src/main/resources</directory>
-            </resource>
-            <resource>
-                <directory>${basedir}</directory>
-                <targetPath>META-INF</targetPath>
-                <includes>
-                    <include>COPYRIGHT.txt</include>
-                    <include>NOTICE.txt</include>
-                    <include>LICENSE.txt</include>
-                    <include>LICENSES.txt</include>
-                    <include>README*</include>
-                    <include>CHANGES.txt</include>
-                </includes>
-            </resource>
-        </resources>
-        <testResources>
-            <testResource>
-                <directory>src/test/resources</directory>
-            </testResource>
-            <testResource>
-                <directory>${basedir}</directory>
-                <targetPath>META-INF</targetPath>
-                <includes>
-                    <include>COPYRIGHT.txt</include>
-                    <include>NOTICE.txt</include>
-                    <include>LICENSE.txt</include>
-                    <include>LICENSES.txt</include>
-                    <include>README*</include>
-                    <include>CHANGES.txt</include>
-                </includes>
-            </testResource>
-        </testResources>
-    </build>
+  <build>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>${basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>COPYRIGHT.txt</include>
+          <include>NOTICE.txt</include>
+          <include>LICENSE.txt</include>
+          <include>LICENSES.txt</include>
+          <include>README*</include>
+          <include>CHANGES.txt</include>
+        </includes>
+      </resource>
+    </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+      </testResource>
+      <testResource>
+        <directory>${basedir}</directory>
+        <targetPath>META-INF</targetPath>
+        <includes>
+          <include>COPYRIGHT.txt</include>
+          <include>NOTICE.txt</include>
+          <include>LICENSE.txt</include>
+          <include>LICENSES.txt</include>
+          <include>README*</include>
+          <include>CHANGES.txt</include>
+        </includes>
+      </testResource>
+    </testResources>
+  </build>
 </project>

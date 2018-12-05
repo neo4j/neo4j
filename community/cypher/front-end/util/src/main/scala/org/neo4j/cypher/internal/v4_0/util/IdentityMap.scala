@@ -33,7 +33,7 @@ object IdentityMap {
   }
 }
 
-case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V] = new util.IdentityHashMap[K, V]()) extends Map[K, V] {
+case class IdentityMap[K, V] private (idMap: util.IdentityHashMap[K, V]) extends Map[K, V] {
   self =>
 
   override def get(key: K): Option[V] =

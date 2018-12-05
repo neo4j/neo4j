@@ -73,10 +73,6 @@
             <artifactId>scalatest_${scala.binary.version}</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.scalautils</groupId>
-            <artifactId>scalautils_${scala.binary.version}</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.scalacheck</groupId>
             <artifactId>scalacheck_${scala.binary.version}</artifactId>
         </dependency>

@@ -64,7 +64,7 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to integer") {
-    val caughtException = evaluating { toInteger(true) } should produce[ParameterWrongTypeException]
+    val caughtException = the[ParameterWrongTypeException] thrownBy toInteger(true)
     caughtException.getMessage should startWith("Expected a String or Number, got: ")
   }
 
@@ -77,7 +77,7 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   test("should fail for larger integers larger that 8 bytes") {
-    val caughtException = evaluating { toInteger("10508455564958384115") } should produce[CypherTypeException]
+    val caughtException = the[CypherTypeException] thrownBy toInteger("10508455564958384115")
     caughtException.getMessage should be("integer, 10508455564958384115, is too large")
   }
 
@@ -91,7 +91,7 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   test("cannot handle -2^63-1") {
-    val caughtException = evaluating { toInteger("-9223372036854775809") } should produce[CypherTypeException]
+    val caughtException = the[CypherTypeException] thrownBy toInteger("-9223372036854775809")
     caughtException.getMessage should be("integer, -9223372036854775809, is too large")
   }
 
@@ -100,7 +100,7 @@ class ToIntegerFunctionTest extends CypherFunSuite {
   }
 
   test("cannot handle 2^63") {
-    val caughtException = evaluating { toInteger("9223372036854775808") } should produce[CypherTypeException]
+    val caughtException = the[CypherTypeException] thrownBy toInteger("9223372036854775808")
     caughtException.getMessage should be("integer, 9223372036854775808, is too large")
   }
 

@@ -68,7 +68,6 @@ class TaskCloserTest extends CypherFunSuite with BeforeAndAfter {
   }
 
   test("does not close twice") {
-    val expected = new Exception("oh noes")
     taskCloser.addTask(closingTask)
 
     taskCloser.close(success = true)

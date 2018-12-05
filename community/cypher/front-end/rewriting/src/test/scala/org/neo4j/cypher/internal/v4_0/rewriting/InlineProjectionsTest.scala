@@ -287,12 +287,12 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
   }
 
   test("should refuse to inline queries containing update clauses by throwing CantHandleQueryException") {
-    evaluating {
+    an[InternalException] shouldBe thrownBy {
       projectionInlinedAst(
         """CREATE (n)
           |RETURN n
         """.stripMargin)
-    } should produce[InternalException]
+    }
   }
 
   test("MATCH (n) WITH n.prop AS x WITH x LIMIT 10 RETURN x") {

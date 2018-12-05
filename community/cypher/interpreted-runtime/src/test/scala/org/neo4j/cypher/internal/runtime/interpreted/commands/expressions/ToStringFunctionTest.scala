@@ -60,7 +60,7 @@ class ToStringFunctionTest extends CypherFunSuite {
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to a string") {
-    val caughtException = evaluating { toStringFunction(List(1,24))} should produce[ParameterWrongTypeException]
+    val caughtException = the[ParameterWrongTypeException] thrownBy toStringFunction(List(1, 24))
     caughtException.getMessage should startWith("Expected a String, Number, Boolean, Temporal or Duration, got: ")
   }
 

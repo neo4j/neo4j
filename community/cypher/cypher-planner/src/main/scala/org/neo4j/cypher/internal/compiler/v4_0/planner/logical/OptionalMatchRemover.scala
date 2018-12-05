@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.planner.logical
 
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Rewriter, topDown}
-import org.neo4j.cypher.internal.compiler.v4_0.phases.{PlannerContext, LogicalPlanState}
+import org.neo4j.cypher.internal.compiler.v4_0.phases.{LogicalPlanState, PlannerContext}
 import org.neo4j.cypher.internal.v4_0.frontend.phases.{Condition, Phase}
 import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.expressions._
@@ -137,12 +137,15 @@ case object OptionalMatchRemover extends PlannerQueryRewriter {
       case Predicate(deps, HasLabels(Variable(_), labels)) if deps.size == 1 && !kept(deps.head) =>
         assert(labels.size == 1) // We know there is only a single label here because AST rewriting
         addLabel(deps.head, labels.head)
+        ()
 
       case Predicate(deps, Equals(Property(Variable(_), prop), rhs)) if deps.size == 1 && !kept(deps.head) =>
         addProperty(deps.head, prop, rhs)
+        ()
 
       case Predicate(_, expr) =>
         predicatesToKeep += expr
+        ()
     }
 
     (patternPredicates.toMap, predicatesToKeep.toSet)

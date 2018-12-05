@@ -76,7 +76,7 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
   }
 
   private def checkOrder: SemanticCheck = s => {
-    val (lastPair, errors) = clauses.sliding(2).foldLeft(Seq.empty[Clause], Vector.empty[SemanticError]) {
+    val (lastPair, errors) = clauses.sliding(2).foldLeft(Seq.empty[Clause] -> Vector.empty[SemanticError]) {
       case ((_, semanticErrors), pair) =>
         val optError = pair match {
           case Seq(_: With, _: Start) =>

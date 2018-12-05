@@ -146,7 +146,7 @@ class StandardInternalExecutionResult(context: QueryContext,
       map
     }
 
-    def remove(): Unit = throw new UnsupportedOperationException("remove")
+    override def remove(): Unit = throw new UnsupportedOperationException("remove")
 
     def close(): Unit = self.close()
   }

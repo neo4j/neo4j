@@ -122,7 +122,7 @@ object Foldable {
 
     def findByAllClass[A: ClassTag]: Seq[A] = {
       val remaining = mutable.ArrayStack(that)
-      var result = mutable.ListBuffer[A]()
+      val result = mutable.ListBuffer[A]()
 
       while (remaining.nonEmpty) {
         val that = remaining.pop()

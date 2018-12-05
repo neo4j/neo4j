@@ -16,13 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.util.test_helpers
 
+import org.scalactic.source.Position
 import org.scalatest.Tag
 
 trait IgnoreAllTests extends CypherFunSuite {
 
   def ignoranceRationale = ""
 
-  abstract override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) {
+  override protected def test(testName: String, testTags: Tag*)(testFun: => Any)(implicit pos: Position): Unit =  {
     val ignoredTestName =
       if (ignoranceRationale.isEmpty) testName else s"testName [$ignoranceRationale]"
     ignore(ignoredTestName, testTags: _*)(testFun)

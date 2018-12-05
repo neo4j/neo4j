@@ -769,7 +769,7 @@ class NormalizeWithAndReturnClausesTest extends CypherFunSuite with RewriteTest 
   }
 
   test("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") {
-    evaluating { rewriting("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") } should produce[SyntaxException]
+    a[SyntaxException] shouldBe thrownBy { rewriting("MATCH (n) WITH n AS n ORDER BY max(n) RETURN n") }
   }
 
   protected override def assertRewrite(originalQuery: String, expectedQuery: String) {

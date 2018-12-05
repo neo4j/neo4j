@@ -43,7 +43,7 @@ import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
 class LogicalPlanConverterTest extends CypherFunSuite {
-
+/*
   private implicit val idGen3_5 = new SequentialIdGenV3_5()
   private implicit val idGen4_0 = new SequentialIdGenV4_0()
 
@@ -549,5 +549,5 @@ class LogicalPlanConverterTest extends CypherFunSuite {
       case p:plansV3_5.LogicalPlan => assignAttributesRecursivelyWithDefaultValues(p, attributes)
       case _ =>
     }
-  }
+  }*/
 }

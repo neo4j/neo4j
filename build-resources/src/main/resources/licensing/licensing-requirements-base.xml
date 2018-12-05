@@ -99,6 +99,7 @@
       <aka>Apache2</aka>
       <aka>Apache License, Version 2</aka>
       <aka>Apache License, 2.0</aka>
+      <aka>the Apache License, ASL Version 2.0</aka>
     </license>
     <license name="BSD License">
       <aka>BSD</aka>
@@ -112,6 +113,7 @@
       <aka>New BSD License</aka>
       <aka>BSD 3-Clause "New" or "Revised" License (BSD-3-Clause)</aka>
       <aka>BSD*</aka>
+      <aka>BSD-style</aka>
     </license>
     <license name="BSD License 2-clause">
       <aka>BSD-2-Clause</aka>

@@ -60,7 +60,7 @@ class ToFloatFunctionTest extends CypherFunSuite {
   }
 
   test("should throw an exception if the argument is an object which cannot be converted to a float") {
-    val caughtException = evaluating { toFloat(true) } should produce[ParameterWrongTypeException]
+    val caughtException = the[ParameterWrongTypeException] thrownBy toFloat(true)
     caughtException.getMessage should startWith("Expected a String or Number, got: ")
   }
 
