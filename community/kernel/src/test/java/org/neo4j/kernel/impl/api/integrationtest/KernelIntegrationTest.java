@@ -184,7 +184,8 @@ public abstract class KernelIntegrationTest
 
     protected GraphDatabaseService createGraphDatabase()
     {
-        GraphDatabaseBuilder graphDatabaseBuilder = createGraphDatabaseFactory().setFileSystem( fileSystemRule.get() )
+        GraphDatabaseBuilder graphDatabaseBuilder = configure( createGraphDatabaseFactory() )
+                .setFileSystem( fileSystemRule.get() )
                 .newEmbeddedDatabaseBuilder( testDir.graphDbDir() );
         return configure( graphDatabaseBuilder ).newGraphDatabase();
     }
@@ -197,6 +198,11 @@ public abstract class KernelIntegrationTest
     protected GraphDatabaseBuilder configure( GraphDatabaseBuilder graphDatabaseBuilder )
     {
         return graphDatabaseBuilder;
+    }
+
+    protected TestGraphDatabaseFactory configure( TestGraphDatabaseFactory factory )
+    {
+        return factory;
     }
 
     void dbWithNoCache() throws TransactionFailureException
