@@ -1046,6 +1046,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     public static final Setting<Boolean> archive_failed_index = setting(
             "unsupported.dbms.index.archive_failed", BOOLEAN, FALSE );
 
+    @Internal
+    @Description( "Ignore the store lock. Shall only be used by internal code which knows what is safe." )
+    public static final Setting<Boolean> ignore_store_lock = setting( "dbms.ignore_store_lock", BOOLEAN, FALSE );
+
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
     public static final BoltConnectorValidator boltValidator = new BoltConnectorValidator();

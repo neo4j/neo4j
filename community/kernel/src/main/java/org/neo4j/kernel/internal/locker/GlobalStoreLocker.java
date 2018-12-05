@@ -49,15 +49,27 @@ import org.neo4j.kernel.StoreLockException;
 public class GlobalStoreLocker extends StoreLocker
 {
     private static final Set<File> lockedFiles = Collections.newSetFromMap( new ConcurrentHashMap<>() );
+    private final boolean ignoreLock;
 
     public GlobalStoreLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout )
     {
+        this( fileSystemAbstraction, storeLayout, false );
+    }
+
+    public GlobalStoreLocker( FileSystemAbstraction fileSystemAbstraction, StoreLayout storeLayout, boolean ignoreLock )
+    {
         super( fileSystemAbstraction, storeLayout );
+        this.ignoreLock = ignoreLock;
     }
 
     @Override
     public void checkLock() throws StoreLockException
     {
+        if ( ignoreLock )
+        {
+            return;
+        }
+
         super.checkLock();
         lockedFiles.add( storeLockFile );
     }
