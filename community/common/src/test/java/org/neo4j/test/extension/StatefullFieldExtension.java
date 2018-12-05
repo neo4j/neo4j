@@ -65,7 +65,7 @@ public abstract class StatefullFieldExtension<T> implements TestInstancePostProc
         }
     }
 
-    T getStoredValue( ExtensionContext context )
+    protected T getStoredValue( ExtensionContext context )
     {
         return getLocalStore( context ).get( getFieldKey(), getFieldType() );
     }
