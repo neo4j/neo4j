@@ -35,8 +35,8 @@ import javax.lang.model.util.Types;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.UserManager;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.logging.Log;
@@ -58,7 +58,7 @@ class ContextFieldVisitor extends SimpleElementVisitor8<Stream<CompilationMessag
             Arrays.asList( GraphDatabaseAPI.class.getName(), KernelTransaction.class.getName(),
                     DependencyResolver.class.getName(), UserManager.class.getName(),
                     // the following classes are not in the compiler classpath
-                    "org.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager",
+                    "com.neo4j.kernel.enterprise.api.security.EnterpriseAuthManager",
                     "org.neo4j.server.security.enterprise.log.SecurityLog" ) );
 
     private final Elements elements;
