@@ -113,7 +113,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Name of the database to load" )
     public static final Setting<String> active_database =
-            buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).constraint( except( SYSTEM_DATABASE_NAME ) ).build();
+            buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).build();
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )
