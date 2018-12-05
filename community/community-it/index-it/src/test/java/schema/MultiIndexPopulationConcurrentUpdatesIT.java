@@ -94,6 +94,7 @@ import static java.lang.String.format;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.kernel.database.Database.initialSchemaRulesLoader;
@@ -325,7 +326,7 @@ public class MultiIndexPopulationConcurrentUpdatesIT
             indexService = IndexingServiceFactory.createIndexingService( Config.defaults(), scheduler,
                     providerMap, storeView, tokenNameLookup, initialSchemaRulesLoader( storageEngine ),
                     nullLogProvider, nullLogProvider, IndexingService.NO_MONITOR, getSchemaState(),
-                    embeddedDatabase.getDependencyResolver().resolveDependency( IndexStatisticsStore.class ) );
+                    mock( IndexStatisticsStore.class ) );
             indexService.start();
 
             rules = createIndexRules( labelNameIdMap, propertyId );
