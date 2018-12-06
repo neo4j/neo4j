@@ -33,7 +33,7 @@ public class QualifiedName
 
     public QualifiedName( List<String> namespace, String name )
     {
-        this( namespace.toArray( new String[namespace.size()] ), name );
+        this( namespace.toArray( new String[0] ), name );
     }
 
     public QualifiedName( String[] namespace, String name )
