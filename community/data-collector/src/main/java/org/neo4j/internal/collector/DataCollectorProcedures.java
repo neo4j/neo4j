@@ -41,7 +41,8 @@ public class DataCollectorProcedures
     public DataCollector dataCollector;
 
     @Admin
-    @Description( "Retrieve statistical data about the current database." )
+    @Description( "Retrieve statistical data about the current database. Available sections are '" +
+                  GraphCountsSection.NAME + "', '" + TokensSection.NAME + "'" )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
             throws InvalidArgumentsException, IndexNotFoundKernelException, TransactionFailureException
