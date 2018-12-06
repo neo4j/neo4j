@@ -23,48 +23,53 @@ import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, GraphElementPropertyFunctions}
 import org.neo4j.cypher.internal.v4_0.logical.plans.UserFunctionSignature
+import org.neo4j.internal.kernel.api.procs.{QualifiedName => KernelQualifiedName}
 import org.neo4j.values._
 
-abstract class FunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
+
+abstract class FunctionInvocation(signature: UserFunctionSignature, input: Array[Expression])
   extends Expression with GraphElementPropertyFunctions {
 
+  override def arguments: Seq[Expression] = input
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
     val query = state.query
-    val argValues = arguments.map(arg => {
+    val argValues = input.map(arg => {
       arg(ctx, state)
     })
     call(query, argValues)
   }
 
   protected def call(query: QueryContext,
-                   argValues: IndexedSeq[AnyValue]): AnyValue
+                   argValues: Array[AnyValue]): AnyValue
 
 
-  override def symbolTableDependencies = arguments.flatMap(_.symbolTableDependencies).toSet
+  override def symbolTableDependencies: Set[String] = input.flatMap(_.symbolTableDependencies).toSet
 
-  override def toString = s"${signature.name}(${arguments.mkString(",")})"
+  override def toString = s"${signature.name}(${input.mkString(",")})"
 }
 
-case class FunctionInvocationById(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
-  extends FunctionInvocation(signature, arguments) {
+case class FunctionInvocationById(signature: UserFunctionSignature, input: Array[Expression])
+  extends FunctionInvocation(signature, input) {
 
   protected def call(query: QueryContext,
-                   argValues: IndexedSeq[AnyValue]): AnyValue = {
+                   argValues: Array[AnyValue]): AnyValue = {
     query.callFunction(signature.id.get, argValues, signature.allowed)
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
+  override def rewrite(f: Expression => Expression) =
+    f(FunctionInvocationById(signature, input.map(a => a.rewrite(f))))
 }
 
-case class FunctionInvocationByName(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
-  extends FunctionInvocation(signature, arguments) {
+case class FunctionInvocationByName(signature: UserFunctionSignature, input: Array[Expression])
+  extends FunctionInvocation(signature, input) {
+  import scala.collection.JavaConverters._
+  private val kernelName = new KernelQualifiedName(signature.name.namespace.asJava, signature.name.name)
 
   protected def call(query: QueryContext,
-                     argValues: IndexedSeq[AnyValue]): AnyValue = {
-    query.callFunction(signature.name, argValues, signature.allowed)
+                     argValues: Array[AnyValue]): AnyValue = {
+    query.callFunction(kernelName, argValues, signature.allowed)
   }
 
-  override def rewrite(f: (Expression) => Expression) =
-    f(FunctionInvocationByName(signature, arguments.map(a => a.rewrite(f))))
+  override def rewrite(f: Expression => Expression) =
+    f(FunctionInvocationByName(signature, input.map(a => a.rewrite(f))))
 }

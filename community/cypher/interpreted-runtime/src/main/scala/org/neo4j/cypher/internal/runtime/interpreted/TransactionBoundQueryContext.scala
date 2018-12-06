@@ -58,6 +58,8 @@ import org.neo4j.values.{AnyValue, ValueMapper}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{BOTH, INCOMING, OUTGOING}
 import org.neo4j.cypher.internal.v4_0.util.{EntityNotFoundException, FailedIndexException}
+import org.neo4j.internal.kernel.api.procs.QualifiedName
+
 
 import scala.collection.Iterator
 import scala.collection.JavaConverters._
@@ -891,10 +893,10 @@ sealed class TransactionBoundQueryContext(val transactionalContext: Transactiona
     CallSupport.callDbmsProcedure(transactionalContext.tc, name, args, allowed)
 
 
-  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue =
+  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     CallSupport.callFunction(transactionalContext.tc, id, args, allowed)
 
-  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue =
+  override def callFunction(name: QualifiedName, args: Array[AnyValue], allowed: Array[String]): AnyValue =
     CallSupport.callFunction(transactionalContext.tc, name, args, allowed)
 
   override def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator =

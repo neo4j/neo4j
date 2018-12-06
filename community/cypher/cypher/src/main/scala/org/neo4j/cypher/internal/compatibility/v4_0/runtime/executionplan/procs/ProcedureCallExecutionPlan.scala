@@ -27,14 +27,15 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, ParameterExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{ExternalCSVResource, QueryState}
 import org.neo4j.cypher.internal.runtime.planDescription.Argument
-import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.values.virtual.MapValue
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, InvalidArgumentException}
+import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.cypher.internal.v4_0.util.{InternalNotification, InvalidArgumentException}
+import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.internal.kernel.api.procs.QualifiedName
+import org.neo4j.values.virtual.MapValue
 
 /**
   * Execution plan for calling procedures
@@ -72,7 +73,10 @@ case class ProcedureCallExecutionPlan(signature: ProcedureSignature,
                    prePopulateResults: Boolean): RuntimeResult = {
     val input = evaluateArguments(ctx, params)
     val callMode = ProcedureCallMode.fromAccessMode(signature.accessMode)
-    new ProcedureCallRuntimeResult(ctx, signature.name, signature.id, callMode, input, resultMappings, doProfile)
+    import scala.collection.JavaConverters._
+    val kernelName = new QualifiedName(signature.name.namespace.asJava, signature.name.name)
+
+    new ProcedureCallRuntimeResult(ctx, kernelName, signature.id, callMode, input, resultMappings, doProfile)
   }
 
   private def evaluateArguments(ctx: QueryContext, params: MapValue): Seq[Any] = {

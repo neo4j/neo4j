@@ -24,18 +24,18 @@ import java.time.temporal.TemporalAmount
 import java.util
 
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.logical.plans.QualifiedName
+import org.neo4j.cypher.internal.v4_0.util.symbols.{CypherType, _}
 import org.neo4j.cypher.result.QueryResult.{QueryResultVisitor, Record}
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
 import org.neo4j.graphdb.spatial.{Geometry, Point}
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values._
 import org.neo4j.values.storable._
-import org.neo4j.cypher.internal.v4_0.util.symbols.{CypherType, _}
 
 /**
   * Result of calling a procedure.

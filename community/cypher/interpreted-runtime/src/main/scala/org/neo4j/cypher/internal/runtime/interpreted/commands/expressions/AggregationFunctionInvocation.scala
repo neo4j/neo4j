@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ValueConversion}
 import org.neo4j.cypher.internal.v4_0.logical.plans.UserFunctionSignature
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.values.AnyValue
 
 abstract class AggregationFunctionInvocation(signature: UserFunctionSignature, arguments: IndexedSeq[Expression])
@@ -62,15 +63,19 @@ case class AggregationFunctionInvocationById(signature: UserFunctionSignature,  
 {
   protected def call(state: QueryState) = {state.query.aggregateFunction(signature.id.get, signature.allowed)}
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(
+  override def rewrite(f: Expression => Expression): Expression = f(
     AggregationFunctionInvocationById(signature, arguments.map(a => a.rewrite(f))))
 }
 
 case class AggregationFunctionInvocationByName(signature: UserFunctionSignature,  arguments: IndexedSeq[Expression])
   extends AggregationFunctionInvocation(signature, arguments)
 {
-  protected def call(state: QueryState) = {state.query.aggregateFunction(signature.name, signature.allowed)}
 
-  override def rewrite(f: (Expression) => Expression): Expression = f(
+  import scala.collection.JavaConverters._
+  private val kernelName = new QualifiedName(signature.name.namespace.asJava, signature.name.name)
+
+  protected def call(state: QueryState) = {state.query.aggregateFunction(kernelName, signature.allowed)}
+
+  override def rewrite(f: Expression => Expression): Expression = f(
     AggregationFunctionInvocationByName(signature, arguments.map(a => a.rewrite(f))))
 }

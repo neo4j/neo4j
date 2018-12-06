@@ -19,7 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime
 
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.logical.plans.{QualifiedName => _, _}
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 
 import scala.collection.mutable.ArrayBuffer
 

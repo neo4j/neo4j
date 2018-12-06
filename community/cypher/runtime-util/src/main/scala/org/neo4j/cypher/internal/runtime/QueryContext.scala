@@ -23,7 +23,7 @@ import java.net.URL
 
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v4_0.spi.{IdempotentResult, KernelStatisticProvider, TokenContext}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
+import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api._
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
@@ -35,6 +35,7 @@ import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.EntityNotFoundException
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 
 import scala.collection.Iterator
 
@@ -194,9 +195,6 @@ trait QueryContext extends TokenContext with DbAccess {
 
   def callDbmsProcedure(id: Int, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
   def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]): Iterator[Array[AnyRef]]
-
-  def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]): AnyValue
-  def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]): AnyValue
 
   def aggregateFunction(id: Int, allowed: Array[String]): UserDefinedAggregator
   def aggregateFunction(name: QualifiedName, allowed: Array[String]): UserDefinedAggregator

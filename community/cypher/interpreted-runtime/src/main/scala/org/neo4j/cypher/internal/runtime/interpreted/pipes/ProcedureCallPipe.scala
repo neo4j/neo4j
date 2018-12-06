@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.runtime.{ProcedureCallMode, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureSignature
+import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.values.AnyValue
 
 object ProcedureCallRowProcessing {
@@ -47,6 +48,8 @@ case class ProcedureCallPipe(source: Pipe,
                             (val id: Id = Id.INVALID_ID)
 
   extends PipeWithSource(source) {
+  import scala.collection.JavaConverters._
+  private val kernelName = new QualifiedName(signature.name.namespace.asJava, signature.name.name)
 
   argExprs.foreach(_.registerOwningPipe(this))
 
@@ -81,7 +84,7 @@ case class ProcedureCallPipe(source: Pipe,
   private def call(qtx: QueryContext,
                    argValues: Seq[Any]) =
     if (signature.id.nonEmpty) callMode.callProcedure(qtx, signature.id.get, argValues)
-    else callMode.callProcedure(qtx, signature.name, argValues)
+    else callMode.callProcedure(qtx, kernelName, argValues)
 
   private def internalCreateResultsByPassingThrough(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val qtx = state.query

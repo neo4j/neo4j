@@ -156,8 +156,8 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
         (signature.isAggregate, signature.id) match {
           case (true, Some(_)) => commandexpressions.AggregationFunctionInvocationById(signature, callArgumentCommands)
           case (true, None) => commandexpressions.AggregationFunctionInvocationByName(signature, callArgumentCommands)
-          case (false, Some(_)) => commandexpressions.FunctionInvocationById(signature, callArgumentCommands)
-          case (false, None) => commandexpressions.FunctionInvocationByName(signature, callArgumentCommands)
+          case (false, Some(_)) => commandexpressions.FunctionInvocationById(signature, callArgumentCommands.toArray)
+          case (false, None) => commandexpressions.FunctionInvocationByName(signature, callArgumentCommands.toArray)
         }
       case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
       case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)

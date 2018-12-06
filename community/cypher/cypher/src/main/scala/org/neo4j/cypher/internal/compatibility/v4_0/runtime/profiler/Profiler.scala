@@ -115,7 +115,7 @@ final class ProfilingPipeQueryContext(inner: QueryContext, val p: Pipe)
   override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = {
     increment()
     value.map {
-      (v) =>
+      v =>
         increment()
         v
     }

@@ -20,23 +20,23 @@
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime.executionplan.procs
 
 import org.mockito.ArgumentMatchers.{any, anyInt}
-import org.mockito.Mockito
 import org.mockito.Mockito.when
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext, ResourceManager}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.result.RuntimeResult
-import org.neo4j.internal.kernel.api.{CursorFactory, Procedures}
-import org.neo4j.values.storable.LongValue
-import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.logical.plans._
 import org.neo4j.cypher.internal.v4_0.util.DummyPosition
 import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.cypher.result.RuntimeResult
+import org.neo4j.internal.kernel.api.procs.{QualifiedName => KernelQualifiedName}
+import org.neo4j.internal.kernel.api.{CursorFactory, Procedures}
+import org.neo4j.values.storable.LongValue
+import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 
 import scala.collection.JavaConverters._
 
@@ -51,7 +51,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    val res = proc.run(ctx, false, EMPTY_MAP, false)
+    val res = proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false)
 
     // Then
     toList(res) should equal(List(Map("b" -> 84)))
@@ -64,7 +64,7 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, false, EMPTY_MAP, false)
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false)
 
     // Then without touching the result, it should have been spooled out
     iteratorExhausted should equal(true)
@@ -77,13 +77,13 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
                                           converters, idGen.id())
 
     // When
-    proc.run(ctx, false, EMPTY_MAP, false)
+    proc.run(ctx, doProfile = false, EMPTY_MAP, prePopulateResults = false)
 
     // Then without touching the result, the Kernel iterator should not be touched
     iteratorExhausted should equal(false)
   }
 
-  override protected def beforeEach() = iteratorExhausted = false
+  override protected def beforeEach(): Unit = iteratorExhausted = false
 
   def add(lhs: Expression, rhs: Expression): Expression = Add(lhs, rhs)(pos)
 
@@ -111,11 +111,11 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     res.asIterator().asScala.map(_.asScala.toMap).toList
 
   private val pos = DummyPosition(-1)
-  val ctx = mock[QueryContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
+  private val ctx = mock[QueryContext](org.mockito.Mockito.RETURNS_DEEP_STUBS)
   when(ctx.resources).thenReturn(mock[ResourceManager])
-  var iteratorExhausted = false
+  private var iteratorExhausted = false
 
-  val procedureResult = new Answer[Iterator[Array[AnyRef]]] {
+  private val procedureResult = new Answer[Iterator[Array[AnyRef]]] {
     override def answer(invocationOnMock: InvocationOnMock) = {
       val input: Seq[AnyRef] = invocationOnMock.getArgument(1)
       new Iterator[Array[AnyRef]] {
@@ -129,14 +129,14 @@ class ProcedureCallExecutionPlanTest extends CypherFunSuite {
     }
   }
 
-  val procs = mock[Procedures]
+  private val procs = mock[Procedures]
   private val transactionalContext: QueryTransactionalContext = mock[QueryTransactionalContext]
   when(ctx.transactionalContext).thenReturn(transactionalContext)
   when(transactionalContext.cursors).thenReturn(mock[CursorFactory])
   when(ctx.callReadOnlyProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadOnlyProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadOnlyProcedure(any[KernelQualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.callReadWriteProcedure(anyInt, any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
-  when(ctx.callReadWriteProcedure(any[QualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
+  when(ctx.callReadWriteProcedure(any[KernelQualifiedName], any[Seq[Any]], any[Array[String]])).thenAnswer(procedureResult)
   when(ctx.asObject(any[LongValue])).thenAnswer(new Answer[Long]() {
     override def answer(invocationOnMock: InvocationOnMock): Long = invocationOnMock.getArgument(0).asInstanceOf[LongValue].value()
   })

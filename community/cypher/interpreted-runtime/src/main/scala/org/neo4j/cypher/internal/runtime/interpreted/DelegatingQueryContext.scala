@@ -24,7 +24,7 @@ import java.net.URL
 import org.eclipse.collections.api.iterator.LongIterator
 import org.neo4j.cypher.internal.planner.v4_0.spi.{IdempotentResult, KernelStatisticProvider}
 import org.neo4j.cypher.internal.runtime._
-import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrder, QualifiedName}
+import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrder
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import org.neo4j.internal.kernel.api.helpers.RelationshipSelectionCursor
 import org.neo4j.internal.kernel.api.{QueryContext => _, _}
@@ -35,6 +35,8 @@ import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{TextValue, Value}
 import org.neo4j.values.virtual.{ListValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.internal.kernel.api.procs.QualifiedName
+
 
 import scala.collection.Iterator
 
@@ -263,10 +265,10 @@ abstract class DelegatingQueryContext(val inner: QueryContext) extends QueryCont
   override def callDbmsProcedure(name: QualifiedName, args: Seq[Any], allowed: Array[String]) =
     inner.callDbmsProcedure(name, args, allowed)
 
-  override def callFunction(id: Int, args: Seq[AnyValue], allowed: Array[String]) =
+  override def callFunction(id: Int, args: Array[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callFunction(id, args, allowed))
 
-  override def callFunction(name: QualifiedName, args: Seq[AnyValue], allowed: Array[String]) =
+  override def callFunction(name: QualifiedName, args: Array[AnyValue], allowed: Array[String]) =
     singleDbHit(inner.callFunction(name, args, allowed))
 
   override def aggregateFunction(id: Int,
