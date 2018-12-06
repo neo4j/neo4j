@@ -41,7 +41,7 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
   extends SingleQueryPlanner {
 
   override def apply(in: PlannerQuery, context: LogicalPlanningContext, idGen: IdGen): (LogicalPlan, LogicalPlanningContext) = {
-    val updatedContext = addAggregatedPropertiesToContext(in, context, hasFoundMutatingPatterns = false)
+    val updatedContext = addAggregatedPropertiesToContext(in, context)
 
     val (completePlan, ctx) =
       countStorePlanner(in, updatedContext) match {
@@ -71,12 +71,10 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
    * The renamings map is used to keep track of any projections changing the name of the property,
    * as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
    */
-  def addAggregatedPropertiesToContext(currentQuery: PlannerQuery, context: LogicalPlanningContext, hasFoundMutatingPatterns: Boolean): LogicalPlanningContext = {
+  def addAggregatedPropertiesToContext(currentQuery: PlannerQuery, context: LogicalPlanningContext): LogicalPlanningContext = {
 
     // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
-    val hasMutatingPatterns = hasFoundMutatingPatterns || currentQuery.queryGraph.mutatingPatterns.nonEmpty
-
-    if (hasMutatingPatterns) return context
+    if (currentQuery.queryGraph.mutatingPatterns.nonEmpty) return context
 
     currentQuery.horizon match {
       case aggr: AggregatingQueryProjection =>
@@ -90,12 +88,12 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
         currentQuery.tail match {
           case Some(tail) =>
             renamings ++= proj.projections
-            addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
+            addAggregatedPropertiesToContext(tail, context)
           case _ => context
         }
       case _ =>
         currentQuery.tail match {
-          case Some(tail) => addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
+          case Some(tail) => addAggregatedPropertiesToContext(tail, context)
           case _ => context
         }
     }
