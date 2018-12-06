@@ -73,7 +73,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @PageCacheExtension
-@ExtendWith( {TestDirectoryExtension.class, DefaultFileSystemExtension.class} )
 class CommonAbstractStoreTest
 {
     private static final int PAGE_SIZE = 32;
