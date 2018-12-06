@@ -79,13 +79,25 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
-    public void shutdownDatabase( String ignore )
+    public void dropDatabase( String ignore )
     {
-        shutdownDatabase();
+        throw new UnsupportedOperationException( "Default database manager does not support database drop." );
     }
 
     @Override
-    public void start() throws Throwable
+    public void stopDatabase( String ignore )
+    {
+        stopDatabase();
+    }
+
+    @Override
+    public void startDatabase( String databaseName )
+    {
+        throw new UnsupportedOperationException( "Default database manager does not support starting databases." );
+    }
+
+    @Override
+    public void start()
     {
         if ( databaseContext != null )
         {
@@ -103,9 +115,9 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
     }
 
     @Override
-    public void shutdown() throws Throwable
+    public void shutdown()
     {
-        shutdownDatabase();
+        stopDatabase();
     }
 
     @Override
@@ -118,7 +130,7 @@ public final class DefaultDatabaseManager extends LifecycleAdapter implements Da
         return singletonList( databaseContext.getDatabase().getDatabaseName() );
     }
 
-    private void shutdownDatabase()
+    private void stopDatabase()
     {
         if ( databaseContext != null )
         {

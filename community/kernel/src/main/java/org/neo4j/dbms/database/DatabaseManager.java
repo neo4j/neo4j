@@ -29,16 +29,39 @@ public interface DatabaseManager extends Lifecycle
 
     Optional<DatabaseContext> getDatabaseContext( String name );
 
-    DatabaseContext createDatabase( String name );
-
     /**
-     * Shutdown database with specified name.
-     * @param name database name to shutdown
+     * Create database with specified name.
+     * Database name should be unique.
+     * In case if database with specified name already exists exception is thrown.
+     * @param databaseName name of database to create
+     * @return database context for newly created database
      */
-    void shutdownDatabase( String name );
+    DatabaseContext createDatabase( String databaseName );
 
     /**
-     * Return sorted list of known database
+     * Drop database with specified name.
+     * Database that was requested to be dropped will be stopped first, and then completely removed.
+     * If database with requested name does not exist exception will be thrown.
+     * @param databaseName name of database to drop.
+     */
+    void dropDatabase( String databaseName );
+
+    /**
+     * Stop database with specified name.
+     * Stopping already stopped database does not have any effect.
+     * @param databaseName database name to stop
+     */
+    void stopDatabase( String databaseName );
+
+    /**
+     * Start database with specified name.
+     * Starting already started database does not have any effect.
+     * @param databaseName database name to start
+     */
+    void startDatabase( String databaseName );
+
+    /**
+     * Return sorted list of known database names
      * @return sorted list of known database names
      */
     List<String> listDatabases();
