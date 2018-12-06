@@ -76,28 +76,28 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
     // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
     val hasMutatingPatterns = hasFoundMutatingPatterns || currentQuery.queryGraph.mutatingPatterns.nonEmpty
 
+    if (hasMutatingPatterns) return context
+
     currentQuery.horizon match {
-      case aggr: AggregatingQueryProjection if aggr.groupingExpressions.isEmpty && !hasMutatingPatterns =>
-        AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
-          case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
-          case _ => context
-        }
+      case aggr: AggregatingQueryProjection =>
+        if (aggr.groupingExpressions.isEmpty) // needed here to not enter next case
+          AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
+            case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
+            case _ => context
+          }
+        else context
       case proj: QueryProjection =>
         currentQuery.tail match {
-          case Some(tail) if !hasMutatingPatterns =>
+          case Some(tail) =>
             renamings ++= proj.projections
             addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
-          case _ =>
-            context
+          case _ => context
         }
-      case _: UnwindProjection =>
+      case _ =>
         currentQuery.tail match {
-          case Some(tail) if !hasMutatingPatterns =>
-            addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
-          case _ =>
-            context
+          case Some(tail) => addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
+          case _ => context
         }
-      case _ => context
     }
   }
 }

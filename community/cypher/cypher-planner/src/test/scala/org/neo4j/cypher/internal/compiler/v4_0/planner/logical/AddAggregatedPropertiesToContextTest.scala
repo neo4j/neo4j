@@ -75,6 +75,13 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
     assertContextNotUpdated(result)
   }
 
+  test("should return input context for merge before aggregation") {
+    val plannerQuery = buildPlannerQuery("MERGE (n:Label) RETURN min(n.prop)")
+    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
+
+    assertContextNotUpdated(result)
+  }
+
   test("should return updated context if no mutating patterns before aggregation") {
     val plannerQuery = buildPlannerQuery("MATCH (n) RETURN min(n.prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
@@ -105,6 +112,20 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
 
   test("should return updated context for distinct before aggregation") {
     val plannerQuery = buildPlannerQuery("MATCH (n) WITH DISTINCT n.prop AS prop RETURN min(prop)")
+    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
+
+    assertContextUpdated(result, Set(("n", "prop")))
+  }
+
+  test("should return updated context for LOAD CSV before aggregation") {
+    val plannerQuery = buildPlannerQuery("LOAD CSV WITH HEADERS FROM '$url' AS row MATCH (n) WHERE toInt(row.Value) > 20 RETURN count(n.prop)")
+    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
+
+    assertContextUpdated(result, Set(("n", "prop")))
+  }
+
+  test("should return updated context for procedure call before aggregation") {
+    val plannerQuery = buildPlannerQuery("MATCH (n) CALL db.labels() YIELD label RETURN count(n.prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
 
     assertContextUpdated(result, Set(("n", "prop")))
