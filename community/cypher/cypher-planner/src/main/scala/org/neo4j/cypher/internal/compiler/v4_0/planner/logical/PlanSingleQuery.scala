@@ -23,10 +23,11 @@ import org.neo4j.cypher.internal.compiler.v4_0.helpers.AggregationHelper
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.alignGetValueFromIndexBehavior
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.countStorePlanner
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.steps.verifyBestPlan
-import org.neo4j.cypher.internal.ir.v4_0.{AggregatingQueryProjection, PlannerQuery, RegularQueryProjection}
+import org.neo4j.cypher.internal.ir.v4_0._
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
+
 import scala.collection.mutable
 
 /*
@@ -76,17 +77,25 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
     val hasMutatingPatterns = hasFoundMutatingPatterns || currentQuery.queryGraph.mutatingPatterns.nonEmpty
 
     currentQuery.horizon match {
-      case proj: RegularQueryProjection if proj.projections.nonEmpty =>
-        currentQuery.tail match {
-          case Some(tail) if !hasMutatingPatterns =>
-            renamings ++= proj.projections
-            addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
-          case _ => context
-        }
       case aggr: AggregatingQueryProjection if aggr.groupingExpressions.isEmpty && !hasMutatingPatterns =>
         AggregationHelper.extractProperties(aggr.aggregationExpressions, renamings) match {
           case properties: Set[(String, String)] if properties.nonEmpty => context.withAggregationProperties(properties)
           case _ => context
+        }
+      case proj: QueryProjection =>
+        currentQuery.tail match {
+          case Some(tail) if !hasMutatingPatterns =>
+            renamings ++= proj.projections
+            addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
+          case _ =>
+            context
+        }
+      case _: UnwindProjection =>
+        currentQuery.tail match {
+          case Some(tail) if !hasMutatingPatterns =>
+            addAggregatedPropertiesToContext(tail, context, hasMutatingPatterns)
+          case _ =>
+            context
         }
       case _ => context
     }

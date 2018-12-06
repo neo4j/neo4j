@@ -68,7 +68,7 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
     assertContextNotUpdated(result)
   }
 
-  test("should return input context if query has mutating patterns before rename") {
+  test("should return input context if query has mutating patterns before renaming") {
     val plannerQuery = buildPlannerQuery("MATCH (n:Label) CREATE (:NewLabel) WITH n.prop AS prop RETURN min(prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
 
@@ -91,6 +91,20 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
 
   test("should return updated context if mutating patterns after aggregation") {
     val plannerQuery = buildPlannerQuery("MATCH (n:Label) WITH min(n.prop) AS min CREATE (:NewLabel) RETURN min")
+    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
+
+    assertContextUpdated(result, Set(("n", "prop")))
+  }
+
+  test("should return updated context for unwind before aggregation") {
+    val plannerQuery = buildPlannerQuery("UNWIND [1,2,3] AS i MATCH (n) RETURN min(n.prop)")
+    val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
+
+    assertContextUpdated(result, Set(("n", "prop")))
+  }
+
+  test("should return updated context for distinct before aggregation") {
+    val plannerQuery = buildPlannerQuery("MATCH (n) WITH DISTINCT n.prop AS prop RETURN min(prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
 
     assertContextUpdated(result, Set(("n", "prop")))
