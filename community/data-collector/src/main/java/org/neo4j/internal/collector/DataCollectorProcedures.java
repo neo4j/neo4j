@@ -35,7 +35,7 @@ import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
 
 @SuppressWarnings( "WeakerAccess" )
-public class CollectorProcedures
+public class DataCollectorProcedures
 {
     @Context
     public DataCollector dataCollector;

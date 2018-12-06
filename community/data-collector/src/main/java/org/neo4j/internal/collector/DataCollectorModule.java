@@ -38,7 +38,7 @@ public class DataCollectorModule
         Preconditions.checkState( kernel != null, "Kernel was null" );
         DataCollector dataCollector = new DataCollector( kernel, jobScheduler );
         procedures.registerComponent( DataCollector.class, ctx -> dataCollector, false );
-        procedures.registerProcedure( CollectorProcedures.class );
+        procedures.registerProcedure( DataCollectorProcedures.class );
         return dataCollector;
     }
 }
