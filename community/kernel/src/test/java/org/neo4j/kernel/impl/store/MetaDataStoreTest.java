@@ -118,7 +118,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getCreationTime );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getCreationTime );
     }
 
     @Test
@@ -126,7 +126,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getCurrentLogVersion );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getCurrentLogVersion );
     }
 
     @Test
@@ -134,7 +134,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getGraphNextProp );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getGraphNextProp );
     }
 
     @Test
@@ -142,7 +142,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getLastClosedTransactionId );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getLastClosedTransactionId );
     }
 
     @Test
@@ -150,7 +150,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getLastClosedTransaction );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getLastClosedTransaction );
     }
 
     @Test
@@ -158,7 +158,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getLastCommittedTransaction );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getLastCommittedTransaction );
     }
 
     @Test
@@ -166,7 +166,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getLastCommittedTransactionId );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getLastCommittedTransactionId );
     }
 
     @Test
@@ -174,7 +174,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getLatestConstraintIntroducingTx );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getLatestConstraintIntroducingTx );
     }
 
     @Test
@@ -182,7 +182,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getRandomNumber );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getRandomNumber );
     }
 
     @Test
@@ -190,7 +190,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getStoreVersion );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getStoreVersion );
     }
 
     @Test
@@ -198,7 +198,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getUpgradeTime );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getUpgradeTime );
     }
 
     @Test
@@ -206,7 +206,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::getUpgradeTransaction );
+        assertThrows( StoreFileClosedException.class, metaDataStore::getUpgradeTransaction );
     }
 
     @Test
@@ -214,7 +214,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, metaDataStore::nextCommittingTransactionId );
+        assertThrows( StoreFileClosedException.class, metaDataStore::nextCommittingTransactionId );
     }
 
     @Test
@@ -238,7 +238,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.setLastCommittedAndClosedTransactionId( 1, 2, BASE_TX_COMMIT_TIMESTAMP, 3, 4 ) );
     }
 
     @Test
@@ -246,7 +246,7 @@ class MetaDataStoreTest
     {
         MetaDataStore metaDataStore = newMetaDataStore();
         metaDataStore.close();
-        assertThrows( IllegalStateException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP ) );
+        assertThrows( StoreFileClosedException.class, () -> metaDataStore.transactionCommitted( 1, 1, BASE_TX_COMMIT_TIMESTAMP ) );
     }
 
     @Test

@@ -835,13 +835,13 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     /**
      * Checks if this store is closed and throws exception if it is.
      *
-     * @throws IllegalStateException if the store is closed
+     * @throws StoreFileClosedException if the store is closed
      */
     void assertNotClosed()
     {
         if ( pagedFile == null )
         {
-            throw new IllegalStateException( this + " for file '" + storageFile + "' is closed" );
+            throw new StoreFileClosedException( this, storageFile );
         }
     }
 
