@@ -71,7 +71,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.data_directory;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 
 @ExtendWith( TestDirectoryExtension.class )
 class LoadCommandTest
@@ -96,7 +96,7 @@ class LoadCommandTest
     void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         execute( "foo.db" );
-        verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/databases/foo.db" ) );
+        verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/tx-logs" ) );
     }
 
     @Test
@@ -105,11 +105,12 @@ class LoadCommandTest
     {
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path transactionLogsDir = dataDir.resolve( "tx-logs" );
         Files.createDirectories( databaseDir );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( databaseDir ), eq( databaseDir ) );
+        verify( loader ).load( any(), eq( databaseDir ), eq( transactionLogsDir ) );
     }
 
     @Test
@@ -120,7 +121,7 @@ class LoadCommandTest
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ),
                 asList( formatProperty( data_directory, dataDir ),
-                        formatProperty( logical_logs_location, txLogsDir ) ) );
+                        formatProperty( transaction_logs_root_path, txLogsDir ) ) );
 
         execute( "foo.db" );
         verify( loader ).load( any(), eq( databaseDir ), eq( txLogsDir ) );
@@ -135,6 +136,7 @@ class LoadCommandTest
 
         Path dataDir = testDirectory.directory( "some-other-path" ).toPath();
         Path databaseDir = dataDir.resolve( "databases/foo.db" );
+        Path txLogsDir = dataDir.resolve( "tx-logs" );
 
         Files.createDirectories( realDatabaseDir );
         Files.createDirectories( dataDir.resolve( "databases" ) );
@@ -144,7 +146,7 @@ class LoadCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( realDatabaseDir ), eq( realDatabaseDir ) );
+        verify( loader ).load( any(), eq( realDatabaseDir ), eq( txLogsDir ) );
     }
 
     @Test
@@ -166,7 +168,9 @@ class LoadCommandTest
             throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         Path databaseDirectory = homeDir.resolve( "data/databases/foo.db" );
+        Path txDirectory = homeDir.resolve( "data/tx-logs" );
         Files.createDirectories( databaseDirectory );
+        Files.createDirectories( txDirectory );
 
         doAnswer( ignored ->
         {
@@ -213,10 +217,11 @@ class LoadCommandTest
     void shouldDefaultToGraphDb() throws Exception
     {
         Path databaseDir = homeDir.resolve( "data/databases/" + GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+        Path transactionLogsDir = homeDir.resolve( "data/tx-logs" );
         Files.createDirectories( databaseDir );
 
         new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--from=something"} );
-        verify( loader ).load( any(), eq( databaseDir ), eq( databaseDir ) );
+        verify( loader ).load( any(), eq( databaseDir ), eq( transactionLogsDir ) );
     }
 
     @Test

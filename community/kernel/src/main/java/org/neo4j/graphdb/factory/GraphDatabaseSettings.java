@@ -652,7 +652,7 @@ public class GraphDatabaseSettings implements LoadableConfig
             "Reduced performance of CONTAINS and ENDS WITH string index queries, compared to a Lucene index." )
     public static final Setting<String> default_schema_provider = setting( "dbms.index.default_schema_provider", STRING, NATIVE_BTREE10.providerName() );
 
-    // TODO: remove this setting? or keep only for migration
+    // Should not be used. Here only for auto migration purposes.
     @Deprecated
     @Description( "Location where Neo4j keeps the logical transaction logs." )
     public static final Setting<File> logical_logs_location = pathSetting( "dbms.directories.tx_log", "", database_path );

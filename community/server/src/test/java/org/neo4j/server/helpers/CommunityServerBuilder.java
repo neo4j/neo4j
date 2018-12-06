@@ -185,7 +185,7 @@ public class CommunityServerBuilder
                 new File( temporaryFolder, "certificates" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.logs_directory.name(),
                 new File( temporaryFolder, "logs" ).getAbsolutePath() );
-        properties.put( GraphDatabaseSettings.logical_logs_location.name(),
+        properties.put( GraphDatabaseSettings.transaction_logs_root_path.name(),
                 new File( temporaryFolder, "transaction-logs" ).getAbsolutePath() );
         properties.put( GraphDatabaseSettings.pagecache_memory.name(), "8m" );
         properties.put( GraphDatabaseSettings.shutdown_transaction_end_timeout.name(), "0s" );

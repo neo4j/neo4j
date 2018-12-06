@@ -46,7 +46,7 @@ import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_logs_location;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
 
 public class LoadCommand implements AdminCommand
 {
@@ -94,7 +94,7 @@ public class LoadCommand implements AdminCommand
 
     private Path getTransactionalLogsDirectory( Config config )
     {
-        return config.get( logical_logs_location ).toPath();
+        return config.get( transaction_logs_root_path ).toPath();
     }
 
     private Config buildConfig( String databaseName )

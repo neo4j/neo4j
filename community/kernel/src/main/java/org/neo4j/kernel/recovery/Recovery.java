@@ -202,7 +202,7 @@ public final class Recovery
         requireNonNull( databaseLayout );
         Map<String,String> configRaw = config.getRaw();
         //remove any custom logical logs location
-        configRaw.remove( GraphDatabaseSettings.logical_logs_location.name() );
+        configRaw.remove( GraphDatabaseSettings.transaction_logs_root_path.name() );
         Config recoveryConfig = defaults( configRaw );
         performRecovery( fs, pageCache, recoveryConfig, databaseLayout, NullLogProvider.getInstance(), new Monitors(), loadExtensions(), Optional.empty() );
     }
