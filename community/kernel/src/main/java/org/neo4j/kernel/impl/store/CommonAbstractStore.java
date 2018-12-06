@@ -78,7 +78,7 @@ public abstract class CommonAbstractStore<RECORD extends AbstractBaseRecord,HEAD
     final File storageFile;
     private final File idFile;
     private final String typeDescriptor;
-    protected PagedFile pagedFile;
+    protected volatile PagedFile pagedFile;
     protected int recordSize;
     private IdGenerator idGenerator;
     private boolean storeOk = true;
