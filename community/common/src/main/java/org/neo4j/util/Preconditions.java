@@ -144,10 +144,42 @@ public final class Preconditions
     }
 
     /**
+     * Ensures that {@code expression} is {@code true} or throws {@link IllegalStateException} otherwise.
+     *
+     * @param expression an expression for check
+     * @param message error message format
+     * @param args arguments referenced by the error message format
+     * @throws IllegalStateException if {@code expression} is {@code false}
+     */
+    public static void checkState( boolean expression, String message, Object... args )
+    {
+        if ( !expression )
+        {
+            throw new IllegalArgumentException( args.length > 0 ? format( message, args ) : message );
+        }
+    }
+
+    /**
      * Ensures that {@code expression} is {@code true} or throws {@link IllegalArgumentException} otherwise.
      *
      * @param expression an expression for check
-     * @param message error message for the exception
+     * @param message error message
+     * @throws IllegalArgumentException if {@code expression} is {@code false}
+     */
+    public static void checkArgument( boolean expression, String message )
+    {
+        if ( !expression )
+        {
+            throw new IllegalArgumentException( message );
+        }
+    }
+
+    /**
+     * Ensures that {@code expression} is {@code true} or throws {@link IllegalArgumentException} otherwise.
+     *
+     * @param expression an expression for check
+     * @param message error message format
+     * @param args arguments referenced by the error message format
      * @throws IllegalArgumentException if {@code expression} is {@code false}
      */
     public static void checkArgument( boolean expression, String message, Object... args )
