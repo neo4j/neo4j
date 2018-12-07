@@ -51,6 +51,7 @@ import org.neo4j.kernel.impl.store.MetaDataStore.Position;
 import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.lifecycle.Lifespan;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -171,7 +172,7 @@ class NativeLabelScanStoreMigratorTest
     void populateNativeLabelScanIndexDuringMigration() throws IOException
     {
         prepare34DatabaseWithNodes();
-        indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_4.STORE_VERSION, StandardV3_4.STORE_VERSION );
+        indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationLayout, databaseLayout, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         try ( Lifespan lifespan = new Lifespan() )
@@ -192,7 +193,7 @@ class NativeLabelScanStoreMigratorTest
     void reportProgressOnNativeIndexPopulation() throws IOException
     {
         prepare34DatabaseWithNodes();
-        indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV3_4.STORE_VERSION, StandardV3_4.STORE_VERSION );
+        indexMigrator.migrate( databaseLayout, migrationLayout, progressReporter, StandardV4_0.STORE_VERSION, StandardV4_0.STORE_VERSION );
         indexMigrator.moveMigratedFiles( migrationLayout, databaseLayout, StandardV2_3.STORE_VERSION, StandardV3_2.STORE_VERSION );
 
         verify( progressReporter ).start( 10 );
