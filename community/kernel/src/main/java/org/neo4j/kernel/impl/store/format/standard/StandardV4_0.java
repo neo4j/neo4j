@@ -34,15 +34,15 @@ import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 
-public class StandardV3_4 extends BaseRecordFormats
+public class StandardV4_0 extends BaseRecordFormats
 {
-    public static final String STORE_VERSION = StoreVersion.STANDARD_V3_4.versionString();
-    public static final RecordFormats RECORD_FORMATS = new StandardV3_4();
-    public static final String NAME = "standardV3_4_0";
+    public static final String STORE_VERSION = StoreVersion.STANDARD_V4_0.versionString();
+    public static final RecordFormats RECORD_FORMATS = new StandardV4_0();
+    public static final String NAME = "standard";
 
-    public StandardV3_4()
+    public StandardV4_0()
     {
-        super( STORE_VERSION, StoreVersion.STANDARD_V3_4.introductionVersion(), 8, Capability.SCHEMA,
+        super( STORE_VERSION, StoreVersion.STANDARD_V4_0.introductionVersion(), 9, Capability.SCHEMA,
                 Capability.DENSE_NODES, Capability.LUCENE_5, Capability.POINT_PROPERTIES, Capability.TEMPORAL_PROPERTIES );
     }
 
