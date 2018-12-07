@@ -102,7 +102,8 @@ public interface TestServerBuilder
     TestServerBuilder withFixture( Function<GraphDatabaseService, Void> fixtureFunction );
 
     /**
-     * Pre-populate the server with a database copied from the specified directory
+     * Pre-populate the server with databases copied from the specified source directory.
+     * The source directory needs to have sub-folders `databases/graph.db` in which the source store files are located.
      * @param sourceDirectory the directory to copy from
      * @return this builder instance
      */

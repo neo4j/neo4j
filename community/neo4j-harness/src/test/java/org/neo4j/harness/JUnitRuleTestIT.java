@@ -23,8 +23,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runners.model.Statement;
 
+import java.io.File;
 import java.util.List;
 
+import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
@@ -32,6 +34,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.configuration.ssl.LegacySslPolicyConfig;
 import org.neo4j.server.configuration.ServerSettings;
@@ -109,13 +112,14 @@ public class JUnitRuleTestIT
     }
 
     @Test
-    public void shouldRuleWorkWithExsitingDirectory()
+    public void shouldRuleWorkWithExistingDirectory() throws Throwable
     {
-        // given
+        // given a data folder, create /databases/graph.db sub-folders.
+        File existingDir = testDirectory.directory( "existing" );
+        File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, existingDir.toPath().toString() )
+                .get( DatabaseManagementSystemSettings.database_path );
+        GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
-        GraphDatabaseService db = new TestGraphDatabaseFactory()
-                .newEmbeddedDatabaseBuilder( testDirectory.directory() )
-                .newGraphDatabase();
         try
         {
             db.execute( "CREATE ()" );
@@ -125,23 +129,26 @@ public class JUnitRuleTestIT
             db.shutdown();
         }
 
-        // When a rule with an pre-populated graph db directory is used
-        final Neo4jRule ruleWithDirectory = new Neo4jRule( testDirectory.directory() )
+        // When a rule with an pre-populated data directory is used
+        File newDir = testDirectory.directory( "new" );
+        final Neo4jRule ruleWithDirectory = new Neo4jRule( newDir )
                 .withConfig( ServerSettings.script_enabled, Settings.TRUE )
-                .copyFrom( testDirectory.directory() );
-        ruleWithDirectory.apply( new Statement()
+                .copyFrom( existingDir );
+        Statement statement = ruleWithDirectory.apply( new Statement()
         {
             @Override
-            public void evaluate() throws Throwable
+            public void evaluate()
             {
                 // Then the database is not empty
-                Result result = ruleWithDirectory.getGraphDatabaseService()
-                        .execute( "MATCH (n) RETURN count(n) AS " + "count" );
+                Result result = ruleWithDirectory.getGraphDatabaseService().execute( "MATCH (n) RETURN count(n) AS " + "count" );
 
                 List<Object> column = Iterators.asList( result.columnAs( "count" ) );
                 assertEquals( 1, column.size() );
-                assertEquals( 1, column.get( 0 ) );
+                assertEquals( 1L, column.get( 0 ) );
             }
         }, null );
+
+        // Then
+        statement.evaluate();
     }
 }
