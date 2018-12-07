@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.v1.transport.socket;
+package org.neo4j.bolt.transport;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -25,13 +25,11 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import org.neo4j.bolt.transport.BoltProtocol;
-import org.neo4j.bolt.transport.ProtocolChooser;
-import org.neo4j.bolt.transport.SocketTransportHandler;
 import org.neo4j.bolt.v1.runtime.BoltStateMachine;
 import org.neo4j.bolt.v1.runtime.SynchronousBoltWorker;
 import org.neo4j.bolt.v1.transport.BoltProtocolV1;
@@ -135,14 +133,14 @@ public class SocketTransportHandlerTest
         // Then
         verify( machine ).close();
         logging.assertExactly( inLog( SocketTransportHandler.class )
-                .error( equalTo( "Fatal error occurred when handling a client connection: Oh no!" ), is( cause ) ) );
+                .error( equalTo( "Fatal error occurred when handling a client connection: " + ctx.channel() ), is( cause ) ) );
     }
 
     @Test
     public void logsAndClosesContextWhenProtocolNotInitializedOnUnexpectedExceptions() throws Throwable
     {
         // Given
-        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        ChannelHandlerContext context = channelHandlerContextMock();
         AssertableLogProvider logging = new AssertableLogProvider();
         SocketTransportHandler handler = new SocketTransportHandler( mock( ProtocolChooser.class ), logging );
 
@@ -153,8 +151,28 @@ public class SocketTransportHandlerTest
         // Then
         verify( context ).close();
         logging.assertExactly( inLog( SocketTransportHandler.class )
-                .error( equalTo( "Fatal error occurred when handling a client connection: Oh no!" ),
+                .error( equalTo( "Fatal error occurred when handling a client connection: " + context.channel() ),
                         is( cause ) ) );
+    }
+
+    @Test
+    public void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext() throws Exception
+    {
+        // Given
+        ChannelHandlerContext context = channelHandlerContextMock();
+        AssertableLogProvider logging = new AssertableLogProvider();
+        SocketTransportHandler handler = new SocketTransportHandler( mock( ProtocolChooser.class ), logging );
+
+        IOException connResetError = new IOException( "Connection reset by peer" );
+
+        // When
+        handler.exceptionCaught( context, connResetError );
+
+        // Then
+        verify( context ).close();
+        logging.assertExactly( inLog( SocketTransportHandler.class )
+                .warn( "Fatal error occurred when handling a client connection, " +
+                        "remote peer unexpectedly closed connection: %s", context.channel() ) );
     }
 
     @Test

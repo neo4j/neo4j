@@ -23,6 +23,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
@@ -83,8 +84,26 @@ public class SocketTransportHandler extends ChannelInboundHandlerAdapter
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        log.error( "Fatal error occurred when handling a client connection: " + cause.getMessage(), cause );
-        close( ctx );
+        try
+        {
+            // Netty throws a NativeIoException on connection reset - directly importing that class
+            // caused a host of linking errors, because it depends on JNI to work. Hence, we just
+            // test on the message we know we'll get.
+            if ( Exceptions.contains( cause, e -> e.getMessage().contains( "Connection reset by peer" ) ) )
+            {
+                log.warn( "Fatal error occurred when handling a client connection, " +
+                        "remote peer unexpectedly closed connection: %s", ctx.channel() );
+            }
+            else
+            {
+                log.error( String.format( "Fatal error occurred when handling a client connection: %s", ctx.channel() ),
+                        cause );
+            }
+        }
+        finally
+        {
+            close( ctx );
+        }
     }
 
     private void close( ChannelHandlerContext ctx )
