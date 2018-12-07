@@ -79,10 +79,11 @@ public enum LogEntryVersion
     // as of 2017-05-26: the records in command log entries include a bit that specifies if the command is serialised
     // using a fixed-width reference format, or not. This change is technically backwards compatible, so we bump the
     // log version to prevent mixed-version clusters from forming.
-    V3_0_10( -10, LogEntryParsersV2_3.class );
-    // Method moreRecentVersionExists() relies on the fact that we have negative numbers, thus next version to use is -11
+    V3_0_10( -10, LogEntryParsersV2_3.class ),
+    V4_0( -11, LogEntryParsersV2_3.class );
+    // Method moreRecentVersionExists() relies on the fact that we have negative numbers, thus next version to use is -12
 
-    public static final LogEntryVersion CURRENT = V3_0_10;
+    public static final LogEntryVersion CURRENT = V4_0;
     private static final byte LOWEST_VERSION = (byte)-V2_3.byteCode();
     private static final LogEntryVersion[] ALL = values();
     private static final LogEntryVersion[] LOOKUP_BY_VERSION;

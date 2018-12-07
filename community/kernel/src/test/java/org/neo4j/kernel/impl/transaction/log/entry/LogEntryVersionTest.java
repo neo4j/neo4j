@@ -69,6 +69,7 @@ public class LogEntryVersionTest
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0 ) );
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V2_3_5 ) );
         assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0_2 ) );
-        assertFalse( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0_10 ) );
+        assertTrue( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V3_0_10 ) );
+        assertFalse( LogEntryVersion.moreRecentVersionExists( LogEntryVersion.V4_0 ) );
     }
 }
