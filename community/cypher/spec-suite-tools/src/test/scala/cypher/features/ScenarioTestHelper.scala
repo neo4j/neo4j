@@ -126,6 +126,7 @@ object ScenarioTestHelper {
       Console.out.flush() // to make sure we see progress
       if (isFailure) Some(scenario.toString) else None
     }
-    println(blacklist.distinct.mkString("\n","\n","\n"))
+    // Sort the list alphabetically to normalize diffs
+    println(blacklist.distinct.sorted.mkString("\n","\n","\n"))
   }
 }
