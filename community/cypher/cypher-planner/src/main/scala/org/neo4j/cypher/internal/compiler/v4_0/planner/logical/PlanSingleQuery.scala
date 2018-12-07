@@ -65,7 +65,14 @@ case class PlanSingleQuery(planPart: PartPlanner = planPart,
 
   val renamings: mutable.Map[String, Expression] = mutable.Map.empty
 
+  /*
+   * Extract all properties over which aggregation is performed, where we potentially could use a NodeIndexScan.
+   * The renamings map is used to keep track of any projections changing the name of the property,
+   * as in MATCH (n:Label) WITH n.prop1 AS prop RETURN count(prop)
+   */
   def addAggregatedPropertiesToContext(currentQuery: PlannerQuery, context: LogicalPlanningContext, hasFoundMutatingPatterns: Boolean): LogicalPlanningContext = {
+
+    // If the graph is mutated between the MATCH and the aggregation, an index scan might lead to the wrong number of mutations
     val hasMutatingPatterns = hasFoundMutatingPatterns || currentQuery.queryGraph.mutatingPatterns.nonEmpty
 
     currentQuery.horizon match {

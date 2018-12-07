@@ -47,6 +47,11 @@ case class LogicalPlanningContext(planContext: PlanContext,
                                   leafPlanUpdater: LeafPlanUpdater = EmptyUpdater,
                                   costComparisonListener: CostComparisonListener,
                                   planningAttributes: PlanningAttributes,
+                                  /*
+                                   * A set of all properties over which aggregation is performed,
+                                   * where we potentially could use a NodeIndexScan.
+                                   * E.g. WITH n.prop1 AS prop RETURN min(prop), count(m.prop2) => Set(("n", "prop1"), ("m", "prop2"))
+                                   */
                                   aggregatingProperties: Set[(String, String)] = Set.empty) {
   def withStrictness(strictness: StrictnessMode): LogicalPlanningContext =
     copy(input = input.withPreferredStrictness(strictness))

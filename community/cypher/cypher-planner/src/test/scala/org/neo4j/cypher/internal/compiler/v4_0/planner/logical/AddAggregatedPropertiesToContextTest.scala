@@ -79,21 +79,21 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
     val plannerQuery = buildPlannerQuery("MATCH (n) RETURN min(n.prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
 
-    assertContextUpdated(result)
+    assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context if no mutating patterns before projection followed by aggregation") {
     val plannerQuery = buildPlannerQuery("MATCH (n) WITH n.prop AS prop RETURN min(prop)")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
 
-    assertContextUpdated(result)
+    assertContextUpdated(result, Set(("n", "prop")))
   }
 
   test("should return updated context if mutating patterns after aggregation") {
     val plannerQuery = buildPlannerQuery("MATCH (n:Label) WITH min(n.prop) AS min CREATE (:NewLabel) RETURN min")
     val result = planSingeQuery.addAggregatedPropertiesToContext(plannerQuery, context, hasFoundMutatingPatterns = false)
 
-    assertContextUpdated(result)
+    assertContextUpdated(result, Set(("n", "prop")))
   }
 
   private def assertContextNotUpdated(newContext: LogicalPlanningContext): Unit = {
@@ -101,8 +101,8 @@ class AddAggregatedPropertiesToContextTest extends CypherFunSuite with LogicalPl
     newContext should equal(context)
   }
 
-  private def assertContextUpdated(newContext: LogicalPlanningContext): Unit = {
-    newContext.aggregatingProperties should not be empty
+  private def assertContextUpdated(newContext: LogicalPlanningContext, expected: Set[(String, String)]): Unit = {
+    newContext.aggregatingProperties should equal(expected)
     newContext should not equal context
   }
 }
