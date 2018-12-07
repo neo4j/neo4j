@@ -43,14 +43,18 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
     public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, Set<IndexEntryConflictException> conflicts )
     {
-        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data" );
+        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", buildCauseChain( conflicts ) );
+        this.conflicts = conflicts;
+    }
+
+    private static IndexEntryConflictException buildCauseChain( Set<IndexEntryConflictException> conflicts )
+    {
         IndexEntryConflictException chainedConflicts = null;
         for ( IndexEntryConflictException conflict : conflicts )
         {
             chainedConflicts = Exceptions.chain( chainedConflicts, conflict );
         }
-        initCause( chainedConflicts );
-        this.conflicts = conflicts;
+        return chainedConflicts;
     }
 
     public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
