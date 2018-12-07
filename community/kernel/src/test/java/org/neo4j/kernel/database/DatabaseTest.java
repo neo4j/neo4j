@@ -64,14 +64,14 @@ public class DatabaseTest
     @Rule
     public TestDirectory dir = TestDirectory.testDirectory( fs.get() );
     @Rule
-    public DatabaseRule dsRule = new DatabaseRule();
+    public DatabaseRule databaseRule = new DatabaseRule();
     @Rule
     public PageCacheRule pageCacheRule = new PageCacheRule();
 
     @Test
     public void databaseHealthShouldBeHealedOnStart() throws Throwable
     {
-        Database theDataSource = null;
+        Database database = null;
         try
         {
             DatabaseHealth databaseHealth = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ),
@@ -79,21 +79,20 @@ public class DatabaseTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
-            theDataSource = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     dependencies );
 
             databaseHealth.panic( new Throwable() );
 
-            theDataSource.start();
+            database.start();
 
             databaseHealth.assertHealthy( Throwable.class );
         }
         finally
         {
-            if ( theDataSource != null )
+            if ( database != null )
             {
-                theDataSource.stop();
-                theDataSource.shutdown();
+                database.stop();
             }
         }
     }
@@ -102,14 +101,13 @@ public class DatabaseTest
     public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
-        Database ds = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
 
-        ds.start();
+        database.start();
         verify( pageCache, never() ).flushAndForce();
         verify( pageCache, never() ).flushAndForce( any( IOLimiter.class ) );
 
-        ds.stop();
-        ds.shutdown();
+        database.stop();
         verify( pageCache ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
@@ -118,13 +116,12 @@ public class DatabaseTest
     {
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
 
-        Database ds = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
 
-        ds.start();
+        database.start();
         verify( pageCache, never() ).flushAndForce();
 
-        ds.stop();
-        ds.shutdown();
+        database.stop();
         verify( pageCache ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
@@ -137,13 +134,12 @@ public class DatabaseTest
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( health );
-        Database ds = dsRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache, dependencies );
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache, dependencies );
 
-        ds.start();
+        database.start();
         verify( pageCache, never() ).flushAndForce();
 
-        ds.stop();
-        ds.shutdown();
+        database.stop();
         verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
     }
 
@@ -163,12 +159,12 @@ public class DatabaseTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        Database dataSource = dsRule.getDatabase( dir.databaseLayout(), fs.get(),
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(),
                 pageCache, dependencies );
 
         try
         {
-            dataSource.start();
+            database.start();
             fail( "Exception expected" );
         }
         catch ( Exception e )
@@ -194,13 +190,13 @@ public class DatabaseTest
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseHealth );
-        Database dataSource = dsRule.getDatabase( dir.databaseLayout(), fs, pageCache, dependencies );
-        dataSource.start();
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs, pageCache, dependencies );
+        database.start();
 
         try
         {
             // When
-            dataSource.stop();
+            database.stop();
             fail( "it should have thrown" );
         }
         catch ( LifecycleException e )

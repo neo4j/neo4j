@@ -585,6 +585,7 @@ public class Database extends LifecycleAdapter
         // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
         // Shut down all services in here, effectively making the database unusable for anyone who tries.
         life.shutdown();
+        eventHandlers.shutdown();
         started = false;
     }
 
