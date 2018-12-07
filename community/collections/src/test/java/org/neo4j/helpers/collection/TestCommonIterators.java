@@ -34,8 +34,10 @@ import org.neo4j.graphdb.ResourceIterator;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -224,5 +226,112 @@ class TestCommonIterators
         Stream<Integer> stream = Iterables.stream( iterable, characteristics );
 
         assertEquals( characteristics, stream.spliterator().characteristics() );
+    }
+
+    @Test
+    void testCachingIterator()
+    {
+        Iterator<Integer> source = new RangeIterator( 8 );
+        CachingIterator<Integer> caching = new CachingIterator<>( source );
+
+        assertThrows( NoSuchElementException.class, caching::previous );
+        assertThrows( NoSuchElementException.class, caching::current );
+
+        // Next and previous
+        assertEquals( 0, caching.position() );
+        assertTrue( caching.hasNext() );
+        assertEquals( 0, caching.position() );
+        assertFalse( caching.hasPrevious() );
+        assertEquals( (Integer) 0, caching.next() );
+        assertTrue( caching.hasNext() );
+        assertTrue( caching.hasPrevious() );
+        assertEquals( (Integer) 1, caching.next() );
+        assertTrue( caching.hasPrevious() );
+        assertEquals( (Integer) 1, caching.current() );
+        assertEquals( (Integer) 2, caching.next() );
+        assertEquals( (Integer) 2, caching.current() );
+        assertEquals( (Integer) 3, (Integer) caching.position() );
+        assertEquals( (Integer) 2, caching.current() );
+        assertTrue( caching.hasPrevious() );
+        assertEquals( (Integer) 2, caching.previous() );
+        assertEquals( (Integer) 2, caching.current() );
+        assertEquals( (Integer) 2, (Integer) caching.position() );
+        assertEquals( (Integer) 1, caching.previous() );
+        assertEquals( (Integer) 1, caching.current() );
+        assertEquals( (Integer) 1, (Integer) caching.position() );
+        assertEquals( (Integer) 0, caching.previous() );
+        assertEquals( (Integer) 0, (Integer) caching.position() );
+        assertFalse( caching.hasPrevious() );
+
+        assertThrows( IllegalArgumentException.class, () -> caching.position( -1 ), "Shouldn't be able to set a lower value than 0" );
+
+        assertEquals( (Integer) 0, caching.current() );
+        assertEquals( 0, caching.position( 3 ) );
+
+        assertThrows( NoSuchElementException.class, caching::current, "Shouldn't be able to call current() after a call to position(int)" );
+
+        assertTrue( caching.hasNext() );
+        assertEquals( (Integer) 3, caching.next() );
+        assertEquals( (Integer) 3, caching.current() );
+        assertTrue( caching.hasPrevious() );
+        assertEquals( (Integer) 4, caching.next() );
+        assertEquals( 5, caching.position() );
+        assertEquals( (Integer) 4, caching.previous() );
+        assertEquals( (Integer) 4, caching.current() );
+        assertEquals( (Integer) 4, caching.current() );
+        assertEquals( 4, caching.position() );
+        assertEquals( (Integer) 3, caching.previous() );
+        assertEquals( 3, caching.position() );
+
+        assertThrows( NoSuchElementException.class, () -> caching.position( 9 ), "Shouldn't be able to set a position which is too big" );
+
+        assertEquals( 3, caching.position( 8 ) );
+        assertTrue( caching.hasPrevious() );
+        assertFalse( caching.hasNext() );
+
+        assertThrows( NoSuchElementException.class, caching::next, "Shouldn't be able to go beyond last item" );
+
+        assertEquals( 8, caching.position() );
+        assertEquals( (Integer) 7, caching.previous() );
+        assertEquals( (Integer) 6, caching.previous() );
+        assertEquals( 6, caching.position( 0 ) );
+        assertEquals( (Integer) 0, caching.next() );
+    }
+
+    @Test
+    void testPagingIterator()
+    {
+        Iterator<Integer> source = new RangeIterator( 24 );
+        PagingIterator<Integer> pager = new PagingIterator<>( source, 10 );
+        assertEquals( 0, pager.page() );
+        assertTrue( pager.hasNext() );
+        assertPage( pager.nextPage(), 10, 0 );
+        assertTrue( pager.hasNext() );
+
+        assertEquals( 1, pager.page() );
+        assertTrue( pager.hasNext() );
+        assertPage( pager.nextPage(), 10, 10 );
+        assertTrue( pager.hasNext() );
+
+        assertEquals( 2, pager.page() );
+        assertTrue( pager.hasNext() );
+        assertPage( pager.nextPage(), 4, 20 );
+        assertFalse( pager.hasNext() );
+
+        pager.page( 1 );
+        assertEquals( 1, pager.page() );
+        assertTrue( pager.hasNext() );
+        assertPage( pager.nextPage(), 10, 10 );
+        assertTrue( pager.hasNext() );
+    }
+
+    private void assertPage( Iterator<Integer> page, int size, int plus )
+    {
+        for ( int i = 0; i < size; i++ )
+        {
+            assertTrue( page.hasNext() );
+            assertEquals( (Integer) (i + plus), page.next() );
+        }
+        assertFalse( page.hasNext() );
     }
 }
