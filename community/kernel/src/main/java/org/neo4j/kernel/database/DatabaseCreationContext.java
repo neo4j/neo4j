@@ -35,7 +35,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.coreapi.CoreAPIAvailabilityGuard;
@@ -51,7 +50,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
@@ -91,15 +89,11 @@ public interface DatabaseCreationContext
 
     TransactionEventHandlers getTransactionEventHandlers();
 
-    IndexingService.Monitor getIndexingServiceMonitor();
-
     FileSystemAbstraction getFs();
 
     TransactionMonitor getTransactionMonitor();
 
     DatabaseHealth getDatabaseHealth();
-
-    LogFileCreationMonitor getPhysicalLogMonitor();
 
     TransactionHeaderInformationFactory getTransactionHeaderInformationFactory();
 

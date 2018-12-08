@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.scheduler;
 
 import java.util.Comparator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
@@ -37,6 +38,7 @@ final class TimeBasedTaskScheduler implements Runnable
     private final SystemNanoClock clock;
     private final ThreadPoolManager pools;
     private final PriorityBlockingQueue<ScheduledJobHandle> delayedTasks;
+    private final ConcurrentLinkedQueue<ScheduledJobHandle> canceledTasks;
     private volatile Thread timeKeeper;
     private volatile boolean stopped;
 
@@ -45,6 +47,7 @@ final class TimeBasedTaskScheduler implements Runnable
         this.clock = clock;
         this.pools = pools;
         delayedTasks = new PriorityBlockingQueue<>( 42, DEADLINE_COMPARATOR );
+        canceledTasks = new ConcurrentLinkedQueue<>();
     }
 
     public JobHandle submit( Group group, Runnable job, long initialDelayNanos, long reschedulingDelayNanos )
@@ -97,6 +100,11 @@ final class TimeBasedTaskScheduler implements Runnable
             ScheduledJobHandle task = delayedTasks.poll();
             task.submitIfRunnable( pools );
         }
+        while ( !canceledTasks.isEmpty() )
+        {
+            ScheduledJobHandle canceled = canceledTasks.poll();
+            delayedTasks.remove( canceled );
+        }
         return delayedTasks.isEmpty() ? NO_TASKS_PARK : delayedTasks.peek().nextDeadlineNanos - now;
     }
 
@@ -104,5 +112,10 @@ final class TimeBasedTaskScheduler implements Runnable
     {
         stopped = true;
         LockSupport.unpark( timeKeeper );
+    }
+
+    void cancelTask( ScheduledJobHandle job )
+    {
+        canceledTasks.add( job );
     }
 }

@@ -495,6 +495,23 @@ class ConfigTest
                              "new setting might not have taken effect: Boo", exception );
     }
 
+    @Test
+    void removeRegisteredSettingChangeListener()
+    {
+        Config config = Config.builder().withConfigClasses( singletonList( new MyDynamicSettings() ) ).build();
+        AtomicInteger updateCounter = new AtomicInteger( 0 );
+        SettingChangeListener<Boolean> listener = ( previous, update ) -> updateCounter.getAndIncrement();
+
+        config.registerDynamicUpdateListener( MyDynamicSettings.boolSetting, listener );
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "false", ORIGIN );
+        assertThat( updateCounter.get(), is( 1 ) );
+
+        config.unregisterDynamicUpdateListener( MyDynamicSettings.boolSetting, listener );
+
+        config.updateDynamicSetting( MyDynamicSettings.boolSetting.name(), "true", ORIGIN );
+        assertThat( updateCounter.get(), is( 1 ) );
+    }
+
     private static Config Config()
     {
         return Config( Collections.emptyMap() );

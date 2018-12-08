@@ -42,7 +42,6 @@ import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.constraints.StandardConstraintSemantics;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.store.id.configuration.IdTypeConfigurationProvider;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.transaction.stats.TransactionCounters;
 import org.neo4j.kernel.impl.util.Dependencies;
@@ -158,8 +156,8 @@ public class DatabaseRule extends ExternalResource
 
         database = new Database( new TestDatabaseCreationContext( databaseName, databaseLayout, config, idGeneratorFactory, logService,
                 mock( JobScheduler.class, RETURNS_MOCKS ), mock( TokenNameLookup.class ), mutableDependencies, mockedTokenHolders(), locksFactory,
-                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), IndexingService.NO_MONITOR, fs, transactionMonitor, databaseHealth,
-                mock( LogFileCreationMonitor.class ), TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
+                mock( SchemaWriteGuard.class ), mock( TransactionEventHandlers.class ), fs, transactionMonitor, databaseHealth,
+                TransactionHeaderInformationFactory.DEFAULT, new CommunityCommitProcessFactory(),
                 pageCache, new StandardConstraintSemantics(), monitors,
                 new Tracers( "null", NullLog.getInstance(), monitors, jobScheduler, clock ),
                 mock( Procedures.class ), IOLimiter.UNLIMITED, databaseAvailabilityGuard, clock, new CanWrite(), new StoreCopyCheckPointMutex(),
@@ -210,11 +208,9 @@ public class DatabaseRule extends ExternalResource
         private final StatementLocksFactory statementLocksFactory;
         private final SchemaWriteGuard schemaWriteGuard;
         private final TransactionEventHandlers transactionEventHandlers;
-        private final IndexingService.Monitor indexingServiceMonitor;
         private final FileSystemAbstraction fs;
         private final TransactionMonitor transactionMonitor;
         private final DatabaseHealth databaseHealth;
-        private final LogFileCreationMonitor physicalLogMonitor;
         private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
         private final CommitProcessFactory commitProcessFactory;
         private final PageCache pageCache;
@@ -243,8 +239,8 @@ public class DatabaseRule extends ExternalResource
         TestDatabaseCreationContext( String databaseName, DatabaseLayout databaseLayout, Config config, IdGeneratorFactory idGeneratorFactory,
                 LogService logService, JobScheduler scheduler, TokenNameLookup tokenNameLookup, DependencyResolver dependencyResolver,
                 TokenHolders tokenHolders, StatementLocksFactory statementLocksFactory, SchemaWriteGuard schemaWriteGuard,
-                TransactionEventHandlers transactionEventHandlers, IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
-                TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth, LogFileCreationMonitor physicalLogMonitor,
+                TransactionEventHandlers transactionEventHandlers, FileSystemAbstraction fs,
+                TransactionMonitor transactionMonitor, DatabaseHealth databaseHealth,
                 TransactionHeaderInformationFactory transactionHeaderInformationFactory, CommitProcessFactory commitProcessFactory,
                 PageCache pageCache, ConstraintSemantics constraintSemantics,
                 Monitors monitors, Tracers tracers, Procedures procedures, IOLimiter ioLimiter, DatabaseAvailabilityGuard databaseAvailabilityGuard,
@@ -265,11 +261,9 @@ public class DatabaseRule extends ExternalResource
             this.statementLocksFactory = statementLocksFactory;
             this.schemaWriteGuard = schemaWriteGuard;
             this.transactionEventHandlers = transactionEventHandlers;
-            this.indexingServiceMonitor = indexingServiceMonitor;
             this.fs = fs;
             this.transactionMonitor = transactionMonitor;
             this.databaseHealth = databaseHealth;
-            this.physicalLogMonitor = physicalLogMonitor;
             this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
             this.commitProcessFactory = commitProcessFactory;
             this.pageCache = pageCache;
@@ -379,12 +373,6 @@ public class DatabaseRule extends ExternalResource
         }
 
         @Override
-        public IndexingService.Monitor getIndexingServiceMonitor()
-        {
-            return indexingServiceMonitor;
-        }
-
-        @Override
         public FileSystemAbstraction getFs()
         {
             return fs;
@@ -400,12 +388,6 @@ public class DatabaseRule extends ExternalResource
         public DatabaseHealth getDatabaseHealth()
         {
             return databaseHealth;
-        }
-
-        @Override
-        public LogFileCreationMonitor getPhysicalLogMonitor()
-        {
-            return physicalLogMonitor;
         }
 
         @Override

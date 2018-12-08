@@ -24,8 +24,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.CancelListener;
+import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.util.concurrent.BinaryLatch;
 
@@ -62,6 +62,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     //   or happens after the relevant handles have been added to the queue.
     long nextDeadlineNanos;
 
+    private final TimeBasedTaskScheduler scheduler;
     private final Group group;
     private final CopyOnWriteArrayList<CancelListener> cancelListeners;
     private final BinaryLatch handleRelease;
@@ -72,6 +73,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
     ScheduledJobHandle( TimeBasedTaskScheduler scheduler, Group group, Runnable task,
                         long nextDeadlineNanos, long reschedulingDelayNanos )
     {
+        this.scheduler = scheduler;
         this.group = group;
         this.nextDeadlineNanos = nextDeadlineNanos;
         handleRelease = new BinaryLatch();
@@ -121,6 +123,7 @@ final class ScheduledJobHandle extends AtomicInteger implements JobHandle
         {
             cancelListener.cancelled( mayInterruptIfRunning );
         }
+        scheduler.cancelTask( this );
         // Release the handle to allow waitTermination() to observe the cancellation.
         handleRelease.release();
     }

@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory.module;
 import java.util.function.Function;
 
 import org.neo4j.common.TokenNameLookup;
-import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.CommitProcessFactory;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
-import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.core.TokenHolders;
@@ -59,7 +57,6 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
-import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
 import org.neo4j.kernel.impl.transaction.stats.DatabaseTransactionStats;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
@@ -86,11 +83,9 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     private final StatementLocksFactory statementLocksFactory;
     private final SchemaWriteGuard schemaWriteGuard;
     private final TransactionEventHandlers transactionEventHandlers;
-    private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
     private final DatabaseTransactionStats transactionStats;
     private final DatabaseHealth databaseHealth;
-    private final LogFileCreationMonitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
     private final PageCache pageCache;
@@ -135,16 +130,14 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
         this.statementLocksFactory = editionContext.getStatementLocksFactory();
         this.schemaWriteGuard = editionContext.getSchemaWriteGuard();
         this.transactionEventHandlers = new TransactionEventHandlers( facade );
-        this.monitors = new Monitors( platformModule.monitors );
-        this.indexingServiceMonitor = monitors.newMonitor( IndexingService.Monitor.class );
-        this.physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
+        this.monitors = platformModule.monitors;
         this.fs = platformModule.fileSystem;
         this.transactionStats = editionContext.getTransactionMonitor();
         this.eventHandlers = new DatabaseEventHandlers( logService.getInternalLog( DatabaseEventHandlers.class ) );
         this.databaseHealth = new DatabaseHealth( new DatabasePanicEventGenerator( eventHandlers ), logService.getInternalLog( DatabaseHealth.class ) );
         this.transactionHeaderInformationFactory = editionContext.getHeaderInformationFactory();
         this.commitProcessFactory = editionContext.getCommitProcessFactory();
-        this.pageCache = new DatabasePageCache( platformModule.pageCache );
+        this.pageCache = platformModule.pageCache;
         this.constraintSemantics = editionContext.getConstraintSemantics();
         this.tracers = platformModule.tracers;
         this.procedures = procedures;
@@ -245,12 +238,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     }
 
     @Override
-    public IndexingService.Monitor getIndexingServiceMonitor()
-    {
-        return indexingServiceMonitor;
-    }
-
-    @Override
     public FileSystemAbstraction getFs()
     {
         return fs;
@@ -266,12 +253,6 @@ public class ModularDatabaseCreationContext implements DatabaseCreationContext
     public DatabaseHealth getDatabaseHealth()
     {
         return databaseHealth;
-    }
-
-    @Override
-    public LogFileCreationMonitor getPhysicalLogMonitor()
-    {
-        return physicalLogMonitor;
     }
 
     @Override

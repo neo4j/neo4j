@@ -66,7 +66,7 @@ public class DelayedBuffer<T>
     private final long[] chunk;
     private int chunkCursor;
 
-    public DelayedBuffer( Supplier<T> thresholdSupplier, Predicate<T> safeThreshold, int chunkSize,
+    DelayedBuffer( Supplier<T> thresholdSupplier, Predicate<T> safeThreshold, int chunkSize,
             Consumer<long[]> chunkConsumer )
     {
         assert chunkSize > 0;

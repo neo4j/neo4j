@@ -25,11 +25,12 @@ import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 import org.neo4j.common.TokenNameLookup;
+import org.neo4j.dbms.database.DatabaseConfig;
+import org.neo4j.dbms.database.DatabasePageCache;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.availability.AvailabilityGuard;
 import org.neo4j.kernel.availability.DatabaseAvailability;
 import org.neo4j.kernel.availability.DatabaseAvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.SettingChangeListener;
 import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -77,6 +79,7 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.locking.StatementLocksFactory;
+import org.neo4j.kernel.impl.pagecache.PageCacheLifecycle;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.query.QueryExecutionEngine;
@@ -147,14 +150,16 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 public class Database extends LifecycleAdapter
 {
-    private final Monitors monitors;
+    // TODO: delete global fields for objects that used during construction only?
+
+    private final Monitors globalMonitors;
     private final Tracers tracers;
 
     private final Log msgLog;
     private final LogService logService;
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
-    private final DependencyResolver dependencyResolver;
+    private final DependencyResolver globalDependencies;
     private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
     private final StatementLocksFactory statementLocksFactory;
@@ -162,16 +167,14 @@ public class Database extends LifecycleAdapter
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
     private final JobScheduler scheduler;
-    private final Config config;
+    private final DatabaseConfig config;
     private final LockService lockService;
-    private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
     private final TransactionMonitor transactionMonitor;
     private final DatabaseHealth databaseHealth;
-    private final LogFileCreationMonitor physicalLogMonitor;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
-    private final PageCache pageCache;
+    private final PageCache globalPageCache;
     private final ConstraintSemantics constraintSemantics;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
@@ -204,15 +207,16 @@ public class Database extends LifecycleAdapter
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private volatile boolean started;
+    private Monitors monitors;
 
     public Database( DatabaseCreationContext context )
     {
         this.databaseName = context.getDatabaseName();
         this.databaseLayout = context.getDatabaseLayout();
-        this.config = context.getConfig();
+        this.config = new DatabaseConfig( context.getConfig() );
         this.idGeneratorFactory = context.getIdGeneratorFactory();
         this.tokenNameLookup = context.getTokenNameLookup();
-        this.dependencyResolver = context.getGlobalDependencies();
+        this.globalDependencies = context.getGlobalDependencies();
         this.scheduler = context.getScheduler();
         this.logService = context.getLogService();
         this.storeCopyCheckPointMutex = context.getStoreCopyCheckPointMutex();
@@ -223,14 +227,12 @@ public class Database extends LifecycleAdapter
         this.statementLocksFactory = context.getStatementLocksFactory();
         this.schemaWriteGuard = context.getSchemaWriteGuard();
         this.transactionEventHandlers = context.getTransactionEventHandlers();
-        this.indexingServiceMonitor = context.getIndexingServiceMonitor();
         this.fs = context.getFs();
         this.transactionMonitor = context.getTransactionMonitor();
         this.databaseHealth = context.getDatabaseHealth();
-        this.physicalLogMonitor = context.getPhysicalLogMonitor();
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
-        this.monitors = context.getMonitors();
+        this.globalMonitors = context.getMonitors();
         this.tracers = context.getTracers();
         this.procedures = context.getProcedures();
         this.ioLimiter = context.getIoLimiter();
@@ -250,15 +252,12 @@ public class Database extends LifecycleAdapter
         this.msgLog = logProvider.getLog( getClass() );
         this.lockService = new ReentrantLockService();
         this.commitProcessFactory = context.getCommitProcessFactory();
-        this.pageCache = context.getPageCache();
+        this.globalPageCache = context.getPageCache();
         this.collectionsFactorySupplier = context.getCollectionsFactorySupplier();
         this.databaseAvailability = context.getDatabaseAvailability();
         this.databaseMigratorFactory = context.getDatabaseMigratorFactory();
     }
 
-    // We do our own internal life management:
-    // start() does life.init() and life.start(),
-    // stop() does life.stop() and life.shutdown().
     @Override
     public void start()
     {
@@ -268,7 +267,14 @@ public class Database extends LifecycleAdapter
         }
         try
         {
-            dataSourceDependencies = new Dependencies( dependencyResolver );
+            life = new LifeSupport();
+            life.add( config );
+            dataSourceDependencies = new Dependencies( globalDependencies );
+
+            DatabasePageCache pageCache = new DatabasePageCache( globalPageCache );
+            monitors = new Monitors( globalMonitors );
+            LogFileCreationMonitor physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
+
             dataSourceDependencies.satisfyDependency( this );
             dataSourceDependencies.satisfyDependency( monitors );
             dataSourceDependencies.satisfyDependency( pageCache );
@@ -283,12 +289,12 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( idGeneratorFactory );
             dataSourceDependencies.satisfyDependency( idController );
             dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+            dataSourceDependencies.satisfyDependency( lockService );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             dataSourceDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
-            dataSourceDependencies.satisfyDependency( lockService );
 
-            life = new LifeSupport();
+            life.add( new PageCacheLifecycle( pageCache ) );
             life.add( initializeExtensions( dataSourceDependencies ) );
 
             DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
@@ -320,7 +326,8 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine( databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier, recoveryCleanupWorkCollector );
+            storageEngine = buildStorageEngine( pageCache, databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier,
+                    recoveryCleanupWorkCollector, monitors );
             life.add( logFiles );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
@@ -328,7 +335,7 @@ public class Database extends LifecycleAdapter
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
             DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore );
+                    buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore, monitors );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
             final DatabaseKernelModule kernelModule =
@@ -345,7 +352,6 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
-            dataSourceDependencies.satisfyDependency( this );
 
             executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
         }
@@ -355,7 +361,7 @@ public class Database extends LifecycleAdapter
             msgLog.warn( "Exception occurred while setting up store modules. Attempting to close things down.", e );
             try
             {
-                // Close the neostore, so that locks are released properly
+                // Close the storage engine, so that locks are released properly
                 if ( storageEngine != null )
                 {
                     storageEngine.forceClose();
@@ -363,13 +369,13 @@ public class Database extends LifecycleAdapter
             }
             catch ( Exception closeException )
             {
-                msgLog.error( "Couldn't close neostore after startup failure", closeException );
+                msgLog.error( "Couldn't close database after startup failure", closeException );
             }
             throwIfUnchecked( e );
             throw new RuntimeException( e );
         }
 
-        dependencyResolver.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
+        dataSourceDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
         life.add( databaseAvailability );
         life.setLast( lifecycleToTriggerCheckPointOnShutdown() );
@@ -385,12 +391,11 @@ public class Database extends LifecycleAdapter
             try
             {
                 life.shutdown();
-                // Close the neostore, so that locks are released properly
                 storageEngine.forceClose();
             }
             catch ( Exception closeException )
             {
-                msgLog.error( "Couldn't close neostore after startup failure", closeException );
+                msgLog.error( "Couldn't close database after startup failure", closeException );
             }
             throw new RuntimeException( e );
         }
@@ -423,13 +428,13 @@ public class Database extends LifecycleAdapter
         databaseMigrator.migrate();
     }
 
-    private StorageEngine buildStorageEngine( SchemaState schemaState, OperationalMode operationalMode, VersionContextSupplier versionContextSupplier,
-            RecoveryCleanupWorkCollector recoveryCleanupWorkCollector )
+    private StorageEngine buildStorageEngine( PageCache pageCache, SchemaState schemaState, OperationalMode operationalMode,
+            VersionContextSupplier versionContextSupplier, RecoveryCleanupWorkCollector recoveryCleanupWorkCollector, Monitors monitors )
     {
         RecordStorageEngine storageEngine =
                 new RecordStorageEngine( databaseLayout, config, pageCache, fs, logProvider, userLogProvider, tokenHolders,
                         schemaState, constraintSemantics, scheduler,
-                        tokenNameLookup, lockService, indexProviderMap, indexingServiceMonitor, databaseHealth,
+                        tokenNameLookup, lockService, indexProviderMap, monitors.newMonitor( IndexingService.Monitor.class ), databaseHealth,
                         idGeneratorFactory, idController, monitors,
                         recoveryCleanupWorkCollector,
                         operationalMode, versionContextSupplier );
@@ -444,7 +449,7 @@ public class Database extends LifecycleAdapter
 
     private DatabaseTransactionLogModule buildTransactionLogs( LogFiles logFiles, Config config,
             LogProvider logProvider, JobScheduler scheduler, StorageEngine storageEngine,
-            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, TransactionIdStore transactionIdStore )
+            LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader, TransactionIdStore transactionIdStore, Monitors monitors )
     {
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
         if ( config.get( GraphDatabaseSettings.ephemeral ) )
@@ -527,7 +532,7 @@ public class Database extends LifecycleAdapter
     private AtomicReference<CpuClock> setupCpuClockAtomicReference()
     {
         AtomicReference<CpuClock> cpuClock = new AtomicReference<>( CpuClock.NOT_AVAILABLE );
-        BiConsumer<Boolean,Boolean> cpuClockUpdater = ( before, after ) ->
+        SettingChangeListener<Boolean> cpuClockUpdater = ( before, after ) ->
         {
             if ( after )
             {
@@ -546,7 +551,7 @@ public class Database extends LifecycleAdapter
     private AtomicReference<HeapAllocation> setupHeapAllocationAtomicReference()
     {
         AtomicReference<HeapAllocation> heapAllocation = new AtomicReference<>( HeapAllocation.NOT_AVAILABLE );
-        BiConsumer<Boolean,Boolean> heapAllocationUpdater = ( before, after ) ->
+        SettingChangeListener<Boolean> heapAllocationUpdater = ( before, after ) ->
         {
             if ( after )
             {

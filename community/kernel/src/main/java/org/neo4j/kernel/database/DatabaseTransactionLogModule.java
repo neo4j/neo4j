@@ -46,11 +46,6 @@ class DatabaseTransactionLogModule
         this.appender = appender;
     }
 
-    public LogicalTransactionStore logicalTransactionStore()
-    {
-        return logicalTransactionStore;
-    }
-
     CheckPointer checkPointing()
     {
         return checkPointer;

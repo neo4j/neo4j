@@ -55,6 +55,7 @@ public class DataCollectorManager extends LifecycleAdapter
     public void start() throws Throwable
     {
         // When we have multiple dbs, this has to be suitably modified to get the right kernel and procedures
+        // TODO setup of these procedures and their lifecycle/expectations are incorrect and need to updated
         Database databaseContext = databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) ).get().getDatabase();
         dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, databaseContext.getKernel() ) );
     }

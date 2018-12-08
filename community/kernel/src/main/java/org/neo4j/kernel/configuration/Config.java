@@ -36,7 +36,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.function.BiConsumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -60,6 +59,7 @@ import org.neo4j.logging.BufferingLog;
 import org.neo4j.logging.Log;
 
 import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.configuration.Connector.ConnectorType.BOLT;
@@ -83,7 +83,7 @@ public class Config implements Configuration
 
     private final Map<String,String> params = new CopyOnWriteHashMap<>(); // Read heavy workload
     private final Map<String,Object> parsedParams = new CopyOnWriteHashMap<>(); // Read heavy workload
-    private final Map<String, Collection<BiConsumer<String,String>>> updateListeners = new ConcurrentHashMap<>();
+    private final Map<String, Collection<DynamicUpdateListener>> updateListeners = new ConcurrentHashMap<>();
     private final ConfigurationMigrator migrator;
     private final List<ConfigurationValidator> validators = new ArrayList<>();
     private final Map<String,String> overriddenDefaults = new CopyOnWriteHashMap<>();
@@ -379,6 +379,11 @@ public class Config implements Configuration
     public static Config defaults( @Nonnull final Setting<?> setting, final String value )
     {
         return builder().withSetting( setting, value ).build();
+    }
+
+    protected Config()
+    {
+        this( null, false, emptyMap(), emptyMap(), emptyList(), emptyList() );
     }
 
     private Config( File configFile,
@@ -699,25 +704,27 @@ public class Config implements Configuration
      * @param listener The listener callback that will be notified of any configuration changes to the given setting.
      * @param <V> The value type of the setting.
      */
-    public <V> void registerDynamicUpdateListener( Setting<V> setting, BiConsumer<V,V> listener )
+    public <V> void registerDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> listener )
     {
         String settingName = setting.name();
         verifyValidDynamicSetting( settingName );
-        BiConsumer<String,String> projectedListener = ( oldValStr, newValStr ) ->
-        {
-            try
-            {
-                V oldVal = setting.apply( s -> oldValStr );
-                V newVal = setting.apply( s -> newValStr );
-                listener.accept( oldVal, newVal );
-            }
-            catch ( Exception e )
-            {
-                log.error( "Failure when notifying listeners after dynamic setting change; " +
-                           "new setting might not have taken effect: " + e.getMessage(), e );
-            }
-        };
+        DynamicUpdateListener projectedListener = new DynamicUpdateListener<>( setting, listener );
         updateListeners.computeIfAbsent( settingName, k -> new ConcurrentLinkedQueue<>() ).add( projectedListener );
+    }
+
+    /**
+     * Remove listener of dynamic updates to the given setting.
+     * @param setting The {@link Setting} that was listen for changes.
+     * @param externalListener previously registered callback
+     * @param <V> The value type of the setting.
+     */
+    public <V> void unregisterDynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> externalListener )
+    {
+        updateListeners.computeIfPresent( setting.name(), ( s, dynamicUpdateListeners ) ->
+        {
+            dynamicUpdateListeners.removeIf( listener -> listener.getExternalListener().equals( externalListener ) );
+            return dynamicUpdateListeners.isEmpty() ? null : dynamicUpdateListeners;
+        } );
     }
 
     /**
@@ -755,9 +762,12 @@ public class Config implements Configuration
                 .collect( Collectors.toList() );
 
         // Validate settings
-        Map<String,String> additionalSettings =
-                new IndividualSettingsValidator( settingValidators, warnOnUnknownSettings ).validate( this, log );
-        params.putAll( additionalSettings );
+        if ( !settingValidators.isEmpty() )
+        {
+            Map<String,String> additionalSettings =
+                    new IndividualSettingsValidator( settingValidators, warnOnUnknownSettings ).validate( this, log );
+            params.putAll( additionalSettings );
+        }
 
         // Validate configuration
         for ( ConfigurationValidator validator : validators )
@@ -964,5 +974,37 @@ public class Config implements Configuration
                 .sorted( Comparator.comparing( Map.Entry::getKey ) )
                 .map( entry -> entry.getKey() + "=" + entry.getValue() )
                 .collect( Collectors.joining( ", ") );
+    }
+
+    private class DynamicUpdateListener<V> implements SettingChangeListener<String>
+    {
+        private final Setting<V> setting;
+        private final SettingChangeListener<V> externalListener;
+
+        DynamicUpdateListener( Setting<V> setting, SettingChangeListener<V> externalListener )
+        {
+            this.setting = setting;
+            this.externalListener = externalListener;
+        }
+
+        SettingChangeListener<V> getExternalListener()
+        {
+            return externalListener;
+        }
+
+        @Override
+        public void accept( String oldValStr, String newValStr )
+        {
+            try
+            {
+                V oldVal = setting.apply( s -> oldValStr );
+                V newVal = setting.apply( s -> newValStr );
+                externalListener.accept( oldVal, newVal );
+            }
+            catch ( Exception e )
+            {
+                log.error( "Failure when notifying listeners after dynamic setting change;new setting might not have taken effect: " + e.getMessage(), e );
+            }
+        }
     }
 }
