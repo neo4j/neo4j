@@ -18,26 +18,19 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.neo4j.internal.collector;
+import java.util.Map;
 
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.scheduler.JobScheduler;
-
-public class DataCollector implements AutoCloseable
+@SuppressWarnings( "WeakerAccess" )
+public class StatusResult
 {
-    final Kernel kernel;
-    final JobScheduler jobScheduler;
-    final QueryCollector queryCollector;
+    public final String section;
+    public final String status;
+    public final Map<String, Object> data;
 
-    DataCollector( Kernel kernel, JobScheduler jobScheduler )
+    public StatusResult( String section, String status, Map<String,Object> data )
     {
-        this.kernel = kernel;
-        this.jobScheduler = jobScheduler;
-        this.queryCollector = new QueryCollector();
-    }
-
-    @Override
-    public void close()
-    {
-        // intended to eventually be used to stop any ongoing collection
+        this.section = section;
+        this.status = status;
+        this.data = data;
     }
 }

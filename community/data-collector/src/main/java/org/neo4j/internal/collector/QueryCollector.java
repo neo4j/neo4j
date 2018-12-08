@@ -19,25 +19,23 @@
  */
 package org.neo4j.internal.collector;
 
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.scheduler.JobScheduler;
-
-public class DataCollector implements AutoCloseable
+final class QueryCollector extends CollectorStateMachine
 {
-    final Kernel kernel;
-    final JobScheduler jobScheduler;
-    final QueryCollector queryCollector;
-
-    DataCollector( Kernel kernel, JobScheduler jobScheduler )
+    @Override
+    Result doCollect()
     {
-        this.kernel = kernel;
-        this.jobScheduler = jobScheduler;
-        this.queryCollector = new QueryCollector();
+        return success( "Collection started." );
     }
 
     @Override
-    public void close()
+    Result doStop()
     {
-        // intended to eventually be used to stop any ongoing collection
+        return success( "Collection stopped." );
+    }
+
+    @Override
+    Result doClear()
+    {
+        return success( "Data cleared." );
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector;
 
 import java.time.ZonedDateTime;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -75,5 +76,41 @@ public class DataCollectorProcedures
         Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
 
         return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel, Anonymizer.IDS ) );
+    }
+
+    @Admin
+    @Description( "Retrieve the status of all available collector daemons, for this database." )
+    @Procedure( name = "db.stats.status", mode = Mode.READ )
+    public Stream<StatusResult> status()
+    {
+        CollectorStateMachine.Status status = dataCollector.queryCollector.status();
+        return Stream.of( new StatusResult( QueriesSection.NAME, status.message, Collections.emptyMap() ) );
+    }
+
+    @Admin
+    @Description( "Start data collection of a given data section." )
+    @Procedure( name = "db.stats.collect", mode = Mode.READ )
+    public Stream<ActionResult> collect( @Name( value = "section" ) String section )
+    {
+        CollectorStateMachine.Result result = dataCollector.queryCollector.collect();
+        return Stream.of( new ActionResult( section, result.success, result.message ) );
+    }
+
+    @Admin
+    @Description( "Stop data collection of a given data section." )
+    @Procedure( name = "db.stats.stop", mode = Mode.READ )
+    public Stream<ActionResult> stop( @Name( value = "section" ) String section )
+    {
+        CollectorStateMachine.Result result = dataCollector.queryCollector.stop();
+        return Stream.of( new ActionResult( section, result.success, result.message ) );
+    }
+
+    @Admin
+    @Description( "Clear collected data of a given data section." )
+    @Procedure( name = "db.stats.clear", mode = Mode.READ )
+    public Stream<ActionResult> clear( @Name( value = "section" ) String section )
+    {
+        CollectorStateMachine.Result result = dataCollector.queryCollector.clear();
+        return Stream.of( new ActionResult( section, result.success, result.message ) );
     }
 }

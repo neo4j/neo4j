@@ -19,25 +19,17 @@
  */
 package org.neo4j.internal.collector;
 
-import org.neo4j.internal.kernel.api.Kernel;
-import org.neo4j.scheduler.JobScheduler;
-
-public class DataCollector implements AutoCloseable
+@SuppressWarnings( "WeakerAccess" )
+public class ActionResult
 {
-    final Kernel kernel;
-    final JobScheduler jobScheduler;
-    final QueryCollector queryCollector;
+    public final String section;
+    public final boolean success;
+    public final String message;
 
-    DataCollector( Kernel kernel, JobScheduler jobScheduler )
+    public ActionResult( String section, boolean success, String message )
     {
-        this.kernel = kernel;
-        this.jobScheduler = jobScheduler;
-        this.queryCollector = new QueryCollector();
-    }
-
-    @Override
-    public void close()
-    {
-        // intended to eventually be used to stop any ongoing collection
+        this.section = section;
+        this.success = success;
+        this.message = message;
     }
 }
