@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector;
 
 import java.time.ZonedDateTime;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -41,9 +42,11 @@ public class DataCollectorProcedures
     @Context
     public DataCollector dataCollector;
 
+    private static String[] SECTIONS = {GraphCountsSection.NAME, TokensSection.NAME, QueriesSection.NAME};
+
     @Admin
-    @Description( "Retrieve statistical data about the current database. Available sections are '" +
-                  GraphCountsSection.NAME + "', '" + TokensSection.NAME + "'" )
+    @Description( "Retrieve statistical data about the current database. Valid sections are '" +
+                  GraphCountsSection.NAME + "', '" + TokensSection.NAME + "', '" + QueriesSection.NAME + "'" )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
             throws InvalidArgumentsException, IndexNotFoundKernelException, TransactionFailureException
@@ -57,9 +60,11 @@ public class DataCollectorProcedures
         case TokensSection.NAME:
             return TokensSection.collect( dataCollector.kernel );
 
+        case QueriesSection.NAME:
+            throw new UnsupportedOperationException( "not implemented" );
+
         default:
-            throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s', '%s']",
-                                                                section, GraphCountsSection.NAME, TokensSection.NAME ) );
+            throw unknownSectionException( section );
         }
     }
 
@@ -90,27 +95,47 @@ public class DataCollectorProcedures
     @Admin
     @Description( "Start data collection of a given data section." )
     @Procedure( name = "db.stats.collect", mode = Mode.READ )
-    public Stream<ActionResult> collect( @Name( value = "section" ) String section )
+    public Stream<ActionResult> collect( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
-        CollectorStateMachine.Result result = dataCollector.queryCollector.collect();
+        CollectorStateMachine.Result result = collectorStateMachine( section ).collect();
         return Stream.of( new ActionResult( section, result.success, result.message ) );
     }
 
     @Admin
     @Description( "Stop data collection of a given data section." )
     @Procedure( name = "db.stats.stop", mode = Mode.READ )
-    public Stream<ActionResult> stop( @Name( value = "section" ) String section )
+    public Stream<ActionResult> stop( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
-        CollectorStateMachine.Result result = dataCollector.queryCollector.stop();
+        CollectorStateMachine.Result result = collectorStateMachine( section ).stop();
         return Stream.of( new ActionResult( section, result.success, result.message ) );
     }
 
     @Admin
     @Description( "Clear collected data of a given data section." )
     @Procedure( name = "db.stats.clear", mode = Mode.READ )
-    public Stream<ActionResult> clear( @Name( value = "section" ) String section )
+    public Stream<ActionResult> clear( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
-        CollectorStateMachine.Result result = dataCollector.queryCollector.clear();
+        CollectorStateMachine.Result result = collectorStateMachine( section ).clear();
         return Stream.of( new ActionResult( section, result.success, result.message ) );
+    }
+
+    private QueryCollector collectorStateMachine( String section ) throws InvalidArgumentsException
+    {
+        switch ( section )
+        {
+        case TokensSection.NAME:
+        case GraphCountsSection.NAME:
+            throw new InvalidArgumentsException( "Section '%s' does not have to be explicitly collected, it can always be directly retrieved." );
+        case QueriesSection.NAME:
+            return dataCollector.queryCollector;
+        default:
+            throw unknownSectionException( section );
+        }
+    }
+
+    private InvalidArgumentsException unknownSectionException( @Name( "section" ) String section )
+    {
+        return new InvalidArgumentsException( String.format( "Unknown section '%s', known sections are %s",
+                                                             section, Arrays.toString( SECTIONS ) ) );
     }
 }

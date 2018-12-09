@@ -142,6 +142,30 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     assertStatus(HAS_DATA)
   }
 
+  test("collect/stop/clear of invalid section should throw") {
+    assertInvalidArgument("CALL db.stats.collect('TeddyBear')")
+    assertInvalidArgument("CALL db.stats.stop('TeddyBear')")
+    assertInvalidArgument("CALL db.stats.clear('TeddyBear')")
+    assertInvalidArgument("CALL db.stats.collect('TOKENS')")
+    assertInvalidArgument("CALL db.stats.stop('TOKENS')")
+    assertInvalidArgument("CALL db.stats.clear('TOKENS')")
+    assertInvalidArgument("CALL db.stats.collect('GRAPH COUNTS')")
+    assertInvalidArgument("CALL db.stats.stop('GRAPH COUNTS')")
+    assertInvalidArgument("CALL db.stats.clear('GRAPH COUNTS')")
+  }
+
+  private def assertInvalidArgument(query: String): Unit = {
+     try {
+       execute(query)
+     } catch {
+       case e: CypherExecutionException =>
+         e.status should be(org.neo4j.kernel.api.exceptions.Status.General.InvalidArguments)
+       case x =>
+         x shouldBe a[CypherExecutionException]
+     }
+
+  }
+
   private def assertStatus(status: String): Unit = {
     val res = execute("CALL db.stats.status()").single
     res should beMapContaining(
