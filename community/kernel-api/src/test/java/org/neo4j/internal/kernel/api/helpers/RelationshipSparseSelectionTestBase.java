@@ -19,13 +19,13 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.internal.kernel.api.RelationshipTraversalCursor;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class RelationshipSparseSelectionTestBase<Traverser extends RelationshipSparseSelection>
         extends RelationshipSelectionTestBase
@@ -56,7 +56,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
                             .loop( 8, typeB )
                             .loop( 9, typeC ) );
 
-    @Before
+    @BeforeEach
     public void rewindInner()
     {
         innerByDir.rewind();
@@ -66,7 +66,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     protected abstract Traverser make();
 
     @Test
-    public void shouldSelectOutgoing()
+    void shouldSelectOutgoing()
     {
         // given
         Traverser traverser = make();
@@ -85,7 +85,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     }
 
     @Test
-    public void shouldSelectIncoming()
+    void shouldSelectIncoming()
     {
         // given
         Traverser traverser = make();
@@ -104,7 +104,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     }
 
     @Test
-    public void shouldSelectAll()
+    void shouldSelectAll()
     {
         // given
         Traverser traverser = make();
@@ -126,7 +126,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     }
 
     @Test
-    public void shouldSelectOutgoingOfType()
+    void shouldSelectOutgoingOfType()
     {
         // given
         Traverser traverser = make();
@@ -143,7 +143,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     }
 
     @Test
-    public void shouldSelectIncomingOfType()
+    void shouldSelectIncomingOfType()
     {
         // given
         Traverser traverser = make();
@@ -160,7 +160,7 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     }
 
     @Test
-    public void shouldSelectAllOfType()
+    void shouldSelectAllOfType()
     {
         // given
         Traverser traverser = make();
@@ -255,6 +255,6 @@ public abstract class RelationshipSparseSelectionTestBase<Traverser extends Rela
     private void assertEmptyAndClosed( Traverser traverser, RelationshipTraversalCursor inner )
     {
         assertEmpty( traverser );
-        assertTrue( "closed traversal cursor", inner.isClosed() );
+        assertTrue( inner.isClosed(), "closed traversal cursor" );
     }
 }

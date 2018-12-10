@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
 import java.util.List;
@@ -35,10 +35,10 @@ import org.neo4j.values.storable.ValueGroup;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -58,7 +58,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
         extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void shouldSeeSingleRelationshipInTransaction() throws Exception
+    void shouldSeeSingleRelationshipInTransaction() throws Exception
     {
         int label;
         long n1, n2;
@@ -80,21 +80,21 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( r, relationship );
-                assertTrue( "should find relationship", relationship.next() );
+                assertTrue( relationship.next(), "should find relationship" );
 
                 assertEquals( label, relationship.type() );
                 assertEquals( n1, relationship.sourceNodeReference() );
                 assertEquals( n2, relationship.targetNodeReference() );
                 assertEquals( r, relationship.relationshipReference() );
 
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldNotSeeSingleRelationshipWhichWasDeletedInTransaction() throws Exception
+    void shouldNotSeeSingleRelationshipWhichWasDeletedInTransaction() throws Exception
     {
         int label;
         long n1, n2, r;
@@ -113,18 +113,18 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( Transaction tx = beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
             {
                 tx.dataRead().singleRelationship( r, relationship );
-                assertFalse( "should not find relationship", relationship.next() );
+                assertFalse( relationship.next(), "should not find relationship" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldScanRelationshipInTransaction() throws Exception
+    void shouldScanRelationshipInTransaction() throws Exception
     {
         final int nRelationshipsInStore = 10;
 
@@ -155,7 +155,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldNotScanRelationshipWhichWasDeletedInTransaction() throws Exception
+    void shouldNotScanRelationshipWhichWasDeletedInTransaction() throws Exception
     {
         final int nRelationshipsInStore = 5 + 1 + 5;
 
@@ -176,7 +176,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
 
         try ( Transaction tx = beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             try ( RelationshipScanCursor relationship = tx.cursors().allocateRelationshipScanCursor() )
             {
                 tx.dataRead().allRelationshipsScan( relationship );
@@ -187,7 +187,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeRelationshipInTransaction() throws Exception
+    void shouldSeeRelationshipInTransaction() throws Exception
     {
         long n1, n2;
         try ( Transaction tx = beginTransaction() )
@@ -205,20 +205,20 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.allRelationships( relationship );
-                assertTrue( "should find relationship", relationship.next() );
+                assertTrue( relationship.next(), "should find relationship" );
                 assertEquals( r, relationship.relationshipReference() );
 
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldNotSeeRelationshipDeletedInTransaction() throws Exception
+    void shouldNotSeeRelationshipDeletedInTransaction() throws Exception
     {
         long n1, n2, r;
         try ( Transaction tx = beginTransaction() )
@@ -239,17 +239,17 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.allRelationships( relationship );
-                assertFalse( "should not find relationship", relationship.next() );
+                assertFalse( relationship.next(), "should not find relationship" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldSeeRelationshipInTransactionBeforeCursorInitialization() throws Exception
+    void shouldSeeRelationshipInTransactionBeforeCursorInitialization() throws Exception
     {
         long n1, n2;
         try ( Transaction tx = beginTransaction() )
@@ -267,69 +267,69 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   RelationshipTraversalCursor relationship = tx.cursors().allocateRelationshipTraversalCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.allRelationships( relationship );
-                assertTrue( "should find relationship", relationship.next() );
+                assertTrue( relationship.next(), "should find relationship" );
                 assertEquals( r, relationship.relationshipReference() );
 
                 tx.dataWrite().relationshipCreate( n1, label, n2 ); // should not be seen
-                assertFalse( "should not find relationship added after cursor init", relationship.next() );
+                assertFalse( relationship.next(), "should not find relationship added after cursor init" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroups() throws Exception
+    void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
         traverseWithoutGroups( sparse( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroups() throws Exception
+    void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
         traverseWithoutGroups( RelationshipTestSupport.dense( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         traverseWithoutGroups( sparse( graphDb ), true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
         traverseWithoutGroups( RelationshipTestSupport.dense( graphDb ), true );
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroups() throws Exception
+    void shouldTraverseSparseNodeViaGroups() throws Exception
     {
         traverseViaGroups( sparse( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroups() throws Exception
+    void shouldTraverseDenseNodeViaGroups() throws Exception
     {
         traverseViaGroups( RelationshipTestSupport.dense( graphDb ), false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( sparse( graphDb ), true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( RelationshipTestSupport.dense( graphDb ), true );
     }
 
     @Test
-    public void shouldSeeNewRelationshipPropertyInTransaction() throws Exception
+    void shouldSeeNewRelationshipPropertyInTransaction() throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -349,10 +349,10 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( n1, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
                 node.allRelationships( relationship );
 
-                assertTrue( "should access relationship", relationship.next() );
+                assertTrue( relationship.next(), "should access relationship" );
 
                 relationship.properties( property );
 
@@ -372,14 +372,14 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                 }
 
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldSeeAddedPropertyFromExistingRelationshipWithoutPropertiesInTransaction() throws Exception
+    void shouldSeeAddedPropertyFromExistingRelationshipWithoutPropertiesInTransaction() throws Exception
     {
         // Given
         long relationshipId;
@@ -403,15 +403,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
-                assertTrue( "should access relationship", relationship.next() );
+                assertTrue( relationship.next(), "should access relationship" );
 
                 relationship.properties( property );
                 assertTrue( property.next() );
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "hello" ) );
 
-                assertFalse( "should only find one properties", property.next() );
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( property.next(), "should only find one properties" );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
 
             tx.success();
@@ -425,7 +425,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeAddedPropertyFromExistingRelationshipWithPropertiesInTransaction() throws Exception
+    void shouldSeeAddedPropertyFromExistingRelationshipWithPropertiesInTransaction() throws Exception
     {
         // Given
         long relationshipId;
@@ -455,7 +455,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
-                assertTrue( "should access relationship", relationship.next() );
+                assertTrue( relationship.next(), "should access relationship" );
 
                 relationship.properties( property );
 
@@ -476,7 +476,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                     }
                 }
 
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
             tx.success();
         }
@@ -490,7 +490,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeUpdatedPropertyFromExistingRelationshipWithPropertiesInTransaction() throws Exception
+    void shouldSeeUpdatedPropertyFromExistingRelationshipWithPropertiesInTransaction() throws Exception
     {
         // Given
         long relationshipId;
@@ -516,7 +516,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
-                assertTrue( "should access relationship", relationship.next() );
+                assertTrue( relationship.next(), "should access relationship" );
 
                 relationship.properties( property );
 
@@ -524,8 +524,8 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should only find one property", property.next() );
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( property.next(), "should only find one property" );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
 
             tx.success();
@@ -539,7 +539,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldNotSeeRemovedPropertyInTransaction() throws Exception
+    void shouldNotSeeRemovedPropertyInTransaction() throws Exception
     {
         // Given
         long relationshipId;
@@ -565,11 +565,11 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
-                assertTrue( "should access relationship", relationship.next() );
+                assertTrue( relationship.next(), "should access relationship" );
 
                 relationship.properties( property );
-                assertFalse( "should not find any properties", property.next() );
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( property.next(), "should not find any properties" );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
 
             tx.success();
@@ -583,7 +583,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
+    void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
     {
         // Given
         long relationshipId;
@@ -611,15 +611,15 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleRelationship( relationshipId, relationship );
-                assertTrue( "should access relationship", relationship.next() );
+                assertTrue( relationship.next(), "should access relationship" );
 
                 relationship.properties( property );
                 assertTrue( property.next() );
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should not find any properties", property.next() );
-                assertFalse( "should only find one relationship", relationship.next() );
+                assertFalse( property.next(), "should not find any properties" );
+                assertFalse( relationship.next(), "should only find one relationship" );
             }
 
             tx.success();
@@ -633,7 +633,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldCountFromTxState() throws Exception
+    void shouldCountFromTxState() throws Exception
     {
         //dense outgoing
         assertCount( 100, OUT, group ->
@@ -687,7 +687,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void groupCursorShouldSeeNewTypes() throws Exception
+    void groupCursorShouldSeeNewTypes() throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -749,7 +749,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void groupCursorShouldAddToCountFromTxState() throws Exception
+    void groupCursorShouldAddToCountFromTxState() throws Exception
     {
         long start;
         long existingRelationship;
@@ -790,7 +790,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void groupCursorShouldSeeBothOldAndNewRelationshipsFromSparseNode() throws Exception
+    void groupCursorShouldSeeBothOldAndNewRelationshipsFromSparseNode() throws Exception
     {
         long start;
         long existingRelationship;
@@ -848,7 +848,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void groupCursorShouldSeeBothOldAndNewRelationshipsFromDenseNode() throws Exception
+    void groupCursorShouldSeeBothOldAndNewRelationshipsFromDenseNode() throws Exception
     {
         long start;
         long existingRelationship;
@@ -917,7 +917,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void groupCursorShouldNewRelationshipBetweenAlreadyConnectedSparseNodes() throws Exception
+    void groupCursorShouldNewRelationshipBetweenAlreadyConnectedSparseNodes() throws Exception
     {
         long start;
         long end;
@@ -961,7 +961,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void groupCursorShouldNewRelationshipBetweenAlreadyConnectedDenseNodes() throws Exception
+    void groupCursorShouldNewRelationshipBetweenAlreadyConnectedDenseNodes() throws Exception
     {
         long start;
         long end;
@@ -1025,7 +1025,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldCountNewRelationships() throws Exception
+    void shouldCountNewRelationships() throws Exception
     {
         int relationship;
         try ( Transaction tx = beginTransaction() )
@@ -1050,7 +1050,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void shouldNotCountRemovedRelationships() throws Exception
+    void shouldNotCountRemovedRelationships() throws Exception
     {
         int relationshipId;
         long relationship;
@@ -1139,7 +1139,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
                 // when
                 tx.dataRead().singleNode( start.id, node );
 
-                assertTrue( "access node", node.next() );
+                assertTrue( node.next(), "access node" );
                 if ( detached )
                 {
                     tx.dataRead().relationships( start.id, node.allRelationshipsReference(), relationship );
@@ -1173,7 +1173,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
             {
                 // when
                 read.singleNode( start.id, node );
-                assertTrue( "access node", node.next() );
+                assertTrue( node.next(), "access node" );
                 if ( detached )
                 {
                     read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
@@ -1272,7 +1272,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void hasPropertiesShouldSeeNewlyCreatedProperties() throws Exception
+    void hasPropertiesShouldSeeNewlyCreatedProperties() throws Exception
     {
         // Given
         long relationship;
@@ -1303,7 +1303,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void hasPropertiesShouldSeeNewlyCreatedPropertiesOnNewlyCreatedRelationship() throws Exception
+    void hasPropertiesShouldSeeNewlyCreatedPropertiesOnNewlyCreatedRelationship() throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -1324,7 +1324,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void hasPropertiesShouldSeeNewlyRemovedProperties() throws Exception
+    void hasPropertiesShouldSeeNewlyRemovedProperties() throws Exception
     {
         // Given
         long relationship;
@@ -1363,7 +1363,7 @@ public abstract class RelationshipTransactionStateTestBase<G extends KernelAPIWr
     }
 
     @Test
-    public void propertyTypeShouldBeTxStateAware() throws Exception
+    void propertyTypeShouldBeTxStateAware() throws Exception
     {
         // Given
         long relationship;

@@ -19,19 +19,20 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void shouldDetectNodeDeletedInTransaction() throws Exception
+    void shouldDetectNodeDeletedInTransaction() throws Exception
     {
         // GIVEN
         long deletedInTx, unaffected, addedInTx, addedAndRemovedInTx;
@@ -59,7 +60,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     }
 
     @Test
-    public void shouldDetectRelationshipDeletedInTransaction() throws Exception
+    void shouldDetectRelationshipDeletedInTransaction() throws Exception
     {
         // GIVEN
         long node;
@@ -91,7 +92,7 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
     }
 
     @Test
-    public void shouldReportInTransactionNodeProperty() throws Exception
+    void shouldReportInTransactionNodeProperty() throws Exception
     {
         // GIVEN
         long node;
@@ -118,20 +119,23 @@ public abstract class TransactionStateTestBase<G extends KernelAPIWriteTestSuppo
             tx.dataWrite().nodeSetProperty( node, p5, Values.of( 15 ) );
 
             // THEN
-            assertNull( "Unchanged existing property is null",
-                        tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p1 ) );
+            assertNull( tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p1 ),
+                    "Unchanged existing property is null" );
 
-            assertNull( "Unchanged missing property is null",
-                        tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p2 ) );
+            assertNull( tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p2 ),
+                    "Unchanged missing property is null" );
 
-            assertEquals( "Changed property is new value", Values.of( 13 ),
-                          tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p3 ) );
+            assertEquals( Values.of( 13 ),
+                    tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p3 ),
+                    "Changed property is new value" );
 
-            assertEquals( "Removed property is NO_VALUE", Values.NO_VALUE,
-                          tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p4 ) );
+            assertEquals( Values.NO_VALUE,
+                    tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p4 ),
+                    "Removed property is NO_VALUE" );
 
-            assertEquals( "Added property is new value", Values.of( 15 ),
-                          tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p5 ) );
+            assertEquals( Values.of( 15 ),
+                    tx.dataRead().nodePropertyChangeInTransactionOrNull( node, p5 ),
+                    "Added property is new value" );
         }
     }
 }

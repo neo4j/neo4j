@@ -21,16 +21,16 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.RelationshipType.withName;
 
 public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAPIReadTestSupport>
@@ -94,7 +94,7 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
     }
 
     @Test
-    public void shouldTraverseTreeOfDepthThree()
+    void shouldTraverseTreeOfDepthThree()
     {
         try ( NodeCursor node = cursors.allocateNodeCursor();
               RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
@@ -106,25 +106,25 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
 
             // when
             read.singleNode( three_root, node );
-            assertTrue( "access root node", node.next() );
+            assertTrue( node.next(), "access root node" );
             node.relationships( group );
-            assertFalse( "single root", node.next() );
+            assertFalse( node.next(), "single root" );
 
-            assertTrue( "access group of root", group.next() );
+            assertTrue( group.next(), "access group of root" );
             group.incoming( relationship1 );
-            assertFalse( "single group of root", group.next() );
+            assertFalse( group.next(), "single group of root" );
 
             while ( relationship1.next() )
             {
                 relationship1.neighbour( node );
 
-                assertTrue( "child level 1", node.next() );
+                assertTrue( node.next(), "child level 1" );
                 node.relationships( group );
-                assertFalse( "single node", node.next() );
+                assertFalse( node.next(), "single node" );
 
-                assertTrue( "group of level 1 child", group.next() );
+                assertTrue( group.next(), "group of level 1 child" );
                 group.incoming( relationship2 );
-                assertFalse( "single group of level 1 child", group.next() );
+                assertFalse( group.next(), "single group of level 1 child" );
 
                 while ( relationship2.next() )
                 {
@@ -134,8 +134,8 @@ public abstract class DeepRelationshipTraversalCursorTestBase<G extends KernelAP
             }
 
             // then
-            assertEquals( "total number of leaf nodes", expected_total, total );
-            assertEquals( "number of distinct leaf nodes", expected_unique, leafs.size() );
+            assertEquals( expected_total, total, "total number of leaf nodes" );
+            assertEquals( expected_unique, leafs.size(), "number of distinct leaf nodes" );
         }
     }
 }

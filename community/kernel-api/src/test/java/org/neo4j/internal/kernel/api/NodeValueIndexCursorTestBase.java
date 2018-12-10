@@ -23,8 +23,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Assume;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -40,10 +39,11 @@ import org.neo4j.values.storable.Values;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian;
 import static org.neo4j.values.storable.CoordinateReferenceSystem.Cartesian_3D;
@@ -190,7 +190,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformExactLookup() throws Exception
+    void shouldPerformExactLookup() throws Exception
     {
         // given
         boolean needsValues = false;
@@ -300,7 +300,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformExactLookupInCompositeIndex() throws Exception
+    void shouldPerformExactLookupInCompositeIndex() throws Exception
     {
         // given
         boolean needsValues = false;
@@ -323,7 +323,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringPrefixSearch() throws Exception
+    void shouldPerformStringPrefixSearch() throws Exception
     {
         // given
         boolean needsValues = indexProvidesStringValues();
@@ -346,7 +346,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringSuffixSearch() throws Exception
+    void shouldPerformStringSuffixSearch() throws Exception
     {
         // given
         boolean needsValues = indexProvidesStringValues();
@@ -368,7 +368,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringContainmentSearch() throws Exception
+    void shouldPerformStringContainmentSearch() throws Exception
     {
         // given
         boolean needsValues = indexProvidesStringValues();
@@ -390,7 +390,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformStringRangeSearch() throws Exception
+    void shouldPerformStringRangeSearch() throws Exception
     {
         // given
         boolean needsValues = indexProvidesStringValues();
@@ -437,7 +437,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformNumericRangeSearch() throws Exception
+    void shouldPerformNumericRangeSearch() throws Exception
     {
         // given
         boolean needsValues = indexProvidesNumericValues();
@@ -476,7 +476,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformTemporalRangeSearch() throws KernelException
+    void shouldPerformTemporalRangeSearch() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesTemporalValues();
@@ -519,7 +519,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformSpatialRangeSearch() throws KernelException
+    void shouldPerformSpatialRangeSearch() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesSpatialValues();
@@ -558,7 +558,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformBooleanSearch() throws KernelException
+    void shouldPerformBooleanSearch() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesBooleanValues();
@@ -585,7 +585,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformTextArraySearch() throws KernelException
+    void shouldPerformTextArraySearch() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesArrayValues();
@@ -612,7 +612,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldPerformIndexScan() throws Exception
+    void shouldPerformIndexScan() throws Exception
     {
         // given
         int label = token.nodeLabel( "Node" );
@@ -633,7 +633,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForNumbers() throws Exception
+    void shouldRespectOrderCapabilitiesForNumbers() throws Exception
     {
         // given
         boolean needsValues = indexProvidesNumericValues();
@@ -655,7 +655,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForStrings() throws Exception
+    void shouldRespectOrderCapabilitiesForStrings() throws Exception
     {
         // given
         boolean needsValues = indexProvidesStringValues();
@@ -677,7 +677,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForTemporal() throws KernelException
+    void shouldRespectOrderCapabilitiesForTemporal() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesTemporalValues();
@@ -700,7 +700,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
+    void shouldRespectOrderCapabilitiesForSpatial() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesSpatialValues();
@@ -722,7 +722,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForStringArray() throws KernelException
+    void shouldRespectOrderCapabilitiesForStringArray() throws KernelException
     {
         // given
         boolean needsValues = indexProvidesSpatialValues();
@@ -746,7 +746,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldRespectOrderCapabilitiesForWildcard() throws Exception
+    void shouldRespectOrderCapabilitiesForWildcard() throws Exception
     {
         // given
         boolean needsValues = false;
@@ -768,10 +768,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldProvideValuesForPoints() throws Exception
+    void shouldProvideValuesForPoints() throws Exception
     {
-        // given
-        Assume.assumeTrue( indexProvidesAllValues() );
+        // give
+        assumeTrue( indexProvidesAllValues() );
 
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
@@ -791,10 +791,10 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldProvideValuesForAllTypes() throws Exception
+    void shouldProvideValuesForAllTypes() throws Exception
     {
         // given
-        Assume.assumeTrue( indexProvidesAllValues() );
+        assumeTrue( indexProvidesAllValues() );
 
         int label = token.nodeLabel( "What" );
         int prop = token.propertyKey( "ever" );
@@ -826,12 +826,14 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
                 switch ( indexOrder )
                 {
                 case ASCENDING:
-                    assertTrue( "Requested ordering " + indexOrder + " was not respected.",
-                            Values.COMPARATOR.compare( currentValue, storedValue ) <= 0 );
+                    assertTrue( Values.COMPARATOR.compare( currentValue, storedValue ) <= 0,
+                            "Requested ordering " + indexOrder + " was not respected."
+                    );
                     break;
                 case DESCENDING:
-                    assertTrue( "Requested ordering " + indexOrder + " was not respected.",
-                            Values.COMPARATOR.compare( currentValue, storedValue ) >= 0 );
+                    assertTrue( Values.COMPARATOR.compare( currentValue, storedValue ) >= 0,
+                            "Requested ordering " + indexOrder + " was not respected."
+                    );
                     break;
                 case NONE:
                     // Don't verify
@@ -853,26 +855,27 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         uniqueIds.clear();
         for ( int i = 0; i < nodes; i++ )
         {
-            assertTrue( "at least " + nodes + " nodes, was " + uniqueIds.size(), node.next() );
+            assertTrue( node.next(), "at least " + nodes + " nodes, was " + uniqueIds.size() );
             long nodeReference = node.nodeReference();
-            assertTrue( "all nodes are unique", uniqueIds.add( nodeReference ) );
+            assertTrue( uniqueIds.add( nodeReference ), "all nodes are unique" );
 
             // Assert has value capability
             if ( IndexValueCapability.YES.equals( expectValue ) )
             {
-                assertTrue( "Value capability said index would have value for " + expectValue + ", but didn't", node.hasValue() );
+                assertTrue( node.hasValue(),
+                        "Value capability said index would have value for " + expectValue + ", but didn't" );
             }
 
             // Assert has correct value
             if ( indexProvidesValues )
             {
-                assertTrue( "Index did not provide values", node.hasValue() );
+                assertTrue( node.hasValue(), "Index did not provide values" );
                 Value storedValue = getPropertyValueFromStore( nodeReference );
                 assertThat( "has correct value", node.propertyValue( 0 ), is( storedValue ) );
             }
         }
 
-        assertFalse( "no more than " + nodes + " nodes", node.next() );
+        assertFalse( node.next(), "no more than " + nodes + " nodes" );
     }
 
     private void assertFoundNodesAndNoValue( NodeValueIndexCursor node, int nodes, MutableLongSet uniqueIds )
@@ -880,9 +883,9 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
         uniqueIds.clear();
         for ( int i = 0; i < nodes; i++ )
         {
-            assertTrue( "at least " + nodes + " nodes, was " + uniqueIds.size(), node.next() );
+            assertTrue( node.next(), "at least " + nodes + " nodes, was " + uniqueIds.size() );
             long nodeReference = node.nodeReference();
-            assertTrue( "all nodes are unique", uniqueIds.add( nodeReference ) );
+            assertTrue( uniqueIds.add( nodeReference ), "all nodes are unique" );
 
             // We can't quite assert !node.hasValue() because even tho pure SpatialIndexReader is guaranteed to not return any values,
             // where null could be used, the generic native index, especially when having composite keys including spatial values it's
@@ -890,7 +893,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
             // potentially containing some NO_VALUE values.
         }
 
-        assertFalse( "no more than " + nodes + " nodes", node.next() );
+        assertFalse( node.next(), "no more than " + nodes + " nodes" );
     }
 
     private void assertFoundNodesAndValue( NodeValueIndexCursor node, MutableLongSet uniqueIds, IndexValueCapability expectValue, boolean indexProvidesValues,
@@ -900,7 +903,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
         for ( long expectedNode : expected )
         {
-            assertTrue( "expected node " + expectedNode, uniqueIds.contains( expectedNode ) );
+            assertTrue( uniqueIds.contains( expectedNode ), "expected node " + expectedNode );
         }
     }
 
@@ -911,7 +914,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
 
         for ( long expectedNode : expected )
         {
-            assertTrue( "expected node " + expectedNode, uniqueIds.contains( expectedNode ) );
+            assertTrue( uniqueIds.contains( expectedNode ), "expected node " + expectedNode );
         }
     }
 
@@ -929,33 +932,33 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldGetNoIndexForMissingTokens()
+    void shouldGetNoIndexForMissingTokens()
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         int badLabel = token.nodeLabel( "BAD_LABEL" );
         int badProp = token.propertyKey( "badProp" );
 
-        assertEquals( "bad label", IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
-        assertEquals( "bad prop", IndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
-        assertEquals( "just bad", IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( IndexReference.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test
-    public void shouldGetNoIndexForUnknownTokens()
+    void shouldGetNoIndexForUnknownTokens()
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
         int badLabel = Integer.MAX_VALUE;
         int badProp = Integer.MAX_VALUE;
 
-        assertEquals( "bad label", IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ) );
-        assertEquals( "bad prop", IndexReference.NO_INDEX, schemaRead.index( label, badProp ) );
-        assertEquals( "just bad", IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ) );
+        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, prop ), "bad label" );
+        assertEquals( IndexReference.NO_INDEX, schemaRead.index( label, badProp ), "bad prop" );
+        assertEquals( IndexReference.NO_INDEX, schemaRead.index( badLabel, badProp ), "just bad" );
     }
 
     @Test
-    public void shouldGetVersionAndKeyFromIndexReference()
+    void shouldGetVersionAndKeyFromIndexReference()
     {
         // Given
         int label = token.nodeLabel( "Node" );
@@ -967,7 +970,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInIndexScan() throws Exception
+    void shouldNotFindDeletedNodeInIndexScan() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesAllValues();
@@ -993,7 +996,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInIndexSeek() throws Exception
+    void shouldNotFindDeletedNodeInIndexSeek() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1013,7 +1016,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDNodeWithRemovedLabelInIndexSeek() throws Exception
+    void shouldNotFindDNodeWithRemovedLabelInIndexSeek() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1033,7 +1036,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInIndexSeek() throws Exception
+    void shouldNotFindUpdatedNodeInIndexSeek() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1053,7 +1056,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInIndexSeek() throws Exception
+    void shouldFindUpdatedNodeInIndexSeek() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1074,7 +1077,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInIndexSeek() throws Exception
+    void shouldFindSwappedNodeInIndexSeek() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1096,7 +1099,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInRangeSearch() throws Exception
+    void shouldNotFindDeletedNodeInRangeSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1119,7 +1122,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInRangeSearch() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInRangeSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1142,7 +1145,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInRangeSearch() throws Exception
+    void shouldNotFindUpdatedNodeInRangeSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1165,7 +1168,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInRangeSearch() throws Exception
+    void shouldFindUpdatedNodeInRangeSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1186,7 +1189,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInRangeSearch() throws Exception
+    void shouldFindSwappedNodeInRangeSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1209,7 +1212,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInPrefixSearch() throws Exception
+    void shouldNotFindDeletedNodeInPrefixSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1229,7 +1232,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInPrefixSearch() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInPrefixSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1249,7 +1252,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInPrefixSearch() throws Exception
+    void shouldNotFindUpdatedNodeInPrefixSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1269,7 +1272,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInPrefixSearch() throws Exception
+    void shouldFindUpdatedNodeInPrefixSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1290,7 +1293,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInPrefixSearch() throws Exception
+    void shouldFindSwappedNodeInPrefixSearch() throws Exception
     {
         // Given
         boolean needsValues = indexProvidesStringValues();
@@ -1312,7 +1315,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInCompositeIndex() throws Exception
+    void shouldNotFindDeletedNodeInCompositeIndex() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1334,7 +1337,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInCompositeIndex() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInCompositeIndex() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1355,7 +1358,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldNotFindUpdatedNodeInCompositeIndex() throws Exception
+    void shouldNotFindUpdatedNodeInCompositeIndex() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1378,7 +1381,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindUpdatedNodeInCompositeIndex() throws Exception
+    void shouldFindUpdatedNodeInCompositeIndex() throws Exception
     {
         // Given
         boolean needsValues = false;
@@ -1402,7 +1405,7 @@ public abstract class NodeValueIndexCursorTestBase<G extends KernelAPIReadTestSu
     }
 
     @Test
-    public void shouldFindSwappedNodeInCompositeIndex() throws Exception
+    void shouldFindSwappedNodeInCompositeIndex() throws Exception
     {
         // Given
         boolean needsValues = false;

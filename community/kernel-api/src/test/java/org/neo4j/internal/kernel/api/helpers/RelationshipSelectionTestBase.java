@@ -21,9 +21,10 @@ package org.neo4j.internal.kernel.api.helpers;
 
 import org.neo4j.graphdb.ResourceIterator;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 class RelationshipSelectionTestBase
 {
@@ -34,57 +35,57 @@ class RelationshipSelectionTestBase
 
     void assertOutgoing( ResourceIterator<R> iterator, int targetNode, int type )
     {
-        assertTrue( "has next", iterator.hasNext() );
+        assertTrue( iterator.hasNext(), "has next" );
         R r = iterator.next();
-        assertEquals( "expected type", type, r.type );
-        assertEquals( "expected target", targetNode, r.targetNode );
+        assertEquals( type, r.type, "expected type" );
+        assertEquals( targetNode, r.targetNode, "expected target" );
     }
 
     void assertIncoming( ResourceIterator<R> iterator, int sourceNode, int type )
     {
-        assertTrue( "has next", iterator.hasNext() );
+        assertTrue( iterator.hasNext(), "has next" );
         R r = iterator.next();
-        assertEquals( "expected type", type, r.type );
-        assertEquals( "expected source", sourceNode, r.sourceNode );
+        assertEquals( type, r.type, "expected type" );
+        assertEquals( sourceNode, r.sourceNode, "expected source" );
     }
 
     void assertLoop( ResourceIterator<R> iterator, int type )
     {
-        assertTrue( "has next", iterator.hasNext() );
+        assertTrue( iterator.hasNext(), "has next" );
         R r = iterator.next();
-        assertEquals( "expected type", type, r.type );
-        assertEquals( "expected loop", r.sourceNode, r.targetNode );
+        assertEquals( type, r.type, "expected type" );
+        assertEquals( r.sourceNode, r.targetNode, "expected loop" );
     }
 
     void assertEmpty( ResourceIterator<R> iterator )
     {
-        assertFalse( "no more", iterator.hasNext() );
+        assertFalse( iterator.hasNext(), "no more" );
     }
 
     void assertOutgoing( RelationshipSelectionCursor cursor, int targetNode, int type )
     {
-        assertTrue( "has next", cursor.next() );
-        assertEquals( "expected type", type, cursor.type() );
-        assertEquals( "expected target", targetNode, cursor.targetNodeReference() );
+        assertTrue( cursor.next(), "has next" );
+        assertEquals( type, cursor.type(), "expected type" );
+        assertEquals( targetNode, cursor.targetNodeReference(), "expected target" );
     }
 
     void assertIncoming( RelationshipSelectionCursor cursor, int sourceNode, int type )
     {
-        assertTrue( "has next", cursor.next() );
-        assertEquals( "expected type", type, cursor.type() );
-        assertEquals( "expected source", sourceNode, cursor.sourceNodeReference() );
+        assertTrue( cursor.next(), "has next" );
+        assertEquals( type, cursor.type(), "expected type" );
+        assertEquals( sourceNode, cursor.sourceNodeReference(), "expected source" );
     }
 
     void assertLoop( RelationshipSelectionCursor cursor, int type )
     {
-        assertTrue( "has next", cursor.next() );
-        assertEquals( "expected type", type, cursor.type() );
-        assertEquals( "expected loop", cursor.sourceNodeReference(), cursor.targetNodeReference() );
+        assertTrue( cursor.next(), "has next" );
+        assertEquals( type, cursor.type(), "expected type" );
+        assertEquals( cursor.sourceNodeReference(), cursor.targetNodeReference(), "expected loop" );
     }
 
     void assertEmpty( RelationshipSelectionCursor cursor )
     {
-        assertFalse( "no more", cursor.next() );
+        assertFalse( cursor.next(), "no more" );
     }
 
     int[] types( int... types )

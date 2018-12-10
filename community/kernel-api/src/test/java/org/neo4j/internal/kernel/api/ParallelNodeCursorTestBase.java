@@ -23,9 +23,7 @@ package org.neo4j.internal.kernel.api;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,7 +32,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -42,9 +39,10 @@ import java.util.stream.Collectors;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
 import static org.neo4j.internal.kernel.api.TestUtils.concat;
 import static org.neo4j.internal.kernel.api.TestUtils.randomBatchWorker;
@@ -54,8 +52,6 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
 {
     private static LongList NODE_IDS;
     private static final int NUMBER_OF_NODES = 128;
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
     private static final ToLongFunction<NodeCursor> NODE_GET = NodeCursor::nodeReference;
 
     @Override
@@ -74,7 +70,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldScanASubsetOfNodes()
+    void shouldScanASubsetOfNodes()
     {
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
         {
@@ -93,7 +89,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldHandleSizeHintOverflow()
+    void shouldHandleSizeHintOverflow()
     {
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
         {
@@ -112,23 +108,20 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldFailForSizeHintZero()
+    void shouldFailForSizeHintZero()
     {
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
         {
             // given
             Scan<NodeCursor> scan = read.allNodesScan();
 
-            // expect
-            exception.expect( IllegalArgumentException.class );
-
             // when
-            scan.reserveBatch( nodes, 0 );
+            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( nodes, 0 ) );
         }
     }
 
     @Test
-    public void shouldScanAllNodesInBatches()
+    void shouldScanAllNodesInBatches()
     {
         // given
         LongArrayList ids = new LongArrayList();
@@ -150,7 +143,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
+    void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -186,7 +179,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldScanAllNodesFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
+    void shouldScanAllNodesFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -220,7 +213,7 @@ public abstract class ParallelNodeCursorTestBase<G extends KernelAPIReadTestSupp
     }
 
     @Test
-    public void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
+    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );

@@ -24,7 +24,7 @@ import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -46,8 +46,8 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException
 import org.neo4j.internal.kernel.api.exceptions.schema.TooManyLabelsException;
 
 import static java.lang.String.format;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
 import static org.neo4j.internal.kernel.api.TestUtils.concat;
@@ -62,7 +62,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
 
     @Test
-    public void shouldHandleEmptyDatabase()
+    void shouldHandleEmptyDatabase()
             throws TransactionFailureException, IllegalTokenNameException, TooManyLabelsException
     {
         try ( Transaction tx = beginTransaction() )
@@ -80,7 +80,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    public void scanShouldNotSeeDeletedNode() throws Exception
+    void scanShouldNotSeeDeletedNode() throws Exception
     {
         int size = 1000;
         Set<Long> created = new HashSet<>( size );
@@ -128,7 +128,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    public void scanShouldSeeAddedNodes() throws Exception
+    void scanShouldSeeAddedNodes() throws Exception
     {
         int size = 64;
         int label = label( "L" );
@@ -159,7 +159,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    public void shouldReserveBatchFromTxState() throws KernelException
+    void shouldReserveBatchFromTxState() throws KernelException
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -185,7 +185,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    public void shouldScanAllNodesFromMultipleThreads()
+    void shouldScanAllNodesFromMultipleThreads()
             throws InterruptedException, ExecutionException, KernelException
     {
         // given
@@ -232,7 +232,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    public void shouldScanAllNodesFromRandomlySizedWorkers()
+    void shouldScanAllNodesFromRandomlySizedWorkers()
             throws InterruptedException, KernelException
     {
         // given
@@ -271,7 +271,7 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
     }
 
     @Test
-    public void parallelTxStateScanStressTest()
+    void parallelTxStateScanStressTest()
             throws KernelException, InterruptedException
     {
         int label = label( "L" );
@@ -306,9 +306,9 @@ public abstract class ParallelNodeLabelScanTransactionStateTestBase<G extends Ke
 
                     assertDistinct( lists );
                     LongList concat = concat( lists );
-                    assertEquals( format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
-                            allNodes, LongSets.immutable.withAll( concat ) );
-                    assertEquals( format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
+                    assertEquals( allNodes, LongSets.immutable.withAll( concat ),
+                            format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ) );
+                    assertEquals( allNodes.size(), concat.size(), format( "nodes=%d", nodeInTx ) );
                     tx.failure();
                 }
             }

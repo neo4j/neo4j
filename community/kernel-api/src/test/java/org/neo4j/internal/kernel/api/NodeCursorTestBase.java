@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -28,10 +29,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 
 public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
@@ -74,7 +75,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     }
 
     @Test
-    public void shouldScanNodes()
+    void shouldScanNodes()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -93,7 +94,7 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
     }
 
     @Test
-    public void shouldAccessNodesByReference()
+    void shouldAccessNodesByReference()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
@@ -104,16 +105,16 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
                 read.singleNode( id, nodes  );
 
                 // then
-                assertTrue( "should access defined node", nodes.next() );
-                assertEquals( "should access the correct node", id, nodes.nodeReference() );
-                assertFalse( "should only access a single node", nodes.next() );
+                assertTrue( nodes.next(), "should access defined node" );
+                assertEquals( id, nodes.nodeReference(), "should access the correct node" );
+                assertFalse( nodes.next(), "should only access a single node" );
             }
         }
     }
 
     // This is functionality which is only required for the hacky db.schema not to leak real data
     @Test
-    public void shouldNotAccessNegativeReferences()
+    void shouldNotAccessNegativeReferences()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor() )
@@ -122,12 +123,12 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             read.singleNode( -2L, node  );
 
             // then
-            assertFalse( "should not access negative reference node", node.next() );
+            assertFalse( node.next(), "should not access negative reference node" );
         }
     }
 
     @Test
-    public void shouldNotFindDeletedNode()
+    void shouldNotFindDeletedNode()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
@@ -136,12 +137,12 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             read.singleNode( gone, nodes );
 
             // then
-            assertFalse( "should not access deleted node", nodes.next() );
+            assertFalse( nodes.next(), "should not access deleted node" );
         }
     }
 
     @Test
-    public void shouldReadLabels()
+    void shouldReadLabels()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
@@ -152,49 +153,49 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             read.singleNode( foo, nodes );
 
             // then
-            assertTrue( "should access defined node", nodes.next() );
+            assertTrue( nodes.next(), "should access defined node" );
             labels = nodes.labels();
-            assertEquals( "number of labels", 1, labels.numberOfLabels() );
+            assertEquals( 1, labels.numberOfLabels(), "number of labels" );
             int fooLabel = labels.label( 0 );
             assertTrue( nodes.hasLabel( fooLabel ) );
-            assertFalse( "should only access a single node", nodes.next() );
+            assertFalse( nodes.next(), "should only access a single node" );
 
             // when
             read.singleNode( bar, nodes );
 
             // then
-            assertTrue( "should access defined node", nodes.next() );
+            assertTrue( nodes.next(), "should access defined node" );
             labels = nodes.labels();
-            assertEquals( "number of labels", 1, labels.numberOfLabels() );
+            assertEquals( 1, labels.numberOfLabels(), "number of labels" );
             int barLabel = labels.label( 0 );
             assertFalse( nodes.hasLabel( fooLabel ) );
             assertTrue( nodes.hasLabel( barLabel ) );
-            assertFalse( "should only access a single node", nodes.next() );
+            assertFalse( nodes.next(), "should only access a single node" );
 
             // when
             read.singleNode( baz, nodes );
 
             // then
-            assertTrue( "should access defined node", nodes.next() );
+            assertTrue( nodes.next(), "should access defined node" );
             labels = nodes.labels();
-            assertEquals( "number of labels", 1, labels.numberOfLabels() );
+            assertEquals( 1, labels.numberOfLabels(), "number of labels" );
             int bazLabel = labels.label( 0 );
             assertFalse( nodes.hasLabel( fooLabel ) );
             assertFalse( nodes.hasLabel( barLabel ) );
             assertTrue( nodes.hasLabel( bazLabel ) );
-            assertFalse( "should only access a single node", nodes.next() );
+            assertFalse( nodes.next(), "should only access a single node" );
 
-            assertNotEquals( "distinct labels", fooLabel, barLabel );
-            assertNotEquals( "distinct labels", fooLabel, bazLabel );
-            assertNotEquals( "distinct labels", barLabel, bazLabel );
+            assertNotEquals( fooLabel, barLabel, "distinct labels" );
+            assertNotEquals( fooLabel, bazLabel, "distinct labels" );
+            assertNotEquals( barLabel, bazLabel, "distinct labels" );
 
             // when
             read.singleNode( barbaz, nodes );
 
             // then
-            assertTrue( "should access defined node", nodes.next() );
+            assertTrue( nodes.next(), "should access defined node" );
             labels = nodes.labels();
-            assertEquals( "number of labels", 2, labels.numberOfLabels() );
+            assertEquals( 2, labels.numberOfLabels(), "number of labels" );
             if ( labels.label( 0 ) == barLabel )
             {
                 assertEquals( bazLabel, labels.label( 1 ) );
@@ -208,19 +209,19 @@ public abstract class NodeCursorTestBase<G extends KernelAPIReadTestSupport> ext
             assertTrue( nodes.hasLabel( barLabel ) );
             assertTrue( nodes.hasLabel( bazLabel ) );
 
-            assertFalse( "should only access a single node", nodes.next() );
+            assertFalse( nodes.next(), "should only access a single node" );
 
             // when
             read.singleNode( bare, nodes );
 
             // then
-            assertTrue( "should access defined node", nodes.next() );
+            assertTrue( nodes.next(), "should access defined node" );
             labels = nodes.labels();
-            assertEquals( "number of labels", 0, labels.numberOfLabels() );
+            assertEquals( 0, labels.numberOfLabels(), "number of labels" );
             assertFalse( nodes.hasLabel( fooLabel ) );
             assertFalse( nodes.hasLabel( barLabel ) );
             assertFalse( nodes.hasLabel( bazLabel ) );
-            assertFalse( "should only access a single node", nodes.next() );
+            assertFalse( nodes.next(), "should only access a single node" );
         }
     }
 }

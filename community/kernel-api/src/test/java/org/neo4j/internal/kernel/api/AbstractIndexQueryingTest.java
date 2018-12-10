@@ -19,13 +19,15 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotApplicableKernelException;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<S>
 {
@@ -45,23 +47,25 @@ public abstract class AbstractIndexQueryingTest<S extends KernelAPIReadTestSuppo
         }
     }
 
-    @Test( expected = IndexNotApplicableKernelException.class )
-    public void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
+    @Test
+    void nodeIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
     {
         IndexReadSession index = read.indexReadSession( schemaRead.indexGetForName( "ftsRels" ) );
         try ( NodeValueIndexCursor cursor = cursors.allocateNodeValueIndexCursor() )
         {
-            read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "search" ) );
+            assertThrows( IndexNotApplicableKernelException.class, () ->
+                    read.nodeIndexSeek( index, cursor, IndexOrder.NONE, false, IndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 
-    @Test( expected = IndexNotApplicableKernelException.class )
-    public void relationshipIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
+    @Test
+    void relationshipIndexSeekMustThrowOnWrongIndexEntityType() throws Exception
     {
         IndexReference index = schemaRead.indexGetForName( "ftsNodes" );
         try ( RelationshipIndexCursor cursor = cursors.allocateRelationshipIndexCursor() )
         {
-            read.relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( "search" ) );
+            assertThrows( IndexNotApplicableKernelException.class, () ->
+                    read.relationshipIndexSeek( index, cursor, IndexQuery.fulltextSearch( "search" ) ) );
         }
     }
 }

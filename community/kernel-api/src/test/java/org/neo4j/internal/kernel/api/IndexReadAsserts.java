@@ -21,25 +21,25 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class IndexReadAsserts
+class IndexReadAsserts
 {
     static void assertNodes( NodeIndexCursor node, MutableLongSet uniqueIds, long... expected )
     {
         uniqueIds.clear();
         for ( long count : expected )
         {
-            assertTrue( "at least " + expected.length + " nodes", node.next() );
+            assertTrue( node.next(), "at least " + expected.length + " nodes" );
             assertTrue( uniqueIds.add( node.nodeReference() ) );
         }
-        assertFalse( "no more than " + expected.length + " nodes", node.next() );
-        assertEquals( "all nodes are unique", expected.length, uniqueIds.size() );
+        assertFalse( node.next(), "no more than " + expected.length + " nodes" );
+        assertEquals( expected.length, uniqueIds.size(), "all nodes are unique" );
         for ( long expectedNode : expected )
         {
-            assertTrue( "expected node " + expectedNode, uniqueIds.contains( expectedNode ) );
+            assertTrue( uniqueIds.contains( expectedNode ), "expected node " + expectedNode );
         }
     }
 
@@ -48,19 +48,19 @@ public class IndexReadAsserts
         uniqueIds.clear();
         for ( int i = 0; i < expectedCount; i++ )
         {
-            assertTrue( "at least " + expectedCount + " nodes", node.next() );
+            assertTrue( node.next(), "at least " + expectedCount + " nodes" );
             assertTrue( uniqueIds.add( node.nodeReference() ) );
         }
-        assertFalse( "no more than " + expectedCount + " nodes", node.next() );
+        assertFalse( node.next(), "no more than " + expectedCount + " nodes" );
     }
 
     static void assertFoundRelationships( RelationshipIndexCursor edge, int edges, MutableLongSet uniqueIds )
     {
         for ( int i = 0; i < edges; i++ )
         {
-            assertTrue( "at least " + edges + " relationships", edge.next() );
+            assertTrue( edge.next(), "at least " + edges + " relationships" );
             assertTrue( uniqueIds.add( edge.relationshipReference() ) );
         }
-        assertFalse( "no more than " + edges + " relationships", edge.next() );
+        assertFalse( edge.next(), "no more than " + edges + " relationships" );
     }
 }

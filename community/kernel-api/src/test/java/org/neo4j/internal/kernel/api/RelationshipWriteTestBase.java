@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 
@@ -33,9 +31,9 @@ import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
 import static org.neo4j.values.storable.Values.stringValue;
@@ -43,11 +41,8 @@ import static org.neo4j.values.storable.Values.stringValue;
 @SuppressWarnings( "Duplicates" )
 public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldCreateRelationship() throws Exception
+    void shouldCreateRelationship() throws Exception
     {
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -74,7 +69,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldCreateRelationshipBetweenInTransactionNodes() throws Exception
+    void shouldCreateRelationshipBetweenInTransactionNodes() throws Exception
     {
         long n1, n2, r;
         try ( Transaction tx = beginTransaction() )
@@ -95,7 +90,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldRollbackRelationshipOnFailure() throws Exception
+    void shouldRollbackRelationshipOnFailure() throws Exception
     {
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -119,7 +114,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldDeleteRelationship() throws Exception
+    void shouldDeleteRelationship() throws Exception
     {
         long n1, r;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -135,7 +130,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
 
         try ( Transaction tx = beginTransaction() )
         {
-            assertTrue( "should delete relationship", tx.dataWrite().relationshipDelete( r ) );
+            assertTrue( tx.dataWrite().relationshipDelete( r ), "should delete relationship" );
             tx.success();
         }
 
@@ -146,7 +141,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldNotDeleteRelationshipThatDoesNotExist() throws Exception
+    void shouldNotDeleteRelationshipThatDoesNotExist() throws Exception
     {
         long relationship = 0;
 
@@ -164,7 +159,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldDeleteRelationshipAddedInTransaction() throws Exception
+    void shouldDeleteRelationshipAddedInTransaction() throws Exception
     {
         long n1, n2;
         try ( org.neo4j.graphdb.Transaction tx = graphDb.beginTx() )
@@ -190,7 +185,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldAddPropertyToRelationship() throws Exception
+    void shouldAddPropertyToRelationship() throws Exception
     {
         // Given
         long  relationshipId;
@@ -221,7 +216,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldUpdatePropertyToRelationship() throws Exception
+    void shouldUpdatePropertyToRelationship() throws Exception
     {
         // Given
         long  relationshipId;
@@ -255,7 +250,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldRemovePropertyFromRelationship() throws Exception
+    void shouldRemovePropertyFromRelationship() throws Exception
     {
         // Given
         long  relationshipId;
@@ -288,7 +283,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldRemoveNonExistingPropertyFromRelationship() throws Exception
+    void shouldRemoveNonExistingPropertyFromRelationship() throws Exception
     {
         // Given
         long  relationshipId;
@@ -319,7 +314,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldRemovePropertyFromRelationshipTwice() throws Exception
+    void shouldRemovePropertyFromRelationshipTwice() throws Exception
     {
         // Given
         long  relationshipId;
@@ -354,7 +349,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldUpdatePropertyToRelationshipInTransaction() throws Exception
+    void shouldUpdatePropertyToRelationshipInTransaction() throws Exception
     {
         // Given
         long  relationshipId;
@@ -387,7 +382,7 @@ public abstract class RelationshipWriteTestBase<G extends KernelAPIWriteTestSupp
     }
 
     @Test
-    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
     {
         // Given
         long relationshipId;

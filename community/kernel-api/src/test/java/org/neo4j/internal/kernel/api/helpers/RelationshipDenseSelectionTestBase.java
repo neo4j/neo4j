@@ -19,15 +19,17 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.junit.Before;
-import org.junit.Test;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.graphdb.ResourceIterator;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 
 public abstract class RelationshipDenseSelectionTestBase<Traverser extends RelationshipDenseSelection>
         extends RelationshipSelectionTestBase
@@ -68,7 +70,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
 
     private StubRelationshipCursor innerRelationshipCursor = new StubRelationshipCursor( store );
 
-    @Before
+    @BeforeEach
     public void rewindCursor()
     {
         innerGroupCursor.rewind();
@@ -77,7 +79,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     protected abstract Traverser make();
 
     @Test
-    public void shouldSelectOutgoing()
+    void shouldSelectOutgoing()
     {
         // given
         Traverser traverser = make();
@@ -96,7 +98,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectIncoming()
+    void shouldSelectIncoming()
     {
         // given
         Traverser traverser = make();
@@ -115,7 +117,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectAll()
+    void shouldSelectAll()
     {
         // given
         Traverser traverser = make();
@@ -137,7 +139,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectOutgoingOfType()
+    void shouldSelectOutgoingOfType()
     {
         // given
         Traverser traverser = make();
@@ -153,7 +155,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectIncomingOfType()
+    void shouldSelectIncomingOfType()
     {
         // given
         Traverser traverser = make();
@@ -170,7 +172,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectAllOfType()
+    void shouldSelectAllOfType()
     {
         // given
         Traverser traverser = make();
@@ -189,7 +191,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectNoOutgoingRelationshipsOnSelectingWithZeroLengthTypeIdArray()
+    void shouldSelectNoOutgoingRelationshipsOnSelectingWithZeroLengthTypeIdArray()
     {
         // given
         Traverser traverser = make();
@@ -203,7 +205,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectNoIncomingRelationshipsOnSelectingWithZeroLengthTypeIdArray()
+    void shouldSelectNoIncomingRelationshipsOnSelectingWithZeroLengthTypeIdArray()
     {
         // given
         Traverser traverser = make();
@@ -217,7 +219,7 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     }
 
     @Test
-    public void shouldSelectNoRelationshipsOnSelectingWithZeroLengthTypeIdArray()
+    void shouldSelectNoRelationshipsOnSelectingWithZeroLengthTypeIdArray()
     {
         // given
         Traverser traverser = make();
@@ -307,8 +309,8 @@ public abstract class RelationshipDenseSelectionTestBase<Traverser extends Relat
     private void assertEmptyAndClosed( Traverser traverser )
     {
         assertEmpty( traverser );
-        assertTrue( "close group cursor", innerGroupCursor.isClosed() );
-        assertTrue( "close traversal cursor", innerRelationshipCursor.isClosed() );
+        assertTrue( innerGroupCursor.isClosed(), "close group cursor" );
+        assertTrue( innerRelationshipCursor.isClosed(), "close traversal cursor" );
     }
 
     private StubGroupCursor.GroupData group(

@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
@@ -29,9 +30,9 @@ import org.neo4j.values.storable.ValueGroup;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.longValue;
@@ -41,7 +42,7 @@ import static org.neo4j.values.storable.Values.stringValue;
 public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void shouldSeeNodeInTransaction() throws Exception
+    void shouldSeeNodeInTransaction() throws Exception
     {
         long nodeId;
         try ( Transaction tx = beginTransaction() )
@@ -50,9 +51,9 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
                 assertEquals( nodeId, node.nodeReference() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -64,7 +65,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeNewLabeledNodeInTransaction() throws Exception
+    void shouldSeeNewLabeledNodeInTransaction() throws Exception
     {
         long nodeId;
         int labelId;
@@ -79,14 +80,14 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 LabelSet labels = node.labels();
                 assertEquals( 1, labels.numberOfLabels() );
                 assertEquals( labelId, labels.label( 0 ) );
                 assertTrue( node.hasLabel( labelId ) );
                 assertFalse( node.hasLabel( labelId + 1 ) );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -100,7 +101,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeLabelChangesInTransaction() throws Exception
+    void shouldSeeLabelChangesInTransaction() throws Exception
     {
         long nodeId;
         int toRetain, toDelete, toAdd, toRegret;
@@ -139,14 +140,14 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             try ( NodeCursor node = tx.cursors().allocateNodeCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 assertLabels( node.labels(), toRetain, toAdd );
                 assertTrue( node.hasLabel( toAdd ) );
                 assertTrue( node.hasLabel( toRetain ) );
                 assertFalse( node.hasLabel( toDelete ) );
                 assertFalse( node.hasLabel( toRegret ) );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -160,7 +161,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldDiscoverDeletedNodeInTransaction() throws Exception
+    void shouldDiscoverDeletedNodeInTransaction() throws Exception
     {
         long nodeId;
         try ( Transaction tx = beginTransaction() )
@@ -182,7 +183,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldHandleMultipleNodeDeletions() throws Exception
+    void shouldHandleMultipleNodeDeletions() throws Exception
     {
         long nodeId;
         try ( Transaction tx = beginTransaction() )
@@ -200,7 +201,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeNewNodePropertyInTransaction() throws Exception
+    void shouldSeeNewNodePropertyInTransaction() throws Exception
     {
         long nodeId;
         String propKey1 = "prop1";
@@ -218,7 +219,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
                 assertTrue( property.next() );
@@ -230,15 +231,15 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( prop2, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should only find two properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find two properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
     }
 
     @Test
-    public void shouldSeeAddedPropertyFromExistingNodeWithoutPropertiesInTransaction() throws Exception
+    void shouldSeeAddedPropertyFromExistingNodeWithoutPropertiesInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -259,15 +260,15 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
                 assertTrue( property.next() );
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "hello" ) );
 
-                assertFalse( "should only find one properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find one properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -281,7 +282,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeAddedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
+    void shouldSeeAddedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -307,7 +308,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
 
@@ -321,8 +322,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( propToken1, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "hello" ) );
 
-                assertFalse( "should only find two properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find two properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
             tx.success();
         }
@@ -337,7 +338,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeUpdatedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
+    void shouldSeeUpdatedPropertyFromExistingNodeWithPropertiesInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -360,7 +361,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
 
@@ -368,8 +369,8 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should only find one property", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should only find one property" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -383,7 +384,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeRemovedPropertyInTransaction() throws Exception
+    void shouldSeeRemovedPropertyInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -405,11 +406,11 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
-                assertFalse( "should not find any properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should not find any properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -423,7 +424,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
+    void shouldSeeRemovedThenAddedPropertyInTransaction() throws Exception
     {
         // Given
         long nodeId;
@@ -446,15 +447,15 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
                   PropertyCursor property = tx.cursors().allocatePropertyCursor() )
             {
                 tx.dataRead().singleNode( nodeId, node );
-                assertTrue( "should access node", node.next() );
+                assertTrue( node.next(), "should access node" );
 
                 node.properties( property );
                 assertTrue( property.next() );
                 assertEquals( propToken, property.propertyKey() );
                 assertEquals( property.propertyValue(), stringValue( "world" ) );
 
-                assertFalse( "should not find any properties", property.next() );
-                assertFalse( "should only find one node", node.next() );
+                assertFalse( property.next(), "should not find any properties" );
+                assertFalse( node.next(), "should only find one node" );
             }
 
             tx.success();
@@ -468,7 +469,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeExistingNode() throws Exception
+    void shouldSeeExistingNode() throws Exception
     {
         // Given
         long node;
@@ -486,7 +487,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotSeeNonExistingNode() throws Exception
+    void shouldNotSeeNonExistingNode() throws Exception
     {
         // Given, empty db
 
@@ -498,7 +499,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldSeeNodeExistingInTxOnly() throws Exception
+    void shouldSeeNodeExistingInTxOnly() throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -509,7 +510,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotSeeDeletedNode() throws Exception
+    void shouldNotSeeDeletedNode() throws Exception
     {
         // Given
         long node;
@@ -528,7 +529,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotFindDeletedNodeInLabelScan() throws Exception
+    void shouldNotFindDeletedNodeInLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label" );
@@ -546,7 +547,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotFindNodeWithRemovedLabelInLabelScan() throws Exception
+    void shouldNotFindNodeWithRemovedLabelInLabelScan() throws Exception
     {
         // Given
         Node node = createNode( "label" );
@@ -564,7 +565,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldFindUpdatedNodeInInLabelScan() throws Exception
+    void shouldFindUpdatedNodeInInLabelScan() throws Exception
     {
         // Given
         Node node = createNode(  );
@@ -584,7 +585,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldFindSwappedNodeInLabelScan() throws Exception
+    void shouldFindSwappedNodeInLabelScan() throws Exception
     {
         // Given
         Node node1 = createNode( "label" );
@@ -605,7 +606,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldCountNewLabelsFromTxState() throws Exception
+    void shouldCountNewLabelsFromTxState() throws Exception
     {
         // Given
         Node node1 = createNode( "label" );
@@ -625,7 +626,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldCountNewNodesFromTxState() throws Exception
+    void shouldCountNewNodesFromTxState() throws Exception
     {
         // Given
         createNode();
@@ -645,7 +646,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotCountRemovedLabelsFromTxState() throws Exception
+    void shouldNotCountRemovedLabelsFromTxState() throws Exception
     {
         // Given
         Node node1 = createNode( "label" );
@@ -665,7 +666,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldNotCountRemovedNodesFromTxState() throws Exception
+    void shouldNotCountRemovedNodesFromTxState() throws Exception
     {
         // Given
         Node node1 = createNode( "label" );
@@ -685,7 +686,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void hasPropertiesShouldSeeNewlyCreatedProperties() throws Exception
+    void hasPropertiesShouldSeeNewlyCreatedProperties() throws Exception
     {
         // Given
         long node;
@@ -718,7 +719,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void hasPropertiesShouldSeeNewlyCreatedPropertiesOnNewlyCreatedNode() throws Exception
+    void hasPropertiesShouldSeeNewlyCreatedPropertiesOnNewlyCreatedNode() throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -737,7 +738,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void hasPropertiesShouldSeeNewlyRemovedProperties() throws Exception
+    void hasPropertiesShouldSeeNewlyRemovedProperties() throws Exception
     {
         // Given
         long node;
@@ -775,7 +776,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void propertyTypeShouldBeTxStateAware() throws Exception
+    void propertyTypeShouldBeTxStateAware() throws Exception
     {
         // Given
         long node;
@@ -814,7 +815,7 @@ public abstract class NodeTransactionStateTestBase<G extends KernelAPIWriteTestS
             labelArray[i] = labels.label( i );
         }
         Arrays.sort( labelArray );
-        assertTrue( "labels match expected", Arrays.equals( expected, labelArray ) );
+        assertTrue( Arrays.equals( expected, labelArray ), "labels match expected" );
     }
 
     public Node createNode( String... labels ) throws Exception

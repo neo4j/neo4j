@@ -24,7 +24,7 @@ import org.eclipse.collections.api.set.primitive.LongSet;
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -36,7 +36,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -44,8 +43,9 @@ import java.util.stream.Collectors;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
 import static org.neo4j.internal.kernel.api.TestUtils.concat;
@@ -60,7 +60,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     private static final ToLongFunction<NodeCursor> NODE_GET = NodeCursor::nodeReference;
 
     @Test
-    public void shouldHandleEmptyDatabase() throws TransactionFailureException
+    void shouldHandleEmptyDatabase() throws TransactionFailureException
     {
         try ( Transaction tx = beginTransaction() )
         {
@@ -76,7 +76,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void scanShouldNotSeeDeletedNode() throws Exception
+    void scanShouldNotSeeDeletedNode() throws Exception
     {
         int size = 100;
         Set<Long> created = new HashSet<>( size );
@@ -119,7 +119,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void scanShouldSeeAddedNodes() throws Exception
+    void scanShouldSeeAddedNodes() throws Exception
     {
         int size = 100;
         MutableLongSet existing = createNodes( size );
@@ -154,7 +154,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void shouldReserveBatchFromTxState()
+    void shouldReserveBatchFromTxState()
             throws TransactionFailureException, InvalidTransactionTypeKernelException
     {
         try ( Transaction tx = beginTransaction() )
@@ -183,7 +183,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void shouldScanAllNodesFromMultipleThreads()
+    void shouldScanAllNodesFromMultipleThreads()
             throws InterruptedException, ExecutionException, TransactionFailureException,
             InvalidTransactionTypeKernelException
     {
@@ -228,7 +228,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void shouldScanAllNodesFromMultipleThreadWithBigSizeHints()
+    void shouldScanAllNodesFromMultipleThreadWithBigSizeHints()
             throws InterruptedException, ExecutionException, TransactionFailureException,
             InvalidTransactionTypeKernelException
     {
@@ -273,7 +273,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void shouldScanAllNodesFromRandomlySizedWorkers()
+    void shouldScanAllNodesFromRandomlySizedWorkers()
             throws InterruptedException, TransactionFailureException,
             InvalidTransactionTypeKernelException
     {
@@ -318,7 +318,7 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
     }
 
     @Test
-    public void parallelTxStateScanStressTest() throws InvalidTransactionTypeKernelException, TransactionFailureException, InterruptedException
+    void parallelTxStateScanStressTest() throws InvalidTransactionTypeKernelException, TransactionFailureException, InterruptedException
     {
         LongSet existingNodes = createNodes( 77 );
         int workers = Runtime.getRuntime().availableProcessors();
@@ -352,9 +352,9 @@ public abstract class ParallelNodeCursorTransactionStateTestBase<G extends Kerne
                     assertDistinct( lists );
                     LongList concat = concat( lists );
                     assertEquals(
-                            String.format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ),
-                            allNodes, LongSets.immutable.withAll( concat ) );
-                    assertEquals( String.format( "nodes=%d", nodeInTx ), allNodes.size(), concat.size() );
+                            allNodes, LongSets.immutable.withAll( concat ),
+                            format( "nodes=%d, seen=%d, all=%d", nodeInTx, concat.size(), allNodes.size() ) );
+                    assertEquals( allNodes.size(), concat.size(), format( "nodes=%d", nodeInTx ) );
                     tx.failure();
                 }
             }

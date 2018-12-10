@@ -19,7 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -31,7 +31,7 @@ public class NodesTest
 {
 
     @Test
-    public void shouldCountOutgoingDense()
+    void shouldCountOutgoingDense()
     {
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
@@ -51,7 +51,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountOutgoingSparse()
+    void shouldCountOutgoingSparse()
     {
         // Given
         StubRelationshipCursor relationshipCursor = new StubRelationshipCursor(
@@ -72,7 +72,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountIncomingDense()
+    void shouldCountIncomingDense()
     {
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
@@ -92,7 +92,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountIncomingSparse()
+    void shouldCountIncomingSparse()
     {
         // Given
         StubRelationshipCursor relationshipCursor = new StubRelationshipCursor(
@@ -114,7 +114,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountAllDense()
+    void shouldCountAllDense()
     {
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
@@ -134,7 +134,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountAllSparse()
+    void shouldCountAllSparse()
     {
         // Given
         StubRelationshipCursor relationshipCursor = new StubRelationshipCursor(
@@ -156,7 +156,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountOutgoingDenseWithType()
+    void shouldCountOutgoingDenseWithType()
     {
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
@@ -171,7 +171,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountOutgoingSparseWithType()
+    void shouldCountOutgoingSparseWithType()
     {
         // Given
         StubRelationshipCursor relationshipCursor = new StubRelationshipCursor(
@@ -193,7 +193,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountIncomingWithTypeDense()
+    void shouldCountIncomingWithTypeDense()
     {
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
@@ -207,7 +207,7 @@ public class NodesTest
         assertThat( countIncoming( new StubNodeCursor( true ), cursors, 2 ), equalTo( 4 ) );
     }
     @Test
-    public void shouldCountIncomingWithTypeSparse()
+    void shouldCountIncomingWithTypeSparse()
     {
         // Given
         StubRelationshipCursor relationshipCursor = new StubRelationshipCursor(
@@ -229,7 +229,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountAllWithTypeDense()
+    void shouldCountAllWithTypeDense()
     {
         // Given
         StubGroupCursor groupCursor = new StubGroupCursor(
@@ -244,7 +244,7 @@ public class NodesTest
     }
 
     @Test
-    public void shouldCountAllWithTypeSparse()
+    void shouldCountAllWithTypeSparse()
     {
         // Given
         StubRelationshipCursor relationshipCursor = new StubRelationshipCursor(

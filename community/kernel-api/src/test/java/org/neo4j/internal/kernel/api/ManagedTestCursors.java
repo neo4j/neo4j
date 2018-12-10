@@ -22,7 +22,7 @@ package org.neo4j.internal.kernel.api;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class ManagedTestCursors implements CursorFactory
 {

@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.time.ZoneOffset;
 
@@ -38,18 +39,18 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.ValueGroup;
 import org.neo4j.values.storable.Values;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.stringValue;
 
-public class IndexQueryTest
+class IndexQueryTest
 {
     private final int propId = 0;
 
     // EXISTS
 
     @Test
-    public void testExists()
+    void testExists()
     {
         ExistsPredicate p = IndexQuery.exists( propId );
 
@@ -66,7 +67,7 @@ public class IndexQueryTest
     // EXACT
 
     @Test
-    public void testExact()
+    void testExact()
     {
         assertExactPredicate( "string" );
         assertExactPredicate( 1 );
@@ -86,7 +87,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testExact_ComparingBigDoublesAndLongs()
+    void testExact_ComparingBigDoublesAndLongs()
     {
         ExactPredicate p = IndexQuery.exact( propId, 9007199254740993L );
 
@@ -96,7 +97,7 @@ public class IndexQueryTest
     // NUMERIC RANGE
 
     @Test
-    public void testNumRange_FalseForIrrelevant()
+    void testNumRange_FalseForIrrelevant()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 11, true, 13, true );
 
@@ -104,7 +105,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_InclusiveLowerInclusiveUpper()
+    void testNumRange_InclusiveLowerInclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 11, true, 13, true );
 
@@ -116,7 +117,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_ExclusiveLowerExclusiveLower()
+    void testNumRange_ExclusiveLowerExclusiveLower()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 11, false, 13, false );
 
@@ -126,7 +127,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_InclusiveLowerExclusiveUpper()
+    void testNumRange_InclusiveLowerExclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 11, true, 13, false );
 
@@ -137,7 +138,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_ExclusiveLowerInclusiveUpper()
+    void testNumRange_ExclusiveLowerInclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 11, false, 13, true );
 
@@ -148,7 +149,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_LowerNullValue()
+    void testNumRange_LowerNullValue()
     {
         RangePredicate<?> p = IndexQuery.range( propId, null, true, 13, true );
 
@@ -160,7 +161,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_UpperNullValue()
+    void testNumRange_UpperNullValue()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 11, true, null, true );
 
@@ -172,7 +173,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testNumRange_ComparingBigDoublesAndLongs()
+    void testNumRange_ComparingBigDoublesAndLongs()
     {
         RangePredicate<?> p = IndexQuery.range( propId, 9007199254740993L, true, null, true );
 
@@ -182,7 +183,7 @@ public class IndexQueryTest
     // STRING RANGE
 
     @Test
-    public void testStringRange_FalseForIrrelevant()
+    void testStringRange_FalseForIrrelevant()
     {
         RangePredicate<?> p = IndexQuery.range( propId, "bbb", true, "bee", true );
 
@@ -190,7 +191,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringRange_InclusiveLowerInclusiveUpper()
+    void testStringRange_InclusiveLowerInclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, "bbb", true, "bee", true );
 
@@ -202,7 +203,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringRange_ExclusiveLowerInclusiveUpper()
+    void testStringRange_ExclusiveLowerInclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, "bbb", false, "bee", true );
 
@@ -213,7 +214,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringRange_InclusiveLowerExclusiveUpper()
+    void testStringRange_InclusiveLowerExclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, "bbb", true, "bee", false );
 
@@ -224,7 +225,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringRange_ExclusiveLowerExclusiveUpper()
+    void testStringRange_ExclusiveLowerExclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, "bbb", false, "bee", false );
 
@@ -235,7 +236,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringRange_UpperUnbounded()
+    void testStringRange_UpperUnbounded()
     {
         RangePredicate<?> p = IndexQuery.range( propId, "bbb", false, null, false );
 
@@ -245,7 +246,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringRange_LowerUnbounded()
+    void testStringRange_LowerUnbounded()
     {
         RangePredicate<?> p = IndexQuery.range( propId, null, false, "bee", false );
 
@@ -273,7 +274,7 @@ public class IndexQueryTest
     //TODO: Also insert points which can't be compared e.g. Cartesian and (-100, 100)
 
     @Test
-    public void testGeometryRange_FalseForIrrelevant()
+    void testGeometryRange_FalseForIrrelevant()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps2, true, gps5, true );
 
@@ -281,7 +282,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_InclusiveLowerInclusiveUpper()
+    void testGeometryRange_InclusiveLowerInclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps2, true, gps5, true );
 
@@ -297,7 +298,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_ExclusiveLowerInclusiveUpper()
+    void testGeometryRange_ExclusiveLowerInclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps2, false, gps5, true );
 
@@ -312,7 +313,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_InclusiveLowerExclusiveUpper()
+    void testGeometryRange_InclusiveLowerExclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps2, true, gps5, false );
 
@@ -327,7 +328,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_ExclusiveLowerExclusiveUpper()
+    void testGeometryRange_ExclusiveLowerExclusiveUpper()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps2, false, gps5, false );
 
@@ -342,7 +343,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_UpperUnbounded()
+    void testGeometryRange_UpperUnbounded()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps2, false, null, false );
 
@@ -356,7 +357,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_LowerUnbounded()
+    void testGeometryRange_LowerUnbounded()
     {
         RangePredicate<?> p = IndexQuery.range( propId, null, false, gps5, false );
 
@@ -370,7 +371,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_Cartesian()
+    void testGeometryRange_Cartesian()
     {
         RangePredicate<?> p = IndexQuery.range( propId, car1, false, car2, true );
 
@@ -386,7 +387,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_Cartesian3D()
+    void testGeometryRange_Cartesian3D()
     {
         RangePredicate<?> p = IndexQuery.range( propId, car3, true, car4, true );
 
@@ -402,7 +403,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testGeometryRange_WGS84_3D()
+    void testGeometryRange_WGS84_3D()
     {
         RangePredicate<?> p = IndexQuery.range( propId, gps1_3d, true, gps2_3d, true );
 
@@ -418,7 +419,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testDateRange()
+    void testDateRange()
     {
         RangePredicate<?> p = IndexQuery.range( propId, DateValue.date( 2014, 7, 7 ), true, DateValue.date( 2017,3, 7 ), false );
 
@@ -432,7 +433,7 @@ public class IndexQueryTest
 
     // VALUE GROUP SCAN
     @Test
-    public void testValueGroupRange()
+    void testValueGroupRange()
     {
         RangePredicate<?> p = IndexQuery.range( propId, ValueGroup.DATE );
 
@@ -444,7 +445,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testCRSRange()
+    void testCRSRange()
     {
         RangePredicate<?> p = IndexQuery.range( propId, CoordinateReferenceSystem.WGS84 );
 
@@ -459,7 +460,7 @@ public class IndexQueryTest
     // STRING PREFIX
 
     @Test
-    public void testStringPrefix_FalseForIrrelevant()
+    void testStringPrefix_FalseForIrrelevant()
     {
         StringPrefixPredicate p = IndexQuery.stringPrefix( propId, stringValue( "dog" ) );
 
@@ -467,7 +468,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringPrefix_SomeValues()
+    void testStringPrefix_SomeValues()
     {
         StringPrefixPredicate p = IndexQuery.stringPrefix( propId, stringValue( "dog" ) );
 
@@ -481,7 +482,7 @@ public class IndexQueryTest
     // STRING CONTAINS
 
     @Test
-    public void testStringContains_FalseForIrrelevant()
+    void testStringContains_FalseForIrrelevant()
     {
         StringContainsPredicate p = IndexQuery.stringContains( propId, stringValue( "cat" ));
 
@@ -489,7 +490,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringContains_SomeValues()
+    void testStringContains_SomeValues()
     {
         StringContainsPredicate p = IndexQuery.stringContains( propId, stringValue( "cat" ));
 
@@ -504,7 +505,7 @@ public class IndexQueryTest
     // STRING SUFFIX
 
     @Test
-    public void testStringSuffix_FalseForIrrelevant()
+    void testStringSuffix_FalseForIrrelevant()
     {
         StringSuffixPredicate p = IndexQuery.stringSuffix( propId, stringValue( "less" ) );
 
@@ -512,7 +513,7 @@ public class IndexQueryTest
     }
 
     @Test
-    public void testStringSuffix_SomeValues()
+    void testStringSuffix_SomeValues()
     {
         StringSuffixPredicate p = IndexQuery.stringSuffix( propId, stringValue( "less" ) );
 

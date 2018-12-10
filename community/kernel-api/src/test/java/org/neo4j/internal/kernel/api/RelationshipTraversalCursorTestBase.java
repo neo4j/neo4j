@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Assume;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Map;
 
@@ -28,10 +28,11 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
@@ -46,12 +47,12 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     private static long bare, start, end;
     private static RelationshipTestSupport.StartNode sparse, dense;
 
-    protected boolean supportsDirectTraversal()
+    private boolean supportsDirectTraversal()
     {
         return true;
     }
 
-    protected boolean supportsSparseNodes()
+    private boolean supportsSparseNodes()
     {
         return true;
     }
@@ -82,7 +83,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
     }
 
     @Test
-    public void shouldNotAccessGroupsOfBareNode()
+    void shouldNotAccessGroupsOfBareNode()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -90,16 +91,16 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         {
             // when
             read.singleNode( bare, node );
-            assertTrue( "access node", node.next() );
+            assertTrue( node.next(), "access node" );
             node.relationships( group );
 
             // then
-            assertFalse( "access group", group.next() );
+            assertFalse( group.next(), "access group" );
         }
     }
 
     @Test
-    public void shouldTraverseRelationshipsOfGivenType()
+    void shouldTraverseRelationshipsOfGivenType()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -120,41 +121,40 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
                     group.outgoing( relationship );
                     while ( relationship.next() )
                     {
-                        assertEquals( "node #" + node.nodeReference() +
-                                        " relationship should have same label as group", group.type(),
-                                relationship.type() );
+                        assertEquals( group.type(), relationship.type(), "node #" + node.nodeReference() +
+                                                                         " relationship should have same label as group"
+                        );
                         degree.outgoing++;
                     }
                     group.incoming( relationship );
                     while ( relationship.next() )
                     {
-                        assertEquals( "node #" + node.nodeReference() +
-                                        "relationship should have same label as group", group.type(),
-                                relationship.type() );
+                        assertEquals( group.type(), relationship.type(), "node #" + node.nodeReference() +
+                                                                         "relationship should have same label as group"
+                        );
                         degree.incoming++;
                     }
                     group.loops( relationship );
                     while ( relationship.next() )
                     {
-                        assertEquals( "node #" + node.nodeReference() +
-                                        "relationship should have same label as group", group.type(),
-                                relationship.type() );
+                        assertEquals( group.type(), relationship.type(), "node #" + node.nodeReference() +
+                                                                         "relationship should have same label as group"
+                        );
                         degree.loop++;
                     }
 
                     // then
-                    assertNotEquals( "all", 0, degree.incoming + degree.outgoing + degree.loop );
+                    assertNotEquals( 0, degree.incoming + degree.outgoing + degree.loop, "all" );
                     assertEquals(
-                            "node #" + node.nodeReference() + " outgoing",
-                            group.outgoingCount(),
-                            degree.outgoing );
+                            group.outgoingCount(), degree.outgoing, "node #" + node.nodeReference() + " outgoing"
+                    );
                     assertEquals(
-                            "node #" + node.nodeReference() + " incoming",
-                            group.incomingCount(),
-                            degree.incoming );
-                    assertEquals( "node #" + node.nodeReference() + " loop", group.loopCount(), degree.loop );
-                    assertEquals( "node #" + node.nodeReference() + " all = incoming + outgoing - loop",
-                            group.totalCount(), degree.incoming + degree.outgoing + degree.loop );
+                            group.incomingCount(), degree.incoming, "node #" + node.nodeReference() + " incoming"
+                    );
+                    assertEquals( group.loopCount(), degree.loop, "node #" + node.nodeReference() + " loop" );
+                    assertEquals( group.totalCount(), degree.incoming + degree.outgoing + degree.loop,
+                            "node #" + node.nodeReference() + " all = incoming + outgoing - loop"
+                    );
                 }
                 if ( none )
                 {
@@ -163,12 +163,12 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
             }
 
             // then
-            assertEquals( "number of empty nodes", 1, empty );
+            assertEquals( 1, empty, "number of empty nodes" );
         }
     }
 
     @Test
-    public void shouldFollowSpecificRelationship()
+    void shouldFollowSpecificRelationship()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor();
@@ -177,125 +177,125 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         {
             // when - traversing from start to end
             read.singleNode( start, node );
-            assertTrue( "access start node", node.next() );
+            assertTrue( node.next(), "access start node" );
             node.relationships( group );
-            assertTrue( "access relationship group", group.next() );
+            assertTrue( group.next(), "access relationship group" );
             group.outgoing( relationship );
-            assertTrue( "access outgoing relationships", relationship.next() );
+            assertTrue( relationship.next(), "access outgoing relationships" );
 
             // then
-            assertEquals( "source node", start, relationship.sourceNodeReference() );
-            assertEquals( "target node", end, relationship.targetNodeReference() );
+            assertEquals( start, relationship.sourceNodeReference(), "source node" );
+            assertEquals( end, relationship.targetNodeReference(), "target node" );
 
-            assertEquals( "node of origin", start, relationship.originNodeReference() );
-            assertEquals( "neighbouring node", end, relationship.neighbourNodeReference() );
+            assertEquals( start, relationship.originNodeReference(), "node of origin" );
+            assertEquals( end, relationship.neighbourNodeReference(), "neighbouring node" );
 
-            assertEquals( "relationship should have same label as group", group.type(),
-                    relationship.type() );
+            assertEquals( group.type(), relationship.type(), "relationship should have same label as group"
+            );
 
-            assertFalse( "only a single relationship", relationship.next() );
+            assertFalse( relationship.next(), "only a single relationship" );
 
             group.incoming( relationship );
-            assertFalse( "no incoming relationships", relationship.next() );
+            assertFalse( relationship.next(), "no incoming relationships" );
             group.loops( relationship );
-            assertFalse( "no loop relationships", relationship.next() );
+            assertFalse( relationship.next(), "no loop relationships" );
 
-            assertFalse( "only a single group", group.next() );
+            assertFalse( group.next(), "only a single group" );
 
             // when - traversing from end to start
             read.singleNode( end, node );
-            assertTrue( "access start node", node.next() );
+            assertTrue( node.next(), "access start node" );
             node.relationships( group );
-            assertTrue( "access relationship group", group.next() );
+            assertTrue( group.next(), "access relationship group" );
             group.incoming( relationship );
-            assertTrue( "access incoming relationships", relationship.next() );
+            assertTrue( relationship.next(), "access incoming relationships" );
 
             // then
-            assertEquals( "source node", start, relationship.sourceNodeReference() );
-            assertEquals( "target node", end, relationship.targetNodeReference() );
+            assertEquals( start, relationship.sourceNodeReference(), "source node" );
+            assertEquals( end, relationship.targetNodeReference(), "target node" );
 
-            assertEquals( "node of origin", end, relationship.originNodeReference() );
-            assertEquals( "neighbouring node", start, relationship.neighbourNodeReference() );
+            assertEquals( end, relationship.originNodeReference(), "node of origin" );
+            assertEquals( start, relationship.neighbourNodeReference(), "neighbouring node" );
 
-            assertEquals( "relationship should have same label as group", group.type(),
-                    relationship.type() );
+            assertEquals( group.type(), relationship.type(), "relationship should have same label as group"
+            );
 
-            assertFalse( "only a single relationship", relationship.next() );
+            assertFalse( relationship.next(), "only a single relationship" );
 
             group.outgoing( relationship );
-            assertFalse( "no outgoing relationships", relationship.next() );
+            assertFalse( relationship.next(), "no outgoing relationships" );
             group.loops( relationship );
-            assertFalse( "no loop relationships", relationship.next() );
+            assertFalse( relationship.next(), "no loop relationships" );
 
-            assertFalse( "only a single group", group.next() );
+            assertFalse( group.next(), "only a single group" );
         }
     }
 
     @Test
-    public void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
+    void shouldHaveBeenAbleToCreateDenseAndSparseNodes()
     {
         // given
         try ( NodeCursor node = cursors.allocateNodeCursor() )
         {
             read.singleNode( dense.id, node );
-            assertTrue( "access dense node", node.next() );
-            assertTrue( "dense node", node.isDense() );
+            assertTrue( node.next(), "access dense node" );
+            assertTrue( node.isDense(), "dense node" );
 
             read.singleNode( sparse.id, node );
-            assertTrue( "access sparse node", node.next() );
-            assertFalse( "sparse node", node.isDense() && supportsSparseNodes() );
+            assertTrue( node.next(), "access sparse node" );
+            assertFalse( node.isDense() && supportsSparseNodes(), "sparse node" );
         }
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroups() throws Exception
+    void shouldTraverseSparseNodeViaGroups() throws Exception
     {
         traverseViaGroups( sparse, false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroups() throws Exception
+    void shouldTraverseDenseNodeViaGroups() throws Exception
     {
         traverseViaGroups( dense, false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( sparse, true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeViaGroupsWithDetachedReferences() throws Exception
     {
         traverseViaGroups( dense, true );
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroups() throws Exception
+    void shouldTraverseSparseNodeWithoutGroups() throws Exception
     {
-        Assume.assumeTrue( supportsSparseNodes() && supportsDirectTraversal() );
+        assumeTrue( supportsSparseNodes() && supportsDirectTraversal() );
         traverseWithoutGroups( sparse, false );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroups() throws Exception
+    void shouldTraverseDenseNodeWithoutGroups() throws Exception
     {
-        Assume.assumeTrue( supportsDirectTraversal() );
+        assumeTrue( supportsDirectTraversal() );
         traverseWithoutGroups( dense, false );
     }
 
     @Test
-    public void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseSparseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
-        Assume.assumeTrue( supportsSparseNodes() );
+        assumeTrue( supportsSparseNodes() );
         traverseWithoutGroups( sparse, true );
     }
 
     @Test
-    public void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
+    void shouldTraverseDenseNodeWithoutGroupsWithDetachedReferences() throws Exception
     {
-        Assume.assumeTrue( supportsDirectTraversal() );
+        assumeTrue( supportsDirectTraversal() );
         traverseWithoutGroups( dense, true );
     }
 
@@ -310,7 +310,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         {
             // when
             read.singleNode( start.id, node );
-            assertTrue( "access node", node.next() );
+            assertTrue( node.next(), "access node" );
             if ( detached )
             {
                 read.relationshipGroups( start.id, node.relationshipGroupReference(), group );
@@ -370,7 +370,7 @@ public abstract class RelationshipTraversalCursorTestBase<G extends KernelAPIRea
         {
             // when
             read.singleNode( start.id, node );
-            assertTrue( "access node", node.next() );
+            assertTrue( node.next(), "access node" );
 
             if ( detached )
             {

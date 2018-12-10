@@ -27,9 +27,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.hamcrest.Matchers;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,9 +44,10 @@ import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
 import static org.neo4j.internal.kernel.api.TestUtils.concat;
 import static org.neo4j.internal.kernel.api.TestUtils.randomBatchWorker;
@@ -63,9 +62,6 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     private static LongSet BAR_NODES;
     private static int[] ALL_LABELS = new int[]{FOO_LABEL, BAR_LABEL};
     private static final ToLongFunction<NodeLabelIndexCursor> NODE_GET = NodeLabelIndexCursor::nodeReference;
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -106,7 +102,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     }
 
     @Test
-    public void shouldScanASubsetOfNodes()
+    void shouldScanASubsetOfNodes()
     {
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
@@ -143,7 +139,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     }
 
     @Test
-    public void shouldHandleSizeHintOverflow()
+    void shouldHandleSizeHintOverflow()
     {
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
@@ -164,23 +160,20 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     }
 
     @Test
-    public void shouldFailForSizeHintZero()
+    void shouldFailForSizeHintZero()
     {
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
         {
             // given
             Scan<NodeLabelIndexCursor> scan = read.nodeLabelScan( FOO_LABEL );
 
-            // expect
-            exception.expect( IllegalArgumentException.class );
-
             // when
-            scan.reserveBatch( nodes, 0 );
+            assertThrows( IllegalArgumentException.class , () -> scan.reserveBatch( nodes, 0 ) );
         }
     }
 
     @Test
-    public void shouldScanAllNodesInBatches()
+    void shouldScanAllNodesInBatches()
     {
         // given
         try ( NodeLabelIndexCursor nodes = cursors.allocateNodeLabelIndexCursor() )
@@ -204,7 +197,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     }
 
     @Test
-    public void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
+    void shouldScanAllNodesFromMultipleThreads() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -241,7 +234,7 @@ public abstract class ParallelNodeLabelScanTestBase<G extends KernelAPIReadTestS
     }
 
     @Test
-    public void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException
+    void shouldScanAllNodesFromRandomlySizedWorkers() throws InterruptedException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );

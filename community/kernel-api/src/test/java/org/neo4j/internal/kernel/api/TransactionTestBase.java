@@ -19,17 +19,18 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void shouldRollbackWhenTxIsNotSuccess() throws Exception
+    void shouldRollbackWhenTxIsNotSuccess() throws Exception
     {
         // GIVEN
         long nodeId;
@@ -49,7 +50,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
     }
 
     @Test
-    public void shouldRollbackWhenTxIsFailed() throws Exception
+    void shouldRollbackWhenTxIsFailed() throws Exception
     {
         // GIVEN
         long nodeId;
@@ -69,7 +70,7 @@ public abstract class TransactionTestBase<G extends KernelAPIWriteTestSupport> e
     }
 
     @Test
-    public void shouldRollbackAndThrowWhenTxIsBothFailedAndSuccess() throws Exception
+    void shouldRollbackAndThrowWhenTxIsBothFailedAndSuccess() throws Exception
     {
         // GIVEN
         long nodeId;

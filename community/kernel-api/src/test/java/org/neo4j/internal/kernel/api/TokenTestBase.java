@@ -19,20 +19,20 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.function.ThrowingConsumer;
 import org.neo4j.function.ThrowingFunction;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
     @Test
-    public void labelGetOrCreateForName()
+    void labelGetOrCreateForName()
     {
         assertIllegalToken( token -> token.labelGetOrCreateForName( null ) );
         assertIllegalToken( token -> token.labelGetOrCreateForName( "" ) );
@@ -41,7 +41,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
     }
 
     @Test
-    public void labelGetOrCreateForNames()
+    void labelGetOrCreateForNames()
     {
         assertIllegalToken( token -> token.labelGetOrCreateForNames( new String[]{null}, new int[1] ) );
         assertIllegalToken( token -> token.labelGetOrCreateForNames( new String[]{""}, new int[1] ) );
@@ -53,7 +53,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
     }
 
     @Test
-    public void propertyKeyGetOrCreateForName()
+    void propertyKeyGetOrCreateForName()
     {
         assertIllegalToken( token -> token.propertyKeyGetOrCreateForName( null ) );
         assertIllegalToken( token -> token.propertyKeyGetOrCreateForName( "" ) );
@@ -62,7 +62,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
     }
 
     @Test
-    public void propertyKeyGetOrCreateForNames()
+    void propertyKeyGetOrCreateForNames()
     {
         assertIllegalToken( token -> token.propertyKeyGetOrCreateForNames( new String[]{null}, new int[1] ) );
         assertIllegalToken( token -> token.propertyKeyGetOrCreateForNames( new String[]{""}, new int[1] ) );
@@ -74,7 +74,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
     }
 
     @Test
-    public void relationshipTypeGetOrCreateForName()
+    void relationshipTypeGetOrCreateForName()
     {
         assertIllegalToken( token -> token.relationshipTypeGetOrCreateForName( null ) );
         assertIllegalToken( token -> token.relationshipTypeGetOrCreateForName( "" ) );
@@ -83,7 +83,7 @@ public abstract class TokenTestBase<G extends KernelAPIWriteTestSupport> extends
     }
 
     @Test
-    public void relationshipTypeGetOrCreateForNames()
+    void relationshipTypeGetOrCreateForNames()
     {
         assertIllegalToken( token -> token.relationshipTypeGetOrCreateForNames( new String[]{null}, new int[1] ) );
         assertIllegalToken( token -> token.relationshipTypeGetOrCreateForNames( new String[]{""}, new int[1] ) );

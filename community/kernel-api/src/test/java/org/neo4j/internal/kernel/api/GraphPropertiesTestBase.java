@@ -19,23 +19,23 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.values.storable.Value;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.stringValue;
 
 @SuppressWarnings( "Duplicates" )
 public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
-
     @Test
-    public void shouldBeAbleToWriteNewGraphProperty() throws Exception
+    void shouldBeAbleToWriteNewGraphProperty() throws Exception
     {
         int prop;
         try ( Transaction tx = beginTransaction() )
@@ -52,7 +52,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldBeAbleToReplaceExistingGraphProperty() throws Exception
+    void shouldBeAbleToReplaceExistingGraphProperty() throws Exception
     {
         int prop;
         try ( Transaction tx = beginTransaction() )
@@ -75,7 +75,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldBeAbleToRemoveExistingGraphProperty() throws Exception
+    void shouldBeAbleToRemoveExistingGraphProperty() throws Exception
     {
         int prop;
         try ( Transaction tx = beginTransaction() )
@@ -98,7 +98,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldBeAbleToReadExistingGraphProperties() throws Exception
+    void shouldBeAbleToReadExistingGraphProperties() throws Exception
     {
         int prop1, prop2, prop3;
         try ( Transaction tx = beginTransaction() )
@@ -134,7 +134,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldSeeNewGraphPropertyInTransaction() throws Exception
+    void shouldSeeNewGraphPropertyInTransaction() throws Exception
     {
         try ( Transaction tx = beginTransaction();
               PropertyCursor cursor = tx.cursors().allocatePropertyCursor() )
@@ -150,7 +150,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldSeeUpdatedGraphPropertyInTransaction() throws Exception
+    void shouldSeeUpdatedGraphPropertyInTransaction() throws Exception
     {
         int prop;
         try ( Transaction tx = beginTransaction() )
@@ -175,7 +175,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldNotSeeRemovedGraphPropertyInTransaction() throws Exception
+    void shouldNotSeeRemovedGraphPropertyInTransaction() throws Exception
     {
         int prop;
         try ( Transaction tx = beginTransaction() )
@@ -196,7 +196,7 @@ public abstract class GraphPropertiesTestBase<G extends KernelAPIWriteTestSuppor
     }
 
     @Test
-    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
     {
         // Given
         int prop;

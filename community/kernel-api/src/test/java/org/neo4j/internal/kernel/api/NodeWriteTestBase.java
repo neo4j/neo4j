@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.Node;
@@ -34,10 +32,11 @@ import org.neo4j.values.storable.Values;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.Values.NO_VALUE;
 import static org.neo4j.values.storable.Values.intValue;
@@ -46,14 +45,11 @@ import static org.neo4j.values.storable.Values.stringValue;
 @SuppressWarnings( "Duplicates" )
 public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> extends KernelAPIWriteTestBase<G>
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
     private static final String propertyKey = "prop";
     private static final String labelName = "Town";
 
     @Test
-    public void shouldCreateNode() throws Exception
+    void shouldCreateNode() throws Exception
     {
         long node;
         try ( Transaction tx = beginTransaction() )
@@ -69,7 +65,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRollbackOnFailure() throws Exception
+    void shouldRollbackOnFailure() throws Exception
     {
         long node;
         try ( Transaction tx = beginTransaction() )
@@ -90,7 +86,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRemoveNode() throws Exception
+    void shouldRemoveNode() throws Exception
     {
         long node = createNode();
 
@@ -114,7 +110,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldNotRemoveNodeThatDoesNotExist() throws Exception
+    void shouldNotRemoveNodeThatDoesNotExist() throws Exception
     {
         long node = 0;
 
@@ -132,7 +128,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldAddLabelNode() throws Exception
+    void shouldAddLabelNode() throws Exception
     {
         // Given
         long node = createNode();
@@ -150,7 +146,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldAddLabelNodeOnce() throws Exception
+    void shouldAddLabelNodeOnce() throws Exception
     {
         long node = createNodeWithLabel( labelName );
 
@@ -165,7 +161,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRemoveLabel() throws Exception
+    void shouldRemoveLabel() throws Exception
     {
         long nodeId = createNodeWithLabel( labelName );
 
@@ -180,20 +176,19 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldNotAddLabelToNonExistingNode() throws Exception
+    void shouldNotAddLabelToNonExistingNode() throws Exception
     {
         long node = 1337L;
 
         try ( Transaction tx = beginTransaction() )
         {
             int labelId = tx.token().labelGetOrCreateForName( labelName );
-            exception.expect( KernelException.class );
-            tx.dataWrite().nodeAddLabel( node, labelId );
+            assertThrows( KernelException.class, () -> tx.dataWrite().nodeAddLabel( node, labelId ) );
         }
     }
 
     @Test
-    public void shouldRemoveLabelOnce() throws Exception
+    void shouldRemoveLabelOnce() throws Exception
     {
         int labelId;
         long nodeId = createNodeWithLabel( labelName );
@@ -216,7 +211,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldAddPropertyToNode() throws Exception
+    void shouldAddPropertyToNode() throws Exception
     {
         // Given
         long node = createNode();
@@ -234,7 +229,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRollbackSetNodeProperty() throws Exception
+    void shouldRollbackSetNodeProperty() throws Exception
     {
         // Given
         long node = createNode();
@@ -252,7 +247,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldThrowWhenSettingPropertyOnDeletedNode() throws Exception
+    void shouldThrowWhenSettingPropertyOnDeletedNode() throws Exception
     {
         // Given
         long node = createNode();
@@ -272,7 +267,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldUpdatePropertyToNode() throws Exception
+    void shouldUpdatePropertyToNode() throws Exception
     {
         // Given
         long node = createNodeWithProperty( propertyKey, 42 );
@@ -291,7 +286,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRemovePropertyFromNode() throws Exception
+    void shouldRemovePropertyFromNode() throws Exception
     {
         // Given
         long node = createNodeWithProperty( propertyKey, 42 );
@@ -310,7 +305,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRemoveNonExistingPropertyFromNode() throws Exception
+    void shouldRemoveNonExistingPropertyFromNode() throws Exception
     {
         // Given
         long node = createNode();
@@ -328,7 +323,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRemovePropertyFromNodeTwice() throws Exception
+    void shouldRemovePropertyFromNodeTwice() throws Exception
     {
         // Given
         long node = createNodeWithProperty( propertyKey, 42 );
@@ -349,7 +344,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldUpdatePropertyToNodeInTransaction() throws Exception
+    void shouldUpdatePropertyToNodeInTransaction() throws Exception
     {
         // Given
         long node = createNode();
@@ -369,7 +364,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldRemoveReSetAndTwiceRemovePropertyOnNode() throws Exception
+    void shouldRemoveReSetAndTwiceRemovePropertyOnNode() throws Exception
     {
         // given
         long node = createNodeWithProperty( propertyKey, "bar" );
@@ -391,7 +386,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
+    void shouldNotWriteWhenSettingPropertyToSameValue() throws Exception
     {
         // Given
         Value theValue = stringValue( "The Value" );
@@ -407,7 +402,7 @@ public abstract class NodeWriteTestBase<G extends KernelAPIWriteTestSupport> ext
     }
 
     @Test
-    public void shouldSetAndReadLargeByteArrayPropertyToNode() throws Exception
+    void shouldSetAndReadLargeByteArrayPropertyToNode() throws Exception
     {
         // Given
         int prop;

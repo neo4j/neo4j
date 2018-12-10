@@ -19,8 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
@@ -52,7 +52,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
      */
     public abstract WriteSupport newTestSupport();
 
-    @Before
+    @BeforeEach
     public void setupGraph() throws IOException
     {
         if ( testSupport == null )
@@ -71,7 +71,7 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
         return kernel.beginTransaction( Transaction.Type.implicit, LoginContext.AUTH_DISABLED );
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDown()
     {
         if ( testSupport != null )

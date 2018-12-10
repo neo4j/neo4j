@@ -21,7 +21,7 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.exceptions.KernelException;
 
@@ -37,7 +37,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
     private int labelFirst = 4;
 
     @Test
-    public void shouldFindNodesByLabel() throws Exception
+    void shouldFindNodesByLabel() throws Exception
     {
         // GIVEN
         long toDelete;
@@ -96,7 +96,7 @@ public abstract class NodeLabelIndexCursorTestBase<G extends KernelAPIWriteTestS
     }
 
     @Test
-    public void shouldFindNodesByLabelInTx() throws Exception
+    void shouldFindNodesByLabelInTx() throws Exception
     {
         long inStore;
         long deletedInTx;

@@ -19,14 +19,10 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -37,29 +33,17 @@ import org.neo4j.helpers.collection.Pair;
 import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@RunWith( Parameterized.class )
 public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
-
-    @Parameterized.Parameters( name = "{0}" )
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList( new Object[][]{{IndexOrder.ASCENDING}} );
-    }
-
-    @Parameterized.Parameter
-    public IndexOrder indexOrder;
-
-    @Test
-    public void shouldRangeScanInOrder() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING"} )
+    void shouldRangeScanInOrder( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
@@ -95,13 +79,14 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 IndexQuery query = IndexQuery.range( prop, "hello", true, "trello", true );
                 tx.dataRead().nodeIndexSeek( index, cursor, indexOrder, true, query );
 
-                assertResultsInOrder( expected, cursor );
+                assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
     }
 
-    @Test
-    public void shouldPrefixScanInOrder() throws Exception
+    @ParameterizedTest
+    @EnumSource( value = IndexOrder.class, names = {"ASCENDING"} )
+    void shouldPrefixScanInOrder( IndexOrder indexOrder ) throws Exception
     {
         List<Pair<Long,Value>> expected = new ArrayList<>();
 
@@ -137,12 +122,13 @@ public abstract class NodeIndexOrderTestBase<G extends KernelAPIWriteTestSupport
                 IndexQuery query = IndexQuery.stringPrefix( prop, stringValue( "b" ) );
                 tx.dataRead().nodeIndexSeek( index, cursor, indexOrder, true, query );
 
-                assertResultsInOrder( expected, cursor );
+                assertResultsInOrder( expected, cursor, indexOrder );
             }
         }
     }
 
-    private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor )
+    private void assertResultsInOrder( List<Pair<Long,Value>> expected, NodeValueIndexCursor cursor,
+            IndexOrder indexOrder )
     {
         Comparator<Pair<Long,Value>> comparator = indexOrder == IndexOrder.ASCENDING ? ( a, b ) -> Values.COMPARATOR.compare( a.other(), b.other() )
                                                                                      : ( a, b ) -> Values.COMPARATOR.compare( b.other(), a.other() );

@@ -21,13 +21,10 @@ package org.neo4j.internal.kernel.api;
 
 import org.eclipse.collections.api.set.ImmutableSet;
 import org.eclipse.collections.impl.collector.Collectors2;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -40,29 +37,18 @@ import org.neo4j.values.storable.Value;
 import org.neo4j.values.storable.Values;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.neo4j.values.storable.Values.stringValue;
 
-@RunWith( Parameterized.class )
+
 public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
-    @Parameterized.Parameters()
-    public static Iterable<Object[]> data()
-    {
-        return Arrays.asList(new Object[][] {
-                { true }, { false }
-        });
-    }
-
-    @Parameterized.Parameter
-    public boolean needsValues;
-
-    @Test
-    public void shouldPerformStringSuffixSearch() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringSuffixSearch( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long, Value>> expected = new HashSet<>();
@@ -87,8 +73,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformScan() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformScan( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -124,7 +111,7 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     }
 
     @Test
-    public void shouldPerformEqualitySeek() throws Exception
+    void shouldPerformEqualitySeek() throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -150,8 +137,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformStringPrefixSearch() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringPrefixSearch( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -177,8 +165,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformStringRangeSearch() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringRangeSearch( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -203,8 +192,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformStringRangeSearchWithAddedNodeInTxState() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringRangeSearchWithAddedNodeInTxState( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -234,8 +224,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformStringRangeSearchWithRemovedNodeInTxState() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringRangeSearchWithRemovedNodeInTxState( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -264,8 +255,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformStringRangeSearchWithDeletedNodeInTxState() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringRangeSearchWithDeletedNodeInTxState( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -293,8 +285,9 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
         }
     }
 
-    @Test
-    public void shouldPerformStringContainsSearch() throws Exception
+    @ParameterizedTest
+    @ValueSource( strings = {"true", "false"} )
+    void shouldPerformStringContainsSearch( boolean needsValues ) throws Exception
     {
         // given
         Set<Pair<Long,Value>> expected = new HashSet<>();
@@ -321,18 +314,15 @@ public abstract class NodeIndexTransactionStateTestBase<G extends KernelAPIWrite
     }
 
     @Test
-    public void shouldThrowIfTransactionTerminated() throws Exception
+    void shouldThrowIfTransactionTerminated() throws Exception
     {
         try ( Transaction tx = beginTransaction() )
         {
             // given
             terminate( tx );
 
-            // expect
-            exception.expect( TransactionTerminatedException.class );
-
             // when
-            tx.dataRead().nodeExists( 42 );
+            assertThrows( TransactionTerminatedException.class, () -> tx.dataRead().nodeExists( 42 ) );
         }
     }
 

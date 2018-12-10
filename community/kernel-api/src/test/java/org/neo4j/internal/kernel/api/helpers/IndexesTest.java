@@ -19,9 +19,7 @@
  */
 package org.neo4j.internal.kernel.api.helpers;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
@@ -34,29 +32,29 @@ import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelExcept
 import org.neo4j.register.Register;
 import org.neo4j.register.Registers;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.neo4j.internal.kernel.api.helpers.Indexes.awaitResampling;
 
 public class IndexesTest
 {
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     private final Register.DoubleLongRegister register = Registers.newDoubleLongRegister();
 
     @Test
-    public void shouldNotTimeOutIfNoIndexes() throws Throwable
+    void shouldNotTimeOutIfNoIndexes() throws Throwable
     {
         // Given
         final SchemaRead schemaRead = schemaWithIndexes();
 
         // Then no exception
-        Indexes.awaitResampling( schemaRead, 0 );
+        awaitResampling( schemaRead, 0 );
     }
 
     @Test
-    public void shouldNotTimeOutIfNoUpdates() throws Throwable
+    void shouldNotTimeOutIfNoUpdates() throws Throwable
     {
         // Given
         IndexReference index =  mock( IndexReference.class );
@@ -64,10 +62,10 @@ public class IndexesTest
         setUpdates( schemaRead, 0 );
 
         // Then no exception
-        Indexes.awaitResampling( schemaRead, 0 );
+        awaitResampling( schemaRead, 0 );
     }
     @Test
-    public void shouldAwaitIndexResampling() throws Throwable
+    void shouldAwaitIndexResampling() throws Throwable
     {
         // Given
         IndexReference index =  mock( IndexReference.class );
@@ -75,11 +73,11 @@ public class IndexesTest
         setUpdates( schemaRead, 1, 2, 3, 0 );
 
         // Then no exception
-        Indexes.awaitResampling( schemaRead, 60 );
+        awaitResampling( schemaRead, 60 );
     }
 
     @Test
-    public void shouldAwaitIndexResamplingForHeavyLoad() throws Throwable
+    void shouldAwaitIndexResamplingForHeavyLoad() throws Throwable
     {
         // Given
         IndexReference index =  mock( IndexReference.class );
@@ -87,11 +85,11 @@ public class IndexesTest
         setUpdates( schemaRead, 1, 2, 3, 2 );  // <- updates went down but didn't reach the first seen value
 
         // Then no exception
-        Indexes.awaitResampling( schemaRead, 60 );
+        awaitResampling( schemaRead, 60 );
     }
 
     @Test
-    public void shouldTimeout() throws Throwable
+    void shouldTimeout() throws Throwable
     {
         // Given
         IndexReference index =  mock( IndexReference.class );
@@ -99,8 +97,7 @@ public class IndexesTest
         setUpdates( schemaRead, 1, 1, 1 );
 
         // Then
-        exception.expect( TimeoutException.class );
-        Indexes.awaitResampling( schemaRead, 1 );
+        assertThrows( TimeoutException.class, () -> awaitResampling( schemaRead, 1 ) );
     }
 
     private SchemaRead schemaWithIndexes( IndexReference... indexes )

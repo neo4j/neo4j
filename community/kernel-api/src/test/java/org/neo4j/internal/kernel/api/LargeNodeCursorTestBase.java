@@ -19,7 +19,8 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,9 +30,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport> extends KernelAPIReadTestBase<G>
 {
@@ -72,7 +73,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     }
 
     @Test
-    public void shouldScanNodes()
+    void shouldScanNodes()
     {
         // given
         List<Long> ids = new ArrayList<>();
@@ -91,7 +92,7 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
     }
 
     @Test
-    public void shouldAccessNodesByReference()
+    void shouldAccessNodesByReference()
     {
         // given
         try ( NodeCursor nodes = cursors.allocateNodeCursor() )
@@ -102,9 +103,9 @@ public abstract class LargeNodeCursorTestBase<G extends KernelAPIReadTestSupport
                 read.singleNode( id, nodes );
 
                 // then
-                assertTrue( "should access defined node", nodes.next() );
-                assertEquals( "should access the correct node", id, nodes.nodeReference() );
-                assertFalse( "should only access a single node", nodes.next() );
+                assertTrue( nodes.next(), "should access defined node" );
+                assertEquals( id, nodes.nodeReference(), "should access the correct node" );
+                assertFalse( nodes.next(), "should only access a single node" );
             }
         }
     }

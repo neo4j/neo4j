@@ -34,7 +34,8 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 import java.util.function.ToLongFunction;
 
-import static org.junit.Assert.assertTrue;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class TestUtils
 {
@@ -53,7 +54,7 @@ final class TestUtils
         MutableLongSet seen = LongSets.mutable.empty();
         for ( LongList list : lists )
         {
-            list.forEach( item -> assertTrue( String.format( "%s was seen multiple times", item ), seen.add( item ) ) );
+            list.forEach( item -> assertTrue( seen.add( item ), format( "%s was seen multiple times", item ) ) );
         }
     }
 

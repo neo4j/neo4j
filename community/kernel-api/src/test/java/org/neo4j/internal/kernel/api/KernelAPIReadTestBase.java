@@ -19,10 +19,9 @@
  */
 package org.neo4j.internal.kernel.api;
 
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.IOException;
@@ -54,25 +53,24 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     protected Token token;
     protected ManagedTestCursors cursors;
 
-    @Rule
-    public CursorsClosedPostCondition cursorsClosedPostCondition = new CursorsClosedPostCondition( () -> cursors );
-
-    @After
+    @AfterEach
     public void closeTransaction() throws Exception
     {
         tx.success();
         tx.close();
     }
 
-    @AfterClass
-    public static void tearDown()
+    @AfterAll
+    public void tearDown()
     {
         if ( testSupport != null )
         {
             testSupport.tearDown();
             folder.delete();
             testSupport = null;
+
         }
+        cursors.assertAllClosedAndReset();
     }
 
     /**
@@ -88,7 +86,7 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
      */
     public abstract void createTestGraph( GraphDatabaseService graphDb );
 
-    @Before
+    @BeforeEach
     public void setupGraph() throws IOException, KernelException
     {
         if ( testSupport == null )
