@@ -25,8 +25,8 @@ import org.neo4j.kernel.impl.util.Dependencies;
 public class GlobalKernelExtensions extends AbstractKernelExtensions
 {
     public GlobalKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy )
+                             Dependencies dependencies, KernelExtensionFailureStrategy kernelExtensionFailureStrategy )
     {
-        super( kernelContext, kernelExtensionFactories, dependencies, unsatisfiedDependencyStrategy, ExtensionType.GLOBAL );
+        super( kernelContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.GLOBAL );
     }
 }

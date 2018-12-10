@@ -19,10 +19,9 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
-
-
-public interface UnsatisfiedDependencyStrategy
+/**
+ * This cannot be initialised as a dependencies proxy, because it is only possible to make proxies of interfaces, and this is a class!
+ */
+class UnproxyableDependencies
 {
-    void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e );
 }

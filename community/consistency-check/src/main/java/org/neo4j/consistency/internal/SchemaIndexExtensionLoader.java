@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.index.IndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.spi.KernelContext;
@@ -55,6 +55,6 @@ public class SchemaIndexExtensionLoader
         @SuppressWarnings( "rawtypes" )
         Iterable kernelExtensions = Service.load( KernelExtensionFactory.class );
         KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );
-        return new DatabaseKernelExtensions( kernelContext, kernelExtensions, deps, UnsatisfiedDependencyStrategies.ignore() );
+        return new DatabaseKernelExtensions( kernelContext, kernelExtensions, deps, KernelExtensionFailureStrategies.ignore() );
     }
 }

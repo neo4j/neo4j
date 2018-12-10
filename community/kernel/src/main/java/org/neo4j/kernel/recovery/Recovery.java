@@ -41,7 +41,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.DatabaseKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies;
+import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
 import org.neo4j.kernel.impl.api.DatabaseSchemaState;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -333,7 +333,7 @@ public final class Recovery
         deps.satisfyDependencies( fileSystem, config, logService, pageCache, recoveryCollector, nonListenableMonitors, jobScheduler,
                 tokenHolders, recoveryCleanupCollector );
         KernelContext kernelContext = new SimpleKernelContext( databaseDirectory, databaseInfo, deps );
-        return new DatabaseKernelExtensions( kernelContext, recoveryExtensions, deps, UnsatisfiedDependencyStrategies.fail() );
+        return new DatabaseKernelExtensions( kernelContext, recoveryExtensions, deps, KernelExtensionFailureStrategies.fail() );
     }
 
     private static boolean isRecoveryRequired( FileSystemAbstraction fs, PageCache pageCache, DatabaseLayout databaseLayout, Config config,

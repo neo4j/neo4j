@@ -38,11 +38,11 @@ import static org.neo4j.helpers.collection.Iterables.iterable;
 class GlobalKernelExtensionsTest
 {
     @Test
-    void shouldConsultUnsatisfiedDependencyHandler()
+    void shouldConsultUnsatisfiedDependencyHandlerOnMissingDependencies()
     {
         // GIVEN
         KernelContext context = mock( KernelContext.class );
-        UnsatisfiedDependencyStrategy handler = mock( UnsatisfiedDependencyStrategy.class );
+        KernelExtensionFailureStrategy handler = mock( KernelExtensionFailureStrategy.class );
         Dependencies dependencies = new Dependencies(); // that hasn't got anything.
         TestingExtensionFactory extensionFactory = new TestingExtensionFactory();
         GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
@@ -56,6 +56,32 @@ class GlobalKernelExtensionsTest
 
             // THEN
             verify( handler ).handle( eq( extensionFactory ), any( UnsatisfiedDependencyException.class ) );
+        }
+        finally
+        {
+            life.shutdown();
+        }
+    }
+
+    @Test
+    void shouldConsultUnsatisfiedDependencyHandlerOnFailingDependencyClasses()
+    {
+        // GIVEN
+        KernelContext context = mock( KernelContext.class );
+        KernelExtensionFailureStrategy handler = mock( KernelExtensionFailureStrategy.class );
+        Dependencies dependencies = new Dependencies(); // that hasn't got anything.
+        UninitializableKernelExtensionFactory extensionFactory = new UninitializableKernelExtensionFactory();
+        GlobalKernelExtensions extensions = new GlobalKernelExtensions( context, iterable( extensionFactory ), dependencies, handler );
+
+        // WHEN
+        LifeSupport life = new LifeSupport();
+        life.add( extensions );
+        try
+        {
+            life.start();
+
+            // THEN
+            verify( handler ).handle( eq( extensionFactory ), any( IllegalArgumentException.class ) );
         }
         finally
         {
