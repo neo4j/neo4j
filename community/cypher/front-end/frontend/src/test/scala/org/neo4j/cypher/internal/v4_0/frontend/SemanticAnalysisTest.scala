@@ -16,11 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.frontend
 
+import org.neo4j.cypher.internal.v4_0.frontend.ErrorCollectingContext.failWith
 import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
 import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticErrorDef
 import org.neo4j.cypher.internal.v4_0.frontend.phases._
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.scalatest.matchers.MatchResult
+import org.scalatest.matchers.Matcher
 
 class SemanticAnalysisTest extends CypherFunSuite with AstConstructionTestSupport {
 
@@ -31,56 +34,70 @@ class SemanticAnalysisTest extends CypherFunSuite with AstConstructionTestSuppor
     val query = "RETURN name AS name"
     val startState = initStartState(query, Map("name" -> CTString))
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors shouldBe empty
+    context.errors shouldBe empty
   }
 
   test("can inject starting semantic state for larger query") {
     val query = "MATCH (n:Label {name: name}) WHERE n.age > age RETURN n.name AS name"
 
     val startState = initStartState(query, Map("name" -> CTString, "age" -> CTInteger))
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    context.errors shouldBe empty
+  }
 
-    ErrorCollectingContext.errors shouldBe empty
+  test("should fail for max() with no arguments") {
+    val query = "RETURN max() AS max"
+
+    val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
+    pipeline.transform(startState, context)
+
+    context should failWith("Insufficient parameters for function 'max'")
   }
 
   test("Should allow overriding variable name in RETURN clause with an ORDER BY") {
     val query = "MATCH (n) RETURN n.prop AS n ORDER BY n + 2"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors shouldBe empty
+    context.errors shouldBe empty
   }
 
   test("Should not allow multiple columns with the same name in WITH") {
     val query = "MATCH (n) WITH n.prop AS n, n.foo AS n ORDER BY n + 2 RETURN 1 AS one"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Multiple result columns with the same name are not supported"))
+    context.errors.map(_.msg) should equal(List("Multiple result columns with the same name are not supported"))
   }
 
   test("Should not allow duplicate variable name") {
     val query = "CREATE (n),(n) RETURN 1 as one"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `n` already declared"))
+    context.errors.map(_.msg) should equal(List("Variable `n` already declared"))
   }
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
     InitialState(query, None, NoPlannerName, initialFields)
 }
 
-object ErrorCollectingContext extends BaseContext {
+class ErrorCollectingContext extends BaseContext {
 
   var errors: Seq[SemanticErrorDef] = Seq.empty
 
@@ -92,6 +109,16 @@ object ErrorCollectingContext extends BaseContext {
     errors = errs
 }
 
+object ErrorCollectingContext {
+  def failWith(errorMessages: String*): Matcher[ErrorCollectingContext] = new Matcher[ErrorCollectingContext] {
+    override def apply(context: ErrorCollectingContext): MatchResult = {
+      MatchResult(
+        matches = context.errors.map(_.msg) == errorMessages,
+        rawFailureMessage = s"Expected errors: $errorMessages but got ${context.errors}",
+        rawNegatedFailureMessage = s"Did not expect errors: $errorMessages.")
+    }
+  }
+}
 object NoPlannerName extends PlannerName {
   override def name = "no planner"
   override def toTextOutput = "no planner"

@@ -16,6 +16,14 @@
  */
 package org.neo4j.cypher.internal.v4_0.expressions.functions
 
-case object Min extends AggregatingFunction {
+import org.neo4j.cypher.internal.v4_0.util.symbols.CTAny
+import org.neo4j.cypher.internal.v4_0.expressions.TypeSignature
+import org.neo4j.cypher.internal.v4_0.expressions.TypeSignatures
+
+case object Min extends AggregatingFunction with TypeSignatures {
   override def name = "min"
+
+  override val signatures: Vector[TypeSignature] = Vector(
+    TypeSignature(Vector(CTAny), CTAny)
+  )
 }

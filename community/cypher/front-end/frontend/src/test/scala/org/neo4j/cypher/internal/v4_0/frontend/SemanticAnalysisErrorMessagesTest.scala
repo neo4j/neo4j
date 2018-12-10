@@ -38,60 +38,66 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite with AstConstruct
     val query = "MATCH (p) WITH DISTINCT p.email AS mail ORDER BY p.name RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail ORDER BY p.name RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after RETURN DISTINCT") {
     val query = "MATCH (p) RETURN DISTINCT p.email AS mail ORDER BY p.name"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in ORDER BY after RETURN with aggregation") {
     val query = "MATCH (p) RETURN collect(p.email) AS mail ORDER BY p.name"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in WHERE after WITH DISTINCT") {
     val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE exists(p.name) RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   test("Should give helpful error when accessing illegal variable in WHERE after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail WHERE exists(p.name) RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
+    context.errors.map(_.msg) should equal(List("In a WITH/RETURN with DISTINCT or an aggregation, it is not possible to access variables declared before the WITH/RETURN: p"))
   }
 
   // negative tests that we do not get this error message otherwise
@@ -100,59 +106,65 @@ class SemanticAnalysisErrorMessagesTest extends CypherFunSuite with AstConstruct
     val query = "MATCH (p) WITH DISTINCT p.email AS mail ORDER BY q.name RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail ORDER BY q.name RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after RETURN DISTINCT") {
     val query = "MATCH (p) RETURN DISTINCT p.email AS mail ORDER BY q.name"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in ORDER BY after RETURN with aggregation") {
     val query = "MATCH (p) RETURN collect(p.email) AS mail ORDER BY q.name"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in WHERE after WITH DISTINCT") {
     val query = "MATCH (p) WITH DISTINCT p.email AS mail WHERE exists(q.name) RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
 
   test("Should not invent helpful error when accessing undefined variable in WHERE after WITH with aggregation") {
     val query = "MATCH (p) WITH collect(p.email) AS mail WHERE exists(q.name) RETURN mail AS mail"
 
     val startState = initStartState(query, Map.empty)
+    val context = new ErrorCollectingContext()
 
-    pipeline.transform(startState, ErrorCollectingContext)
+    pipeline.transform(startState, context)
 
-    ErrorCollectingContext.errors.map(_.msg) should equal(List("Variable `q` not defined"))
+    context.errors.map(_.msg) should equal(List("Variable `q` not defined"))
   }
 
   private def initStartState(query: String, initialFields: Map[String, CypherType]) =
