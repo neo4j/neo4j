@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.state.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges.RecordChange;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 
 import static org.junit.Assert.assertFalse;
@@ -124,7 +125,7 @@ public class WriteTransactionCommandOrderingTest
         RecordChanges<RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class );
         RecordChanges<PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class );
         RecordChanges<RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class );
-        RecordChanges<SchemaRecord,SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
+        RecordChanges<SchemaRecord, SchemaRule> schemaRuleChanges = mock( RecordChanges.class );
 
         when( recordChangeSet.getLabelTokenChanges() ).thenReturn( labelTokenChanges );
         when( recordChangeSet.getRelationshipTypeTokenChanges() ).thenReturn( relationshipTypeTokenChanges );

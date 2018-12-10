@@ -22,7 +22,7 @@ package org.neo4j.kernel.api.exceptions.schema;
 import org.neo4j.common.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
 import static java.lang.String.format;

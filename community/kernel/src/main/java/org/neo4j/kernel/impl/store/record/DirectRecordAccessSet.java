@@ -20,13 +20,13 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.Loaders;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.store.NeoStores;
 import org.neo4j.kernel.impl.store.PropertyStore;
 import org.neo4j.kernel.impl.store.RecordStore;
 import org.neo4j.kernel.impl.store.SchemaStore;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess;
 import org.neo4j.kernel.impl.transaction.state.RecordAccessSet;
+import org.neo4j.storageengine.api.SchemaRule;
 
 public class DirectRecordAccessSet implements RecordAccessSet
 {

@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRecord;
 import org.neo4j.kernel.impl.transaction.state.RecordAccess.Loader;
+import org.neo4j.storageengine.api.SchemaRule;
 
 import static java.lang.Math.toIntExact;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
@@ -47,7 +48,7 @@ public class Loaders
     private final Loader<PropertyRecord,PrimitiveRecord> propertyLoader;
     private final Loader<RelationshipRecord,Void> relationshipLoader;
     private final Loader<RelationshipGroupRecord,Integer> relationshipGroupLoader;
-    private final Loader<SchemaRecord,SchemaRule> schemaRuleLoader;
+    private final Loader<SchemaRecord, SchemaRule> schemaRuleLoader;
     private final Loader<PropertyKeyTokenRecord,Void> propertyKeyTokenLoader;
     private final Loader<LabelTokenRecord,Void> labelTokenLoader;
     private final Loader<RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader;

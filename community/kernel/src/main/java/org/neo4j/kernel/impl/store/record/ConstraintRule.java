@@ -20,7 +20,7 @@
 package org.neo4j.kernel.impl.store.record;
 
 import org.neo4j.kernel.api.schema.constraints.IndexBackedConstraintDescriptor;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.ConstraintDescriptor;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 

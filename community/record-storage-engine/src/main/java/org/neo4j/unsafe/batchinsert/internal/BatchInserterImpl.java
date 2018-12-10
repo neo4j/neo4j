@@ -106,7 +106,6 @@ import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageReade
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipCreator;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaCache;
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.SchemaRule;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.StoreIndexDescriptor;
 import org.neo4j.kernel.impl.store.CountsComputer;
 import org.neo4j.kernel.impl.store.LabelTokenStore;
@@ -158,6 +157,7 @@ import org.neo4j.logging.LogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.schema.LabelSchemaDescriptor;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchRelationship;

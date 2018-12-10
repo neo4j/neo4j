@@ -56,6 +56,7 @@ import org.neo4j.kernel.impl.transaction.state.RecordChangeSet;
 import org.neo4j.kernel.impl.transaction.state.RecordChanges;
 import org.neo4j.kernel.impl.transaction.state.TokenCreator;
 import org.neo4j.kernel.impl.util.statistics.IntCounter;
+import org.neo4j.storageengine.api.SchemaRule;
 import org.neo4j.storageengine.api.StorageCommand;
 import org.neo4j.storageengine.api.StorageProperty;
 import org.neo4j.storageengine.api.lock.ResourceLocker;
@@ -258,7 +259,7 @@ public class TransactionRecordState implements RecordState
         {
             schemaChangeByMode[i] = new ArrayList<>();
         }
-        for ( RecordProxy<SchemaRecord,SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
+        for ( RecordProxy<SchemaRecord, SchemaRule> change : recordChangeSet.getSchemaRuleChanges().changes() )
         {
             if ( change.forReadingLinkage().inUse() )
             {
