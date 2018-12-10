@@ -21,13 +21,15 @@ package org.neo4j.internal.kernel.api;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+
+import static org.neo4j.internal.kernel.api.TestUtils.createTemporaryFolder;
 
 /**
  * KernelAPIWriteTestBase is the basis of write tests targeting the Kernel API.
@@ -43,7 +45,8 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 @SuppressWarnings( "WeakerAccess" )
 public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWriteTestSupport>
 {
-    protected static final TemporaryFolder folder = new TemporaryFolder();
+    protected static File folder;
+
     protected static KernelAPIWriteTestSupport testSupport;
     protected static GraphDatabaseService graphDb;
 
@@ -57,9 +60,9 @@ public abstract class KernelAPIWriteTestBase<WriteSupport extends KernelAPIWrite
     {
         if ( testSupport == null )
         {
-            folder.create();
+            folder = createTemporaryFolder();
             testSupport = newTestSupport();
-            testSupport.setup( folder.getRoot() );
+            testSupport.setup( folder );
             graphDb = testSupport.graphBackdoor();
         }
         testSupport.clearGraph();

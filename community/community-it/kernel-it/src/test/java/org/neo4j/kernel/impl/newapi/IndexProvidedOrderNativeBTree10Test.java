@@ -19,8 +19,9 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Rule;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -38,6 +39,8 @@ import org.neo4j.internal.kernel.api.IndexQuery;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestBase;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -50,13 +53,14 @@ import static org.neo4j.graphdb.Label.label;
 import static org.neo4j.values.storable.ValueTuple.COMPARATOR;
 
 @SuppressWarnings( "FieldCanBeLocal" )
+@ExtendWith( RandomExtension.class )
 public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
     private static int N_NODES = 10000;
     private static int N_ITERATIONS = 100;
 
-    @Rule
-    public RandomRule randomRule = new RandomRule();
+    @Inject
+    RandomRule randomRule;
 
     private TreeSet<NodeValueTuple> singlePropValues = new TreeSet<>( COMPARATOR );
     private TreeSet<NodeValueTuple> doublePropValues = new TreeSet<>( COMPARATOR );
@@ -128,7 +132,7 @@ public class IndexProvidedOrderNativeBTree10Test extends KernelAPIReadTestBase<R
     }
 
     @Test
-    public void shouldProvideResultInOrderIfCapable() throws KernelException
+    void shouldProvideResultInOrderIfCapable() throws KernelException
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );

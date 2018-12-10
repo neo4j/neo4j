@@ -26,6 +26,8 @@ import org.eclipse.collections.impl.factory.primitive.LongLists;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -129,5 +131,13 @@ final class TestUtils
             count++;
         }
         return count;
+    }
+
+    static File createTemporaryFolder() throws IOException
+    {
+        File createdFolder = File.createTempFile( "neo4j", "" );
+        createdFolder.delete();
+        createdFolder.mkdir();
+        return createdFolder;
     }
 }

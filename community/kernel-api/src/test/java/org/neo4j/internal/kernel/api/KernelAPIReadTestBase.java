@@ -22,14 +22,16 @@ package org.neo4j.internal.kernel.api;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.exceptions.KernelException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.security.LoginContext;
+
+import static org.neo4j.internal.kernel.api.TestUtils.createTemporaryFolder;
 
 /**
  * KernelAPIReadTestBase is the basis of read tests targeting the Kernel API.
@@ -45,7 +47,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext;
 @SuppressWarnings( "WeakerAccess" )
 public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTestSupport>
 {
-    protected static final TemporaryFolder folder = new TemporaryFolder();
+    protected static File folder;
     protected static KernelAPIReadTestSupport testSupport;
     protected Transaction tx;
     protected Read read;
@@ -58,19 +60,18 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     {
         tx.success();
         tx.close();
+        cursors.assertAllClosedAndReset();
     }
 
     @AfterAll
-    public void tearDown()
+    public static void tearDown()
     {
         if ( testSupport != null )
         {
             testSupport.tearDown();
             folder.delete();
             testSupport = null;
-
         }
-        cursors.assertAllClosedAndReset();
     }
 
     /**
@@ -91,9 +92,9 @@ public abstract class KernelAPIReadTestBase<ReadSupport extends KernelAPIReadTes
     {
         if ( testSupport == null )
         {
-            folder.create();
+            folder = createTemporaryFolder();
             testSupport = newTestSupport();
-            testSupport.setup( folder.getRoot(), this::createTestGraph );
+            testSupport.setup( folder, this::createTestGraph );
         }
         Kernel kernel = testSupport.kernelToTest();
         tx = beginTransaction( kernel );

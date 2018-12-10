@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.newapi;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -33,6 +33,8 @@ import org.neo4j.internal.kernel.api.IndexOrder;
 import org.neo4j.internal.kernel.api.IndexReadSession;
 import org.neo4j.internal.kernel.api.KernelAPIReadTestBase;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.values.storable.RandomValues;
 import org.neo4j.values.storable.Value;
@@ -44,13 +46,14 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.neo4j.graphdb.Label.label;
 
+@ExtendWith( RandomExtension.class )
 public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<ReadTestSupport>
 {
     @SuppressWarnings( "FieldCanBeLocal" )
     private static int N_NODES = 10000;
 
-    @Rule
-    public RandomRule randomRule = new RandomRule();
+    @Inject
+    RandomRule randomRule;
 
     private List<Value> singlePropValues = new ArrayList<>();
     private List<ValueTuple> doublePropValues = new ArrayList<>();
@@ -103,7 +106,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     }
 
     @Test
-    public void shouldGetAllSinglePropertyValues() throws Exception
+    void shouldGetAllSinglePropertyValues() throws Exception
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
@@ -127,7 +130,7 @@ public class IndexProvidedValuesNativeBTree10Test extends KernelAPIReadTestBase<
     }
 
     @Test
-    public void shouldGetAllDoublePropertyValues() throws Exception
+    void shouldGetAllDoublePropertyValues() throws Exception
     {
         int label = token.nodeLabel( "Node" );
         int prop = token.propertyKey( "prop" );
