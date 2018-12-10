@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.internal.kernel.api.TokenNameLookup;
 import org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
@@ -42,8 +43,18 @@ public class UniquePropertyValueValidationException extends ConstraintValidation
     public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,
             ConstraintValidationException.Phase phase, Set<IndexEntryConflictException> conflicts )
     {
-        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data" );
+        super( constraint, phase, phase == Phase.VERIFICATION ? "Existing data" : "New data", buildCauseChain( conflicts ) );
         this.conflicts = conflicts;
+    }
+
+    private static IndexEntryConflictException buildCauseChain( Set<IndexEntryConflictException> conflicts )
+    {
+        IndexEntryConflictException chainedConflicts = null;
+        for ( IndexEntryConflictException conflict : conflicts )
+        {
+            chainedConflicts = Exceptions.chain( chainedConflicts, conflict );
+        }
+        return chainedConflicts;
     }
 
     public UniquePropertyValueValidationException( IndexBackedConstraintDescriptor constraint,

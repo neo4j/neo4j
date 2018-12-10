@@ -224,11 +224,7 @@ public class MultipleIndexPopulator implements IndexPopulator
             }
         }
 
-        // Index conflicts are expected (for unique indexes) so we don't need to log them.
-        if ( !(failure instanceof IndexEntryConflictException) )
-        {
-            log.error( format( "Failed to populate index: [%s]", population.indexUserDescription ), failure );
-        }
+        log.error( format( "Failed to populate index: [%s]", population.indexUserDescription ), failure );
 
         // The flipper will have already flipped to a failed index context here, but
         // it will not include the cause of failure, so we do another flip to a failed
