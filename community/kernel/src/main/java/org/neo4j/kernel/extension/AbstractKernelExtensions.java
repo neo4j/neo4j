@@ -40,13 +40,13 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
     private final List<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Dependencies dependencies;
     private final LifeSupport life = new LifeSupport();
-    private final UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy;
+    private final KernelExtensionFailureStrategy kernelExtensionFailureStrategy;
 
     AbstractKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories, Dependencies dependencies,
-            UnsatisfiedDependencyStrategy unsatisfiedDependencyStrategy, ExtensionType extensionType )
+            KernelExtensionFailureStrategy kernelExtensionFailureStrategy, ExtensionType extensionType )
     {
         this.kernelContext = kernelContext;
-        this.unsatisfiedDependencyStrategy = unsatisfiedDependencyStrategy;
+        this.kernelExtensionFailureStrategy = kernelExtensionFailureStrategy;
         this.kernelExtensionFactories = stream( kernelExtensionFactories ).filter( e -> e.getExtensionType() == extensionType ).collect( toList() );
         this.dependencies = dependencies;
     }
@@ -56,17 +56,20 @@ public abstract class AbstractKernelExtensions extends DependencyResolver.Adapte
     {
         for ( KernelExtensionFactory<?> kernelExtensionFactory : kernelExtensionFactories )
         {
-            Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
             try
             {
+                Object kernelExtensionDependencies = getKernelExtensionDependencies( kernelExtensionFactory );
                 Lifecycle dependency = newInstance( kernelContext, kernelExtensionFactory, kernelExtensionDependencies );
-                Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null " +
-                        "KernelExtension" );
+                Objects.requireNonNull( dependency, kernelExtensionFactory.toString() + " returned a null KernelExtension" );
                 life.add( dependencies.satisfyDependency( dependency ) );
             }
-            catch ( UnsatisfiedDependencyException e )
+            catch ( UnsatisfiedDependencyException exception )
             {
-                unsatisfiedDependencyStrategy.handle( kernelExtensionFactory, e );
+                kernelExtensionFailureStrategy.handle( kernelExtensionFactory, exception );
+            }
+            catch ( Throwable throwable )
+            {
+                kernelExtensionFailureStrategy.handle( kernelExtensionFactory, throwable );
             }
         }
 

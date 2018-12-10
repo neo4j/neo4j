@@ -163,7 +163,7 @@ import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.extension.KernelExtensionFailureStrategies.fail;
 
 public class NeoStoreDataSource extends LifecycleAdapter
 {

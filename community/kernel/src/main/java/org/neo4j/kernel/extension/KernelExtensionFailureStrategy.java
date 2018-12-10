@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.impl.spi.KernelContext;
-import org.neo4j.kernel.impl.util.Dependencies;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 
-public class DatabaseKernelExtensions extends AbstractKernelExtensions
+
+public interface KernelExtensionFailureStrategy
 {
-    public DatabaseKernelExtensions( KernelContext kernelContext, Iterable<KernelExtensionFactory<?>> kernelExtensionFactories,
-                             Dependencies dependencies, KernelExtensionFailureStrategy kernelExtensionFailureStrategy )
-    {
-        super( kernelContext, kernelExtensionFactories, dependencies, kernelExtensionFailureStrategy, ExtensionType.DATABASE );
-    }
+    void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e );
+
+    void handle( KernelExtensionFactory kernelExtensionFactory, Throwable e );
 }
