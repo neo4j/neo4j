@@ -66,6 +66,7 @@ import org.neo4j.procedure.Description;
 import org.neo4j.procedure.Mode;
 import org.neo4j.procedure.Name;
 import org.neo4j.procedure.Procedure;
+import org.neo4j.storageengine.api.EntityType;
 import org.neo4j.storageengine.api.schema.PopulationProgress;
 
 import static org.neo4j.helpers.collection.Iterators.asList;
@@ -134,15 +135,7 @@ public class BuiltInProcedures
             {
                 try
                 {
-                    String type;
-                    if ( index.isUnique() )
-                    {
-                        type = IndexType.NODE_UNIQUE_PROPERTY.typeName();
-                    }
-                    else
-                    {
-                        type = IndexType.NODE_LABEL_PROPERTY.typeName();
-                    }
+                    IndexType type = IndexType.getIndexTypeOf( index );
 
                     SchemaDescriptor schema = index.schema();
                     long indexId = getIndexId( indexingService, schema );
@@ -161,7 +154,7 @@ public class BuiltInProcedures
                                                  tokenNames,
                                                  propertyNames,
                                                  state,
-                                                 type,
+                                                 type.typeName(),
                                                  indexProgress.getCompletedPercentage(),
                                                  providerDescriptorMap,
                                                  failureMessage ) );
@@ -1011,13 +1004,49 @@ public class BuiltInProcedures
     private enum IndexType
     {
         NODE_LABEL_PROPERTY( "node_label_property" ),
-        NODE_UNIQUE_PROPERTY( "node_unique_property" );
+        NODE_UNIQUE_PROPERTY( "node_unique_property" ),
+        REL_TYPE_PROPERTY( "relationship_type_property" ),
+        NODE_FULLTEXT( "node_fulltext" ),
+        RELATIONSHIP_FULLTEXT( "relationship_fulltext" );
 
         private final String typeName;
 
         IndexType( String typeName )
         {
             this.typeName = typeName;
+        }
+
+        private static IndexType getIndexTypeOf( IndexReference index )
+        {
+            if ( index.isFulltextIndex() )
+            {
+                if ( index.schema().entityType() == EntityType.NODE )
+                {
+                    return IndexType.NODE_FULLTEXT;
+                }
+                else
+                {
+                    return IndexType.RELATIONSHIP_FULLTEXT;
+                }
+            }
+            else
+            {
+                if ( index.isUnique() )
+                {
+                    return IndexType.NODE_UNIQUE_PROPERTY;
+                }
+                else
+                {
+                    if ( index.schema().entityType() == EntityType.NODE )
+                    {
+                        return IndexType.NODE_LABEL_PROPERTY;
+                    }
+                    else
+                    {
+                        return IndexType.REL_TYPE_PROPERTY;
+                    }
+                }
+            }
         }
 
         public String typeName()
