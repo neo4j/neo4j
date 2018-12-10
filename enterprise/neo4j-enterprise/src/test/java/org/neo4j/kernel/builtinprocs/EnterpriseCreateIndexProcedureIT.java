@@ -48,6 +48,7 @@ import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 import org.neo4j.internal.kernel.api.procs.ProcedureSignature;
+import org.neo4j.kernel.api.exceptions.index.IndexEntryConflictException;
 import org.neo4j.kernel.api.exceptions.schema.UniquePropertyValueValidationException;
 import org.neo4j.kernel.api.security.AnonymousContext;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
@@ -358,7 +359,7 @@ public class EnterpriseCreateIndexProcedureIT extends KernelIntegrationTest
         {
             // then
             // good
-            assertThat( rootCause( e ), instanceOf( UniquePropertyValueValidationException.class ) );
+            assertThat( rootCause( e ), instanceOf( IndexEntryConflictException.class ) );
         }
     }
 
