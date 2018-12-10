@@ -159,9 +159,8 @@ public class ConstraintIndexCreatorTest
         verify( schemaRead ).indexGetCommittedId( indexReference );
         verify( schemaRead, times( 2 ) ).index( descriptor );
         verifyNoMoreInteractions( schemaRead );
-        TransactionState tx2 = kernel.transactions.get( 1 ).txState();
-        verify( tx2 ).indexDoDrop( index );
-        verifyNoMoreInteractions( tx2 );
+        KernelTransactionImplementation kti2 = kernel.transactions.get( 1 );
+        verify( kti2 ).addIndexDoDropToTxState( index );
     }
 
     @Test
@@ -178,7 +177,7 @@ public class ConstraintIndexCreatorTest
 
         // then
         assertEquals( 1, kernel.transactions.size() );
-        verify( kernel.transactions.get( 0 ).txState() ).indexDoDrop( index );
+        verify( kernel.transactions.get( 0 ) ).addIndexDoDropToTxState( index );
         verifyZeroInteractions( indexingService );
     }
 
