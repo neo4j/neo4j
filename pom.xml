@@ -275,21 +275,21 @@
                   <packages>
                     <regex>true</regex>
                     <include>
-                      <item>org\.neo4j\.graphalgo(\\..+)?</item>
-                      <item>org\.neo4j\.cypher\.export(\\..+)?</item>
-                      <item>org\.neo4j\.cypher\.javacompat(\\..+)?</item>
-                      <item>org\.neo4j\.graphdb(\\..+)?</item>
-                      <item>org\.neo4j\.helpers(\\..+)?</item>
-                      <item>org\.neo4j\.index(\\..+)?</item>
-                      <item>org\.neo4j\.jmx(\\..+)?</item>
-                      <item>org\.neo4j\.management(\\..+)?</item>
-                      <item>org\.neo4j\.server\.helpers(\\..+)?</item>
-                      <item>org\.neo4j\.server\.plugins(\\..+)?</item>
-                      <item>org\.neo4j\.server\.rest\.repr(\\..+)?</item>
-                      <item>org\.neo4j\.server\.rest\.web(\\..+)?</item>
-                      <item>org\.neo4j\.unsafe\.batchinsert(\\..+)?</item>
-                      <item>org\.neo4j\.logging(\\..+)?</item>
-                      <item>org\.neo4j\.procedure(\\..+)?</item>
+                      <item>org\.neo4j\.graphalgo(\..+)?</item>
+                      <item>org\.neo4j\.cypher\.export(\..+)?</item>
+                      <item>org\.neo4j\.cypher\.javacompat(\..+)?</item>
+                      <item>org\.neo4j\.graphdb(\..+)?</item>
+                      <item>org\.neo4j\.helpers(\..+)?</item>
+                      <item>org\.neo4j\.index(\..+)?</item>
+                      <item>org\.neo4j\.jmx(\..+)?</item>
+                      <item>org\.neo4j\.management(\..+)?</item>
+                      <item>org\.neo4j\.server\.helpers(\..+)?</item>
+                      <item>org\.neo4j\.server\.plugins(\..+)?</item>
+                      <item>org\.neo4j\.server\.rest\.repr(\..+)?</item>
+                      <item>org\.neo4j\.server\.rest\.web(\..+)?</item>
+                      <item>org\.neo4j\.unsafe\.batchinsert(\..+)?</item>
+                      <item>org\.neo4j\.logging(\..+)?</item>
+                      <item>org\.neo4j\.procedure(\..+)?</item>
                     </include>
                     <exclude>
                       <item>.*\.impl(\..+)?</item>
@@ -315,6 +315,26 @@
                   <item>
                       <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                       <code>java.class.nonPublicPartOfAPI</code>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.helpers.collection.MultiSet</classQualifiedName>
+                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.helpers.collection.CachingIterator</classQualifiedName>
+                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.helpers.collection.RangeIterator</classQualifiedName>
+                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.helpers.collection.PagingIterator</classQualifiedName>
+                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
                   </item>
               </revapi.ignore>
               <revapi.semver.ignore>
