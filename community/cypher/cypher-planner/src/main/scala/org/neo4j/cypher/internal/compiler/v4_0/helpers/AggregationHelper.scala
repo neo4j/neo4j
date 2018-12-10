@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v4_0.helpers
 
 import org.neo4j.cypher.internal.v4_0.expressions._
 
+import scala.annotation.tailrec
 import scala.collection.mutable
 
 object AggregationHelper {
@@ -62,17 +63,29 @@ object AggregationHelper {
     }.toSet
   }
 
-  private def extractPropertyForValue(aggregationExpression: Expression, renamings: mutable.Map[String, Expression]): Option[(String, String)] = {
-    aggregationExpression match {
-      case FunctionInvocation(_, _, _, Seq(Property(Variable(varName), PropertyKeyName(propName)), _*)) =>
-        Some((varName, propName))
-      case f @ FunctionInvocation(_, _, _, arguments@ Seq(Variable(name), _*)) if renamings.contains(name) =>
-        renamings(name) match {
-          case Property(Variable(varName), PropertyKeyName(propName)) => Some((varName, propName))
-          case variable @ Variable(varName) if !varName.equals(name) =>
-            extractPropertyForValue(f.copy(args = IndexedSeq(variable) ++ arguments.tail)(f.position), renamings)
-          case _ => None
-        }
+  @tailrec
+  private def extractPropertyForValue(expression: Expression,
+                                      renamings: mutable.Map[String, Expression],
+                                      property: Option[String] = None): Option[(String, String)] = {
+    expression match {
+      case FunctionInvocation(_, _, _, Seq(expr, _*)) =>
+        // Cannot handle a function inside an aggregation
+        if (expr.isInstanceOf[FunctionInvocation])
+          None
+        else
+          extractPropertyForValue(expr, renamings)
+      case Property(Variable(varName), PropertyKeyName(propName)) =>
+        if (renamings.contains(varName))
+          extractPropertyForValue(renamings(varName), renamings, Some(propName))
+        else
+          Some(varName, propName)
+      case variable@Variable(varName) =>
+        if (renamings.contains(varName) && renamings(varName) != variable)
+          extractPropertyForValue(renamings(varName), renamings)
+        else if (property.nonEmpty)
+          Some(varName, property.get)
+        else
+          None
       case _ => None
     }
   }
