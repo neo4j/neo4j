@@ -16,6 +16,15 @@
  */
 package org.neo4j.cypher.internal.v3_5.expressions.functions
 
-case object Collect extends AggregatingFunction {
+import org.neo4j.cypher.internal.v3_5.util.symbols.CTAny
+import org.neo4j.cypher.internal.v3_5.util.symbols.CTList
+import org.neo4j.cypher.internal.v3_5.expressions.TypeSignature
+import org.neo4j.cypher.internal.v3_5.expressions.TypeSignatures
+
+case object Collect extends AggregatingFunction with TypeSignatures {
   def name = "collect"
+
+  override val signatures: Vector[TypeSignature] = Vector(
+    TypeSignature(Vector(CTAny), CTList(CTAny))
+  )
 }
