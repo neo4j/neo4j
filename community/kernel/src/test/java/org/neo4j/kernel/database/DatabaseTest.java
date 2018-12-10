@@ -21,13 +21,18 @@ package org.neo4j.kernel.database;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.stubbing.Answer;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.DatabasePanicEventGenerator;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
@@ -39,16 +44,21 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.test.rule.DatabaseRule;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -98,31 +108,102 @@ public class DatabaseTest
     }
 
     @Test
-    public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
+    public void noPageCacheFlushOnDatabaseDrop() throws Throwable
     {
-        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+        PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
+        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
         Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
         verify( pageCache, never() ).flushAndForce( any( IOLimiter.class ) );
 
+        long flushesBeforeClose = pageCacheTracer.flushes();
+
+        database.drop();
+
+        assertEquals( flushesBeforeClose, pageCacheTracer.flushes() );
+    }
+
+    @Test
+    public void flushDatabaseDataOnStop() throws Throwable
+    {
+        DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
+        PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
+        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+
+        database.start();
+        verify( pageCache, never() ).flushAndForce();
+        verify( pageCache, never() ).flushAndForce( any( IOLimiter.class ) );
+
+        long flushesBeforeClose = pageCacheTracer.flushes();
+
         database.stop();
-        verify( pageCache ).flushAndForce( IOLimiter.UNLIMITED );
+
+        assertNotEquals( flushesBeforeClose, pageCacheTracer.flushes() );
+    }
+
+    @Test
+    public void flushOfThePageCacheHappensOnlyOnceDuringShutdown() throws Throwable
+    {
+        PageCache realPageCache = pageCacheRule.getPageCache( fs.get() );
+        List<PagedFile> files = new ArrayList<>();
+        PageCache pageCache = spy( realPageCache );
+        doAnswer( (Answer<PagedFile>) invocation ->
+        {
+            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0 ), invocation.getArgument( 1 ) ) );
+            files.add( file );
+            return file;
+        } )
+        .when( pageCache ).map( any( File.class ), anyInt() );
+
+        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        files.clear();
+
+        database.start();
+        verify( pageCache, never() ).flushAndForce();
+        verify( pageCache, never() ).flushAndForce( any( IOLimiter.class ) );
+
+        database.stop();
+
+        verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
+        assertFalse( files.isEmpty() );
+        for ( PagedFile file : files )
+        {
+            verify( file ).flushAndForce( IOLimiter.UNLIMITED );
+        }
     }
 
     @Test
     public void flushOfThePageCacheOnShutdownHappensIfTheDbIsHealthy() throws Throwable
     {
-        PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get() ) );
+        PageCache realPageCache = pageCacheRule.getPageCache( fs.get() );
+        List<PagedFile> files = new ArrayList<>();
+        PageCache pageCache = spy( realPageCache );
+        doAnswer( (Answer<PagedFile>) invocation ->
+        {
+            PagedFile file = spy( realPageCache.map( invocation.getArgument( 0 ), invocation.getArgument( 1 ) ) );
+            files.add( file );
+            return file;
+        } )
+        .when( pageCache ).map( any( File.class ), anyInt() );
 
         Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        files.clear();
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
 
         database.stop();
-        verify( pageCache ).flushAndForce( IOLimiter.UNLIMITED );
+
+        verify( pageCache, never() ).flushAndForce( IOLimiter.UNLIMITED );
+        assertFalse( files.isEmpty() );
+        for ( PagedFile file : files )
+        {
+            verify( file ).flushAndForce( IOLimiter.UNLIMITED );
+        }
     }
 
     @Test

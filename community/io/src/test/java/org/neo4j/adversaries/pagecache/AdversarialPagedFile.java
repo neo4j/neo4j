@@ -106,4 +106,10 @@ public class AdversarialPagedFile implements PagedFile
         adversary.injectFailure( FileNotFoundException.class, SecurityException.class );
         delegate.close();
     }
+
+    @Override
+    public void setDeleteOnClose( boolean deleteOnClose )
+    {
+        delegate.setDeleteOnClose( deleteOnClose );
+    }
 }

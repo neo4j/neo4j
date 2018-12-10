@@ -1003,7 +1003,7 @@ public class Config implements Configuration
             }
             catch ( Exception e )
             {
-                log.error( "Failure when notifying listeners after dynamic setting change;new setting might not have taken effect: " + e.getMessage(), e );
+                log.error( "Failure when notifying listeners after dynamic setting change; new setting might not have taken effect: " + e.getMessage(), e );
             }
         }
     }

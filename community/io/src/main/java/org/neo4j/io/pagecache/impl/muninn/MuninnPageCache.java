@@ -390,7 +390,7 @@ public class MuninnPageCache implements PageCache
                     throw new UnsupportedOperationException( "Cannot truncate a file that is already mapped" );
                 }
                 pagedFile.incrementRefCount();
-                pagedFile.markDeleteOnClose( deleteOnClose );
+                pagedFile.setDeleteOnClose( deleteOnClose );
                 return pagedFile;
             }
             current = current.next;
@@ -416,7 +416,7 @@ public class MuninnPageCache implements PageCache
                 truncateExisting,
                 noChannelStriping );
         pagedFile.incrementRefCount();
-        pagedFile.markDeleteOnClose( deleteOnClose );
+        pagedFile.setDeleteOnClose( deleteOnClose );
         current = new FileMapping( file, pagedFile );
         current.next = mappedFiles;
         mappedFiles = current;

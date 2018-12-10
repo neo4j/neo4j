@@ -20,6 +20,7 @@
 package org.neo4j.kernel.database;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ import org.neo4j.io.fs.watcher.DatabaseLayoutWatcher;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.kernel.api.InwardKernel;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -144,6 +146,7 @@ import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.util.VisibleForTesting;
 
+import static java.lang.String.format;
 import static org.neo4j.helpers.Exceptions.throwIfUnchecked;
 import static org.neo4j.kernel.extension.KernelExtensionFailureStrategies.fail;
 import static org.neo4j.kernel.recovery.Recovery.performRecovery;
@@ -208,6 +211,7 @@ public class Database extends LifecycleAdapter
     private final Iterable<QueryEngineProvider> engineProviders;
     private volatile boolean started;
     private Monitors monitors;
+    private DatabasePageCache databasePageCache;
 
     public Database( DatabaseCreationContext context )
     {
@@ -271,13 +275,13 @@ public class Database extends LifecycleAdapter
             life.add( config );
             dataSourceDependencies = new Dependencies( globalDependencies );
 
-            DatabasePageCache pageCache = new DatabasePageCache( globalPageCache );
+            databasePageCache = new DatabasePageCache( globalPageCache );
             monitors = new Monitors( globalMonitors );
             LogFileCreationMonitor physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
 
             dataSourceDependencies.satisfyDependency( this );
             dataSourceDependencies.satisfyDependency( monitors );
-            dataSourceDependencies.satisfyDependency( pageCache );
+            dataSourceDependencies.satisfyDependency( databasePageCache );
             dataSourceDependencies.satisfyDependency( tokenHolders );
             dataSourceDependencies.satisfyDependency( facade );
             dataSourceDependencies.satisfyDependency( databaseHealth );
@@ -294,7 +298,7 @@ public class Database extends LifecycleAdapter
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
             dataSourceDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
 
-            life.add( new PageCacheLifecycle( pageCache ) );
+            life.add( new PageCacheLifecycle( databasePageCache ) );
             life.add( initializeExtensions( dataSourceDependencies ) );
 
             DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
@@ -318,7 +322,7 @@ public class Database extends LifecycleAdapter
             // Upgrade the store before we begin
             upgradeStore();
 
-            performRecovery( fs, pageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
+            performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
@@ -326,7 +330,7 @@ public class Database extends LifecycleAdapter
             Supplier<KernelTransactionsSnapshot> transactionsSnapshotSupplier = () -> kernelModule.kernelTransactions().get();
             idController.initialize( transactionsSnapshotSupplier );
 
-            storageEngine = buildStorageEngine( pageCache, databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier,
+            storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier,
                     recoveryCleanupWorkCollector, monitors );
             life.add( logFiles );
 
@@ -587,17 +591,30 @@ public class Database extends LifecycleAdapter
 
         life.stop();
         awaitAllClosingTransactions();
-        // Checkpointing is now triggered as part of life.shutdown see lifecycleToTriggerCheckPointOnShutdown()
-        // Shut down all services in here, effectively making the database unusable for anyone who tries.
         life.shutdown();
         eventHandlers.shutdown();
         started = false;
     }
 
-    @Override
-    public synchronized void shutdown()
+    public void drop()
     {
-        eventHandlers.shutdown();
+        prepareForDrop();
+        stop();
+        dropDatabaseFiles();
+    }
+
+    private void dropDatabaseFiles()
+    {
+        try
+        {
+            // TODO: remove database transaction logs.
+            fs.deleteRecursively( databaseLayout.databaseDirectory() );
+        }
+        catch ( IOException e )
+        {
+            logService.getInternalLog( Database.class ).warn( format( "Failed to remove dropped database '%s' files.", databaseName ), e );
+            throw new UncheckedIOException( e );
+        }
     }
 
     private void awaitAllClosingTransactions()
@@ -615,7 +632,7 @@ public class Database extends LifecycleAdapter
     {
         // Write new checkpoint in the log only if the kernel is healthy.
         // We cannot throw here since we need to shutdown without exceptions,
-        // so let's make the checkpointing part of the life, so LifeSupport can handle exceptions properly
+        // so let's make the checkpoint part of the life, so LifeSupport can handle exceptions properly
         return LifecycleAdapter.onShutdown( () ->
         {
             if ( databaseHealth.isHealthy() )
@@ -713,6 +730,17 @@ public class Database extends LifecycleAdapter
     public DatabaseAvailabilityGuard getDatabaseAvailabilityGuard()
     {
         return databaseAvailabilityGuard;
+    }
+
+    private void prepareForDrop()
+    {
+        if ( databasePageCache != null )
+        {
+            for ( PagedFile pagedFile : databasePageCache.listExistingMappings() )
+            {
+                pagedFile.setDeleteOnClose( true );
+            }
+        }
     }
 
     @VisibleForTesting

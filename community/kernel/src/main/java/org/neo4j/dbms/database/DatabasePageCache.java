@@ -188,6 +188,12 @@ public class DatabasePageCache implements PageCache
         }
 
         @Override
+        public void setDeleteOnClose( boolean deleteOnClose )
+        {
+            delegate.setDeleteOnClose( deleteOnClose );
+        }
+
+        @Override
         public boolean equals( Object o )
         {
             if ( this == o )

@@ -72,8 +72,7 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     final int swapperId;
     private final CursorFactory cursorFactory;
 
-    // Guarded by the monitor lock on MuninnPageCache (map and unmap)
-    private boolean deleteOnClose;
+    private volatile boolean deleteOnClose;
 
     // Used to trace the causes of any exceptions from getLastPageId.
     private volatile Exception closeStackTrace;
@@ -270,6 +269,14 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         if ( limiter == null )
         {
             throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
+        }
+        if ( deleteOnClose )
+        {
+            // No need to spend time flushing data to a file we're going to delete anyway.
+            // However, we still have to mark the dirtied pages as clean since evicting would otherwise try to flush
+            // these pages, and would fail because the file is closed, and we cannot allow that to happen.
+            markAllDirtyPagesAsClean();
+            return;
         }
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
@@ -657,7 +664,8 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         return (int) refCountOf( getHeaderState() );
     }
 
-    void markDeleteOnClose( boolean deleteOnClose )
+    @Override
+    public void setDeleteOnClose( boolean deleteOnClose )
     {
         this.deleteOnClose |= deleteOnClose;
     }

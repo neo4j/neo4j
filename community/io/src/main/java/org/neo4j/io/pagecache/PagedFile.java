@@ -187,4 +187,11 @@ public interface PagedFile extends AutoCloseable
     @Override
     void close();
 
+    /**
+     * Set if this page file can be deleted on close.
+     * Pages of marked for deletion file do not need to be flushed on close so closing file
+     * that is marked for deletion can be significantly faster.
+     * @param deleteOnClose true if file can be deleted on close, false otherwise.
+     */
+    void setDeleteOnClose( boolean deleteOnClose );
 }
