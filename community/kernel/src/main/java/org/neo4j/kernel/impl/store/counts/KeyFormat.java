@@ -32,8 +32,7 @@ class KeyFormat implements CountsVisitor
     private static final byte NODE_COUNT = 1;
     private static final byte RELATIONSHIP_COUNT = 2;
     private static final byte INDEX = 127;
-    private static final byte INDEX_STATS = 1;
-    private static final byte INDEX_SAMPLE = 2;
+
     private final WritableBuffer buffer;
 
     KeyFormat( WritableBuffer key )

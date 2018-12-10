@@ -360,7 +360,13 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
         {
             try
             {
-                return visitKeyValuePair( readKey( key ), value );
+                Key readKey = readKey( key );
+                if ( readKey == null )
+                {
+                    // This is a legacy key, which should be ignored
+                    return true;
+                }
+                return visitKeyValuePair( readKey, value );
             }
             catch ( UnknownKey e )
             {
@@ -449,7 +455,9 @@ public abstract class AbstractKeyValueStore<Key> extends LifecycleAdapter
                     {
                         try
                         {
-                            if ( include( readKey( key ), value ) )
+                            Key readKey = readKey( key );
+                            // readKey can be null if it's a legacy key, migration logic pending
+                            if ( readKey != null && include( readKey, value ) )
                             {
                                 return true;
                             }
