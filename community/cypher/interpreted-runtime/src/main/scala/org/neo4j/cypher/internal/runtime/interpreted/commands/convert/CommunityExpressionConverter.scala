@@ -21,25 +21,16 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.convert
 
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
 import org.neo4j.cypher.internal.runtime.interpreted._
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.InequalitySeekRangeExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PointDistanceSeekRangeExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{InequalitySeekRangeExpression, PointDistanceSeekRangeExpression, Expression => CommandExpression}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
-import org.neo4j.cypher.internal.runtime.interpreted.commands.PathExtractorExpression
-import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{values => commandvalues}
-import org.neo4j.cypher.internal.runtime.interpreted.commands.{expressions => commandexpressions}
-import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
+import org.neo4j.cypher.internal.v4_0.expressions.{DesugaredMapProjection, Expression, PropertyKeyName, functions}
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
-import org.neo4j.cypher.internal.v4_0.expressions.DesugaredMapProjection
-import org.neo4j.cypher.internal.v4_0.expressions.Expression
-import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
-import org.neo4j.cypher.internal.v4_0.expressions.functions
+import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
@@ -160,7 +151,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           case (false, None) => commandexpressions.FunctionInvocationByName(signature, callArgumentCommands.toArray)
         }
       case e: ast.MapProjection => throw new InternalException("should have been rewritten away")
-      case e: NestedPlanExpression => commandexpressions.NestedPlanExpression(e.plan)
+      case e: NestedPlanExpression => throw new InternalException("should have been rewritten away")
       case CoerceToPredicate(inner) => predicates.CoercedPredicate(self.toCommandExpression(id, inner))
       case _ => null
     }
@@ -222,7 +213,7 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
           case e: ast.ContainerIndex =>
             commandexpressions.ContainerIndex(self.toCommandExpression(id, e.expr), self.toCommandExpression(id, e.idx))
           case e: NestedPlanExpression =>
-            commands.expressions.NestedPlanExpression(e.plan)
+            throw new InternalException("should have been rewritten away")
         }
       case Exp => commandexpressions.ExpFunction(self.toCommandExpression(id, invocation.arguments.head))
       case Filename => commandexpressions.Filename()
