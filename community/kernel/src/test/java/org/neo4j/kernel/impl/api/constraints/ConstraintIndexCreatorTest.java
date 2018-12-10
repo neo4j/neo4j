@@ -153,7 +153,7 @@ public class ConstraintIndexCreatorTest
         catch ( UniquePropertyValueValidationException e )
         {
             assertEquals( "Existing data does not satisfy CONSTRAINT ON ( label[123]:label[123] ) " +
-                          "ASSERT label[123].property[456] IS UNIQUE.", e.getMessage() );
+                    "ASSERT label[123].property[456] IS UNIQUE: Both node 2 and node 1 share the property value ( String(\"a\") )", e.getMessage() );
         }
         assertEquals( 2, kernel.transactions.size() );
         KernelTransactionImplementation tx1 = kernel.transactions.get( 0 );
