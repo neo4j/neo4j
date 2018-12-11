@@ -23,11 +23,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.collector.DataCollectorModule;
 import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.scheduler.JobScheduler;
@@ -54,10 +52,8 @@ public class DataCollectorManager extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        // When we have multiple dbs, this has to be suitably modified to get the right kernel and procedures
-        // TODO setup of these procedures and their lifecycle/expectations are incorrect and need to updated
-        Database databaseContext = databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) ).get().getDatabase();
-        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, databaseContext.getKernel() ) );
+        // TODO misha: cleanup when procedures will be updated for multi-databases
+        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, databaseManager, config ) );
     }
 
     @Override

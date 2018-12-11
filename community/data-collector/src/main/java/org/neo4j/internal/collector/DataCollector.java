@@ -19,23 +19,43 @@
  */
 package org.neo4j.internal.collector;
 
+import org.neo4j.dbms.database.DatabaseContext;
+import org.neo4j.dbms.database.DatabaseManager;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.database.Database;
 import org.neo4j.scheduler.JobScheduler;
 
 public class DataCollector implements AutoCloseable
 {
-    final Kernel kernel;
-    final JobScheduler jobScheduler;
+    private final DatabaseManager databaseManager;
+    private final JobScheduler jobScheduler;
+    private final Config config;
 
-    DataCollector( Kernel kernel, JobScheduler jobScheduler )
+    DataCollector( DatabaseManager databaseManager, JobScheduler jobScheduler, Config config )
     {
-        this.kernel = kernel;
+        this.databaseManager = databaseManager;
         this.jobScheduler = jobScheduler;
+        this.config = config;
     }
 
     @Override
     public void close()
     {
         // intended to eventually be used to stop any ongoing collection
+    }
+
+    public Kernel getKernel()
+    {
+        return databaseManager.getDatabaseContext( config.get( GraphDatabaseSettings.active_database ) )
+                .map( DatabaseContext::getDatabase )
+                .map( Database::getKernel )
+                .orElseThrow( () -> new IllegalStateException( "Active database not found." ) );
+    }
+
+    public JobScheduler getJobScheduler()
+    {
+        return jobScheduler;
     }
 }

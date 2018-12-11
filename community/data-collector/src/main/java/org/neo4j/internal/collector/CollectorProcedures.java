@@ -50,10 +50,10 @@ public class CollectorProcedures
         switch ( upperSection )
         {
         case GraphCountsSection.NAME:
-            return GraphCountsSection.collect( dataCollector.kernel, Anonymizer.PLAIN_TEXT );
+            return GraphCountsSection.collect( dataCollector.getKernel(), Anonymizer.PLAIN_TEXT );
 
         case TokensSection.NAME:
-            return TokensSection.collect( dataCollector.kernel );
+            return TokensSection.collect( dataCollector.getKernel() );
 
         default:
             throw new InvalidArgumentsException( String.format( "Unknown retrieve section '%s', known sections are ['%s', '%s']",
@@ -70,9 +70,9 @@ public class CollectorProcedures
         Map<String, Object> metaData = new HashMap<>();
         metaData.put( "graphToken", graphToken );
         metaData.put( "retrieveTime", ZonedDateTime.now() );
-        TokensSection.putTokenCounts( metaData, dataCollector.kernel );
+        TokensSection.putTokenCounts( metaData, dataCollector.getKernel() );
         Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
 
-        return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel, Anonymizer.IDS ) );
+        return Stream.concat( meta, GraphCountsSection.collect( dataCollector.getKernel(), Anonymizer.IDS ) );
     }
 }

@@ -19,11 +19,13 @@
  */
 package org.neo4j.internal.collector;
 
+import org.neo4j.dbms.database.DatabaseManager;
 import org.neo4j.exceptions.KernelException;
-import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.util.Preconditions;
+
+import static java.util.Objects.requireNonNull;
 
 public class DataCollectorModule
 {
@@ -33,10 +35,12 @@ public class DataCollectorModule
 
     public static AutoCloseable setupDataCollector( Procedures procedures,
                                                     JobScheduler jobScheduler,
-                                                    Kernel kernel ) throws KernelException
+                                                    DatabaseManager databaseManager,
+                                                    Config config) throws KernelException
     {
-        Preconditions.checkState( kernel != null, "Kernel was null" );
-        DataCollector dataCollector = new DataCollector( kernel, jobScheduler );
+        requireNonNull( databaseManager );
+        requireNonNull( config );
+        DataCollector dataCollector = new DataCollector( databaseManager, jobScheduler, config );
         procedures.registerComponent( DataCollector.class, ctx -> dataCollector, false );
         procedures.registerProcedure( CollectorProcedures.class );
         return dataCollector;

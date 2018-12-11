@@ -95,15 +95,15 @@ final class TimeBasedTaskScheduler implements Runnable
             // We have no tasks to run. Park until we're woken up by an enqueueTask() call.
             return NO_TASKS_PARK;
         }
-        while ( !stopped && !delayedTasks.isEmpty() && delayedTasks.peek().nextDeadlineNanos <= now )
-        {
-            ScheduledJobHandle task = delayedTasks.poll();
-            task.submitIfRunnable( pools );
-        }
         while ( !canceledTasks.isEmpty() )
         {
             ScheduledJobHandle canceled = canceledTasks.poll();
             delayedTasks.remove( canceled );
+        }
+        while ( !stopped && !delayedTasks.isEmpty() && delayedTasks.peek().nextDeadlineNanos <= now )
+        {
+            ScheduledJobHandle task = delayedTasks.poll();
+            task.submitIfRunnable( pools );
         }
         return delayedTasks.isEmpty() ? NO_TASKS_PARK : delayedTasks.peek().nextDeadlineNanos - now;
     }

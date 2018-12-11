@@ -280,6 +280,7 @@ public class Database extends LifecycleAdapter
             LogFileCreationMonitor physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
 
             dataSourceDependencies.satisfyDependency( this );
+            dataSourceDependencies.satisfyDependency( config );
             dataSourceDependencies.satisfyDependency( monitors );
             dataSourceDependencies.satisfyDependency( databasePageCache );
             dataSourceDependencies.satisfyDependency( tokenHolders );
