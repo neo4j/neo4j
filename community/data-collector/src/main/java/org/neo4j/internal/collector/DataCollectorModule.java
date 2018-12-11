@@ -33,10 +33,8 @@ public class DataCollectorModule
     {
     }
 
-    public static AutoCloseable setupDataCollector( Procedures procedures,
-                                                    JobScheduler jobScheduler,
-                                                    DatabaseManager databaseManager,
-                                                    Config config) throws KernelException
+    public static AutoCloseable setupDataCollector( Procedures procedures, JobScheduler jobScheduler, DatabaseManager databaseManager, Config config )
+            throws KernelException
     {
         requireNonNull( databaseManager );
         requireNonNull( config );

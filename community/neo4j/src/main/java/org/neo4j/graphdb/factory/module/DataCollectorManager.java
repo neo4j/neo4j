@@ -52,7 +52,6 @@ public class DataCollectorManager extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        // TODO misha: cleanup when procedures will be updated for multi-databases
         dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, databaseManager, config ) );
     }
 
