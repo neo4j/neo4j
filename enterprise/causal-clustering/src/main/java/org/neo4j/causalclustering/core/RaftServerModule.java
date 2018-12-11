@@ -74,6 +74,7 @@ public class RaftServerModule
     {
         RaftServer raftServer = new RaftServer( new CoreReplicatedContentMarshal(), pipelineHandlerAppender, platformModule.config, logProvider,
                 platformModule.logging.getUserLogProvider(), monitors, platformModule.clock );
+        platformModule.dependencies.satisfyDependency( raftServer ); // resolved in tests
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage> loggingRaftInbound = new LoggingInbound<>( raftServer,
                 messageLogger, identityModule.myself() );
