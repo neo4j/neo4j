@@ -36,6 +36,8 @@ import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
 import org.neo4j.bolt.transport.pipeline.ProtocolHandshaker;
 import org.neo4j.bolt.transport.pipeline.WebSocketFrameTranslator;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.bolt.transport.pipeline.ProtocolHandshaker.BOLT_MAGIC_PREAMBLE;
@@ -53,6 +55,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
     private final BoltProtocolPipelineInstallerFactory handlerFactory;
+    private final Log log;
 
     TransportSelectionHandler( String connector, SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
             BoltProtocolPipelineInstallerFactory handlerFactory, BoltMessageLogging boltLogging )
@@ -64,6 +67,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         this.logging = logging;
         this.boltLogging = boltLogging;
         this.handlerFactory = handlerFactory;
+        this.log = logging.getLog( TransportSelectionHandler.class );
     }
 
     @Override
@@ -98,8 +102,25 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     @Override
     public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
     {
-        logging.getLog( getClass() ).error( "Fatal error occurred during protocol selection for connection: " + ctx.channel(), cause );
-        ctx.close();
+        try
+        {
+            // Netty throws a NativeIoException on connection reset - directly importing that class
+            // caused a host of linking errors, because it depends on JNI to work. Hence, we just
+            // test on the message we know we'll get.
+            if ( Exceptions.contains( cause, e -> e.getMessage().contains( "Connection reset by peer" ) ) )
+            {
+                log.warn( "Fatal error occurred when initialising pipeline, " +
+                        "remote peer unexpectedly closed connection: %s", ctx.channel() );
+            }
+            else
+            {
+                log.error( "Fatal error occurred when initialising pipeline: " + ctx.channel(), cause );
+            }
+        }
+        finally
+        {
+            ctx.close();
+        }
     }
 
     private boolean isBoltPreamble( ByteBuf in )

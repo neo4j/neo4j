@@ -19,48 +19,66 @@
  */
 package org.neo4j.bolt.transport;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.junit.After;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import org.junit.Test;
 
-import org.neo4j.bolt.logging.BoltMessageLogging;
+import java.io.IOException;
+
 import org.neo4j.logging.AssertableLogProvider;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertFalse;
+import static org.hamcrest.Matchers.sameInstance;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.neo4j.logging.AssertableLogProvider.inLog;
 
 public class TransportSelectionHandlerTest
 {
-    private final EmbeddedChannel channel = new EmbeddedChannel();
-
-    @After
-    public void cleanup()
+    @Test
+    public void shouldLogOnUnexpectedExceptionsAndClosesContext() throws Throwable
     {
-        channel.finishAndReleaseAll();
+        // Given
+        ChannelHandlerContext context = channelHandlerContextMock();
+        AssertableLogProvider logging = new AssertableLogProvider();
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null );
+
+        // When
+        Throwable cause = new Throwable( "Oh no!" );
+        handler.exceptionCaught( context, cause );
+
+        // Then
+        verify( context ).close();
+        logging.assertExactly( inLog( TransportSelectionHandler.class )
+                .error( equalTo( "Fatal error occurred when initialising pipeline: " + context.channel() ), sameInstance( cause ) ) );
     }
 
     @Test
-    public void shouldHandleExceptions()
+    public void shouldLogConnectionResetErrorsAtWarningLevelAndClosesContext() throws Exception
     {
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        RuntimeException error = new RuntimeException();
+        // Given
+        ChannelHandlerContext context = channelHandlerContextMock();
+        AssertableLogProvider logging = new AssertableLogProvider();
+        TransportSelectionHandler handler = new TransportSelectionHandler( null, null, false, false, logging, null, null );
 
-        channel.pipeline().addLast( newHandler( logProvider ) );
+        IOException connResetError = new IOException( "Connection reset by peer" );
 
-        channel.pipeline().fireExceptionCaught( error );
+        // When
+        handler.exceptionCaught( context, connResetError );
 
-        assertFalse( channel.isActive() );
-        logProvider.assertAtLeastOnce( inLog( TransportSelectionHandler.class ).error(
-                startsWith( "Fatal error occurred during protocol selection" ),
-                equalTo( error ) ) );
+        // Then
+        verify( context ).close();
+        logging.assertExactly( inLog( TransportSelectionHandler.class )
+                .warn( "Fatal error occurred when initialising pipeline, " +
+                        "remote peer unexpectedly closed connection: %s", context.channel() ) );
     }
 
-    private static TransportSelectionHandler newHandler( AssertableLogProvider logProvider )
+    private static ChannelHandlerContext channelHandlerContextMock()
     {
-        return new TransportSelectionHandler( "bolt", null, false, false,
-                logProvider, mock( BoltProtocolPipelineInstallerFactory.class ), BoltMessageLogging.none() );
+        Channel channel = mock( Channel.class );
+        ChannelHandlerContext context = mock( ChannelHandlerContext.class );
+        when( context.channel() ).thenReturn( channel );
+        return context;
     }
 }
