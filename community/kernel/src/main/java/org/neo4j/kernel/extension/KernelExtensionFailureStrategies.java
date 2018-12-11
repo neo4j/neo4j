@@ -21,7 +21,7 @@ package org.neo4j.kernel.extension;
 
 import java.io.PrintStream;
 
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+import org.neo4j.exceptions.UnsatisfiedDependencyException;
 
 public class KernelExtensionFailureStrategies
 {
