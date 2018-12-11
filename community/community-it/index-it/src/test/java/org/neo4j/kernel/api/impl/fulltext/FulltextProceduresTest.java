@@ -161,6 +161,7 @@ public class FulltextProceduresTest
             assertEquals( asList( "Label1", "Label2" ), row.get( "tokenNames" ) );
             assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
             assertEquals( "test-index", row.get( "indexName" ) );
+            assertEquals( "node_fulltext", row.get( "type" ) );
             assertFalse( result.hasNext() );
             result.close();
             awaitIndexesOnline();
@@ -182,6 +183,7 @@ public class FulltextProceduresTest
             assertEquals( "INDEX ON NODE:Label1, Label2(prop1, prop2)", row.get( "description" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
+            //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
             tx.success();
@@ -204,6 +206,7 @@ public class FulltextProceduresTest
             assertEquals( asList( "Reltype1", "Reltype2" ), row.get( "tokenNames" ) );
             assertEquals( asList( "prop1", "prop2" ), row.get( "properties" ) );
             assertEquals( "test-index", row.get( "indexName" ) );
+            assertEquals( "relationship_fulltext", row.get( "type" ) );
             assertFalse( result.hasNext() );
             result.close();
             awaitIndexesOnline();
@@ -225,6 +228,7 @@ public class FulltextProceduresTest
             assertEquals( "INDEX ON RELATIONSHIP:Reltype1, Reltype2(prop1, prop2)", row.get( "description" ) );
             assertEquals( "ONLINE", row.get( "state" ) );
             assertFalse( result.hasNext() );
+            //noinspection ConstantConditions
             assertFalse( result.hasNext() );
             assertNotNull( db.schema().getIndexByName( "test-index" ) );
             tx.success();
