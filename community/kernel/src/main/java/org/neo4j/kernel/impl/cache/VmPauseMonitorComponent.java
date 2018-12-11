@@ -51,7 +51,7 @@ public class VmPauseMonitorComponent implements Lifecycle
         vmPauseMonitor = new VmPauseMonitor(
                 config.get( GraphDatabaseSettings.vm_pause_monitor_measurement_duration ),
                 config.get( GraphDatabaseSettings.vm_pause_monitor_stall_alert_threshold ),
-                log, jobScheduler, vmPauseInfo -> log.debug( "Detected VM stop-the-world pause: {}", vmPauseInfo )
+                log, jobScheduler, vmPauseInfo -> log.warn( "Detected VM stop-the-world pause: %s", vmPauseInfo )
         );
         vmPauseMonitor.start();
     }
