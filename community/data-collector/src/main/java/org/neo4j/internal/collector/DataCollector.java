@@ -25,18 +25,15 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.database.Database;
-import org.neo4j.scheduler.JobScheduler;
 
 public class DataCollector implements AutoCloseable
 {
     private final DatabaseManager databaseManager;
-    private final JobScheduler jobScheduler;
     private final Config config;
 
-    DataCollector( DatabaseManager databaseManager, JobScheduler jobScheduler, Config config )
+    DataCollector( DatabaseManager databaseManager, Config config )
     {
         this.databaseManager = databaseManager;
-        this.jobScheduler = jobScheduler;
         this.config = config;
     }
 
@@ -52,10 +49,5 @@ public class DataCollector implements AutoCloseable
                 .map( DatabaseContext::getDatabase )
                 .map( Database::getKernel )
                 .orElseThrow( () -> new IllegalStateException( "Active database not found." ) );
-    }
-
-    public JobScheduler getJobScheduler()
-    {
-        return jobScheduler;
     }
 }

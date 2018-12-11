@@ -28,6 +28,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.time.SystemNanoClock;
+import org.neo4j.util.VisibleForTesting;
 
 final class TimeBasedTaskScheduler implements Runnable
 {
@@ -106,6 +107,12 @@ final class TimeBasedTaskScheduler implements Runnable
             task.submitIfRunnable( pools );
         }
         return delayedTasks.isEmpty() ? NO_TASKS_PARK : delayedTasks.peek().nextDeadlineNanos - now;
+    }
+
+    @VisibleForTesting
+    int tasksLeft()
+    {
+        return delayedTasks.size();
     }
 
     public void stop()

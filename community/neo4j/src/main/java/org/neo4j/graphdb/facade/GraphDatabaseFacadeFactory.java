@@ -177,7 +177,7 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( databaseManager );
         platform.dependencies.satisfyDependency( databaseManager );
 
-        DataCollectorManager dataCollectorManager = new DataCollectorManager( databaseManager, platform.jobScheduler, procedures, config );
+        DataCollectorManager dataCollectorManager = new DataCollectorManager( databaseManager, procedures, config );
         platform.life.add( dataCollectorManager );
 
         edition.createSecurityModule( platform, procedures );

@@ -22,13 +22,13 @@ package org.neo4j.kernel;
 import org.junit.Test;
 
 import org.neo4j.dbms.database.DatabaseManager;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactoryContractTest;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * Test the implementation of the {@link org.neo4j.kernel.extension.KernelExtensionFactory} framework. Treats the
@@ -72,12 +72,10 @@ public final class TestKernelExtension extends KernelExtensionFactoryContractTes
         GraphDatabaseAPI graphdb = graphDb( 0 );
         try
         {
-            assertEquals( graphdb.getDependencyResolver().resolveDependency( Config.class ),
-                    graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions.class ).resolveDependency(
-                            DummyExtension.class ).getDependencies().getConfig() );
+            GlobalKernelExtensions globalKernelExtensions = graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions.class );
+            assertNotNull( globalKernelExtensions.resolveDependency( DummyExtension.class ).getDependencies().getConfig() );
             assertEquals( graphdb.getDependencyResolver().resolveDependency( DatabaseManager.class ),
-                    graphdb.getDependencyResolver().resolveDependency( GlobalKernelExtensions.class ).resolveDependency(
-                            DummyExtension.class ).getDependencies().getDatabaseManager() );
+                    globalKernelExtensions.resolveDependency( DummyExtension.class ).getDependencies().getDatabaseManager() );
         }
         finally
         {

@@ -28,22 +28,18 @@ import org.neo4j.io.IOUtils;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.proc.Procedures;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.scheduler.JobScheduler;
 
 public class DataCollectorManager extends LifecycleAdapter
 {
     private final DatabaseManager databaseManager;
-    private final JobScheduler jobScheduler;
     private final Procedures procedures;
     private final Config config;
     private final List<AutoCloseable> dataCollectors;
 
     public DataCollectorManager( DatabaseManager databaseManager,
-                                 JobScheduler jobScheduler,
                                  Procedures procedures, Config config )
     {
         this.databaseManager = databaseManager;
-        this.jobScheduler = jobScheduler;
         this.procedures = procedures;
         this.config = config;
         this.dataCollectors = new ArrayList<>();
@@ -52,7 +48,7 @@ public class DataCollectorManager extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, jobScheduler, databaseManager, config ) );
+        dataCollectors.add( DataCollectorModule.setupDataCollector( procedures, databaseManager, config ) );
     }
 
     @Override

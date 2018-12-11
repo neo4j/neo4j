@@ -153,16 +153,15 @@ import static org.neo4j.kernel.recovery.Recovery.performRecovery;
 
 public class Database extends LifecycleAdapter
 {
-    // TODO: delete global fields for objects that used during construction only?
-
     private final Monitors globalMonitors;
-    private final Tracers tracers;
+    private final DependencyResolver globalDependencies;
+    private final PageCache globalPageCache;
+    private final Tracers globalTracers;
 
     private final Log msgLog;
     private final LogService logService;
     private final LogProvider logProvider;
     private final LogProvider userLogProvider;
-    private final DependencyResolver globalDependencies;
     private final TokenNameLookup tokenNameLookup;
     private final TokenHolders tokenHolders;
     private final StatementLocksFactory statementLocksFactory;
@@ -177,7 +176,6 @@ public class Database extends LifecycleAdapter
     private final DatabaseHealth databaseHealth;
     private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final CommitProcessFactory commitProcessFactory;
-    private final PageCache globalPageCache;
     private final ConstraintSemantics constraintSemantics;
     private final Procedures procedures;
     private final IOLimiter ioLimiter;
@@ -210,7 +208,7 @@ public class Database extends LifecycleAdapter
     private final GraphDatabaseFacade facade;
     private final Iterable<QueryEngineProvider> engineProviders;
     private volatile boolean started;
-    private Monitors monitors;
+    private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
 
     public Database( DatabaseCreationContext context )
@@ -237,7 +235,7 @@ public class Database extends LifecycleAdapter
         this.transactionHeaderInformationFactory = context.getTransactionHeaderInformationFactory();
         this.constraintSemantics = context.getConstraintSemantics();
         this.globalMonitors = context.getMonitors();
-        this.tracers = context.getTracers();
+        this.globalTracers = context.getTracers();
         this.procedures = context.getProcedures();
         this.ioLimiter = context.getIoLimiter();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
@@ -276,12 +274,12 @@ public class Database extends LifecycleAdapter
             dataSourceDependencies = new Dependencies( globalDependencies );
 
             databasePageCache = new DatabasePageCache( globalPageCache );
-            monitors = new Monitors( globalMonitors );
-            LogFileCreationMonitor physicalLogMonitor = monitors.newMonitor( LogFileCreationMonitor.class );
+            databaseMonitors = new Monitors( globalMonitors );
+            LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
             dataSourceDependencies.satisfyDependency( this );
             dataSourceDependencies.satisfyDependency( config );
-            dataSourceDependencies.satisfyDependency( monitors );
+            dataSourceDependencies.satisfyDependency( databaseMonitors );
             dataSourceDependencies.satisfyDependency( databasePageCache );
             dataSourceDependencies.satisfyDependency( tokenHolders );
             dataSourceDependencies.satisfyDependency( facade );
@@ -313,17 +311,19 @@ public class Database extends LifecycleAdapter
                     LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
                             config ).withDependencies( dataSourceDependencies ).build();
 
-            monitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
-            monitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
-            monitors.addMonitorListener( new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
+            databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
+            databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
+            databaseMonitors.addMonitorListener(
+                    new ReverseTransactionCursorLoggingMonitor( logService.getInternalLog( ReversedSingleFileTransactionCursor.class ) ) );
             LogTailScanner tailScanner =
-                    new LogTailScanner( logFiles, logEntryReader, monitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
+                    new LogTailScanner( logFiles, logEntryReader, databaseMonitors, config.get( GraphDatabaseSettings.fail_on_corrupted_log_files ) );
             LogVersionUpgradeChecker.check( tailScanner, config );
 
             // Upgrade the store before we begin
             upgradeStore();
 
-            performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, monitors, kernelExtensionFactories, Optional.of( tailScanner ) );
+            performRecovery( fs, databasePageCache, config, databaseLayout, logProvider, databaseMonitors, kernelExtensionFactories,
+                    Optional.of( tailScanner ) );
 
             // Build all modules and their services
             DatabaseSchemaState databaseSchemaState = new DatabaseSchemaState( logProvider );
@@ -332,7 +332,7 @@ public class Database extends LifecycleAdapter
             idController.initialize( transactionsSnapshotSupplier );
 
             storageEngine = buildStorageEngine( databasePageCache, databaseSchemaState, databaseInfo.operationalMode, versionContextSupplier,
-                    recoveryCleanupWorkCollector, monitors );
+                    recoveryCleanupWorkCollector, databaseMonitors );
             life.add( logFiles );
 
             TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
@@ -340,7 +340,7 @@ public class Database extends LifecycleAdapter
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
             DatabaseTransactionLogModule transactionLogModule =
-                    buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore, monitors );
+                    buildTransactionLogs( logFiles, config, logProvider, scheduler, storageEngine, logEntryReader, transactionIdStore, databaseMonitors );
             transactionLogModule.satisfyDependencies( dataSourceDependencies );
 
             final DatabaseKernelModule kernelModule =
@@ -477,7 +477,7 @@ public class Database extends LifecycleAdapter
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, storageEngine, logPruning, appender, databaseHealth, logProvider,
-                tracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
+                globalTracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
@@ -515,7 +515,7 @@ public class Database extends LifecycleAdapter
         KernelTransactions kernelTransactions = life.add(
                 new KernelTransactions( config, statementLocksFactory, constraintIndexCreator, statementOperationParts, schemaWriteGuard,
                         transactionHeaderInformationFactory, transactionCommitProcess, hooks,
-                        transactionMonitor, databaseAvailabilityGuard, tracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
+                        transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
                         constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore,
                         dataSourceDependencies ) );
@@ -656,7 +656,7 @@ public class Database extends LifecycleAdapter
 
     public Monitors getMonitors()
     {
-        return monitors;
+        return databaseMonitors;
     }
 
     public boolean isReadOnly()
