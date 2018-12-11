@@ -34,6 +34,9 @@ import scala.collection.mutable.ArrayBuffer
 class QueryIndexes(schemaRead: SchemaRead) {
 
   private val buffer = new ArrayBuffer[IndexReference]
+  private var labelScan: Boolean = false
+
+  def registerLabelScan(): Unit = labelScan = true
 
   def registerQueryIndex(label: LabelToken, property: IndexedProperty): Int = registerQueryIndex(label, Seq(property))
 
@@ -45,4 +48,6 @@ class QueryIndexes(schemaRead: SchemaRead) {
   }
 
   def indexes: Array[IndexReference] = buffer.toArray
+
+  def hasLabelScan: Boolean = labelScan
 }

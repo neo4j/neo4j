@@ -69,6 +69,7 @@ case class InterpretedPipeMapper(readOnly: Boolean,
                                             new LazyTypes(typeNames.map(_.name).toArray), endLabel.map(LazyLabel.apply))(id = id)
 
       case NodeByLabelScan(ident, label, _) =>
+        queryIndexes.registerLabelScan()
         NodeByLabelScanPipe(ident, LazyLabel(label))(id = id)
 
       case NodeByIdSeek(ident, nodeIdExpr, _) =>
