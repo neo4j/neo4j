@@ -236,7 +236,8 @@ public class PlatformModule
 
     protected StoreLocker createStoreLocker()
     {
-        return new GlobalStoreLocker( fileSystem, storeLayout );
+        boolean ignoreLock = config.get( GraphDatabaseSettings.ignore_store_lock );
+        return new GlobalStoreLocker( fileSystem, storeLayout, ignoreLock );
     }
 
     protected SystemNanoClock createClock()

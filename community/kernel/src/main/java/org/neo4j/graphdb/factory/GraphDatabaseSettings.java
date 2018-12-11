@@ -107,7 +107,7 @@ public class GraphDatabaseSettings implements LoadableConfig
 
     @Description( "Name of the database to load" )
     public static final Setting<String> active_database =
-            buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).constraint( except( SYSTEM_DATABASE_NAME ) ).build();
+            buildSetting( "dbms.active_database", STRING, DEFAULT_DATABASE_NAME ).build();
 
     @Description( "Path of the data directory. You must not configure more than one Neo4j installation to use the " +
             "same data directory." )
@@ -991,6 +991,10 @@ public class GraphDatabaseSettings implements LoadableConfig
     @Internal
     public static final Setting<Boolean> archive_failed_index = setting(
             "unsupported.dbms.index.archive_failed", BOOLEAN, FALSE );
+
+    @Internal
+    @Description( "Ignore the store lock. Shall only be used by internal code which knows what is safe." )
+    public static final Setting<Boolean> ignore_store_lock = setting( "dbms.ignore_store_lock", BOOLEAN, FALSE );
 
     // Needed to validate config, accessed via reflection
     @SuppressWarnings( "unused" )
