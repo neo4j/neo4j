@@ -27,6 +27,7 @@ import org.mockito.InOrder;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
@@ -440,17 +441,15 @@ class RecoveryTest
         return new LogTailScanner( logFiles, reader, monitors, false );
     }
 
-    private void writeSomeData( File file,
-            Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
+    private void writeSomeData( File file, Visitor<Pair<LogEntryWriter,Consumer<LogPositionMarker>>,IOException> visitor ) throws IOException
     {
 
-        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel(
-                fileSystem.open( file, OpenMode.READ_WRITE ), logVersion, CURRENT_LOG_VERSION );
-                PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel(
-                        versionedStoreChannel ) )
+        try ( LogVersionedStoreChannel versionedStoreChannel = new PhysicalLogVersionedStoreChannel( fileSystem.open( file, OpenMode.READ_WRITE ), logVersion,
+                CURRENT_LOG_VERSION );
+                PositionAwarePhysicalFlushableChannel writableLogChannel = new PositionAwarePhysicalFlushableChannel( versionedStoreChannel,
+                        ByteBuffer.allocate( 1024 ) ) )
         {
             writeLogHeader( writableLogChannel, logVersion, 2L );
-
             Consumer<LogPositionMarker> consumer = marker ->
             {
                 try

@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.log;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 /**
  * Decorator around a {@link LogVersionedStoreChannel} making it expose {@link FlushablePositionAwareChannel}. This
@@ -32,16 +33,10 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
     private LogVersionedStoreChannel logVersionedStoreChannel;
     private final PhysicalFlushableChannel channel;
 
-    public PositionAwarePhysicalFlushableChannel( LogVersionedStoreChannel logVersionedStoreChannel )
+    public PositionAwarePhysicalFlushableChannel( LogVersionedStoreChannel logVersionedStoreChannel, ByteBuffer buffer )
     {
         this.logVersionedStoreChannel = logVersionedStoreChannel;
-        this.channel = new PhysicalFlushableChannel( logVersionedStoreChannel );
-    }
-
-    public PositionAwarePhysicalFlushableChannel( LogVersionedStoreChannel logVersionedStoreChannel, int bufferSize )
-    {
-        this.logVersionedStoreChannel = logVersionedStoreChannel;
-        this.channel = new PhysicalFlushableChannel( logVersionedStoreChannel, bufferSize );
+        this.channel = new PhysicalFlushableChannel( logVersionedStoreChannel, buffer );
     }
 
     @Override
@@ -109,10 +104,5 @@ public class PositionAwarePhysicalFlushableChannel implements FlushablePositionA
     {
         this.logVersionedStoreChannel = channel;
         this.channel.setChannel( channel );
-    }
-
-    public void setCurrentPosition( LogPosition position ) throws IOException, UnsupportedOperationException
-    {
-        channel.position( position.getByteOffset() );
     }
 }

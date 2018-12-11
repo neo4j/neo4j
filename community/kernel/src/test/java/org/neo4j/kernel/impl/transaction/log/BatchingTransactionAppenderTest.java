@@ -26,6 +26,7 @@ import org.mockito.Mockito;
 
 import java.io.Flushable;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -243,7 +244,7 @@ public class BatchingTransactionAppenderTest
         long txId = 3;
         String failureMessage = "Forces a failure";
         FlushablePositionAwareChannel channel =
-                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ) ) );
+                spy( new PositionAwarePhysicalFlushableChannel( mock( PhysicalLogVersionedStoreChannel.class ), ByteBuffer.allocate( Long.BYTES ) ) );
         IOException failure = new IOException( failureMessage );
         when( channel.putInt( anyInt() ) ).thenThrow( failure );
         when( logFile.getWriter() ).thenReturn( channel );

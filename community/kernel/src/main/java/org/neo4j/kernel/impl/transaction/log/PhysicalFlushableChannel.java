@@ -49,8 +49,13 @@ public class PhysicalFlushableChannel implements FlushableChannel
 
     public PhysicalFlushableChannel( StoreChannel channel, int bufferSize )
     {
+        this( channel, ByteBuffer.allocate( bufferSize ) );
+    }
+
+    public PhysicalFlushableChannel( StoreChannel channel, ByteBuffer byteBuffer )
+    {
         this.channel = channel;
-        this.buffer = ByteBuffer.allocate( bufferSize );
+        this.buffer = byteBuffer;
     }
 
     void setChannel( LogVersionedStoreChannel channel )

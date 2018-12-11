@@ -19,10 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.log.files;
 
+import sun.nio.ch.DirectBuffer;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.neo4j.io.ByteUnit;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.OpenMode;
 import org.neo4j.kernel.impl.transaction.log.FlushablePositionAwareChannel;
@@ -37,6 +41,9 @@ import org.neo4j.kernel.impl.transaction.log.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.log.ReaderLogVersionBridge;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static java.lang.Math.min;
+import static java.lang.Runtime.getRuntime;
+
 /**
  * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
  */
@@ -50,6 +57,7 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
     private LogVersionRepository logVersionRepository;
 
     private volatile PhysicalLogVersionedStoreChannel channel;
+    private ByteBuffer byteBuffer;
 
     TransactionLogFile( TransactionLogFiles logFiles, TransactionLogFilesContext context )
     {
@@ -78,7 +86,8 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         channel = logFiles.createLogChannelForVersion( lastLogVersionUsed, OpenMode.READ_WRITE, context::getLastCommittedTransactionId );
         // Move to the end
         channel.position( channel.size() );
-        writer = new PositionAwarePhysicalFlushableChannel( channel );
+        byteBuffer = ByteBuffer.allocateDirect( calculateLogBufferSize() );
+        writer = new PositionAwarePhysicalFlushableChannel( channel, byteBuffer );
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence
@@ -94,6 +103,10 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         if ( channel != null )
         {
             channel.close();
+        }
+        if ( byteBuffer != null )
+        {
+            ((DirectBuffer)byteBuffer).cleaner().clean();
         }
     }
 
@@ -212,5 +225,22 @@ class TransactionLogFile extends LifecycleAdapter implements LogFile
         {
             visitor.visit( reader );
         }
+    }
+
+    /**
+     * Calculate size of byte buffer for transaction log file based on number of available cpu's.
+     * Minimal buffer size is 512KB. Every another 4 cpu's will add another 512KB into the buffer size.
+     * Maximal buffer size is 4MB taking into account that we can have more then one transaction log writer in multi-database env.
+     * <p/>
+     * Examples:
+     * runtime with 4 cpus will have buffer size of 1MB
+     * runtime with 8 cpus will have buffer size of 1MB 512KB
+     * runtime with 12 cpus will have buffer size of 2MB
+     *
+     * @return transaction log writer buffer size.
+     */
+    private static int calculateLogBufferSize()
+    {
+        return (int) ByteUnit.kibiBytes( min( (getRuntime().availableProcessors() / 4) + 1, 8 ) * 512 );
     }
 }
