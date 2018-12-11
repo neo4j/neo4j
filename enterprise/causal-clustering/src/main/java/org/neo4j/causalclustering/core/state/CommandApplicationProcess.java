@@ -24,9 +24,9 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import org.neo4j.causalclustering.SessionTracker;
-import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.RaftLog;
 import org.neo4j.causalclustering.core.consensus.log.RaftLogEntry;
+import org.neo4j.causalclustering.core.consensus.log.cache.InFlightCache;
 import org.neo4j.causalclustering.core.consensus.log.monitoring.RaftLogCommitIndexMonitor;
 import org.neo4j.causalclustering.core.replication.DistributedOperation;
 import org.neo4j.causalclustering.core.replication.ProgressTracker;
@@ -238,7 +238,6 @@ public class CommandApplicationProcess
             {
                 if ( !sessionTracker.validateOperation( operation.globalSession(), operation.operationId() ) )
                 {
-                    sessionTracker.validateOperation( operation.globalSession(), operation.operationId() );
                     commandIndex++;
                     continue;
                 }
