@@ -36,6 +36,8 @@ import java.util.function.Function;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.logging.BoltMessageLogging;
+import org.neo4j.helpers.Exceptions;
+import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
 import static org.neo4j.bolt.transport.BoltHandshakeProtocolHandler.BOLT_MAGIC_PREAMBLE;
@@ -52,6 +54,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
     private final LogProvider logging;
     private final BoltMessageLogging boltLogging;
     private final Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions;
+    private final Log log;
 
     TransportSelectionHandler( SslContext sslCtx, boolean encryptionRequired, boolean isEncrypted, LogProvider logging,
                                Map<Long, Function<BoltChannel, BoltMessagingProtocolHandler>> protocolVersions,
@@ -62,6 +65,7 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         this.isEncrypted = isEncrypted;
         this.logging = logging;
         this.boltLogging = boltLogging;
+        this.log = logging.getLog( TransportSelectionHandler.class );
         this.protocolVersions = protocolVersions;
     }
 
@@ -90,6 +94,30 @@ public class TransportSelectionHandler extends ByteToMessageDecoder
         {
             // TODO: send a alert_message for a ssl connection to terminate the handshake
             in.clear();
+            ctx.close();
+        }
+    }
+
+    @Override
+    public void exceptionCaught( ChannelHandlerContext ctx, Throwable cause ) throws Exception
+    {
+        try
+        {
+            // Netty throws a NativeIoException on connection reset - directly importing that class
+            // caused a host of linking errors, because it depends on JNI to work. Hence, we just
+            // test on the message we know we'll get.
+            if ( Exceptions.contains( cause, e -> e.getMessage().contains( "Connection reset by peer" ) ) )
+            {
+                log.warn( "Fatal error occurred when initialising pipeline, " +
+                        "remote peer unexpectedly closed connection: %s", ctx.channel() );
+            }
+            else
+            {
+                log.error( "Fatal error occurred when initialising pipeline: " + ctx.channel(), cause );
+            }
+        }
+        finally
+        {
             ctx.close();
         }
     }
