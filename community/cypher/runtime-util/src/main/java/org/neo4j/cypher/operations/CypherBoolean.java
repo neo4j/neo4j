@@ -222,7 +222,7 @@ public final class CypherBoolean
     {
         assert rhs != NO_VALUE;
 
-        ListValue anyValues = CypherFunctions.makeTraversable( rhs );
+        ListValue anyValues = CypherFunctions.asList( rhs );
 
         boolean seenUndefined = false;
         for ( AnyValue value : anyValues )

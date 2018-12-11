@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.operations;
 
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
-import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException;
-import org.neo4j.cypher.internal.v4_0.util.ParameterWrongTypeException;
-
 import java.math.BigDecimal;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.neo4j.cypher.internal.runtime.DbAccess;
 import org.neo4j.cypher.internal.runtime.ExpressionCursors;
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException;
+import org.neo4j.cypher.internal.v4_0.util.InvalidArgumentException;
+import org.neo4j.cypher.internal.v4_0.util.ParameterWrongTypeException;
 import org.neo4j.internal.kernel.api.NodeCursor;
 import org.neo4j.internal.kernel.api.PropertyCursor;
 import org.neo4j.internal.kernel.api.RelationshipScanCursor;
@@ -1077,7 +1076,7 @@ public final class CypherFunctions
         assert collection != NO_VALUE && fromValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
 
         int from = asInt( fromValue );
-       ListValue list = makeTraversable( collection );
+       ListValue list = asList( collection );
        if ( from >= 0 )
        {
            return list.drop( from );
@@ -1092,7 +1091,7 @@ public final class CypherFunctions
     {
         assert collection != NO_VALUE && toValue != NO_VALUE : "NO_VALUE checks need to happen outside this call";
         int from = asInt( toValue );
-        ListValue list = makeTraversable( collection );
+        ListValue list = asList( collection );
         if ( from >= 0 )
         {
             return list.take( from );
@@ -1110,7 +1109,7 @@ public final class CypherFunctions
 
         int from = asInt( fromValue );
         int to = asInt( toValue );
-        ListValue list = makeTraversable( collection );
+        ListValue list = asList( collection );
         int size = list.size();
         if ( from >= 0 && to >= 0 )
         {
@@ -1130,7 +1129,7 @@ public final class CypherFunctions
         }
     }
 
-    public static ListValue makeTraversable( AnyValue collection )
+    public static ListValue asList( AnyValue collection )
     {
         ListValue list;
         if ( collection == NO_VALUE )
