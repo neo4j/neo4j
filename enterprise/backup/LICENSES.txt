@@ -23,7 +23,6 @@ Apache Software License, Version 2.0
   jPowerShell
   jProcesses
   Lucene Core
-  Lucene Memory
   LZ4 and xxHash
   Netty
   Netty/All-in-One

@@ -7,7 +7,6 @@ Apache Software License, Version 2.0
   Apache Commons Lang
   Apache Commons Text
   Lucene Core
-  Lucene Memory
   Netty/All-in-One
 ------------------------------------------------------------------------------
 

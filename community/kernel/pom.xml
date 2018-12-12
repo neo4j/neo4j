@@ -178,6 +178,17 @@ the relevant Commercial Agreement.
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-lucene-upgrade</artifactId>
       <version>${project.version}</version>
+      <exclusions>
+        <exclusion>
+          <groupId>*</groupId>
+          <artifactId>*</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+    <!--lucene should be included here to be able to produce correct licensing file-->
+    <dependency>
+      <groupId>org.apache.lucene</groupId>
+      <artifactId>lucene-core</artifactId>
     </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>

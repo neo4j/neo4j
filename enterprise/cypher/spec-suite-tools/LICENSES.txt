@@ -16,7 +16,6 @@ Apache Software License, Version 2.0
   json4s-core
   json4s-native
   Lucene Core
-  Lucene Memory
   MongoDB Java Driver
   Netty/All-in-One
   nscala-time
