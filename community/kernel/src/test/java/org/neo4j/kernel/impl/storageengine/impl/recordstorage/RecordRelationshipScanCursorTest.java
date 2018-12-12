@@ -173,6 +173,6 @@ public class RecordRelationshipScanCursorTest
 
     private RecordRelationshipScanCursor createRelationshipCursor()
     {
-        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore(), neoStores.getRelationshipGroupStore() );
+        return new RecordRelationshipScanCursor( neoStores.getRelationshipStore() );
     }
 }

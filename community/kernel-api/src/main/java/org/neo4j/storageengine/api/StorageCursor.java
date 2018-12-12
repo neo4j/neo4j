@@ -31,15 +31,15 @@ public interface StorageCursor extends AutoCloseable
     boolean next();
 
     /**
-     * Closes the cursor so that calls to {@link #next()} will not return {@code true} anymore.
-     * After this point this cursor can still be used, by initializing it with any of the cursor-specific
+     * Resets state in this cursor so that calls to {@link #next()} will not return {@code true} anymore.
+     * After this point this cursor can still be used, after initializing it with any of the cursor-specific
      * initialization method.
+     */
+    void reset();
+
+    /**
+     * Closes and releases resources allocated by this cursor so that it cannot be initialized or used again after this call.
      */
     @Override
     void close();
-
-    /**
-     * Releases resources allocated by this cursor so that it cannot be initialized or used again after this call.
-     */
-    void release();
 }

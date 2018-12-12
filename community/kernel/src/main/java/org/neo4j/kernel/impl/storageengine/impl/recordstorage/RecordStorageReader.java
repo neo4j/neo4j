@@ -491,7 +491,7 @@ public class RecordStorageReader implements StorageReader
     @Override
     public RecordRelationshipScanCursor allocateRelationshipScanCursor()
     {
-        return new RecordRelationshipScanCursor( relationshipStore, relationshipGroupStore );
+        return new RecordRelationshipScanCursor( relationshipStore );
     }
 
     @Override

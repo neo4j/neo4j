@@ -149,7 +149,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
 
             if ( next == NO_ID )
             {
-                reset();
+                resetState();
                 return false;
             }
 
@@ -165,7 +165,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
         buffer = buffer.next;
         if ( !hasBufferedData() )
         {
-            reset();
+            resetState();
             return false;
         }
         else
@@ -278,17 +278,17 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public void close()
+    public void reset()
     {
         if ( open )
         {
             open = false;
             buffer = null;
-            reset();
+            resetState();
         }
     }
 
-    private void reset()
+    private void resetState()
     {
         setId( next = NO_ID );
         groupState = GroupState.NONE;
@@ -296,7 +296,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
     }
 
     @Override
-    public void release()
+    public void close()
     {
         if ( pageCursor != null )
         {
@@ -304,7 +304,7 @@ class RecordRelationshipTraversalCursor extends RecordRelationshipCursor impleme
             pageCursor = null;
         }
 
-        group.release();
+        group.close();
     }
 
     @Override

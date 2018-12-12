@@ -380,12 +380,12 @@ public class DefaultRelationshipTraversalCursorTest
             }
 
             @Override
-            public void close()
+            public void reset()
             {
             }
 
             @Override
-            public void release()
+            public void close()
             {
             }
         };

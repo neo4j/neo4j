@@ -201,7 +201,7 @@ class DefaultNodeCursor implements NodeCursor
             read = null;
             hasChanges = HasChanges.MAYBE;
             addedNodes = ImmutableEmptyLongIterator.INSTANCE;
-            storeCursor.close();
+            storeCursor.reset();
 
             pool.accept( this );
         }
@@ -265,6 +265,6 @@ class DefaultNodeCursor implements NodeCursor
 
     void release()
     {
-        storeCursor.release();
+        storeCursor.close();
     }
 }
