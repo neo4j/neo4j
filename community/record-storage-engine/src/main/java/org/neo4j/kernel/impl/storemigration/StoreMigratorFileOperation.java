@@ -27,7 +27,7 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseFile;
 import org.neo4j.io.layout.DatabaseLayout;
 
-import static org.neo4j.helpers.collection.Streams.ofOptional;
+import static org.neo4j.collection.Streams.ofOptional;
 
 class StoreMigratorFileOperation
 {
