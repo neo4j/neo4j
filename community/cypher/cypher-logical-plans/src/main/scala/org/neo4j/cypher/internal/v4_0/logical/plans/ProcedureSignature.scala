@@ -20,8 +20,8 @@
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
 import org.neo4j.cypher.internal.v4_0.ast.UnresolvedCall
-import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 import org.neo4j.cypher.internal.v4_0.expressions.FunctionInvocation
+import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
 
 case class ProcedureSignature(name: QualifiedName,
                               inputSignature: IndexedSeq[FieldSignature],
@@ -50,7 +50,8 @@ case class UserFunctionSignature(name: QualifiedName,
                                  allowed: Array[String],
                                  description: Option[String],
                                  isAggregate: Boolean,
-                                 id: Option[Int] = None) {
+                                 id: Option[Int] = None,
+                                 threadSafe: Boolean = false) {
   override def toString = s"$name(${inputSignature.mkString(", ")}) :: ${outputType.toNeoTypeString}"
 }
 

@@ -134,6 +134,12 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
     }
 
     @Override
+    public boolean threadSafe()
+    {
+        return true;
+    }
+
+    @Override
     public final AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
     {
         if ( input == null || (input.length > 0 && (input[0] == NO_VALUE || input[0] == null)) )
@@ -207,6 +213,12 @@ public abstract class TemporalFunction<T extends AnyValue> implements CallableUs
 
         @Override
         public abstract AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException;
+
+        @Override
+        public boolean threadSafe()
+        {
+            return true;
+        }
     }
 
     private static class Now<T extends AnyValue> extends SubFunction<T>

@@ -180,7 +180,7 @@ public class ProcedureRegistry
         {
             return null;
         }
-        return new UserFunctionHandle( func.signature(), functions.idOf( name) );
+        return new UserFunctionHandle( func.signature(), functions.idOf( name), func.threadSafe() );
     }
 
     public UserFunctionHandle aggregationFunction( QualifiedName name )
@@ -190,7 +190,7 @@ public class ProcedureRegistry
         {
             return null;
         }
-        return new UserFunctionHandle( func.signature(), aggregationFunctions.idOf( name) );
+        return new UserFunctionHandle( func.signature(), aggregationFunctions.idOf( name), false );
     }
 
     public RawIterator<Object[],ProcedureException> callProcedure( Context ctx, QualifiedName name, Object[] input, ResourceTracker resourceTracker )

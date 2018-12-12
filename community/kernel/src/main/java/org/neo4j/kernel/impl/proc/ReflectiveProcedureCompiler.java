@@ -844,6 +844,12 @@ class ReflectiveProcedureCompiler
                 }
             }
         }
+
+        @Override
+        public boolean threadSafe()
+        {
+            return false;
+        }
     }
 
     private static class ReflectiveUserAggregationFunction extends ReflectiveBase implements

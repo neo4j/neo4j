@@ -210,7 +210,8 @@ class TransactionBoundPlanContext(tc: TransactionalContextWrapper, logger: Inter
       val description = asOption(signature.description())
 
       Some(UserFunctionSignature(name, input, output, deprecationInfo,
-                                 signature.allowed(), description, isAggregate = aggregation, id = Some(fcn.id())))
+                                 signature.allowed(), description, isAggregate = aggregation,
+                                 id = Some(fcn.id()), threadSafe = fcn.threadSafe()))
     }
   }
 

@@ -71,6 +71,12 @@ class DurationFunction implements CallableUserFunction
     }
 
     @Override
+    public boolean threadSafe()
+    {
+        return true;
+    }
+
+    @Override
     public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
     {
         if ( input == null )
@@ -142,6 +148,12 @@ class DurationFunction implements CallableUserFunction
         public UserFunctionSignature signature()
         {
             return signature;
+        }
+
+        @Override
+        public boolean threadSafe()
+        {
+            return true;
         }
 
         @Override

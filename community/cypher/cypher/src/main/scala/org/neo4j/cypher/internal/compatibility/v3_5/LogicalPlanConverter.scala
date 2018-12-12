@@ -22,36 +22,25 @@ package org.neo4j.cypher.internal.compatibility.v3_5
 import java.lang.reflect.Constructor
 
 import org.neo4j.cypher.internal.compatibility.v3_5.SemanticTableConverter.ExpressionMapping4To5
-import org.neo4j.cypher.internal.ir.{v3_5 => irV3_5}
-import org.neo4j.cypher.internal.ir.{v4_0 => irV4_0}
+import org.neo4j.cypher.internal.ir.{v3_5 => irV3_5, v4_0 => irV4_0}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanningAttributes => PlanningAttributesV3_5}
 import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanningAttributes => PlanningAttributesV4_0}
 import org.neo4j.cypher.internal.v3_5.logical.plans.{LogicalPlan => LogicalPlanV3_5}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansV3_5}
-import org.neo4j.cypher.internal.v4_0.expressions.InvalidNodePattern
-import org.neo4j.cypher.internal.v4_0.expressions.LogicalVariable
-import org.neo4j.cypher.internal.v4_0.expressions.{Expression => ExpressionV4_0}
+import org.neo4j.cypher.internal.v4_0.expressions.{InvalidNodePattern, LogicalVariable, Expression => ExpressionV4_0}
 import org.neo4j.cypher.internal.v4_0.logical.plans.{LogicalPlan => LogicalPlanV4_0}
 import org.neo4j.cypher.internal.v4_0.logical.{plans => plansv4_0}
 import org.neo4j.cypher.internal.v4_0.util.Rewritable.RewritableAny
-import org.neo4j.cypher.internal.v4_0.util._
 import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.util.{symbols => symbolsV4_0}
-import org.neo4j.cypher.internal.v4_0.{expressions => expressionsV4_0}
-import org.neo4j.cypher.internal.v4_0.{util => utilV4_0}
-import org.opencypher.v9_0.expressions.{Expression => ExpressionV3_5}
-import org.opencypher.v9_0.expressions.{SemanticDirection => SemanticDirectionV3_5}
-import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5}
-import org.opencypher.v9_0.util.{symbols => symbolsV3_5}
-import org.opencypher.v9_0.{ast => astV3_5}
-import org.opencypher.v9_0.{expressions => expressionsV3_5}
-import org.opencypher.v9_0.{util => utilV3_5}
+import org.neo4j.cypher.internal.v4_0.util.{symbols => symbolsV4_0, _}
+import org.neo4j.cypher.internal.v4_0.{expressions => expressionsV4_0, util => utilV4_0}
+import org.opencypher.v9_0.expressions.{Expression => ExpressionV3_5, SemanticDirection => SemanticDirectionV3_5}
+import org.opencypher.v9_0.util.{InputPosition => InputPositionV3_5, symbols => symbolsV3_5}
+import org.opencypher.v9_0.{ast => astV3_5, expressions => expressionsV3_5, util => utilV3_5}
 
 import scala.collection.mutable
 import scala.collection.mutable.{HashMap => MutableHashMap}
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 /**
   * This is responsible for converting logical plans from the old version to the current version.
@@ -98,6 +87,17 @@ object LogicalPlanConverter {
 
     private val rewriter: RewriterWithArgs = bottomUpWithArgs { before =>
       val rewritten = RewriterWithArgs.lift {
+        case (_: plansV3_5.UserFunctionSignature , children) =>
+          plansv4_0.UserFunctionSignature(
+            children(0).asInstanceOf[plansv4_0.QualifiedName],
+            children(1).asInstanceOf[IndexedSeq[plansv4_0.FieldSignature]],
+            children(2).asInstanceOf[symbolsV4_0.CypherType],
+            children(3).asInstanceOf[Option[String]],
+            children(4).asInstanceOf[Array[String]],
+            children(5).asInstanceOf[Option[String]],
+            children(6).asInstanceOf[Boolean],
+            children(7).asInstanceOf[Option[Int]],
+            threadSafe = false)
 
         case ( plan:plansV3_5.ActiveRead, children: Seq[AnyRef]) =>
 
@@ -203,7 +203,6 @@ object LogicalPlanConverter {
                     _: plansV3_5.ColumnOrder |
                     _: plansV3_5.IndexedProperty |
                     _: plansV3_5.ProcedureSignature |
-                    _: plansV3_5.UserFunctionSignature |
                     _: plansV3_5.Bound[_] |
                     _: plansV3_5.SeekRange[_]), children: Seq[AnyRef]) =>
           convertVersion(oldLogicalPlanPackage, newLogicalPlanPackage, item, children)
