@@ -75,6 +75,14 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         throw new IllegalStateException("Not in tree context when going left")
     }
 
+    def leftList: List[E] = context match {
+      case Top =>
+        Nil
+
+      case TreeContext(left, _, _) =>
+        left
+    }
+
     def leftMost: Location = context match {
       case TreeContext(Nil, _, _) =>
         self
@@ -133,6 +141,14 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def replace(newElem: E): Location =
       Location(newElem, context)
 
+    def replaceLeftList(newLeft: List[E]): Location = self match {
+      case Location(_, Top) =>
+        self
+
+      case Location(tree, TreeContext(_, parent, right)) =>
+       Location(tree, TreeContext(newLeft, parent, right))
+    }
+
     def insertLeft(newElem: E): Option[Location] = self match {
       case Location(_, Top) =>
         None
@@ -163,6 +179,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
     def isLeftMost = location.map(_.isLeftMost)
     def left = location.flatMap(_.left)
+    def leftList = location.map(_.leftList)
     def leftMost = location.map(_.leftMost)
 
     def isRightMost = location.map(_.isLeftMost)
@@ -173,6 +190,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def up = location.flatMap(_.up)
 
     def replace(replacementElem: E) = location.map(_.replace(replacementElem))
+    def replaceLeftList(replacementList: List[E]) = location.map(_.replaceLeftList(replacementList))
     def insertLeft(newElem: E) = location.flatMap(_.insertLeft(newElem))
     def insertRight(newElem: E) = location.flatMap(_.insertRight(newElem))
     def insertChild(newElem: E) = location.map(_.insertChild(newElem))
