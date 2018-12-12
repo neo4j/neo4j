@@ -63,6 +63,8 @@ abstract class LogicalPlan(idGen: IdGen)
 
   val id: Id = idGen.id()
 
+  var hasLoadCSV: Boolean = false
+
   override val hashCode: Int = MurmurHash3.productHash(self)
 
   override def equals(obj: scala.Any): Boolean = {
@@ -105,7 +107,9 @@ abstract class LogicalPlan(idGen: IdGen)
   def copyPlan(): LogicalPlan = {
     try {
       val arguments = this.children.toList:+ SameId(this.id)
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      val plan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      plan.hasLoadCSV = this.hasLoadCSV
+      plan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the IdGen in a separate constructor", e)
@@ -115,7 +119,9 @@ abstract class LogicalPlan(idGen: IdGen)
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
     try {
       val arguments = this.children.toList :+ idGen
-      copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      val plan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
+      plan.hasLoadCSV = this.hasLoadCSV
+      plan
     } catch {
       case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
         throw new InternalException("Logical plans need to be case classes, and have the IdGen in a separate constructor", e)

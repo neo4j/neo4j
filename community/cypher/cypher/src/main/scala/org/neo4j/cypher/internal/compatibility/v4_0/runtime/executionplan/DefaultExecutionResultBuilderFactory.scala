@@ -34,9 +34,7 @@ abstract class BaseExecutionResultBuilderFactory(pipe: Pipe,
 
   abstract class BaseExecutionResultBuilder() extends ExecutionResultBuilder {
     protected var externalResource: ExternalCSVResource = new CSVResources(queryContext.resources)
-    protected var pipeDecorator: PipeDecorator = if (logicalPlan.treeFind[LogicalPlan] {
-      case _: LoadCSV => true
-    }.isEmpty) NullPipeDecorator else new LinenumberPipeDecorator()
+    protected var pipeDecorator: PipeDecorator = if (logicalPlan.hasLoadCSV) new LinenumberPipeDecorator() else NullPipeDecorator
 
     protected def createQueryState(params: MapValue, prePopulateResults: Boolean): QueryState
 
