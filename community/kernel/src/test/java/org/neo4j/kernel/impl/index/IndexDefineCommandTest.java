@@ -25,7 +25,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageCommandReaderFactory;
+import org.neo4j.kernel.impl.storageengine.impl.recordstorage.ServiceLoadingCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.log.InMemoryClosableChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.CommandReader;
@@ -84,7 +84,7 @@ public class IndexDefineCommandTest
         command.serialize( channel );
 
         // THEN
-        CommandReader commandReader = new RecordStorageCommandReaderFactory().byVersion(
+        CommandReader commandReader = new ServiceLoadingCommandReaderFactory().get(
                 LogEntryVersion.CURRENT.byteCode() );
         IndexDefineCommand read = (IndexDefineCommand) commandReader.read( channel );
         assertEquals( command.getIndexNameIdRange(), read.getIndexNameIdRange() );

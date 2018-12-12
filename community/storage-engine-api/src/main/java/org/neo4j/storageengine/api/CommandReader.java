@@ -27,6 +27,12 @@ import java.io.IOException;
  */
 public interface CommandReader
 {
+
+    /**
+     * @return unique identifier of log entry format that this class can read
+     */
+    int getFormatId();
+
     /**
      * Reads the next {@link StorageCommand} from {@link ReadableChannel channel}.
      *

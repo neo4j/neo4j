@@ -171,7 +171,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             integrityValidator = new IntegrityValidator( neoStores );
             cacheAccess = new BridgingCacheAccess( schemaCache, schemaState, tokenHolders );
 
-            commandReaderFactory = new RecordStorageCommandReaderFactory();
+            commandReaderFactory = new ServiceLoadingCommandReaderFactory();
 
             denseNodeThreshold = config.get( GraphDatabaseSettings.dense_node_threshold );
             recordIdBatchSize = config.get( GraphDatabaseSettings.record_id_batch_size );

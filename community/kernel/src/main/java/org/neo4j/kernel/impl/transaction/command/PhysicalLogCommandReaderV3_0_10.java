@@ -17,20 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.storageengine.api;
+package org.neo4j.kernel.impl.transaction.command;
+
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 
 /**
- * Provides {@link CommandReader} instances for specific entry versions.
+ * This class is needed to workaround the fact that same class is used to handle two formally different versions.
+ * @see LogEntryVersion#V3_0_10
  */
-public interface CommandReaderFactory
+@SuppressWarnings( "unused" )
+public class PhysicalLogCommandReaderV3_0_10 extends PhysicalLogCommandReaderV3_0_2
 {
-    /**
-     * Given {@code version} give back a {@link CommandReader} capable of reading such commands.
-     * Command writers/readers may choose to use log entry version for command versioning or could
-     * introduce its own scheme.
-     *
-     * @param formatId log entry version. Versions are typically 0 or negative numbers.
-     * @return {@link CommandReader} for reading commands of that version.
-     */
-    CommandReader get( int formatId );
+    @Override
+    public int getFormatId()
+    {
+        return LogEntryVersion.V3_0_10.byteCode();
+    }
 }

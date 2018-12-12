@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipRecord;
 import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.store.record.SchemaRuleSerialization;
 import org.neo4j.kernel.impl.transaction.command.CommandReading.DynamicRecordAdder;
+import org.neo4j.kernel.impl.transaction.log.entry.LogEntryVersion;
 import org.neo4j.storageengine.api.ReadableChannel;
 import org.neo4j.storageengine.api.SchemaRule;
 
@@ -68,6 +69,12 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
 public class PhysicalLogCommandReaderV2_2_10 extends BaseCommandReader
 {
+    @Override
+    public int getFormatId()
+    {
+        return LogEntryVersion.V2_3_5.byteCode();
+    }
+
     @Override
     protected Command read( byte commandType, ReadableChannel channel ) throws IOException
     {

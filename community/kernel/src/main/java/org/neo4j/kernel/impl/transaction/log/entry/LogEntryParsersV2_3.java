@@ -67,7 +67,7 @@ public enum LogEntryParsersV2_3 implements LogEntryParser<LogEntry>
                 public LogEntry parse( LogEntryVersion version, ReadableClosableChannel channel, LogPositionMarker marker,
                                        CommandReaderFactory commandReader ) throws IOException
                 {
-                    StorageCommand command = commandReader.byVersion( version.byteCode() ).read( channel );
+                    StorageCommand command = commandReader.get( version.byteCode() ).read( channel );
                     return command == null ? null : new LogEntryCommand( version, command );
                 }
 
