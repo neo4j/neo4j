@@ -26,11 +26,11 @@ import org.junit.runners.model.Statement;
 import java.io.File;
 import java.util.List;
 
-import org.neo4j.dbms.DatabaseManagementSystemSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.harness.extensionpackage.MyUnmanagedExtension;
 import org.neo4j.harness.junit.Neo4jRule;
 import org.neo4j.helpers.collection.Iterators;
@@ -116,8 +116,8 @@ public class JUnitRuleTestIT
     {
         // given a data folder, create /databases/graph.db sub-folders.
         File existingDir = testDirectory.directory( "existing" );
-        File storeDir = Config.defaults( DatabaseManagementSystemSettings.data_directory, existingDir.toPath().toString() )
-                .get( DatabaseManagementSystemSettings.database_path );
+        File storeDir = Config.defaults( GraphDatabaseSettings.data_directory, existingDir.toPath().toString() )
+                .get( GraphDatabaseSettings.database_path );
         GraphDatabaseService db = new TestGraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
         try
