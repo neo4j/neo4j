@@ -75,7 +75,7 @@ abstract class BaseCursorScan<C extends Cursor, S> implements Scan<C>
         return scanStore( cursor, sizeHint, addedItems );
     }
 
-    protected abstract long[] addedInTransaction();
+    abstract long[] addedInTransaction();
 
-    protected abstract boolean scanStore( C cursor,  int sizeHint, LongIterator addedItems );
+    abstract boolean scanStore( C cursor, int sizeHint, LongIterator addedItems );
 }

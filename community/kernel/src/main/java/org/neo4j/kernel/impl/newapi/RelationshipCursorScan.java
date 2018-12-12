@@ -33,13 +33,13 @@ final class RelationshipCursorScan extends BaseCursorScan<RelationshipScanCursor
     }
 
     @Override
-    protected long[] addedInTransaction()
+    long[] addedInTransaction()
     {
         return read.txState().addedAndRemovedRelationships().getAdded().toArray();
     }
 
     @Override
-    protected boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems )
+    boolean scanStore( RelationshipScanCursor cursor, int sizeHint, LongIterator addedItems )
     {
         return ((DefaultRelationshipScanCursor) cursor)
                 .scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );

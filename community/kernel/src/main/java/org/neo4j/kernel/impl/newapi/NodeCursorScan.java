@@ -32,13 +32,13 @@ final class NodeCursorScan extends BaseCursorScan<NodeCursor,AllNodeScan>
     }
 
     @Override
-    protected long[] addedInTransaction()
+    long[] addedInTransaction()
     {
         return read.txState().addedAndRemovedNodes().getAdded().toArray();
     }
 
     @Override
-    protected boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
+    boolean scanStore( NodeCursor cursor, int sizeHint, LongIterator addedItems )
     {
         return ((DefaultNodeCursor) cursor).scanBatch( read, storageScan, sizeHint, addedItems, hasChanges );
     }

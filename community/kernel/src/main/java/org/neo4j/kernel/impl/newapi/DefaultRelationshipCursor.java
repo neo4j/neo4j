@@ -30,7 +30,7 @@ import static org.neo4j.kernel.impl.newapi.Read.NO_ID;
 abstract class DefaultRelationshipCursor<STORECURSOR extends StorageRelationshipCursor> implements RelationshipDataAccessor
 {
     protected boolean hasChanges;
-    protected boolean checkHasChanges;
+    boolean checkHasChanges;
     Read read;
 
     final STORECURSOR storeCursor;
