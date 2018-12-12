@@ -36,15 +36,15 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
   case class TreeContext(left: List[E], parent: Location, right: List[E]) extends Context
 
   object Children {
-    def unapply(v: Any) = implicitly[ClassTag[E]].unapply(v).map(_.children)
+    def unapply(v: Any): Option[Seq[E]] = implicitly[ClassTag[E]].unapply(v).map(_.children)
   }
 
   final case class Location(elem: E, context: Context) {
     self =>
 
-    def isRoot = context == Top
+    def isRoot: Boolean = context == Top
 
-    def isLeaf = self match {
+    def isLeaf: Boolean = self match {
       case Location(Children(Nil), _) => true
       case _ => false
     }
@@ -58,7 +58,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         Location(parentElem.updateChildren(left.reverse ++ List(elem) ++ right), parentContext).root
     }
 
-    def isLeftMost = context match {
+    def isLeftMost: Boolean = context match {
       case TreeContext(Nil, _, _) => true
       case Top => true
       case _ => false
@@ -94,7 +94,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         throw new IllegalStateException(s"Cannot navigate from $otherContext")
     }
 
-    def isRightMost = context match {
+    def isRightMost: Boolean = context match {
       case TreeContext(_, _, Nil) => true
       case Top => true
       case _ => false
@@ -108,7 +108,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         Some(Location(head, TreeContext(elem +: left, parent, tail)))
 
       case _ =>
-        throw new IllegalStateException("Not in tree context when going left")
+        throw new IllegalStateException("Not in tree context when going right")
     }
 
     def rightMost: Location = context match {
