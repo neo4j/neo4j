@@ -224,12 +224,6 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     }
 
     @Override
-    public CommandReaderFactory commandReaderFactory()
-    {
-        return commandReaderFactory;
-    }
-
-    @Override
     public void addIndexUpdateListener( IndexUpdateListener listener )
     {
         Preconditions.checkState( this.indexUpdateListener == null,

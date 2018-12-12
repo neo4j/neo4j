@@ -117,12 +117,6 @@ public interface StorageEngine
     void apply( CommandsToApply batch, TransactionApplicationMode mode ) throws Exception;
 
     /**
-     * @return a {@link CommandReaderFactory} capable of returning {@link CommandReader commands readers}
-     * for specific log entry versions.
-     */
-    CommandReaderFactory commandReaderFactory();
-
-    /**
      * Flushes and forces all changes down to underlying storage. This is a blocking call and when it returns
      * all changes applied to this storage engine will be durable.
      *
