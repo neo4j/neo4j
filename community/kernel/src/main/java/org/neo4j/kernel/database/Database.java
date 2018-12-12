@@ -157,6 +157,7 @@ public class Database extends LifecycleAdapter
     private final DependencyResolver globalDependencies;
     private final PageCache globalPageCache;
     private final Tracers globalTracers;
+    private final Config globalConfig;
 
     private final Log msgLog;
     private final LogService logService;
@@ -169,7 +170,6 @@ public class Database extends LifecycleAdapter
     private final TransactionEventHandlers transactionEventHandlers;
     private final IdGeneratorFactory idGeneratorFactory;
     private final JobScheduler scheduler;
-    private final DatabaseConfig config;
     private final LockService lockService;
     private final FileSystemAbstraction fs;
     private final TransactionMonitor transactionMonitor;
@@ -191,6 +191,7 @@ public class Database extends LifecycleAdapter
     private Dependencies dataSourceDependencies;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
+    private DatabaseConfig config;
     private final String databaseName;
     private final DatabaseLayout databaseLayout;
     private final boolean readOnly;
@@ -236,6 +237,7 @@ public class Database extends LifecycleAdapter
         this.constraintSemantics = context.getConstraintSemantics();
         this.globalMonitors = context.getMonitors();
         this.globalTracers = context.getTracers();
+        this.globalConfig = context.getConfig();
         this.procedures = context.getProcedures();
         this.ioLimiter = context.getIoLimiter();
         this.databaseAvailabilityGuard = context.getDatabaseAvailabilityGuard();
@@ -269,12 +271,14 @@ public class Database extends LifecycleAdapter
         }
         try
         {
-            life = new LifeSupport();
-            life.add( config );
+            config = new DatabaseConfig( globalConfig );
             dataSourceDependencies = new Dependencies( globalDependencies );
-
             databasePageCache = new DatabasePageCache( globalPageCache );
             databaseMonitors = new Monitors( globalMonitors );
+
+            life = new LifeSupport();
+            life.add( config );
+
             LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
             dataSourceDependencies.satisfyDependency( this );
