@@ -25,7 +25,7 @@ import org.eclipse.collections.api.set.primitive.MutableLongSet;
 import org.eclipse.collections.impl.block.procedure.checked.primitive.CheckedLongProcedure;
 import org.eclipse.collections.impl.factory.primitive.LongSets;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,8 +44,9 @@ import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelExce
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IllegalTokenNameException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static java.lang.String.format;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
 import static org.neo4j.internal.kernel.api.TestUtils.concat;
@@ -375,10 +376,10 @@ public abstract class ParallelRelationshipCursorTransactionStateTestBase<G exten
 
                     assertDistinct( lists );
                     LongList concat = concat( lists );
-                    assertEquals(
-                            String.format( "relationships=%d, seen=%d, all=%d", relationshipsInTx, concat.size(), allRels.size() ),
-                            allRels, LongSets.immutable.withAll( concat ) );
-                    assertEquals( String.format( "relationships=%d", relationshipsInTx ), allRels.size(), concat.size() );
+                    assertEquals( allRels, LongSets.immutable.withAll( concat ),
+                            format( "relationships=%d, seen=%d, all=%d", relationshipsInTx, concat.size(),
+                                    allRels.size() ) );
+                    assertEquals( allRels.size(), concat.size(), format( "relationships=%d", relationshipsInTx ) );
                     tx.failure();
                 }
             }

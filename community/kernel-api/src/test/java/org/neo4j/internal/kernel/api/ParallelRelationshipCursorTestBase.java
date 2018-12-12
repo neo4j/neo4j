@@ -23,9 +23,7 @@ package org.neo4j.internal.kernel.api;
 import org.eclipse.collections.api.list.primitive.LongList;
 import org.eclipse.collections.api.list.primitive.MutableLongList;
 import org.eclipse.collections.impl.list.mutable.primitive.LongArrayList;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,9 +40,10 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.internal.kernel.api.TestUtils.assertDistinct;
 import static org.neo4j.internal.kernel.api.TestUtils.concat;
 import static org.neo4j.internal.kernel.api.TestUtils.randomBatchWorker;
@@ -55,9 +54,6 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     private static LongList RELATIONSHIPS;
     private static final int NUMBER_OF_RELATIONSHIPS = 128;
     private static final ToLongFunction<RelationshipScanCursor> REL_GET = RelationshipScanCursor::relationshipReference;
-
-    @Rule
-    public ExpectedException exception = ExpectedException.none();
 
     @Override
     public void createTestGraph( GraphDatabaseService graphDb )
@@ -76,7 +72,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    public void shouldScanASubsetOfRelationships()
+    void shouldScanASubsetOfRelationships()
     {
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
         {
@@ -95,7 +91,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    public void shouldHandleSizeHintOverflow()
+    void shouldHandleSizeHintOverflow()
     {
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
         {
@@ -114,23 +110,20 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    public void shouldFailForSizeHintZero()
+    void shouldFailForSizeHintZero()
     {
         try ( RelationshipScanCursor relationships = cursors.allocateRelationshipScanCursor() )
         {
             // given
             Scan<RelationshipScanCursor> scan = read.allRelationshipsScan();
 
-            // expect
-            exception.expect( IllegalArgumentException.class );
-
             // when
-            scan.reserveBatch( relationships, 0 );
+            assertThrows( IllegalArgumentException.class, () -> scan.reserveBatch( relationships, 0 ) );
         }
     }
 
     @Test
-    public void shouldScanAllRelationshipsInBatches()
+    void shouldScanAllRelationshipsInBatches()
     {
         // given
         LongArrayList ids = new LongArrayList();
@@ -152,7 +145,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    public void shouldScanAllRelationshipsFromMultipleThreads() throws InterruptedException, ExecutionException
+    void shouldScanAllRelationshipsFromMultipleThreads() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -188,7 +181,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    public void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
+    void shouldScanAllRelationshipsFromMultipleThreadWithBigSizeHints() throws InterruptedException, ExecutionException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
@@ -222,7 +215,7 @@ public abstract class ParallelRelationshipCursorTestBase<G extends KernelAPIRead
     }
 
     @Test
-    public void shouldScanAllRelationshipsFromRandomlySizedWorkers() throws InterruptedException
+    void shouldScanAllRelationshipsFromRandomlySizedWorkers() throws InterruptedException
     {
         // given
         ExecutorService service = Executors.newFixedThreadPool( 4 );
