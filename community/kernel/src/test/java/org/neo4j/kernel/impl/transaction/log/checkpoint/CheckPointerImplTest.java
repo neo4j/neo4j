@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -44,10 +44,12 @@ import org.neo4j.logging.NullLogProvider;
 import org.neo4j.storageengine.api.StorageEngine;
 import org.neo4j.util.concurrent.BinaryLatch;
 
+import static java.time.Duration.ofSeconds;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -64,7 +66,7 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.test.ThreadTestUtils.forkFuture;
 
-public class CheckPointerImplTest
+class CheckPointerImplTest
 {
     private static final SimpleTriggerInfo INFO = new SimpleTriggerInfo( "test" );
 
@@ -82,7 +84,7 @@ public class CheckPointerImplTest
     private final LogPosition logPosition = new LogPosition( 16L, 233L );
 
     @Test
-    public void shouldNotFlushIfItIsNotNeeded() throws Throwable
+    void shouldNotFlushIfItIsNotNeeded() throws Throwable
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
@@ -101,7 +103,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void shouldFlushIfItIsNeeded() throws Throwable
+    void shouldFlushIfItIsNeeded() throws Throwable
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
@@ -127,7 +129,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void shouldForceCheckPointAlways() throws Throwable
+    void shouldForceCheckPointAlways() throws Throwable
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
@@ -153,7 +155,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void shouldCheckPointAlwaysWhenThereIsNoRunningCheckPoint() throws Throwable
+    void shouldCheckPointAlwaysWhenThereIsNoRunningCheckPoint() throws Throwable
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
@@ -179,7 +181,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void shouldCheckPointNoWaitAlwaysWhenThereIsNoRunningCheckPoint() throws Throwable
+    void shouldCheckPointNoWaitAlwaysWhenThereIsNoRunningCheckPoint() throws Throwable
     {
         // Given
         CheckPointerImpl checkPointing = checkPointer();
@@ -205,7 +207,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
+    void forceCheckPointShouldWaitTheCurrentCheckPointingToCompleteBeforeRunning() throws Throwable
     {
         // Given
         Lock lock = new ReentrantLock();
@@ -274,7 +276,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void tryCheckPointShouldWaitTheCurrentCheckPointingToCompleteNoRunCheckPointButUseTheTxIdOfTheEarlierRun()
+    void tryCheckPointShouldWaitTheCurrentCheckPointingToCompleteNoRunCheckPointButUseTheTxIdOfTheEarlierRun()
             throws Throwable
     {
         // Given
@@ -293,7 +295,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void tryCheckPointNoWaitShouldReturnWhenCheckPointIsAlreadyRunning() throws Throwable
+    void tryCheckPointNoWaitShouldReturnWhenCheckPointIsAlreadyRunning() throws Throwable
     {
         // Given
         Lock lock = mock( Lock.class );
@@ -310,7 +312,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void mustUseIoLimiterFromFlushing() throws Throwable
+    void mustUseIoLimiterFromFlushing() throws Throwable
     {
         limiter = new IOLimiter()
         {
@@ -337,7 +339,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
+    void mustFlushAsFastAsPossibleDuringForceCheckPoint() throws Exception
     {
         AtomicBoolean doneDisablingLimits = new AtomicBoolean();
         limiter = new IOLimiter()
@@ -367,7 +369,7 @@ public class CheckPointerImplTest
     }
 
     @Test
-    public void mustFlushAsFastAsPossibleDuringTryCheckPoint() throws Exception
+    void mustFlushAsFastAsPossibleDuringTryCheckPoint() throws Exception
     {
 
         AtomicBoolean doneDisablingLimits = new AtomicBoolean();
@@ -458,18 +460,19 @@ public class CheckPointerImplTest
         assertThat( observedRushCount.get(), is( 1L ) );
     }
 
-    @Test( timeout = 5000 )
-    public void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
+    @Test
+    void mustRequestFastestPossibleFlushWhenForceCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        verifyAsyncActionCausesConcurrentFlushingRush(
-                checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+                verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.forceCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
+
     }
 
-    @Test( timeout = 5000 )
-    public void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint() throws Exception
+    @Test
+    void mustRequestFastestPossibleFlushWhenTryCheckPointIsCalledDuringBackgroundCheckPoint()
     {
-        verifyAsyncActionCausesConcurrentFlushingRush(
-                checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) );
+        assertTimeoutPreemptively( ofSeconds( 5 ), () ->
+                verifyAsyncActionCausesConcurrentFlushingRush( checkPointer -> checkPointer.tryCheckPoint( new SimpleTriggerInfo( "async" ) ) ) );
     }
 
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )

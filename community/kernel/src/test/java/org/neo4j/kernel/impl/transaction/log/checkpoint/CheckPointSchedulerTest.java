@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 
 import java.io.Flushable;
 import java.io.IOException;
@@ -43,12 +43,14 @@ import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static java.time.Duration.ofSeconds;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -59,7 +61,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
-public class CheckPointSchedulerTest
+class CheckPointSchedulerTest
 {
     private final IOLimiter ioLimiter = mock( IOLimiter.class );
     private final CheckPointer checkPointer = mock( CheckPointer.class );
@@ -68,21 +70,21 @@ public class CheckPointSchedulerTest
 
     private static ExecutorService executor;
 
-    @BeforeClass
-    public static void setUpExecutor()
+    @BeforeAll
+    static void setUpExecutor()
     {
         executor = Executors.newCachedThreadPool();
     }
 
-    @AfterClass
-    public static void tearDownExecutor() throws InterruptedException
+    @AfterAll
+    static void tearDownExecutor() throws InterruptedException
     {
         executor.shutdown();
         executor.awaitTermination( 30, TimeUnit.SECONDS );
     }
 
     @Test
-    public void shouldScheduleTheCheckPointerJobOnStart()
+    void shouldScheduleTheCheckPointerJobOnStart()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -99,7 +101,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldRescheduleTheJobAfterARun() throws Throwable
+    void shouldRescheduleTheJobAfterARun() throws Throwable
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -122,7 +124,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldNotRescheduleAJobWhenStopped()
+    void shouldNotRescheduleAJobWhenStopped()
     {
         // given
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 20L, health );
@@ -141,7 +143,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void stoppedJobCantBeInvoked() throws Throwable
+    void stoppedJobCantBeInvoked() throws Throwable
     {
         CheckPointScheduler scheduler = new CheckPointScheduler( checkPointer, ioLimiter, jobScheduler, 10L, health );
         scheduler.start();
@@ -159,9 +161,14 @@ public class CheckPointSchedulerTest
         verifyNoMoreInteractions( checkPointer );
     }
 
-    // Timeout as fallback safety if test deadlocks
-    @Test( timeout = 60_000 )
-    public void shouldWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
+    @Test
+    void shouldWaitOnStopUntilTheRunningCheckpointIsDone()
+    {
+        // Timeout as fallback safety if test deadlocks
+        assertTimeoutPreemptively( ofSeconds( 60 ), this::testWaitOnStopUntilTheRunningCheckpointIsDone );
+    }
+
+    void testWaitOnStopUntilTheRunningCheckpointIsDone() throws Throwable
     {
         // given
         final AtomicReference<Throwable> ex = new AtomicReference<>();
@@ -244,7 +251,7 @@ public class CheckPointSchedulerTest
     }
 
     @Test
-    public void shouldContinueThroughSporadicFailures()
+    void shouldContinueThroughSporadicFailures()
     {
         // GIVEN
         ControlledCheckPointer checkPointer = new ControlledCheckPointer();
@@ -266,8 +273,13 @@ public class CheckPointSchedulerTest
         }
     }
 
-    @Test( timeout = 10_000 )
-    public void checkpointOnStopShouldFlushAsFastAsPossible() throws Throwable
+    @Test
+    void checkpointOnStopShouldFlushAsFastAsPossible()
+    {
+        assertTimeoutPreemptively( ofSeconds( 10 ), this::testCheckpointOnStopShouldFlushAsFastAsPossible );
+    }
+
+    void testCheckpointOnStopShouldFlushAsFastAsPossible() throws Throwable
     {
         CheckableIOLimiter ioLimiter = new CheckableIOLimiter();
         CountDownLatch checkPointerLatch = new CountDownLatch( 1 );
@@ -281,12 +293,12 @@ public class CheckPointSchedulerTest
         scheduler.stop();
         checkpointerStarter.get();
 
-        assertTrue( "Checkpointer should be created.", checkPointer.isCheckpointCreated() );
-        assertTrue( "Limiter should be enabled in the end.", ioLimiter.isLimited() );
+        assertTrue( checkPointer.isCheckpointCreated(), "Checkpointer should be created." );
+        assertTrue( ioLimiter.isLimited(), "Limiter should be enabled in the end." );
     }
 
     @Test
-    public void shouldCausePanicAfterSomeFailures() throws Throwable
+    void shouldCausePanicAfterSomeFailures() throws Throwable
     {
         // GIVEN
         RuntimeException[] failures = new RuntimeException[] {
@@ -304,17 +316,11 @@ public class CheckPointSchedulerTest
             verifyZeroInteractions( health );
         }
 
-        try
-        {
-            jobScheduler.runJob();
-            fail( "Should have failed" );
-        }
-        catch ( UnderlyingStorageException e )
-        {
-            // THEN
-            assertEquals( Iterators.asSet( failures ), Iterators.asSet( e.getSuppressed() ) );
-            verify( health ).panic( e );
-        }
+        UnderlyingStorageException error = assertThrows( UnderlyingStorageException.class, jobScheduler::runJob );
+
+        // THEN
+        assertEquals( Iterators.asSet( failures ), Iterators.asSet( error.getSuppressed() ) );
+        verify( health ).panic( error );
     }
 
     private static class ControlledCheckPointer implements CheckPointer
