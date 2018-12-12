@@ -137,11 +137,13 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                                 "failureMessage :: STRING?)",
                         "List all indexes in the database.", "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
+                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"), " +
+                                "or CALL db.awaitIndex(\"index_name\")).", "READ" ),
                 proc( "db.awaitIndexes", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ" ),
                 proc( "db.resampleIndex", "(index :: STRING?) :: VOID",
-                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
+                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"), " +
+                                "or CALL db.resampleIndex(\"index_name\")).", "READ" ),
                 proc( "db.resampleOutdatedIndexes", "() :: VOID", "Schedule resampling of all outdated indexes.", "READ" ),
                 proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.", "READ" ),
                 proc( "db.labels", "() :: (label :: STRING?)", "List all labels in the database.", "READ" ),

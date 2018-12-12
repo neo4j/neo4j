@@ -265,7 +265,8 @@ public class BuiltInProceduresTest
                         "dbms.listConfig(searchString =  :: STRING?) :: (name :: STRING?, description :: STRING?, value :: STRING?, dynamic :: BOOLEAN?)",
                         "List the currently active config of Neo4j.", "DBMS" ),
                 record( "db.awaitIndex", "db.awaitIndex(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
+                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"), " +
+                                "or CALL db.awaitIndex(\"index_name\")).", "READ" ),
                 record( "db.awaitIndexes", "db.awaitIndexes(timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ" ),
                 record( "db.constraints", "db.constraints() :: (description :: STRING?)",
@@ -280,7 +281,8 @@ public class BuiltInProceduresTest
                 record( "db.relationshipTypes", "db.relationshipTypes() :: (relationshipType :: STRING?)",
                         "List all relationship types in the database.", "READ" ),
                 record( "db.resampleIndex", "db.resampleIndex(index :: STRING?) :: VOID",
-                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
+                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"), " +
+                                "or CALL db.resampleIndex(\"index_name\")).", "READ" ),
                 record( "db.resampleOutdatedIndexes", "db.resampleOutdatedIndexes() :: VOID",
                         "Schedule resampling of all outdated indexes.", "READ" ),
                 record( "db.schema",

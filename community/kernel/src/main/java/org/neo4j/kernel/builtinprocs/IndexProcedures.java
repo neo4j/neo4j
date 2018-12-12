@@ -60,20 +60,16 @@ public class IndexProcedures implements AutoCloseable
     public void awaitIndex( String indexSpecification, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
-        IndexSpecifier index = parse( indexSpecification );
-        int labelId = getLabelId( index.label() );
-        int[] propertyKeyIds = getPropertyIds( index.properties() );
-        waitUntilOnline( getIndex( labelId, propertyKeyIds, index ), index, timeout, timeoutUnits );
+        IndexSpecifier specifier = IndexSpecifier.patternOrName( indexSpecification );
+        waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
     }
 
     public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
-        IndexSpecifier index = parse( indexSpecification );
-        int labelId = getLabelId( index.label() );
-        int[] propertyKeyIds = getPropertyIds( index.properties() );
+        IndexSpecifier specifier = IndexSpecifier.patternOrName( indexSpecification );
         try
         {
-            triggerSampling( getIndex( labelId, propertyKeyIds, index ) );
+            triggerSampling( getIndex( specifier ) );
         }
         catch ( IndexNotFoundKernelException e )
         {
@@ -106,7 +102,7 @@ public class IndexProcedures implements AutoCloseable
             IndexCreator indexCreator ) throws ProcedureException
     {
         assertProviderNameNotNull( providerName );
-        IndexSpecifier index = parse( indexSpecification );
+        IndexSpecifier index = IndexSpecifier.pattern( indexSpecification );
         int labelId = getOrCreateLabelId( index.label() );
         int[] propertyKeyIds = getOrCreatePropertyIds( index.properties() );
         try
@@ -133,11 +129,6 @@ public class IndexProcedures implements AutoCloseable
     private static String indexProviderNullMessage()
     {
         return "Could not create index with specified index provider being null.";
-    }
-
-    private static IndexSpecifier parse( String specification )
-    {
-        return new IndexSpecifier( specification );
     }
 
     private int getLabelId( String labelName ) throws ProcedureException
@@ -195,21 +186,35 @@ public class IndexProcedures implements AutoCloseable
         return propertyKeyIds;
     }
 
-    private IndexReference getIndex( int labelId, int[] propertyKeyIds, IndexSpecifier index ) throws
-            ProcedureException
+    private IndexReference getIndex( IndexSpecifier specifier ) throws ProcedureException
     {
-        IndexReference indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
-
-        if ( indexReference == IndexReference.NO_INDEX )
+        if ( specifier.name() != null )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, "No index on %s", index );
+            // Find index by name.
+            IndexReference indexReference = ktx.schemaRead().indexGetForName( specifier.name() );
+
+            if ( indexReference == IndexReference.NO_INDEX )
+            {
+                throw new ProcedureException( Status.Schema.IndexNotFound, "No such index '%s'", specifier );
+            }
+            return indexReference;
         }
-        return indexReference;
+        else
+        {
+            // Find index by label and properties.
+            int labelId = getLabelId( specifier.label() );
+            int[] propertyKeyIds = getPropertyIds( specifier.properties() );
+            IndexReference indexReference = ktx.schemaRead().index( labelId, propertyKeyIds );
+
+            if ( indexReference == IndexReference.NO_INDEX )
+            {
+                throw new ProcedureException( Status.Schema.IndexNotFound, "No such index %s", specifier );
+            }
+            return indexReference;
+        }
     }
 
-    private void waitUntilOnline( IndexReference index, IndexSpecifier indexDescription,
-                                  long timeout, TimeUnit timeoutUnits )
-            throws ProcedureException
+    private void waitUntilOnline( IndexReference index, IndexSpecifier indexDescription, long timeout, TimeUnit timeoutUnits ) throws ProcedureException
     {
         try
         {
@@ -222,9 +227,9 @@ public class IndexProcedures implements AutoCloseable
         }
     }
 
-    private boolean isOnline( IndexSpecifier indexDescription, IndexReference index ) throws ProcedureException
+    private boolean isOnline( IndexSpecifier specifier, IndexReference index ) throws ProcedureException
     {
-        InternalIndexState state = getState( indexDescription, index );
+        InternalIndexState state = getState( specifier, index );
         switch ( state )
         {
             case POPULATING:
@@ -232,16 +237,15 @@ public class IndexProcedures implements AutoCloseable
             case ONLINE:
                 return true;
             case FAILED:
-                String cause = getFailure( indexDescription, index );
+                String cause = getFailure( specifier, index );
                 throw new ProcedureException( Status.Schema.IndexCreationFailed,
-                        IndexPopulationFailure.appendCauseOfFailure( "Index on %s is in failed state.", cause ), indexDescription );
+                        IndexPopulationFailure.appendCauseOfFailure( "Index %s is in failed state.", cause ), specifier );
             default:
                 throw new IllegalStateException( "Unknown index state " + state );
         }
     }
 
-    private InternalIndexState getState( IndexSpecifier indexDescription, IndexReference index )
-            throws ProcedureException
+    private InternalIndexState getState( IndexSpecifier specifier, IndexReference index ) throws ProcedureException
     {
         try
         {
@@ -249,12 +253,11 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", specifier );
         }
     }
 
-    private String getFailure( IndexSpecifier indexDescription, IndexReference index )
-            throws ProcedureException
+    private String getFailure( IndexSpecifier indexDescription, IndexReference index ) throws ProcedureException
     {
         try
         {
@@ -262,7 +265,7 @@ public class IndexProcedures implements AutoCloseable
         }
         catch ( IndexNotFoundKernelException e )
         {
-            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No index on %s", indexDescription );
+            throw new ProcedureException( Status.Schema.IndexNotFound, e, "No such index %s", indexDescription );
         }
     }
 

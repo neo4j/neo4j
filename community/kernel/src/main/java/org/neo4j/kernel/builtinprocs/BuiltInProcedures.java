@@ -169,7 +169,7 @@ public class BuiltInProcedures
         }
     }
 
-    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"))." )
+    @Description( "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"), or CALL db.awaitIndex(\"index_name\"))." )
     @Procedure( name = "db.awaitIndex", mode = READ )
     public void awaitIndex( @Name( "index" ) String index,
             @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout )
@@ -188,7 +188,7 @@ public class BuiltInProcedures
         graphDatabaseAPI.schema().awaitIndexesOnline( timeout, TimeUnit.SECONDS );
     }
 
-    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"))." )
+    @Description( "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"), or CALL db.resampleIndex(\"index_name\"))." )
     @Procedure( name = "db.resampleIndex", mode = READ )
     public void resampleIndex( @Name( "index" ) String index ) throws ProcedureException
     {

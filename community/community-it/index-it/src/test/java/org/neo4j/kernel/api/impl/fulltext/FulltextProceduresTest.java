@@ -36,7 +36,6 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -54,7 +53,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.neo4j.graphdb.Entity;
-import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -102,6 +100,7 @@ public class FulltextProceduresTest
     private static final String DB_INDEXES = "CALL db.indexes";
     private static final String DROP = "CALL db.index.fulltext.drop(\"%s\")";
     private static final String LIST_AVAILABLE_ANALYZERS = "CALL db.index.fulltext.listAvailableAnalyzers()";
+    private static final String DB_AWAIT_INDEX = "CALL db.awaitIndex(\"%s\")";
     static final String QUERY_NODES = "CALL db.index.fulltext.queryNodes(\"%s\", \"%s\")";
     static final String QUERY_RELS = "CALL db.index.fulltext.queryRelationships(\"%s\", \"%s\")";
     static final String AWAIT_REFRESH = "CALL db.index.fulltext.awaitEventuallyConsistentIndexRefresh()";
@@ -2060,6 +2059,35 @@ public class FulltextProceduresTest
         try ( Result result = db.execute( "cypher 3.4 profile match (n:" + LABEL.name() + ") where n." + PROP + " = {prop} return n", params ) )
         {
             assertNoIndexSeeks( result );
+        }
+    }
+
+    @Test
+    public void awaitIndexProcedureMustWorkOnIndexNames()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            for ( int i = 0; i < 1000; i++ )
+            {
+                Node node = db.createNode( LABEL );
+                node.setProperty( PROP, "value" );
+                Relationship rel = node.createRelationshipTo( node, REL );
+                rel.setProperty( PROP, "value" );
+            }
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            createSimpleNodesIndex();
+            createSimpleRelationshipIndex();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( format( DB_AWAIT_INDEX, "nodes" ) ).close();
+            db.execute( format( DB_AWAIT_INDEX, "rels" ) ).close();
+            tx.success();
         }
     }
 
