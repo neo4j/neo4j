@@ -20,6 +20,7 @@
 package org.neo4j.internal.collector;
 
 import org.neo4j.internal.kernel.api.Kernel;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 
 public class DataCollector implements AutoCloseable
@@ -28,11 +29,12 @@ public class DataCollector implements AutoCloseable
     final JobScheduler jobScheduler;
     final QueryCollector queryCollector;
 
-    DataCollector( Kernel kernel, JobScheduler jobScheduler )
+    DataCollector( Kernel kernel, JobScheduler jobScheduler, Monitors monitors )
     {
         this.kernel = kernel;
         this.jobScheduler = jobScheduler;
         this.queryCollector = new QueryCollector();
+        monitors.addMonitorListener( queryCollector );
     }
 
     @Override

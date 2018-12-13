@@ -19,7 +19,27 @@
  */
 package org.neo4j.internal.collector;
 
-final class QueriesSection
+import java.util.Arrays;
+
+import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
+
+@SuppressWarnings( "WeakerAccess" )
+class Sections
 {
-    static final String NAME = "QUERIES";
+    private Sections()
+    { // only static methods
+    }
+
+    static final String GRAPH_COUNTS = "GRAPH COUNTS";
+    static final String TOKENS = "TOKENS";
+    static final String QUERIES = "QUERIES";
+
+    static final String[] SECTIONS = {GRAPH_COUNTS, TOKENS, QUERIES};
+    static final String NAMES = Arrays.toString( SECTIONS );
+
+    static InvalidArgumentsException unknownSectionException( String section )
+    {
+        return new InvalidArgumentsException( String.format( "Unknown section '%s', known sections are %s",
+                                                             section, NAMES ) );
+    }
 }

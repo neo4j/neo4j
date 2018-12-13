@@ -53,13 +53,11 @@ import org.neo4j.register.Registers;
  */
 final class GraphCountsSection
 {
-    static final String NAME = "GRAPH COUNTS";
-
     private GraphCountsSection()
     { // only static functionality
     }
 
-    static Stream<RetrieveResult> collect( Kernel kernel, Anonymizer anonymizer )
+    static Stream<RetrieveResult> retrieve( Kernel kernel, Anonymizer anonymizer )
             throws TransactionFailureException, IndexNotFoundKernelException
     {
         try ( Transaction tx = kernel.beginTransaction( Transaction.Type.explicit, LoginContext.AUTH_DISABLED ) )
@@ -73,7 +71,7 @@ final class GraphCountsSection
             data.put( "indexes", indexes( tokens, tx.schemaRead(), anonymizer ) );
             data.put( "constraints", constraints( tokens, tx.schemaRead(), anonymizer ) );
 
-            return Stream.of( new RetrieveResult( NAME, data ) );
+            return Stream.of( new RetrieveResult( Sections.GRAPH_COUNTS, data ) );
         }
     }
 

@@ -20,7 +20,6 @@
 package org.neo4j.internal.collector;
 
 import java.time.ZonedDateTime;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,11 +41,9 @@ public class DataCollectorProcedures
     @Context
     public DataCollector dataCollector;
 
-    private static String[] SECTIONS = {GraphCountsSection.NAME, TokensSection.NAME, QueriesSection.NAME};
-
     @Admin
     @Description( "Retrieve statistical data about the current database. Valid sections are '" +
-                  GraphCountsSection.NAME + "', '" + TokensSection.NAME + "', '" + QueriesSection.NAME + "'" )
+                  Sections.GRAPH_COUNTS + "', '" + Sections.TOKENS + "', '" + Sections.QUERIES + "'" )
     @Procedure( name = "db.stats.retrieve", mode = Mode.READ )
     public Stream<RetrieveResult> retrieve( @Name( value = "section" ) String section )
             throws InvalidArgumentsException, IndexNotFoundKernelException, TransactionFailureException
@@ -54,17 +51,17 @@ public class DataCollectorProcedures
         String upperSection = section.toUpperCase();
         switch ( upperSection )
         {
-        case GraphCountsSection.NAME:
-            return GraphCountsSection.collect( dataCollector.kernel, Anonymizer.PLAIN_TEXT );
+        case Sections.GRAPH_COUNTS:
+            return GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.PLAIN_TEXT );
 
-        case TokensSection.NAME:
-            return TokensSection.collect( dataCollector.kernel );
+        case Sections.TOKENS:
+            return TokensSection.retrieve( dataCollector.kernel );
 
-        case QueriesSection.NAME:
-            throw new UnsupportedOperationException( "not implemented" );
+        case Sections.QUERIES:
+            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData() );
 
         default:
-            throw unknownSectionException( section );
+            throw Sections.unknownSectionException( section );
         }
     }
 
@@ -80,7 +77,7 @@ public class DataCollectorProcedures
         TokensSection.putTokenCounts( metaData, dataCollector.kernel );
         Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
 
-        return Stream.concat( meta, GraphCountsSection.collect( dataCollector.kernel, Anonymizer.IDS ) );
+        return Stream.concat( meta, GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.IDS ) );
     }
 
     @Admin
@@ -89,7 +86,7 @@ public class DataCollectorProcedures
     public Stream<StatusResult> status()
     {
         CollectorStateMachine.Status status = dataCollector.queryCollector.status();
-        return Stream.of( new StatusResult( QueriesSection.NAME, status.message, Collections.emptyMap() ) );
+        return Stream.of( new StatusResult( Sections.QUERIES, status.message, Collections.emptyMap() ) );
     }
 
     @Admin
@@ -123,19 +120,13 @@ public class DataCollectorProcedures
     {
         switch ( section )
         {
-        case TokensSection.NAME:
-        case GraphCountsSection.NAME:
+        case Sections.TOKENS:
+        case Sections.GRAPH_COUNTS:
             throw new InvalidArgumentsException( "Section '%s' does not have to be explicitly collected, it can always be directly retrieved." );
-        case QueriesSection.NAME:
+        case Sections.QUERIES:
             return dataCollector.queryCollector;
         default:
-            throw unknownSectionException( section );
+            throw Sections.unknownSectionException( section );
         }
-    }
-
-    private InvalidArgumentsException unknownSectionException( @Name( "section" ) String section )
-    {
-        return new InvalidArgumentsException( String.format( "Unknown section '%s', known sections are %s",
-                                                             section, Arrays.toString( SECTIONS ) ) );
     }
 }

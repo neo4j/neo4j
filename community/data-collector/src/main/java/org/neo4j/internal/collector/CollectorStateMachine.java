@@ -22,7 +22,7 @@ package org.neo4j.internal.collector;
 /**
  * Base class for managing state transitions of data-collector daemons.
  */
-abstract class CollectorStateMachine
+abstract class CollectorStateMachine<DATA>
 {
     private enum State { IDLE, COLLECTING, HAS_DATA }
 
@@ -132,7 +132,23 @@ abstract class CollectorStateMachine
         }
     }
 
+    public synchronized DATA getData()
+    {
+        switch ( state )
+        {
+        case IDLE:
+            throw new IllegalStateException( "Collector is idle and has no data." );
+        case COLLECTING:
+            throw new IllegalStateException( "Collector is still collecting.");
+        case HAS_DATA:
+            return doGetData();
+        default:
+            throw new IllegalStateException( "Unknown state " + state );
+        }
+    }
+
     abstract Result doCollect();
     abstract Result doStop();
     abstract Result doClear();
+    abstract DATA doGetData();
 }

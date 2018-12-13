@@ -22,6 +22,7 @@ package org.neo4j.internal.collector;
 import org.neo4j.internal.kernel.api.Kernel;
 import org.neo4j.internal.kernel.api.exceptions.KernelException;
 import org.neo4j.kernel.impl.proc.Procedures;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.Preconditions;
 
@@ -33,10 +34,11 @@ public class DataCollectorModule
 
     public static AutoCloseable setupDataCollector( Procedures procedures,
                                                     JobScheduler jobScheduler,
-                                                    Kernel kernel ) throws KernelException
+                                                    Kernel kernel,
+                                                    Monitors monitors ) throws KernelException
     {
         Preconditions.checkState( kernel != null, "Kernel was null" );
-        DataCollector dataCollector = new DataCollector( kernel, jobScheduler );
+        DataCollector dataCollector = new DataCollector( kernel, jobScheduler, monitors );
         procedures.registerComponent( DataCollector.class, ctx -> dataCollector, false );
         procedures.registerProcedure( DataCollectorProcedures.class );
         return dataCollector;

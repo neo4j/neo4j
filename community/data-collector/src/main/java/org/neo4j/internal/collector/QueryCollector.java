@@ -19,23 +19,77 @@
  */
 package org.neo4j.internal.collector;
 
-final class QueryCollector extends CollectorStateMachine
+import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+import org.neo4j.kernel.api.query.ExecutingQuery;
+import org.neo4j.kernel.api.query.QuerySnapshot;
+import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
+
+/**
+ * Simple Thread-safe query collector.
+ *
+ * Note that is has several potentially not-so-nice properties:
+ *
+ *  - It buffers all query data until collection is done. On high-workload systems
+ *    this could use substantial memory
+ *
+ *  - All threads that report queries on {@link QueryCollector#endSuccess(org.neo4j.kernel.api.query.ExecutingQuery)}
+ *    contend for writing to the queue, which might cause delays at query close time on highly concurrent systems
+ */
+class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
 {
+    private volatile boolean on;
+    private final ConcurrentLinkedQueue<QuerySnapshot> queries;
+
+    QueryCollector()
+    {
+        on = false;
+        queries = new ConcurrentLinkedQueue<>();
+    }
+
+    // CollectorStateMachine
+
     @Override
     Result doCollect()
     {
+        on = true;
         return success( "Collection started." );
     }
 
     @Override
     Result doStop()
     {
+        on = false;
         return success( "Collection stopped." );
     }
 
     @Override
     Result doClear()
     {
+        queries.clear();
         return success( "Data cleared." );
+    }
+
+    @Override
+    Iterator<QuerySnapshot> doGetData()
+    {
+        return queries.iterator();
+    }
+
+    // QueryExecutionMonitor
+
+    @Override
+    public void endFailure( ExecutingQuery query, Throwable failure )
+    {
+    }
+
+    @Override
+    public void endSuccess( ExecutingQuery query )
+    {
+        if ( on )
+        {
+            queries.add( query.snapshot() );
+        }
     }
 }
