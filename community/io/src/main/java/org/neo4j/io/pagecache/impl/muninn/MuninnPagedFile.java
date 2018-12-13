@@ -270,14 +270,6 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
         {
             throw new IllegalArgumentException( "IOPSLimiter cannot be null" );
         }
-        if ( deleteOnClose )
-        {
-            // No need to spend time flushing data to a file we're going to delete anyway.
-            // However, we still have to mark the dirtied pages as clean since evicting would otherwise try to flush
-            // these pages, and would fail because the file is closed, and we cannot allow that to happen.
-            markAllDirtyPagesAsClean();
-            return;
-        }
         try ( MajorFlushEvent flushEvent = pageCacheTracer.beginFileFlush( swapper ) )
         {
             flushAndForceInternal( flushEvent.flushEventOpportunity(), false, limiter );
@@ -667,7 +659,13 @@ final class MuninnPagedFile extends PageList implements PagedFile, Flushable
     @Override
     public void setDeleteOnClose( boolean deleteOnClose )
     {
-        this.deleteOnClose |= deleteOnClose;
+        this.deleteOnClose = deleteOnClose;
+    }
+
+    @Override
+    public boolean isDeleteOnClose()
+    {
+        return deleteOnClose;
     }
 
     /**

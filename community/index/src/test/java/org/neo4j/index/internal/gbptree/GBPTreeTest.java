@@ -64,23 +64,27 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.FileIsNotMappedException;
+import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.extension.DefaultFileSystemExtension;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.extension.pagecache.PageCacheSupportExtension;
+import org.neo4j.test.rule.PageCacheConfig;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
 
 import static java.time.Duration.ofSeconds;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -1617,17 +1621,29 @@ class GBPTreeTest
 
             for ( int i = 0; i < 2; i++ )
             {
-                try
-                {
-                    // when
-                    seek.next();
-                    fail( "Should have failed" );
-                }
-                catch ( IllegalStateException e )
-                {
-                    // then good
-                }
+                assertThrows( IllegalStateException.class, seek::next );
             }
+        }
+    }
+
+    @Test
+    void skipFlushingPageFileOnCloseWhenPageFileMarkForDeletion() throws IOException
+    {
+        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
+        PageCacheConfig config = config().withTracer( defaultPageCacheTracer );
+        try ( PageCache pageCache = pageCacheExtension.getPageCache( fileSystem, config );
+              GBPTree<MutableLong,MutableLong> tree = index( pageCache ).with( RecoveryCleanupWorkCollector.ignore() ).build() )
+        {
+            List<PagedFile> pagedFiles = pageCache.listExistingMappings();
+            assertThat( pagedFiles, hasSize( 1 ) );
+
+            long flushesBefore = defaultPageCacheTracer.flushes();
+
+            PagedFile indexPageFile = pagedFiles.get( 0 );
+            indexPageFile.setDeleteOnClose( true );
+            tree.close();
+
+            assertEquals( flushesBefore, defaultPageCacheTracer.flushes() );
         }
     }
 

@@ -1000,7 +1000,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         {
             try
             {
-                pagedFile.flushAndForce();
+                if ( !pagedFile.isDeleteOnClose() )
+                {
+                    pagedFile.flushAndForce();
+                }
                 internalIndexClose();
             }
             catch ( IOException e )
@@ -1020,7 +1023,10 @@ public class GBPTree<KEY,VALUE> implements Closeable
         if ( cleaning != null && !changesSinceLastCheckpoint && !cleaning.needed() )
         {
             clean = true;
-            forceState();
+            if ( !pagedFile.isDeleteOnClose() )
+            {
+                forceState();
+            }
         }
         pagedFile.close();
         closed = true;

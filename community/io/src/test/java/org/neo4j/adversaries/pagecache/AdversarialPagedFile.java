@@ -112,4 +112,10 @@ public class AdversarialPagedFile implements PagedFile
     {
         delegate.setDeleteOnClose( deleteOnClose );
     }
+
+    @Override
+    public boolean isDeleteOnClose()
+    {
+        return delegate.isDeleteOnClose();
+    }
 }

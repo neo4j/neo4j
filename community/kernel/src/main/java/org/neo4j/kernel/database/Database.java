@@ -104,7 +104,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.SimpleTriggerInfo;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -126,7 +126,6 @@ import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.internal.TransactionEventHandlers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
@@ -202,7 +201,6 @@ public class Database extends LifecycleAdapter
 
     private StorageEngine storageEngine;
     private QueryExecutionEngine executionEngine;
-    private DatabaseTransactionLogModule transactionLogModule;
     private DatabaseKernelModule kernelModule;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensionFactories;
     private final Function<DatabaseLayout,DatabaseLayoutWatcher> watcherServiceFactory;
@@ -211,6 +209,7 @@ public class Database extends LifecycleAdapter
     private volatile boolean started;
     private Monitors databaseMonitors;
     private DatabasePageCache databasePageCache;
+    private CheckpointerLifecycle checkpointerLifecycle;
 
     public Database( DatabaseCreationContext context )
     {
@@ -355,14 +354,19 @@ public class Database extends LifecycleAdapter
             kernelModule.satisfyDependencies( dataSourceDependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
-            this.transactionLogModule = transactionLogModule;
             this.kernelModule = kernelModule;
 
             dataSourceDependencies.satisfyDependency( databaseSchemaState );
             dataSourceDependencies.satisfyDependency( logEntryReader );
             dataSourceDependencies.satisfyDependency( storageEngine );
 
-            executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
+            this.executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
+            this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointing(), databaseHealth );
+
+            dataSourceDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
+
+            life.add( databaseAvailability );
+            life.setLast( checkpointerLifecycle );
         }
         catch ( Throwable e )
         {
@@ -383,12 +387,6 @@ public class Database extends LifecycleAdapter
             throwIfUnchecked( e );
             throw new RuntimeException( e );
         }
-
-        dataSourceDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
-
-        life.add( databaseAvailability );
-        life.setLast( lifecycleToTriggerCheckPointOnShutdown() );
-
         try
         {
             life.start();
@@ -633,21 +631,6 @@ public class Database extends LifecycleAdapter
         }
     }
 
-    private Lifecycle lifecycleToTriggerCheckPointOnShutdown()
-    {
-        // Write new checkpoint in the log only if the kernel is healthy.
-        // We cannot throw here since we need to shutdown without exceptions,
-        // so let's make the checkpoint part of the life, so LifeSupport can handle exceptions properly
-        return LifecycleAdapter.onShutdown( () ->
-        {
-            if ( databaseHealth.isHealthy() )
-            {
-                // Flushing of neo stores happens as part of the checkpoint
-                transactionLogModule.checkPointing().forceCheckPoint( new SimpleTriggerInfo( "database shutdown" ) );
-            }
-        } );
-    }
-
     public StoreId getStoreId()
     {
         return storageEngine.getStoreId();
@@ -739,13 +722,11 @@ public class Database extends LifecycleAdapter
 
     private void prepareForDrop()
     {
-        if ( databasePageCache != null )
+        for ( PagedFile pagedFile : databasePageCache.listExistingMappings() )
         {
-            for ( PagedFile pagedFile : databasePageCache.listExistingMappings() )
-            {
-                pagedFile.setDeleteOnClose( true );
-            }
+            pagedFile.setDeleteOnClose( true );
         }
+        checkpointerLifecycle.setCheckpointOnShutdown( false );
     }
 
     @VisibleForTesting

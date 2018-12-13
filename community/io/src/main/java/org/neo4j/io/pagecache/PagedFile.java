@@ -194,4 +194,10 @@ public interface PagedFile extends AutoCloseable
      * @param deleteOnClose true if file can be deleted on close, false otherwise.
      */
     void setDeleteOnClose( boolean deleteOnClose );
+
+    /**
+     * Check if this can be deleted on close.
+     * @return true if file can be deleted on close, false otherwise.
+     */
+    boolean isDeleteOnClose();
 }

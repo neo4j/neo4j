@@ -94,4 +94,10 @@ public class StubPagedFile implements PagedFile
     public void setDeleteOnClose( boolean deleteOnClose )
     {
     }
+
+    @Override
+    public boolean isDeleteOnClose()
+    {
+        return false;
+    }
 }

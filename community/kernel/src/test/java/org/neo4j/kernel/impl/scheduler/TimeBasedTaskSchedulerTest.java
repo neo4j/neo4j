@@ -254,12 +254,15 @@ class TimeBasedTaskSchedulerTest
         Runnable recurring = () ->
         {
             counter.incrementAndGet();
-            semaphore.release();
         };
         JobHandle handle = scheduler.submit( Group.STORAGE_MAINTENANCE, recurring, 0, 100 );
         clock.forward( 100, TimeUnit.NANOSECONDS );
         scheduler.tick();
-        assertSemaphoreAcquire();
+
+        while ( scheduler.tasksLeft() == 0 )
+        {
+            Thread.yield();
+        }
 
         handle.cancel( false );
         assertEquals( 1, scheduler.tasksLeft() );

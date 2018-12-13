@@ -127,29 +127,6 @@ public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
     }
 
     @Test
-    void doNotFlushFileMarkedForDeletionOnFlushAndForce() throws IOException
-    {
-        DefaultPageCacheTracer defaultPageCacheTracer = new DefaultPageCacheTracer();
-        File fileForDeletion = file( "fileForDeletion" );
-        writeInitialDataTo( fileForDeletion );
-        try ( MuninnPageCache pageCache = createPageCache( fs, 2, defaultPageCacheTracer, PageCursorTracerSupplier.NULL ) )
-        {
-            try ( PagedFile pagedFile = map( pageCache, fileForDeletion, 8 ) )
-            {
-                try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_WRITE_LOCK ) )
-                {
-                    assertTrue( cursor.next() );
-                    cursor.putLong( 0L );
-                }
-                pagedFile.setDeleteOnClose( true );
-                pagedFile.flushAndForce( IOLimiter.UNLIMITED );
-            }
-            assertFalse( fs.fileExists( fileForDeletion ) );
-            assertEquals( 0, defaultPageCacheTracer.flushes() );
-        }
-    }
-
-    @Test
     void ableToEvictAllPageInAPageCache() throws IOException
     {
         writeInitialDataTo( file( "a" ) );

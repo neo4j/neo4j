@@ -80,6 +80,12 @@ public class DelegatingPagedFile implements PagedFile
     }
 
     @Override
+    public boolean isDeleteOnClose()
+    {
+        return delegate.isDeleteOnClose();
+    }
+
+    @Override
     public void flushAndForce( IOLimiter limiter ) throws IOException
     {
         delegate.flushAndForce( limiter );
