@@ -112,6 +112,12 @@ class FulltextSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
+    public boolean isFulltextIndex()
+    {
+        return true;
+    }
+
+    @Override
     public int hashCode()
     {
         return schema.hashCode();

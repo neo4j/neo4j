@@ -46,24 +46,28 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     protected final IndexDescriptor.Type type;
     protected final Optional<String> userSuppliedName;
     protected final IndexProviderDescriptor providerDescriptor;
+    private final boolean isFulltextIndex;
 
     public IndexDescriptor( org.neo4j.storageengine.api.schema.IndexDescriptor indexDescriptor )
     {
         this( indexDescriptor.schema(),
               indexDescriptor.isUnique() ? Type.UNIQUE : Type.GENERAL,
               indexDescriptor.hasUserSuppliedName() ? Optional.of( indexDescriptor.name() ) : Optional.empty(),
-              IndexProviderDescriptor.from( indexDescriptor ) );
+              IndexProviderDescriptor.from( indexDescriptor ),
+              indexDescriptor.isFulltextIndex() );
     }
 
     public IndexDescriptor( SchemaDescriptor schema,
                             Type type,
                             Optional<String> userSuppliedName,
-                            IndexProviderDescriptor providerDescriptor )
+                            IndexProviderDescriptor providerDescriptor,
+                            boolean isFulltextIndex )
     {
         this.schema = schema;
         this.type = type;
         this.userSuppliedName = userSuppliedName;
         this.providerDescriptor = providerDescriptor;
+        this.isFulltextIndex = isFulltextIndex;
     }
 
     // METHODS
@@ -135,7 +139,7 @@ public class IndexDescriptor implements SchemaDescriptorSupplier, IndexReference
     @Override
     public boolean isFulltextIndex()
     {
-        return false;
+        return isFulltextIndex;
     }
 
     @Override

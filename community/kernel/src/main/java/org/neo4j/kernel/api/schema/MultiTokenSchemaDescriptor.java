@@ -129,6 +129,12 @@ public class MultiTokenSchemaDescriptor implements SchemaDescriptor
     }
 
     @Override
+    public boolean isFulltextIndex()
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( this == o )

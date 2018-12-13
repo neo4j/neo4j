@@ -104,6 +104,12 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
         {
             return null;
         }
+
+        @Override
+        public boolean isFulltextIndex()
+        {
+            return false;
+        }
     };
 
     static long[] schemaTokenLockingIds( SchemaDescriptor schema )
@@ -226,6 +232,11 @@ public interface SchemaDescriptor extends SchemaDescriptorSupplier
      * @return PropertySchemaType of this schema unit.
      */
     PropertySchemaType propertySchemaType();
+
+    /**
+     * @return whether or not this is a descriptor of a fulltext index.
+     */
+    boolean isFulltextIndex();
 
     /**
      * Create a predicate that checks whether a schema descriptor Supplier supplies the given schema descriptor.

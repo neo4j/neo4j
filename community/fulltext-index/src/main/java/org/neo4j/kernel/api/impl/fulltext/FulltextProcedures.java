@@ -258,7 +258,7 @@ public class FulltextProcedures
     private IndexReference getValidIndexReference( @Name( "indexName" ) String name )
     {
         IndexReference indexReference = tx.schemaRead().indexGetForName( name );
-        if ( indexReference == IndexReference.NO_INDEX )
+        if ( indexReference == IndexReference.NO_INDEX || !indexReference.isFulltextIndex() )
         {
             throw new IllegalArgumentException( "There is no such fulltext schema index: " + name );
         }

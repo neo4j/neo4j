@@ -112,6 +112,12 @@ public class LabelSchemaDescriptor implements org.neo4j.storageengine.api.schema
     }
 
     @Override
+    public boolean isFulltextIndex()
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( o instanceof LabelSchemaDescriptor )

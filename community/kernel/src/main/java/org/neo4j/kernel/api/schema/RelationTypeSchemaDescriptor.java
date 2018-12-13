@@ -111,6 +111,12 @@ public class RelationTypeSchemaDescriptor implements org.neo4j.storageengine.api
     }
 
     @Override
+    public boolean isFulltextIndex()
+    {
+        return false;
+    }
+
+    @Override
     public boolean equals( Object o )
     {
         if ( o instanceof RelationTypeSchemaDescriptor )
