@@ -119,6 +119,11 @@ the relevant Commercial Agreement.
             <artifactId>neo4j-record-storage-engine</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-dbms</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- For the tests specified by this package -->
         <dependency>

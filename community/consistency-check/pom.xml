@@ -52,11 +52,6 @@ the relevant Commercial Agreement.
             <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-lucene-index</artifactId>
-            <version>${project.version}</version>
-        </dependency>
 
         <dependency>
             <groupId>com.google.code.findbugs</groupId>
@@ -129,11 +124,6 @@ the relevant Commercial Agreement.
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-command-line</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-dbms</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
