@@ -90,7 +90,7 @@ public class DataCollectorProcedures
     }
 
     @Admin
-    @Description( "Start data collection of a given data section." )
+    @Description( "Start data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
     @Procedure( name = "db.stats.collect", mode = Mode.READ )
     public Stream<ActionResult> collect( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
@@ -99,7 +99,7 @@ public class DataCollectorProcedures
     }
 
     @Admin
-    @Description( "Stop data collection of a given data section." )
+    @Description( "Stop data collection of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
     @Procedure( name = "db.stats.stop", mode = Mode.READ )
     public Stream<ActionResult> stop( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
@@ -108,7 +108,7 @@ public class DataCollectorProcedures
     }
 
     @Admin
-    @Description( "Clear collected data of a given data section." )
+    @Description( "Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + "'")
     @Procedure( name = "db.stats.clear", mode = Mode.READ )
     public Stream<ActionResult> clear( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {
