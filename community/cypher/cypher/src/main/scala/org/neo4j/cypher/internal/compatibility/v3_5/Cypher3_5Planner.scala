@@ -56,7 +56,6 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SequentialIdGen
 import org.neo4j.cypher.CypherPlannerOption
 import org.neo4j.cypher.CypherUpdateStrategy
 import org.neo4j.cypher.CypherVersion
-import org.neo4j.cypher.internal.v4_0.logical.plans.{LoadCSV, LogicalPlan}
 import org.neo4j.helpers.collection.Pair
 import org.neo4j.kernel.impl.api.SchemaStateKey
 import org.neo4j.kernel.impl.query.TransactionalContext
@@ -225,12 +224,7 @@ case class Cypher3_5Planner(configv4_0: CypherPlannerConfiguration,
         // Log notifications/warnings from planning
         notificationLoggerV3_5.notifications.map(helpers.as4_0).foreach(notificationLoggerv4_0.log)
 
-        val plan = CacheableLogicalPlan(logicalPlanStatev4_0, reusabilityState, notificationLoggerv4_0.notifications, shouldBeCached = true)
-        val logicalPlan = plan.logicalPlanState.logicalPlan
-        logicalPlan.hasLoadCSV = logicalPlan.treeFind[LogicalPlan] {
-          case _: LoadCSV => true
-        }.nonEmpty
-        plan
+        CacheableLogicalPlan(logicalPlanStatev4_0, reusabilityState, notificationLoggerv4_0.notifications, shouldBeCached = true)
       }
 
       // 3.5 does not produce different plans for different parameter types.

@@ -65,6 +65,18 @@ abstract class LogicalPlan(idGen: IdGen)
 
   var hasLoadCSV: Boolean = false
 
+  /*
+   * We need to propagate the hasLoadCSV flag up the stack
+   * to be able to chose the linenumberPipeDecorator when we have a LOAD CSV
+   */
+  def propagateHasLoadCSV(): Unit = {
+    (lhs, rhs) match {
+      case (Some(l), None) => hasLoadCSV = hasLoadCSV || l.hasLoadCSV
+      case (Some(l), Some(r)) => hasLoadCSV = hasLoadCSV || l.hasLoadCSV || r.hasLoadCSV
+      case _ =>
+    }
+  }
+
   override val hashCode: Int = MurmurHash3.productHash(self)
 
   override def equals(obj: scala.Any): Boolean = {
@@ -147,6 +159,7 @@ abstract class LogicalPlan(idGen: IdGen)
           constructor.invoke(this, args :+ SameId(this.id): _*).asInstanceOf[this.type]
         else
           constructor.invoke(this, args: _*).asInstanceOf[this.type]
+      resultingPlan.propagateHasLoadCSV()
       resultingPlan
     }
 
