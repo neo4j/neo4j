@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.api.CountsAccessor;
 import org.neo4j.kernel.impl.api.CountsVisitor;
 import org.neo4j.kernel.impl.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.store.counts.keys.CountsKey;
+import org.neo4j.kernel.impl.store.counts.keys.CountsKeyType;
 import org.neo4j.kernel.impl.store.kvstore.AbstractKeyValueStore;
 import org.neo4j.kernel.impl.store.kvstore.DataInitializer;
 import org.neo4j.kernel.impl.store.kvstore.EntryUpdater;
@@ -224,7 +225,8 @@ public class CountsTracker extends AbstractKeyValueStore<CountsKey>
     @Override
     protected boolean include( CountsKey countsKey, ReadableBuffer value )
     {
-        return !value.allZeroes();
+        boolean empty = value.allZeroes() || countsKey.recordType() == CountsKeyType.EMPTY;
+        return !empty;
     }
 
     @Override

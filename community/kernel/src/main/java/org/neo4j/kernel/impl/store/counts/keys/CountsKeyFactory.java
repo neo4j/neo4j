@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.counts.keys;
 
+import org.neo4j.kernel.impl.api.CountsVisitor;
+
 import static java.lang.Math.toIntExact;
 
 public class CountsKeyFactory
@@ -36,4 +38,25 @@ public class CountsKeyFactory
     {
         return new RelationshipKey( toIntExact( startLabelId ), typeId, toIntExact( endLabelId ) );
     }
+
+    public static final CountsKey NULL_KEY = new CountsKey()
+    {
+        @Override
+        public CountsKeyType recordType()
+        {
+            return CountsKeyType.EMPTY;
+        }
+
+        @Override
+        public void accept( CountsVisitor visitor, long first, long second )
+        {
+            // An empty key won't notify the visitor about anything, effectively making this key invisible
+        }
+
+        @Override
+        public int compareTo( CountsKey other )
+        {
+            throw new UnsupportedOperationException( "Calling this method indicated that an EMPTY key is being stored, this should not happen" );
+        }
+    };
 }

@@ -88,7 +88,7 @@ class KeyFormat implements CountsVisitor
         case KeyFormat.RELATIONSHIP_COUNT:
             return CountsKeyFactory.relationshipKey( key.getInt( 4 ), key.getInt( 8 ), key.getInt( 12 ) );
         case KeyFormat.INDEX:
-            return null;
+            return CountsKeyFactory.NULL_KEY;
         default:
             throw new UnknownKey( "Unknown key type: " + key );
         }
