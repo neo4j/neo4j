@@ -28,7 +28,7 @@ case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")
 
 case object CostSlottedTestConfig extends TestConfig(Some("cost-slotted.txt"),"CYPHER planner=cost runtime=slotted")
 
-case object CostSlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("cost-slotted-compiled-expressions.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
+case object CostSlottedWithCompiledExpressionsTestConfig extends TestConfig(Some("cost-slotted.txt"),"CYPHER planner=cost runtime=slotted expressionEngine=COMPILED")
 
 case object CostMorselSingleThreadedTestConfig extends TestConfig(Some("cost-morsel-single-threaded.txt"),"CYPHER planner=cost runtime=morsel debug=singlethreaded")
 
