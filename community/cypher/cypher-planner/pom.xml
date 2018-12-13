@@ -75,12 +75,12 @@
 
     <dependency>
       <groupId>org.scalatest</groupId>
-      <artifactId>scalatest_2.11</artifactId>
+      <artifactId>scalatest_${scala.binary.version}</artifactId>
     </dependency>
 
     <dependency>
       <groupId>org.scalacheck</groupId>
-      <artifactId>scalacheck_2.11</artifactId>
+      <artifactId>scalacheck_${scala.binary.version}</artifactId>
     </dependency>
 
     <!-- neo4j -->
@@ -169,7 +169,7 @@
 
     <dependency>
       <groupId>org.parboiled</groupId>
-      <artifactId>parboiled-scala_2.11</artifactId>
+      <artifactId>parboiled-scala_${scala.binary.version}</artifactId>
     </dependency>
 
     <dependency>
