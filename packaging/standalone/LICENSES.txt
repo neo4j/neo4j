@@ -36,7 +36,6 @@ Apache Software License, Version 2.0
   Lucene codecs
   Lucene Common Analyzers
   Lucene Core
-  Lucene Memory
   Lucene QueryParsers
   neo4j-driver
   Netty/All-in-One
