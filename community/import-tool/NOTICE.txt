@@ -27,10 +27,7 @@ Third-party licenses
 
 Apache Software License, Version 2.0
   Apache Commons Lang
-  Lucene codecs
-  Lucene Common Analyzers
   Lucene Core
-  Lucene QueryParsers
   Netty/All-in-One
 
 Bouncy Castle License
