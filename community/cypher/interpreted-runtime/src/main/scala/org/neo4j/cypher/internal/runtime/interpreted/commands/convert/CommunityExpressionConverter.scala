@@ -26,11 +26,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predica
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedRelType
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{PathExtractorExpression, predicates, expressions => commandexpressions, values => commandvalues}
-import org.neo4j.cypher.internal.v4_0.expressions.{DesugaredMapProjection, Expression, PropertyKeyName, functions}
 import org.neo4j.cypher.internal.v4_0.expressions.functions._
+import org.neo4j.cypher.internal.v4_0.expressions.{DesugaredMapProjection, Expression, PropertyKeyName, functions}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
-import org.neo4j.cypher.internal.v4_0.util.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.{InternalException, NonEmptyList}
 import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 case class CommunityExpressionConverter(tokenContext: TokenContext) extends ExpressionConverter {
@@ -41,6 +41,13 @@ case class CommunityExpressionConverter(tokenContext: TokenContext) extends Expr
                                    self: ExpressionConverters): Option[CommandProjection] = {
     val projected = for ((k,Some(v)) <- projections.mapValues(e => toCommandExpression(id, e, self))) yield (k,v)
     if (projected.size < projections.size) None else Some(InterpretedCommandProjection(projected))
+  }
+
+
+  override def toGroupingExpression(id: Id,
+                                    groupings: Map[String, Expression],
+                                    self: ExpressionConverters): Option[GroupingExpression] = {
+    throw new IllegalStateException("CommunityExpressionConverter cannot create grouping expressions")
   }
 
   override def toCommandExpression(id: Id, expression: ast.Expression,
