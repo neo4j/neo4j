@@ -116,6 +116,12 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         }
 
         @Override
+        public boolean threadSafe()
+        {
+            return true;
+        }
+
+        @Override
         public AnyValue apply( Context ctx, AnyValue[] input ) throws ProcedureException
         {
             if ( input != null && input.length == 2 )
@@ -151,6 +157,12 @@ class DateTimeFunction extends TemporalFunction<DateTimeValue>
         public UserFunctionSignature signature()
         {
             return signature;
+        }
+
+        @Override
+        public boolean threadSafe()
+        {
+            return true;
         }
 
         @Override
