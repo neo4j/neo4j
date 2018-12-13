@@ -19,8 +19,7 @@
  */
 package org.neo4j.cypher.internal.v4_0.logical.plans
 
-import org.neo4j.cypher.internal.v4_0.util.attribution.IdGen
-import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
+import org.neo4j.cypher.internal.v4_0.util.attribution.{IdGen, SameId}
 
 /**
   * Produce a single row with the contents of argument
@@ -28,10 +27,6 @@ import org.neo4j.cypher.internal.v4_0.util.attribution.SameId
 case class Argument(argumentIds: Set[String] = Set.empty)(implicit idGen: IdGen) extends LogicalLeafPlan(idGen) {
 
   override val availableSymbols: Set[String] = argumentIds
-
-  override def copyPlan(): LogicalPlan = {
-    this.copy(argumentIds)(SameId(this.id)).asInstanceOf[this.type]
-  }
 
   override def dup(children: Seq[AnyRef]) = children.size match {
     case 1 =>

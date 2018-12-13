@@ -23,38 +23,24 @@ import java.lang.reflect.Modifier
 
 import org.neo4j.cypher.internal.compatibility.v3_5.SemanticTableConverter.ExpressionMapping4To5
 import org.neo4j.cypher.internal.ir.{v3_5 => irV3_5}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_5}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Solveds => SolvedsV3_5}
-import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{ProvidedOrders => ProvidedOrdersV3_5}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities => CardinalitiesV4_0}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Solveds => SolvedsV4_0}
-import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{ProvidedOrders => ProvidedOrdersV4_0}
-import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanningAttributes => PlanningAttributesV4_0}
+import org.neo4j.cypher.internal.planner.v3_5.spi.PlanningAttributes.{Cardinalities => CardinalitiesV3_5, ProvidedOrders => ProvidedOrdersV3_5, Solveds => SolvedsV3_5}
 import org.neo4j.cypher.internal.planner.v3_5.spi.{PlanningAttributes => PlanningAttributesV3_5}
+import org.neo4j.cypher.internal.planner.v4_0.spi.PlanningAttributes.{Cardinalities => CardinalitiesV4_0, ProvidedOrders => ProvidedOrdersV4_0, Solveds => SolvedsV4_0}
+import org.neo4j.cypher.internal.planner.v4_0.spi.{PlanningAttributes => PlanningAttributesV4_0}
 import org.neo4j.cypher.internal.v3_5.logical.{plans => plansV3_5}
-import org.neo4j.cypher.internal.v4_0.logical.plans.IndexOrderAscending
-import org.neo4j.cypher.internal.v4_0.logical.plans.ProcedureCall
+import org.neo4j.cypher.internal.v4_0.logical.plans.{IndexOrderAscending, ProcedureCall}
 import org.neo4j.cypher.internal.v4_0.logical.{plans => plansV4_0}
 import org.neo4j.cypher.internal.v4_0.util.attribution.{SequentialIdGen => SequentialIdGenV4_0}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.v4_0.util.InputPosition
-import org.neo4j.cypher.internal.v4_0.util.NonEmptyList
-import org.neo4j.cypher.internal.v4_0.util.{symbols => symbolsV4_0}
-import org.neo4j.cypher.internal.v4_0.{ast => astV4_0}
-import org.neo4j.cypher.internal.v4_0.{util => utilV4_0}
-import org.neo4j.cypher.internal.v4_0.{expressions => expressionsV4_0}
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, NonEmptyList, symbols => symbolsV4_0}
+import org.neo4j.cypher.internal.v4_0.{ast => astV4_0, expressions => expressionsV4_0, util => utilV4_0}
 import org.neo4j.cypher.internal.v3_5.util.attribution.{SequentialIdGen => SequentialIdGenV3_5}
-import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5}
-import org.neo4j.cypher.internal.v3_5.util.{symbols => symbolsV3_5}
-import org.neo4j.cypher.internal.v3_5.{ast => astV3_5}
-import org.neo4j.cypher.internal.v3_5.{expressions => expressionsV3_5}
-import org.neo4j.cypher.internal.v3_5.{util => utilV3_5}
+import org.neo4j.cypher.internal.v3_5.util.{InputPosition => InputPositionV3_5, symbols => symbolsV3_5}
+import org.neo4j.cypher.internal.v3_5.{ast => astV3_5, expressions => expressionsV3_5, util => utilV3_5}
 import org.reflections.Reflections
 
 import scala.collection.JavaConverters._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 class LogicalPlanConverterTest extends CypherFunSuite {
 
@@ -433,6 +419,18 @@ class LogicalPlanConverterTest extends CypherFunSuite {
           case Failure(e) => fail(s"Converting ${subType.getName} failed", e)
         }
       }
+  }
+
+  test("should convert ProduceResult and keep hasLoadCSV flag") {
+    val s3_5 = plansV3_5.LoadCSV(plansV3_5.Argument(), null, null, null, None, legacyCsvQuoteEscaping = false, 0)
+    val p3_5 = plansV3_5.ProduceResult(s3_5, Seq("a"))
+
+    val s4_0 = plansV4_0.LoadCSV(plansV4_0.Argument(), null, null, null, None, legacyCsvQuoteEscaping = false, 0)
+    val p4_0 = plansV4_0.ProduceResult(s4_0, Seq("a"))
+
+    val rewrittenPlan = convert[plansV4_0.ProduceResult](p3_5)
+    rewrittenPlan should be(p4_0)
+    rewrittenPlan.hasLoadCSV should be(true)
   }
 
   /**

@@ -24,9 +24,9 @@ import java.lang.reflect.Method
 import org.neo4j.cypher.internal.ir.v4_0.{PlannerQuery, Strictness}
 import org.neo4j.cypher.internal.v4_0.expressions._
 import org.neo4j.cypher.internal.v4_0.util.Foldable._
-import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 import org.neo4j.cypher.internal.v4_0.util.Rewritable._
 import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, IdGen, SameId}
+import org.neo4j.cypher.internal.v4_0.util.{Foldable, InternalException, Rewritable}
 
 import scala.collection.mutable
 import scala.util.hashing.MurmurHash3
@@ -114,18 +114,6 @@ abstract class LogicalPlan(idGen: IdGen)
   def leaves: Seq[LogicalPlan] = this.treeFold(Seq.empty[LogicalPlan]) {
     case plan: LogicalPlan
       if plan.lhs.isEmpty && plan.rhs.isEmpty => acc => (acc :+ plan, Some(identity))
-  }
-
-  def copyPlan(): LogicalPlan = {
-    try {
-      val arguments = this.children.toList:+ SameId(this.id)
-      val plan = copyConstructor.invoke(this, arguments: _*).asInstanceOf[this.type]
-      plan.hasLoadCSV = this.hasLoadCSV
-      plan
-    } catch {
-      case e: IllegalArgumentException if e.getMessage.startsWith("wrong number of arguments") =>
-        throw new InternalException("Logical plans need to be case classes, and have the IdGen in a separate constructor", e)
-    }
   }
 
   def copyPlanWithIdGen(idGen: IdGen): LogicalPlan = {
