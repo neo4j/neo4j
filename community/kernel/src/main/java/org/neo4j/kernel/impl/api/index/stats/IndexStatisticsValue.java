@@ -28,6 +28,7 @@ class IndexStatisticsValue
 {
     static final int SIZE = Long.SIZE * 2;
 
+    // Two longs, used for storing arbitrary counts, depending on what type of key this value is paired with.
     long first;
     long second;
 

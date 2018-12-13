@@ -93,7 +93,7 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
     /**
      * The provided {@code target} will be filled with:
      * <ol>
-     *     <li>{@link DoubleLongRegister#readFirst()}: Number of updates made to this index</li>
+     *     <li>{@link DoubleLongRegister#readFirst()}: Number of updates made to this index since last resampling</li>
      *     <li>{@link DoubleLongRegister#readSecond()}: Total size of the index</li>
      * </ol>
      *
@@ -109,7 +109,7 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
      * The provided {@code target} will be filled with:
      * <ol>
      *     <li>{@link DoubleLongRegister#readFirst()}: Number of unique values in the last sample set made of this index</li>
-     *     <li>{@link DoubleLongRegister#readSecond()}: Total size of the index</li>
+     *     <li>{@link DoubleLongRegister#readSecond()}: Number of values in the last sample set made of this index</li>
      * </ol>
      *
      * @param target a register to store the read values in
@@ -134,26 +134,26 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
         return target;
     }
 
-    void replaceIndexUpdateAndSize( long indexId, long updates, long size )
+    void replaceIndexUpdateAndSize( long indexId, long updatesCount, long indexSize )
     {
         IndexStatisticsKey key = new IndexStatisticsKey( TYPE_STATISTICS, indexId, 0 );
-        IndexStatisticsValue value = new IndexStatisticsValue( updates, size );
+        IndexStatisticsValue value = new IndexStatisticsValue( updatesCount, indexSize );
         cache.put( key, value );
     }
 
-    void replaceIndexSample( long indexId, long unique, long size )
+    void replaceIndexSample( long indexId, long numberOfUniqueValuesInSample, long sampleSize )
     {
         IndexStatisticsKey key = new IndexStatisticsKey( TYPE_SAMPLE, indexId, 0 );
-        IndexStatisticsValue value = new IndexStatisticsValue( unique, size );
+        IndexStatisticsValue value = new IndexStatisticsValue( numberOfUniqueValuesInSample, sampleSize );
         cache.put( key, value );
     }
 
     /**
      * Convenience for setting values for updates, size and sample counts.
      */
-    public void replaceIndexCounts( long indexId, long uniqueElements, long maxUniqueElements, long indexSize )
+    public void replaceIndexCounts( long indexId, long numberOfUniqueValuesInSample, long sampleSize, long indexSize )
     {
-        replaceIndexSample( indexId, uniqueElements, maxUniqueElements );
+        replaceIndexSample( indexId, numberOfUniqueValuesInSample, sampleSize );
         replaceIndexUpdateAndSize( indexId, 0L, indexSize );
     }
 
@@ -190,10 +190,10 @@ public class IndexStatisticsStore implements Lifecycle, IndexStatisticsVisitor.V
                 switch ( key.type )
                 {
                 case TYPE_STATISTICS:
-                    visitor.visitIndexStatistics( key.first, value.first, value.second );
+                    visitor.visitIndexStatistics( key.indexId, value.first, value.second );
                     break;
                 case TYPE_SAMPLE:
-                    visitor.visitIndexSample( key.first, value.first, value.second );
+                    visitor.visitIndexSample( key.indexId, value.first, value.second );
                     break;
                 default:
                     throw new IllegalArgumentException( "Unknown type of " + key );

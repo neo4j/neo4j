@@ -39,8 +39,8 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     public IndexStatisticsKey copyKey( IndexStatisticsKey key, IndexStatisticsKey into )
     {
         into.type = key.type;
-        into.first = key.first;
-        into.second = key.second;
+        into.indexId = key.indexId;
+        into.additional = key.additional;
         return into;
     }
 
@@ -73,8 +73,8 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     public void writeKey( PageCursor cursor, IndexStatisticsKey key )
     {
         cursor.putByte( key.type );
-        cursor.putLong( key.first );
-        cursor.putLong( key.second );
+        cursor.putLong( key.indexId );
+        cursor.putLong( key.additional );
     }
 
     @Override
@@ -88,8 +88,8 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
     public void readKey( PageCursor cursor, IndexStatisticsKey into, int keySize )
     {
         into.type = cursor.getByte();
-        into.first = cursor.getLong();
-        into.second = cursor.getLong();
+        into.indexId = cursor.getLong();
+        into.additional = cursor.getLong();
     }
 
     @Override
@@ -131,11 +131,11 @@ class IndexStatisticsLayout extends Layout.Adapter<IndexStatisticsKey,IndexStati
         {
             return typeCompare;
         }
-        int keyCompare = Long.compare( o1.first, o2.first );
+        int keyCompare = Long.compare( o1.indexId, o2.indexId );
         if ( keyCompare != 0 )
         {
             return keyCompare;
         }
-        return Long.compare( o1.second, o2.second );
+        return Long.compare( o1.additional, o2.additional );
     }
 }

@@ -29,24 +29,25 @@ class IndexStatisticsKey
     static final int SIZE = Byte.SIZE + Long.SIZE * 2;
 
     byte type;
-    long first;
-    long second;
+    long indexId;
+    // used for future expansion of type of keys in the index statistics store.
+    long additional;
 
     IndexStatisticsKey()
     {
     }
 
-    IndexStatisticsKey( byte type, long first, long second )
+    IndexStatisticsKey( byte type, long indexId, long additional )
     {
         this.type = type;
-        this.first = first;
-        this.second = second;
+        this.indexId = indexId;
+        this.additional = additional;
     }
 
     @Override
     public int hashCode()
     {
-        return hash( type, first, second );
+        return hash( type, indexId, additional );
     }
 
     @Override
@@ -55,7 +56,7 @@ class IndexStatisticsKey
         if ( obj instanceof IndexStatisticsKey )
         {
             IndexStatisticsKey other = (IndexStatisticsKey) obj;
-            return type == other.type && first == other.first && second == other.second;
+            return type == other.type && indexId == other.indexId && additional == other.additional;
         }
         return false;
     }
@@ -63,6 +64,6 @@ class IndexStatisticsKey
     @Override
     public String toString()
     {
-        return "[type:" + type + ",first:" + first + ",second:" + second + "]";
+        return "[type:" + type + ",indexId:" + indexId + ",additional:" + additional + "]";
     }
 }
