@@ -50,7 +50,6 @@ the relevant Commercial Agreement.
   <build>
     <plugins>
       <!-- This module contains public API, run javadoc and revapi -->
-     <!--TODO put back when 3.4 is out
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
       </plugin>
@@ -58,7 +57,6 @@ the relevant Commercial Agreement.
         <groupId>org.revapi</groupId>
         <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
-      -->
     </plugins>
   </build>
 
