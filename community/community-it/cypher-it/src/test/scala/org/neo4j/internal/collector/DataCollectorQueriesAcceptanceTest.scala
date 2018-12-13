@@ -77,4 +77,55 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     // then
     execute("CALL db.stats.retrieve('QUERIES')").toList should be(empty)
   }
+
+  test("should retrieve query execution plan and estimated rows") {
+    // given
+    execute("CREATE (a), (b), (c)")
+
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n) RETURN sum(id(n))")
+    execute("MATCH (n) RETURN count(n)")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "MATCH (n) RETURN sum(id(n))",
+          "queryExecutionPlan" -> Map(
+            "id" -> 0,
+            "operator" -> "ProduceResults",
+            "lhs" -> Map(
+              "id" -> 1,
+              "operator" -> "EagerAggregation",
+              "lhs" -> Map(
+                "id" -> 2,
+                "operator" -> "AllNodesScan"
+              )
+            )
+          ),
+          "estimatedRows" -> List(1.0, 1.0, 3.0)
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "MATCH (n) RETURN count(n)",
+          "queryExecutionPlan" -> Map(
+            "id" -> 0,
+            "operator" -> "ProduceResults",
+            "lhs" -> Map(
+              "id" -> 1,
+              "operator" -> "NodeCountFromCountStore"
+            )
+          ),
+          "estimatedRows" -> List(1.0, 1.0)
+        )
+      )
+    )
+  }
 }

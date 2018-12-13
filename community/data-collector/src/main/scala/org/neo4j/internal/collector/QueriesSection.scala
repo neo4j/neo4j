@@ -23,6 +23,7 @@ import java.util
 import java.util.{Spliterator, Spliterators}
 import java.util.stream.{Stream, StreamSupport}
 
+import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.query.QuerySnapshot
 import org.neo4j.values.virtual.MapValue
 
@@ -42,7 +43,7 @@ object QueriesSection {
 
   case class ProfileData(dbHits: util.ArrayList[Long], rows: util.ArrayList[Long], params: util.Map[String, AnyRef])
 
-  case class QueryKey(queryText: String)
+  case class QueryKey(queryText: String, plan: ExecutionPlanDescription)
 
   class QueryData() {
     val invocations = new ArrayBuffer[SingleInvocation]
@@ -55,7 +56,7 @@ object QueriesSection {
       val snapshot = querySnapshots.next()
       val queryString = snapshot.queryText()
       if (!queryString.contains("CALL db.stats.")) {
-        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString), new QueryData())
+        val snapshotList = queries.getOrElseUpdate(QueryKey(queryString, snapshot.queryPlan()), new QueryData())
         snapshotList.invocations += SingleInvocation(snapshot.queryParameters(),
                                                      snapshot.elapsedTimeMicros(),
                                                      snapshot.compilationTimeMicros())
@@ -66,9 +67,33 @@ object QueriesSection {
       case (queryKey, queryData) =>
         val data = new util.HashMap[String, AnyRef]()
         data.put("query", queryKey.queryText)
+
+        val estimatedRows = new util.ArrayList[Double]
+        data.put("queryExecutionPlan", planToMap(queryKey.plan, estimatedRows))
+        data.put("estimatedRows", estimatedRows)
+
         data.put("invocations", invocations(queryData.invocations))
         new RetrieveResult(Sections.QUERIES, data)
     }))
+  }
+
+  private def planToMap(plan: ExecutionPlanDescription, estimatedRows: util.ArrayList[Double]): util.Map[String, AnyRef] = {
+    val data = new util.HashMap[String, AnyRef]()
+    val id: Integer = estimatedRows.size
+    estimatedRows.add(plan.getArguments.get("EstimatedRows").asInstanceOf[Double])
+    data.put("id", id)
+    data.put("operator", plan.getName)
+    val children = plan.getChildren
+    children.size match {
+      case 0 => // nothing to do
+      case 1 => data.put("lhs", planToMap(children.get(0), estimatedRows))
+      case 2 =>
+        data.put("lhs", planToMap(children.get(0), estimatedRows))
+        data.put("rhs", planToMap(children.get(1), estimatedRows))
+      case x =>
+        throw new IllegalStateException("Cannot handle operators with more that 2 children, got "+x)
+    }
+    data
   }
 
   private def invocations(invocations: ArrayBuffer[QueriesSection.SingleInvocation]): util.ArrayList[util.Map[String, AnyRef]] = {
