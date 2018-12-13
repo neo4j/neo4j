@@ -26,6 +26,8 @@ import java.util.Map;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.storageengine.api.Token;
 
+import static java.util.Collections.unmodifiableCollection;
+
 /**
  * Token cache that provide id -> TOKEN and name -> id mappings.
  * Name -> id mapping will be updated last since it's used as part of the check for token existence in a cache.
@@ -54,7 +56,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
         idToToken.clear();
     }
 
-    private void putAndEnsureUnique( Map<String,Integer> nameToId, Token token, String tokenType )
+    private void putAndEnsureUnique( Map<String,Integer> nameToId, TOKEN token, String tokenType )
     {
         Integer previous = nameToId.putIfAbsent( token.name(), token.id() );
         if ( previous != null && previous != token.id() )
@@ -98,7 +100,7 @@ public class InMemoryTokenCache<TOKEN extends Token>
 
     public Iterable<TOKEN> allTokens()
     {
-        return idToToken.values();
+        return unmodifiableCollection( idToToken.values() );
     }
 
     public int size()
