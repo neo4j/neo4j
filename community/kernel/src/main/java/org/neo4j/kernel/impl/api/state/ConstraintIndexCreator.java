@@ -51,7 +51,6 @@ import org.neo4j.kernel.impl.transaction.state.storeview.DefaultNodePropertyAcce
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
-import org.neo4j.storageengine.api.schema.SchemaDescriptorSupplier;
 
 import static org.neo4j.internal.kernel.api.Transaction.Type.implicit;
 import static org.neo4j.internal.kernel.api.exceptions.schema.ConstraintValidationException.Phase.VERIFICATION;
@@ -244,8 +243,8 @@ public class ConstraintIndexCreator
             // There's already an index for this schema descriptor, which isn't of the type we're after.
             throw new AlreadyIndexedException( schema, CONSTRAINT_CREATION );
         }
-        SchemaDescriptorSupplier indexDescriptor = createConstraintIndex( schema, provider );
-        IndexProxy indexProxy = indexingService.getIndexProxy( indexDescriptor.schema() );
+        IndexReference indexReference = createConstraintIndex( schema, provider );
+        IndexProxy indexProxy = indexingService.getIndexProxy( indexReference.schema() );
         return indexProxy.getDescriptor();
     }
 

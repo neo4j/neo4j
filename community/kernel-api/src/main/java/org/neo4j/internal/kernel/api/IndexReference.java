@@ -47,11 +47,6 @@ public interface IndexReference extends IndexCapability, SchemaDescriptorSupplie
     int[] properties();
 
     /**
-     * Returns the schema of this index.
-     */
-    SchemaDescriptor schema();
-
-    /**
      * Returns the key (or name) of the index provider that backs this index.
      */
     String providerKey();
