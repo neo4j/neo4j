@@ -57,7 +57,9 @@ object ScenarioTestHelper {
           Try {
             scenario(Neo4jAdapter(config.executionPrefix, graphDatabaseFactory)).execute()
           } match {
-            case Success(_) => throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
+            case Success(_) =>
+              if (!blacklist.exists(_.isFlaky(scenario)))
+                throw new IllegalStateException("Unexpectedly succeeded in the following blacklisted scenario:\n" + name)
             case Failure(e) => // failed as expected
           }
         }

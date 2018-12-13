@@ -23,9 +23,13 @@ import org.opencypher.tools.tck.api.Scenario
 
 import scala.util.matching.Regex
 
-case class BlacklistEntry(featureName: Option[String], scenarioName: String) {
+case class BlacklistEntry(featureName: Option[String], scenarioName: String, isFlaky: Boolean) {
   def isBlacklisted(scenario: Scenario): Boolean = {
     scenarioName == scenario.name && (featureName.isEmpty || featureName.get == scenario.featureName)
+  }
+
+  def isFlaky(scenario: Scenario): Boolean  = {
+    isFlaky && isBlacklisted(scenario)
   }
 
   override def toString: String = {
@@ -38,15 +42,16 @@ case class BlacklistEntry(featureName: Option[String], scenarioName: String) {
 }
 
 object BlacklistEntry {
-  val entryPattern: Regex = """Feature "(.*)": Scenario "(.*)"""".r
+  val entryPattern: Regex = """(\??)Feature "(.*)": Scenario "(.*)"""".r
 
   def apply(line: String): BlacklistEntry = {
-    if (line.startsWith("Feature")) {
+    if (line.startsWith("?") || line.startsWith("Feature")) {
       line match {
-        case entryPattern(featureName, scenarioName) => new BlacklistEntry(Some(featureName), scenarioName)
+        case entryPattern(questionMark, featureName, scenarioName) =>
+          new BlacklistEntry(Some(featureName), scenarioName, isFlaky = questionMark.nonEmpty)
         case other => throw new UnsupportedOperationException(s"Could not parse blacklist entry $other")
       }
 
-    } else new BlacklistEntry(None, line)
+    } else new BlacklistEntry(None, line, isFlaky = false)
   }
 }
