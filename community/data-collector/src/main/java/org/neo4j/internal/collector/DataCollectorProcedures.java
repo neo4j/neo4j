@@ -58,7 +58,7 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.kernel );
 
         case Sections.QUERIES:
-            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData() );
+            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData(), dataCollector.valueMapper );
 
         default:
             throw Sections.unknownSectionException( section );

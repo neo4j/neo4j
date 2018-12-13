@@ -25,6 +25,7 @@ import java.util.stream.{Stream, StreamSupport}
 
 import org.neo4j.graphdb.ExecutionPlanDescription
 import org.neo4j.kernel.api.query.QuerySnapshot
+import org.neo4j.values.ValueMapper
 import org.neo4j.values.virtual.MapValue
 
 import scala.collection.mutable
@@ -50,7 +51,8 @@ object QueriesSection {
     val profiles = new ArrayBuffer[ProfileData]
   }
 
-  def retrieve(querySnapshots: java.util.Iterator[QuerySnapshot]): Stream[RetrieveResult] = {
+  def retrieve(querySnapshots: java.util.Iterator[QuerySnapshot],
+               valueMapper: ValueMapper.JavaMapper): Stream[RetrieveResult] = {
     val queries = new mutable.HashMap[QueryKey, QueryData]()
     while (querySnapshots.hasNext) {
       val snapshot = querySnapshots.next()
@@ -72,7 +74,7 @@ object QueriesSection {
         data.put("queryExecutionPlan", planToMap(queryKey.plan, estimatedRows))
         data.put("estimatedRows", estimatedRows)
 
-        data.put("invocations", invocations(queryData.invocations))
+        data.put("invocations", invocations(queryData.invocations, valueMapper))
         new RetrieveResult(Sections.QUERIES, data)
     }))
   }
@@ -96,12 +98,17 @@ object QueriesSection {
     data
   }
 
-  private def invocations(invocations: ArrayBuffer[QueriesSection.SingleInvocation]): util.ArrayList[util.Map[String, AnyRef]] = {
+  private def invocations(invocations: ArrayBuffer[QueriesSection.SingleInvocation],
+                          valueMapper: ValueMapper.JavaMapper
+                         ): util.ArrayList[util.Map[String, AnyRef]] = {
     val result = new util.ArrayList[util.Map[String, AnyRef]]()
     for (invocationData <- invocations) {
       invocationData match {
         case SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros) =>
           val data = new util.HashMap[String, AnyRef]()
+          if (queryParameters.size() > 0)
+            data.put("params", queryParameters.map(valueMapper))
+
           val compileTime = compilationTimeMicros
           val elapsed = elapsedTimeMicros
           if (compileTime > 0) {

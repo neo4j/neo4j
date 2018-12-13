@@ -128,4 +128,61 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
       )
     )
   }
+
+  test("should retrieve invocations of query") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> "BrassLeg"))
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> 2))
+    execute("WITH 42 AS x RETURN x")
+    execute("MATCH (n {p: $param}) RETURN count(n)", Map("param" -> List(3.1, 3.2)))
+    execute("WITH 42 AS x RETURN x")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieve('QUERIES')").toList
+
+    // then
+    res should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "MATCH (n {p: $param}) RETURN count(n)",
+          "invocations" -> beListInOrder(
+            beMapContaining(
+              "params" -> Map("param" -> "BrassLeg"),
+              "elapsedExecutionTimeInUs" -> ofType[Long],
+              "elapsedCompileTimeInUs" -> ofType[Long]
+            ),
+            beMapContaining(
+              "params" -> Map("param" -> 2),
+              "elapsedExecutionTimeInUs" -> ofType[Long],
+              "elapsedCompileTimeInUs" -> ofType[Long]
+            ),
+            beMapContaining(
+              "params" -> Map("param" -> List(3.1, 3.2)),
+              "elapsedExecutionTimeInUs" -> ofType[Long],
+              "elapsedCompileTimeInUs" -> ofType[Long]
+            )
+          )
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "WITH 42 AS x RETURN x",
+          "invocations" -> beListInOrder(
+            beMapContaining(
+              "elapsedExecutionTimeInUs" -> ofType[Long],
+              "elapsedCompileTimeInUs" -> ofType[Long]
+            ),
+            beMapContaining(
+              "elapsedExecutionTimeInUs" -> ofType[Long],
+              "elapsedCompileTimeInUs" -> ofType[Long]
+            )
+          )
+        )
+      )
+    )
+  }
 }
