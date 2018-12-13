@@ -287,13 +287,6 @@ the relevant Commercial Agreement.
         </dependency>
         <dependency>
             <groupId>org.neo4j</groupId>
-            <artifactId>neo4j-values</artifactId>
-            <version>${project.version}</version>
-            <type>test-jar</type>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.neo4j</groupId>
             <artifactId>neo4j-index</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
