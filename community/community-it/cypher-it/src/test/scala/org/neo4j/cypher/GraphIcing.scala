@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.javacompat.GraphDatabaseCypherService
 import org.neo4j.cypher.internal.runtime.{RuntimeJavaValueConverter, isGraphKernelResultValue}
 import org.neo4j.graphdb.Label.label
 import org.neo4j.graphdb._
+import org.neo4j.graphdb.schema.IndexDefinition
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext.AUTH_DISABLED
 import org.neo4j.kernel.GraphDatabaseQueryService
@@ -92,11 +93,19 @@ trait GraphIcing {
       graph.execute(s"CREATE CONSTRAINT ON (n:$label) ASSERT (n.${properties.mkString(", n.")}) IS NODE KEY")
     }
 
-    def createIndex(label: String, properties: String*): Unit = {
+    def createIndex(label: String, properties: String*): IndexDefinition = {
       graph.execute(s"CREATE INDEX ON :$label(${properties.map(p => s"`$p`").mkString(",")})")
 
       inTx {
         graph.schema().awaitIndexesOnline(10, TimeUnit.MINUTES)
+      }
+
+      getIndex(label, properties)
+    }
+
+    def getIndex(label: String, properties: Seq[String]): IndexDefinition = {
+      inTx {
+        graph.schema().getIndexes(Label.label(label)).asScala.find(index => index.getPropertyKeys.asScala.toList == properties.toList).get
       }
     }
 

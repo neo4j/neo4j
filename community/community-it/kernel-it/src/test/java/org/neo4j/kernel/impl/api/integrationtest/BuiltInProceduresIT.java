@@ -35,6 +35,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.TokenWrite;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
@@ -277,6 +278,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
             tx.success();
         }
 
+        transaction = newTransaction();
+        IndexReference personFooIndex = transaction.schemaRead().index( personFooDescriptor );
+        IndexReference ageFooIndex = transaction.schemaRead().index( ageFooDescriptor );
+        IndexReference personFooBarIndex = transaction.schemaRead().index( personFooBarDescriptor );
+
         // When
         RawIterator<Object[],ProcedureException> stream =
                 procs().procedureCallRead( procs().procedureGet( procedureName( "db", "indexes" ) ).id(), new Object[0] );
@@ -294,11 +300,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
         Map<String,String> pdm = MapUtil.stringMap( // Provider Descriptor Map.
                 "key", provider.getProviderDescriptor().getKey(), "version", provider.getProviderDescriptor().getVersion() );
         assertThat( result, containsInAnyOrder(
-                new Object[]{"INDEX ON :Age(foo)", "index_1", singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
+                new Object[]{"INDEX ON :Age(foo)", ageFooIndex.name(), singletonList( "Age" ), singletonList( "foo" ), "ONLINE",
                         "node_unique_property", 100D, pdm, indexingService.getIndexId( ageFooDescriptor ), ""},
-                new Object[]{"INDEX ON :Person(foo)", "Unnamed index", singletonList( "Person" ),
+                new Object[]{"INDEX ON :Person(foo)", personFooIndex.name(), singletonList( "Person" ),
                         singletonList( "foo" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooDescriptor ), ""},
-                new Object[]{"INDEX ON :Person(foo, bar)", "Unnamed index", singletonList( "Person" ),
+                new Object[]{"INDEX ON :Person(foo, bar)", personFooBarIndex.name(), singletonList( "Person" ),
                         Arrays.asList( "foo", "bar" ), "ONLINE", "node_label_property", 100D, pdm, indexingService.getIndexId( personFooBarDescriptor ), ""}
         ) );
         commit();
