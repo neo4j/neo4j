@@ -51,7 +51,9 @@ public final class RelationshipSelections
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipSelectionCursor outgoingCursor( CursorFactory cursors, NodeCursor node, int[] types )
+    public static RelationshipSelectionCursor outgoingCursor( CursorFactory cursors,
+                                                              NodeCursor node,
+                                                              int[] types )
     {
         if ( node.isDense() )
         {
@@ -95,7 +97,9 @@ public final class RelationshipSelections
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipSelectionCursor incomingCursor( CursorFactory cursors, NodeCursor node, int[] types )
+    public static RelationshipSelectionCursor incomingCursor( CursorFactory cursors,
+                                                              NodeCursor node,
+                                                              int[] types )
     {
         if ( node.isDense() )
         {
@@ -139,7 +143,9 @@ public final class RelationshipSelections
      * @param types The types of the relationship
      * @return A cursor that allows traversing the relationship chain.
      */
-    public static RelationshipSelectionCursor allCursor( CursorFactory cursors, NodeCursor node, int[] types )
+    public static RelationshipSelectionCursor allCursor( CursorFactory cursors,
+                                                         NodeCursor node,
+                                                         int[] types )
     {
         if ( node.isDense() )
         {
@@ -184,8 +190,10 @@ public final class RelationshipSelections
      * @param factory factory for creating instance of generic type T
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> outgoingIterator( CursorFactory cursors, NodeCursor node, int[] types,
-            RelationshipFactory<T> factory )
+    public static <T> ResourceIterator<T> outgoingIterator( CursorFactory cursors,
+                                                            NodeCursor node,
+                                                            int[] types,
+                                                            RelationshipFactory<T> factory )
     {
         if ( node.isDense() )
         {
@@ -213,8 +221,10 @@ public final class RelationshipSelections
      * @param factory factory for creating instance of generic type T
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> incomingIterator( CursorFactory cursors, NodeCursor node, int[] types,
-            RelationshipFactory<T> factory )
+    public static <T> ResourceIterator<T> incomingIterator( CursorFactory cursors,
+                                                            NodeCursor node,
+                                                            int[] types,
+                                                            RelationshipFactory<T> factory )
     {
         if ( node.isDense() )
         {
@@ -242,8 +252,10 @@ public final class RelationshipSelections
      * @param factory factory for creating instance of generic type T
      * @return An iterator that allows traversing the relationship chain.
      */
-    public static <T> ResourceIterator<T> allIterator( CursorFactory cursors, NodeCursor node, int[] types,
-            RelationshipFactory<T> factory )
+    public static <T> ResourceIterator<T> allIterator( CursorFactory cursors,
+                                                       NodeCursor node,
+                                                       int[] types,
+                                                       RelationshipFactory<T> factory )
     {
         if ( node.isDense() )
         {
@@ -281,35 +293,45 @@ public final class RelationshipSelections
         denseSelection.incoming( groupCursor, traversalCursor, types );
     }
 
-    private static void setupAllDense( RelationshipDenseSelection denseSelection, RelationshipGroupCursor groupCursor, RelationshipTraversalCursor traversalCursor,
-            NodeCursor node, int[] types )
+    private static void setupAllDense( RelationshipDenseSelection denseSelection,
+                                       RelationshipGroupCursor groupCursor,
+                                       RelationshipTraversalCursor traversalCursor,
+                                       NodeCursor node,
+                                       int[] types )
     {
         node.relationships( groupCursor );
         denseSelection.all( groupCursor, traversalCursor, types );
     }
 
     private static void setupOutgoingSparse( RelationshipSparseSelection sparseSelection,
-            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types )
+                                             RelationshipTraversalCursor traversalCursor,
+                                             NodeCursor node,
+                                             int[] types )
     {
         node.allRelationships( traversalCursor );
         sparseSelection.outgoing( traversalCursor, types );
     }
 
     private static void setupIncomingSparse( RelationshipSparseSelection sparseSelection,
-            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types )
+                                             RelationshipTraversalCursor traversalCursor,
+                                             NodeCursor node,
+                                             int[] types )
     {
         node.allRelationships( traversalCursor );
         sparseSelection.incoming( traversalCursor, types );
     }
 
     private static void setupAllSparse( RelationshipSparseSelection sparseSelection,
-            RelationshipTraversalCursor traversalCursor, NodeCursor node, int[] types )
+                                        RelationshipTraversalCursor traversalCursor,
+                                        NodeCursor node,
+                                        int[] types )
     {
         node.allRelationships( traversalCursor );
         sparseSelection.all( traversalCursor, types );
     }
 
-    private static void withDenseCursors( CursorFactory cursors, BiConsumer<RelationshipGroupCursor, RelationshipTraversalCursor> f )
+    private static void withDenseCursors( CursorFactory cursors,
+                                          BiConsumer<RelationshipGroupCursor, RelationshipTraversalCursor> f )
     {
         RelationshipGroupCursor group = cursors.allocateRelationshipGroupCursor();
         RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
@@ -324,7 +346,8 @@ public final class RelationshipSelections
         }
     }
 
-    private static void withSparseCursor( CursorFactory cursors, Consumer<RelationshipTraversalCursor> f )
+    private static void withSparseCursor( CursorFactory cursors,
+                                          Consumer<RelationshipTraversalCursor> f )
     {
         RelationshipTraversalCursor traversal = cursors.allocateRelationshipTraversalCursor();
         try
