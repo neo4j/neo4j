@@ -57,20 +57,6 @@ the relevant Commercial Agreement.
   </build>
 
     <dependencies>
-
-        <!-- scala -->
-
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-library</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.scala-lang</groupId>
-            <artifactId>scala-reflect</artifactId>
-        </dependency>
-
-        <!-- neo4j -->
-
         <dependency>
             <groupId>org.neo4j</groupId>
             <artifactId>neo4j-procedure-api</artifactId>
@@ -82,9 +68,6 @@ the relevant Commercial Agreement.
             <version>${project.version}</version>
         </dependency>
 
-        <!-- neo4j testing -->
-
         <!-- Test are located with other IT tests to solve problems with depending of TestGraphDatabaseFactory et.c. -->
-
     </dependencies>
 </project>

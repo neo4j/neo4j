@@ -30,12 +30,6 @@ Apache Software License, Version 2.0
   Lucene Core
   Netty/All-in-One
 
-BSD - Scala License
-  Scala Library
-
-BSD License
-  Scala Compiler
-
 Bouncy Castle License
   Bouncy Castle PKIX, CMS, EAC, TSP, PKCS, OCSP, CMP, and CRMF APIs
   Bouncy Castle Provider
