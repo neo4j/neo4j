@@ -34,15 +34,7 @@ public class MetricsReportingBoltConnection extends DefaultBoltConnection
     MetricsReportingBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
             BoltConnectionLifetimeListener listener, BoltConnectionQueueMonitor queueMonitor, BoltConnectionMetricsMonitor metricsMonitor, Clock clock )
     {
-        this( channel, output, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
-    }
-
-    MetricsReportingBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
-            BoltConnectionLifetimeListener listener,
-            BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, BoltConnectionMetricsMonitor metricsMonitor,
-            Clock clock )
-    {
-        super( channel, output, machine, logService, listener, queueMonitor, maxBatchSize );
+        super( channel, output, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
         this.metricsMonitor = metricsMonitor;
         this.clock = clock;
     }

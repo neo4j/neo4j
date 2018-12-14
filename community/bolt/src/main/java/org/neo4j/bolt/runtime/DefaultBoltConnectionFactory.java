@@ -38,7 +38,6 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
     private final LogService logService;
     private final Clock clock;
     private final Config config;
-    private final Monitors monitors;
     private final BoltConnectionMetricsMonitor metricsMonitor;
 
     public DefaultBoltConnectionFactory( BoltSchedulerProvider schedulerProvider, TransportThrottleGroup throttleGroup,
@@ -49,7 +48,6 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         this.config = config;
         this.logService = logService;
         this.clock = clock;
-        this.monitors = monitors;
         this.metricsMonitor = monitors.newMonitor( BoltConnectionMetricsMonitor.class );
     }
 
@@ -63,19 +61,8 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         BoltConnectionReadLimiter readLimiter = createReadLimiter( config, logService );
         BoltConnectionQueueMonitor connectionQueueMonitor = new BoltConnectionQueueMonitorAggregate( scheduler, readLimiter );
         ChunkedOutput chunkedOutput = new ChunkedOutput( channel.rawChannel(), throttleGroup );
-
-        BoltConnection connection;
-        if ( monitors.hasListeners( BoltConnectionMetricsMonitor.class ) )
-        {
-            connection = new MetricsReportingBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
-                    connectionQueueMonitor, metricsMonitor, clock );
-        }
-        else
-        {
-            connection = new DefaultBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
-                    connectionQueueMonitor );
-        }
-
+        BoltConnection connection = new MetricsReportingBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
+                connectionQueueMonitor, metricsMonitor, clock );
         connection.start();
 
         return connection;

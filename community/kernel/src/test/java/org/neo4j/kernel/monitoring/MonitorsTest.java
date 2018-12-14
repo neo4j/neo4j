@@ -21,8 +21,6 @@ package org.neo4j.kernel.monitoring;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -111,52 +109,6 @@ class MonitorsTest
         monitorTag2.aVoid();
         verify( listener, times(1) ).aVoid();
         verifyNoMoreInteractions( listener );
-    }
-
-    @Test
-    void shouldTellIfMonitorHasListeners()
-    {
-        // Given
-        Monitors monitors = new Monitors();
-        MyMonitor listener = mock( MyMonitor.class );
-
-        // When I have a monitor with no listeners
-        monitors.newMonitor( MyMonitor.class );
-
-        // Then
-        assertFalse( monitors.hasListeners( MyMonitor.class ) );
-
-        // When I add a listener
-        monitors.addMonitorListener( listener );
-
-        // Then
-        assertTrue( monitors.hasListeners( MyMonitor.class ) );
-
-        // When that listener is removed again
-        monitors.removeMonitorListener( listener );
-
-        // Then
-        assertFalse( monitors.hasListeners( MyMonitor.class ) );
-    }
-
-    @Test
-    void multipleListenersRegistration()
-    {
-        Monitors monitors = new Monitors();
-        MyMonitor listener1 = mock( MyMonitor.class );
-        MyMonitor listener2 = mock( MyMonitor.class );
-
-        assertFalse( monitors.hasListeners( MyMonitor.class ) );
-
-        monitors.addMonitorListener( listener1 );
-        monitors.addMonitorListener( listener2 );
-        assertTrue( monitors.hasListeners( MyMonitor.class ) );
-
-        monitors.removeMonitorListener( listener1 );
-        assertTrue( monitors.hasListeners( MyMonitor.class ) );
-
-        monitors.removeMonitorListener( listener2 );
-        assertFalse( monitors.hasListeners( MyMonitor.class ) );
     }
 
     @Test

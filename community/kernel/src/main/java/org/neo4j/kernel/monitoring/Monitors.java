@@ -104,11 +104,6 @@ public class Monitors
         listenerInterfaces.forEach( monitoredInterfaces::remove );
     }
 
-    public boolean hasListeners( Class<?> monitorClass )
-    {
-        return monitoredInterfaces.contains( monitorClass ) || ((parent != null) && parent.hasListeners( monitorClass ));
-    }
-
     private void cleanupMonitorListeners( Object monitorListener, Method key )
     {
         methodMonitorListeners.computeIfPresent( key, ( method1, handlers ) ->
