@@ -57,6 +57,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.BoundedIterable;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.internal.kernel.api.PopulationProgress;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
@@ -197,6 +198,7 @@ public class IndexingServiceTest
         when( indexStatisticsStore.indexSample( anyLong(), any( DoubleLongRegister.class ) ) )
                 .thenAnswer( invocation -> invocation.getArgument( 1 ) );
         when( storeView.newPropertyAccessor() ).thenReturn( propertyAccessor );
+        when( indexProvider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
     }
 
     @Test
@@ -447,12 +449,10 @@ public class IndexingServiceTest
                 asList( onlineIndex, populatingIndex, failedIndex ), internalLogProvider, userLogProvider, IndexingService.NO_MONITOR,
                 schemaState, indexStatisticsStore );
 
-        when( provider.getInitialState( onlineIndex ) )
-                .thenReturn( ONLINE );
-        when( provider.getInitialState( populatingIndex ) )
-                .thenReturn( InternalIndexState.POPULATING );
-        when( provider.getInitialState( failedIndex ) )
-                .thenReturn( InternalIndexState.FAILED );
+        when( provider.getInitialState( onlineIndex ) ).thenReturn( ONLINE );
+        when( provider.getInitialState( populatingIndex ) ).thenReturn( InternalIndexState.POPULATING );
+        when( provider.getInitialState( failedIndex ) ).thenReturn( InternalIndexState.FAILED );
+        when( provider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
 
         indexingService.init();
 
@@ -1178,6 +1178,7 @@ public class IndexingServiceTest
         indexes.add( populatingIndex );
         StoreIndexDescriptor failedIndex = storeIndex( nextIndexId, nextIndexId++, 1, PROVIDER_DESCRIPTOR );
         when( provider.getInitialState( failedIndex ) ).thenReturn( FAILED );
+        when( provider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
         indexes.add( failedIndex );
         for ( int i = 0; i < 10; i++ )
         {

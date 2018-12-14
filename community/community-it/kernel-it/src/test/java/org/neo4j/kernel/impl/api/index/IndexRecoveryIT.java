@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
+import org.neo4j.internal.kernel.api.IndexCapability;
 import org.neo4j.internal.kernel.api.InternalIndexState;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
@@ -114,6 +115,7 @@ class IndexRecoveryIT
         when( mockedIndexProvider.getProviderDescriptor() ).thenReturn( PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.storeMigrationParticipant( any( FileSystemAbstraction.class ), any( PageCache.class ) ) )
                 .thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
+        when( mockedIndexProvider.getCapability( any() ) ).thenReturn( IndexCapability.NO_CAPABILITY );
     }
 
     @AfterEach
@@ -126,7 +128,7 @@ class IndexRecoveryIT
     }
 
     @Test
-    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated() throws Exception
+    void shouldBeAbleToRecoverInTheMiddleOfPopulatingAnIndexWhereLogHasRotated()
     {
         assertTimeoutPreemptively( ofSeconds( 5 ), () ->
         {
