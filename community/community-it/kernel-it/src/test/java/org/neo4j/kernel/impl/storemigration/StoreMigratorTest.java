@@ -39,8 +39,8 @@ import org.neo4j.kernel.configuration.LayoutConfig;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.standard.MetaDataRecordFormat;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -226,7 +226,7 @@ class StoreMigratorTest
         MyProgressReporter progressReporter = new MyProgressReporter();
         // Migrate with two storeversions that have the same FORMAT capabilities
         migrator.migrate( dbLayout, testDirectory.databaseLayout( "migrationDir" ), progressReporter,
-                StandardV3_0.STORE_VERSION, StandardV3_2.STORE_VERSION );
+                StandardV3_4.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
         // Should not have started any migration
         assertFalse( progressReporter.started );

@@ -19,8 +19,8 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -44,7 +44,7 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.StoreVersion;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
 import org.neo4j.kernel.impl.store.format.standard.StandardFormatFamily;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
@@ -66,6 +66,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVers
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException.MESSAGE;
 
+@Ignore
 @RunWith( Enclosed.class )
 public class UpgradableDatabaseTest
 {
@@ -91,9 +92,7 @@ public class UpgradableDatabaseTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Collections.singletonList(
-                    StandardV2_3.STORE_VERSION
-            );
+            return Collections.singletonList( StandardV3_4.STORE_VERSION );
         }
 
         @Before
@@ -148,9 +147,6 @@ public class UpgradableDatabaseTest
         @Test
         public void shouldRejectStoresIfDBIsNotShutdownCleanly() throws IOException
         {
-            // checkpoint has been introduced in 2.3
-            Assume.assumeTrue( StandardV2_3.STORE_VERSION.equals( version ) );
-
             // given
             removeCheckPointFromTxLog( fileSystem, databaseLayout.databaseDirectory() );
             final UpgradableDatabase upgradableDatabase = getUpgradableDatabase();
@@ -172,8 +168,6 @@ public class UpgradableDatabaseTest
     @RunWith( Parameterized.class )
     public static class UnsupportedVersions
     {
-        private static final String neostoreFilename = "neostore";
-
         private final TestDirectory testDirectory = TestDirectory.testDirectory();
         private final PageCacheRule pageCacheRule = new PageCacheRule();
         private final DefaultFileSystemRule fileSystemRule = new DefaultFileSystemRule();
@@ -192,7 +186,7 @@ public class UpgradableDatabaseTest
         @Parameterized.Parameters( name = "{0}" )
         public static Collection<String> versions()
         {
-            return Arrays.asList( "v0.A.4", StoreVersion.HIGH_LIMIT_V3_0_0.versionString() );
+            return Arrays.asList( "v0.A.4", StoreVersion.HIGH_LIMIT_V3_4_0.versionString() );
         }
 
         @Before
@@ -201,8 +195,8 @@ public class UpgradableDatabaseTest
             fileSystem = fileSystemRule.get();
             databaseLayout = testDirectory.databaseLayout();
             // doesn't matter which version we pick we are changing it to the wrong one...
-            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV2_3.STORE_VERSION, databaseLayout.databaseDirectory() );
-            changeVersionNumber( fileSystem, databaseLayout.file( neostoreFilename ), version );
+            MigrationTestUtils.findFormatStoreDirectoryForVersion( StandardV3_4.STORE_VERSION, databaseLayout.databaseDirectory() );
+            changeVersionNumber( fileSystem, databaseLayout.metadataStore(), version );
             File metadataStore = databaseLayout.metadataStore();
             PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
             MetaDataStore.setRecord( pageCache, metadataStore, STORE_VERSION, MetaDataStore.versionStringToLong( version ) );

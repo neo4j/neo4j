@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.store.format.standard;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.util.Collection;
 
@@ -33,32 +31,20 @@ import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.record.RelationshipGroupRecord;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.neo4j.kernel.impl.store.NoStoreHeader.NO_STORE_HEADER;
 import static org.neo4j.kernel.impl.store.record.RecordLoad.NORMAL;
 
-@RunWith( Parameterized.class )
-public class RelationshipGroupRecordFormatTest
+class RelationshipGroupRecordFormatTest
 {
-    @Parameters
-    public static Collection<RecordFormats> formats()
-    {
-        return asList( StandardV2_3.RECORD_FORMATS, StandardV3_0.RECORD_FORMATS );
-    }
 
-    private final RecordFormat<RelationshipGroupRecord> format;
-    private final int recordSize;
-
-    public RelationshipGroupRecordFormatTest( RecordFormats formats )
-    {
-        this.format = formats.relationshipGroup();
-        this.recordSize = format.getRecordSize( NO_STORE_HEADER );
-    }
-
-    @Test
-    public void shouldReadUnsignedRelationshipTypeId() throws Exception
+    @ParameterizedTest
+    @MethodSource( "formats" )
+    void shouldReadUnsignedRelationshipTypeId( RecordFormats formats ) throws Exception
     {
         // GIVEN
+        RecordFormat<RelationshipGroupRecord> format = formats.relationshipGroup();
+        int recordSize = format.getRecordSize( NO_STORE_HEADER );
         try ( PageCursor cursor = new StubPageCursor( 1, recordSize * 10 ) )
         {
             int offset = 10;
@@ -76,5 +62,10 @@ public class RelationshipGroupRecordFormatTest
             // THEN
             assertEquals( group, read );
         }
+    }
+
+    private static Collection<RecordFormats> formats()
+    {
+        return asList( StandardV3_4.RECORD_FORMATS, StandardV4_0.RECORD_FORMATS );
     }
 }

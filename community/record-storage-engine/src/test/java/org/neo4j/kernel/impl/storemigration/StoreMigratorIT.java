@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,8 +30,8 @@ import org.junit.runners.Parameterized;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.function.Function;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -43,7 +44,7 @@ import org.neo4j.kernel.impl.store.StoreFactory;
 import org.neo4j.kernel.impl.store.TransactionId;
 import org.neo4j.kernel.impl.store.format.RecordFormats;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.id.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -66,6 +67,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
+@Ignore
 @RunWith( Parameterized.class )
 public class StoreMigratorIT
 {
@@ -94,12 +96,9 @@ public class StoreMigratorIT
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<Object[]> versions()
     {
-        return Arrays.<Object[]>asList(
-                new Object[]{
-                        StandardV2_3.STORE_VERSION, new LogPosition( 3, 169 ),
-                        txInfoAcceptanceOnIdAndTimestamp( 39, UNKNOWN_TX_COMMIT_TIMESTAMP )
-                }
-        );
+        return Collections.singletonList(
+                new Object[]{StandardV3_4.STORE_VERSION, new LogPosition( 3, 169 ),
+                        txInfoAcceptanceOnIdAndTimestamp( 39, UNKNOWN_TX_COMMIT_TIMESTAMP )} );
     }
 
     @Before
@@ -130,20 +129,13 @@ public class StoreMigratorIT
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         MigrationProgressMonitor progressMonitor = MigrationProgressMonitor.SILENT;
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
-        countsMigrator
-                .migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
-                        upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
         migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
-                upgradableDatabase.currentVersion() );
-        countsMigrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
@@ -170,18 +162,12 @@ public class StoreMigratorIT
 
         String versionToMigrateFrom = upgradableDatabase.checkUpgradable( databaseLayout ).storeVersion();
         StoreMigrator migrator = new StoreMigrator( fs, pageCache, CONFIG, logService, jobScheduler );
-        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
         DatabaseLayout migrationLayout = directory.databaseLayout( StoreUpgrader.MIGRATION_DIRECTORY );
 
         // WHEN migrating
         migrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
-        countsMigrator
-                .migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ), versionToMigrateFrom,
-                        upgradableDatabase.currentVersion() );
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
-                upgradableDatabase.currentVersion() );
-        countsMigrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful
@@ -213,12 +199,8 @@ public class StoreMigratorIT
                 versionToMigrateFrom, upgradableDatabase.currentVersion() );
 
         // WHEN simulating resuming the migration
-        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, CONFIG );
-        countsMigrator.migrate( databaseLayout, migrationLayout, progressMonitor.startSection( "section" ),
-                versionToMigrateFrom, upgradableDatabase.currentVersion() );
+
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
-                upgradableDatabase.currentVersion() );
-        countsMigrator.moveMigratedFiles( migrationLayout, databaseLayout, versionToMigrateFrom,
                 upgradableDatabase.currentVersion() );
 
         // THEN starting the new store should be successful

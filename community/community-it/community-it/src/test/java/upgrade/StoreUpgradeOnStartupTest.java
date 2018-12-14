@@ -21,6 +21,7 @@ package upgrade;
 
 import org.hamcrest.Matchers;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -39,9 +40,9 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.storemigration.RecordStoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
@@ -55,6 +56,7 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoSt
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 
+@Ignore
 @RunWith( Parameterized.class )
 public class StoreUpgradeOnStartupTest
 {
@@ -77,9 +79,7 @@ public class StoreUpgradeOnStartupTest
     @Parameterized.Parameters( name = "{0}" )
     public static Collection<String> versions()
     {
-        return Collections.singletonList(
-                StandardV2_3.STORE_VERSION
-        );
+        return Collections.singletonList( StandardV3_4.STORE_VERSION );
     }
 
     @Before

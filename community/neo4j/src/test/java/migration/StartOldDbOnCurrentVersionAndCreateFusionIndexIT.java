@@ -79,8 +79,6 @@ import static org.neo4j.test.Unzip.unzip;
 @ExtendWith( TestDirectoryExtension.class )
 class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
 {
-    private static final String ZIP_FILE_3_2 = "3_2-db.zip";
-    private static final String ZIP_FILE_3_3 = "3_3-db.zip";
     private static final String ZIP_FILE_3_4 = "3_4-db.zip";
 
     private static final String KEY1 = "key1";
@@ -111,34 +109,6 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
     @Inject
     private TestDirectory directory;
 
-    @Disabled( "Here as reference for how 3.2 db was created" )
-    @Test
-    void create3_2Database() throws Exception
-    {
-        File storeDir = tempStoreDirectory();
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
-    }
-
-    @Disabled( "Here as reference for how 3.3 db was created" )
-    @Test
-    void create3_3Database() throws Exception
-    {
-        File storeDir = tempStoreDirectory();
-        GraphDatabaseFactory factory = new GraphDatabaseFactory();
-        GraphDatabaseBuilder builder = factory.newEmbeddedDatabaseBuilder( storeDir );
-
-        builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.FALSE );
-        GraphDatabaseService db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.LUCENE_10.label );
-
-        builder.setConfig( GraphDatabaseSettings.enable_native_schema_index, Settings.TRUE );
-        db = builder.newGraphDatabase();
-        createIndexDataAndShutdown( db, Provider.FUSION_10.label );
-        System.out.println( "Db created in " + storeDir.getAbsolutePath() );
-    }
-
     @Disabled( "Here as reference for how 3.4 db was created" )
     @Test
     void create3_4Database() throws Exception
@@ -159,18 +129,6 @@ class StartOldDbOnCurrentVersionAndCreateFusionIndexIT
         db = builder.newGraphDatabase();
         createIndexDataAndShutdown( db, Provider.FUSION_20.label );
         System.out.println( "Db created in " + storeDir.getAbsolutePath() );
-    }
-
-    @Test
-    void shouldOpen3_2DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
-    {
-        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_2, Provider.LUCENE_10 );
-    }
-
-    @Test
-    void shouldOpen3_3DbAndCreateAndWorkWithSomeFusionIndexes() throws Exception
-    {
-        shouldOpenOldDbAndCreateAndWorkWithSomeFusionIndexes( ZIP_FILE_3_3, Provider.FUSION_10 );
     }
 
     @Test

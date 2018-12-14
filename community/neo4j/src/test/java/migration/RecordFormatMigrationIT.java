@@ -33,11 +33,11 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.kernel.configuration.Settings;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.RecordStorageEngine;
 import org.neo4j.kernel.impl.store.format.standard.Standard;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_2;
 import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
+import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
@@ -74,14 +74,14 @@ class RecordFormatMigrationIT
             transaction.success();
         }
         database.shutdown();
-        Throwable throwable = assertThrows( Throwable.class, () -> startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME ) );
+        Throwable throwable = assertThrows( Throwable.class, () -> startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV4_0.NAME ) );
         assertSame( UpgradeNotAllowedException.class, Exceptions.rootCause( throwable ).getClass() );
     }
 
     @Test
     void failToDowngradeFormatWheUpgradeAllowed()
     {
-        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV4_0.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -91,7 +91,7 @@ class RecordFormatMigrationIT
         database.shutdown();
         Throwable throwable = assertThrows( Throwable.class,
                 () -> new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( storeDir )
-                        .setConfig( record_format, StandardV3_2.NAME )
+                        .setConfig( record_format, StandardV3_4.NAME )
                         .setConfig( allow_upgrade, Settings.TRUE ).newGraphDatabase() );
         assertSame( StoreUpgrader.AttemptedDowngradeException.class, Exceptions.rootCause( throwable ).getClass() );
     }
@@ -99,7 +99,7 @@ class RecordFormatMigrationIT
     @Test
     void skipMigrationIfFormatSpecifiedInConfig()
     {
-        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -108,16 +108,16 @@ class RecordFormatMigrationIT
         }
         database.shutdown();
 
-        GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
+        GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         RecordStorageEngine storageEngine = nonUpgradedStore.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        assertEquals( StandardV3_2.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
+        assertEquals( StandardV3_4.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
         nonUpgradedStore.shutdown();
     }
 
     @Test
     void skipMigrationIfStoreFormatNotSpecifiedButIsAvailableInRuntime()
     {
-        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();
@@ -129,14 +129,14 @@ class RecordFormatMigrationIT
         GraphDatabaseAPI nonUpgradedStore = (GraphDatabaseAPI) new GraphDatabaseFactory()
                 .newEmbeddedDatabase( storeDir );
         RecordStorageEngine storageEngine = nonUpgradedStore.getDependencyResolver().resolveDependency( RecordStorageEngine.class );
-        assertEquals( StandardV3_2.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
+        assertEquals( StandardV3_4.NAME, storageEngine.testAccessNeoStores().getRecordFormats().name() );
         nonUpgradedStore.shutdown();
     }
 
     @Test
     void latestRecordNotMigratedWhenFormatBumped()
     {
-        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_2.NAME );
+        GraphDatabaseService database = startDatabaseWithFormatUnspecifiedUpgrade( storeDir, StandardV3_4.NAME );
         try ( Transaction transaction = database.beginTx() )
         {
             Node node = database.createNode();

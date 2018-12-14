@@ -83,13 +83,11 @@ public class DatabaseMigratorImpl implements DatabaseMigrator
 
         StoreMigrator storeMigrator = new StoreMigrator( fs, pageCache, config, logService, jobScheduler );
         NativeLabelScanStoreMigrator nativeLabelScanStoreMigrator = new NativeLabelScanStoreMigrator( fs, pageCache, config );
-        CountsMigrator countsMigrator = new CountsMigrator( fs, pageCache, config );
 
         this.indexProviderMap.accept(
             provider -> storeUpgrader.addParticipant( provider.storeMigrationParticipant( fs, pageCache ) ) );
         storeUpgrader.addParticipant( storeMigrator );
         storeUpgrader.addParticipant( nativeLabelScanStoreMigrator );
-        storeUpgrader.addParticipant( countsMigrator );
         storeUpgrader.migrateIfNeeded( databaseLayout );
     }
 }

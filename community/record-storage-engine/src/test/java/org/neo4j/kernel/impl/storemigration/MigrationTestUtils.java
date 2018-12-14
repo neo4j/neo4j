@@ -28,10 +28,8 @@ import org.neo4j.io.fs.OpenMode;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.store.format.RecordFormatSelector;
-import org.neo4j.kernel.impl.store.format.standard.StandardV2_3;
-import org.neo4j.kernel.impl.store.format.standard.StandardV3_0;
-import org.neo4j.kernel.impl.storemigration.legacystore.v23.Legacy23Store;
-import org.neo4j.kernel.impl.storemigration.legacystore.v30.Legacy30Store;
+import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
+import org.neo4j.kernel.impl.storemigration.legacystore.v34.Legacy34Store;
 import org.neo4j.kernel.impl.transaction.log.LogPosition;
 import org.neo4j.kernel.impl.transaction.log.ReadableClosablePositionAwareChannel;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
@@ -80,13 +78,9 @@ public class MigrationTestUtils
 
     public static File findFormatStoreDirectoryForVersion( String version, File targetDir ) throws IOException
     {
-        if ( StandardV2_3.STORE_VERSION.equals( version ) )
+        if ( StandardV3_4.STORE_VERSION.equals( version ) )
         {
-            return find23FormatStoreDirectory( targetDir );
-        }
-        else if ( StandardV3_0.STORE_VERSION.equals( version ) )
-        {
-            return find30FormatStoreDirectory( targetDir );
+            return find34FormatStoreDirectory( targetDir );
         }
         else
         {
@@ -94,14 +88,10 @@ public class MigrationTestUtils
         }
     }
 
-    private static File find30FormatStoreDirectory( File targetDir ) throws IOException
+    //TODO:
+    private static File find34FormatStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy30Store.class, "upgradeTest30Db.zip", targetDir );
-    }
-
-    public static File find23FormatStoreDirectory( File targetDir ) throws IOException
-    {
-        return Unzip.unzip( Legacy23Store.class, "upgradeTest23Db.zip", targetDir );
+        return Unzip.unzip( Legacy34Store.class, "upgradeTest23Db.zip", targetDir );
     }
 
     public static boolean checkNeoStoreHasDefaultFormatVersion( RecordStoreVersionCheck check, DatabaseLayout databaseLayout )
