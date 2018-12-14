@@ -61,8 +61,10 @@ import org.neo4j.scheduler.JobScheduler;
 
 import static java.util.Collections.singletonList;
 
-class RaftServerModule
+public class RaftServerModule
 {
+    public static final String RAFT_SERVER_NAME = "raft-server";
+
     private final PlatformModule platformModule;
     private final ConsensusModule consensusModule;
     private final IdentityModule identityModule;
@@ -125,7 +127,8 @@ class RaftServerModule
 
         ListenSocketAddress raftListenAddress = platformModule.config.get( CausalClusteringSettings.raft_listen_address );
         Server raftServer = new Server( handshakeServerInitializer, installedProtocolsHandler, logProvider, platformModule.logging.getUserLogProvider(),
-                raftListenAddress, "raft-server" );
+                raftListenAddress, RAFT_SERVER_NAME );
+        platformModule.dependencies.satisfyDependency( raftServer ); // resolved in tests
 
         LoggingInbound<ReceivedInstantClusterIdAwareMessage<?>> loggingRaftInbound =
                 new LoggingInbound<>( nettyHandler, messageLogger, identityModule.myself() );

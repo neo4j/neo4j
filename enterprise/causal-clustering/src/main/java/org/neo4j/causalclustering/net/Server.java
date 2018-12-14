@@ -159,6 +159,11 @@ public class Server extends SuspendableLifeCycle
         // do nothing
     }
 
+    public String name()
+    {
+        return serverName;
+    }
+
     public ListenSocketAddress address()
     {
         return listenAddress;
