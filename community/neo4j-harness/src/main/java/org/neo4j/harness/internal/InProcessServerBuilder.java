@@ -19,6 +19,8 @@
  */
 package org.neo4j.harness.internal;
 
+import org.apache.commons.lang3.SystemUtils;
+
 import java.io.File;
 
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies;
@@ -32,7 +34,7 @@ public class InProcessServerBuilder extends AbstractInProcessServerBuilder
 {
     public InProcessServerBuilder()
     {
-        this( new File( System.getProperty( "java.io.tmpdir" ) ) );
+        this( SystemUtils.getJavaIoTmpDir() );
     }
 
     public InProcessServerBuilder( File workingDir )

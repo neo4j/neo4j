@@ -49,7 +49,7 @@ public class Neo4jRule implements TestRule, TestServerBuilder
     private ServerControls controls;
     private PrintStream dumpLogsOnFailureTarget;
 
-    public Neo4jRule( TestServerBuilder builder )
+    protected Neo4jRule( TestServerBuilder builder )
     {
         this.builder = builder;
     }
