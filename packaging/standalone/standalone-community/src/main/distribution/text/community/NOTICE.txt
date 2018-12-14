@@ -93,7 +93,6 @@ Apache Software License, Version 2.0
   neo4j-driver
   Netty/All-in-One
   oauth-sign
-  opencsv
   openCypher AST for the Cypher Query Language
   openCypher Expressions
   openCypher Front End
