@@ -35,7 +35,8 @@ import java.util.stream.Collectors;
 
 import org.neo4j.values.AnyValue;
 
-import static org.hamcrest.Matchers.empty;
+import static java.lang.Character.isAlphabetic;
+import static java.lang.Character.isDigit;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -185,38 +186,37 @@ public class RandomValuesTest
         checkDistribution( randomValues::nextDoubleValue );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void nextNumberValue()
     {
         HashSet<Class<? extends NumberValue>> seen = new HashSet<>( NUMBER_TYPES );
 
-        for ( int i = 0; i < ITERATIONS; i++ )
+        while ( !seen.isEmpty() )
         {
             NumberValue numberValue = randomValues.nextNumberValue();
             assertThat( NUMBER_TYPES, hasItem( numberValue.getClass() ) );
             seen.remove( numberValue.getClass() );
         }
-        assertThat( seen, empty() );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void nextAlphaNumericString()
     {
         Set<Integer> seenDigits = "ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvxyz0123456789".chars().boxed()
                 .collect( Collectors.toSet() );
-        for ( int i = 0; i < ITERATIONS; i++ )
+        while ( !seenDigits.isEmpty() )
         {
-            TextValue textValue = randomValues.nextAlphaNumericTextValue( 10, 20 );
-            String asString = textValue.stringValue();
-            for ( int j = 0; j < asString.length(); j++ )
             {
-                int ch = asString.charAt( j );
-                assertTrue( "Not a character nor letter: " + ch,
-                        Character.isAlphabetic( ch ) || Character.isDigit( ch ) );
-                seenDigits.remove( ch );
+                TextValue textValue = randomValues.nextAlphaNumericTextValue( 10, 20 );
+                String asString = textValue.stringValue();
+                for ( int j = 0; j < asString.length(); j++ )
+                {
+                    int ch = asString.charAt( j );
+                    assertTrue( "Not a character nor letter: " + ch, isAlphabetic( ch ) || isDigit( ch ) );
+                    seenDigits.remove( ch );
+                }
             }
         }
-        assertThat( seenDigits, empty() );
     }
 
     @Test
@@ -245,11 +245,11 @@ public class RandomValuesTest
         }
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void nextArray()
     {
         HashSet<Class<? extends AnyValue>> seen = new HashSet<>( TYPES );
-        for ( int i = 0; i < ITERATIONS; i++ )
+        while ( !seen.isEmpty() )
         {
             ArrayValue arrayValue = randomValues.nextArray();
             assertThat( arrayValue.length(), greaterThanOrEqualTo( 1 ) );
@@ -257,28 +257,24 @@ public class RandomValuesTest
             assertKnownType( value.getClass(), TYPES );
             markSeen( value.getClass(), seen );
         }
-
-        assertThat( seen, empty() );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void nextValue()
     {
         HashSet<Class<? extends AnyValue>> all = new HashSet<>( TYPES );
         all.add( ArrayValue.class );
         HashSet<Class<? extends AnyValue>> seen = new HashSet<>( all );
 
-        for ( int i = 0; i < ITERATIONS; i++ )
+        while ( !seen.isEmpty() )
         {
             Value value = randomValues.nextValue();
             assertKnownType( value.getClass(), all );
             markSeen( value.getClass(), seen );
         }
-
-        assertThat( seen, empty() );
     }
 
-    @Test
+    @Test( timeout = 10_000 )
     public void nextValueOfTypes()
     {
         ValueType[] allTypes = ValueType.values();
@@ -288,13 +284,12 @@ public class RandomValuesTest
         {
             seen.add( type.valueClass );
         }
-        for ( int i = 0; i < ITERATIONS; i++ )
+        while ( !seen.isEmpty() )
         {
             Value value = randomValues.nextValueOfTypes( including );
             assertValueAmongTypes( including, value );
             markSeen( value.getClass(), seen );
         }
-        assertThat( seen, empty() );
     }
 
     @Test
