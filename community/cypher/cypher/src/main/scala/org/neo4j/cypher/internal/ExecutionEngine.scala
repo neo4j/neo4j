@@ -199,7 +199,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
     }
   }
 
-  private def supplier[T](t: T): Supplier[T] =
+  private def supplier[T](t: => T): Supplier[T] =
     new Supplier[T] {
       override def get(): T = t
     }

@@ -183,6 +183,10 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
         case CypherExecutionMode.normal => NormalMode
       }
       val taskCloser = new TaskCloser
+      val queryContext = getQueryContext(transactionalContext)
+      taskCloser.addTask(queryContext.transactionalContext.close)
+      taskCloser.addTask(queryContext.resources.close)
+
       runSafely {
 
         val internalExecutionResult =
@@ -196,10 +200,6 @@ case class CypherCurrentCompiler[CONTEXT <: RuntimeContext](planner: CypherPlann
                                    planDescriptionBuilder.explain(),
                                    queryType, allNotifications)
           } else {
-
-            val queryContext = getQueryContext(transactionalContext)
-            taskCloser.addTask(queryContext.transactionalContext.close)
-            taskCloser.addTask(queryContext.resources.close)
 
             val doProfile = innerExecutionMode == ProfileMode
             val runtimeResult = executionPlan.run(queryContext, doProfile, params)
