@@ -32,9 +32,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   }
 
   test("noReturnColumns") {
-    expectError(
+    expectSyntaxError(
       "match (s) where id(s) = 0 return",
-      "Unexpected end of input: expected whitespace, DISTINCT, GRAPHS, SOURCE GRAPH [AS <name>], TARGET GRAPH [AS <name>], GRAPH AT <graph-url> [AS <name>], GRAPH OF <pattern> [AS <name>], GRAPH, GRAPH <graph-ref> [AS <name>], >>, '*' or an expression (line 1, column 33 (offset: 32))"
+      "Unexpected end of input: expected",
+      32
     )
   }
 
@@ -125,10 +126,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   test("badMatch5") {
     expectSyntaxError(
       "match (p) where id(p) = 2 match p[:likes]->dude return dude.name",
-      "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
-      "a relationship pattern, ',', USING, WHERE, LOAD CSV, FROM, INTO, START, MATCH, UNWIND, MERGE, " +
-      "CREATE GRAPH >>, CREATE >> GRAPH, CREATE GRAPH, CREATE, SET, DELETE GRAPHS, DELETE, REMOVE, FOREACH, WITH, " +
-      "CALL, PERSIST, RELOCATE, RETURN, SNAPSHOT, UNION, ';' or end of input (line 1, column 34 (offset: 33))",
+      "Invalid input '[': expected",
       33
     )
   }

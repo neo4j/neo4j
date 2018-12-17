@@ -149,28 +149,6 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
       }
   }
 
-  test("graph return items in RETURN are protected") {
-    val original =
-      """FROM GRAPH AT '/test/graph2' AS myGraph
-        |MATCH (n:Person)
-        |RETURN n.name AS name GRAPHS myGraph
-      """.stripMargin
-
-    assertRewritten(original, original, List.empty, SemanticFeature.MultipleGraphs)
-  }
-
-  test("graph return items in WITH are protected") {
-    val original =
-      """FROM GRAPH AT '/test/graph2' AS myGraph
-        |WITH 1 AS a GRAPHS myGraph
-        |MATCH (n:Person)
-        |WITH n GRAPHS GRAPH AT 'foo' AS fooG >> myGraph AS barG
-        |RETURN n.name AS name GRAPHS fooG, barG
-      """.stripMargin
-
-    assertRewritten(original, original, List.empty, SemanticFeature.MultipleGraphs)
-  }
-
   val astRewriter = new ASTRewriter(RewriterStepSequencer.newValidating, Never, getDegreeRewriting = true)
 
   private def assertRewritten(from: String, to: String, semanticTableExpressions: List[Expression], features: SemanticFeature*): Unit = {
@@ -189,7 +167,7 @@ class NamespacerTest extends CypherFunSuite with AstConstructionTestSupport with
   private def parseAndRewrite(queryText: String, features: SemanticFeature*): Statement = {
     val parsedAst = parser.parse(queryText)
     val mkException = new SyntaxExceptionCreator(queryText, Some(pos))
-    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeGraphReturnItems, normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
+    val cleanedAst = parsedAst.endoRewrite(inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException)))
     val (rewrittenAst, _, _) = astRewriter.rewrite(queryText, cleanedAst, cleanedAst.semanticState(features: _*))
     rewrittenAst
   }
