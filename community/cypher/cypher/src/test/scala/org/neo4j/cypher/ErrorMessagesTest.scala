@@ -255,6 +255,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
     )
   }
 
+  test("invalid query does not suggest multiple graph keywords because they dont exist") {
+    expectSyntaxErrorWithout(
+      "RETURN 1 AS toUpper('name')",
+      Set("RELOCATE", "GRAPH", "FROM", "PERSIST"),
+      19)
+  }
+
   private def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
@@ -263,6 +270,14 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
   private def expectSyntaxError(query: String, expectedError: String, expectedOffset: Int) {
     val error = intercept[SyntaxException](executeQuery(query))
     assertThat(error.getMessage(), containsString(expectedError))
+    assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
+  }
+
+  private def expectSyntaxErrorWithout(query: String, doesNotContain: Set[String], expectedOffset: Int) {
+    val error = intercept[SyntaxException](executeQuery(query))
+    doesNotContain.foreach { part =>
+      assertThat(error.getMessage(), org.hamcrest.CoreMatchers.not(containsString(part)))
+    }
     assertThat(error.offset, equalTo(Some(expectedOffset): Option[Int]))
   }
 
