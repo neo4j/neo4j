@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal
 
 import java.time.Clock
+import java.util.function.Supplier
 
 import org.neo4j.cypher.internal.QueryCache.ParameterTypeMap
 import org.neo4j.cypher.internal.compatibility.CypherCacheMonitor
@@ -97,7 +98,7 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
         checkParameters(executableQuery.paramNames, params, executableQuery.extractedParams)
       }
       val combinedParams = params.updatedWith(executableQuery.extractedParams)
-      context.executingQuery().compilationCompleted(executableQuery.compilerInfo)
+      context.executingQuery().compilationCompleted(executableQuery.compilerInfo, supplier(executableQuery.planDescription()))
       executableQuery.execute(context, preParsedQuery, combinedParams)
 
     } catch {
@@ -197,6 +198,11 @@ class ExecutionEngine(val queryService: GraphDatabaseQueryService,
       }
     }
   }
+
+  private def supplier[T](t: => T): Supplier[T] =
+    new Supplier[T] {
+      override def get(): T = t
+    }
 }
 
 object ExecutionEngine {

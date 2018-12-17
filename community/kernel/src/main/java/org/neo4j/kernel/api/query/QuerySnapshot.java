@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.neo4j.graphdb.ExecutionPlanDescription;
 import org.neo4j.kernel.impl.locking.ActiveLock;
 import org.neo4j.kernel.impl.query.clientconnection.ClientConnectionInfo;
 import org.neo4j.values.virtual.MapValue;
@@ -32,10 +33,10 @@ public class QuerySnapshot
 {
     private final ExecutingQuery query;
     private final CompilerInfo compilerInfo;
-    private final long compilationTimeMillis;
-    private final long elapsedTimeMillis;
-    private final long cpuTimeMillis;
-    private final long waitTimeMillis;
+    private final long compilationTimeMicros;
+    private final long elapsedTimeMicros;
+    private final long cpuTimeMicros;
+    private final long waitTimeMicros;
     private final String status;
     private final Map<String,Object> resourceInfo;
     private final List<ActiveLock> waitingLocks;
@@ -43,17 +44,17 @@ public class QuerySnapshot
     private final long allocatedBytes;
     private final PageCounterValues page;
 
-    QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMillis,
-                   long elapsedTimeMillis, long cpuTimeMillis, long waitTimeMillis, String status,
+    QuerySnapshot( ExecutingQuery query, CompilerInfo compilerInfo, PageCounterValues page, long compilationTimeMicros,
+                   long elapsedTimeMicros, long cpuTimeMicros, long waitTimeMicros, String status,
                    Map<String,Object> resourceInfo, List<ActiveLock> waitingLocks, long activeLockCount, long allocatedBytes )
     {
         this.query = query;
         this.compilerInfo = compilerInfo;
         this.page = page;
-        this.compilationTimeMillis = compilationTimeMillis;
-        this.elapsedTimeMillis = elapsedTimeMillis;
-        this.cpuTimeMillis = cpuTimeMillis;
-        this.waitTimeMillis = waitTimeMillis;
+        this.compilationTimeMicros = compilationTimeMicros;
+        this.elapsedTimeMicros = elapsedTimeMicros;
+        this.cpuTimeMicros = cpuTimeMicros;
+        this.waitTimeMicros = waitTimeMicros;
         this.status = status;
         this.resourceInfo = resourceInfo;
         this.waitingLocks = waitingLocks;
@@ -69,6 +70,11 @@ public class QuerySnapshot
     public String queryText()
     {
         return query.queryText();
+    }
+
+    public ExecutionPlanDescription queryPlan()
+    {
+        return query.planDescription();
     }
 
     public MapValue queryParameters()
@@ -135,42 +141,42 @@ public class QuerySnapshot
     /**
      * The time spent planning the query, before the query actually starts executing.
      *
-     * @return the time in milliseconds spent planning the query.
+     * @return the time in microseconds spent planning the query.
      */
-    public long compilationTimeMillis()
+    public long compilationTimeMicros()
     {
-        return compilationTimeMillis;
+        return compilationTimeMicros;
     }
 
     /**
      * The time that has been spent waiting on locks or other queries, as opposed to actively executing this query.
      *
-     * @return the time in milliseconds spent waiting on locks.
+     * @return the time in microseconds spent waiting on locks.
      */
-    public long waitTimeMillis()
+    public long waitTimeMicros()
     {
-        return waitTimeMillis;
+        return waitTimeMicros;
     }
 
     /**
      * The time (wall time) that has elapsed since the execution of this query started.
      *
-     * @return the time in milliseconds since execution of this query started.
+     * @return the time in microseconds since execution of this query started.
      */
-    public long elapsedTimeMillis()
+    public long elapsedTimeMicros()
     {
-        return elapsedTimeMillis;
+        return elapsedTimeMicros;
     }
 
     /**
      * Time that the CPU has actively spent working on things related to this query.
      *
-     * @return the time in milliseconds that the CPU has spent on this query, or {@code null} if the cpu time could not
+     * @return the time in microseconds that the CPU has spent on this query, or {@code null} if the cpu time could not
      * be measured.
      */
-    public Long cpuTimeMillis()
+    public Long cpuTimeMicros()
     {
-        return cpuTimeMillis < 0 ? null : cpuTimeMillis;
+        return cpuTimeMicros < 0 ? null : cpuTimeMicros;
     }
 
     /**
@@ -183,12 +189,12 @@ public class QuerySnapshot
      * actually waiting on the lock rather than doing active work). In most cases such "lock bookkeeping time" is going
      * to be dwarfed by the idle time.
      *
-     * @return the time in milliseconds that this query was de-scheduled, or {@code null} if the cpu time could not be
+     * @return the time in microseconds that this query was de-scheduled, or {@code null} if the cpu time could not be
      * measured.
      */
-    public Long idleTimeMillis()
+    public Long idleTimeMicros()
     {
-        return cpuTimeMillis < 0 ? null : (elapsedTimeMillis - cpuTimeMillis - waitTimeMillis);
+        return cpuTimeMicros < 0 ? null : (elapsedTimeMicros - cpuTimeMicros - waitTimeMicros);
     }
 
     /**

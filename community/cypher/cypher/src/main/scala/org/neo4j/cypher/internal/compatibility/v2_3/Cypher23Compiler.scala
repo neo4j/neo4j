@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.{InfoLogger, ExplainMode => Expla
 import org.neo4j.cypher.internal.frontend.v2_3.InputPosition
 import org.neo4j.cypher.internal.javacompat.ExecutionResult
 import org.neo4j.cypher.internal.runtime.interpreted.{TransactionalContextWrapper, ValueConversion}
+import org.neo4j.cypher.internal.runtime.planDescription.InternalPlanDescription
 import org.neo4j.cypher.internal.spi.v2_3.{TransactionBoundGraphStatistics, TransactionBoundPlanContext, TransactionBoundQueryContext}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.graphdb.{Node, Notification, Relationship, Result}
@@ -76,7 +77,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
     private def queryContext(transactionalContext: TransactionalContextWrapper): QueryContext =
       new ExceptionTranslatingQueryContext(new TransactionBoundQueryContext(transactionalContext))
 
-    def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
+    private def run(transactionalContext: TransactionalContext, executionMode: CypherExecutionMode, params: Map[String, Any]): ExecutionResult = {
       val innerExecutionMode = executionMode match {
         case CypherExecutionMode.explain => ExplainModev2_3
         case CypherExecutionMode.profile => ProfileModev2_3
@@ -105,7 +106,7 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
       }
     }
 
-    def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = {
+    override def reusabilityState(lastCommittedTxId: () => Long, ctx: TransactionalContext): ReusabilityState = {
       val stale = inner.isStale(lastCommittedTxId, TransactionBoundGraphStatistics(ctx))
       if (stale)
         NeedsReplan(0)
@@ -125,6 +126,9 @@ trait Cypher23Compiler extends CachingPlanner[PreparedQuery] with Compiler {
 
       run(transactionalContext, preParsedQuery.executionMode, map.toMap)
     }
+
+    override def planDescription(): InternalPlanDescription =
+      InternalPlanDescription.error("Plan description is not available")
   }
 
   override def compile(preParsedQuery: PreParsedQuery,
