@@ -24,8 +24,7 @@ catch
 {
 };
 
-$verbose = "$args" -match "-v|-verbose"
-$actualArgs = $args -notmatch "-v|-verbose"
-
 Import-Module "$PSScriptRoot\Neo4j-Management.psd1"
-Exit (Invoke-Neo4j -Verbose:$verbose -Command ($actualArgs -join ' '))
+$Arguments = Get-Args $args
+Exit (Invoke-Neo4j -Verbose:$Arguments.Verbose -Command $Arguments.ArgsAsStr)
+

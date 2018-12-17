@@ -16,8 +16,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-$verbose = "$args" -match "-v|-verbose"
-$actualArgs = $args -notmatch "-v|-verbose"
-
 Import-Module "$PSScriptRoot\Neo4j-Management.psd1"
-Exit (Invoke-Neo4jAdmin -Verbose:$verbose -CommandArgs $actualArgs)
+$Arguments = Get-Args $args
+Exit (Invoke-Neo4jAdmin -Verbose:$Arguments.Verbose -CommandArgs $Arguments.Args)

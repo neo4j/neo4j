@@ -42,7 +42,8 @@ FunctionsToExport = @(
 'Invoke-Neo4jAdmin',
 'Invoke-Neo4jShell',
 'Invoke-Neo4jBackup',
-'Invoke-Neo4jImport'
+'Invoke-Neo4jImport',
+'Get-Args'
 )
 
 CmdletsToExport = ''
