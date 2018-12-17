@@ -6,10 +6,13 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Auto Common Libraries
   AutoService
+  AutoValue Annotations
   error-prone annotations
   FindBugs-jsr305
   Guava: Google Core Libraries for Java
   J2ObjC Annotations
+  java-diff-utils
+  Truth Core
 ------------------------------------------------------------------------------
 
                                  Apache License

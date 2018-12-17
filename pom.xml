@@ -671,6 +671,7 @@
           <version>3.0.0-M2</version>
           <configuration>
             <rules>
+              <dependencyConvergence/>
               <evaluateBeanshell>
                 <message>Maven module has to be in a "groupId" beginning with "org.neo4j"</message>
                 <condition>{String s = "${project.groupId}"; s.startsWith("org.neo4j");}</condition>
@@ -1273,6 +1274,11 @@
         <version>3.6.1</version>
       </dependency>
       <dependency>
+        <groupId>commons-logging</groupId>
+        <artifactId>commons-logging</artifactId>
+        <version>1.2</version>
+      </dependency>
+      <dependency>
         <groupId>commons-configuration</groupId>
         <artifactId>commons-configuration</artifactId>
         <version>1.10</version>
@@ -1280,8 +1286,12 @@
         <scope>compile</scope>
         <exclusions>
           <exclusion>
-            <artifactId>commons-digester</artifactId>
             <groupId>commons-digester</groupId>
+            <artifactId>commons-digester</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>commons-logging</groupId>
+            <artifactId>commons-logging</artifactId>
           </exclusion>
         </exclusions>
       </dependency>
@@ -1486,6 +1496,55 @@
         <artifactId>compile-testing</artifactId>
         <version>0.15</version>
         <scope>test</scope>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.truth</groupId>
+            <artifactId>truth</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.auto</groupId>
+            <artifactId>auto-common</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto.service</groupId>
+        <artifactId>auto-service</artifactId>
+        <version>1.0-rc4</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.auto</groupId>
+            <artifactId>auto-common</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+        </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.google.auto</groupId>
+        <artifactId>auto-common</artifactId>
+        <version>0.10</version>
+      </dependency>
+      <dependency>
+        <groupId>com.google.truth</groupId>
+        <artifactId>truth</artifactId>
+        <version>0.42</version>
+        <exclusions>
+          <exclusion>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.checkerframework</groupId>
+            <artifactId>checker-qual</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>com.google.errorprone</groupId>
+            <artifactId>error_prone_annotations</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
 
       <dependency>
