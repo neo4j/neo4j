@@ -20,12 +20,14 @@
 package org.neo4j.bolt.runtime;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.hamcrest.CoreMatchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -43,15 +45,18 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
-import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.isA;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -159,7 +164,7 @@ public class DefaultBoltConnectionTest
 
         connection.enqueue( job );
 
-        verify( queueMonitor ).enqueued( connection, job );
+        verify( queueMonitor ).enqueued( eq(connection), any() );
     }
 
     @Test
@@ -195,21 +200,19 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( queueMonitor ).drained( same( connection ), anyCollection() );
-        assertTrue( drainedJobs.contains( job ) );
+        assertThat( drainedJobs, hasSize( 1 ) );
     }
 
     @Test
     public void processNextBatchShouldDrainMaxBatchSizeItemsOnEachCall()
     {
         List<Job> drainedJobs = new ArrayList<>();
-        List<Job> pushedJobs = new ArrayList<>();
         BoltConnection connection = newConnection( 10 );
         doAnswer( inv -> drainedJobs.addAll( inv.getArgument( 1 ) ) ).when( queueMonitor ).drained( same( connection ), anyCollection() );
 
         for ( int i = 0; i < 15; i++ )
         {
             Job newJob = Jobs.noop();
-            pushedJobs.add( newJob );
             connection.enqueue( newJob );
         }
 
@@ -217,14 +220,14 @@ public class DefaultBoltConnectionTest
 
         verify( queueMonitor ).drained( same( connection ), anyCollection() );
         assertEquals( 10, drainedJobs.size() );
-        assertTrue( drainedJobs.containsAll( pushedJobs.subList( 0, 10 ) ) );
+        assertThat( drainedJobs, hasSize( 10 ) );
 
         drainedJobs.clear();
         connection.processNextBatch();
 
         verify( queueMonitor, times( 2 ) ).drained( same( connection ), anyCollection() );
         assertEquals( 5, drainedJobs.size() );
-        assertTrue( drainedJobs.containsAll( pushedJobs.subList( 10, 15 ) ) );
+        assertThat( drainedJobs, hasSize( 5 ) );
     }
 
     @Test
@@ -245,7 +248,7 @@ public class DefaultBoltConnectionTest
         connection.stop();
 
         verify( stateMachine ).markForTermination();
-        verify( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
+        verify( queueMonitor ).enqueued( eq( connection ), ArgumentMatchers.any( Job.class ) );
     }
 
     @Test
@@ -257,7 +260,7 @@ public class DefaultBoltConnectionTest
 
         connection.processNextBatch();
 
-        verify( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
+        verify( queueMonitor ).enqueued( eq( connection ), ArgumentMatchers.any( Job.class ) );
         verify( stateMachine ).markForTermination();
         verify( stateMachine ).close();
     }
@@ -271,7 +274,7 @@ public class DefaultBoltConnectionTest
         {
             connection.handleSchedulingError( new RejectedExecutionException() );
             return null;
-        } ).when( queueMonitor ).enqueued( ArgumentMatchers.eq( connection ), ArgumentMatchers.any( Job.class ) );
+        } ).when( queueMonitor ).enqueued( eq( connection ), ArgumentMatchers.any( Job.class ) );
 
         connection.stop();
 
@@ -306,7 +309,8 @@ public class DefaultBoltConnectionTest
         connection.processNextBatch();
 
         verify( stateMachine ).close();
-        logProvider.assertNone( AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).warn( any( String.class ) ) );
+        logProvider.assertNone(
+                AssertableLogProvider.inLog( containsString( BoltServer.class.getPackage().getName() ) ).warn( CoreMatchers.any( String.class ) ) );
     }
 
     @Test
@@ -346,7 +350,7 @@ public class DefaultBoltConnectionTest
     }
 
     @Test
-    public void processNextBatchShouldThrowAssertionErrorIfStatementOpen() throws Exception
+    public void processNextBatchShouldThrowAssertionErrorIfStatementOpen()
     {
         BoltConnection connection = newConnection( 1 );
         connection.enqueue( Jobs.noop() );
@@ -404,7 +408,8 @@ public class DefaultBoltConnectionTest
 
     private DefaultBoltConnection newConnection( int maxBatchSize )
     {
-        return new DefaultBoltConnection( boltChannel, mock( PackOutput.class ), stateMachine, logService, connectionListener, queueMonitor, maxBatchSize );
+        return new DefaultBoltConnection( boltChannel, mock( PackOutput.class ), stateMachine, logService, connectionListener, queueMonitor, maxBatchSize,
+                mock( BoltConnectionMetricsMonitor.class ), Clock.systemUTC() );
     }
 
 }

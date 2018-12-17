@@ -30,6 +30,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.internal.LogService;
 
 import static java.util.Objects.requireNonNull;
+import static org.neo4j.bolt.runtime.DefaultBoltConnection.DEFAULT_MAX_BATCH_SIZE;
 
 public class DefaultBoltConnectionFactory implements BoltConnectionFactory
 {
@@ -61,8 +62,8 @@ public class DefaultBoltConnectionFactory implements BoltConnectionFactory
         BoltConnectionReadLimiter readLimiter = createReadLimiter( config, logService );
         BoltConnectionQueueMonitor connectionQueueMonitor = new BoltConnectionQueueMonitorAggregate( scheduler, readLimiter );
         ChunkedOutput chunkedOutput = new ChunkedOutput( channel.rawChannel(), throttleGroup );
-        BoltConnection connection = new MetricsReportingBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
-                connectionQueueMonitor, metricsMonitor, clock );
+        BoltConnection connection = new DefaultBoltConnection( channel, chunkedOutput, stateMachine, logService, scheduler,
+                connectionQueueMonitor, DEFAULT_MAX_BATCH_SIZE, metricsMonitor, clock );
         connection.start();
 
         return connection;

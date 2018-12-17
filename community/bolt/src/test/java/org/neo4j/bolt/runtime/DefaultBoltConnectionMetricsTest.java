@@ -19,7 +19,7 @@
  */
 package org.neo4j.bolt.runtime;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import org.neo4j.bolt.BoltChannel;
 import org.neo4j.bolt.testing.BoltTestUtil;
@@ -31,12 +31,13 @@ import org.neo4j.time.Clocks;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.neo4j.bolt.runtime.DefaultBoltConnection.DEFAULT_MAX_BATCH_SIZE;
 
-public class MetricsReportingBoltConnectionTest
+class DefaultBoltConnectionMetricsTest
 {
 
     @Test
-    public void shouldNotifyConnectionOpened()
+    void notifyConnectionOpened()
     {
         BoltConnectionMetricsMonitor metricsMonitor = mock( BoltConnectionMetricsMonitor.class );
         BoltConnection connection = newConnection( metricsMonitor );
@@ -47,7 +48,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyConnectionClosed()
+    void notifyConnectionClosed()
     {
         BoltConnectionMetricsMonitor metricsMonitor = mock( BoltConnectionMetricsMonitor.class );
         BoltConnection connection = newConnection( metricsMonitor );
@@ -60,7 +61,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyConnectionClosedOnBoltConnectionAuthFatality()
+    void notifyConnectionClosedOnBoltConnectionAuthFatality()
     {
         verifyConnectionClosed( machine ->
         {
@@ -69,7 +70,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyConnectionClosedOnBoltProtocolBreachFatality()
+    void notifyConnectionClosedOnBoltProtocolBreachFatality()
     {
         verifyConnectionClosed( machine ->
         {
@@ -78,7 +79,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyConnectionClosedOnUncheckedException()
+    void notifyConnectionClosedOnUncheckedException()
     {
         verifyConnectionClosed( machine ->
         {
@@ -87,7 +88,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyMessageReceived()
+    void notifyMessageReceived()
     {
         BoltConnectionMetricsMonitor metricsMonitor = mock( BoltConnectionMetricsMonitor.class );
         BoltConnection connection = newConnection( metricsMonitor );
@@ -102,7 +103,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyMessageProcessingStartedAndCompleted()
+    void notifyMessageProcessingStartedAndCompleted()
     {
         BoltConnectionMetricsMonitor metricsMonitor = mock( BoltConnectionMetricsMonitor.class );
         BoltConnection connection = newConnection( metricsMonitor );
@@ -119,7 +120,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyConnectionActivatedAndDeactivated()
+    void notifyConnectionActivatedAndDeactivated()
     {
         BoltConnectionMetricsMonitor metricsMonitor = mock( BoltConnectionMetricsMonitor.class );
         BoltConnection connection = newConnection( metricsMonitor );
@@ -136,7 +137,7 @@ public class MetricsReportingBoltConnectionTest
     }
 
     @Test
-    public void shouldNotifyMessageProcessingFailed()
+    void notifyMessageProcessingFailed()
     {
         BoltConnectionMetricsMonitor metricsMonitor = mock( BoltConnectionMetricsMonitor.class );
         BoltConnection connection = newConnection( metricsMonitor );
@@ -166,7 +167,8 @@ public class MetricsReportingBoltConnectionTest
     private static BoltConnection newConnection( BoltConnectionMetricsMonitor metricsMonitor )
     {
         BoltChannel channel = BoltTestUtil.newTestBoltChannel();
-        return new MetricsReportingBoltConnection( channel, mock( PackOutput.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
-                mock( BoltConnectionLifetimeListener.class ), mock( BoltConnectionQueueMonitor.class ), metricsMonitor, Clocks.systemClock() );
+        return new DefaultBoltConnection( channel, mock( PackOutput.class ), mock( BoltStateMachine.class ), NullLogService.getInstance(),
+                mock( BoltConnectionLifetimeListener.class ), mock( BoltConnectionQueueMonitor.class ), DEFAULT_MAX_BATCH_SIZE, metricsMonitor,
+                Clocks.systemClock() );
     }
 }

@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.net.SocketAddress;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,7 +43,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class DefaultBoltConnection implements BoltConnection
 {
-    protected static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltServer.class, "max_batch_size", 100 );
+    static final int DEFAULT_MAX_BATCH_SIZE = FeatureToggles.getInteger( BoltServer.class, "max_batch_size", 100 );
 
     private final String id;
 
@@ -62,16 +63,11 @@ public class DefaultBoltConnection implements BoltConnection
     private final AtomicBoolean shouldClose = new AtomicBoolean();
     private final AtomicBoolean closed = new AtomicBoolean();
 
-    public DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
-            BoltConnectionLifetimeListener listener,
-            BoltConnectionQueueMonitor queueMonitor )
-    {
-        this( channel, output, machine, logService, listener, queueMonitor, DEFAULT_MAX_BATCH_SIZE );
-    }
+    private final BoltConnectionMetricsMonitor metricsMonitor;
+    private final Clock clock;
 
-    public DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService,
-            BoltConnectionLifetimeListener listener,
-            BoltConnectionQueueMonitor queueMonitor, int maxBatchSize )
+    DefaultBoltConnection( BoltChannel channel, PackOutput output, BoltStateMachine machine, LogService logService, BoltConnectionLifetimeListener listener,
+            BoltConnectionQueueMonitor queueMonitor, int maxBatchSize, BoltConnectionMetricsMonitor metricsMonitor, Clock clock )
     {
         this.id = channel.id();
         this.channel = channel;
@@ -83,6 +79,8 @@ public class DefaultBoltConnection implements BoltConnection
         this.userLog = logService.getUserLog( getClass() );
         this.maxBatchSize = maxBatchSize;
         this.batch = new ArrayList<>( maxBatchSize );
+        this.metricsMonitor = metricsMonitor;
+        this.clock = clock;
     }
 
     @Override
@@ -125,12 +123,29 @@ public class DefaultBoltConnection implements BoltConnection
     public void start()
     {
         notifyCreated();
+        metricsMonitor.connectionOpened();
     }
 
     @Override
     public void enqueue( Job job )
     {
-        enqueueInternal( job );
+        metricsMonitor.messageReceived();
+        long queuedAt = clock.millis();
+        enqueueInternal( machine ->
+        {
+            long queueTime = clock.millis() - queuedAt;
+            metricsMonitor.messageProcessingStarted( queueTime );
+            try
+            {
+                job.perform( machine );
+                metricsMonitor.messageProcessingCompleted( clock.millis() - queuedAt - queueTime );
+            }
+            catch ( Throwable t )
+            {
+                metricsMonitor.messageProcessingFailed();
+                throw t;
+            }
+        } );
     }
 
     @Override
@@ -139,7 +154,28 @@ public class DefaultBoltConnection implements BoltConnection
         return processNextBatch( maxBatchSize, false );
     }
 
-    protected boolean processNextBatch( int batchCount, boolean exitIfNoJobsAvailable )
+    private boolean processNextBatch( int batchCount, boolean exitIfNoJobsAvailable )
+    {
+        metricsMonitor.connectionActivated();
+
+        try
+        {
+            boolean continueProcessing = processNextBatchInternal( batchCount, exitIfNoJobsAvailable );
+
+            if ( !continueProcessing )
+            {
+                metricsMonitor.connectionClosed();
+            }
+
+            return continueProcessing;
+        }
+        finally
+        {
+            metricsMonitor.connectionWaiting();
+        }
+    }
+
+    private boolean processNextBatchInternal( int batchCount, boolean exitIfNoJobsAvailable )
     {
         try
         {
