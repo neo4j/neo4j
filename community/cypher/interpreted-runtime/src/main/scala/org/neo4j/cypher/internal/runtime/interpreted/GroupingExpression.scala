@@ -25,7 +25,8 @@ import org.neo4j.values.AnyValue
 trait GroupingExpression{
   type T <: AnyValue
   def registerOwningPipe(pipe: Pipe): Unit
-  def groupingKey(context: ExecutionContext, state: QueryState): T
+  def computeGroupingKey(context: ExecutionContext, state: QueryState): T
+  def getGroupingKey(context: ExecutionContext): T
   def isEmpty: Boolean
   def project(context: ExecutionContext,  groupingKey: T): Unit
 }

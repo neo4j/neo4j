@@ -85,6 +85,10 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void expression( Expression expression )
     {
+        if ( expression == Expression.EMPTY)
+        {
+            return;
+        }
         indent();
         expression.accept( this );
         target.append( ";\n" );
