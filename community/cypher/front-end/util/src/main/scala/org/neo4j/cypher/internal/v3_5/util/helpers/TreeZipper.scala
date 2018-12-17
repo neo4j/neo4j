@@ -36,15 +36,15 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
   case class TreeContext(left: List[E], parent: Location, right: List[E]) extends Context
 
   object Children {
-    def unapply(v: Any) = implicitly[ClassTag[E]].unapply(v).map(_.children)
+    def unapply(v: Any): Option[Seq[E]] = implicitly[ClassTag[E]].unapply(v).map(_.children)
   }
 
   final case class Location(elem: E, context: Context) {
     self =>
 
-    def isRoot = context == Top
+    def isRoot: Boolean = context == Top
 
-    def isLeaf = self match {
+    def isLeaf: Boolean = self match {
       case Location(Children(Nil), _) => true
       case _ => false
     }
@@ -58,7 +58,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         Location(parentElem.updateChildren(left.reverse ++ List(elem) ++ right), parentContext).root
     }
 
-    def isLeftMost = context match {
+    def isLeftMost: Boolean = context match {
       case TreeContext(Nil, _, _) => true
       case Top => true
       case _ => false
@@ -75,6 +75,14 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         throw new IllegalStateException("Not in tree context when going left")
     }
 
+    def leftList: List[E] = context match {
+      case Top =>
+        Nil
+
+      case TreeContext(left, _, _) =>
+        left
+    }
+
     def leftMost: Location = context match {
       case TreeContext(Nil, _, _) =>
         self
@@ -86,7 +94,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         throw new IllegalStateException(s"Cannot navigate from $otherContext")
     }
 
-    def isRightMost = context match {
+    def isRightMost: Boolean = context match {
       case TreeContext(_, _, Nil) => true
       case Top => true
       case _ => false
@@ -100,7 +108,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
         Some(Location(head, TreeContext(elem +: left, parent, tail)))
 
       case _ =>
-        throw new IllegalStateException("Not in tree context when going left")
+        throw new IllegalStateException("Not in tree context when going right")
     }
 
     def rightMost: Location = context match {
@@ -133,6 +141,14 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def replace(newElem: E): Location =
       Location(newElem, context)
 
+    def replaceLeftList(newLeft: List[E]): Location = self match {
+      case Location(_, Top) =>
+        self
+
+      case Location(tree, TreeContext(_, parent, right)) =>
+       Location(tree, TreeContext(newLeft, parent, right))
+    }
+
     def insertLeft(newElem: E): Option[Location] = self match {
       case Location(_, Top) =>
         None
@@ -163,6 +179,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
 
     def isLeftMost = location.map(_.isLeftMost)
     def left = location.flatMap(_.left)
+    def leftList = location.map(_.leftList)
     def leftMost = location.map(_.leftMost)
 
     def isRightMost = location.map(_.isLeftMost)
@@ -173,6 +190,7 @@ abstract class TreeZipper[E <: TreeElem[E] : ClassTag] {
     def up = location.flatMap(_.up)
 
     def replace(replacementElem: E) = location.map(_.replace(replacementElem))
+    def replaceLeftList(replacementList: List[E]) = location.map(_.replaceLeftList(replacementList))
     def insertLeft(newElem: E) = location.flatMap(_.insertLeft(newElem))
     def insertRight(newElem: E) = location.flatMap(_.insertRight(newElem))
     def insertChild(newElem: E) = location.map(_.insertChild(newElem))
