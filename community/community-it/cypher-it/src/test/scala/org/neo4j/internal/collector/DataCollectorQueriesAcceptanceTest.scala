@@ -185,4 +185,115 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
       )
     )
   }
+
+  test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
+    // given
+    execute("CREATE (:User {name: 'BronzeArm'})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("MATCH ({p: 42}), ({name: 'Scroge'}) RETURN 1")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
+      querySection("MATCH ({p1: 42}), ({p0: 'Scrooge'}) RETURN 1")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize unknown tokens inside queries") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
+    execute("MATCH ({p: 42}), ({name: 'Scrooge'}) RETURN 1")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("MATCH (:UNKNOWN0)-[:UNKNOWN1]->(:UNKNOWN2)-[:UNKNOWN3]->(:UNKNOWN4) RETURN 1"),
+      querySection("MATCH ({UNKNOWN0: 42}), ({UNKNOWN1: 'Scrooge'}) RETURN 1")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize variables and return names") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("RETURN 42 AS x")
+    execute("WITH 42 AS x RETURN x")
+    execute("WITH 1 AS k RETURN k + k")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("RETURN 42 AS var0"),
+      querySection("WITH 42 AS var0 RETURN var0"),
+      querySection("WITH 1 AS var0 RETURN var0 + var0")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize parameters") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("RETURN 42 = $user, $name", Map("user" -> "BrassLeg", "name" -> "George"))
+    execute("RETURN 42 = $user, $name", Map("user" -> 2, "name" -> "Glinda"))
+    execute("RETURN 42 = $user, $name", Map("user" -> List(3.1, 3.2), "name" -> "Kim"))
+    execute("RETURN $user, $name, $user + $name", Map("user" -> List(3.1, 3.2), "name" -> "Kim"))
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    println(graph.execute("CALL db.stats.retrieveAllAnonymized('myToken')").resultAsString())
+
+    // then
+    res.toList should beListWithoutOrder(
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "RETURN 42 = $param0, $param1",
+          "invocations" -> beListInOrder(
+            beMapContaining(
+              "params" -> "4ac156c0", // Map("user" -> "BrassLeg", "name" -> "George")
+              "elapsedExecutionTimeInUs" -> ofType[Long],
+              "elapsedCompileTimeInUs" -> ofType[Long]
+            ),
+            beMapContaining(
+              "params" -> "b439d06c" // Map("user" -> 2, "name" -> "Glinda")
+            ),
+            beMapContaining(
+              "params" -> "e5adc9ad" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            )
+          )
+        )
+      ),
+      beMapContaining(
+        "section" -> "QUERIES",
+        "data" -> beMapContaining(
+          "query" -> "RETURN $param0, $param1, $param0 + $param1",
+          "invocations" -> beListInOrder(
+            beMapContaining(
+              "params" -> "e5adc9ad" // Map("user" -> List(3.1, 3.2), "name" -> "Kim")
+            )
+          )
+        )
+      )
+    )
+  }
+
+  private def querySection(queryText: String) =
+    beMapContaining(
+      "section" -> "QUERIES",
+      "data" -> beMapContaining(
+        "query" -> beCypher(queryText)
+      )
+    )
 }

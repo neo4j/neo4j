@@ -52,7 +52,7 @@ object QueriesSection {
   }
 
   def retrieve(querySnapshots: java.util.Iterator[QuerySnapshot],
-               valueMapper: ValueMapper.JavaMapper): Stream[RetrieveResult] = {
+               anonymizer: QueryAnonymizer): Stream[RetrieveResult] = {
     val queries = new mutable.HashMap[QueryKey, QueryData]()
     while (querySnapshots.hasNext) {
       val snapshot = querySnapshots.next()
@@ -68,13 +68,13 @@ object QueriesSection {
     asRetrieveStream(queries.toIterator.map({
       case (queryKey, queryData) =>
         val data = new util.HashMap[String, AnyRef]()
-        data.put("query", queryKey.queryText)
+        data.put("query", anonymizer.queryText(queryKey.queryText))
 
         val estimatedRows = new util.ArrayList[Double]
         data.put("queryExecutionPlan", planToMap(queryKey.plan, estimatedRows))
         data.put("estimatedRows", estimatedRows)
 
-        data.put("invocations", invocations(queryData.invocations, valueMapper))
+        data.put("invocations", invocations(queryData.invocations, anonymizer))
         new RetrieveResult(Sections.QUERIES, data)
     }))
   }
@@ -99,7 +99,7 @@ object QueriesSection {
   }
 
   private def invocations(invocations: ArrayBuffer[QueriesSection.SingleInvocation],
-                          valueMapper: ValueMapper.JavaMapper
+                          anonymizer: QueryAnonymizer
                          ): util.ArrayList[util.Map[String, AnyRef]] = {
     val result = new util.ArrayList[util.Map[String, AnyRef]]()
     for (invocationData <- invocations) {
@@ -107,7 +107,7 @@ object QueriesSection {
         case SingleInvocation(queryParameters, elapsedTimeMicros, compilationTimeMicros) =>
           val data = new util.HashMap[String, AnyRef]()
           if (queryParameters.size() > 0)
-            data.put("params", queryParameters.map(valueMapper))
+            data.put("params", anonymizer.queryParams(queryParameters))
 
           val compileTime = compilationTimeMicros
           val elapsed = elapsedTimeMicros

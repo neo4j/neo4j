@@ -81,6 +81,16 @@ the relevant Commercial Agreement.
             <artifactId>neo4j-kernel</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-parser-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>neo4j-rewriting-3.5</artifactId>
+            <version>${project.version}</version>
+        </dependency>
 
         <!-- neo4j testing -->
 

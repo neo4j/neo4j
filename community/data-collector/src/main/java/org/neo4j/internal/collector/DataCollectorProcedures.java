@@ -27,6 +27,7 @@ import java.util.stream.Stream;
 
 import org.neo4j.internal.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.InvalidArgumentsException;
 import org.neo4j.procedure.Admin;
 import org.neo4j.procedure.Context;
@@ -40,6 +41,9 @@ public class DataCollectorProcedures
 {
     @Context
     public DataCollector dataCollector;
+
+    @Context
+    public KernelTransaction transaction;
 
     @Admin
     @Description( "Retrieve statistical data about the current database. Valid sections are '" +
@@ -58,7 +62,7 @@ public class DataCollectorProcedures
             return TokensSection.retrieve( dataCollector.kernel );
 
         case Sections.QUERIES:
-            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData(), dataCollector.valueMapper );
+            return QueriesSection.retrieve( dataCollector.queryCollector.doGetData(), new PlainText( dataCollector.valueMapper ) );
 
         default:
             throw Sections.unknownSectionException( section );
@@ -77,7 +81,10 @@ public class DataCollectorProcedures
         TokensSection.putTokenCounts( metaData, dataCollector.kernel );
         Stream<RetrieveResult> meta = Stream.of( new RetrieveResult( "META", metaData ) );
 
-        return Stream.concat( meta, GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.IDS ) );
+        return Stream.of( meta,
+                          GraphCountsSection.retrieve( dataCollector.kernel, Anonymizer.IDS ),
+                          QueriesSection.retrieve( dataCollector.queryCollector.doGetData(), new IdAnonymizer( transaction.tokenRead() ) )
+            ).flatMap( x -> x );
     }
 
     @Admin
