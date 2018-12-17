@@ -41,7 +41,7 @@ public class TransactionMetrics extends LifecycleAdapter
 
     @Documented( "The total number of started transactions" )
     public static final String TX_STARTED = name( TRANSACTION_PREFIX, "started" );
-    @Documented( "The highest peak of concurrent transactions ever seen on this machine" )
+    @Documented( "The highest peak of concurrent transactions" )
     public static final String TX_PEAK_CONCURRENT = name( TRANSACTION_PREFIX, "peak_concurrent" );
 
     @Documented( "The number of currently active transactions" )
