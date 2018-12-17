@@ -21,6 +21,7 @@ package org.neo4j.jmx;
 
 @ManagementInterface( name = StoreSize.NAME )
 @Description( "Information about the disk space used by different parts of the Neo4j graph store" )
+@Deprecated
 public interface StoreSize
 {
     String NAME = "Store sizes";

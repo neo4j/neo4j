@@ -30,6 +30,7 @@ import org.neo4j.kernel.internal.GraphDatabaseAPI;
 
 import static java.lang.String.format;
 
+@Deprecated
 public class JmxUtils
 {
     private static final MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
