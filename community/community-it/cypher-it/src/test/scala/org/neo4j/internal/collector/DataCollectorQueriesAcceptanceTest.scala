@@ -191,7 +191,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     execute("CREATE (:User {name: 'BronzeArm'})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
     execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
-    execute("MATCH ({p: 42}), ({name: 'Scroge'}) RETURN 1")
+    execute("MATCH ({p: 42}), ({name: 'Scrooge'}) RETURN 1")
     execute("CALL db.stats.stop('QUERIES')").single
 
     // when
