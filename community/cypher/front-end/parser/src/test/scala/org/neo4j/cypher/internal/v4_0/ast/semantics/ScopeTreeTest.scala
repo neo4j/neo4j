@@ -115,7 +115,7 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("a", 7, 15))(),
+      scope(nodeSymbol("a", 7, 15, 20))(),
       scope(
         nodeSymbol("a", 7, 15, 20),
         nodeSymbol("b", 38, 46))(),
@@ -195,7 +195,7 @@ class ScopeTreeTest extends CypherFunSuite {
     val scopeTree = ast.scope
 
     scopeTree should equal(scope()(
-      scope(nodeSymbol("liker", 7, 19, 38))(),
+      scope(nodeSymbol("liker", 7, 19, 28, 38, 83))(),
       scope(pathCollectionSymbol("isNew", 54, 65), nodeSymbol("liker", 83, 19, 38, 7, 28))(),
       scope(allSymbol("freshId", 97, 116), pathCollectionSymbol("isNew", 54, 65, 74, 133))(),
       scope(pathCollectionSymbol("isNew", 54, 74, 65, 142, 133))()
@@ -223,7 +223,7 @@ class ScopeTreeTest extends CypherFunSuite {
     val actual = ast.scope
     val expected = scope()(
       scope()(),
-      scope(intSymbol("p", 10, 36), intSymbol("rng", 25))(),
+      scope(intSymbol("p", 10, 36), intSymbol("rng", 25, 47))(),
       scope(intSymbol("p", 10, 36, 37))()
     )
 

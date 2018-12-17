@@ -223,7 +223,10 @@ object SemanticState {
     def mergeSymbolPositionsFromScope(other: Scope, exclude: Set[String] = Set.empty): ScopeLocation =
       other.symbolTable.values.foldLeft(location) {
         case (loc, sym) if exclude(sym.name) => loc
-        case (loc, sym) => loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
+        case (loc, sym) =>
+          val locWithMergedPos = loc.replace(loc.scope.mergePositions(sym.name, sym.positions))
+          val leftWithMergedPos = loc.leftList.map(_.mergePositions(sym.name, sym.positions))
+          locWithMergedPos.replaceLeftList(leftWithMergedPos)
       }
 
     def updateVariable(variable: String, types: TypeSpec, positions: Set[InputPosition]): ScopeLocation =

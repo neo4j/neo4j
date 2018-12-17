@@ -67,6 +67,15 @@ class TreeZipperTest extends CypherFunSuite {
       .left.tap { _.elem should equal(Some(child1)) }
   }
 
+  test("Can get and change left list") {
+    val elem = root.location.down.right.right.get //child3
+    elem.leftList should equal(List(child2, child1))
+
+    val elemWithNewLeft = elem.replaceLeftList(List(child4, child2))
+    elemWithNewLeft.leftList should equal(List(child4, child2))
+    elemWithNewLeft.right.leftList should equal(Some(List(child3, child4, child2)))
+  }
+
   test("Correctly infers tree structure") {
     def assertRole(location: TestElemZipper.Location, isRoot: Boolean, isLeftMost: Boolean, isRightMost: Boolean, isLeaf: Boolean): Unit = {
       location.isRoot should equal(isRoot)
