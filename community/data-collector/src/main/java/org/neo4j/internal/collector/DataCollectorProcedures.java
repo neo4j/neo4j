@@ -115,7 +115,7 @@ public class DataCollectorProcedures
     }
 
     @Admin
-    @Description( "Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + "'")
+    @Description( "Clear collected data of a given data section. Valid sections are '" + Sections.QUERIES + "'" )
     @Procedure( name = "db.stats.clear", mode = Mode.READ )
     public Stream<ActionResult> clear( @Name( value = "section" ) String section ) throws InvalidArgumentsException
     {

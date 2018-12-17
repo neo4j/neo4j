@@ -24,7 +24,10 @@ package org.neo4j.internal.collector;
  */
 abstract class CollectorStateMachine<DATA>
 {
-    private enum State { IDLE, COLLECTING, HAS_DATA }
+    private enum State
+    {
+        IDLE, COLLECTING, HAS_DATA
+    }
 
     static final class Status
     {
@@ -123,7 +126,7 @@ abstract class CollectorStateMachine<DATA>
             doStop();
             state = State.IDLE;
             doClear();
-            return success( "Collection stopped and data cleared.");
+            return success( "Collection stopped and data cleared." );
         case HAS_DATA:
             state = State.IDLE;
             return doClear();
@@ -139,7 +142,7 @@ abstract class CollectorStateMachine<DATA>
         case IDLE:
             throw new IllegalStateException( "Collector is idle and has no data." );
         case COLLECTING:
-            throw new IllegalStateException( "Collector is still collecting.");
+            throw new IllegalStateException( "Collector is still collecting." );
         case HAS_DATA:
             return doGetData();
         default:
