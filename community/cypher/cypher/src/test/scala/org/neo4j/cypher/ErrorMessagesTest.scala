@@ -258,6 +258,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite {
       "RETURN 1 AS toUpper('name')",
       Set("RELOCATE", "GRAPH", "FROM", "PERSIST"),
       19)
+    expectSyntaxError(
+      "RETURN 1 AS toUpper('name')",
+      "Invalid input '(': expected",
+      19)
   }
 
   private def expectError(query: String, expectedError: String) {
