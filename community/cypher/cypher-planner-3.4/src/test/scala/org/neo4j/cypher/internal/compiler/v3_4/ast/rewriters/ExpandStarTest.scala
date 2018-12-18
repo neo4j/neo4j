@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v3_4.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v3_4._
 import org.neo4j.cypher.internal.frontend.v3_4.ast._
 import org.neo4j.cypher.internal.frontend.v3_4.ast.rewriters.{expandStar, normalizeReturnClauses, normalizeWithClauses}
-import org.neo4j.cypher.internal.frontend.v3_4.semantics.{SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.frontend.v3_4.semantics.SemanticState
 import org.neo4j.cypher.internal.util.v3_4.inSequence
 import org.neo4j.cypher.internal.util.v3_4.test_helpers.CypherFunSuite
 
@@ -120,12 +120,9 @@ class ExpandStarTest extends CypherFunSuite with AstConstructionTestSupport {
     assert(result === expected)
   }
 
-  private def prepRewrite(q: String, multipleGraphs: Boolean = false) = {
+  private def prepRewrite(q: String) = {
     val mkException = new SyntaxExceptionCreator(q, Some(pos))
-    val rewriter = if (multipleGraphs)
-      inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
-    else
-      inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
+    val rewriter = inSequence(normalizeReturnClauses(mkException), normalizeWithClauses(mkException))
     parser.parse(q).endoRewrite(rewriter)
   }
 }
