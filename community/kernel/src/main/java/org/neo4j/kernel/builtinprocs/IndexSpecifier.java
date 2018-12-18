@@ -59,17 +59,22 @@ public class IndexSpecifier
     private final String[] properties;
     private final String name;
 
-    public static IndexSpecifier patternOrName( String specification )
+    public static IndexSpecifier byPatternOrName( String specification )
     {
-        return parse( specification, true );
+        return parse( specification, true, true );
     }
 
-    public static IndexSpecifier pattern( String specification )
+    public static IndexSpecifier byPattern( String specification )
     {
-        return parse( specification, false );
+        return parse( specification, false, true );
     }
 
-    private static IndexSpecifier parse( String specification, boolean allowIndexNameSpecs )
+    public static IndexSpecifier byName( String specification )
+    {
+        return parse( specification, true, false );
+    }
+
+    private static IndexSpecifier parse( String specification, boolean allowIndexNameSpecs, boolean allowIndexPatternSpecs )
     {
         Matcher matcher = PATTERN_START_INDEX_NAME_OR_LABEL.matcher( specification );
         if ( !matcher.find() )
@@ -91,6 +96,12 @@ public class IndexSpecifier
                 return new IndexSpecifier( specification, indexName );
             }
             throw new IllegalArgumentException( "Invalid characters following index name: '" + specification + "'" );
+        }
+
+        if ( !allowIndexPatternSpecs )
+        {
+            throw new IllegalArgumentException( "Cannot parse index specification: '" + specification +
+                    "' - it looks like an index pattern, but an index name was expected." );
         }
 
         String label = either( matcher.group( GROUP_LABEL ), matcher.group( GROUP_QUOTED_LABEL ) );

@@ -33,39 +33,39 @@ public class IndexSpecifierTest
     @Test
     public void shouldFormatAsCanonicalRepresentation()
     {
-        assertThat( IndexSpecifier.patternOrName( ":Person(name)" ).toString(), is( ":Person(name)" ) );
-        assertThat( IndexSpecifier.pattern( ":Person(name)" ).toString(), is( ":Person(name)" ) );
+        assertThat( IndexSpecifier.byPatternOrName( ":Person(name)" ).toString(), is( ":Person(name)" ) );
+        assertThat( IndexSpecifier.byPattern( ":Person(name)" ).toString(), is( ":Person(name)" ) );
     }
 
     @Test
     public void shouldParseASimpleLabel()
     {
-        assertThat( IndexSpecifier.patternOrName( ":Person_23(name)" ).label(), is( "Person_23" ) );
-        assertThat( IndexSpecifier.pattern( ":Person_23(name)" ).label(), is( "Person_23" ) );
+        assertThat( IndexSpecifier.byPatternOrName( ":Person_23(name)" ).label(), is( "Person_23" ) );
+        assertThat( IndexSpecifier.byPattern( ":Person_23(name)" ).label(), is( "Person_23" ) );
     }
 
     @Test
     public void shouldParseASimpleProperty()
     {
-        assertThat( IndexSpecifier.patternOrName( ":Person(a_Name_123)" ).properties(), is( arrayContaining( "a_Name_123" ) ) );
-        assertThat( IndexSpecifier.pattern( ":Person(a_Name_123)" ).properties(), is( arrayContaining( "a_Name_123" ) ) );
+        assertThat( IndexSpecifier.byPatternOrName( ":Person(a_Name_123)" ).properties(), is( arrayContaining( "a_Name_123" ) ) );
+        assertThat( IndexSpecifier.byPattern( ":Person(a_Name_123)" ).properties(), is( arrayContaining( "a_Name_123" ) ) );
     }
 
     @Test
     public void shouldParseTwoProperties()
     {
-        assertThat( IndexSpecifier.patternOrName( ":Person(name, lastName)" ).properties(),
+        assertThat( IndexSpecifier.byPatternOrName( ":Person(name, lastName)" ).properties(),
                 is( arrayContaining( "name", "lastName" ) ) );
-        assertThat( IndexSpecifier.pattern( ":Person(name, lastName)" ).properties(),
+        assertThat( IndexSpecifier.byPattern( ":Person(name, lastName)" ).properties(),
                 is( arrayContaining( "name", "lastName" ) ) );
     }
 
     @Test
     public void shouldParseManyProperties()
     {
-        assertThat( IndexSpecifier.patternOrName( ":Person(1, 2, 3, 4, 5, 6)" ).properties(),
+        assertThat( IndexSpecifier.byPatternOrName( ":Person(1, 2, 3, 4, 5, 6)" ).properties(),
                 is( arrayContaining( "1", "2", "3", "4", "5", "6" ) ) );
-        assertThat( IndexSpecifier.pattern( ":Person(1, 2, 3, 4, 5, 6)" ).properties(),
+        assertThat( IndexSpecifier.byPattern( ":Person(1, 2, 3, 4, 5, 6)" ).properties(),
                 is( arrayContaining( "1", "2", "3", "4", "5", "6" ) ) );
     }
 
@@ -73,41 +73,46 @@ public class IndexSpecifierTest
     public void shouldParseManyPropertiesWithWhitespace()
     {
         String specification = ":Person( 1 , 2   ,3   ,4  )";
-        assertThat( IndexSpecifier.patternOrName( specification ).properties(),
+        assertThat( IndexSpecifier.byPatternOrName( specification ).properties(),
                 is( arrayContaining( "1", "2", "3", "4" ) ) );
-        assertThat( IndexSpecifier.pattern( specification ).properties(),
+        assertThat( IndexSpecifier.byPattern( specification ).properties(),
                 is( arrayContaining( "1", "2", "3", "4" ) ) );
     }
 
     @Test
     public void shouldParseOddProperties()
     {
-        assertThat( IndexSpecifier.patternOrName( ": Person(1,    2lskgj_LKHGS, `3sdlkhs,   df``sas;g`, 4, `  5  `, 6)" ).properties(),
+        assertThat( IndexSpecifier.byPatternOrName( ": Person(1,    2lskgj_LKHGS, `3sdlkhs,   df``sas;g`, 4, `  5  `, 6)" ).properties(),
                 is( arrayContaining( "1", "2lskgj_LKHGS", "3sdlkhs,   df``sas;g", "4", "  5  ", "6" ) ) );
-        assertThat( IndexSpecifier.pattern( ": Person(1,    2lskgj_LKHGS, `3sdlkhs,   df``sas;g`, 4, `  5  `, 6)" ).properties(),
+        assertThat( IndexSpecifier.byPattern( ": Person(1,    2lskgj_LKHGS, `3sdlkhs,   df``sas;g`, 4, `  5  `, 6)" ).properties(),
                 is( arrayContaining( "1", "2lskgj_LKHGS", "3sdlkhs,   df``sas;g", "4", "  5  ", "6" ) ) );
     }
 
     @Test
     public void shouldParseANastyLabel()
     {
-        assertThat( IndexSpecifier.patternOrName( ":`:(!\"£$%^&*( )`(name)" ).label(), is( ":(!\"£$%^&*( )" ) );
-        assertThat( IndexSpecifier.pattern( ":`:(!\"£$%^&*( )`(name)" ).label(), is( ":(!\"£$%^&*( )" ) );
+        assertThat( IndexSpecifier.byPatternOrName( ":`:(!\"£$%^&*( )`(name)" ).label(), is( ":(!\"£$%^&*( )" ) );
+        assertThat( IndexSpecifier.byPattern( ":`:(!\"£$%^&*( )`(name)" ).label(), is( ":(!\"£$%^&*( )" ) );
     }
 
     @Test
     public void shouldParseANastyProperty()
     {
-        assertThat( IndexSpecifier.patternOrName( ":Person(`(:!\"£$%^&*( )`)" ).properties(),
+        assertThat( IndexSpecifier.byPatternOrName( ":Person(`(:!\"£$%^&*( )`)" ).properties(),
                 is( arrayContaining( "(:!\"£$%^&*( )" ) ) );
-        assertThat( IndexSpecifier.pattern( ":Person(`(:!\"£$%^&*( )`)" ).properties(),
+        assertThat( IndexSpecifier.byPattern( ":Person(`(:!\"£$%^&*( )`)" ).properties(),
                 is( arrayContaining( "(:!\"£$%^&*( )" ) ) );
     }
 
     @Test
     public void specifiersThatDoNotBeginWithColonAreIndexNames()
     {
-        IndexSpecifier spec = IndexSpecifier.patternOrName( "my_index" );
+        IndexSpecifier spec = IndexSpecifier.byPatternOrName( "my_index" );
+        assertThat( spec.name(), is( "my_index" ) );
+        assertNull( spec.label() );
+        assertNull( spec.properties() );
+
+        spec = IndexSpecifier.byName( "my_index" );
         assertThat( spec.name(), is( "my_index" ) );
         assertNull( spec.label() );
         assertNull( spec.properties() );
@@ -116,7 +121,7 @@ public class IndexSpecifierTest
     @Test
     public void patternSpecifiersHaveNoName()
     {
-        IndexSpecifier spec = IndexSpecifier.pattern( ":Person(name)" );
+        IndexSpecifier spec = IndexSpecifier.byPattern( ":Person(name)" );
         assertNotNull( spec.label() );
         assertNotNull( spec.properties() );
         assertNull( spec.name() );
@@ -127,16 +132,27 @@ public class IndexSpecifierTest
     {
         try
         {
-            IndexSpecifier.patternOrName( "just some rubbish" );
+            IndexSpecifier.byPatternOrName( "just some rubbish" );
             fail( "expected exception" );
         }
         catch ( IllegalArgumentException e )
         {
             //expected
         }
+
         try
         {
-            IndexSpecifier.pattern( "rubbish" );
+            IndexSpecifier.byPattern( "rubbish" );
+            fail( "expected exception" );
+        }
+        catch ( IllegalArgumentException e )
+        {
+            //expected
+        }
+
+        try
+        {
+            IndexSpecifier.byName( ":Person(name)" );
             fail( "expected exception" );
         }
         catch ( IllegalArgumentException e )

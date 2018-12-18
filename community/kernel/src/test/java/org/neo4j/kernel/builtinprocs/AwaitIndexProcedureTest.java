@@ -89,7 +89,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT );
+            procedure.awaitIndexByPattern( ":NonExistentLabel(prop)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -105,7 +105,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT );
+            procedure.awaitIndexByPattern( ":Label(nonExistentProperty)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -122,7 +122,7 @@ public class AwaitIndexProcedureTest
         when( schemaRead.index( anyInt(), any() ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( ONLINE );
 
-        procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
+        procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
 
         verify( schemaRead ).index( descriptor.getLabelId(), descriptor.getPropertyId() );
     }
@@ -135,7 +135,7 @@ public class AwaitIndexProcedureTest
         when( schemaRead.indexGetForName( "my index" ) ).thenReturn( anyIndex );
         when( schemaRead.indexGetState( any( IndexReference.class ) ) ).thenReturn( ONLINE );
 
-        procedure.awaitIndex( "`my index`", TIMEOUT, TIME_UNIT );
+        procedure.awaitIndexByName( "`my index`", TIMEOUT, TIME_UNIT );
 
         verify( schemaRead ).indexGetForName( "my index" );
     }
@@ -151,7 +151,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
+            procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -170,13 +170,19 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
+            procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
         {
             assertThat( e.status(), is( Status.Schema.IndexNotFound ) );
         }
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void shouldThrowAnExceptionIfGivenAnIndexName() throws ProcedureException
+    {
+        procedure.awaitIndexByPattern( "`some index`", TIMEOUT, TIME_UNIT );
     }
 
     @Test
@@ -188,7 +194,7 @@ public class AwaitIndexProcedureTest
 
         try
         {
-            procedure.awaitIndex( "`some index`", TIMEOUT, TIME_UNIT );
+            procedure.awaitIndexByName( "`some index`", TIMEOUT, TIME_UNIT );
             fail( "Expected an exception" );
         }
         catch ( ProcedureException e )
@@ -212,7 +218,7 @@ public class AwaitIndexProcedureTest
         {
             try
             {
-                procedure.awaitIndex( ":Person(name)", TIMEOUT, TIME_UNIT );
+                procedure.awaitIndexByPattern( ":Person(name)", TIMEOUT, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {
@@ -242,7 +248,7 @@ public class AwaitIndexProcedureTest
             try
             {
                 // We wait here, because we expect timeout
-                procedure.awaitIndex( ":Person(name)", 0, TIME_UNIT );
+                procedure.awaitIndexByPattern( ":Person(name)", 0, TIME_UNIT );
             }
             catch ( ProcedureException e )
             {

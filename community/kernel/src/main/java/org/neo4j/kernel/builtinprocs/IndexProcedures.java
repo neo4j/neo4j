@@ -57,16 +57,23 @@ public class IndexProcedures implements AutoCloseable
         this.indexingService = indexingService;
     }
 
-    public void awaitIndex( String indexSpecification, long timeout, TimeUnit timeoutUnits )
+    public void awaitIndexByPattern( String indexPattern, long timeout, TimeUnit timeoutUnits )
             throws ProcedureException
     {
-        IndexSpecifier specifier = IndexSpecifier.patternOrName( indexSpecification );
+        IndexSpecifier specifier = IndexSpecifier.byPattern( indexPattern );
+        waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
+    }
+
+    public void awaitIndexByName( String indexName, long timeout, TimeUnit timeoutUnits )
+            throws ProcedureException
+    {
+        IndexSpecifier specifier = IndexSpecifier.byName( indexName );
         waitUntilOnline( getIndex( specifier ), specifier, timeout, timeoutUnits );
     }
 
     public void resampleIndex( String indexSpecification ) throws ProcedureException
     {
-        IndexSpecifier specifier = IndexSpecifier.patternOrName( indexSpecification );
+        IndexSpecifier specifier = IndexSpecifier.byPattern( indexSpecification );
         try
         {
             triggerSampling( getIndex( specifier ) );
@@ -102,7 +109,7 @@ public class IndexProcedures implements AutoCloseable
             IndexCreator indexCreator ) throws ProcedureException
     {
         assertProviderNameNotNull( providerName );
-        IndexSpecifier index = IndexSpecifier.pattern( indexSpecification );
+        IndexSpecifier index = IndexSpecifier.byPattern( indexSpecification );
         int labelId = getOrCreateLabelId( index.label() );
         int[] propertyKeyIds = getOrCreatePropertyIds( index.properties() );
         try

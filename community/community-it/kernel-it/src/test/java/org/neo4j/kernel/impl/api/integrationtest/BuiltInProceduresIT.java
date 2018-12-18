@@ -137,13 +137,11 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                                 "failureMessage :: STRING?)",
                         "List all indexes in the database.", "READ" ),
                 proc( "db.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
-                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\"), " +
-                                "or CALL db.awaitIndex(\"index_name\")).", "READ" ),
+                        "Wait for an index to come online (for example: CALL db.awaitIndex(\":Person(name)\")).", "READ" ),
                 proc( "db.awaitIndexes", "(timeOutSeconds = 300 :: INTEGER?) :: VOID",
                         "Wait for all indexes to come online (for example: CALL db.awaitIndexes(\"500\")).", "READ" ),
                 proc( "db.resampleIndex", "(index :: STRING?) :: VOID",
-                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\"), " +
-                                "or CALL db.resampleIndex(\"index_name\")).", "READ" ),
+                        "Schedule resampling of an index (for example: CALL db.resampleIndex(\":Person(name)\")).", "READ" ),
                 proc( "db.resampleOutdatedIndexes", "() :: VOID", "Schedule resampling of all outdated indexes.", "READ" ),
                 proc( "db.propertyKeys", "() :: (propertyKey :: STRING?)", "List all property keys in the database.", "READ" ),
                 proc( "db.labels", "() :: (label :: STRING?)", "List all labels in the database.", "READ" ),
@@ -229,6 +227,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                                 "YIELD index, providerName, status", "SCHEMA" ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
                         "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.", "READ" ),
+                proc( "db.index.fulltext.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
+                                "The name can be quoted by backticks, if necessary.", "READ" ),
                 proc( "db.index.fulltext.createNodeIndex", "(indexName :: STRING?, labels :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, " +
                         "config = {} :: MAP?) :: VOID", startsWith( "Create a node fulltext index for the given labels and properties." ), "SCHEMA" ),
                 proc( "db.index.fulltext.createRelationshipIndex",
