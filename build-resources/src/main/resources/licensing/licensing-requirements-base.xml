@@ -99,6 +99,8 @@
     <license name="BSD License">
       <aka>BSD</aka>
       <aka>BSD License</aka>
+      <!-- this is a temporary workaround for hamcrest since it has incorrect license name published in pom -->
+      <aka>BSD Licence 3</aka>
       <aka>The BSD License</aka>
       <aka>BSD 3-Clause</aka>
       <aka>BSD-3-Clause</aka>
