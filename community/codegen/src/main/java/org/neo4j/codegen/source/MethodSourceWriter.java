@@ -85,7 +85,7 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void expression( Expression expression )
     {
-        if ( expression == Expression.EMPTY)
+        if ( expression == Expression.EMPTY )
         {
             return;
         }
