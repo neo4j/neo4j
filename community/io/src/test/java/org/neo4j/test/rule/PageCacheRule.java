@@ -39,7 +39,7 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.io.pagecache.tracing.cursor.context.VersionContextSupplier;
 import org.neo4j.memory.LocalMemoryTracker;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.neo4j.test.rule.PageCacheConfig.config;
 

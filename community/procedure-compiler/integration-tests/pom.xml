@@ -47,6 +47,12 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.neo4j</groupId>
+            <artifactId>test-utils</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.neo4j.driver</groupId>
             <artifactId>neo4j-java-driver</artifactId>
             <scope>test</scope>

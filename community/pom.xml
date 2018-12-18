@@ -66,6 +66,7 @@
     <module>spatial-index</module>
     <module>community-it</module>
     <module>data-collector</module>
+    <module>testing</module>
   </modules>
 
   <licenses>

@@ -66,7 +66,6 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLogProvider;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.storageengine.migration.AbstractStoreMigrationParticipant;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -74,6 +73,7 @@ import org.neo4j.storageengine.migration.UpgradeNotAllowedException;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.empty;

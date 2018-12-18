@@ -31,13 +31,13 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.graphdb.Label.label;
-import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.OtherThreadRule.isWaiting;
 
 public class UniquenessConstraintValidationConcurrencyIT
 {

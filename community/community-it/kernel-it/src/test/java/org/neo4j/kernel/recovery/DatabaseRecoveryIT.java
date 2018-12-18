@@ -100,7 +100,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.NullLog;
 import org.neo4j.logging.NullLogProvider;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.storageengine.api.IndexEntryUpdate;
 import org.neo4j.storageengine.api.StorageIndexReference;
 import org.neo4j.storageengine.migration.StoreMigrationParticipant;
@@ -114,6 +113,7 @@ import org.neo4j.test.extension.RandomExtension;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.RandomRule;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static java.lang.Long.max;
 import static java.time.Duration.ofMillis;

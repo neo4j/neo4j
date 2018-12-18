@@ -27,7 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 
 import static org.junit.Assert.assertEquals;

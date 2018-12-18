@@ -40,7 +40,7 @@ import org.neo4j.time.FakeClock;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.OtherThreadRule.isWaiting;
 
 @Ignore( "Not a test. This is a compatibility suite, run from LockingCompatibilityTestSuite." )
 public class AcquisitionTimeoutCompatibility extends LockingCompatibilityTestSuite.Compatibility

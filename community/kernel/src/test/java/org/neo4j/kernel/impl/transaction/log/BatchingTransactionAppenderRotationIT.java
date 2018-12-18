@@ -48,10 +48,10 @@ import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.SerializeTransactionEvent;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.NullLog;
 import org.neo4j.storageengine.api.StorageCommand;
+import org.neo4j.test.rule.LifeRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
 

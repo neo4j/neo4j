@@ -54,10 +54,10 @@ import org.neo4j.io.pagecache.tracing.cursor.context.EmptyVersionContextSupplier
 import org.neo4j.io.pagecache.tracing.linear.LinearHistoryPageCacheTracerTest;
 import org.neo4j.io.pagecache.tracing.linear.LinearTracers;
 import org.neo4j.resources.Profiler;
-import org.neo4j.scheduler.DaemonThreadFactory;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.DaemonThreadFactory;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 /**
  * The RandomPageCacheTestHarness can plan and run random page cache tests, repeatably if necessary, and verify that

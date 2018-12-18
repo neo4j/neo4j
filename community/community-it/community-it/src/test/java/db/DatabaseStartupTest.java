@@ -41,11 +41,11 @@ import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.store.MetaDataStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.logging.AssertableLogProvider;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;

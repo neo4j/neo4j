@@ -34,8 +34,8 @@ import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.NullLog;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.MatcherAssert.assertThat;

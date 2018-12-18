@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
-import org.neo4j.scheduler.JobSchedulerAdapter;
+import org.neo4j.test.scheduler.JobSchedulerAdapter;
 
 public class OnDemandJobScheduler extends JobSchedulerAdapter
 {

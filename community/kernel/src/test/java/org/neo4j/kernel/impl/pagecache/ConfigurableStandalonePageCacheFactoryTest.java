@@ -31,9 +31,9 @@ import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.VerboseTimeout;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertTrue;
 

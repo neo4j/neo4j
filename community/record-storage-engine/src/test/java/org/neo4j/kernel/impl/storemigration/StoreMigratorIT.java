@@ -56,11 +56,11 @@ import org.neo4j.logging.internal.LogService;
 import org.neo4j.logging.internal.NullLogService;
 import org.neo4j.logging.internal.SimpleLogService;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.scheduler.ThreadPoolJobScheduler;
 import org.neo4j.storageengine.migration.MigrationProgressMonitor;
 import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.DefaultFileSystemRule;
+import org.neo4j.test.scheduler.ThreadPoolJobScheduler;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;

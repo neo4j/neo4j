@@ -35,7 +35,7 @@ import org.neo4j.helpers.collection.Iterators;
 import org.neo4j.internal.kernel.api.Transaction;
 import org.neo4j.internal.kernel.api.security.LoginContext;
 import org.neo4j.kernel.api.security.AnonymousContext;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.core.AllOf.allOf;

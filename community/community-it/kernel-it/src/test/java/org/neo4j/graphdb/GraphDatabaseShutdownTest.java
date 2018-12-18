@@ -32,7 +32,7 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.CommunityLockClient;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;

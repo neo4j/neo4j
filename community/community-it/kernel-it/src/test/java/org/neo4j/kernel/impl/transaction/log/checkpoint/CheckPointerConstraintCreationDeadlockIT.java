@@ -44,8 +44,8 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.TestLabels;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.VerboseTimeout;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

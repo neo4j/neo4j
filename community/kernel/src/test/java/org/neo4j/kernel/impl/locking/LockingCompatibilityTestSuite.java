@@ -40,15 +40,15 @@ import org.neo4j.storageengine.api.lock.ResourceType;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WaitDetails;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
 import org.neo4j.test.runner.ParameterizedSuiteRunner;
 import org.neo4j.time.Clocks;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.neo4j.test.rule.concurrent.OtherThreadRule.isWaiting;
+import static org.neo4j.test.rule.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
 @RunWith( ParameterizedSuiteRunner.class )

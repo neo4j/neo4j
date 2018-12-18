@@ -29,7 +29,7 @@ import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
 import org.neo4j.test.OtherThreadExecutor;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.server.HTTP;
 
 import static org.hamcrest.CoreMatchers.equalTo;

@@ -34,7 +34,7 @@ import org.neo4j.function.ThrowingAction;
 import org.neo4j.graphdb.Resource;
 import org.neo4j.test.Barrier;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.hamcrest.Matchers.containsString;

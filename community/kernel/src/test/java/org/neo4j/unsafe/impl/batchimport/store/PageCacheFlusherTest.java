@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.test.Barrier;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.fail;

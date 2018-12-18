@@ -61,9 +61,9 @@ import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
-import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
 import org.neo4j.test.Race;
+import org.neo4j.test.rule.LifeRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 

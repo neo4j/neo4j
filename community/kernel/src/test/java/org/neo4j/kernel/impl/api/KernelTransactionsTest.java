@@ -90,7 +90,7 @@ import org.neo4j.storageengine.api.txstate.ReadableTransactionState;
 import org.neo4j.storageengine.api.txstate.TxStateVisitor;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.Race;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 

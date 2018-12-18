@@ -38,8 +38,8 @@ import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.ImpermanentDbmsRule;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.test.rule.TestDirectory;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
 
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;

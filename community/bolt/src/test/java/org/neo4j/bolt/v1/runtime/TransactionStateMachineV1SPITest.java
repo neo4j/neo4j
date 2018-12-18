@@ -39,7 +39,7 @@ import org.neo4j.kernel.impl.query.QueryExecutionEngine;
 import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.logging.NullLog;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 import org.neo4j.time.FakeClock;
 
 import static java.util.concurrent.TimeUnit.SECONDS;

@@ -43,7 +43,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.rule.DbmsRule;
 import org.neo4j.test.rule.EmbeddedDbmsRule;
-import org.neo4j.test.rule.concurrent.OtherThreadRule;
+import org.neo4j.test.rule.OtherThreadRule;
 
 public class TestStartTransactionDuringLogRotation
 {
