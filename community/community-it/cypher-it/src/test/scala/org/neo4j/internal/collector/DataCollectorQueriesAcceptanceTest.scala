@@ -252,8 +252,6 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     // when
     val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
 
-    println(graph.execute("CALL db.stats.retrieveAllAnonymized('myToken')").resultAsString())
-
     // then
     res.toList should beListWithoutOrder(
       beMapContaining(

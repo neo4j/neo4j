@@ -42,12 +42,12 @@ case class PlainText(valueMapper: ValueMapper.JavaMapper) extends QueryAnonymize
 
 case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
 
-  val parser = new CypherParser()
-  val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
+  private val parser = new CypherParser()
+  private val prettifier = Prettifier(ExpressionStringifier(_.asCanonicalStringVal))
 
   override def queryText(queryText: String): String = {
     val originalAst = parser.parse(queryText, None)
-    val anonymizer = anonymizeQuery(IdAnonymizerState(tokens, prettifier))
+    val anonymizer = anonymizeQuery(new IdAnonymizerState(tokens, prettifier))
     val rewrittenAst = anonymizer(originalAst).asInstanceOf[Statement]
     prettifier.asString(rewrittenAst)
   }
@@ -57,10 +57,11 @@ case class IdAnonymizer(tokens: TokenRead) extends QueryAnonymizer {
   }
 }
 
-case class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.neo4j.cypher.internal.v3_5.rewriting.rewriters.Anonymizer {
-  private var variables = mutable.Map[String, String]()
-  private var parameters = mutable.Map[String, String]()
-  private var unknownTokens = mutable.Map[String, String]()
+class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.neo4j.cypher.internal.v3_5.rewriting.rewriters.Anonymizer {
+
+  private val variables = mutable.Map[String, String]()
+  private val parameters = mutable.Map[String, String]()
+  private val unknownTokens = mutable.Map[String, String]()
 
   override def variable(name: String): String =
     variables.getOrElseUpdate(name, "var" + variables.size)

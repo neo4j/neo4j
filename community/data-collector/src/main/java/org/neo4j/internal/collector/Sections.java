@@ -34,8 +34,8 @@ class Sections
     static final String TOKENS = "TOKENS";
     static final String QUERIES = "QUERIES";
 
-    static final String[] SECTIONS = {GRAPH_COUNTS, TOKENS, QUERIES};
-    static final String NAMES = Arrays.toString( SECTIONS );
+    private static final String[] SECTIONS = {GRAPH_COUNTS, TOKENS, QUERIES};
+    private static final String NAMES = Arrays.toString( SECTIONS );
 
     static InvalidArgumentsException unknownSectionException( String section )
     {
