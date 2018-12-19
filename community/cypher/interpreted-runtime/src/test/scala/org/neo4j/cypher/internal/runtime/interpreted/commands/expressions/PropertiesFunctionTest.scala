@@ -21,16 +21,14 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
 import java.util
 
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{NodeOperations, QueryContext, RelationshipOperations}
-import org.neo4j.graphdb.{Node, Relationship}
-import org.neo4j.internal.kernel.api.{NodeCursor, PropertyCursor, RelationshipScanCursor}
-import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
-import org.neo4j.values.virtual.VirtualValues.map
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, NodeOperations, QueryContext, RelationshipOperations}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.graphdb.{Node, Relationship}
+import org.neo4j.values.storable.Values.{NO_VALUE, stringValue}
+import org.neo4j.values.virtual.VirtualValues.map
 
 class PropertiesFunctionTest extends CypherFunSuite {
 

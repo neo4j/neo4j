@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v4_0
 
 import org.neo4j.cypher.ExecutionEngineFunSuite
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 import org.neo4j.cypher.internal.runtime.interpreted.commands.RelatedTo
@@ -28,7 +29,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.HasLabe
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedLabel
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.PatternMatchingBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, PatternGraphBuilder, QueryStateTestSupport}
+import org.neo4j.cypher.internal.runtime.interpreted.{PatternGraphBuilder, QueryStateTestSupport}
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 

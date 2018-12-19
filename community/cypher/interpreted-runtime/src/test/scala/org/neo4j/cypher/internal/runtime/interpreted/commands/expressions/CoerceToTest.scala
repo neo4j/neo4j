@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import java.util.{ArrayList => JavaList, HashMap => JavaMap}
-
-import org.neo4j.cypher.internal.runtime.{Counter, QueryContext}
+import org.neo4j.cypher.internal.runtime.{Counter, ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite

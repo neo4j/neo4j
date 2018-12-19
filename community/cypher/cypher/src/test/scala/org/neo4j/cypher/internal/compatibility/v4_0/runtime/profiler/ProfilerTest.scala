@@ -22,16 +22,16 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.profiler
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.when
 import org.neo4j.cypher.internal.planner.v4_0.spi.{EmptyKernelStatisticProvider, KernelStatisticProvider}
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.InterpretedCommandProjection
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{NestedPipeExpression, ProjectedPath}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext, QueryTransactionalContext}
+import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.result.{OperatorProfile, QueryProfile}
 import org.neo4j.kernel.impl.factory.DatabaseInfo
 import org.neo4j.values.storable.Values.NO_VALUE
-import org.neo4j.cypher.internal.v4_0.util.attribution.{Id, SequentialIdGen}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 
 class ProfilerTest extends CypherFunSuite {
 

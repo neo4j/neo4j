@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.result.QueryResult
 
 case class IteratorBasedResult(mapIterator: Iterator[ExecutionContext],

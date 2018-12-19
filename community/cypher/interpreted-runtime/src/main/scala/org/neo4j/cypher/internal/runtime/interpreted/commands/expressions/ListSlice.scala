@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ExecutionContext, ListSupport}
+import org.neo4j.cypher.internal.runtime.interpreted.{CastSupport, ListSupport}
 import org.neo4j.cypher.operations.CypherFunctions
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{NumberValue, Values}

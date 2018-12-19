@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted
+package org.neo4j.cypher.internal.runtime
 
 import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v4_0.util.InternalException
@@ -37,7 +37,7 @@ object ExecutionContext {
     context
   }
 
-  def apply(m: MutableMap[String, AnyValue] = MutableMaps.empty): MapExecutionContext = new MapExecutionContext(m, null)
+  def apply(m: MutableMap[String, AnyValue] = MutableMap.empty): MapExecutionContext = new MapExecutionContext(m, null)
 }
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)

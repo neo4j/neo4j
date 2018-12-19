@@ -19,13 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, IsMap}
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.IsMap
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{DurationValue, PointValue, TemporalValue, Values}
 import org.neo4j.values.virtual.{VirtualNodeValue, VirtualRelationshipValue}
-import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InvalidArgumentException}
 
 import scala.util.{Failure, Success, Try}
 

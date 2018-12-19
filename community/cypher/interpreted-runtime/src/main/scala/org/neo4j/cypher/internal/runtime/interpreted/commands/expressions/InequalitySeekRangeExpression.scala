@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.v4_0.util.InternalException
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.logical.plans.InequalitySeekRange
+import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.values.AnyValue
 
 case class InequalitySeekRangeExpression(range: InequalitySeekRange[Expression])

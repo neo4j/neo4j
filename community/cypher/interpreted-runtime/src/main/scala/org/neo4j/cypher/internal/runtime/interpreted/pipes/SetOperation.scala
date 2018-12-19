@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{ExpressionCursors, Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ExpressionCursors, Operations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InvalidArgumentException}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.internal.kernel.api.{NodeCursor, RelationshipScanCursor}

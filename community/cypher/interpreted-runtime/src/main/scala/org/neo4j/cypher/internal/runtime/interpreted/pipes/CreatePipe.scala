@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
-import org.neo4j.cypher.internal.runtime.{LenientCreateRelationship, Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, LenientCreateRelationship, Operations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.function.ThrowingBiConsumer

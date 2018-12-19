@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.UserDefinedAggregator
+import org.neo4j.cypher.internal.runtime.interpreted.ValueConversion
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.aggregation.AggregationFunction
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ValueConversion}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, UserDefinedAggregator}
 import org.neo4j.cypher.internal.v4_0.logical.plans.UserFunctionSignature
 import org.neo4j.internal.kernel.api.procs.QualifiedName
 import org.neo4j.values.AnyValue

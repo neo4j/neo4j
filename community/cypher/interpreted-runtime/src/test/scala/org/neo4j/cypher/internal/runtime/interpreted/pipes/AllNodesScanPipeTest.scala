@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
-import org.neo4j.cypher.internal.runtime.{NodeOperations, Operations, QueryContext}
-import org.neo4j.internal.kernel.api.NodeCursor
-import org.neo4j.cypher.internal.runtime.{Operations, QueryContext}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, NodeOperations, Operations, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.internal.kernel.api.NodeCursor
 import org.neo4j.values.virtual.NodeValue
 
 class AllNodesScanPipeTest extends CypherFunSuite {

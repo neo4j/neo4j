@@ -20,16 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v4_0
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateTestSupport
 import org.neo4j.cypher.internal.runtime.interpreted.commands._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{NonEmpty, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedLabel
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateTestSupport}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.kernel.impl.util.ValueUtils.fromNodeProxy
 import org.neo4j.values.storable.Values.{FALSE, TRUE}
 import org.neo4j.values.virtual.PathValue
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 class PathExpressionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 

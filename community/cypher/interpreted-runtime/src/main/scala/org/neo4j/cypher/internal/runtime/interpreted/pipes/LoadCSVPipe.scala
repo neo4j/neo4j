@@ -24,7 +24,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.ir.v4_0.CSVFormat
 import org.neo4j.cypher.internal.ir.v4_0.HasHeaders
 import org.neo4j.cypher.internal.ir.v4_0.NoHeaders
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.ArrayBackedMap
 import org.neo4j.cypher.internal.runtime.QueryContext

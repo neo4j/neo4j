@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ResourceLinenumber}
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, ResourceLinenumber}
 import org.neo4j.cypher.internal.v4_0.util.{CypherException, LoadCsvStatusWrapCypherException}
 
 /*

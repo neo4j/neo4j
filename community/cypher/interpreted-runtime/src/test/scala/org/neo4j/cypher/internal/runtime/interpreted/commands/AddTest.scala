@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.runtime.interpreted.commands
 
 import java.nio.charset.StandardCharsets
 
+import org.neo4j.cypher.internal.runtime.ExecutionContext
+import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Add, Literal, ParameterExpression}
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.values.AnyValue
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.values.storable.Values.{longValue, stringValue, utf8Value}
 import org.neo4j.values.storable.{UTF8StringValue, Values}
 import org.neo4j.values.virtual.VirtualValues

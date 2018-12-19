@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.interpreted._
+import org.neo4j.cypher.internal.runtime.interpreted.MutableMaps
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.PathValueBuilder
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{InCheckContainer, SingleThreadedLRUCache}
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MapExecutionContext, MutableMaps}
-import org.neo4j.cypher.internal.runtime.{ExpressionCursors, QueryContext, QueryStatistics}
+import org.neo4j.cypher.internal.runtime._
+import org.neo4j.cypher.internal.v4_0.util.ParameterNotFoundException
 import org.neo4j.internal.kernel.api.IndexReadSession
 import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.MapValue
-import org.neo4j.cypher.internal.v4_0.util.ParameterNotFoundException
 
 import scala.collection.mutable
 

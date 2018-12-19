@@ -21,14 +21,14 @@ package org.neo4j.cypher.internal.compatibility.v4_0.runtime.helpers
 
 import org.neo4j.cypher.internal.compiler.v4_0.planner.logical.ExpressionEvaluator
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.convert.{CommunityExpressionConverter, ExpressionConverters}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.internal.kernel.api.IndexReadSession
-import org.neo4j.values.virtual.VirtualValues
 import org.neo4j.cypher.internal.v4_0.expressions.Expression
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.cypher.internal.v4_0.util.{CypherException => InternalCypherException}
+import org.neo4j.internal.kernel.api.IndexReadSession
+import org.neo4j.values.virtual.VirtualValues
 
 case object simpleExpressionEvaluator extends ExpressionEvaluator {
 

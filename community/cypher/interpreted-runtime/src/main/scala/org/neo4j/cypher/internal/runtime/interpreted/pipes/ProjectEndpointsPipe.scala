@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
+import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
+import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext}
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
 import org.neo4j.values.virtual.{ListValue, NodeValue, RelationshipReference, RelationshipValue}
 
