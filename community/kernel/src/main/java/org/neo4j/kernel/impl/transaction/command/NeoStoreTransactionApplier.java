@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.command;
 
-import java.io.IOException;
-
 import org.neo4j.kernel.impl.api.TransactionApplier;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockGroup;
@@ -60,12 +58,6 @@ public class NeoStoreTransactionApplier extends TransactionApplier.Adapter
         this.lockService = lockService;
         this.neoStores = neoStores;
         this.cacheAccess = cacheAccess;
-    }
-
-    @Override
-    public void close()
-    {
-        lockGroup.close();
     }
 
     @Override

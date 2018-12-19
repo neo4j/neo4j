@@ -318,18 +318,16 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         // Have these command appliers as separate try-with-resource to have better control over
         // point between closing this and the locks above
-        try ( BatchTransactionApplier batchApplier = applier( mode ) )
+        try ( LockGroup locks = new LockGroup();
+              BatchTransactionApplier batchApplier = applier( mode ) )
         {
             while ( batch != null )
             {
-                try ( LockGroup locks = new LockGroup() )
+                try ( TransactionApplier txApplier = batchApplier.startTx( batch, locks ) )
                 {
-                    try ( TransactionApplier txApplier = batchApplier.startTx( batch, locks ) )
-                    {
-                        batch.accept( txApplier );
-                    }
-                    batch = batch.next();
+                    batch.accept( txApplier );
                 }
+                batch = batch.next();
             }
         }
         catch ( Throwable cause )
