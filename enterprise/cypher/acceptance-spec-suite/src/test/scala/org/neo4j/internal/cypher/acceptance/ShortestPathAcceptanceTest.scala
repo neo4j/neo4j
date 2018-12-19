@@ -355,7 +355,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with CypherComp
     relate(nodeB, nodeC)
     relate(nodeC, nodeD)
 
-    val expectedToFail = Configs.All + Configs.Morsel + TestConfiguration(Versions.Default, Planners.Default,
+    val expectedToFail = Configs.All + TestConfiguration(Versions.Default, Planners.Default,
       Runtimes(Runtimes.Default, Runtimes.ProcedureOrSchema, Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
     failWithError(expectedToFail, "MATCH p = shortestPath((src:A)-[*2..3]->(dst:D)) RETURN nodes(p) AS nodes", List("shortestPath(...) does not support a minimal length different from 0 or 1"))

@@ -31,7 +31,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
   test("should be able to send in an array of nodes via parameter") {
     // given
     val node = createLabeledNode("Person")
-    val result = executeWith(Configs.All + Configs.Morsel, "WITH {param} as p RETURN p", params = Map("param" -> Array(node)))
+    val result = executeWith(Configs.All, "WITH {param} as p RETURN p", params = Map("param" -> Array(node)))
     val outputP = result.next.get("p").get
     outputP should equal(Array(node))
   }
@@ -84,7 +84,7 @@ class ParameterValuesAcceptanceTest extends ExecutionEngineFunSuite with CypherC
     // given
     val node = createLabeledNode("Person")
 
-    val result = executeWith(Configs.All + Configs.Morsel, "MATCH (b) WHERE b = {param} RETURN b", params = Map("param" -> node))
+    val result = executeWith(Configs.All, "MATCH (b) WHERE b = {param} RETURN b", params = Map("param" -> node))
     result.toList should equal(List(Map("b" -> node)))
   }
 

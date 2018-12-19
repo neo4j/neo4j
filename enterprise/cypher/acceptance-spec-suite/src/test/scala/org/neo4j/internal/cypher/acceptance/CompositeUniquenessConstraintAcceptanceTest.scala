@@ -50,7 +50,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
   test("should fail to to create composite uniqueness constraints") {
     // When
 
-    failWithError(singlePropertyUniquenessFailConf + Configs.Morsel,
+    failWithError(singlePropertyUniquenessFailConf,
       "CREATE CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
       List("Only single property uniqueness constraints are supported"))
 
@@ -60,7 +60,7 @@ class CompositeUniquenessConstraintAcceptanceTest extends ExecutionEngineFunSuit
 
   test("should fail to to drop composite uniqueness constraints") {
     // When
-    failWithError(singlePropertyUniquenessFailConf + Configs.Morsel + Configs.Procs,
+    failWithError(singlePropertyUniquenessFailConf + Configs.Procs,
       "DROP CONSTRAINT ON (n:Person) ASSERT (n.firstname,n.lastname) IS UNIQUE",
       List("Only single property uniqueness constraints are supported"))
 

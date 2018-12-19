@@ -31,8 +31,6 @@ case object DefaultTestConfig extends TestConfig(Some("default.txt"),"")
 
 case object CostSlottedTestConfig extends TestConfig(Some("cost-slotted.txt"),"CYPHER planner=cost runtime=slotted")
 
-case object CostMorselTestConfig extends TestConfig(Some("cost-morsel.txt"),"CYPHER planner=cost runtime=morsel")
-
 case object CostCompiledTestConfig extends TestConfig(Some("cost-compiled.txt"),
   "CYPHER planner=cost runtime=compiled debug=generate_java_source")
 

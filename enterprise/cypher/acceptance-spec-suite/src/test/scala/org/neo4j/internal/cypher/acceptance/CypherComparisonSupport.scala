@@ -102,14 +102,11 @@ trait CypherComparisonSupport extends CypherTestSupport {
                               message: Seq[String] = Seq.empty,
                               errorType: Seq[String] = Seq.empty,
                               params: Map[String, Any] = Map.empty): Unit = {
-    // Never consider Morsel even if test requests it
-    val expectedSpecificFailureFromEffective = expectedSpecificFailureFrom - Configs.Morsel
-
-    val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFromEffective.scenarios intersect Configs.Experimental.scenarios
+    val explicitlyRequestedExperimentalScenarios = expectedSpecificFailureFrom.scenarios intersect Configs.Experimental.scenarios
     val scenariosToExecute = Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios
     for (thisScenario <- scenariosToExecute) {
       thisScenario.prepare()
-      val expectedToFailWithSpecificMessage = expectedSpecificFailureFromEffective.containsScenario(thisScenario)
+      val expectedToFailWithSpecificMessage = expectedSpecificFailureFrom.containsScenario(thisScenario)
 
       val tryResult: Try[InternalExecutionResult] = Try(innerExecute(s"CYPHER ${thisScenario.preparserOptions} $query", params))
       tryResult match {
@@ -148,18 +145,14 @@ trait CypherComparisonSupport extends CypherTestSupport {
                             resultAssertionInTx: Option[(InternalExecutionResult) => Unit] = None,
                             executeBefore: () => Unit = () => {},
                             params: Map[String, Any] = Map.empty): InternalExecutionResult = {
-    // Never consider Morsel even if test requests it
-    val expectSucceedEffective = expectSucceed - Configs.Morsel
-
-    if (expectSucceedEffective.scenarios.nonEmpty) {
-      val expectedDifferentResultsEffective = expectedDifferentResults - Configs.Morsel
-      val compareResults = expectSucceedEffective - expectedDifferentResultsEffective
-      val baseScenario = extractBaseScenario(expectSucceedEffective, compareResults)
-      val explicitlyRequestedExperimentalScenarios = expectSucceedEffective.scenarios intersect Configs.Experimental.scenarios
+    if (expectSucceed.scenarios.nonEmpty) {
+      val compareResults = expectSucceed - expectedDifferentResults
+      val baseScenario = extractBaseScenario(expectSucceed, compareResults)
+      val explicitlyRequestedExperimentalScenarios = expectSucceed.scenarios intersect Configs.Experimental.scenarios
 
       val positiveResults = ((Configs.AbsolutelyAll.scenarios ++ explicitlyRequestedExperimentalScenarios) - baseScenario).flatMap {
         thisScenario =>
-          executeScenario(thisScenario, query, expectSucceedEffective.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
+          executeScenario(thisScenario, query, expectSucceed.containsScenario(thisScenario), executeBefore, params, resultAssertionInTx)
       }
 
       //Must be run last and have no rollback to be able to do certain result assertions
@@ -170,7 +163,7 @@ trait CypherComparisonSupport extends CypherTestSupport {
 
       positiveResults.foreach {
         case (scenario, result) =>
-          planComparisonStrategy.compare(expectSucceedEffective, scenario, result)
+          planComparisonStrategy.compare(expectSucceed, scenario, result)
 
           if (compareResults.containsScenario(scenario)) {
             assertResultsSame(result, baseResult, query, s"${scenario.name} returned different results than ${baseScenario.name}")
@@ -443,8 +436,6 @@ object CypherComparisonSupport {
 
     object Default extends Runtime(Set("COMPILED", "SLOTTED", "INTERPRETED", "PROCEDURE"), "")
 
-    object Morsel extends Runtime(Set("MORSEL"), "runtime=morsel")
-
   }
 
   case class Runtime(acceptedRuntimeNames: Set[String], preparserOption: String)
@@ -606,8 +597,6 @@ object CypherComparisonSupport {
 
     def Compiled: TestConfiguration = TestConfiguration(Versions.V3_4, Planners.Cost, Runtimes(Runtimes.CompiledSource, Runtimes.CompiledBytecode))
 
-    def Morsel: TestConfiguration = TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
-
     def Interpreted: TestConfiguration =
       TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Interpreted, Runtimes.Slotted)) +
         TestConfiguration(Versions.V2_3 -> Versions.V3_1, Planners.all, Runtimes.Default) +
@@ -692,7 +681,6 @@ object CypherComparisonSupport {
       * I.e. there will be no check to see if they unexpectedly succeed on tests where they were not explicitly requested.
       */
     def Experimental: TestConfiguration =
-      //TestConfiguration(Versions.Default, Planners.Default, Runtimes(Runtimes.Morsel))
       TestConfiguration.empty
 
     def Empty: TestConfiguration = TestConfiguration.empty

@@ -168,7 +168,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val n4 = createNode(Map("x" -> 50d))
     val n5 = createNode(Map("x" -> 50.toByte))
 
-    val result = executeWith(Configs.Interpreted + Configs.Morsel, s"match (n) where n.x < 100 return n")
+    val result = executeWith(Configs.Interpreted, s"match (n) where n.x < 100 return n")
 
     result.columnAs[Node]("n").toList should equal(List(n1, n2, n3, n4, n5))
   }
@@ -382,7 +382,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     val r1 = relate(node1, node2, "prop" -> 10)
     val r2 = relate(node1, node2, "prop" -> 0)
 
-    val result = executeWith(Configs.Interpreted + Configs.Morsel, query)
+    val result = executeWith(Configs.Interpreted, query)
 
     result.toList should equal(List(Map("r" -> r1)))
   }
@@ -390,14 +390,14 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
   // Not TCK material -- id()
   test("id in where leads to empty result") {
     // when
-    val result = executeWith(Configs.All + Configs.Morsel, "MATCH (n) WHERE id(n)=1337 RETURN n")
+    val result = executeWith(Configs.All, "MATCH (n) WHERE id(n)=1337 RETURN n")
 
     // then DOESN'T THROW EXCEPTION
     result shouldBe empty
   }
 
   test("should not fail if asking for a non existent node id with WHERE") {
-    executeWith(Configs.Interpreted + Configs.Morsel, "match (n) where id(n) in [0,1] return n")
+    executeWith(Configs.Interpreted, "match (n) where id(n) in [0,1] return n")
       .toList
     // should not throw an exception
   }
@@ -635,9 +635,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
   // Not TCK material -- id()
   test("should return empty result when there are no relationship with the given id") {
-    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
-    executeWith(Configs.Interpreted + Configs.Morsel, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted, "MATCH ()-[r]->() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted, "MATCH ()<-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
+    executeWith(Configs.Interpreted, "MATCH ()-[r]-() WHERE id(r) = 42 RETURN r") shouldBe empty
   }
 
   // Not TCK material -- id()
@@ -772,7 +772,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |         RETURN candidate
       """.stripMargin
 
-    val res = executeWith(Configs.Interpreted + Configs.Morsel, query)
+    val res = executeWith(Configs.Interpreted, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
@@ -789,7 +789,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
         |         RETURN candidate
       """.stripMargin
 
-    val res = executeWith(Configs.Interpreted + Configs.Morsel, query)
+    val res = executeWith(Configs.Interpreted, query)
 
     //Then
     res.toList should equal(List(Map("candidate" -> "John"), Map("candidate" -> "Jonathan")))
@@ -851,7 +851,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createLabeledNode("B")
     createLabeledNode("C")
 
-    val result = executeWith(Configs.Interpreted + Configs.Morsel, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
+    val result = executeWith(Configs.Interpreted, "MATCH (a) WHERE a:A:B OR a:A:C RETURN a")
 
     // Then
     result.toList should equal(List(Map("a" -> n1), Map("a" -> n2), Map("a" -> n3)))
@@ -913,7 +913,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // Given an empty database
 
     // When
-    val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
+    val result = executeWith(Configs.All, "PROFILE MATCH (n) WHERE 1 = 1 AND 5 > 1 RETURN n")
 
     // Then
     result.executionPlanDescription().find("Selection") shouldBe empty
@@ -923,7 +923,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     // Given an empty database
 
     // When
-    val result = executeWith(Configs.All + Configs.Morsel, "PROFILE MATCH (n) WHERE FALSE OR 1 = 1 RETURN n")
+    val result = executeWith(Configs.All, "PROFILE MATCH (n) WHERE FALSE OR 1 = 1 RETURN n")
 
     // Then
     result.executionPlanDescription().find("Selection") shouldBe empty

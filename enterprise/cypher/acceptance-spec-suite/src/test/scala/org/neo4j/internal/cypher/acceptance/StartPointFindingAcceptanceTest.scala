@@ -34,7 +34,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     createNode("a")
     val node = createNode("b")
 
-    val result =executeWith(Configs.All + Configs.Morsel,
+    val result =executeWith(Configs.All,
       s"match (n) where ${node.getId} = id(n) return n")
     result.columnAs[Node]("n").toList should equal(List(node))
 
@@ -44,7 +44,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     createNode("a")
     val node = createNode("b")
 
-    val result = executeWith(Configs.All + Configs.Morsel,
+    val result = executeWith(Configs.All,
       s"match (n) where id(n) = ${node.getId} return n")
     result.columnAs[Node]("n").toList should equal(List(node))
   }
@@ -54,7 +54,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     val n1= createNode("b")
     val n2 = createNode("c")
 
-    val result = executeWith(Configs.Interpreted + Configs.Morsel, s"match (n) where id(n) IN [${n1.getId}, ${n2.getId}] return n")
+    val result = executeWith(Configs.Interpreted, s"match (n) where id(n) IN [${n1.getId}, ${n2.getId}] return n")
     result.columnAs("n").toList should equal(Seq(n1, n2))
   }
 
@@ -93,7 +93,7 @@ class StartPointFindingAcceptanceTest extends ExecutionEngineFunSuite with Cyphe
     val rel1 = relate(createNode("a"), createNode("b"))
     val rel2 = relate(createNode("c"), createNode("d"))
 
-    val result = executeWith(Configs.Interpreted + Configs.Morsel, s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
+    val result = executeWith(Configs.Interpreted, s"match ()-[r]->() where id(r) IN [${rel1.getId}, ${rel2.getId}] return r")
     result.columnAs("r").toList should equal(Seq(rel1, rel2))
   }
 
