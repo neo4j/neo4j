@@ -100,6 +100,7 @@ import static org.neo4j.helpers.collection.Iterators.emptyResourceIterator;
 import static org.neo4j.helpers.collection.Iterators.filter;
 import static org.neo4j.helpers.collection.Iterators.iterator;
 import static org.neo4j.helpers.collection.Iterators.singleOrNull;
+import static org.neo4j.internal.kernel.api.schema.SchemaDescriptorPredicates.hasProperty;
 import static org.neo4j.kernel.impl.api.store.DefaultIndexReference.fromDescriptor;
 import static org.neo4j.register.Registers.newDoubleLongRegister;
 import static org.neo4j.storageengine.api.txstate.TxStateVisitor.EMPTY;
@@ -636,12 +637,19 @@ public class AllStoreHolder extends Read
         {
             constraints = ktx.txState().constraintsChanges().apply( constraints );
         }
-        return Iterators.map( constraintDescriptor ->
+        return Iterators.map( this::lockConstraint, constraints );
+    }
+
+    Iterator<ConstraintDescriptor> constraintsGetForProperty( int propertyKey )
+    {
+        ktx.assertOpen();
+        Iterator<ConstraintDescriptor> constraints = storeReadLayer.constraintsGetAll();
+        if ( ktx.hasTxStateWithChanges() )
         {
-            SchemaDescriptor schema = constraintDescriptor.schema();
-            ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
-            return constraintDescriptor;
-        }, constraints );
+            constraints = ktx.txState().constraintsChanges().apply( constraints );
+        }
+        return Iterators.map( this::lockConstraint,
+                              Iterators.filter( hasProperty( propertyKey ), constraints ) );
     }
 
     @Override
@@ -1194,5 +1202,12 @@ public class AllStoreHolder extends Read
         {
             throw new IndexNotFoundKernelException( "No index was found" );
         }
+    }
+
+    private ConstraintDescriptor lockConstraint( ConstraintDescriptor constraint )
+    {
+        SchemaDescriptor schema = constraint.schema();
+        ktx.statementLocks().pessimistic().acquireShared( ktx.lockTracer(), schema.keyType(), schema.keyId() );
+        return constraint;
     }
 }

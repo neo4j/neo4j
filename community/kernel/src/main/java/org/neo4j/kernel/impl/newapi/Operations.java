@@ -486,8 +486,7 @@ public class Operations implements Write, ExplicitIndexWrite, SchemaWrite
 
         singleNode( node );
         acquireSharedNodeLabelLocks();
-        Iterator<ConstraintDescriptor> constraints = Iterators.filter( hasProperty( propertyKey ),
-                allStoreHolder.constraintsGetAll() );
+        Iterator<ConstraintDescriptor> constraints = allStoreHolder.constraintsGetForProperty( propertyKey );
         Iterator<IndexBackedConstraintDescriptor> uniquenessConstraints =
                 new CastingIterator<>( constraints, IndexBackedConstraintDescriptor.class );
 
