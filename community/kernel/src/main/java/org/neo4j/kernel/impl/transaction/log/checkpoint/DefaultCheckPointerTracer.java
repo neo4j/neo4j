@@ -33,13 +33,8 @@ import org.neo4j.time.SystemNanoClock;
 
 public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointerMonitor
 {
-    public interface Monitor
-    {
-        void lastCheckPointEventDuration( long millis );
-    }
-
     private final SystemNanoClock clock;
-    private final Monitor monitor;
+    private final CheckpointDurationMonitor monitor;
     private final JobScheduler jobScheduler;
 
     private final AtomicLong counter = new AtomicLong();
@@ -68,12 +63,12 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
         }
     };
 
-    public DefaultCheckPointerTracer( Monitor monitor, JobScheduler jobScheduler )
+    public DefaultCheckPointerTracer( CheckpointDurationMonitor monitor, JobScheduler jobScheduler )
     {
         this( Clocks.nanoClock(), monitor, jobScheduler );
     }
 
-    public DefaultCheckPointerTracer( SystemNanoClock clock, Monitor monitor, JobScheduler jobScheduler )
+    public DefaultCheckPointerTracer( SystemNanoClock clock, CheckpointDurationMonitor monitor, JobScheduler jobScheduler )
     {
         this.clock = clock;
         this.monitor = monitor;

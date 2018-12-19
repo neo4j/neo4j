@@ -22,12 +22,13 @@ package org.neo4j.kernel.monitoring.tracing;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointDurationMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
-import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
+import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.time.SystemNanoClock;
 
 /**
@@ -42,8 +43,7 @@ public class DefaultTracerFactory implements TracerFactory
     }
 
     @Override
-    public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock,
-            Log log )
+    public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, Log log )
     {
         return new DefaultPageCacheTracer();
     }
@@ -58,7 +58,7 @@ public class DefaultTracerFactory implements TracerFactory
     @Override
     public CheckPointTracer createCheckPointTracer( Monitors monitors, JobScheduler jobScheduler )
     {
-        DefaultCheckPointerTracer.Monitor monitor = monitors.newMonitor( DefaultCheckPointerTracer.Monitor.class );
+        CheckpointDurationMonitor monitor = monitors.newMonitor( CheckpointDurationMonitor.class );
         return new DefaultCheckPointerTracer( monitor, jobScheduler );
     }
 }

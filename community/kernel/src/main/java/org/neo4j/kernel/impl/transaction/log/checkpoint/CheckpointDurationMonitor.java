@@ -17,24 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.bolt.runtime;
+package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public interface BoltConnectionMetricsMonitor
+public interface CheckpointDurationMonitor
 {
-    void connectionOpened();
-
-    void connectionActivated();
-
-    void connectionWaiting();
-
-    void messageReceived();
-
-    void messageProcessingStarted( long queueTime );
-
-    void messageProcessingCompleted( long processingTime );
-
-    void messageProcessingFailed();
-
-    void connectionClosed();
-
+    void lastCheckPointEventDuration( long millis );
 }
