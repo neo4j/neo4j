@@ -119,6 +119,12 @@ public class FakeClockJobScheduler extends FakeClock implements JobScheduler
     }
 
     @Override
+    public ThreadFactory interruptableThreadFactory( Group group )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         JobHandle handle = schedule( job, now() );

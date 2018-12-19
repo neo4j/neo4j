@@ -70,6 +70,12 @@ public interface JobScheduler extends Lifecycle, AutoCloseable
      */
     ThreadFactory threadFactory( Group group );
 
+    /**
+     * This is similar to {@link #threadFactory(Group)}, but attempts to shutdown all Threads when being shut down.
+     * It will do so by calling {@link Thread#interrupt()} on each Thread.
+     */
+    ThreadFactory interruptableThreadFactory( Group group );
+
     /** Schedule a new job in the specified group. */
     JobHandle schedule( Group group, Runnable job );
 

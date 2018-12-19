@@ -46,6 +46,12 @@ public class JobSchedulerAdapter extends LifecycleAdapter implements JobSchedule
     }
 
     @Override
+    public ThreadFactory interruptableThreadFactory( Group group )
+    {
+        return null;
+    }
+
+    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         return null;

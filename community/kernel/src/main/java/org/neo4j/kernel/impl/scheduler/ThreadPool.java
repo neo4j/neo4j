@@ -31,6 +31,7 @@ import org.neo4j.scheduler.JobHandle;
 final class ThreadPool
 {
     private final GroupedDaemonThreadFactory threadFactory;
+    private final InterruptableThreadFactory interruptableThreadFactory;
     private final ExecutorService executor;
     private final ConcurrentHashMap<Object,Future<?>> registry;
     private InterruptedException shutdownInterrupted;
@@ -38,6 +39,7 @@ final class ThreadPool
     ThreadPool( Group group, ThreadGroup parentThreadGroup )
     {
         threadFactory = new GroupedDaemonThreadFactory( group, parentThreadGroup );
+        interruptableThreadFactory = new InterruptableThreadFactory( group, parentThreadGroup );
         executor = group.buildExecutorService( threadFactory );
         registry = new ConcurrentHashMap<>();
     }
@@ -45,6 +47,11 @@ final class ThreadPool
     public ThreadFactory getThreadFactory()
     {
         return threadFactory;
+    }
+
+    ThreadFactory getInterruptableThreadFactory()
+    {
+        return interruptableThreadFactory;
     }
 
     public JobHandle submit( Runnable job )
@@ -78,9 +85,11 @@ final class ThreadPool
     void shutDown()
     {
         executor.shutdown();
+        interruptableThreadFactory.shutDown();
         try
         {
             executor.awaitTermination( 30, TimeUnit.SECONDS );
+            interruptableThreadFactory.awaitTermination( 30, TimeUnit.SECONDS );
         }
         catch ( InterruptedException e )
         {

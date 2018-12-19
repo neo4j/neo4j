@@ -59,6 +59,12 @@ public class CountingJobScheduler implements JobScheduler
     }
 
     @Override
+    public ThreadFactory interruptableThreadFactory( Group group )
+    {
+        return delegate.interruptableThreadFactory( group );
+    }
+
+    @Override
     public ExecutorService workStealingExecutor( Group group, int parallelism )
     {
         return delegate.workStealingExecutor( group, parallelism );

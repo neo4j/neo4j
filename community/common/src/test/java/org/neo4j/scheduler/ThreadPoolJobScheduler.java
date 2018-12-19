@@ -80,6 +80,12 @@ public class ThreadPoolJobScheduler extends LifecycleAdapter implements JobSched
     }
 
     @Override
+    public ThreadFactory interruptableThreadFactory( Group group )
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public JobHandle schedule( Group group, Runnable job )
     {
         return new FutureJobHandle<>( executor.submit( job ) );
