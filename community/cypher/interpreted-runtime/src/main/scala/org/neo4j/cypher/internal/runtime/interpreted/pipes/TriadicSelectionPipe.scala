@@ -23,6 +23,7 @@ import org.eclipse.collections.impl.set.mutable.primitive.LongHashSet
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
 
@@ -33,19 +34,19 @@ case class TriadicSelectionPipe(positivePredicate: Boolean, left: Pipe, source: 
                                (val id: Id = Id.INVALID_ID)
 extends PipeWithSource(left) {
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     var triadicState: LongHashSet = null
     // 1. Build
     new LazyGroupingIterator[ExecutionContext](input) {
-      override def getKey(row: ExecutionContext) = row(source)
+      override def getKey(row: ExecutionContext): AnyValue = row.getByName(source)
 
-      override def getValue(row: ExecutionContext) = row(seen) match {
+      override def getValue(row: ExecutionContext): Option[Long] = row.getByName(seen) match {
         case n: VirtualNodeValue => Some(n.id())
         case Values.NO_VALUE => None
         case x => throw new CypherTypeException(s"Expected a node at `$seen` but got $x")
       }
 
-      override def setState(triadicSet: LongHashSet) = triadicState = triadicSet
+      override def setState(triadicSet: LongHashSet): Unit = triadicState = triadicSet
 
     // 2. pass through 'right'
     }.flatMap { outerContext =>
@@ -54,7 +55,7 @@ extends PipeWithSource(left) {
 
     // 3. Probe
     }.filter { ctx =>
-      ctx(target) match {
+      ctx.getByName(target) match {
         case n: VirtualNodeValue => if(positivePredicate) triadicState.contains(n.id()) else !triadicState.contains(n.id())
         case _ => false
       }

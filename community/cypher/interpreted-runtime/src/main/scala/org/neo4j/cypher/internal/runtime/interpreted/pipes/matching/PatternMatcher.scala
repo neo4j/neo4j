@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes.matching
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.Predicate
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 import scala.collection.Map
+import scala.language.postfixOps
 
 class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
                      predicates: Seq[Predicate],
@@ -46,8 +47,8 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
 
   def createInitialHistory: InitialHistory = {
 
-    val relationshipsInContextButNotInPattern = source.collect {
-      case (key, r: RelationshipValue) if !boundRels.contains(key) && variablesInClause.contains(key) => r
+    val relationshipsInContextButNotInPattern = variablesInClause.filter(key => !boundRels.contains(key) && source.containsName(key)).map(source.getByName).collect {
+      case r: RelationshipValue => r
     }.toIndexedSeq
 
     new InitialHistory(source, relationshipsInContextButNotInPattern, state.executionContextFactory)
@@ -175,7 +176,7 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
 
   private def isMatchSoFar(history: History): Boolean = {
     val m = history.toMap
-    val predicate = predicates.filter(predicate=> !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m contains))
+    val predicate = predicates.filter(predicate => !predicate.containsIsNull && predicate.symbolTableDependencies.forall(m containsName))
     predicate.forall(_.isTrue(m, state))
   }
 
@@ -229,10 +230,10 @@ class PatternMatcher(bindings: Map[String, Set[MatchingPair]],
     """, current, pRel, history, remaining.toList))
   }
 
-  private def debug[U](history: History, resultMap: Map[String, Any]) {
+  private def debug[U](history: History, context: ExecutionContext) {
     if (isDebugging)
-      println(String.format("""yield(history=%s) => %s
-    """, history, resultMap))
+      println(String.format( """yield(history=%s) => %s
+    """, history, context))
   }
 
   private def debug(rel: GraphRelationship, node: NodeValue, pNode: PatternNode, pRel: PatternRelationship, history: History, remaining: Set[MatchingPair]) {

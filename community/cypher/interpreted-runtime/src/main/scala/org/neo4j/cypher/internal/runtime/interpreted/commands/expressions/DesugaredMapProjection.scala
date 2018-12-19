@@ -31,7 +31,7 @@ case class DesugaredMapProjection(id: String, includeAllProps: Boolean, literalE
   extends Expression with GraphElementPropertyFunctions {
 
   override def apply(ctx: ExecutionContext, state: QueryState): AnyValue = {
-    val variableValue = ctx(id)
+    val variableValue = ctx.getByName(id)
 
     val mapOfProperties = variableValue match {
       case v if v == Values.NO_VALUE => return Values.NO_VALUE

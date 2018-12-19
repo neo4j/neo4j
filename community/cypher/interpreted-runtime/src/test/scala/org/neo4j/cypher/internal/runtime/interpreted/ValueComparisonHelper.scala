@@ -31,11 +31,15 @@ object ValueComparisonHelper {
 
   def beEquivalentTo(result: Seq[Map[String, Any]]) = new Matcher[Seq[ExecutionContext]] {
     override def apply(left: Seq[ExecutionContext]): MatchResult = MatchResult(
-      matches = left.indices.forall(i =>
-                                      left(i).keySet == result(i).keySet &&
-                                        left(i).forall{
-                                          case (k,v) => check(v, result(i)(k))
-                                        }),
+      matches = left.indices.forall(i => {
+        val res = result(i)
+        val row = left(i)
+        res.size == row.numberOfColumns &&
+        res.keySet.forall(row.containsName) &&
+         res.forall {
+           case (k,v) => check(row.getByName(k), v)
+         }
+      }),
       rawFailureMessage = s"$left != $result",
       rawNegatedFailureMessage = s"$left == $result")
   }

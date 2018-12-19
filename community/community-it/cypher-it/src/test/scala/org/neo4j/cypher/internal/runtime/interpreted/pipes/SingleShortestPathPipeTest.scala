@@ -23,12 +23,12 @@ import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper.withQueryState
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.ShortestPathExpression
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{ShortestPath, SingleNode}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.graphdb.Node
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
 import org.neo4j.values.virtual.PathValue
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), SemanticDirection.BOTH,
@@ -56,7 +56,7 @@ class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
     val pipe = ShortestPathPipe(source, ShortestPathExpression(path))()
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipe.createResults(queryState).next()("p").asInstanceOf[PathValue]
+        pipe.createResults(queryState).next().getByName("p").asInstanceOf[PathValue]
       })
     }
   }

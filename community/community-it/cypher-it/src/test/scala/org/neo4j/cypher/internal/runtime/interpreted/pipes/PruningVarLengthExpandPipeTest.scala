@@ -26,13 +26,13 @@ import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEqu
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate, True}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.UnresolvedProperty
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.graphdb.Node
 import org.neo4j.internal.kernel.api.Transaction.Type
 import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -101,7 +101,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).map(_.apply("to")).toSet should equal(
+        pipeUnderTest.createResults(queryState).map(_.getByName("to")).toSet should equal(
           nodes.slice(min, max + 1).map(fromNodeProxy).toSet // Slice is excluding the end, whereas ()-[*3..5]->() is including
         )
       })
@@ -425,16 +425,14 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
                          nodePredicate: Predicate) = {
     PruningVarLengthExpandPipe(src, "from", "to", types, outgoing, min, max, new VarLengthPredicate {
       override def filterNode(row: ExecutionContext, state: QueryState)(node: NodeValue): Boolean = {
-        row("to") = node
-        val result = nodePredicate.isTrue(row, state)
-        row.remove("to")
+        val cp = row.copyWith("to", node)
+        val result = nodePredicate.isTrue(cp, state)
         result
       }
 
       override def filterRelationship(row: ExecutionContext, state: QueryState)(rel: RelationshipValue): Boolean = {
-        row("r") = rel
-        val result = relationshipPredicate.isTrue(row, state)
-        row.remove("r")
+        val cp = row.copyWith("r", rel)
+        val result = relationshipPredicate.isTrue(cp, state)
         result
       }
     })()

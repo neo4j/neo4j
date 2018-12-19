@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotGetValue, GetValue, IndexOrderNone, IndexedProperty}
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{DoNotGetValue, GetValue, IndexOrderNone, IndexedProperty}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
@@ -52,7 +52,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should use cache node properties when asked for") {
@@ -66,7 +66,7 @@ class NodeIndexScanPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_("n")) should be(List(node))
+    result.map(_.getByName("n")) should be(List(node))
     result.head.getCachedProperty(cachedNodeProperty("n", propertyKey)) should be(Values.stringValue("hello"))
   }
 }

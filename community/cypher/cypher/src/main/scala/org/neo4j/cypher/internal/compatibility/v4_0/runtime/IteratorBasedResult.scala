@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compatibility.v4_0.runtime
 
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.result.QueryResult
-import org.neo4j.values.AnyValue
 
-case class IteratorBasedResult(mapIterator: Iterator[collection.Map[String, AnyValue]],
+case class IteratorBasedResult(mapIterator: Iterator[ExecutionContext],
                                recordIterator: Option[Iterator[QueryResult.Record]] = None)

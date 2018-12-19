@@ -53,7 +53,7 @@ case class DistinctPipe(source: Pipe, expressions: Map[String, Expression])
     var seen = mutable.Set[AnyValue]()
 
     result.filter { ctx =>
-      val values = VirtualValues.list(keyNames.map(ctx): _*)
+      val values = VirtualValues.list(keyNames.map(ctx.getByName): _*)
 
       if (seen.contains(values)) {
         false

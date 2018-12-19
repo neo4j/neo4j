@@ -32,38 +32,38 @@ object ProjectedPath {
 
   case class singleNodeProjector(node: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) = {
-      tailProjector(ctx, builder.addNode(ctx(node)))
+      tailProjector(ctx, builder.addNode(ctx.getByName(node)))
     }
   }
 
   case class singleIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addIncomingRelationship(ctx(rel)))
+      tailProjector(ctx, builder.addIncomingRelationship(ctx.getByName(rel)))
   }
 
   case class singleOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addOutgoingRelationship(ctx(rel)))
+      tailProjector(ctx, builder.addOutgoingRelationship(ctx.getByName(rel)))
   }
 
   case class singleUndirectedRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addUndirectedRelationship(ctx(rel)))
+      tailProjector(ctx, builder.addUndirectedRelationship(ctx.getByName(rel)))
   }
 
   case class multiIncomingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addIncomingRelationships(ctx(rels)))
+      tailProjector(ctx, builder.addIncomingRelationships(ctx.getByName(rels)))
   }
 
   case class multiOutgoingRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addOutgoingRelationships(ctx(rels)))
+      tailProjector(ctx, builder.addOutgoingRelationships(ctx.getByName(rels)))
   }
 
   case class multiUndirectedRelationshipProjector(rels: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
-      tailProjector(ctx, builder.addUndirectedRelationships(ctx(rels)))
+      tailProjector(ctx, builder.addUndirectedRelationships(ctx.getByName(rels)))
   }
 }
 

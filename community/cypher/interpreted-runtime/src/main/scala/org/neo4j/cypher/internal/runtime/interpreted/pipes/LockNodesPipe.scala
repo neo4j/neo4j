@@ -31,7 +31,7 @@ case class LockNodesPipe(src: Pipe, variablesToLock: Set[String])(val id: Id = I
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.map { ctx =>
       val nodesToLock: Set[Long] = variablesToLock.flatMap { varName =>
-        ctx(varName) match {
+        ctx.getByName(varName) match {
           case n: VirtualNodeValue => Some(n.id())
           case x if x == Values.NO_VALUE => None
           case x: AnyValue => throw CastSupport.typeError[VirtualNodeValue](x)

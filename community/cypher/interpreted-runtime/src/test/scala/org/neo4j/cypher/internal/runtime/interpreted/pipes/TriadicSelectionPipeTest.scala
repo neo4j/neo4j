@@ -39,7 +39,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx("c")).map { case y: NodeValue =>
+    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: NodeValue =>
       y.id()
     }.toSet
     ids should equal(Set(11, 12, 21, 22))
@@ -53,7 +53,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx("c")).map { case y: NodeValue =>
+    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: NodeValue =>
       y.id()
     }.toSet
     ids should equal(Set(11, 12, 21, 22))
@@ -67,7 +67,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(true, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => ctx("c")).map { case y: NodeValue =>
+    val ids = pipe.createResults(queryState).map(ctx => ctx.getByName("c")).map { case y: NodeValue =>
       y.id()
     }.toSet
     ids should equal(Set(2))
@@ -83,7 +83,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     val pipe = TriadicSelectionPipe(false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
     //println(pipe.createResults(queryState).toList)
-    val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
+    val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
     }.toSet
@@ -99,7 +99,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
+    val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
     }.toSet
@@ -115,7 +115,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(true, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
+    val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id(), c.id())
     }.toSet
@@ -131,7 +131,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
+    val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id, c.id)
     }.toSet
@@ -147,7 +147,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
     )
     val pipe = TriadicSelectionPipe(false, left, "a", "b", "c", right)()
     val queryState = QueryStateHelper.empty
-    val ids = pipe.createResults(queryState).map(ctx => (ctx("a"), ctx("c"))).map {
+    val ids = pipe.createResults(queryState).map(ctx => (ctx.getByName("a"), ctx.getByName("c"))).map {
       case (a: NodeValue, c: NodeValue) =>
         (a.id, c.id())
     }.toSet
@@ -190,7 +190,7 @@ class TriadicSelectionPipeTest extends CypherFunSuite {
       override def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = state.initialContext match {
         case Some(context: ExecutionContext) =>
           in.flatMap { m =>
-            if (ValueUtils.of(m(keys(0))) == context(keys(0))) {
+            if (ValueUtils.of(m(keys(0))) == context.getByName(keys(0))) {
               val stringToProxy: mutable.Map[String, AnyValue] = collection.mutable.Map(m.mapValues(ValueUtils.of).toSeq: _*)
               val outRow = state.newExecutionContext(CommunityExecutionContextFactory())
               outRow mergeWith ExecutionContext(stringToProxy)

@@ -42,8 +42,8 @@ case class SortPipe(source: Pipe, orderBy: Seq[ColumnOrder])
 case class ExecutionContextOrdering(order: ColumnOrder) extends scala.Ordering[ExecutionContext] {
   override def compare(a: ExecutionContext, b: ExecutionContext): Int = {
     val column = order.id
-    val aVal = a(column)
-    val bVal = b(column)
+    val aVal = a.getByName(column)
+    val bVal = b.getByName(column)
     order.compareValues(aVal, bVal)
   }
 }

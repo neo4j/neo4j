@@ -17,21 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
+package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
 
-case class Variable(entityName: String) extends Expression {
+object ExecutionContextHelper {
 
-  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(entityName)
-
-  override def toString: String = entityName
-
-  def rewrite(f: Expression => Expression) = f(this)
-
-  def arguments = Seq()
-
-  def symbolTableDependencies = Set(entityName)
+  implicit class RichExectionContext(context: ExecutionContext) {
+    def toMap: Map[String, AnyValue] = context match {
+      case m: MapExecutionContext => m.toMap
+      case _ => throw new UnsupportedOperationException(s"cannot make a map out of $context")
+    }
+  }
 }

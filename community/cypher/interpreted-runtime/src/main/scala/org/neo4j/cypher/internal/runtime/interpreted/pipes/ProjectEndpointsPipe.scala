@@ -77,7 +77,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def findSimpleLengthRelEndpoints(context: ExecutionContext,
                                            qtx: QueryContext
                                           ): Option[StartAndEnd] = {
-      val relValue = context(relName) match {
+      val relValue = context.getByName(relName) match {
         case relValue: RelationshipValue => relValue
         case relRef: RelationshipReference => qtx.relationshipOps.getById(relRef.id())
       }
@@ -88,7 +88,7 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
   private def findVarLengthRelEndpoints(context: ExecutionContext,
                                         qtx: QueryContext
                                        ): Option[(StartAndEnd, ListValue)] = {
-    val rels = makeTraversable(context(relName))
+    val rels = makeTraversable(context.getByName(relName))
     if (rels.nonEmpty && allHasAllowedType(rels, qtx)) {
       val firstRel = rels.head match {
         case relValue: RelationshipValue => relValue
@@ -125,9 +125,9 @@ case class ProjectEndpointsPipe(source: Pipe, relName: String,
     val e = relEnd.endNode()
 
     if (!startInScope && !endInScope) Some(NotInScope(s, e))
-    else if ((!startInScope || context(start) == s) && (!endInScope || context(end) == e))
+    else if ((!startInScope || context.getByName(start) == s) && (!endInScope || context.getByName(end) == e))
       Some(InScope(s, e))
-    else if (!directed && (!startInScope || context(start) == e ) && (!endInScope || context(end) == s))
+    else if (!directed && (!startInScope || context.getByName(start) == e ) && (!endInScope || context.getByName(end) == s))
       Some(InScopeReversed(s, e))
     else None
   }

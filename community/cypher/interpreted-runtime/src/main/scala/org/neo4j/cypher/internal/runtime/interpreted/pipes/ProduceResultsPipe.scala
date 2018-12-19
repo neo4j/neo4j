@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.ValuePopulation
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, MutableMaps}
-import org.neo4j.values.AnyValue
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.values.AnyValue
 
 case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
                              (val id: Id = Id.INVALID_ID) extends PipeWithSource(source) {
@@ -46,7 +46,7 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
     val m = MutableMaps.create[String, AnyValue](columns.size)
     columns.foreach(
       name => {
-        val value = original(name)
+        val value = original.getByName(name)
         ValuePopulation.populate(value)
         m.put(name, value)
       }
@@ -57,7 +57,7 @@ case class ProduceResultsPipe(source: Pipe, columns: Seq[String])
   private def produce(original: ExecutionContext) = {
     val m = MutableMaps.create[String, AnyValue](columns.size)
     columns.foreach(
-      name => m.put(name, original(name))
+      name => m.put(name, original.getByName(name))
     )
     ExecutionContext(m)
   }

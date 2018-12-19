@@ -76,7 +76,7 @@ class DistinctPipeTest extends CypherFunSuite {
 
     //THEN
     result should have size 1
-    result.head("x").asInstanceOf[MapValue].get("prop") should equal(stringArray("a", "b"))
+    result.head.getByName("x").asInstanceOf[MapValue].get("prop") should equal(stringArray("a", "b"))
   }
 
   def createDistinctPipe(input: List[Map[String, Any]], expressions: Map[String, Expression] = Map("x" -> Variable("x"))) = {

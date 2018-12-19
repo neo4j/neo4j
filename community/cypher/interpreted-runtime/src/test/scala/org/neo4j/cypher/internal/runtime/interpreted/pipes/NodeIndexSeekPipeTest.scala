@@ -24,14 +24,14 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListLiteral, Literal, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ImplicitDummyPos, QueryStateHelper}
+import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
 import org.neo4j.cypher.internal.v4_0.logical.plans._
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
+import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, LabelId, PropertyKeyId}
 import org.neo4j.internal.kernel.api.IndexReference
 import org.neo4j.values.storable.Values
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.VirtualValues
-import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
-import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, LabelId, PropertyKeyId}
 
 class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
@@ -55,7 +55,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should handle index lookups for multiple values") {
@@ -73,7 +73,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node, node2))
+    result.map(_.getByName("n")).toList should equal(List(node, node2))
   }
 
   test("should handle unique index lookups for multiple values") {
@@ -91,7 +91,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node, node2))
+    result.map(_.getByName("n")).toList should equal(List(node, node2))
   }
 
   test("should handle locking unique index lookups for multiple values") {
@@ -109,7 +109,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node, node2))
+    result.map(_.getByName("n")).toList should equal(List(node, node2))
   }
 
   test("should handle index lookups for multiple values when some are null") {
@@ -130,7 +130,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should handle unique index lookups for multiple values when some are null") {
@@ -150,7 +150,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should handle index lookups for IN an empty collection") {
@@ -167,7 +167,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List.empty)
+    result.map(_.getByName("n")).toList should equal(List.empty)
   }
 
   test("should handle index lookups for IN a collection with duplicates") {
@@ -187,7 +187,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should handle index lookups for IN a collection that returns the same nodes for multiple values") {
@@ -208,7 +208,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node, node))
+    result.map(_.getByName("n")).toList should equal(List(node, node))
   }
 
   test("should handle index lookups for composite index lookups over multiple values") {
@@ -230,7 +230,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should give a helpful error message") {
@@ -257,7 +257,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should use existing values from arguments when available") {
@@ -273,7 +273,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState)
 
     // then
-    result.map(_("n")).toList should equal(List(node))
+    result.map(_.getByName("n")).toList should equal(List(node))
   }
 
   test("should use index provided values when available") {
@@ -294,7 +294,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_("n")) should be(List(node, node2))
+    result.map(_.getByName("n")) should be(List(node, node2))
     result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey.head))) should be(
       List(Values.stringValue("hello"), Values.stringValue("bye"))
     )
@@ -323,7 +323,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_("n")) should be(List(node, node2))
+    result.map(_.getByName("n")) should be(List(node, node2))
     result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKeys(0)))) should be(
       List(Values.stringValue("hello"), Values.stringValue("bye")))
     result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKeys(1)))) should be(
@@ -345,7 +345,7 @@ class NodeIndexSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with In
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_("n")) should be(List(node, node2))
+    result.map(_.getByName("n")) should be(List(node, node2))
     result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey.head))) should be(
       List(Values.stringValue("hello"), Values.stringValue("bye"))
     )

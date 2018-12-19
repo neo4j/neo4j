@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
@@ -127,6 +127,5 @@ case class VarLengthExpandPipe(source: Pipe,
       }
     }
 
-  def fetchFromContext(row: ExecutionContext, state: QueryState, name: String): Any =
-    row.getOrElse(name, throw new InternalException(s"Expected to find a node at '$name' but found nothing"))
+  def fetchFromContext(row: ExecutionContext, state: QueryState, name: String): Any = row.getByName(name)
 }

@@ -24,15 +24,14 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{Pattern, ShortestPath, SingleNode, _}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.runtime.{Expander, KernelPredicate}
-import org.neo4j.graphdb.{Path, PropertyContainer, Relationship}
+import org.neo4j.cypher.internal.v4_0.util.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
+import org.neo4j.graphdb.{NotFoundException, Path, PropertyContainer, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeReference, NodeValue, VirtualValues}
-import org.neo4j.cypher.internal.v4_0.util.{NonEmptyList, ShortestPathCommonEndNodesForbiddenException, SyntaxException}
 
 import scala.collection.JavaConverters._
-import scala.collection.Map
 
 case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                   perStepPredicates: Seq[Predicate] = Seq.empty,
@@ -87,22 +86,28 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
 
       override def test(path: Path): Boolean = maybePredicate.forall {
         predicate =>
-          incomingCtx += shortestPathPattern.pathName -> ValueUtils.fromPath(path)
-          incomingCtx += shortestPathPattern.relIterator.get -> ValueUtils.asListOfEdges(path.relationships())
+          incomingCtx.set(shortestPathPattern.pathName, ValueUtils.fromPath(path))
+          incomingCtx.set(shortestPathPattern.relIterator.get, ValueUtils.asListOfEdges(path.relationships()))
           predicate.isTrue(incomingCtx, state)
       } && (!withFallBack || ShortestPathExpression.noDuplicates(path.relationships.asScala))
     }
 
-  private def getEndPoint(m: Map[String, AnyValue], state: QueryState, start: SingleNode): NodeValue =
-    m.getOrElse(start.name,
-      throw new SyntaxException(
-        s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")) match {
-      case node: NodeValue => node
-      case node: NodeReference => state.query.nodeOps.getById(node.id())
+  private def getEndPoint(m: ExecutionContext, state: QueryState, start: SingleNode): NodeValue = {
+    try {
+      m.getByName(start.name) match {
+        case node: NodeValue => node
+        case node: NodeReference => state.query.nodeOps.getById(node.id())
+      }
+    } catch {
+      case _: NotFoundException =>
+        throw new SyntaxException(
+          s"To find a shortest path, both ends of the path need to be provided. Couldn't find `$start`")
     }
+  }
 
-  private def anyStartpointsContainNull(m: Map[String, Any]): Boolean =
-    m(shortestPathPattern.left.name) == Values.NO_VALUE || m(shortestPathPattern.right.name) == Values.NO_VALUE
+  private def anyStartpointsContainNull(m: ExecutionContext): Boolean = m
+    .getByName(shortestPathPattern.left.name) == Values.NO_VALUE || m
+    .getByName(shortestPathPattern.right.name) == Values.NO_VALUE
 
   override def children = Seq(shortestPathPattern)
 
@@ -130,7 +135,9 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                                  predicate: Predicate,
                                                  state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      predicate.isTrue(incomingCtx += (name -> ValueUtils.asNodeOrEdgeValue(t)), state)
+
+      incomingCtx.set(name, ValueUtils.asNodeOrEdgeValue(t))
+      predicate.isTrue(incomingCtx, state)
     }
   }
 
@@ -139,7 +146,8 @@ case class ShortestPathExpression(shortestPathPattern: ShortestPath,
                                                  predicate: Predicate,
                                                  state: QueryState) = new KernelPredicate[PropertyContainer] {
     override def test(t: PropertyContainer): Boolean = {
-      !predicate.isTrue(incomingCtx += (name -> ValueUtils.asNodeOrEdgeValue(t)), state)
+      incomingCtx.set(name, ValueUtils.asNodeOrEdgeValue(t))
+      !predicate.isTrue(incomingCtx, state)
     }
   }
 

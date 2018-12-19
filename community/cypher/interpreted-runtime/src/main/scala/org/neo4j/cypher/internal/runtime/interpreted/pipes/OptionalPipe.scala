@@ -29,7 +29,7 @@ case class OptionalPipe(nullableVariables: Set[String], source: Pipe)
 
   private def notFoundExecutionContext(initialContext: Option[ExecutionContext]): ExecutionContext = {
     val context = initialContext.getOrElse(ExecutionContext.empty)
-    nullableVariables.foreach(v => context += v -> Values.NO_VALUE)
+    nullableVariables.foreach(v => context.set(v, Values.NO_VALUE))
     context
   }
 

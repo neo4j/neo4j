@@ -41,7 +41,7 @@ abstract class NodeOuterHashJoinPipe(nodeVariables: Set[String],
     val key = new Array[Long](myVariables.length)
 
     for (idx <- myVariables.indices) {
-      key(idx) = context(myVariables(idx)) match {
+      key(idx) = context.getByName(myVariables(idx)) match {
         case n: VirtualNodeValue => n.id
         case _ => return None
       }

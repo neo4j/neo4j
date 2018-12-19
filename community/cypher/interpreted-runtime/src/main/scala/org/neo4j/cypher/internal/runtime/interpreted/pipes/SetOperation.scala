@@ -112,7 +112,7 @@ abstract class SetEntityPropertyOperation[T, CURSOR](itemName: String,
   extends AbstractSetPropertyOperation {
 
   override def set(executionContext: ExecutionContext, state: QueryState): Unit = {
-    val item = executionContext(itemName)
+    val item = executionContext.getByName(itemName)
     if (item != Values.NO_VALUE) {
       val itemId = id(item)
       val ops = operations(state.query)
@@ -192,7 +192,7 @@ abstract class SetPropertyFromMapOperation[T, CURSOR](itemName: String,
                                                       removeOtherProps: Boolean) extends SetOperation {
 
   override def set(executionContext: ExecutionContext, state: QueryState): Unit = {
-    val item = executionContext(itemName)
+    val item = executionContext.getByName(itemName)
     if (item != Values.NO_VALUE) {
       val ops = operations(state.query)
       val itemId = id(item)
@@ -266,7 +266,7 @@ case class SetRelationshipPropertyFromMapOperation(relName: String, expression: 
 case class SetLabelsOperation(nodeName: String, labels: Seq[LazyLabel]) extends SetOperation {
 
   override def set(executionContext: ExecutionContext, state: QueryState) = {
-    val value: AnyValue = executionContext.get(nodeName).get
+    val value: AnyValue = executionContext.getByName(nodeName)
     if (value != Values.NO_VALUE) {
       val nodeId = CastSupport.castOrFail[VirtualNodeValue](value).id()
       val labelIds = labels.map(_.getOrCreateId(state.query).id)

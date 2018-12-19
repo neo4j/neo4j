@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
+import org.neo4j.cypher.internal.v4_0.util.InternalException
+import org.neo4j.graphdb.NotFoundException
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual._
 
 import scala.collection.mutable.{Map => MutableMap}
-import scala.collection.{Iterator, immutable}
 
 object ExecutionContext {
   def empty: ExecutionContext = apply()
@@ -42,7 +42,8 @@ object ExecutionContext {
 
 case class ResourceLinenumber(filename: String, linenumber: Long, last: Boolean = false)
 
-trait ExecutionContext extends MutableMap[String, AnyValue] {
+trait ExecutionContext {
+
   def copyTo(target: ExecutionContext, fromLongOffset: Int = 0, fromRefOffset: Int = 0, toLongOffset: Int = 0, toRefOffset: Int = 0): Unit
   def copyFrom(input: ExecutionContext, nLongs: Int, nRefs: Int): Unit
   def copyCachedFrom(input: ExecutionContext): Unit
@@ -51,6 +52,9 @@ trait ExecutionContext extends MutableMap[String, AnyValue] {
 
   def setRefAt(offset: Int, value: AnyValue): Unit
   def getRefAt(offset: Int): AnyValue
+  def getByName(name: String): AnyValue
+  def containsName(name: String): Boolean
+  def numberOfColumns: Int
 
   def set(newEntries: Seq[(String, AnyValue)]): Unit
   def set(key: String, value: AnyValue): Unit
@@ -106,6 +110,13 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     case _ =>
       fail()
   }
+  def remove(name: String): Option[AnyValue] = m.remove(name)
+  //used for testing
+  def toMap: Map[String, AnyValue] = m.toMap
+
+  override def getByName(name: String): AnyValue = m.getOrElse(name, throw new NotFoundException(s"Unknown variable `$name`."))
+  override def containsName(name: String): Boolean = m.contains(name)
+  override def numberOfColumns: Int = m.size
 
   override def setLongAt(offset: Int, value: Long): Unit = fail()
   override def getLongAt(offset: Int): Long = fail()
@@ -114,12 +125,6 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
   override def getRefAt(offset: Int): AnyValue = fail()
 
   private def fail(): Nothing = throw new InternalException("Tried using a map context as a slotted context")
-
-  override def get(key: String): Option[AnyValue] = m.get(key)
-
-  override def iterator: Iterator[(String, AnyValue)] = m.iterator
-
-  override def size: Int = m.size
 
   override def mergeWith(other: ExecutionContext): Unit = other match {
     case otherMapCtx: MapExecutionContext =>
@@ -136,17 +141,6 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
       setLinenumber(otherMapCtx.getLinenumber)
     case _ => fail()
   }
-
-  override def foreach[U](f: ((String, AnyValue)) => U) {
-    m.foreach(f)
-  }
-
-  override def +=(kv: (String, AnyValue)): MapExecutionContext.this.type = {
-    m += kv
-    this
-  }
-
-  override def toMap[T, U](implicit ev: (String, AnyValue) <:< (T, U)): immutable.Map[T, U] = m.toMap(ev)
 
   override def set(newEntries: Seq[(String, AnyValue)]): Unit =
     m ++= newEntries
@@ -196,11 +190,6 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
 
   override def createClone(): ExecutionContext = cloneFromMap(m.clone())
 
-  override def -=(key: String): this.type = {
-    m.remove(key)
-    this
-  }
-
   override def boundEntities(materializeNode: Long => AnyValue, materializeRelationship: Long => AnyValue): Map[String, AnyValue] =
     m.collect {
       case kv @ (_, _: NodeValue) =>
@@ -214,7 +203,7 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     }.toMap
 
   override def isNull(key: String): Boolean =
-    get(key) match {
+    m.get(key) match {
       case Some(Values.NO_VALUE) => true
       case _ => false
     }

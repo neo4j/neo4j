@@ -21,16 +21,17 @@ package org.neo4j.cypher.internal.runtime.interpreted
 
 import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{Literal, Property, Variable}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{Equals, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.TokenType.PropertyKey
 import org.neo4j.cypher.internal.runtime.interpreted.commands.{Pattern, RelatedTo, SingleNode, VarLengthRelatedTo}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.matching.MatchingContext
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
-import org.neo4j.kernel.impl.util.ValueUtils
-import org.neo4j.values.AnyValue
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
+import org.neo4j.kernel.impl.util.ValueUtils
+import org.neo4j.values.AnyValue
 
 import scala.collection.Map
 
@@ -440,9 +441,9 @@ class MatchingContextTest extends GraphDatabaseFunSuite with PatternGraphBuilder
 
   private var matchingContext: MatchingContext = null
 
-  private def getMatches(params: (String, Any)*) = withQueryState { queryState =>
+  private def getMatches(params: (String, Any)*): List[Map[String, AnyValue]] = withQueryState { queryState =>
     val ctx = ExecutionContext.empty.copyWith(params.map(p => (p._1, ValueUtils.of(p._2))))
-    matchingContext.getMatches(ctx, queryState).toList
+    matchingContext.getMatches(ctx, queryState).map(_.toMap).toList
   }
 
   private def assertMatches(matches: List[Map[String, Any]], expectedSize: Int, expected: Map[String, AnyValue]*) {

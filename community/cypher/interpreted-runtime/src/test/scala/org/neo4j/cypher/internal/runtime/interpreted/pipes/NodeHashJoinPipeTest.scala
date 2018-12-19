@@ -59,7 +59,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
-    result.map(_("b")).toList should equal(List(fromNodeProxy(node2)))
+    result.map(_.getByName("b")).toList should equal(List(fromNodeProxy(node2)))
   }
 
   test("should support joining on two different variables") {

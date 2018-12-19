@@ -32,6 +32,6 @@ case class InterpretedCommandProjection(expressions: Map[String, Expression]) ex
   override def project(ctx: ExecutionContext, state: QueryState): Unit = expressions.foreach {
     case (name, expression) =>
       val result = expression(ctx, state)
-      ctx.put(name, result)
+      ctx.set(name, result)
   }
 }

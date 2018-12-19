@@ -38,7 +38,7 @@ case class ConditionalApplyPipe(source: Pipe, inner: Pipe, items: Seq[String], n
     }
 
   private def condition(context: ExecutionContext) = {
-    val cond = items.exists { context.get(_).get != Values.NO_VALUE}
+    val cond = items.exists { context.getByName(_) != Values.NO_VALUE}
       if (negated) !cond else cond
   }
 

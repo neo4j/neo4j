@@ -27,7 +27,6 @@ import org.neo4j.cypher.result.QueryResult.QueryResultVisitor
 import org.neo4j.cypher.result.RuntimeResult.ConsumptionState
 import org.neo4j.cypher.result.{QueryProfile, RuntimeResult}
 import org.neo4j.graphdb.ResourceIterator
-import org.neo4j.values.AnyValue
 
 class PipeExecutionResult(val result: IteratorBasedResult,
                           val fieldNames: Array[String],
@@ -49,10 +48,11 @@ class PipeExecutionResult(val result: IteratorBasedResult,
       private val inner = result.mapIterator
       def hasNext: Boolean = inner.hasNext
       def next(): util.Map[String, AnyRef] = {
-        val scalaRow: collection.Map[String, AnyValue] = inner.next()
-        val javaRow = new util.HashMap[String, AnyRef](scalaRow.size)
-        for (kv <- scalaRow)
-          javaRow.put(kv._1, query.asObject(kv._2))
+        val scalaRow = inner.next()
+        val javaRow = new util.HashMap[String, AnyRef](scalaRow.numberOfColumns)
+        for (field <- fieldNames){
+          javaRow.put(field, query.asObject(scalaRow.getByName(field)))
+        }
         javaRow
       }
     }
@@ -75,7 +75,7 @@ class PipeExecutionResult(val result: IteratorBasedResult,
     if (maybeRecordIterator.isDefined)
       javaValues.feedQueryResultRecordIteratorToVisitable(maybeRecordIterator.get).accept(visitor)
     else
-      javaValues.feedIteratorToVisitable(result.mapIterator.map(r => fieldNames.map(r))).accept(visitor)
+      javaValues.feedIteratorToVisitable(result.mapIterator.map(r => fieldNames.map(r.getByName))).accept(visitor)
   }
 
   override def consumptionState: RuntimeResult.ConsumptionState =

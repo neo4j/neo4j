@@ -32,7 +32,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
+      if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -51,7 +51,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
+      if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =

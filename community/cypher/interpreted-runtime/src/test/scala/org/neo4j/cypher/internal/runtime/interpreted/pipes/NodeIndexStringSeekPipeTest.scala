@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Literal
 import org.neo4j.cypher.internal.runtime.interpreted.{ImplicitDummyPos, QueryStateHelper}
-import org.neo4j.cypher.internal.v4_0.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
-import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.NodeValue
 import org.neo4j.cypher.internal.v4_0.expressions.{LabelName, LabelToken, PropertyKeyName, PropertyKeyToken}
+import org.neo4j.cypher.internal.v4_0.logical.plans.{GetValue, IndexOrderNone, IndexedProperty}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.{CypherFunSuite, WindowsStringSafe}
 import org.neo4j.cypher.internal.v4_0.util.{LabelId, PropertyKeyId}
+import org.neo4j.values.storable.Values
+import org.neo4j.values.virtual.NodeValue
 
 class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos with IndexMockingHelp {
 
@@ -59,7 +59,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_("n")) should be(List(node))
+    result.map(_.getByName("n")) should be(List(node))
     result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey))) should be(
       List(Values.stringValue("hello"))
     )
@@ -79,7 +79,7 @@ class NodeIndexStringSeekPipeTest extends CypherFunSuite with ImplicitDummyPos w
     val result = pipe.createResults(queryState).toList
 
     // then
-    result.map(_("n")) should be(List(node2))
+    result.map(_.getByName("n")) should be(List(node2))
     result.map(_.getCachedProperty(cachedNodeProperty("n", propertyKey))) should be(
       List(Values.stringValue("bye"))
     )

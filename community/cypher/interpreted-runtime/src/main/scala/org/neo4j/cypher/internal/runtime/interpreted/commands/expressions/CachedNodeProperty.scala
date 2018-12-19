@@ -24,11 +24,11 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.values.KeyToken
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.cypher.internal.v4_0.logical.plans
+import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 import org.neo4j.kernel.api.StatementConstants
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.VirtualNodeValue
-import org.neo4j.cypher.internal.v4_0.util.CypherTypeException
 
 abstract class AbstractCachedNodeProperty extends Expression {
 
@@ -70,7 +70,7 @@ case class CachedNodeProperty(nodeName: String, propertyKey: KeyToken, key: plan
   override def toString: String = key.cacheKey
 
   override def getNodeId(ctx: ExecutionContext): Long =
-    ctx(nodeName) match {
+    ctx.getByName(nodeName) match {
       case Values.NO_VALUE => StatementConstants.NO_SUCH_NODE
       case n: VirtualNodeValue => n.id()
       case other => throw new CypherTypeException(s"Type mismatch: expected a node but was $other")

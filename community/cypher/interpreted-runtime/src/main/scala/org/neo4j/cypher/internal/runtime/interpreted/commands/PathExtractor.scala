@@ -23,18 +23,18 @@ import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
 import org.neo4j.values.AnyValue
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue, PathValue, VirtualValues}
+import org.neo4j.values.virtual.{NodeValue, PathValue, RelationshipValue, VirtualValues}
 
 import scala.collection.mutable.ArrayBuffer
 
 case class PathExtractorExpression(pathPattern: Seq[Pattern]) extends Expression {
 
   override def apply(ctx: ExecutionContext, queryState: QueryState): AnyValue = {
-    def getNode(x: String): NodeValue = ctx(x).asInstanceOf[NodeValue]
+    def getNode(x: String): NodeValue = ctx.getByName(x).asInstanceOf[NodeValue]
 
-    def getRel(x: String): RelationshipValue = ctx(x).asInstanceOf[RelationshipValue]
+    def getRel(x: String): RelationshipValue = ctx.getByName(x).asInstanceOf[RelationshipValue]
 
-    def getPath(x: String): PathValue = ctx(x).asInstanceOf[PathValue]
+    def getPath(x: String): PathValue = ctx.getByName(x).asInstanceOf[PathValue]
 
     val firstNode = getFirstNode(pathPattern)
 

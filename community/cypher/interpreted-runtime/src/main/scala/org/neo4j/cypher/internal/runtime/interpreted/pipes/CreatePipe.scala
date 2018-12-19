@@ -22,12 +22,12 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted._
 import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.Expression
 import org.neo4j.cypher.internal.runtime.{LenientCreateRelationship, Operations, QueryContext}
+import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 import org.neo4j.function.ThrowingBiConsumer
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
-import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.util.{CypherTypeException, InternalException, InvalidSemanticsException}
 
 /**
   * Extends PipeWithSource with methods for setting properties and labels on entities.
@@ -118,13 +118,12 @@ abstract class EntityCreatePipe(src: Pipe) extends BaseCreatePipe(src) {
   }
 
   private def getNode(row: ExecutionContext, relName: String, name: String, lenient: Boolean): NodeValue =
-    row.get(name) match {
-      case Some(n: NodeValue) => n
-      case Some(Values.NO_VALUE) =>
+    row.getByName(name) match {
+      case n: NodeValue => n
+      case Values.NO_VALUE =>
         if (lenient) null
         else throw new InternalException(LenientCreateRelationship.errorMsg(relName, name))
-      case Some(x) => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")
-      case None => throw new InternalException(s"Expected to find a node at '$name' but found instead: null")
+      case x => throw new InternalException(s"Expected to find a node at '$name' but found instead: $x")
     }
 }
 

@@ -23,18 +23,17 @@ import org.mockito.ArgumentMatchers._
 import org.mockito.Mockito._
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.stubbing.Answer
-import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
-import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
+import org.neo4j.cypher.internal.runtime.QueryContext
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper._
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.SymbolTable
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
-import org.neo4j.cypher.internal.runtime.QueryContext
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
-import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
-import org.neo4j.values.virtual.{RelationshipValue, NodeValue}
+import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
 
 class VarLengthExpandPipeTest extends CypherFunSuite {
 
@@ -61,10 +60,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       .createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(List(relationship))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(List(relationship))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between two nodes when the end node is in scope") {
@@ -90,10 +89,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       .createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(List(relationship))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(List(relationship))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between two nodes when a mismatching end node is in scope") {
@@ -174,10 +173,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       .createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(List(relationship))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(List(relationship))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes") {
@@ -209,13 +208,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship))
-    first("b") should beEquivalentTo(middleNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship))
+    first.getByName("b") should beEquivalentTo(middleNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes and end node in scope") {
@@ -247,13 +246,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship))
-    first("b") should beEquivalentTo(middleNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship))
+    first.getByName("b") should beEquivalentTo(middleNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes and mismatching end node in scope") {
@@ -318,19 +317,19 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: third :: fourth :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship2))
-    first("b") should beEquivalentTo(middleNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
-    third("a") should beEquivalentTo(startNode)
-    third("r") should beEquivalentTo(List(leftRelationship1))
-    third("b") should beEquivalentTo(middleNode)
-    fourth("a") should beEquivalentTo(startNode)
-    fourth("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
-    fourth("b") should beEquivalentTo(endNode)
+    val first :: second :: third :: fourth :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship2))
+    first.getByName("b") should beEquivalentTo(middleNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
+    third.getByName("a") should beEquivalentTo(startNode)
+    third.getByName("r") should beEquivalentTo(List(leftRelationship1))
+    third.getByName("b") should beEquivalentTo(middleNode)
+    fourth.getByName("a") should beEquivalentTo(startNode)
+    fourth.getByName("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
+    fourth.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships with end node in scope") {
@@ -362,13 +361,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
-    first("b") should beEquivalentTo(endNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
+    first.getByName("b") should beEquivalentTo(endNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships with mismatching end node in scope") {
@@ -433,13 +432,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship2))
-    first("b") should beEquivalentTo(middleNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship1))
-    second("b") should beEquivalentTo(middleNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship2))
+    first.getByName("b") should beEquivalentTo(middleNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship1))
+    second.getByName("b") should beEquivalentTo(middleNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships and a fixed max length and end node in scope") {
@@ -473,9 +472,9 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
 
     // then
     val (first :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship3))
-    first("b") should beEquivalentTo(endNode)
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship3))
+    first.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths") {
@@ -507,13 +506,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
-    first("b") should beEquivalentTo(endNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
+    first.getByName("b") should beEquivalentTo(endNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths and end node in scope") {
@@ -549,13 +548,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
-    first("b") should beEquivalentTo(endNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship2, rightRelationship))
+    first.getByName("b") should beEquivalentTo(endNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(leftRelationship1, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths 2") {
@@ -592,19 +591,19 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: third :: fourth :: Nil) = result
-    first("a") should beEquivalentTo(firstNode)
-    first("r") should beEquivalentTo(List(initialRelationship, leftRelationship2))
-    first("b") should beEquivalentTo(middleNode)
-    second("a") should beEquivalentTo(firstNode)
-    second("r") should beEquivalentTo(List(initialRelationship, leftRelationship2, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
-    third("a") should beEquivalentTo(firstNode)
-    third("r") should beEquivalentTo(List(initialRelationship, leftRelationship1))
-    third("b") should beEquivalentTo(middleNode)
-    fourth("a") should beEquivalentTo(firstNode)
-    fourth("r") should beEquivalentTo(List(initialRelationship, leftRelationship1, rightRelationship))
-    fourth("b") should beEquivalentTo(endNode)
+    val first :: second :: third :: fourth :: Nil = result
+    first.getByName("a") should beEquivalentTo(firstNode)
+    first.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship2))
+    first.getByName("b") should beEquivalentTo(middleNode)
+    second.getByName("a") should beEquivalentTo(firstNode)
+    second.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship2, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
+    third.getByName("a") should beEquivalentTo(firstNode)
+    third.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship1))
+    third.getByName("b") should beEquivalentTo(middleNode)
+    fourth.getByName("a") should beEquivalentTo(firstNode)
+    fourth.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship1, rightRelationship))
+    fourth.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand between three nodes with multiple relationships and fixed min and max lengths 2 with end node in scope") {
@@ -644,13 +643,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(firstNode)
-    first("r") should beEquivalentTo(List(initialRelationship, leftRelationship2, rightRelationship))
-    first("b") should beEquivalentTo(endNode)
-    second("a") should beEquivalentTo(firstNode)
-    second("r") should beEquivalentTo(List(initialRelationship, leftRelationship1, rightRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(firstNode)
+    first.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship2, rightRelationship))
+    first.getByName("b") should beEquivalentTo(endNode)
+    second.getByName("a") should beEquivalentTo(firstNode)
+    second.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship1, rightRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project the relationship list in the right direction") {
@@ -682,13 +681,13 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
       createResults(queryState).toList
 
     // then
-    val (first :: second :: Nil) = result
-    first("a") should beEquivalentTo(startNode)
-    first("r") should beEquivalentTo(List(leftRelationship))
-    first("b") should beEquivalentTo(middleNode)
-    second("a") should beEquivalentTo(startNode)
-    second("r") should beEquivalentTo(List(rightRelationship, leftRelationship))
-    second("b") should beEquivalentTo(endNode)
+    val first :: second :: Nil = result
+    first.getByName("a") should beEquivalentTo(startNode)
+    first.getByName("r") should beEquivalentTo(List(leftRelationship))
+    first.getByName("b") should beEquivalentTo(middleNode)
+    second.getByName("a") should beEquivalentTo(startNode)
+    second.getByName("r") should beEquivalentTo(List(rightRelationship, leftRelationship))
+    second.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should support var length expand with expansion-stage filtering") {
@@ -733,10 +732,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
                                      LazyTypes.empty, 3, None, nodeInScope = false, filteringStep)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(firstNode)
-    single("r") should beEquivalentTo(List(initialRelationship, leftRelationship1, rightRelationship))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(firstNode)
+    single.getByName("r") should beEquivalentTo(List(initialRelationship, leftRelationship1, rightRelationship))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)-[r*]->(b) correctly when from = a, to = b") {
@@ -769,10 +768,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)-[r*]->(b) correctly when from = b, to = a") {
@@ -805,10 +804,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)<-[r*]-(b) correctly when from = a, to = b") {
@@ -841,10 +840,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.INCOMING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)<-[r*]-(b) correctly when from = b, to = a") {
@@ -877,10 +876,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.OUTGOING, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   ///
@@ -916,10 +915,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)-[r*]-(b) correctly when from = b, to = a for a graph a-[r1]->()-[r2]->b") {
@@ -951,10 +950,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)-[r*]-(b) correctly when from = a, to = b from a<-[r1]-()<-[r2]-b") {
@@ -986,10 +985,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(left, "a", "r", "b", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.OUTGOING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should project (a)-[r*]-(b) correctly when from = b, to = a for a graph a<-[r1]-()<-[r2]-b") {
@@ -1021,10 +1020,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(right, "b", "r", "a", /* dir */ SemanticDirection.BOTH, /* projectedDir */ SemanticDirection.INCOMING, LazyTypes.empty, 2, Some(2), nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a") should beEquivalentTo(startNode)
-    single("r") should beEquivalentTo(Seq(relationship1, relationship2))
-    single("b") should beEquivalentTo(endNode)
+    val single :: Nil = result
+    single.getByName("a") should beEquivalentTo(startNode)
+    single.getByName("r") should beEquivalentTo(Seq(relationship1, relationship2))
+    single.getByName("b") should beEquivalentTo(endNode)
   }
 
   test("should correctly handle nulls from source pipe") {
@@ -1039,10 +1038,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = false)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single("b").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    val single :: Nil = result
+    single.getByName("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    single.getByName("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    single.getByName("b").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
   }
 
   test("should not overwrite expand into to-node on nulls from source pipe") {
@@ -1060,10 +1059,10 @@ class VarLengthExpandPipeTest extends CypherFunSuite {
     val result = VarLengthExpandPipe(source, "a", "r", "b", SemanticDirection.BOTH, SemanticDirection.INCOMING, LazyTypes.empty, 1, None, nodeInScope = true)().createResults(queryState).toList
 
     // then
-    val (single :: Nil) = result
-    single("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
-    single("b") should beEquivalentTo(toNode)
+    val single :: Nil = result
+    single.getByName("a").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    single.getByName("r").asInstanceOf[AnyRef] should be(Values.NO_VALUE)
+    single.getByName("b") should beEquivalentTo(toNode)
   }
 
   private def row(values: (String, AnyValue)*) = ExecutionContext.from(values: _*)

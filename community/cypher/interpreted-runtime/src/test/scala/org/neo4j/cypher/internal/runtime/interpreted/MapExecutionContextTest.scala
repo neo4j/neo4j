@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted
 
-import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
-import org.neo4j.values.storable.BooleanValue
 import org.neo4j.cypher.internal.v4_0.expressions.PropertyKeyName
+import org.neo4j.cypher.internal.v4_0.logical.plans.CachedNodeProperty
 import org.neo4j.cypher.internal.v4_0.util.InputPosition
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+import org.neo4j.values.storable.BooleanValue
 
 class MapExecutionContextTest extends CypherFunSuite {
   test("create clone") {
@@ -35,8 +35,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     val ctxClone = ctx.createClone()
 
     // then
-    ctxClone.contains(key) should equal(true)
-    ctx(key) should equal(BooleanValue.FALSE)
+    ctx.getByName(key) should equal(BooleanValue.FALSE)
     ctxClone should not be theSameInstanceAs(ctx)
 
     mutatingLeftDoesNotAffectRight(ctx, ctxClone)
@@ -51,15 +50,13 @@ class MapExecutionContextTest extends CypherFunSuite {
     ctx.set(key, BooleanValue.FALSE)
 
     // then
-    ctx.contains(key) should equal(true)
-    ctx(key) should equal(BooleanValue.FALSE)
+    ctx.getByName(key) should equal(BooleanValue.FALSE)
 
     // when (over written)
     ctx.set(key, BooleanValue.TRUE)
 
     // then
-    ctx.contains(key) should equal(true)
-    ctx(key) should equal(BooleanValue.TRUE)
+    ctx.getByName(key) should equal(BooleanValue.TRUE)
   }
 
   test("double key set") {
@@ -72,19 +69,15 @@ class MapExecutionContextTest extends CypherFunSuite {
     ctx.set(key1, BooleanValue.FALSE, key2, BooleanValue.FALSE)
 
     // then
-    ctx.contains(key1) should equal(true)
-    ctx.contains(key2) should equal(true)
-    ctx(key1) should equal(BooleanValue.FALSE)
-    ctx(key2) should equal(BooleanValue.FALSE)
+    ctx.getByName(key1) should equal(BooleanValue.FALSE)
+    ctx.getByName(key2) should equal(BooleanValue.FALSE)
 
     // when (over written)
     ctx.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE)
 
     // then
-    ctx.contains(key1) should equal(true)
-    ctx.contains(key2) should equal(true)
-    ctx(key1) should equal(BooleanValue.TRUE)
-    ctx(key2) should equal(BooleanValue.TRUE)
+    ctx.getByName(key1) should equal(BooleanValue.TRUE)
+    ctx.getByName(key2) should equal(BooleanValue.TRUE)
   }
 
   test("triple key set") {
@@ -98,23 +91,17 @@ class MapExecutionContextTest extends CypherFunSuite {
     ctx.set(key1, BooleanValue.FALSE, key2, BooleanValue.FALSE, key3, BooleanValue.FALSE)
 
     // then
-    ctx.contains(key1) should equal(true)
-    ctx.contains(key2) should equal(true)
-    ctx.contains(key3) should equal(true)
-    ctx(key1) should equal(BooleanValue.FALSE)
-    ctx(key2) should equal(BooleanValue.FALSE)
-    ctx(key3) should equal(BooleanValue.FALSE)
+    ctx.getByName(key1) should equal(BooleanValue.FALSE)
+    ctx.getByName(key2) should equal(BooleanValue.FALSE)
+    ctx.getByName(key3) should equal(BooleanValue.FALSE)
 
     // when (over written)
     ctx.set(key1, BooleanValue.TRUE, key2, BooleanValue.TRUE, key3, BooleanValue.TRUE)
 
     // then
-    ctx.contains(key1) should equal(true)
-    ctx.contains(key2) should equal(true)
-    ctx.contains(key3) should equal(true)
-    ctx(key1) should equal(BooleanValue.TRUE)
-    ctx(key2) should equal(BooleanValue.TRUE)
-    ctx(key3) should equal(BooleanValue.TRUE)
+    ctx.getByName(key1) should equal(BooleanValue.TRUE)
+    ctx.getByName(key2) should equal(BooleanValue.TRUE)
+    ctx.getByName(key3) should equal(BooleanValue.TRUE)
   }
 
   test("many key set") {
@@ -127,19 +114,15 @@ class MapExecutionContextTest extends CypherFunSuite {
     ctx.set(Seq((key1, BooleanValue.FALSE), (key2, BooleanValue.FALSE)))
 
     // then
-    ctx.contains(key1) should equal(true)
-    ctx.contains(key2) should equal(true)
-    ctx(key1) should equal(BooleanValue.FALSE)
-    ctx(key2) should equal(BooleanValue.FALSE)
+    ctx.getByName(key1) should equal(BooleanValue.FALSE)
+    ctx.getByName(key2) should equal(BooleanValue.FALSE)
 
     // when (over written)
     ctx.set(Seq((key1, BooleanValue.TRUE), (key2, BooleanValue.TRUE)))
 
     // then
-    ctx.contains(key1) should equal(true)
-    ctx.contains(key2) should equal(true)
-    ctx(key1) should equal(BooleanValue.TRUE)
-    ctx(key2) should equal(BooleanValue.TRUE)
+    ctx.getByName(key1) should equal(BooleanValue.TRUE)
+    ctx.getByName(key2) should equal(BooleanValue.TRUE)
   }
 
   test("mergeWith - no cached properties") {
@@ -153,20 +136,16 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.mergeWith(rhsCtx1)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
     val rhsCtx2 = ExecutionContext.empty.copyWith(key2, BooleanValue.FALSE)
     lhsCtx.mergeWith(rhsCtx2)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.FALSE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.FALSE)
 
     mutatingLeftDoesNotAffectRight(rhsCtx1, lhsCtx)
     mutatingLeftDoesNotAffectRight(rhsCtx2, lhsCtx)
@@ -186,20 +165,16 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.mergeWith(rhsCtx)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
     lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
     lhsCtx.mergeWith(ExecutionContext.empty.copyWith(key2, BooleanValue.FALSE))
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.FALSE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.FALSE)
 
     mutatingLeftDoesNotAffectRight(rhsCtx, lhsCtx)
   }
@@ -219,10 +194,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.mergeWith(rhsCtx1)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
     lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.TRUE)
 
     // when (other map is smaller, the missing keys should not be removed)
@@ -230,10 +203,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.mergeWith(rhsCtx2)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.FALSE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.FALSE)
 
     mutatingLeftDoesNotAffectRight(rhsCtx1, lhsCtx)
     mutatingLeftDoesNotAffectRight(rhsCtx2, lhsCtx)
@@ -255,10 +226,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.mergeWith(rhsCtx1)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
     lhsCtx.getCachedProperty(cachedPropertyKey) should equal(BooleanValue.FALSE)
 
     // when (other map is smaller, the missing keys should not be removed)
@@ -266,10 +235,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     lhsCtx.mergeWith(rhsCtx2)
 
     // then
-    lhsCtx.contains(key1) should equal(true)
-    lhsCtx.contains(key2) should equal(true)
-    lhsCtx(key1) should equal(BooleanValue.TRUE)
-    lhsCtx(key2) should equal(BooleanValue.FALSE)
+    lhsCtx.getByName(key1) should equal(BooleanValue.TRUE)
+    lhsCtx.getByName(key2) should equal(BooleanValue.FALSE)
 
     mutatingLeftDoesNotAffectRight(rhsCtx1, lhsCtx)
     mutatingLeftDoesNotAffectRight(rhsCtx2, lhsCtx)
@@ -302,9 +269,7 @@ class MapExecutionContextTest extends CypherFunSuite {
     val rhsCtx = lhsCtx.copyWith(key, BooleanValue.FALSE)
 
     // then
-    lhsCtx.contains(key) should equal(false)
-    rhsCtx.contains(key) should equal(true)
-    rhsCtx(key) should equal(BooleanValue.FALSE)
+    rhsCtx.getByName(key) should equal(BooleanValue.FALSE)
 
     mutatingLeftDoesNotAffectRight(lhsCtx, rhsCtx)
   }
@@ -319,12 +284,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     val rhsCtx = lhsCtx.copyWith(key1, BooleanValue.FALSE, key2, BooleanValue.TRUE)
 
     // then
-    lhsCtx.contains(key1) should equal(false)
-    lhsCtx.contains(key2) should equal(false)
-    rhsCtx.contains(key1) should equal(true)
-    rhsCtx.contains(key2) should equal(true)
-    rhsCtx(key1) should equal(BooleanValue.FALSE)
-    rhsCtx(key2) should equal(BooleanValue.TRUE)
+    rhsCtx.getByName(key1) should equal(BooleanValue.FALSE)
+    rhsCtx.getByName(key2) should equal(BooleanValue.TRUE)
 
     mutatingLeftDoesNotAffectRight(lhsCtx, rhsCtx)
   }
@@ -340,15 +301,9 @@ class MapExecutionContextTest extends CypherFunSuite {
     val newCtx = lhsCtx.copyWith(key1, BooleanValue.FALSE, key2, BooleanValue.TRUE, key3, BooleanValue.TRUE)
 
     // then
-    lhsCtx.contains(key1) should equal(false)
-    lhsCtx.contains(key2) should equal(false)
-    lhsCtx.contains(key3) should equal(false)
-    newCtx.contains(key1) should equal(true)
-    newCtx.contains(key2) should equal(true)
-    newCtx.contains(key3) should equal(true)
-    newCtx(key1) should equal(BooleanValue.FALSE)
-    newCtx(key2) should equal(BooleanValue.TRUE)
-    newCtx(key3) should equal(BooleanValue.TRUE)
+    newCtx.getByName(key1) should equal(BooleanValue.FALSE)
+    newCtx.getByName(key2) should equal(BooleanValue.TRUE)
+    newCtx.getByName(key3) should equal(BooleanValue.TRUE)
 
     mutatingLeftDoesNotAffectRight(lhsCtx, newCtx)
   }
@@ -363,12 +318,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     val newCtx = lhsCtx.copyWith(Seq((key1, BooleanValue.FALSE), (key2, BooleanValue.FALSE)))
 
     // then
-    lhsCtx.contains(key1) should equal(false)
-    lhsCtx.contains(key2) should equal(false)
-    newCtx.contains(key1) should equal(true)
-    newCtx.contains(key2) should equal(true)
-    newCtx(key1) should equal(BooleanValue.FALSE)
-    newCtx(key2) should equal(BooleanValue.FALSE)
+    newCtx.getByName(key1) should equal(BooleanValue.FALSE)
+    newCtx.getByName(key2) should equal(BooleanValue.FALSE)
 
     mutatingLeftDoesNotAffectRight(lhsCtx, newCtx)
   }
@@ -378,8 +329,6 @@ class MapExecutionContextTest extends CypherFunSuite {
     left should not be theSameInstanceAs(right)
     val newKey = "this key should not yet exist in left or right"
     val newCachedPropertyKey = prop("n", newKey)
-    left.contains(newKey) should equal(false)
-    right.contains(newKey) should equal(false)
     an[NoSuchElementException] should be thrownBy left.getCachedProperty(newCachedPropertyKey)
     an[NoSuchElementException] should be thrownBy right.getCachedProperty(newCachedPropertyKey)
 
@@ -388,9 +337,8 @@ class MapExecutionContextTest extends CypherFunSuite {
     left.setCachedProperty(newCachedPropertyKey, BooleanValue.FALSE)
 
     // then (only left should be modified)
-    left(newKey) should equal(BooleanValue.TRUE)
+    left.getByName(newKey) should equal(BooleanValue.TRUE)
     left.getCachedProperty(newCachedPropertyKey) should equal(BooleanValue.FALSE)
-    right.contains(newKey) should equal(false)
     an[NoSuchElementException] should be thrownBy right.getCachedProperty(newCachedPropertyKey)
   }
 

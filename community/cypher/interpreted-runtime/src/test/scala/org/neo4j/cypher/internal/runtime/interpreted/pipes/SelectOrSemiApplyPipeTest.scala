@@ -35,7 +35,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
+      if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -51,7 +51,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state) => {
       val initialContext = state.initialContext.get
-      if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
+      if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
     })
 
     val result =
@@ -111,7 +111,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
         val initialContext = state.initialContext.get
-        if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
+        if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
       })
 
     val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList
@@ -125,7 +125,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val rhs = pipeWithResults((state: QueryState) => {
         val initialContext = state.initialContext.get
-        if (initialContext("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
+        if (initialContext.getByName("a") == intValue(1)) Iterator(initialContext) else Iterator.empty
       })
 
     val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList

@@ -28,17 +28,19 @@ case class RollUpApplyPipe(lhs: Pipe, rhs: Pipe, collectionName: String, identif
                           (val id: Id = Id.INVALID_ID)
   extends PipeWithSource(lhs) {
 
-  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) = {
+  override protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.map {
       ctx =>
-        if (nullableIdentifiers.map(ctx).contains(NO_VALUE)) {
-          ctx += collectionName -> NO_VALUE
+        if (nullableIdentifiers.map(ctx.getByName).contains(NO_VALUE)) {
+          ctx.set(collectionName, NO_VALUE)
+          ctx
         } else {
           val original = ctx.createClone()
           val innerState = state.withInitialContext(ctx)
           val innerResults = rhs.createResults(innerState)
-          val collection = VirtualValues.list(innerResults.map(m => m(identifierToCollect)).toArray:_*)
-          original += collectionName -> collection
+          val collection = VirtualValues.list(innerResults.map(m => m.getByName(identifierToCollect)).toArray:_*)
+          original.set(collectionName, collection)
+          original
         }
     }
   }

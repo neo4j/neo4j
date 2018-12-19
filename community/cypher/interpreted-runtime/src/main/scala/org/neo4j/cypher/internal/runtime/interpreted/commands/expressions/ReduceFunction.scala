@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
-import org.neo4j.cypher.internal.runtime.interpreted.ListSupport
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.QueryState
+import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, ListSupport}
 import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.values.AnyValue
 
 case class ReduceFunction(collection: Expression, id: String, expression: Expression, acc: String, init: Expression)
   extends NullInNullOutExpression(collection) with ListSupport {
 
-  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState) = {
+  override def compute(value: AnyValue, m: ExecutionContext, state: QueryState): AnyValue = {
     val list = makeTraversable(value)
     val iterator = list.iterator()
     val contextWithAcc = m.copyWith(acc, init(m, state))
@@ -36,7 +35,7 @@ case class ReduceFunction(collection: Expression, id: String, expression: Expres
       contextWithAcc.set(id, iterator.next())
       contextWithAcc.set(acc, expression(contextWithAcc, state))
     }
-    contextWithAcc(acc)
+    contextWithAcc.getByName(acc)
   }
 
   def rewrite(f: (Expression) => Expression) =

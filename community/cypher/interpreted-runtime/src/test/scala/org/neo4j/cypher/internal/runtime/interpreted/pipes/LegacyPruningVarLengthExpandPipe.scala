@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 
 import org.eclipse.collections.impl.map.mutable.primitive.LongObjectHashMap
 import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContext
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
-import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.values.storable.{Value, Values}
 import org.neo4j.values.virtual.{NodeReference, NodeValue, RelationshipValue}
 
@@ -275,13 +275,13 @@ case class LegacyPruningVarLengthExpandPipe(source: Pipe,
         (Empty, null)
       } else {
         val row = input.next()
-        row.get(fromName) match {
-          case Some(node: NodeValue) =>
+        row.getByName(fromName) match {
+          case node: NodeValue =>
             nextState(row, node)
-          case Some(nodeRef: NodeReference) =>
+          case nodeRef: NodeReference =>
             val node = state.query.nodeOps.getById(nodeRef.id())
             nextState(row, node)
-          case Some(x: Value) if x == Values.NO_VALUE =>
+          case x: Value if x == Values.NO_VALUE =>
             (Empty, null)
           case _ =>
             throw new InternalException(s"Expected a node on `$fromName`")

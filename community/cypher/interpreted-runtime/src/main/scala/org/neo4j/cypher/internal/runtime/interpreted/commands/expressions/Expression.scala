@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.AstNode
 import org.neo4j.cypher.internal.runtime.interpreted.commands.predicates.{CoercedPredicate, Predicate}
 import org.neo4j.cypher.internal.runtime.interpreted.pipes.{Pipe, QueryState}
 import org.neo4j.cypher.internal.runtime.interpreted.symbols.TypeSafe
-import org.neo4j.values.AnyValue
-import org.neo4j.values.storable.Values
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.symbols.CypherType
+import org.neo4j.values.AnyValue
+import org.neo4j.values.storable.Values
 
 abstract class Expression extends TypeSafe with AstNode[Expression] {
 
@@ -62,23 +62,23 @@ abstract class Expression extends TypeSafe with AstNode[Expression] {
   // Any expressions that this expression builds on
   def children: Seq[AstNode[_]] = arguments
 
-  def containsAggregate = exists(_.isInstanceOf[AggregationExpression])
+  def containsAggregate: Boolean = exists(_.isInstanceOf[AggregationExpression])
 
   def apply(ctx: ExecutionContext, state: QueryState): AnyValue
 
-  override def toString = this match {
+  override def toString: String = this match {
     case p: Product => scala.runtime.ScalaRunTime._toString(p)
     case _          => getClass.getSimpleName
   }
 
-  val isDeterministic = ! exists {
+  val isDeterministic: Boolean = ! exists {
     case RandFunction() => true
     case _              => false
   }
 }
 
 case class CachedExpression(key:String, typ:CypherType) extends Expression {
-  def apply(ctx: ExecutionContext, state: QueryState) = ctx(key)
+  def apply(ctx: ExecutionContext, state: QueryState): AnyValue = ctx.getByName(key)
 
   def rewrite(f: (Expression) => Expression) = f(this)
 
@@ -86,7 +86,7 @@ case class CachedExpression(key:String, typ:CypherType) extends Expression {
 
   def symbolTableDependencies = Set(key)
 
-  override def toString = "Cached(%s of type %s)".format(key, typ)
+  override def toString: String = "Cached(%s of type %s)".format(key, typ)
 }
 
 abstract class Arithmetics(left: Expression, right: Expression) extends Expression {

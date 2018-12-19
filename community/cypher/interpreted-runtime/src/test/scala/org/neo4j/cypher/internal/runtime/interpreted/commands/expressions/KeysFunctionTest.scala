@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.runtime.interpreted.commands.expressions
 
-import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.runtime.QueryContext
 import org.neo4j.cypher.internal.runtime.interpreted.{ExecutionContext, QueryStateHelper}
+import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.Node
 import org.neo4j.values.AnyValues
 import org.neo4j.values.storable.Values.stringValue
 import org.neo4j.values.virtual.ListValue
 import org.neo4j.values.virtual.VirtualValues.{EMPTY_LIST, list}
-import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
+
+import scala.collection.mutable
 
 class KeysFunctionTest extends CypherFunSuite {
 
@@ -47,7 +48,7 @@ class KeysFunctionTest extends CypherFunSuite {
     when(queryContext.getPropertyKeyName(13)).thenReturn("MoreProp")
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx = ExecutionContext() += ("n" -> node)
+    val ctx = ExecutionContext(mutable.Map("n" -> node))
 
     // WHEN
     val result = KeysFunction(Variable("n"))(ctx, state)
@@ -64,7 +65,7 @@ class KeysFunctionTest extends CypherFunSuite {
 
 
     val state = QueryStateHelper.emptyWith(query = queryContext)
-    val ctx = ExecutionContext() += ("n" -> node)
+    val ctx = ExecutionContext(mutable.Map("n" -> node))
 
     // WHEN
     val result = KeysFunction(Variable("n"))(ctx, state)
