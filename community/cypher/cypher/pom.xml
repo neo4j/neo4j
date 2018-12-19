@@ -47,10 +47,6 @@
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.scalastyle</groupId>
-        <artifactId>scalastyle-maven-plugin</artifactId>
-      </plugin>
       <!-- This module contains public API, run revapi -->
       <plugin>
         <groupId>org.revapi</groupId>

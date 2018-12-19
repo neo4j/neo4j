@@ -998,7 +998,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
     result should equal(expectation)
   }
 
-  // scalastyle:off
   test("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2") {
     val query = buildPlannerQuery("MATCH (a1)-[r]->(b1) WITH r, a1 LIMIT 1 OPTIONAL MATCH (a2)<-[r]-(b2) WHERE a1 = a2 RETURN a1, r, b2, a2")
 
@@ -1009,7 +1008,6 @@ class StatementConvertersTest extends CypherFunSuite with LogicalPlanningTestSup
 
     result should equal(expectation)
   }
-  // scalastyle:on
 
   test("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d") {
     val query = buildPlannerQuery("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
