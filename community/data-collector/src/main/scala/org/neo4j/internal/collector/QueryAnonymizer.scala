@@ -81,6 +81,9 @@ class IdAnonymizerState(tokens: TokenRead, prettifier: Prettifier) extends org.n
   override def parameter(name: String): String =
     parameters.getOrElseUpdate(name, "param" + parameters.size)
 
+  override def literal(value: String): String =
+    s"string[${value.length}]"
+
   private def tokenName(prefix: String, name: String, id: Int): String =
     id match {
       case -1 => unknownTokens.getOrElseUpdate(name, "UNKNOWN"+unknownTokens.size)

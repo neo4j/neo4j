@@ -188,10 +188,10 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("[retrieveAllAnonymized] should anonymize tokens inside queries") {
     // given
-    execute("CREATE (:User {name: 'BronzeArm'})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
+    execute("CREATE (:User {age: 99})-[:KNOWS]->(:Buddy {p: 42})-[:WANTS]->(:Raccoon)") // create tokens
     execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
-    execute("MATCH ({p: 42}), ({name: 'Scrooge'}) RETURN 1")
+    execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
     execute("CALL db.stats.stop('QUERIES')").single
 
     // when
@@ -200,7 +200,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:L0)-[:R0]->(:L1)-[:R1]->(:L2) RETURN 1"),
-      querySection("MATCH ({p1: 42}), ({p0: 'Scrooge'}) RETURN 1")
+      querySection("MATCH ({p1: 42}), ({p0: 43}) RETURN 1")
     )
   }
 
@@ -208,7 +208,7 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     // given
     execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (:User)-[:KNOWS]->(:Buddy)-[:WANTS]->(:Raccoon) RETURN 1")
-    execute("MATCH ({p: 42}), ({name: 'Scrooge'}) RETURN 1")
+    execute("MATCH ({p: 42}), ({age: 43}) RETURN 1")
     execute("CALL db.stats.stop('QUERIES')").single
 
     // when
@@ -217,7 +217,22 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     // then
     res.toList should beListWithoutOrder(
       querySection("MATCH (:UNKNOWN0)-[:UNKNOWN1]->(:UNKNOWN2)-[:UNKNOWN3]->(:UNKNOWN4) RETURN 1"),
-      querySection("MATCH ({UNKNOWN0: 42}), ({UNKNOWN1: 'Scrooge'}) RETURN 1")
+      querySection("MATCH ({UNKNOWN0: 42}), ({UNKNOWN1: 43}) RETURN 1")
+    )
+  }
+
+  test("[retrieveAllAnonymized] should anonymize string literals inside queries") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("RETURN 'Scrooge' AS uncle, 'Donald' AS name")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    // when
+    val res = execute("CALL db.stats.retrieveAllAnonymized('myToken')")
+
+    // then
+    res.toList should beListWithoutOrder(
+      querySection("RETURN 'string[7]' AS var0, 'string[6]' AS var1")
     )
   }
 
