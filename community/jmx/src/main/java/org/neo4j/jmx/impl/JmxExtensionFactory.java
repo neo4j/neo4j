@@ -28,6 +28,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.logging.internal.LogService;
 
 @Service.Implementation( KernelExtensionFactory.class )
+@Deprecated
 public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensionFactory.Dependencies>
 {
     public interface Dependencies

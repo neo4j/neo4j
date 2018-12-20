@@ -25,19 +25,18 @@ import java.util.List;
 import java.util.Map;
 import javax.management.Attribute;
 import javax.management.AttributeList;
-import javax.management.AttributeNotFoundException;
 import javax.management.InvalidAttributeValueException;
 import javax.management.MBeanAttributeInfo;
 import javax.management.MBeanException;
 import javax.management.MBeanInfo;
 import javax.management.NotCompliantMBeanException;
-import javax.management.ReflectionException;
 
 import org.neo4j.configuration.ConfigValue;
 import org.neo4j.jmx.Description;
 import org.neo4j.kernel.internal.KernelData;
 
 @Description( "The configuration parameters used to configure Neo4j" )
+@Deprecated
 public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";

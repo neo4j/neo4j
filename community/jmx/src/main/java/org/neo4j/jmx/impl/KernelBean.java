@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.transaction.state.DataSourceManager;
 import org.neo4j.kernel.internal.KernelData;
 import org.neo4j.storageengine.api.StoreId;
 
+@Deprecated
 public class KernelBean extends Neo4jMBean implements Kernel
 {
     private final long kernelStartTime;

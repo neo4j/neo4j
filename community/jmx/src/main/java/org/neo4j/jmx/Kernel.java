@@ -20,11 +20,11 @@
 package org.neo4j.jmx;
 
 import java.util.Date;
-
 import javax.management.ObjectName;
 
 @ManagementInterface( name = Kernel.NAME )
 @Description( "Information about the Neo4j kernel" )
+@Deprecated
 public interface Kernel
 {
     String NAME = "Kernel";
