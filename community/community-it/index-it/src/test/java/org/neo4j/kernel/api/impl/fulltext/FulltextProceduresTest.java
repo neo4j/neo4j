@@ -94,7 +94,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.ONLY;
-import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 
 public class FulltextProceduresTest
