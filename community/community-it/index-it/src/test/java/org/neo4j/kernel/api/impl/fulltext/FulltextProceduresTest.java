@@ -95,6 +95,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DependencyResolver.SelectionStrategy.ONLY;
 import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 public class FulltextProceduresTest
 {
@@ -2134,7 +2135,35 @@ public class FulltextProceduresTest
         }
         try ( Transaction tx = db.beginTx() )
         {
-            assertThat( count( db.schema().getIndexes() ), is( 1L ) );
+            assertThat( single( db.schema().getIndexes() ).getName(), is( not( "nameIndex" ) ) );
+            tx.success();
+        }
+    }
+
+    @Test
+    public void fulltextIndexesMustNotPreventNormalSchemaIndexesFromBeingDropped()
+    {
+        db = createDatabase();
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.execute( "CREATE INDEX ON :Person(name)" ).close();
+            db.execute( "call db.index.fulltext.createNodeIndex('nameIndex', ['Person'], ['name'])" ).close();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.schema().awaitIndexesOnline( 1, TimeUnit.MINUTES );
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            // This must not throw:
+            db.execute( "DROP INDEX ON :Person(name)" ).close();
+            tx.success();
+        }
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( single( db.schema().getIndexes() ).getName(), is( "nameIndex" ) );
             tx.success();
         }
     }
