@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.io.pagecache.IOLimiter;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PagedFile;
@@ -49,10 +50,12 @@ import org.neo4j.test.rule.PageCacheRule;
 import org.neo4j.test.rule.TestDirectory;
 import org.neo4j.test.rule.fs.EphemeralFileSystemRule;
 
+import static java.util.Optional.of;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
@@ -72,7 +75,7 @@ public class DatabaseTest
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule
-    public TestDirectory dir = TestDirectory.testDirectory( fs.get() );
+    public TestDirectory directory = TestDirectory.testDirectory( fs.get() );
     @Rule
     public DatabaseRule databaseRule = new DatabaseRule();
     @Rule
@@ -89,7 +92,7 @@ public class DatabaseTest
             Dependencies dependencies = new Dependencies();
             dependencies.satisfyDependency( databaseHealth );
 
-            database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
+            database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCacheRule.getPageCache( fs.get() ),
                     dependencies );
 
             databaseHealth.panic( new Throwable() );
@@ -113,7 +116,7 @@ public class DatabaseTest
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
@@ -127,12 +130,31 @@ public class DatabaseTest
     }
 
     @Test
+    public void removeDatabaseDataAndLogsOnDrop()
+    {
+        File customTxLogsRoot = directory.directory( "customTxLogs" );
+        DatabaseLayout databaseLayout = directory.databaseLayout( () -> of( customTxLogsRoot ) );
+        Database database = databaseRule.getDatabase( databaseLayout, fs.get(), pageCacheRule.getPageCache( fs.get() ) );
+
+        database.start();
+
+        assertNotEquals( databaseLayout.databaseDirectory(), databaseLayout.getTransactionLogsDirectory() );
+        assertTrue( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertTrue( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+
+        database.drop();
+
+        assertFalse( fs.fileExists( databaseLayout.databaseDirectory() ) );
+        assertFalse( fs.fileExists( databaseLayout.getTransactionLogsDirectory() ) );
+    }
+
+    @Test
     public void flushDatabaseDataOnStop() throws Throwable
     {
         DefaultPageCacheTracer pageCacheTracer = new DefaultPageCacheTracer();
         PageCacheConfig pageCacheConfig = PageCacheConfig.config().withTracer( pageCacheTracer );
         PageCache pageCache = spy( pageCacheRule.getPageCache( fs.get(), pageCacheConfig ) );
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
@@ -159,7 +181,7 @@ public class DatabaseTest
         } )
         .when( pageCache ).map( any( File.class ), anyInt() );
 
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
         files.clear();
 
         database.start();
@@ -190,7 +212,7 @@ public class DatabaseTest
         } )
         .when( pageCache ).map( any( File.class ), anyInt() );
 
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache );
         files.clear();
 
         database.start();
@@ -215,7 +237,7 @@ public class DatabaseTest
 
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependency( health );
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(), pageCache, dependencies );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(), pageCache, dependencies );
 
         database.start();
         verify( pageCache, never() ).flushAndForce();
@@ -240,7 +262,7 @@ public class DatabaseTest
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( idGeneratorFactory, idTypeConfigurationProvider, config, logService );
 
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs.get(),
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs.get(),
                 pageCache, dependencies );
 
         try
@@ -271,7 +293,7 @@ public class DatabaseTest
                 .assertHealthy( IOException.class ); // <- this is a trick to simulate a failure during checkpointing
         Dependencies dependencies = new Dependencies();
         dependencies.satisfyDependencies( databaseHealth );
-        Database database = databaseRule.getDatabase( dir.databaseLayout(), fs, pageCache, dependencies );
+        Database database = databaseRule.getDatabase( directory.databaseLayout(), fs, pageCache, dependencies );
         database.start();
 
         try

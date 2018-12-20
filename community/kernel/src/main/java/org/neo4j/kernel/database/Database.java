@@ -714,8 +714,8 @@ public class Database extends LifecycleAdapter
     {
         try
         {
-            // TODO: remove database transaction logs.
             fs.deleteRecursively( databaseLayout.databaseDirectory() );
+            fs.deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
         }
         catch ( IOException e )
         {
