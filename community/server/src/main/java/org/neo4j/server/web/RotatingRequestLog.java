@@ -28,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.time.ZoneId;
 import java.util.concurrent.Executor;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import javax.servlet.http.HttpServletRequest;
 
@@ -36,35 +35,24 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.logging.FormattedLogProvider;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.RotatingFileOutputStreamSupplier;
-import org.neo4j.logging.async.AsyncLogEvent;
-import org.neo4j.logging.async.AsyncLogProvider;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
 import org.neo4j.util.concurrent.AsyncEvents;
 
 import static org.apache.commons.lang.StringUtils.defaultString;
 
-public class AsyncRequestLog
-        extends AbstractLifeCycle
-        implements RequestLog, Consumer<AsyncLogEvent>, AsyncEvents.Monitor
+public class RotatingRequestLog extends AbstractLifeCycle implements RequestLog, AsyncEvents.Monitor
 {
     private final Log log;
-    private final AsyncEvents<AsyncLogEvent> asyncEventProcessor;
     private final RotatingFileOutputStreamSupplier outputSupplier;
-    private final JobScheduler scheduler;
 
-    public AsyncRequestLog( FileSystemAbstraction fs, JobScheduler scheduler, ZoneId logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
+    public RotatingRequestLog( FileSystemAbstraction fs, JobScheduler scheduler, ZoneId logTimeZone, String logFile, long rotationSize, int rotationKeepNumber )
             throws IOException
     {
-        this.scheduler = scheduler;
         Executor rotationExecutor = scheduler.executor( Group.LOG_ROTATION );
-        outputSupplier = new RotatingFileOutputStreamSupplier(
-                fs, new File( logFile ), rotationSize, 0, rotationKeepNumber, rotationExecutor );
-        FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone )
-                .toOutputStream( outputSupplier );
-        asyncEventProcessor = new AsyncEvents<>( this, this );
-        AsyncLogProvider asyncLogProvider = new AsyncLogProvider( asyncEventProcessor, logProvider );
-        log = asyncLogProvider.getLog( "REQUEST" );
+        outputSupplier = new RotatingFileOutputStreamSupplier( fs, new File( logFile ), rotationSize, 0, rotationKeepNumber, rotationExecutor );
+        FormattedLogProvider logProvider = FormattedLogProvider.withZoneId( logTimeZone ).toOutputStream( outputSupplier );
+        log = logProvider.getLog( "REQUEST" );
     }
 
     @Override
@@ -109,24 +97,9 @@ public class AsyncRequestLog
     }
 
     @Override
-    protected synchronized void doStart()
-    {
-        scheduler.schedule( Group.FILE_IO_HELPER, asyncEventProcessor );
-        asyncEventProcessor.awaitStartup();
-    }
-
-    @Override
     protected synchronized void doStop() throws IOException
     {
-        asyncEventProcessor.shutdown();
-        asyncEventProcessor.awaitTermination();
         outputSupplier.close();
-    }
-
-    @Override
-    public void accept( AsyncLogEvent event )
-    {
-        event.process();
     }
 
     @Override

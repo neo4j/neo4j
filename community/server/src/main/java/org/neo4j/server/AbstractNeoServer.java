@@ -76,7 +76,7 @@ import org.neo4j.server.rest.transactional.TransactionHandleRegistry;
 import org.neo4j.server.rest.transactional.TransactionRegistry;
 import org.neo4j.server.rest.transactional.TransitionalPeriodTransactionMessContainer;
 import org.neo4j.server.rest.web.DatabaseActions;
-import org.neo4j.server.web.AsyncRequestLog;
+import org.neo4j.server.web.RotatingRequestLog;
 import org.neo4j.server.web.SimpleUriBuilder;
 import org.neo4j.server.web.WebServer;
 import org.neo4j.ssl.SslPolicy;
@@ -135,7 +135,7 @@ public abstract class AbstractNeoServer implements NeoServer
     private ConnectorPortRegister connectorPortRegister;
     private HttpConnector httpConnector;
     private HttpConnector httpsConnector;
-    private AsyncRequestLog requestLog;
+    private RotatingRequestLog requestLog;
 
     protected abstract Iterable<ServerModule> createServerModules();
 
@@ -325,7 +325,7 @@ public abstract class AbstractNeoServer implements NeoServer
             return;
         }
 
-        requestLog = new AsyncRequestLog(
+        requestLog = new RotatingRequestLog(
                 dependencyResolver.resolveDependency( FileSystemAbstraction.class ),
                 dependencyResolver.resolveDependency( JobScheduler.class ),
                 config.get( db_timezone ).getZoneId(),
