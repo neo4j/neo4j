@@ -19,14 +19,33 @@
  */
 package org.neo4j.logging;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class DuplicatingLogProviderTest
 {
+    final Log log1 = mock( Log.class );
+    final Log log2 = mock( Log.class );
+    final Logger infoLogger1 = mock( Logger.class );
+    final Logger infoLogger2 = mock( Logger.class );
+
+    @BeforeEach
+    void beforeEach()
+    {
+        when( log1.infoLogger() ).thenReturn( infoLogger1 );
+        when( log2.infoLogger() ).thenReturn( infoLogger2 );
+    }
+
     @Test
     void shouldReturnSameLoggerForSameClass()
     {
@@ -53,8 +72,11 @@ class DuplicatingLogProviderTest
     void shouldRemoveLogProviderFromDuplication()
     {
         // Given
-        AssertableLogProvider logProvider1 = new AssertableLogProvider();
-        AssertableLogProvider logProvider2 = new AssertableLogProvider();
+        LogProvider logProvider1 = mock( LogProvider.class );
+        LogProvider logProvider2 = mock( LogProvider.class );
+
+        doReturn( log1 ).when( logProvider1 ).getLog( any( Class.class ) );
+        doReturn( log2 ).when( logProvider2 ).getLog( any( Class.class ) );
 
         DuplicatingLogProvider logProvider = new DuplicatingLogProvider( logProvider1, logProvider2 );
 
@@ -65,12 +87,10 @@ class DuplicatingLogProviderTest
         log.info( "The weird turn pro" );
 
         // Then
-        logProvider1.assertExactly(
-                AssertableLogProvider.inLog( getClass() ).info( "When the going gets weird" )
-        );
-        logProvider2.assertExactly(
-                AssertableLogProvider.inLog( getClass() ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( getClass() ).info( "The weird turn pro" )
-        );
+        verify( infoLogger1 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "The weird turn pro" );
+        verifyNoMoreInteractions( infoLogger1 );
+        verifyNoMoreInteractions( infoLogger2 );
     }
 }

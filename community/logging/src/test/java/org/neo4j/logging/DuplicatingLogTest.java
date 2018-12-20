@@ -19,58 +19,80 @@
  */
 package org.neo4j.logging;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
+
+import java.util.function.Consumer;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 class DuplicatingLogTest
 {
+    final Log log1 = mock( Log.class );
+    final Log log2 = mock( Log.class );
+    final Logger infoLogger1 = mock( Logger.class );
+    final Logger infoLogger2 = mock( Logger.class );
+
+    @BeforeEach
+    void beforeEach()
+    {
+        when( log1.infoLogger() ).thenReturn( infoLogger1 );
+        when( log2.infoLogger() ).thenReturn( infoLogger2 );
+    }
+
     @Test
     void shouldOutputToMultipleLogs()
     {
         // Given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log1 = logProvider.getLog( "log 1" );
-        Log log2 = logProvider.getLog( "log 2" );
-
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
 
         // When
         log.info( "When the going gets weird" );
 
         // Then
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( "log 1" ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" )
-        );
+        verify( infoLogger1 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "When the going gets weird" );
+        verifyNoMoreInteractions( infoLogger1 );
+        verifyNoMoreInteractions( infoLogger2 );
     }
 
     @Test
     void shouldBulkOutputToMultipleLogs()
     {
-        // Given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log1 = logProvider.getLog( "log 1" );
-        Log log2 = logProvider.getLog( "log 2" );
+        final Answer bulkAnswer = invocationOnMock ->
+        {
+            final Consumer<Log> consumer = invocationOnMock.getArgument( 0 );
+            consumer.accept( (Log) invocationOnMock.getMock() );
+            return null;
+        };
 
+        doAnswer( bulkAnswer ).when( log1 ).bulk( any() );
+        doAnswer( bulkAnswer ).when( log2 ).bulk( any() );
+
+        // Given
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
 
         // When
         log.bulk( bulkLog -> bulkLog.info( "When the going gets weird" ) );
 
         // Then
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( "log 1" ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" )
-        );
+        verify( infoLogger1 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "When the going gets weird" );
+
+        verifyNoMoreInteractions( infoLogger1 );
+        verifyNoMoreInteractions( infoLogger2 );
     }
 
     @Test
     void shouldRemoveLogFromDuplication()
     {
         // Given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log1 = logProvider.getLog( "log 1" );
-        Log log2 = logProvider.getLog( "log 2" );
-
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
 
         // When
@@ -79,21 +101,17 @@ class DuplicatingLogTest
         log.info( "The weird turn pro" );
 
         // Then
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( "log 1" ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( "log 2" ).info( "The weird turn pro" )
-        );
+        verify( infoLogger1 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "The weird turn pro" );
+        verifyNoMoreInteractions( infoLogger1 );
+        verifyNoMoreInteractions( infoLogger2 );
     }
 
     @Test
     void shouldRemoveLoggersFromDuplication()
     {
         // Given
-        AssertableLogProvider logProvider = new AssertableLogProvider();
-        Log log1 = logProvider.getLog( "log 1" );
-        Log log2 = logProvider.getLog( "log 2" );
-
         DuplicatingLog log = new DuplicatingLog( log1, log2 );
         Logger logger = log.infoLogger();
 
@@ -103,10 +121,10 @@ class DuplicatingLogTest
         logger.log( "The weird turn pro" );
 
         // Then
-        logProvider.assertExactly(
-                AssertableLogProvider.inLog( "log 1" ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( "log 2" ).info( "When the going gets weird" ),
-                AssertableLogProvider.inLog( "log 2" ).info( "The weird turn pro" )
-        );
+        verify( infoLogger1 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "When the going gets weird" );
+        verify( infoLogger2 ).log( "The weird turn pro" );
+        verifyNoMoreInteractions( infoLogger1 );
+        verifyNoMoreInteractions( infoLogger2 );
     }
 }

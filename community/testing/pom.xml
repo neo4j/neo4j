@@ -60,6 +60,7 @@
 
     <modules>
         <module>io-utils</module>
+        <module>log-utils</module>
         <module>test-utils</module>
     </modules>
 </project>

@@ -28,7 +28,6 @@ import org.junit.runners.Parameterized;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Nonnull;
 
 import org.neo4j.logging.AssertableLogProvider;
 import org.neo4j.time.Clocks;
@@ -45,8 +44,9 @@ public class CappedLoggerTest
 
     public interface LogMethod
     {
-        void log( @Nonnull CappedLogger logger, @Nonnull String msg );
-        void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause );
+        void log( CappedLogger logger, String msg );
+
+        void log( CappedLogger logger, String msg, Throwable cause );
     }
 
     @Parameterized.Parameters( name = "{0}" )
@@ -55,13 +55,13 @@ public class CappedLoggerTest
         LogMethod debug = new LogMethod()
         {
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            public void log( CappedLogger logger, String msg )
             {
                 logger.debug( msg );
             }
 
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
+            public void log( CappedLogger logger, String msg, Throwable cause )
             {
                 logger.debug( msg, cause );
             }
@@ -69,13 +69,13 @@ public class CappedLoggerTest
         LogMethod info = new LogMethod()
         {
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            public void log( CappedLogger logger, String msg )
             {
                 logger.debug( msg );
             }
 
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
+            public void log( CappedLogger logger, String msg, Throwable cause )
             {
                 logger.info( msg, cause );
             }
@@ -83,13 +83,13 @@ public class CappedLoggerTest
         LogMethod warn = new LogMethod()
         {
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            public void log( CappedLogger logger, String msg )
             {
                 logger.debug( msg );
             }
 
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
+            public void log( CappedLogger logger, String msg, Throwable cause )
             {
                 logger.warn( msg, cause );
             }
@@ -97,22 +97,22 @@ public class CappedLoggerTest
         LogMethod error = new LogMethod()
         {
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg )
+            public void log( CappedLogger logger, String msg )
             {
                 logger.debug( msg );
             }
 
             @Override
-            public void log( @Nonnull CappedLogger logger, @Nonnull String msg, @Nonnull Throwable cause )
+            public void log( CappedLogger logger, String msg, Throwable cause )
             {
                 logger.error( msg, cause );
             }
         };
         return Arrays.asList(
-                new Object[]{ "debug", debug },
-                new Object[] { "info", info },
-                new Object[] { "warn", warn },
-                new Object[] { "error", error }
+                new Object[]{"debug", debug},
+                new Object[]{"info", info},
+                new Object[]{"warn", warn},
+                new Object[]{"error", error}
         );
     }
 
@@ -186,7 +186,7 @@ public class CappedLoggerTest
         {
             matchers[i] = any( String.class );
         }
-        for (; i < count; i++ )
+        for ( ; i < count; i++ )
         {
             String line = lines[i];
             matchers[i] = containsString( line );
@@ -265,11 +265,11 @@ public class CappedLoggerTest
     public void mustAllowConfigurationChaining()
     {
         logger.setCountLimit( 1 )
-              .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
-              .setDuplicateFilterEnabled( true )
-              .unsetCountLimit()
-              .unsetTimeLimit()
-              .setCountLimit( 1 );
+                .setTimeLimit( 10, MILLISECONDS, Clocks.systemClock() )
+                .setDuplicateFilterEnabled( true )
+                .unsetCountLimit()
+                .unsetTimeLimit()
+                .setCountLimit( 1 );
     }
 
     @Test
