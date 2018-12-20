@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.internal.DataCollectorManager;
 import org.neo4j.graphdb.factory.module.DatabaseModule;
 import org.neo4j.graphdb.factory.module.PlatformModule;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
@@ -39,6 +38,7 @@ import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.graphdb.spatial.Geometry;
 import org.neo4j.graphdb.spatial.Point;
 import org.neo4j.helpers.collection.Pair;
+import org.neo4j.internal.DataCollectorManager;
 import org.neo4j.internal.kernel.api.security.SecurityContext;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.security.provider.SecurityProvider;
@@ -172,10 +172,8 @@ public class GraphDatabaseFacadeFactory
         Procedures procedures = setupProcedures( platform, edition, graphDatabaseFacade );
         platform.dependencies.satisfyDependency( new NonTransactionalDbmsOperations( procedures ) );
 
-        Logger msgLog = platform.logService.getInternalLog( getClass() ).infoLogger();
-        DatabaseManager databaseManager = edition.createDatabaseManager( graphDatabaseFacade, platform, edition, procedures, msgLog );
-        platform.life.add( databaseManager );
-        platform.dependencies.satisfyDependency( databaseManager );
+        Logger logger = platform.logService.getInternalLog( getClass() ).infoLogger();
+        DatabaseManager databaseManager = createAndInitializeDatabaseManager( platform, edition, graphDatabaseFacade, procedures, logger );
 
         DataCollectorManager dataCollectorManager = new DataCollectorManager( databaseManager, procedures, config );
         platform.life.add( dataCollectorManager );
@@ -227,7 +225,7 @@ public class GraphDatabaseFacadeFactory
 
         if ( error != null )
         {
-            msgLog.log( "Failed to start database", error );
+            logger.log( "Failed to start database", error );
             throw error;
         }
 
@@ -299,5 +297,18 @@ public class GraphDatabaseFacadeFactory
         return new BoltServer( databaseManager, platform.jobScheduler,
                 platform.connectorPortRegister, edition.getConnectionTracker(), platform.usageData, platform.config, platform.clock, platform.monitors,
                 platform.logService, platform.dependencies );
+    }
+
+    private static DatabaseManager createAndInitializeDatabaseManager( PlatformModule platform, AbstractEditionModule edition,
+            GraphDatabaseFacade facade, Procedures procedures, Logger logger )
+    {
+        DatabaseManager databaseManager = edition.createDatabaseManager( facade, platform, edition, procedures, logger );
+        if ( !edition.handlesDatabaseManagerLifecycle() )
+        {
+            // only add database manager to the lifecycle when edition doesn't manage it already
+            platform.life.add( databaseManager );
+        }
+        platform.dependencies.satisfyDependency( databaseManager );
+        return databaseManager;
     }
 }

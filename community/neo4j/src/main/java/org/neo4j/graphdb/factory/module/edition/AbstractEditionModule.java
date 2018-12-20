@@ -116,6 +116,17 @@ public abstract class AbstractEditionModule
         return new DefaultDatabaseManager( platform, edition, procedures, msgLog, graphDatabaseFacade );
     }
 
+    /**
+     * Returns {@code false} because {@link DatabaseManager}'s lifecycle is not managed by any component by default.
+     * So {@link DatabaseManager} needs to be included in the global lifecycle.
+     *
+     * @return always {@code false}.
+     */
+    public boolean handlesDatabaseManagerLifecycle()
+    {
+        return false;
+    }
+
     public abstract void createSecurityModule( PlatformModule platformModule, Procedures procedures );
 
     protected static SecurityModule setupSecurityModule( PlatformModule platformModule, AbstractEditionModule editionModule, Log log, Procedures procedures,
