@@ -177,7 +177,7 @@ public class BuiltInProcedures
     {
         try ( IndexProcedures indexProcedures = indexProcedures() )
         {
-            indexProcedures.awaitIndex( index, timeout, TimeUnit.SECONDS );
+            indexProcedures.awaitIndexByPattern( index, timeout, TimeUnit.SECONDS );
         }
     }
 
