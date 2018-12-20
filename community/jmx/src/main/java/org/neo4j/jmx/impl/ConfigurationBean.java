@@ -36,6 +36,7 @@ import org.neo4j.jmx.Description;
 import org.neo4j.kernel.internal.KernelData;
 
 @Description( "The configuration parameters used to configure Neo4j" )
+@Deprecated
 public final class ConfigurationBean extends Neo4jMBean
 {
     public static final String CONFIGURATION_MBEAN_NAME = "Configuration";

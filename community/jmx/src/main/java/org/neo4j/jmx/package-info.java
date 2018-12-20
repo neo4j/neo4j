@@ -19,5 +19,6 @@
  */
 /**
  * Management support using JMX.
+ * Deprecated for removal in next major release.
  */
 package org.neo4j.jmx;

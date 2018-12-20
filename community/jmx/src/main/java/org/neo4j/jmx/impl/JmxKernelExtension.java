@@ -34,6 +34,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.logging.Log;
 import org.neo4j.logging.LogProvider;
 
+@Deprecated
 public class JmxKernelExtension extends LifecycleAdapter
 {
     private final KernelData kernelData;

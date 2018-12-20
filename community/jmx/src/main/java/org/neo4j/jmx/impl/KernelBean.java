@@ -32,6 +32,7 @@ import org.neo4j.storageengine.api.StoreId;
 
 import static org.neo4j.function.Suppliers.lazySingleton;
 
+@Deprecated
 public class KernelBean extends Neo4jMBean implements Kernel
 {
     private final long kernelStartTime;

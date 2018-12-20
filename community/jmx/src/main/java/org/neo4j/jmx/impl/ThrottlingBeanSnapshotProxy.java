@@ -37,6 +37,7 @@ import static org.neo4j.util.Preconditions.requirePositive;
  * The purpose of this proxy is to take a snapshot of all MBean attributes and return those cached values to prevent excessive resource consumption
  * in case of frequent calls and expensive attribute calculations. Snapshot is updated no earlier than {@link #updateInterval} ms after previous update.
  */
+@Deprecated
 class ThrottlingBeanSnapshotProxy implements InvocationHandler
 {
     private final Set<Method> getters;

@@ -58,6 +58,7 @@ import static org.neo4j.io.layout.DatabaseFile.SCHEMA_STORE;
 import static org.neo4j.jmx.impl.ThrottlingBeanSnapshotProxy.newThrottlingBeanSnapshotProxy;
 
 @Service.Implementation( ManagementBeanProvider.class )
+@Deprecated
 public final class StoreSizeBean extends ManagementBeanProvider
 {
     private static final long UPDATE_INTERVAL = 60000;

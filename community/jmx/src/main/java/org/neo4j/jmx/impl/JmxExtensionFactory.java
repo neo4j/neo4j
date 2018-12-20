@@ -30,6 +30,7 @@ import org.neo4j.logging.internal.LogService;
 import static org.neo4j.kernel.extension.ExtensionType.DATABASE;
 
 @Service.Implementation( KernelExtensionFactory.class )
+@Deprecated
 public final class JmxExtensionFactory extends KernelExtensionFactory<JmxExtensionFactory.Dependencies>
 {
     public interface Dependencies

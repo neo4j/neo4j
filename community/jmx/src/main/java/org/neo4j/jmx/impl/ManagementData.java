@@ -24,6 +24,7 @@ import javax.management.ObjectName;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.KernelData;
 
+@Deprecated
 public final class ManagementData
 {
     private final KernelData kernel;

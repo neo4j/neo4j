@@ -28,6 +28,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.database.Database;
 import org.neo4j.kernel.internal.KernelData;
 
+@Deprecated
 public abstract class ManagementBeanProvider extends Service
 {
     final Class<?> beanInterface;
