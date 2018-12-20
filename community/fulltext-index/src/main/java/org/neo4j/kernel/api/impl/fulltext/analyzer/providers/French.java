@@ -38,4 +38,10 @@ public class French extends AnalyzerProvider
     {
         return new FrenchAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "French analyzer with stemming and stop word filtering.";
+    }
 }

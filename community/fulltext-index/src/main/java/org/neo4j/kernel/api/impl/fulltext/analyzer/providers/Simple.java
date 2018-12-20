@@ -38,4 +38,11 @@ public class Simple extends AnalyzerProvider
     {
         return new SimpleAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "A simple analyzer that tokenizes at non-letter boundaries. No stemming or filtering. Works okay for most European languages, but is " +
+                "terrible for languages where words are not separated by spaces, such as many Asian languages.";
+    }
 }

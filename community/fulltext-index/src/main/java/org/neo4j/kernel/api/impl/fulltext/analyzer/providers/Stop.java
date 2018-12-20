@@ -38,4 +38,11 @@ public class Stop extends AnalyzerProvider
     {
         return new StopAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Stop analyzer tokenizes at non-letter characters, and filters out English stop words. This differs from the 'classic' and 'standard' " +
+                "analyzers in that it makes no effort to recognize special terms, like likely product names, URLs or email addresses.";
+    }
 }

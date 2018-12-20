@@ -38,4 +38,10 @@ public class Irish extends AnalyzerProvider
     {
         return new IrishAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Irish analyzer with stemming and stop word filtering.";
+    }
 }

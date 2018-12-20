@@ -38,4 +38,10 @@ public class Classic extends AnalyzerProvider
     {
         return new ClassicAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Classic Lucene analyzer. Similar to 'standard', but with worse unicode support.";
+    }
 }

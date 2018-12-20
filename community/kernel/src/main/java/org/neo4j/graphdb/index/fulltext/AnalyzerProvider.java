@@ -76,4 +76,12 @@ public abstract class AnalyzerProvider extends Service
      * @return A newly constructed {@code Analyzer} instance.
      */
     public abstract Analyzer createAnalyzer();
+
+    /**
+     * @return A description of this analyzer.
+     */
+    public String description()
+    {
+        return "";
+    }
 }

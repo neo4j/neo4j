@@ -40,4 +40,11 @@ public class Standard extends AnalyzerProvider
     {
         return new StandardAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "The default, standard analyzer. Tokenizes on non-letter and filters out English stop words and punctuation. " +
+                "Does no stemming, but takes care to keep likely product names, URLs and email addresses as single terms.";
+    }
 }

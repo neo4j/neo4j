@@ -38,4 +38,11 @@ public class Keyword extends AnalyzerProvider
     {
         return new KeywordAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Keyword analyzer \"tokenizes\" the text as a single term. Useful for zip-codes, ids, etc. " +
+                "Situations where complete and exact matches are desired.";
+    }
 }

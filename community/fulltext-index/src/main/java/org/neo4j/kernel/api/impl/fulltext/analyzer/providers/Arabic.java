@@ -38,4 +38,10 @@ public class Arabic extends AnalyzerProvider
     {
         return new ArabicAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Arabic analyzer with light stemming, as specified by \"Light Stemming for Arabic Information Retrieval\".";
+    }
 }

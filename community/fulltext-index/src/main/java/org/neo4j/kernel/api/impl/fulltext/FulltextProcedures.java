@@ -28,14 +28,17 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.Spliterator;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.internal.kernel.api.IndexReference;
@@ -87,7 +90,13 @@ public class FulltextProcedures
     @Procedure( name = "db.index.fulltext.listAvailableAnalyzers", mode = READ )
     public Stream<AvailableAnalyzer> listAvailableAnalyzers()
     {
-        return accessor.listAvailableAnalyzers().map( AvailableAnalyzer::new );
+        Stream<AnalyzerProvider> stream = accessor.listAvailableAnalyzers();
+        return stream.flatMap( provider ->
+        {
+            String description = provider.description();
+            Spliterator<String> spliterator = provider.getKeys().spliterator();
+            return StreamSupport.stream( spliterator, false ).map( name -> new AvailableAnalyzer( name, description ) );
+        } );
     }
 
     @Description( "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes." )
@@ -285,10 +294,12 @@ public class FulltextProcedures
     public static final class AvailableAnalyzer
     {
         public final String analyzer;
+        public final String description;
 
-        AvailableAnalyzer( String analyzer )
+        AvailableAnalyzer( String name, String description )
         {
-            this.analyzer = analyzer;
+            this.analyzer = name;
+            this.description = description;
         }
     }
 }

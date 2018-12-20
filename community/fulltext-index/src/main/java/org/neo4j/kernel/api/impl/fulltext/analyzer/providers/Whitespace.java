@@ -38,4 +38,10 @@ public class Whitespace extends AnalyzerProvider
     {
         return new WhitespaceAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Breaks text into terms by characters that are considered \"Java whitespace\".";
+    }
 }

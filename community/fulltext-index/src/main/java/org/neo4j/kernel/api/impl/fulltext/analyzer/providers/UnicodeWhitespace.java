@@ -38,4 +38,10 @@ public class UnicodeWhitespace extends AnalyzerProvider
     {
         return new UnicodeWhitespaceAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Breaks text into terms by characters that have the unicode WHITESPACE property.";
+    }
 }

@@ -38,4 +38,12 @@ public class UrlOrEmail extends AnalyzerProvider
     {
         return new UAX29URLEmailAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Tokenizes into sequences of alpha-numeric, numeric, URL, email, southeast asian terms, " +
+                "and into terms of individual ideographic and hiragana characters. " +
+                "English stop words are filtered out.";
+    }
 }

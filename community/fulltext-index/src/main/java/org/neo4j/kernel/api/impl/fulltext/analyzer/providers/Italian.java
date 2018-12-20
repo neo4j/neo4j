@@ -38,4 +38,10 @@ public class Italian extends AnalyzerProvider
     {
         return new ItalianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Italian analyzer with stemming and stop word filtering.";
+    }
 }
