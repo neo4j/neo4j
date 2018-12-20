@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.v4_0.util.symbols.CTNumber
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue}
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 
 class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -39,7 +40,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> TRUE),
       Map("a" -> intValue(2), "let" -> FALSE)
     ))
@@ -58,7 +59,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
       createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),
       Map("a" -> intValue(2), "let" -> TRUE)
     ))
@@ -73,7 +74,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),
       Map("a" -> intValue(2), "let" -> FALSE)
     ))
@@ -88,7 +89,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> TRUE),
       Map("a" -> intValue(2), "let" -> TRUE)
     ))
@@ -103,7 +104,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       LetSemiApplyPipe(lhs, rhs, "let", negated = false)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> TRUE),
       Map("a" -> intValue(2), "let" -> TRUE)
     ))
@@ -118,7 +119,7 @@ class LetSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       LetSemiApplyPipe(lhs, rhs, "let", negated = true)().
       createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> intValue(1), "let" -> FALSE),
       Map("a" -> intValue(2), "let" -> FALSE)
     ))

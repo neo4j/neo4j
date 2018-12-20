@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.runtime.ImplicitValueConversion._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.{FALSE, TRUE, intValue, stringValue}
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 
 class ProduceResultsPipeTest extends CypherFunSuite {
 
@@ -42,7 +43,7 @@ class ProduceResultsPipeTest extends CypherFunSuite {
 
     val result = pipe.createResults(queryState).toList
 
-    result should equal(
+    result should beEquivalentTo(
       List(
         Map("a" -> stringValue("foo"), "b" -> intValue(10), "c" -> TRUE),
         Map("a" -> stringValue("bar"), "b" -> intValue(20), "c" -> FALSE)
