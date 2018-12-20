@@ -33,6 +33,7 @@ import org.neo4j.internal.kernel.api.security.LoginContext
 import org.neo4j.kernel.impl.util.ValueUtils._
 import org.neo4j.values.virtual.VirtualValues.EMPTY_MAP
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 
 import scala.collection.immutable.IndexedSeq
 import scala.util.Random
@@ -157,8 +158,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toSet should equal(
-          Set(
+        pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
+          List(
             Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
           )
         )
@@ -193,8 +194,8 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toSet should equal(
-          Set(
+        pipeUnderTest.createResults(queryState).toList should beEquivalentTo(
+          List(
             Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n4))
         ))
       })
@@ -279,7 +280,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toSet should equal(nodes.tail.map(n => Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n))).toSet)
+        pipeUnderTest.createResults(queryState).map(_.toMap).toSet should equal(nodes.tail.map(n => Map("from" -> fromNodeProxy(n1), "to" -> fromNodeProxy(n))).toSet)
       })
     }
   }
@@ -298,7 +299,7 @@ class PruningVarLengthExpandPipeTest extends GraphDatabaseFunSuite {
 
     graph.withTx { tx =>
       withQueryState(graph, tx, EMPTY_MAP, { queryState =>
-        pipeUnderTest.createResults(queryState).toSet should equal(Set(
+        pipeUnderTest.createResults(queryState).map(_.toMap).toSet should equal(Set(
           Map("from" -> nodeValues(1), "to" -> nodeValues(2)),
           Map("from" -> nodeValues(1), "to" -> nodeValues(3)),
           Map("from" -> nodeValues(1), "to" -> nodeValues(4)),

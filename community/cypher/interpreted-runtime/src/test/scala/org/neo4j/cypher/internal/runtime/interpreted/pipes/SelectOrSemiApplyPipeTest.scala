@@ -42,7 +42,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> intValue(1))))
+    result should beEquivalentTo(List(Map("a" -> intValue(1))))
   }
 
   test("should only let through the one that not matches when the expression is false and it is negated") {
@@ -58,7 +58,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
       SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = true)().
         createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> intValue(2))))
+    result should beEquivalentTo(List(Map("a" -> intValue(2))))
   }
 
   test("should not let anything through if rhs is empty and expression is false") {
@@ -102,7 +102,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     val result =
       SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> intValue(2))))
+    result should beEquivalentTo(List(Map("a" -> intValue(2))))
   }
 
   test("should let through the one that matches and the one satisfying the expression") {
@@ -116,7 +116,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
     val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Variable("a"), Literal(2)), negated = false)().createResults(QueryStateHelper.empty).toList
 
-    result should equal(List(Map("a" -> intValue(1)), Map("a" -> intValue(2))))
+    result should beEquivalentTo(List(Map("a" -> intValue(1)), Map("a" -> intValue(2))))
   }
 
   test("should let pass nothing if the rhs is empty and the expression is false") {

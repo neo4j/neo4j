@@ -30,6 +30,7 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values.{doubleArray, intArray, intValue}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 
 class ValueHashJoinPipeTest extends CypherFunSuite {
 
@@ -96,7 +97,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.map(_.toMap).toSet should equal(Set(
       Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(1), "b2" -> intValue(1)),
       Map("a" -> intValue(1), "b" -> intValue(1), "a2" -> intValue(2), "b2" -> intValue(1)),
       Map("a" -> intValue(2), "b" -> intValue(2), "a2" -> intValue(3), "b2" -> intValue(2)),
@@ -178,7 +179,7 @@ class ValueHashJoinPipeTest extends CypherFunSuite {
     val result = ValueHashJoinPipe(Variable("a"), Variable("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(Map("a" -> ints, "b" ->  doubles)))
+    result.toList should beEquivalentTo(List(Map("a" -> ints, "b" ->  doubles)))
   }
 
 

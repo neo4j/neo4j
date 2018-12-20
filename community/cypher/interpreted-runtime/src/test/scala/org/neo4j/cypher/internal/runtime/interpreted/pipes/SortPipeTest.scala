@@ -88,7 +88,7 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
 
     val sortPipe = new SortPipe(source, List(Ascending("y")))()
 
-    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should equal(List(
+    sortPipe.createResults(QueryStateHelper.emptyWithValueSerialization).toList should beEquivalentTo(List(
       Map("y" -> intValue(1)),
       Map("y" -> intValue(2)),
       Map("y" -> Values.NO_VALUE)))

@@ -232,4 +232,16 @@ class MapExecutionContext(private val m: MutableMap[String, AnyValue], private v
     map.setLinenumber(getLinenumber)
     map
   }
+
+
+  def canEqual(other: Any): Boolean = other.isInstanceOf[MapExecutionContext]
+
+  override def equals(other: Any): Boolean = other match {
+    case that: MapExecutionContext =>
+      (that canEqual this) &&
+        m == that.m
+    case _ => false
+  }
+
+  override def hashCode(): Int = m.hashCode()
 }

@@ -30,7 +30,10 @@ import org.neo4j.cypher.internal.v4_0.util.symbols._
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.graphdb.{Node, Relationship}
 import org.neo4j.kernel.impl.util.ValueUtils.{fromNodeProxy, fromRelationshipProxy}
+import org.neo4j.values.AnyValue
 import org.neo4j.values.virtual.RelationshipValue
+
+import scala.collection.immutable
 
 class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
 
@@ -191,7 +194,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
     val results = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.OUTGOING, LazyTypes.empty)().createResults(queryState).toList
 
     // Then
-    results should contain theSameElementsAs List(
+    results.map(_.toMap) should contain theSameElementsAs List(
       Map("n" -> fromNodeProxy(node1), "k" -> fromNodeProxy(node0), "r1" -> fromRelationshipProxy(rel1), "r2" -> fromRelationshipProxy(rel1)),
       Map("n" -> fromNodeProxy(node0), "k" -> fromNodeProxy(node1), "r1" -> fromRelationshipProxy(rel0), "r2" -> fromRelationshipProxy(rel0)))
   }
@@ -211,7 +214,7 @@ class ExpandIntoPipeTest extends CypherFunSuite with PipeTestSupport {
       row("n" -> node0, "r2" -> rel0, "k" -> node1))
 
     // When
-    val results = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.BOTH, LazyTypes.empty)().createResults(queryState).toList
+    val results = ExpandIntoPipe(source, "n", "r1", "k", SemanticDirection.BOTH, LazyTypes.empty)().createResults(queryState).map(_.toMap).toList
 
     // Then
     results should contain theSameElementsAs List(

@@ -35,6 +35,7 @@ import org.neo4j.values.storable.Values.{NO_VALUE, intValue}
 
 class NodeHashJoinPipeTest extends CypherFunSuite {
 
+  import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
   import org.mockito.Mockito._
 
   test("should support simple hash join over nodes") {
@@ -96,7 +97,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val result = NodeHashJoinPipe(Set("a", "b"), left, right)().createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result.map(_.toMap) should equal(List(
       Map("a"->fromNodeProxy(node0), "b"->fromNodeProxy(node1), "c" -> intValue(1), "d" -> intValue(1)),
       Map("a"->fromNodeProxy(node0), "b"->fromNodeProxy(node2), "c" -> intValue(2), "d" -> intValue(2)),
       Map("a"->fromNodeProxy(node0), "b"->fromNodeProxy(node2), "c" -> intValue(3), "d" -> intValue(2))
@@ -125,7 +126,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(
+    result.map(_.toMap).toList should equal(List(
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(30)),
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(40))
     ))
@@ -153,7 +154,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(
+    result.map(_.toMap).toList should equal(List(
       Map("a" -> intValue(20), "b" -> fromNodeProxy(node2), "c" -> intValue(30))
     ))
   }
@@ -180,7 +181,7 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     val result = NodeHashJoinPipe(Set("b"), left, right)().createResults(queryState)
 
     // then
-    result.toList should equal(List(
+    result.map(_.toMap).toList should equal(List(
       Map("a" -> intValue(10), "b" -> fromNodeProxy(node2), "c" -> intValue(40))
     ))
   }

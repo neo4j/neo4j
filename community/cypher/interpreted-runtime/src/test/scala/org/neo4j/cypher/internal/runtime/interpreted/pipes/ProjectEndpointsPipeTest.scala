@@ -238,7 +238,7 @@ class ProjectEndpointsPipeTest extends CypherFunSuite {
         createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("r" -> asListOfEdges(rels.toArray), "a" -> fromNodeProxy(node1), "b" -> fromNodeProxy(node4))
     ))
   }

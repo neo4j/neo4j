@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.runtime.interpreted.commands.expressions.{ListL
 import org.neo4j.cypher.internal.runtime.{ExecutionContext, QueryContext, RelationshipOperations}
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.virtual.{NodeValue, RelationshipValue}
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 
 class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
 
@@ -73,7 +74,7 @@ class UndirectedDirectedRelationshipByIdSeekPipeTest extends CypherFunSuite {
       createResults(queryState)
 
     // then
-    result.toSet should equal(Set(
+    result.map(_.toMap).toSet should equal(Set(
       Map(relName -> r1, to -> e1, from -> s1),
       Map(relName -> r2, to -> e2, from -> s2),
       Map(relName -> r1, to -> s1, from -> e1),

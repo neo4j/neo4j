@@ -49,14 +49,14 @@ class RollUpApplyPipeTest extends CypherFunSuite with PipeTestSupport {
   test("when rhs has null values on nullableIdentifiers, a null value should be produced") {
     // given
     val lhs = createLhs(null, 1)
-    val rhs = pipeWithResults { (state) => Iterator() }
+    val rhs = pipeWithResults { state => Iterator() }
     val pipe = RollUpApplyPipe(lhs, rhs, collectionName = "x", identifierToCollect = "y", nullableIdentifiers = Set("a"))()
 
     // when
     val result = pipe.createResults(QueryStateHelper.empty).toList
 
     // then
-    result should equal(List(
+    result should beEquivalentTo(List(
       Map("a" -> NO_VALUE, "x" -> NO_VALUE),
       Map("a" -> Values.intValue(1), "x" -> VirtualValues.EMPTY_LIST)))
   }

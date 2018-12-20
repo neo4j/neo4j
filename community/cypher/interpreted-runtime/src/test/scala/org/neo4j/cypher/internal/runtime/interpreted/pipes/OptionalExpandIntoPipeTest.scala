@@ -195,7 +195,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
-    result should equal(List(Map("a" -> fromNodeProxy(node), "r" -> NO_VALUE, "b" -> NO_VALUE)))
+    result.map(_.toMap) should equal(List(Map("a" -> fromNodeProxy(node), "r" -> NO_VALUE, "b" -> NO_VALUE)))
   }
 
   test("expand null into something should return nulled row") {
@@ -207,7 +207,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
-    result should equal(List(Map("a" -> NO_VALUE, "r" -> NO_VALUE, "b" -> fromNodeProxy(node))))
+    result.map(_.toMap) should equal(List(Map("a" -> NO_VALUE, "r" -> NO_VALUE, "b" -> fromNodeProxy(node))))
   }
 
   test("expand null into null should return nulled row") {
@@ -218,7 +218,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val result: List[ExecutionContext] = OptionalExpandIntoPipe(input, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, True())().createResults(queryState).toList
 
     // then
-    result should equal(List(Map("a" -> NO_VALUE, "r" -> NO_VALUE, "b" -> NO_VALUE)))
+    result.map(_.toMap) should equal(List(Map("a" -> NO_VALUE, "r" -> NO_VALUE, "b" -> NO_VALUE)))
   }
 
   test("expand into should handle multiple relationships between the same node") {
@@ -238,7 +238,7 @@ class OptionalExpandIntoPipeTest extends CypherFunSuite {
     val result = OptionalExpandIntoPipe(left, "a", "r", "b", SemanticDirection.OUTGOING, LazyTypes.empty, predicate)().createResults(queryState).toList
 
     // then
-    result should equal(List(
+    result.map(_.toMap) should equal(List(
       Map("a" -> fromNodeProxy(startNode), "b" -> fromNodeProxy(endNode1), "r" -> fromRelationshipProxy(rel1))))
   }
 

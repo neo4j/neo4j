@@ -27,6 +27,7 @@ import org.neo4j.values.storable.Values.intValue
 import org.neo4j.values.virtual.VirtualValues.list
 
 import scala.collection.JavaConverters._
+import org.neo4j.cypher.internal.runtime.interpreted.ValueComparisonHelper.beEquivalentTo
 
 class UnwindPipeTest extends CypherFunSuite {
 
@@ -37,7 +38,7 @@ class UnwindPipeTest extends CypherFunSuite {
   }
 
   test("should unwind collection of numbers") {
-    unwindWithInput(List(Map("x" -> List(1, 2).asJava))) should equal(List(
+    unwindWithInput(List(Map("x" -> List(1, 2).asJava))) should beEquivalentTo(List(
       Map("y" -> intValue(1), "x" -> list(intValue(1), intValue(2))),
       Map("y" -> intValue(2), "x" -> list(intValue(1), intValue(2)))))
   }
@@ -57,8 +58,7 @@ class UnwindPipeTest extends CypherFunSuite {
       list(intValue(4), intValue(5), intValue(6))
     )
     unwindWithInput(List(Map(
-      "x" -> listOfLists))) should equal(
-
+      "x" -> listOfLists))) should beEquivalentTo(
       List(
         Map("y" -> list(intValue(1), intValue(2), intValue(3)), "x" -> listValue),
         Map("y" -> list(intValue(4), intValue(5), intValue(6)), "x" -> listValue)))

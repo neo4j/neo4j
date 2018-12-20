@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.runtime.interpreted.pipes
 import org.neo4j.cypher.internal.runtime.interpreted.QueryStateHelper
 import org.neo4j.cypher.internal.v4_0.util.test_helpers.CypherFunSuite
 import org.neo4j.values.storable.Values.intValue
+import org.neo4j.cypher.internal.runtime.interpreted.ExecutionContextHelper._
 
 class UnionIteratorTest extends CypherFunSuite {
   val state = QueryStateHelper.empty
@@ -40,7 +41,7 @@ class UnionIteratorTest extends CypherFunSuite {
     val union = createUnion(Iterator(singleMap), Iterator.empty)
 
     //THEN
-    union.toList should equal(List( Map("x" -> intValue(1))))
+    union.map(_.toMap).toList should equal(List( Map("x" -> intValue(1))))
   }
 
   test("two_elements") {
@@ -50,7 +51,7 @@ class UnionIteratorTest extends CypherFunSuite {
     val union = createUnion(Iterator(aMap), Iterator(bMap))
 
     //THEN
-    union.toList should equal(List(Map("x" -> intValue(1)), Map("x" -> intValue(2))))
+    union.map(_.toMap).toList should equal(List(Map("x" -> intValue(1)), Map("x" -> intValue(2))))
   }
 
   private def createUnion(aIt: Iterator[Map[String, Any]], bIt: Iterator[Map[String, Any]]): UnionIterator = {
