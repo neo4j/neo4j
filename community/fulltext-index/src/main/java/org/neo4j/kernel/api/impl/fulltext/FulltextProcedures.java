@@ -33,6 +33,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import org.neo4j.common.EntityType;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -46,9 +47,12 @@ import org.neo4j.internal.kernel.api.IndexReference;
 import org.neo4j.internal.kernel.api.NodeValueIndexCursor;
 import org.neo4j.internal.kernel.api.RelationshipIndexCursor;
 import org.neo4j.internal.kernel.api.exceptions.InvalidTransactionTypeKernelException;
+import org.neo4j.internal.kernel.api.exceptions.ProcedureException;
 import org.neo4j.internal.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.builtinprocs.IndexProcedures;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
+import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.storageengine.impl.recordstorage.IndexDescriptor;
 import org.neo4j.procedure.Context;
 import org.neo4j.procedure.Description;
@@ -79,6 +83,9 @@ public class FulltextProcedures
     public GraphDatabaseService db;
 
     @Context
+    public DependencyResolver resolver;
+
+    @Context
     public FulltextAdapter accessor;
 
     @Description( "List the available analyzers that the fulltext indexes can be configured with." )
@@ -93,6 +100,22 @@ public class FulltextProcedures
     public void awaitRefresh()
     {
         accessor.awaitRefresh();
+    }
+
+    @Description( "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
+            "The name can be quoted by backticks, if necessary." )
+    @Procedure( name = "db.index.fulltext.awaitIndex", mode = READ )
+    public void awaitIndex( @Name( "index" ) String index, @Name( value = "timeOutSeconds", defaultValue = "300" ) long timeout ) throws ProcedureException
+    {
+        try ( IndexProcedures indexProcedures = indexProcedures() )
+        {
+            indexProcedures.awaitIndexByName( index, timeout, TimeUnit.SECONDS );
+        }
+    }
+
+    private IndexProcedures indexProcedures()
+    {
+        return new IndexProcedures( tx, resolver.resolveDependency( IndexingService.class ) );
     }
 
     @Description( "Create a node fulltext index for the given labels and properties. " +

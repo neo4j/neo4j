@@ -185,6 +185,9 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                                 "YIELD index, providerName, status", "SCHEMA" ),
                 proc( "db.index.fulltext.awaitEventuallyConsistentIndexRefresh", "() :: VOID",
                         "Wait for the updates from recently committed transactions to be applied to any eventually-consistent fulltext indexes.", "READ" ),
+                proc( "db.index.fulltext.awaitIndex", "(index :: STRING?, timeOutSeconds = 300 :: INTEGER?) :: VOID",
+                        "Similar to db.awaitIndex(index, timeout), except instead of an index pattern, the index is specified by name. " +
+                                "The name can be quoted by backticks, if necessary.", "READ" ),
                 proc( "db.index.fulltext.createNodeIndex", "(indexName :: STRING?, labels :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, " +
                         "config = {} :: MAP?) :: VOID", startsWith( "Create a node fulltext index for the given labels and properties." ), "SCHEMA" ),
                 proc( "db.index.fulltext.createRelationshipIndex",
