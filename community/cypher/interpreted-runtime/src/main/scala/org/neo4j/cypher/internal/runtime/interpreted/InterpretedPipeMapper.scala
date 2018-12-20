@@ -352,9 +352,8 @@ case class InterpretedPipeMapper(readOnly: Boolean,
       val commands = exprs.map(buildPredicate(id, _))
       (context: ExecutionContext, state: QueryState, entity: AnyValue) => {
         keys.zip(commands).forall { case (variable: LogicalVariable, expr: Predicate) =>
-          context(variable.name) = entity
+          context.set(variable.name, entity)
           val result = expr.isTrue(context, state)
-          context.remove(variable.name)
           result
         }
       }
