@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v4_0.phases.LogicalPlanState
 import org.neo4j.cypher.internal.compiler.v4_0.planner.CantCompileQueryException
 import org.neo4j.cypher.internal.compiler.v4_0.{CypherPlannerConfiguration, RuntimeUnsupportedNotification}
 import org.neo4j.cypher.internal.planner.v4_0.spi.TokenContext
-import org.neo4j.cypher.{CypherRuntimeOption, InvalidArgumentException, exceptionHandler}
+import org.neo4j.cypher.{CypherRuntimeOption, RuntimeUnsupportedException, exceptionHandler}
 import org.neo4j.internal.kernel.api.SchemaRead
 import org.neo4j.cypher.internal.v4_0.frontend.phases.RecordingNotificationLogger
 import org.neo4j.cypher.internal.v4_0.util.InternalNotification
@@ -99,12 +99,10 @@ object UnknownRuntime extends CypherRuntime[RuntimeContext] {
 class FallbackRuntime[CONTEXT <: RuntimeContext](runtimes: Seq[CypherRuntime[CONTEXT]],
                                                  requestedRuntime: CypherRuntimeOption) extends CypherRuntime[CONTEXT] {
 
-  private def publicCannotCompile(originalException: Exception) =
-    {
-      val message = s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}"
-      val invalidArgument = new InvalidArgumentException(message, originalException)
-      new org.neo4j.graphdb.QueryExecutionException(message, invalidArgument, invalidArgument.status.code().serialize())
-    }
+  private def publicCannotCompile(originalException: Exception) = {
+    val message = s"This version of Neo4j does not support requested runtime: ${requestedRuntime.name}"
+    throw new RuntimeUnsupportedException(message, originalException)
+  }
 
   override def compileToExecutable(logicalPlan: LogicalPlanState, context: CONTEXT): ExecutionPlan = {
     var executionPlan: Try[ExecutionPlan] = Try(ProcedureCallOrSchemaCommandRuntime.compileToExecutable(logicalPlan, context))

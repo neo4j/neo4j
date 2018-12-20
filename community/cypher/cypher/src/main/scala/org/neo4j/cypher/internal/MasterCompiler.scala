@@ -80,18 +80,7 @@ class MasterCompiler(graph: GraphDatabaseQueryService,
 
     def notificationsSoFar(): Set[Notification] = logger.notifications.map(asKernelNotification(None))
 
-    val supportedRuntimes3_1 = Seq(CypherRuntimeOption.interpreted, CypherRuntimeOption.default)
     val inputPosition = preParsedQuery.offset
-
-    def assertSupportedRuntime(ex: InternalSyntaxException, runtime: CypherRuntimeOption): Unit = {
-      if (!supportedRuntimes3_1.contains(runtime)) {
-        if (config.useErrorsOverWarnings) {
-          throw new InvalidArgumentException("The given query is not currently supported in the selected runtime")
-        } else {
-          logger.log(RuntimeUnsupportedNotification)
-        }
-      }
-    }
 
     if (preParsedQuery.runtime == CypherRuntimeOption.compiled)
       logger.log(DeprecatedCompiledRuntimeNotification)

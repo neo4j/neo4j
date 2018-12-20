@@ -232,6 +232,8 @@ public interface Status
                 "The statement is attempting to perform operations using invalid arguments" ),
         ArithmeticError( ClientError,
                 "Invalid use of arithmetic, such as dividing by zero." ),
+        RuntimeUnsupportedError( ClientError,
+                "This query is not supported by the chosen runtime." ),
 
         // database errors
         ExecutionFailed( DatabaseError,

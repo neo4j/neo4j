@@ -62,6 +62,10 @@ class InvalidArgumentException(message: String, cause: Throwable = null) extends
   val status = Status.Statement.ArgumentError
 }
 
+class RuntimeUnsupportedException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+  val status = Status.Statement.RuntimeUnsupportedError
+}
+
 class PatternException(message: String, cause: Throwable) extends CypherException(message, cause) {
   val status = Status.Statement.SemanticError
   def this(message: String) = this(message,null)
