@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.store.id.BufferingIdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.id.IdReuseEligibility;
 import org.neo4j.kernel.impl.store.id.configuration.CommunityIdTypeConfigurationProvider;
+import org.neo4j.kernel.impl.transaction.command.IndexActivator;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.util.IdOrderingQueue;
 import org.neo4j.kernel.impl.util.SynchronizedArrayIdOrderingQueue;
@@ -222,9 +223,9 @@ public class RecordStorageEngineRule extends ExternalResource
         }
 
         @Override
-        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+        protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, IndexActivator indexActivator )
         {
-            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode );
+            BatchTransactionApplierFacade recordEngineApplier = super.applier( mode, indexActivator );
             return transactionApplierTransformer.apply( recordEngineApplier );
         }
     }

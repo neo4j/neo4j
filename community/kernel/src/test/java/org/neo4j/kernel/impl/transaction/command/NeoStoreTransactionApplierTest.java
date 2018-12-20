@@ -68,6 +68,7 @@ import org.neo4j.kernel.impl.store.record.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.transaction.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.PropertyKeyTokenCommand;
 import org.neo4j.kernel.impl.transaction.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.ApplyFunction;
 import org.neo4j.storageengine.api.Token;
 
 import static java.util.Arrays.asList;
@@ -83,7 +84,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.transaction.command.CommandHandlerContract.apply;
 
 public class NeoStoreTransactionApplierTest
 {
@@ -113,6 +113,7 @@ public class NeoStoreTransactionApplierTest
             labelScanStoreSynchronizer = new WorkSync<>( labelScanStore );
     private final TransactionToApply transactionToApply = mock( TransactionToApply.class );
     private final WorkSync<IndexingUpdateService,IndexUpdatesWork> indexUpdatesSync = new WorkSync<>( indexingService );
+    private final IndexActivator indexActivator = new IndexActivator( indexingService );
 
     @Before
     public void setup()
@@ -924,7 +925,19 @@ public class NeoStoreTransactionApplierTest
     {
         return new IndexBatchTransactionApplier( indexingService, labelScanStoreSynchronizer,
                 indexUpdatesSync, nodeStore,
-                new PropertyPhysicalToLogicalConverter( propertyStore ) );
+                new PropertyPhysicalToLogicalConverter( propertyStore ), indexActivator );
+    }
+
+    private boolean apply( BatchTransactionApplier applier, ApplyFunction function, TransactionToApply transactionToApply ) throws Exception
+    {
+        try
+        {
+            return CommandHandlerContract.apply( applier, function, transactionToApply );
+        }
+        finally
+        {
+            indexActivator.close();
+        }
     }
 
     // SCHEMA RULE COMMAND

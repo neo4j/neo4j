@@ -86,6 +86,7 @@ import org.neo4j.kernel.impl.store.id.IdGeneratorFactory;
 import org.neo4j.kernel.impl.store.record.AbstractBaseRecord;
 import org.neo4j.kernel.impl.transaction.command.CacheInvalidationBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.HighIdBatchTransactionApplier;
+import org.neo4j.kernel.impl.transaction.command.IndexActivator;
 import org.neo4j.kernel.impl.transaction.command.IndexBatchTransactionApplier;
 import org.neo4j.kernel.impl.transaction.command.IndexUpdatesWork;
 import org.neo4j.kernel.impl.transaction.command.LabelUpdateWork;
@@ -318,8 +319,9 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
     {
         // Have these command appliers as separate try-with-resource to have better control over
         // point between closing this and the locks above
-        try ( LockGroup locks = new LockGroup();
-              BatchTransactionApplier batchApplier = applier( mode ) )
+        try ( IndexActivator indexActivator = new IndexActivator( indexingService );
+              LockGroup locks = new LockGroup();
+              BatchTransactionApplier batchApplier = applier( mode, indexActivator ) )
         {
             while ( batch != null )
             {
@@ -346,7 +348,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
      *
      * After all transactions have been applied the appliers are closed.
      */
-    protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode )
+    protected BatchTransactionApplierFacade applier( TransactionApplicationMode mode, IndexActivator indexActivator )
     {
         ArrayList<BatchTransactionApplier> appliers = new ArrayList<>();
         // Graph store application. The order of the decorated store appliers is irrelevant
@@ -367,7 +369,7 @@ public class RecordStorageEngine implements StorageEngine, Lifecycle
             // Schema index application
             appliers.add( new IndexBatchTransactionApplier( indexingService, labelScanStoreSync, indexUpdatesSync,
                     neoStores.getNodeStore(),
-                    indexUpdatesConverter ) );
+                    indexUpdatesConverter, indexActivator ) );
 
             // Explicit index application
             appliers.add(
