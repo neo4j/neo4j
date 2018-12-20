@@ -61,9 +61,9 @@ class TracersTest
     void mustProduceNullImplementationsWhenRequested()
     {
         Tracers tracers = createTracers( "null" );
-        assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
-        assertThat( tracers.pageCursorTracerSupplier, is( PageCursorTracerSupplier.NULL ) );
-        assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
+        assertThat( tracers.getPageCacheTracer(), is( PageCacheTracer.NULL ) );
+        assertThat( tracers.getPageCursorTracerSupplier(), is( PageCursorTracerSupplier.NULL ) );
+        assertThat( tracers.getTracersFactory().createTransactionTracer( monitors, clock ), is( TransactionTracer.NULL ) );
         assertNoWarning();
     }
 
@@ -71,9 +71,9 @@ class TracersTest
     void mustProduceNullImplementationsWhenRequestedIgnoringCase()
     {
         Tracers tracers = createTracers( "NuLl" );
-        assertThat( tracers.pageCacheTracer, is( PageCacheTracer.NULL ) );
-        assertThat( tracers.pageCursorTracerSupplier, is( PageCursorTracerSupplier.NULL ) );
-        assertThat( tracers.transactionTracer, is( TransactionTracer.NULL ) );
+        assertThat( tracers.getPageCacheTracer(), is( PageCacheTracer.NULL ) );
+        assertThat( tracers.getPageCursorTracerSupplier(), is( PageCursorTracerSupplier.NULL ) );
+        assertThat( tracers.getTracersFactory().createTransactionTracer( monitors, clock ), is( TransactionTracer.NULL ) );
         assertNoWarning();
     }
 
@@ -116,10 +116,10 @@ class TracersTest
 
     private void assertDefaultImplementation( Tracers tracers )
     {
-        assertThat( tracers.pageCacheTracer, instanceOf( DefaultPageCacheTracer.class ) );
-        assertThat( tracers.transactionTracer, instanceOf( DefaultTransactionTracer.class ) );
-        assertThat( tracers.checkPointTracer, instanceOf( DefaultCheckPointerTracer.class ) );
-        assertThat( tracers.pageCursorTracerSupplier, instanceOf( DefaultPageCursorTracerSupplier.class ) );
+        assertThat( tracers.getPageCacheTracer(), instanceOf( DefaultPageCacheTracer.class ) );
+        assertThat( tracers.getTracersFactory().createTransactionTracer( monitors, clock ), instanceOf( DefaultTransactionTracer.class ) );
+        assertThat( tracers.getTracersFactory().createCheckPointTracer( monitors, clock ), instanceOf( DefaultCheckPointerTracer.class ) );
+        assertThat( tracers.getPageCursorTracerSupplier(), instanceOf( DefaultPageCursorTracerSupplier.class ) );
     }
 
     private void assertNoWarning()

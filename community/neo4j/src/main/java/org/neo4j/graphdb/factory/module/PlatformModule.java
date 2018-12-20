@@ -25,7 +25,6 @@ import java.io.IOException;
 import org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.module.edition.AbstractEditionModule;
-import org.neo4j.graphdb.internal.DatabaseMigratorFactoryImpl;
 import org.neo4j.graphdb.security.URLAccessRule;
 import org.neo4j.helpers.collection.Pair;
 import org.neo4j.internal.diagnostics.DiagnosticsManager;
@@ -42,7 +41,6 @@ import org.neo4j.kernel.diagnostics.providers.DbmsDiagnosticsManager;
 import org.neo4j.kernel.extension.GlobalKernelExtensions;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.extension.KernelExtensionFailureStrategies;
-import org.neo4j.kernel.impl.api.LogRotationMonitor;
 import org.neo4j.kernel.impl.context.TransactionVersionContextSupplier;
 import org.neo4j.kernel.impl.factory.DatabaseInfo;
 import org.neo4j.kernel.impl.pagecache.ConfiguringPageCacheFactory;
@@ -51,7 +49,6 @@ import org.neo4j.kernel.impl.query.QueryEngineProvider;
 import org.neo4j.kernel.impl.scheduler.JobSchedulerFactory;
 import org.neo4j.kernel.impl.security.URLAccessRules;
 import org.neo4j.kernel.impl.spi.SimpleKernelContext;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.collection.CachingOffHeapBlockAllocator;
 import org.neo4j.kernel.impl.util.collection.CapacityLimitingBlockAllocatorDecorator;
@@ -77,7 +74,6 @@ import org.neo4j.logging.internal.StoreLogService;
 import org.neo4j.scheduler.DeferredExecutor;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.migration.DatabaseMigratorFactory;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.SystemNanoClock;
 import org.neo4j.udc.UsageData;
@@ -182,11 +178,7 @@ public class PlatformModule
         String desiredImplementationName = config.get( GraphDatabaseSettings.tracer );
         tracers = dependencies.satisfyDependency( new Tracers( desiredImplementationName,
                 logService.getInternalLog( Tracers.class ), monitors, jobScheduler, clock ) );
-        dependencies.satisfyDependency( tracers.pageCacheTracer );
-        dependencies.satisfyDependency( firstImplementor(
-                LogRotationMonitor.class, tracers.transactionTracer, LogRotationMonitor.NULL ) );
-        dependencies.satisfyDependency( firstImplementor(
-                CheckPointerMonitor.class, tracers.checkPointTracer, CheckPointerMonitor.NULL ) );
+        dependencies.satisfyDependency( tracers.getPageCacheTracer() );
 
         versionContextSupplier = createCursorContextSupplier( config );
 
@@ -246,19 +238,6 @@ public class PlatformModule
     protected SystemNanoClock createClock()
     {
         return Clocks.nanoClock();
-    }
-
-    @SuppressWarnings( "unchecked" )
-    private static <T> T firstImplementor( Class<T> type, Object... candidates )
-    {
-        for ( Object candidate : candidates )
-        {
-            if ( type.isInstance( candidate ) )
-            {
-                return (T) candidate;
-            }
-        }
-        return null;
     }
 
     private static void publishPlatformInfo( UsageData sysInfo )
@@ -351,7 +330,7 @@ public class PlatformModule
     {
         Log pageCacheLog = logging.getInternalLog( PageCache.class );
         ConfiguringPageCacheFactory pageCacheFactory = new ConfiguringPageCacheFactory(
-                fileSystem, config, tracers.pageCacheTracer, tracers.pageCursorTracerSupplier, pageCacheLog,
+                fileSystem, config, tracers.getPageCacheTracer(), tracers.getPageCursorTracerSupplier(), pageCacheLog,
                 versionContextSupplier, jobScheduler );
         PageCache pageCache = pageCacheFactory.getOrCreatePageCache();
 

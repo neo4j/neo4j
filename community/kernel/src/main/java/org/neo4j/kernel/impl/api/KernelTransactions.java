@@ -61,6 +61,7 @@ import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.MonotonicCounter;
 import org.neo4j.kernel.impl.util.collection.CollectionsFactorySupplier;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.kernel.monitoring.tracing.Tracers;
 import org.neo4j.resources.CpuClock;
 import org.neo4j.resources.HeapAllocation;
@@ -104,10 +105,11 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final Dependencies dataSourceDependencies;
+    private final Dependencies databaseDependendies;
     private final Config config;
     private final CollectionsFactorySupplier collectionsFactorySupplier;
     private final SchemaState schemaState;
+    private final Monitors monitors;
 
     /**
      * Used to enumerate all transactions in the system, active and idle ones.
@@ -146,8 +148,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             AtomicReference<HeapAllocation> heapAllocationRef, AccessCapability accessCapability, VersionContextSupplier versionContextSupplier,
             CollectionsFactorySupplier collectionsFactorySupplier, ConstraintSemantics constraintSemantics, SchemaState schemaState,
             TokenHolders tokenHolders, String currentDatabaseName, IndexingService indexingService, LabelScanStore labelScanStore,
-            IndexStatisticsStore indexStatisticsStore,
-            Dependencies dataSourceDependencies )
+            IndexStatisticsStore indexStatisticsStore, Dependencies databaseDependencies, Monitors monitors )
     {
         this.config = config;
         this.statementLocksFactory = statementLocksFactory;
@@ -171,12 +172,13 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
-        this.dataSourceDependencies = dataSourceDependencies;
+        this.databaseDependendies = databaseDependencies;
         this.versionContextSupplier = versionContextSupplier;
         this.clock = clock;
         this.collectionsFactorySupplier = collectionsFactorySupplier;
         this.constraintSemantics = constraintSemantics;
         this.schemaState = schemaState;
+        this.monitors = monitors;
         this.factory = new KernelTransactionImplementationFactory( allTransactions );
         this.globalTxPool = new GlobalKernelTransactionPool( allTransactions, factory );
         this.localTxPool = new LocalKernelTransactionPool( globalTxPool, activeTransactionCounter, config );
@@ -372,11 +374,12 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
             KernelTransactionImplementation tx =
                     new KernelTransactionImplementation( config, statementOperations, schemaWriteGuard, hooks,
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
-                            transactionCommitProcess, transactionMonitor, localTxPool,
-                            clock, cpuClockRef, heapAllocationRef, tracers.transactionTracer, tracers.lockTracer,
-                            tracers.pageCursorTracerSupplier, storageEngine, accessCapability,
+                            transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
+                            tracers.getTracersFactory().createTransactionTracer( monitors, clock ),
+                            tracers.getTracersFactory().createLockTracer( monitors, clock ),
+                            tracers.getPageCursorTracerSupplier(), storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
-                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, dataSourceDependencies );
+                            schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies );
             this.transactions.add( tx );
             return tx;
         }

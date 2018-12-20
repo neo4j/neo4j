@@ -156,7 +156,7 @@ public class PageCacheCountersIT
     private PageCacheTracer getPageCacheTracer( GraphDatabaseService db )
     {
         Tracers tracers = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Tracers.class );
-        return tracers.pageCacheTracer;
+        return tracers.getPageCacheTracer();
     }
 
     private class NodeCreator implements Runnable, Cancelable

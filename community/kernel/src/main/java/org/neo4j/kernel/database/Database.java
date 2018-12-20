@@ -74,8 +74,8 @@ import org.neo4j.kernel.impl.api.index.stats.IndexStatisticsStore;
 import org.neo4j.kernel.impl.api.operations.QueryRegistrationOperations;
 import org.neo4j.kernel.impl.api.scan.FullLabelStream;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitor;
-import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitorScheduler;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.kernel.impl.constraints.ConstraintSemantics;
 import org.neo4j.kernel.impl.core.TokenHolders;
 import org.neo4j.kernel.impl.factory.AccessCapability;
@@ -110,6 +110,7 @@ import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.log.entry.VersionAwareLogEntryReader;
@@ -123,6 +124,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReverseTransactionCursorLog
 import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransactionCursor;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.DefaultLogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
@@ -197,7 +199,7 @@ public class Database extends LifecycleAdapter
     private final DatabaseEventHandlers eventHandlers;
     private final DatabaseMigratorFactory databaseMigratorFactory;
 
-    private Dependencies dataSourceDependencies;
+    private Dependencies databaseDependencies;
     private LifeSupport life;
     private IndexProviderMap indexProviderMap;
     private DatabaseConfig config;
@@ -281,7 +283,7 @@ public class Database extends LifecycleAdapter
         try
         {
             config = new DatabaseConfig( globalConfig );
-            dataSourceDependencies = new Dependencies( globalDependencies );
+            databaseDependencies = new Dependencies( globalDependencies );
             databasePageCache = new DatabasePageCache( globalPageCache );
             databaseMonitors = new Monitors( globalMonitors );
 
@@ -290,39 +292,48 @@ public class Database extends LifecycleAdapter
 
             LogFileCreationMonitor physicalLogMonitor = databaseMonitors.newMonitor( LogFileCreationMonitor.class );
 
-            dataSourceDependencies.satisfyDependency( this );
-            dataSourceDependencies.satisfyDependency( config );
-            dataSourceDependencies.satisfyDependency( databaseMonitors );
-            dataSourceDependencies.satisfyDependency( databasePageCache );
-            dataSourceDependencies.satisfyDependency( tokenHolders );
-            dataSourceDependencies.satisfyDependency( facade );
-            dataSourceDependencies.satisfyDependency( databaseHealth );
-            dataSourceDependencies.satisfyDependency( storeCopyCheckPointMutex );
-            dataSourceDependencies.satisfyDependency( transactionMonitor );
-            dataSourceDependencies.satisfyDependency( locks );
-            dataSourceDependencies.satisfyDependency( databaseAvailabilityGuard );
-            dataSourceDependencies.satisfyDependency( databaseAvailability );
-            dataSourceDependencies.satisfyDependency( idGeneratorFactory );
-            dataSourceDependencies.satisfyDependency( idController );
-            dataSourceDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
-            dataSourceDependencies.satisfyDependency( lockService );
+            databaseDependencies.satisfyDependency( this );
+            databaseDependencies.satisfyDependency( config );
+            databaseDependencies.satisfyDependency( databaseMonitors );
+            databaseDependencies.satisfyDependency( databasePageCache );
+            databaseDependencies.satisfyDependency( tokenHolders );
+            databaseDependencies.satisfyDependency( facade );
+            databaseDependencies.satisfyDependency( databaseHealth );
+            databaseDependencies.satisfyDependency( storeCopyCheckPointMutex );
+            databaseDependencies.satisfyDependency( transactionMonitor );
+            databaseDependencies.satisfyDependency( locks );
+            databaseDependencies.satisfyDependency( databaseAvailabilityGuard );
+            databaseDependencies.satisfyDependency( databaseAvailability );
+            databaseDependencies.satisfyDependency( idGeneratorFactory );
+            databaseDependencies.satisfyDependency( idController );
+            databaseDependencies.satisfyDependency( new IdBasedStoreEntityCounters( this.idGeneratorFactory ) );
+            databaseDependencies.satisfyDependency( lockService );
+
+            DefaultLogRotationMonitor logRotationMonitor = new DefaultLogRotationMonitor();
+            DefaultCheckPointMonitor checkPointMonitor = new DefaultCheckPointMonitor();
+
+            databaseMonitors.addMonitorListener( logRotationMonitor );
+            databaseMonitors.addMonitorListener( checkPointMonitor );
+
+            databaseDependencies.satisfyDependency( logRotationMonitor );
+            databaseDependencies.satisfyDependency( checkPointMonitor );
 
             RecoveryCleanupWorkCollector recoveryCleanupWorkCollector = RecoveryCleanupWorkCollector.immediate();
-            dataSourceDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
+            databaseDependencies.satisfyDependencies( recoveryCleanupWorkCollector );
 
             life.add( new PageCacheLifecycle( databasePageCache ) );
-            life.add( initializeExtensions( dataSourceDependencies ) );
+            life.add( initializeExtensions( databaseDependencies ) );
 
             DatabaseLayoutWatcher watcherService = watcherServiceFactory.apply( databaseLayout );
             life.add( watcherService );
-            dataSourceDependencies.satisfyDependency( watcherService );
+            databaseDependencies.satisfyDependency( watcherService );
 
             // Check the tail of transaction logs and validate version
             final LogEntryReader<ReadableClosablePositionAwareChannel> logEntryReader = new VersionAwareLogEntryReader<>();
 
             LogFiles logFiles =
                     LogFilesBuilder.builder( databaseLayout, fs ).withLogEntryReader( logEntryReader ).withLogFileMonitor( physicalLogMonitor ).withConfig(
-                            config ).withDependencies( dataSourceDependencies ).build();
+                            config ).withDependencies( databaseDependencies ).build();
 
             databaseMonitors.addMonitorListener( new LoggingLogFileMonitor( msgLog ) );
             databaseMonitors.addMonitorListener( new LoggingLogTailScannerMonitor( logService.getInternalLog( LogTailScanner.class ) ) );
@@ -358,14 +369,14 @@ public class Database extends LifecycleAdapter
             IndexStatisticsStore indexStatisticsStore = new IndexStatisticsStore( databasePageCache, databaseLayout, recoveryCleanupWorkCollector );
             IndexingService indexingService = buildIndexingService( storageEngine, databaseSchemaState, indexStoreView, indexStatisticsStore );
 
-            TransactionIdStore transactionIdStore = dataSourceDependencies.resolveDependency( TransactionIdStore.class );
+            TransactionIdStore transactionIdStore = databaseDependencies.resolveDependency( TransactionIdStore.class );
 
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
             CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
             DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
                     scheduler, forceOperation, logEntryReader, transactionIdStore, databaseMonitors );
-            transactionLogModule.satisfyDependencies( dataSourceDependencies );
+            transactionLogModule.satisfyDependencies( databaseDependencies );
 
             final DatabaseKernelModule kernelModule = buildKernel(
                     logFiles,
@@ -379,25 +390,25 @@ public class Database extends LifecycleAdapter
                     clock,
                     indexStatisticsStore );
 
-            kernelModule.satisfyDependencies( dataSourceDependencies );
+            kernelModule.satisfyDependencies( databaseDependencies );
 
             // Do these assignments last so that we can ensure no cyclical dependencies exist
             this.kernelModule = kernelModule;
 
-            dataSourceDependencies.satisfyDependency( databaseSchemaState );
-            dataSourceDependencies.satisfyDependency( logEntryReader );
-            dataSourceDependencies.satisfyDependency( storageEngine );
-            dataSourceDependencies.satisfyDependency( labelScanStore );
-            dataSourceDependencies.satisfyDependency( indexingService );
-            dataSourceDependencies.satisfyDependency( indexStoreView );
-            dataSourceDependencies.satisfyDependency( indexStatisticsStore );
-            dataSourceDependencies.satisfyDependency( indexProviderMap );
-            dataSourceDependencies.satisfyDependency( forceOperation );
+            databaseDependencies.satisfyDependency( databaseSchemaState );
+            databaseDependencies.satisfyDependency( logEntryReader );
+            databaseDependencies.satisfyDependency( storageEngine );
+            databaseDependencies.satisfyDependency( labelScanStore );
+            databaseDependencies.satisfyDependency( indexingService );
+            databaseDependencies.satisfyDependency( indexStoreView );
+            databaseDependencies.satisfyDependency( indexStatisticsStore );
+            databaseDependencies.satisfyDependency( indexProviderMap );
+            databaseDependencies.satisfyDependency( forceOperation );
 
-            this.executionEngine = QueryEngineProvider.initialize( dataSourceDependencies, facade, engineProviders );
+            this.executionEngine = QueryEngineProvider.initialize( databaseDependencies, facade, engineProviders );
             this.checkpointerLifecycle = new CheckpointerLifecycle( transactionLogModule.checkPointer(), databaseHealth );
 
-            dataSourceDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
+            databaseDependencies.resolveDependency( DbmsDiagnosticsManager.class ).dumpDatabaseDiagnostics( this );
 
             life.add( databaseAvailability );
             life.setLast( checkpointerLifecycle );
@@ -465,7 +476,7 @@ public class Database extends LifecycleAdapter
 
     private void upgradeStore()
     {
-        final DatabaseMigrator databaseMigrator = databaseMigratorFactory.createDatabaseMigrator( databaseLayout, dataSourceDependencies );
+        final DatabaseMigrator databaseMigrator = databaseMigratorFactory.createDatabaseMigrator( databaseLayout, databaseDependencies );
         databaseMigrator.migrate();
     }
 
@@ -481,7 +492,7 @@ public class Database extends LifecycleAdapter
         // We pretend that the storage engine abstract hides all details within it. Whereas that's mostly
         // true it's not entirely true for the time being. As long as we need this call below, which
         // makes available one or more internal things to the outside world, there are leaks to plug.
-        storageEngine.satisfyDependencies( dataSourceDependencies );
+        storageEngine.satisfyDependencies( databaseDependencies );
 
         return life.add( storageEngine );
     }
@@ -582,7 +593,7 @@ public class Database extends LifecycleAdapter
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
-                globalTracers.checkPointTracer, ioLimiter, storeCopyCheckPointMutex );
+                globalTracers.getTracersFactory().createCheckPointTracer( monitors, clock ), ioLimiter, storeCopyCheckPointMutex );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,
@@ -613,7 +624,7 @@ public class Database extends LifecycleAdapter
 
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( kernelProvider, indexingService, logProvider );
 
-        StatementOperationParts statementOperationParts = dataSourceDependencies.satisfyDependency(
+        StatementOperationParts statementOperationParts = databaseDependencies.satisfyDependency(
                 buildStatementOperations( cpuClockRef, heapAllocationRef ) );
 
         TransactionHooks hooks = new TransactionHooks();
@@ -623,8 +634,8 @@ public class Database extends LifecycleAdapter
                         transactionHeaderInformationFactory, transactionCommitProcess, hooks,
                         transactionMonitor, databaseAvailabilityGuard, globalTracers, storageEngine, procedures, transactionIdStore, clock, cpuClockRef,
                         heapAllocationRef, accessCapability, versionContextSupplier, collectionsFactorySupplier,
-                        constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore,
-                        indexStatisticsStore, dataSourceDependencies ) );
+                        constraintSemantics, databaseSchemaState, tokenHolders, getDatabaseName(), indexingService, labelScanStore, indexStatisticsStore,
+                        databaseDependencies, databaseMonitors ) );
 
         buildTransactionMonitor( kernelTransactions, clock, config );
 
@@ -635,7 +646,7 @@ public class Database extends LifecycleAdapter
         life.add( kernel );
 
         final DatabaseFileListing fileListing = new DatabaseFileListing( databaseLayout, logFiles, labelScanStore, indexingService, storageEngine );
-        dataSourceDependencies.satisfyDependency( fileListing );
+        databaseDependencies.satisfyDependency( fileListing );
 
         return new DatabaseKernelModule( transactionCommitProcess, kernel, kernelTransactions, fileListing );
     }
@@ -681,7 +692,7 @@ public class Database extends LifecycleAdapter
     private void buildTransactionMonitor( KernelTransactions kernelTransactions, Clock clock, Config config )
     {
         KernelTransactionMonitor kernelTransactionTimeoutMonitor = new KernelTransactionMonitor( kernelTransactions, clock, logService );
-        dataSourceDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
+        databaseDependencies.satisfyDependency( kernelTransactionTimeoutMonitor );
         KernelTransactionMonitorScheduler transactionMonitorScheduler =
                 new KernelTransactionMonitorScheduler( kernelTransactionTimeoutMonitor, scheduler,
                         config.get( GraphDatabaseSettings.transaction_monitor_check_interval ).toMillis() );
@@ -782,7 +793,7 @@ public class Database extends LifecycleAdapter
 
     public Dependencies getDependencyResolver()
     {
-        return dataSourceDependencies;
+        return databaseDependencies;
     }
 
     public JobScheduler getScheduler()

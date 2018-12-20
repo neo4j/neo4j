@@ -24,8 +24,8 @@ import org.mockito.Mockito;
 
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitor;
-import org.neo4j.kernel.impl.api.transaciton.monitor.KernelTransactionMonitorScheduler;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitor;
+import org.neo4j.kernel.impl.api.transaction.monitor.KernelTransactionMonitorScheduler;
 import org.neo4j.scheduler.Group;
 import org.neo4j.scheduler.JobHandle;
 import org.neo4j.scheduler.JobScheduler;

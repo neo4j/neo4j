@@ -19,35 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
+import java.time.Clock;
 
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
-import org.neo4j.scheduler.Group;
-import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.time.Clocks;
-import org.neo4j.time.SystemNanoClock;
 
-public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointerMonitor
+public class DefaultCheckPointerTracer implements CheckPointTracer
 {
-    private final SystemNanoClock clock;
-    private final CheckpointDurationMonitor monitor;
-    private final JobScheduler jobScheduler;
-
-    private final AtomicLong counter = new AtomicLong();
-    private final AtomicLong accumulatedTotalTimeNanos = new AtomicLong();
-
-    private volatile long startTimeNanos;
+    private final Clock clock;
+    private final CheckPointerMonitor monitor;
+    private volatile long startTimeMillis;
 
     private LogCheckPointEvent logCheckPointEvent = new LogCheckPointEvent()
     {
         @Override
         public void close()
         {
-            updateCountersAndNotifyListeners();
+            notifyMonitor();
         }
 
         @Override
@@ -63,50 +53,22 @@ public class DefaultCheckPointerTracer implements CheckPointTracer, CheckPointer
         }
     };
 
-    public DefaultCheckPointerTracer( CheckpointDurationMonitor monitor, JobScheduler jobScheduler )
-    {
-        this( Clocks.nanoClock(), monitor, jobScheduler );
-    }
-
-    public DefaultCheckPointerTracer( SystemNanoClock clock, CheckpointDurationMonitor monitor, JobScheduler jobScheduler )
+    public DefaultCheckPointerTracer( Clock clock, CheckPointerMonitor monitor )
     {
         this.clock = clock;
         this.monitor = monitor;
-        this.jobScheduler = jobScheduler;
     }
 
     @Override
     public LogCheckPointEvent beginCheckPoint()
     {
-        startTimeNanos = clock.nanos();
+        startTimeMillis = clock.millis();
         return logCheckPointEvent;
     }
 
-    @Override
-    public long numberOfCheckPointEvents()
+    private void notifyMonitor()
     {
-        return counter.get();
-    }
-
-    @Override
-    public long checkPointAccumulatedTotalTimeMillis()
-    {
-        return TimeUnit.NANOSECONDS.toMillis( accumulatedTotalTimeNanos.get() );
-    }
-
-    private void updateCountersAndNotifyListeners()
-    {
-        final long lastEventTime = clock.nanos() - startTimeNanos;
-
-        // update counters
-        counter.incrementAndGet();
-        accumulatedTotalTimeNanos.addAndGet( lastEventTime );
-
-        // notify async
-        jobScheduler.schedule( Group.METRICS_EVENT, () ->
-        {
-            long millis = TimeUnit.NANOSECONDS.toMillis( lastEventTime );
-            monitor.lastCheckPointEventDuration( millis );
-        } );
+        long lastEventTimeMillis = clock.millis() - startTimeMillis;
+        monitor.checkPointCompleted( lastEventTimeMillis );
     }
 }

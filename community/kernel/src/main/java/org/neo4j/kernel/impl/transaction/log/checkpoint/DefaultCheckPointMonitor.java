@@ -19,11 +19,30 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public interface CheckPointerMonitor
+import java.util.concurrent.atomic.AtomicLong;
+
+public class DefaultCheckPointMonitor implements CheckPointerMonitor
 {
-    void checkPointCompleted( long durationMillis );
+    private final AtomicLong counter = new AtomicLong();
+    private final AtomicLong accumulatedTotalTimeMillis = new AtomicLong();
 
-    long numberOfCheckPoints();
+    @Override
+    public void checkPointCompleted( long durationMillis )
+    {
+        counter.incrementAndGet();
+        accumulatedTotalTimeMillis.addAndGet( durationMillis );
+    }
 
-    long checkPointAccumulatedTotalTimeMillis();
+    @Override
+    public long numberOfCheckPoints()
+    {
+        return counter.get();
+    }
+
+    @Override
+    public long checkPointAccumulatedTotalTimeMillis()
+    {
+        return accumulatedTotalTimeMillis.get();
+    }
+
 }

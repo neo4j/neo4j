@@ -25,50 +25,30 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
-import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
 
 class DefaultCheckPointerTracerTest
 {
     private final FakeClock clock = Clocks.fakeClock();
-    private final CheckpointDurationMonitor monitor = mock( CheckpointDurationMonitor.class );
-    private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
+    private final CheckPointerMonitor monitor = new DefaultCheckPointMonitor();
 
     @Test
     void shouldCountEventsAnAccumulatedTotalTime()
     {
-        DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
+        DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor );
 
         triggerEvent( tracer, 20 );
 
-        assertEquals( 1, tracer.numberOfCheckPointEvents() );
-        assertEquals( 20, tracer.checkPointAccumulatedTotalTimeMillis() );
-        verify( monitor, times( 1 ) ).lastCheckPointEventDuration( 20L );
+        assertEquals( 1, monitor.numberOfCheckPoints() );
+        assertEquals( 20, monitor.checkPointAccumulatedTotalTimeMillis() );
 
         triggerEvent( tracer, 30 );
 
-        assertEquals( 2, tracer.numberOfCheckPointEvents() );
-        assertEquals( 50, tracer.checkPointAccumulatedTotalTimeMillis() );
-        verify( monitor, times( 1 ) ).lastCheckPointEventDuration( 30L );
-    }
-
-    @Test
-    void shouldReturnZeroIfNoDataIsAvailable()
-    {
-        DefaultCheckPointerTracer tracer = new DefaultCheckPointerTracer( clock, monitor, jobScheduler );
-
-        jobScheduler.runJob();
-
-        assertEquals( 0, tracer.numberOfCheckPointEvents() );
-        assertEquals( 0, tracer.checkPointAccumulatedTotalTimeMillis() );
-        verifyZeroInteractions( monitor );
+        assertEquals( 2, monitor.numberOfCheckPoints() );
+        assertEquals( 50, monitor.checkPointAccumulatedTotalTimeMillis() );
     }
 
     private void triggerEvent( DefaultCheckPointerTracer tracer, int eventDuration )
@@ -78,7 +58,5 @@ class DefaultCheckPointerTracerTest
         {
             clock.forward( eventDuration, TimeUnit.MILLISECONDS );
         }
-
-        jobScheduler.runJob();
     }
 }

@@ -19,61 +19,42 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
-import org.neo4j.kernel.impl.api.DefaultTransactionTracer.Monitor;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.DefaultLogRotationMonitor;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionEvent;
-import org.neo4j.test.OnDemandJobScheduler;
 import org.neo4j.time.Clocks;
 import org.neo4j.time.FakeClock;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DefaultTransactionTracerTest
+class DefaultTransactionTracerTest
 {
     private final FakeClock clock = Clocks.fakeClock();
-    private final OnDemandJobScheduler jobScheduler = new OnDemandJobScheduler();
-    private final Monitor monitor = mock( Monitor.class );
+    private final LogRotationMonitor monitor = new DefaultLogRotationMonitor();
 
     @Test
-    public void shouldComputeStartEndAndTotalTimeForLogRotation()
+    void shouldComputeStartEndAndTotalTimeForLogRotation()
     {
-        DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
+        DefaultTransactionTracer tracer = new DefaultTransactionTracer( monitor, clock );
 
         triggerEvent( tracer, 20 );
 
-        assertEquals( 1, tracer.numberOfLogRotationEvents() );
-        assertEquals( 20, tracer.logRotationAccumulatedTotalTimeMillis() );
-        verify( monitor, times( 1 ) ).lastLogRotationEventDuration( 20L );
+        assertEquals( 1, monitor.numberOfLogRotations() );
+        assertEquals( 20, monitor.logRotationAccumulatedTotalTimeMillis() );
 
         triggerEvent( tracer, 30 );
 
         // should reset the total time value whenever read
-        assertEquals( 2, tracer.numberOfLogRotationEvents() );
-        assertEquals( 50, tracer.logRotationAccumulatedTotalTimeMillis() );
-        verify( monitor, times( 1 ) ).lastLogRotationEventDuration( 30L );
-    }
-
-    @Test
-    public void shouldReturnMinusOneIfNoDataIsAvailableForLogRotation()
-    {
-        DefaultTransactionTracer tracer = new DefaultTransactionTracer( clock, monitor, jobScheduler );
-
-        jobScheduler.runJob();
-
-        assertEquals( 0, tracer.numberOfLogRotationEvents() );
-        assertEquals( 0, tracer.logRotationAccumulatedTotalTimeMillis() );
-        verifyZeroInteractions( monitor );
+        assertEquals( 2, monitor.numberOfLogRotations() );
+        assertEquals( 50, monitor.logRotationAccumulatedTotalTimeMillis() );
     }
 
     private void triggerEvent( DefaultTransactionTracer tracer, int eventDuration )
@@ -92,7 +73,5 @@ public class DefaultTransactionTracerTest
                 }
             }
         }
-
-        jobScheduler.runJob();
     }
 }

@@ -21,15 +21,13 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.io.pagecache.tracing.cursor.DefaultPageCursorTracerSupplier;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
-import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
-import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
-import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
+
+import static org.apache.commons.lang3.StringUtils.isBlank;
 
 /**
  * <h1>Tracers</h1>
@@ -100,11 +98,9 @@ import org.neo4j.time.SystemNanoClock;
  */
 public class Tracers
 {
-    public final PageCacheTracer pageCacheTracer;
-    public final PageCursorTracerSupplier pageCursorTracerSupplier;
-    public final TransactionTracer transactionTracer;
-    public final CheckPointTracer checkPointTracer;
-    public final LockTracer lockTracer;
+    private final TracerFactory tracersFactory;
+    private final PageCacheTracer pageCacheTracer;
+    private final PageCursorTracerSupplier pageCursorTracerSupplier;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -119,46 +115,59 @@ public class Tracers
     public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler,
             SystemNanoClock clock )
     {
+        tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
+        pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
+        pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
+    }
+
+    public PageCacheTracer getPageCacheTracer()
+    {
+        return pageCacheTracer;
+    }
+
+    public PageCursorTracerSupplier getPageCursorTracerSupplier()
+    {
+        return pageCursorTracerSupplier;
+    }
+
+    public TracerFactory getTracersFactory()
+    {
+        return tracersFactory;
+    }
+
+    private static TracerFactory createTracersFactory( String desiredImplementationName, Log msgLog )
+    {
         if ( "null".equalsIgnoreCase( desiredImplementationName ) )
         {
-            pageCursorTracerSupplier = DefaultPageCursorTracerSupplier.NULL;
-            pageCacheTracer = PageCacheTracer.NULL;
-            transactionTracer = TransactionTracer.NULL;
-            checkPointTracer = CheckPointTracer.NULL;
-            lockTracer = LockTracer.NONE;
+            return new EmptyTracersFactory();
         }
         else
         {
-            TracerFactory foundFactory = new DefaultTracerFactory();
-            boolean found = desiredImplementationName == null;
+            return selectTracerFactory( desiredImplementationName, msgLog );
+        }
+    }
+
+    private static TracerFactory selectTracerFactory( String desiredImplementationName, Log msgLog )
+    {
+        if ( isBlank( desiredImplementationName ) )
+        {
+            return new DefaultTracerFactory();
+        }
+        try
+        {
             for ( TracerFactory factory : Service.load( TracerFactory.class ) )
             {
-                try
+                if ( factory.getImplementationName().equalsIgnoreCase( desiredImplementationName ) )
                 {
-                    if ( factory.getImplementationName().equalsIgnoreCase( desiredImplementationName ) )
-                    {
-                        foundFactory = factory;
-                        found = true;
-                        break;
-                    }
-                }
-                catch ( Exception e )
-                {
-                    msgLog.warn( "Failed to instantiate desired tracer implementations '" +
-                                 desiredImplementationName + "'", e );
+                    return factory;
                 }
             }
-
-            if ( !found )
-            {
-                msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
-            }
-
-            pageCursorTracerSupplier = foundFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
-            pageCacheTracer = foundFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
-            transactionTracer = foundFactory.createTransactionTracer( monitors, jobScheduler );
-            checkPointTracer = foundFactory.createCheckPointTracer( monitors, jobScheduler );
-            lockTracer = foundFactory.createLockTracer( monitors, jobScheduler );
         }
+        catch ( Exception e )
+        {
+            msgLog.warn( "Failed to instantiate desired tracer implementations '" + desiredImplementationName + "'", e );
+        }
+        msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
+        return new DefaultTracerFactory();
     }
 }

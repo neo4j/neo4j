@@ -191,7 +191,7 @@ public class GraphDatabaseFacadeFactory
         platform.life.add( platform.globalKernelExtensions );
         platform.life.add( createBoltServer( platform, edition, databaseManager ) );
         platform.dependencies.satisfyDependency( edition.globalTransactionCounter() );
-        platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.pageCursorTracerSupplier ) );
+        platform.life.add( new PublishPageCacheTracerMetricsAfterStart( platform.tracers.getPageCursorTracerSupplier() ) );
         platform.life.add(
                 new StartupWaiter( edition.getGlobalAvailabilityGuard( platform.clock, platform.logService, platform.config ),
                         edition.getTransactionStartTimeout() ) );

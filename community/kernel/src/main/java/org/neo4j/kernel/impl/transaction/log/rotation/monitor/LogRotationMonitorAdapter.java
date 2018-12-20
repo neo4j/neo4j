@@ -17,9 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.checkpoint;
+package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
-public interface CheckpointDurationMonitor
+public class LogRotationMonitorAdapter implements LogRotationMonitor
 {
-    void lastCheckPointEventDuration( long millis );
+    public static final LogRotationMonitor EMPTY = new LogRotationMonitorAdapter();
+
+    @Override
+    public void logRotation( long millis )
+    {
+        // empty
+    }
+
+    @Override
+    public long numberOfLogRotations()
+    {
+        return 0;
+    }
+
+    @Override
+    public long logRotationAccumulatedTotalTimeMillis()
+    {
+        return 0;
+    }
 }

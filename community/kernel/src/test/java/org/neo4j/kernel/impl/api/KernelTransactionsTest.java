@@ -727,7 +727,7 @@ public class KernelTransactionsTest
                 new CanWrite(), EmptyVersionContextSupplier.EMPTY, ON_HEAP,
                 mock( ConstraintSemantics.class ), mock( SchemaState.class ),
                 mockedTokenHolders(), DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ),
-                mock( IndexStatisticsStore.class ), new Dependencies() );
+                mock( IndexStatisticsStore.class ), new Dependencies(), new Monitors() );
     }
 
     private static TestKernelTransactions createTestTransactions( StorageEngine storageEngine,
@@ -737,7 +737,7 @@ public class KernelTransactionsTest
     {
         return new TestKernelTransactions( statementLocksFactory, null, statementOperations, null, DEFAULT, commitProcess,
                 new TransactionHooks(), mock( TransactionMonitor.class ), databaseAvailabilityGuard, tracers, storageEngine, new Procedures(),
-                transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies() );
+                transactionIdStore, clock, new CanWrite(), EmptyVersionContextSupplier.EMPTY, mockedTokenHolders(), new Dependencies(), new Monitors() );
     }
 
     private static TransactionCommitProcess newRememberingCommitProcess( final TransactionRepresentation[] slot )
@@ -786,7 +786,7 @@ public class KernelTransactionsTest
                 TransactionHooks hooks, TransactionMonitor transactionMonitor, AvailabilityGuard databaseAvailabilityGuard, Tracers tracers,
                 StorageEngine storageEngine, Procedures procedures, TransactionIdStore transactionIdStore, SystemNanoClock clock,
                 AccessCapability accessCapability,
-                VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies )
+                VersionContextSupplier versionContextSupplier, TokenHolders tokenHolders, Dependencies dataSourceDependencies, Monitors monitors )
         {
             super( Config.defaults(), statementLocksFactory, constraintIndexCreator, statementOperations, schemaWriteGuard, txHeaderFactory,
                     transactionCommitProcess, hooks, transactionMonitor, databaseAvailabilityGuard, tracers,
@@ -794,7 +794,7 @@ public class KernelTransactionsTest
                     new AtomicReference<>( HeapAllocation.NOT_AVAILABLE ), accessCapability,
                     versionContextSupplier, ON_HEAP, new StandardConstraintSemantics(), mock( SchemaState.class ), tokenHolders,
                     DEFAULT_DATABASE_NAME, mock( IndexingService.class ), mock( LabelScanStore.class ), mock( IndexStatisticsStore.class ),
-                    dataSourceDependencies );
+                    dataSourceDependencies, monitors );
         }
 
         @Override

@@ -203,7 +203,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             LockTracer lockTracer, PageCursorTracerSupplier cursorTracerSupplier, StorageEngine storageEngine, AccessCapability accessCapability,
             VersionContextSupplier versionContextSupplier, CollectionsFactorySupplier collectionsFactorySupplier,
             ConstraintSemantics constraintSemantics, SchemaState schemaState, TokenHolders tokenHolders, IndexingService indexingService,
-            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dataSourceDependencies )
+            LabelScanStore labelScanStore, IndexStatisticsStore indexStatisticsStore, Dependencies dependencies )
     {
         this.schemaWriteGuard = schemaWriteGuard;
         this.hooks = hooks;
@@ -227,7 +227,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         DefaultPooledCursors cursors = new DefaultPooledCursors( storageReader );
         this.allStoreHolder =
                 new AllStoreHolder( storageReader, this, cursors, procedures, schemaState, indexingService, labelScanStore, indexStatisticsStore,
-                        dataSourceDependencies );
+                        dependencies );
         this.operations =
                 new Operations(
                         allStoreHolder,

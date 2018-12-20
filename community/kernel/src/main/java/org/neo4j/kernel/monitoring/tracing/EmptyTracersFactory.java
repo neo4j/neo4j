@@ -21,47 +21,51 @@ package org.neo4j.kernel.monitoring.tracing;
 
 import java.time.Clock;
 
-import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
-import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
+import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
 
-/**
- * The default TracerFactory, when nothing else is otherwise configured.
- */
-public class DefaultTracerFactory implements TracerFactory
+public class EmptyTracersFactory implements TracerFactory
 {
     @Override
     public String getImplementationName()
     {
-        return "default";
+        return "empty";
     }
 
     @Override
     public PageCacheTracer createPageCacheTracer( Monitors monitors, JobScheduler jobScheduler, SystemNanoClock clock, Log log )
     {
-        return new DefaultPageCacheTracer();
+        return PageCacheTracer.NULL;
     }
 
     @Override
     public TransactionTracer createTransactionTracer( Monitors monitors, Clock clock )
     {
-        LogRotationMonitor monitor = monitors.newMonitor( LogRotationMonitor.class );
-        return new DefaultTransactionTracer( monitor, clock );
+        return TransactionTracer.NULL;
     }
 
     @Override
     public CheckPointTracer createCheckPointTracer( Monitors monitors, Clock clock )
     {
-        CheckPointerMonitor monitor = monitors.newMonitor( CheckPointerMonitor.class );
-        return new DefaultCheckPointerTracer( clock, monitor );
+        return CheckPointTracer.NULL;
+    }
+
+    @Override
+    public LockTracer createLockTracer( Monitors monitors, Clock clock )
+    {
+        return LockTracer.NONE;
+    }
+
+    @Override
+    public PageCursorTracerSupplier createPageCursorTracerSupplier( Monitors monitors, JobScheduler jobScheduler )
+    {
+        return PageCursorTracerSupplier.NULL;
     }
 }

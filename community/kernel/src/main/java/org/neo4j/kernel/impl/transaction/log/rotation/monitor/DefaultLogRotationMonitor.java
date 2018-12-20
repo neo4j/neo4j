@@ -17,26 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api;
+package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
-public interface LogRotationMonitor
+import java.util.concurrent.atomic.AtomicLong;
+
+public class DefaultLogRotationMonitor implements LogRotationMonitor
 {
-    long numberOfLogRotationEvents();
+    private final AtomicLong counter = new AtomicLong();
+    private final AtomicLong accumulatedTotalTimeMillis = new AtomicLong();
 
-    long logRotationAccumulatedTotalTimeMillis();
-
-    LogRotationMonitor NULL = new LogRotationMonitor()
+    @Override
+    public void logRotation( long millis )
     {
-        @Override
-        public long numberOfLogRotationEvents()
-        {
-            return 0;
-        }
+        counter.incrementAndGet();
+        accumulatedTotalTimeMillis.addAndGet( millis );
+    }
 
-        @Override
-        public long logRotationAccumulatedTotalTimeMillis()
-        {
-            return 0;
-        }
-    };
+    @Override
+    public long numberOfLogRotations()
+    {
+        return counter.get();
+    }
+
+    @Override
+    public long logRotationAccumulatedTotalTimeMillis()
+    {
+        return accumulatedTotalTimeMillis.get();
+    }
 }

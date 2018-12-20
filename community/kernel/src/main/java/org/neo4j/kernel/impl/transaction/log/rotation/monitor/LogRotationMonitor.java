@@ -17,13 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.log.checkpoint;
+package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
-public interface CheckPointerMonitor
+public interface LogRotationMonitor
 {
-    void checkPointCompleted( long durationMillis );
+    void logRotation( long millis );
 
-    long numberOfCheckPoints();
+    long numberOfLogRotations();
 
-    long checkPointAccumulatedTotalTimeMillis();
+    long logRotationAccumulatedTotalTimeMillis();
 }

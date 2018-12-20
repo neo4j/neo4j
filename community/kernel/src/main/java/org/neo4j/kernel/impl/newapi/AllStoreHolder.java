@@ -101,7 +101,7 @@ public class AllStoreHolder extends Read
     private final IndexingService indexingService;
     private final LabelScanStore labelScanStore;
     private final IndexStatisticsStore indexStatisticsStore;
-    private final Dependencies dataSourceDependencies;
+    private final Dependencies databaseDependencies;
     private final IndexReaderCache indexReaderCache;
     private LabelScanReader labelScanReader;
 
@@ -113,7 +113,7 @@ public class AllStoreHolder extends Read
                            IndexingService indexingService,
                            LabelScanStore labelScanStore,
                            IndexStatisticsStore indexStatisticsStore,
-                           Dependencies dataSourceDependencies )
+                           Dependencies databaseDependencies )
     {
         super( storageReader, cursors, ktx );
         this.storageReader = storageReader;
@@ -123,7 +123,7 @@ public class AllStoreHolder extends Read
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.indexStatisticsStore = indexStatisticsStore;
-        this.dataSourceDependencies = dataSourceDependencies;
+        this.databaseDependencies = databaseDependencies;
     }
 
     @Override
@@ -1109,8 +1109,8 @@ public class AllStoreHolder extends Read
     {
         BasicContext ctx = new BasicContext();
         ctx.put( Context.KERNEL_TRANSACTION, ktx );
-        ctx.put( Context.DATABASE_API, dataSourceDependencies.resolveDependency( GraphDatabaseAPI.class ) );
-        ctx.put( Context.DEPENDENCY_RESOLVER, dataSourceDependencies );
+        ctx.put( Context.DATABASE_API, databaseDependencies.resolveDependency( GraphDatabaseAPI.class ) );
+        ctx.put( Context.DEPENDENCY_RESOLVER, databaseDependencies );
         ctx.put( Context.THREAD, Thread.currentThread() );
         ClockContext clocks = ktx.clocks();
         ctx.put( Context.SYSTEM_CLOCK, clocks.systemClock() );

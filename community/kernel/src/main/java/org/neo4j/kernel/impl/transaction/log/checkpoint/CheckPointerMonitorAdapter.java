@@ -19,11 +19,25 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-public interface CheckPointerMonitor
+public class CheckPointerMonitorAdapter implements CheckPointerMonitor
 {
-    void checkPointCompleted( long durationMillis );
+    public static final CheckPointerMonitor EMPTY = new CheckPointerMonitorAdapter();
 
-    long numberOfCheckPoints();
+    @Override
+    public void checkPointCompleted( long durationMillis )
+    {
+        // empty
+    }
 
-    long checkPointAccumulatedTotalTimeMillis();
+    @Override
+    public long numberOfCheckPoints()
+    {
+        return 0;
+    }
+
+    @Override
+    public long checkPointAccumulatedTotalTimeMillis()
+    {
+        return 0;
+    }
 }
