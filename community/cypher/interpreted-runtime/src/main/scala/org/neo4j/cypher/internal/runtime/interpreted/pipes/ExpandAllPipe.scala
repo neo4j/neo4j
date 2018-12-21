@@ -38,7 +38,7 @@ case class ExpandAllPipe(source: Pipe,
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       row =>
-        getFromNode(row) match {
+        row.getByName(fromName) match {
           case n: NodeValue =>
             val relationships: Iterator[RelationshipValue] = state.query.getRelationshipsForIds(n.id(), dir, types.types(state.query))
             relationships.map { r =>
@@ -52,8 +52,4 @@ case class ExpandAllPipe(source: Pipe,
         }
     }
   }
-
-  def typeNames = types.names
-
-  def getFromNode(row: ExecutionContext): AnyValue = row.getByName(fromName)
-}
+  }

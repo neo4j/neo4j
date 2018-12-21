@@ -53,6 +53,7 @@ trait ExecutionContext {
   def setRefAt(offset: Int, value: AnyValue): Unit
   def getRefAt(offset: Int): AnyValue
   def getByName(name: String): AnyValue
+  @deprecated
   def containsName(name: String): Boolean
   def numberOfColumns: Int
 

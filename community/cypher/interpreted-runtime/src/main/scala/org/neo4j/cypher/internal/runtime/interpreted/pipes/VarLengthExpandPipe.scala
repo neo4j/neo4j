@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.runtime.ExecutionContext
 import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
 import org.neo4j.cypher.internal.v4_0.util.InternalException
 import org.neo4j.cypher.internal.v4_0.util.attribution.Id
+import org.neo4j.values.AnyValue
 import org.neo4j.values.storable.Values
 import org.neo4j.values.virtual._
 
@@ -97,7 +98,7 @@ case class VarLengthExpandPipe(source: Pipe,
 
     input.flatMap {
       row => {
-        fetchFromContext(row, state, fromName) match {
+        row.getByName(fromName) match {
           case node: NodeValue =>
             expand(row, node)
 
@@ -119,13 +120,11 @@ case class VarLengthExpandPipe(source: Pipe,
 
   private def isToNodeValid(row: ExecutionContext, state: QueryState, node: VirtualNodeValue): Boolean =
     !nodeInScope || {
-      fetchFromContext(row, state, toName) match {
+      row.getByName(toName) match {
         case toNode: VirtualNodeValue =>
           toNode.id == node.id
         case _ =>
           false
       }
     }
-
-  def fetchFromContext(row: ExecutionContext, state: QueryState, name: String): Any = row.getByName(name)
-}
+  }
