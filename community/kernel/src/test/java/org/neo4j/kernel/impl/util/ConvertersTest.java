@@ -19,32 +19,31 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 
-import org.neo4j.helpers.collection.Pair;
+import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.SocketAddress;
+import org.neo4j.test.extension.Inject;
+import org.neo4j.test.extension.TestDirectoryExtension;
 import org.neo4j.test.rule.TestDirectory;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.neo4j.kernel.impl.util.Converters.regexFiles;
-import static org.neo4j.kernel.impl.util.Converters.toOptionalHostnamePortFromRawAddress;
 
-public class ConvertersTest
+@ExtendWith( TestDirectoryExtension.class )
+class ConvertersTest
 {
-    @Rule
-    public final TestDirectory directory = TestDirectory.testDirectory();
+    @Inject
+    private TestDirectory directory;
 
     @Test
-    public void shouldSortFilesByNumberCleverly() throws Exception
+    void shouldSortFilesByNumberCleverly() throws Exception
     {
         // GIVEN
         File file1 = existenceOfFile( "file1" );
@@ -61,118 +60,59 @@ public class ConvertersTest
     }
 
     @Test
-    public void canProcessPortFromAGivenString()
+    void shouldConvertFullHostnamePortToSocketAddress()
     {
-        // given
-        String addressWithPorts = "hostname:1234";
+        HostnamePort hostnamePort = new HostnamePort( "neo4j.com", 7474 );
 
-        // when
-        Optional<Integer> port = toOptionalHostnamePortFromRawAddress( addressWithPorts ).getPort();
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", -1, SocketAddress::new );
 
-        // then
-        assertTrue( port.isPresent() );
-        assertEquals( Integer.valueOf( 1234 ), port.get() );
+        assertEquals( new SocketAddress( "neo4j.com", 7474 ), address );
     }
 
     @Test
-    public void emptyOptionalWhenPortIsMissing()
+    void shouldConvertFullIpV6HostnamePortToSocketAddress()
     {
-        //given
-        String addressWithoutPorts = "hostname";
+        HostnamePort hostnamePort = new HostnamePort( "[fe80:1:2:3:4::5:123]", 7687 );
 
-        // when
-        Optional<Integer> port = toOptionalHostnamePortFromRawAddress( addressWithoutPorts ).getPort();
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", -1, SocketAddress::new );
 
-        // then
-        assertFalse( port.isPresent() );
+        assertEquals( new SocketAddress( "fe80:1:2:3:4::5:123", 7687 ), address );
     }
 
     @Test
-    public void canProcessHostnameFromAGivenAddress()
+    void shouldConvertHostnamePortWithOnlyHostnameToSocketAddress()
     {
-        // given
-        String addressWithPorts = "hostname:1234";
+        HostnamePort hostnamePort = new HostnamePort( "hostname.neo4j.org" );
 
-        // when
-        Optional<String> hostname = toOptionalHostnamePortFromRawAddress( addressWithPorts ).getHostname();
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", 4242, SocketAddress::new );
 
-        // then
-        assertTrue( hostname.isPresent() );
-        assertEquals( "hostname", hostname.get() );
+        assertEquals( new SocketAddress( "hostname.neo4j.org", 4242 ), address );
     }
 
     @Test
-    public void canProcessHostnameWithoutPort()
+    void shouldConvertHostnamePortWithOnlyIpV6HostnameToSocketAddress()
     {
-        // given
-        String addressWithoutPort = "hostname";
+        HostnamePort hostnamePort = new HostnamePort( "[fe80:1:2:3:4::5]" );
 
-        // when
-        Optional<String> hostname = toOptionalHostnamePortFromRawAddress( addressWithoutPort ).getHostname();
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "", 1234, SocketAddress::new );
 
-        // then
-        assertTrue( hostname.isPresent() );
-        assertEquals( "hostname", hostname.get() );
+        assertEquals( new SocketAddress( "fe80:1:2:3:4::5", 1234 ), address );
     }
 
     @Test
-    public void emptyOptionalWhenOnlyPort()
+    void shouldConvertHostnamePortWithOnlyPortToSocketAddress()
     {
-        // given
-        String portOnlyAddress = ":1234";
+        HostnamePort hostnamePort = new HostnamePort( ":7687" );
 
-        // when
-        Optional<String> hostname = toOptionalHostnamePortFromRawAddress( portOnlyAddress ).getHostname();
+        SocketAddress address = Converters.toSocketAddress( hostnamePort, "neo4j.com", -1, SocketAddress::new );
 
-        // then
-        assertFalse( hostname.isPresent() );
-    }
-
-    @Test
-    public void ipv6Works()
-    {
-        // with
-        String full = "1234:5678:9abc:def0:1234:5678:9abc:def0";
-        List<Pair<String,OptionalHostnamePort>> cases = Arrays.asList(
-                Pair.of( "[::1]", new OptionalHostnamePort( "::1", null, null ) ),
-                Pair.of( "[3FFe::1]", new OptionalHostnamePort( "3FFe::1", null, null ) ),
-                Pair.of( "[::1]:2", new OptionalHostnamePort( "::1", 2, 2 ) ),
-                Pair.of( "[" + full + "]", new OptionalHostnamePort( full, null, null ) ),
-                Pair.of( "[" + full + "]" + ":5432", new OptionalHostnamePort( full, 5432, 5432 ) ),
-                Pair.of( "[1::2]:3-4", new OptionalHostnamePort( "1::2", 3, 4 ) ) );
-        for ( Pair<String,OptionalHostnamePort> useCase : cases )
-        {
-            // given
-            String caseInput = useCase.first();
-            OptionalHostnamePort caseOutput = useCase.other();
-
-            // when
-            OptionalHostnamePort optionalHostnamePort = toOptionalHostnamePortFromRawAddress( caseInput );
-
-            // then
-            String msg = String.format( "\"%s\" -> %s", caseInput, caseOutput );
-            assertEquals( msg, caseOutput.getHostname(), optionalHostnamePort.getHostname() );
-            assertEquals( msg, caseOutput.getPort(), optionalHostnamePort.getPort() );
-            assertEquals( msg, caseOutput.getUpperRangePort(), optionalHostnamePort.getUpperRangePort() );
-        }
-    }
-
-    @Test
-    public void trailingColonIgnored()
-    {
-        // when
-        OptionalHostnamePort optionalHostnamePort = toOptionalHostnamePortFromRawAddress( "localhost::" );
-
-        // then
-        assertEquals( "localhost", optionalHostnamePort.getHostname().get() );
-        assertFalse( optionalHostnamePort.getPort().isPresent() );
-        assertFalse( optionalHostnamePort.getUpperRangePort().isPresent() );
+        assertEquals( new SocketAddress( "neo4j.com", 7687 ), address );
     }
 
     private File existenceOfFile( String name ) throws IOException
     {
         File file = directory.file( name );
-        file.createNewFile();
+        assertTrue( file.createNewFile() );
         return file;
     }
 }

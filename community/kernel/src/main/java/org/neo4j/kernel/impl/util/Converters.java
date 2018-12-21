@@ -26,10 +26,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.helpers.SocketAddress;
 
 public class Converters
 {
@@ -111,26 +112,16 @@ public class Converters
         return Integer::new;
     }
 
-    /**
-     * Takes a raw address that can have a single port or 2 ports (lower and upper bounds of port range) and
-     * processes it to a clean separation of host and ports. When only one port is specified, it is in the lower bound.
-     * The presence of an upper bound implies a range.
-     *
-     * @param rawAddress the raw address that a user can provide via config or command line
-     * @return the host, lower bound port, and upper bound port
-     */
-    public static OptionalHostnamePort toOptionalHostnamePortFromRawAddress( String rawAddress )
+    public static <T extends SocketAddress> T toSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort,
+            BiFunction<String,Integer,T> addressFactory )
     {
-        HostnamePort hostnamePort = new HostnamePort( rawAddress );
-        Optional<String> processedHost = Optional.ofNullable( hostnamePort.getHost() )
-                .map( str -> str.replaceAll( "\\[", "" ) )
-                .map( str -> str.replaceAll( "]", "" ) );
-        return new OptionalHostnamePort( processedHost, optionalFromZeroable( hostnamePort.getPorts()[0] ),
-                optionalFromZeroable( hostnamePort.getPorts()[1] ) );
+        String hostname = removeIpV6Brackets( hostnamePort.getHost() != null ? hostnamePort.getHost() : defaultHostname );
+        int port = hostnamePort.getPort() != 0 ? hostnamePort.getPort() : defaultPort;
+        return addressFactory.apply( hostname, port );
     }
 
-    private static Optional<Integer> optionalFromZeroable( int port )
+    private static String removeIpV6Brackets( String hostname )
     {
-        return port == 0 ? Optional.empty() : Optional.of( port );
+        return hostname.replace( "[", "" ).replace( "]", "" );
     }
 }
