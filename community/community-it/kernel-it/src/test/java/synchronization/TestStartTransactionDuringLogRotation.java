@@ -36,6 +36,8 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.GraphDatabaseAPI;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
@@ -62,7 +64,7 @@ public class TestStartTransactionDuringLogRotation
     private CountDownLatch completeLogRotationLatch;
     private AtomicBoolean writerStopped;
     private Monitors monitors;
-    private LogRotation.Monitor rotationListener;
+    private LogRotationMonitor rotationListener;
     private Label label;
     private Future<Void> rotationFuture;
 
@@ -75,10 +77,10 @@ public class TestStartTransactionDuringLogRotation
         writerStopped = new AtomicBoolean();
         monitors = db.getDependencyResolver().resolveDependency( Monitors.class );
 
-        rotationListener = new LogRotation.Monitor()
+        rotationListener = new LogRotationMonitorAdapter()
         {
             @Override
-            public void startedRotating( long currentVersion )
+            public void startRotation( long currentLogVersion )
             {
                 startLogRotationLatch.countDown();
                 try
@@ -89,11 +91,6 @@ public class TestStartTransactionDuringLogRotation
                 {
                     throw new RuntimeException( e );
                 }
-            }
-
-            @Override
-            public void finishedRotating( long currentVersion )
-            {
             }
         };
 

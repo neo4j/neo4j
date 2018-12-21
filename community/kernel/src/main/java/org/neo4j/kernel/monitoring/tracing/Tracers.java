@@ -22,6 +22,8 @@ package org.neo4j.kernel.monitoring.tracing;
 import org.neo4j.helpers.Service;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
+import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
+import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
@@ -99,10 +101,11 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
  */
 public class Tracers
 {
-    private final TracerFactory tracersFactory;
     private final PageCacheTracer pageCacheTracer;
     private final LockTracer lockTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
+    private final TransactionTracer transactionTracer;
+    private final CheckPointTracer checkPointTracer;
 
     /**
      * Create a Tracers subsystem with the desired implementation, if it can be found and created.
@@ -117,10 +120,12 @@ public class Tracers
     public Tracers( String desiredImplementationName, Log msgLog, Monitors monitors, JobScheduler jobScheduler,
             SystemNanoClock clock )
     {
-        tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
+        TracerFactory tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
         pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
         pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
         lockTracer = tracersFactory.createLockTracer( clock );
+        transactionTracer = tracersFactory.createTransactionTracer( clock );
+        checkPointTracer = tracersFactory.createCheckPointTracer( clock );
     }
 
     public PageCacheTracer getPageCacheTracer()
@@ -138,9 +143,14 @@ public class Tracers
         return lockTracer;
     }
 
-    public TracerFactory getTracersFactory()
+    public TransactionTracer getTransactionTracer()
     {
-        return tracersFactory;
+        return transactionTracer;
+    }
+
+    public CheckPointTracer getCheckPointTracer()
+    {
+        return checkPointTracer;
     }
 
     private static TracerFactory createTracersFactory( String desiredImplementationName, Log msgLog )

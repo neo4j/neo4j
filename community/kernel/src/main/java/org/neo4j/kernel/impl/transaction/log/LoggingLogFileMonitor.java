@@ -23,15 +23,13 @@ import java.io.File;
 
 import org.neo4j.kernel.impl.transaction.log.entry.LogEntryCommit;
 import org.neo4j.kernel.impl.transaction.log.files.LogFileCreationMonitor;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.recovery.RecoveryMonitor;
 import org.neo4j.kernel.recovery.RecoveryStartInformationProvider;
 import org.neo4j.logging.Log;
 
 import static java.lang.String.format;
 
-public class LoggingLogFileMonitor implements LogFileCreationMonitor,
-        LogRotation.Monitor, RecoveryMonitor,
+public class LoggingLogFileMonitor implements LogFileCreationMonitor, RecoveryMonitor,
         RecoveryStartInformationProvider.Monitor
 {
     private long firstTransactionRecovered = -1;
@@ -76,16 +74,6 @@ public class LoggingLogFileMonitor implements LogFileCreationMonitor,
     {
         log.warn( format( "Fail to recover all transactions. Any later transactions after position %s are " +
                 "unreadable and will be truncated.", recoveryFromPosition ), t );
-    }
-
-    @Override
-    public void startedRotating( long currentVersion )
-    {
-    }
-
-    @Override
-    public void finishedRotating( long currentVersion )
-    {
     }
 
     @Override

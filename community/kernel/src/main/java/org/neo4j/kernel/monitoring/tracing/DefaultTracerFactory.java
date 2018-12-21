@@ -24,9 +24,7 @@ import java.time.Clock;
 import org.neo4j.io.pagecache.tracing.DefaultPageCacheTracer;
 import org.neo4j.io.pagecache.tracing.PageCacheTracer;
 import org.neo4j.kernel.impl.api.DefaultTransactionTracer;
-import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointerTracer;
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -52,16 +50,14 @@ public class DefaultTracerFactory implements TracerFactory
     }
 
     @Override
-    public TransactionTracer createTransactionTracer( Monitors monitors, Clock clock )
+    public TransactionTracer createTransactionTracer( Clock clock )
     {
-        LogRotationMonitor monitor = monitors.newMonitor( LogRotationMonitor.class );
-        return new DefaultTransactionTracer( monitor, clock );
+        return new DefaultTransactionTracer();
     }
 
     @Override
-    public CheckPointTracer createCheckPointTracer( Monitors monitors, Clock clock )
+    public CheckPointTracer createCheckPointTracer( Clock clock )
     {
-        CheckPointerMonitor monitor = monitors.newMonitor( CheckPointerMonitor.class );
-        return new DefaultCheckPointerTracer( clock, monitor );
+        return new DefaultCheckPointerTracer();
     }
 }

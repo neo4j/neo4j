@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.time.Clock;
-
-import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.CommitEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -34,11 +31,7 @@ import org.neo4j.kernel.impl.transaction.tracing.TransactionTracer;
 
 public class DefaultTransactionTracer implements TransactionTracer
 {
-    private final Clock clock;
-    private final LogRotationMonitor monitor;
-
-    private long startTimeMillis;
-    private final LogRotateEvent logRotateEvent = this::updateCountersAndNotifyListeners;
+    private final LogRotateEvent logRotateEvent = () -> { };
 
     private final LogAppendEvent logAppendEvent = new LogAppendEvent()
     {
@@ -56,7 +49,6 @@ public class DefaultTransactionTracer implements TransactionTracer
         @Override
         public LogRotateEvent beginLogRotate()
         {
-            startTimeMillis = clock.millis();
             return logRotateEvent;
         }
 
@@ -134,10 +126,9 @@ public class DefaultTransactionTracer implements TransactionTracer
         }
     };
 
-    public DefaultTransactionTracer( LogRotationMonitor monitor, Clock clock )
+    public DefaultTransactionTracer()
     {
-        this.clock = clock;
-        this.monitor = monitor;
+        //empty
     }
 
     @Override
@@ -146,9 +137,4 @@ public class DefaultTransactionTracer implements TransactionTracer
         return transactionEvent;
     }
 
-    private void updateCountersAndNotifyListeners()
-    {
-        long rotationMillis = clock.millis() - startTimeMillis;
-        monitor.logRotation( rotationMillis );
-    }
 }

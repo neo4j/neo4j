@@ -27,10 +27,16 @@ public class DefaultLogRotationMonitor implements LogRotationMonitor
     private final AtomicLong accumulatedTotalTimeMillis = new AtomicLong();
 
     @Override
-    public void logRotation( long millis )
+    public void startRotation( long currentLogVersion )
+    {
+
+    }
+
+    @Override
+    public void finishLogRotation( long currentLogVersion, long rotationMillis )
     {
         counter.incrementAndGet();
-        accumulatedTotalTimeMillis.addAndGet( millis );
+        accumulatedTotalTimeMillis.addAndGet( rotationMillis );
     }
 
     @Override

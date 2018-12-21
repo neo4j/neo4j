@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.log.stresstest.workload;
 
 import java.io.IOException;
+import java.time.Clock;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,8 +39,8 @@ import org.neo4j.kernel.impl.transaction.log.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.DatabaseEventHandlers;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.Lifespan;
@@ -109,7 +110,7 @@ public class Runner implements Callable<Long>
         DatabaseEventHandlers databaseEventHandlers = new DatabaseEventHandlers( log );
         DatabasePanicEventGenerator panicEventGenerator = new DatabasePanicEventGenerator( databaseEventHandlers );
         DatabaseHealth databaseHealth = new DatabaseHealth( panicEventGenerator, log );
-        LogRotationImpl logRotation = new LogRotationImpl( NOOP_LOGROTATION_MONITOR, logFiles, databaseHealth );
+        LogRotationImpl logRotation = new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, LogRotationMonitorAdapter.EMPTY );
         return new BatchingTransactionAppender( logFiles, logRotation,
                 transactionMetadataCache, transactionIdStore, databaseHealth );
     }
@@ -123,20 +124,4 @@ public class Runner implements Callable<Long>
                                                       .withLogVersionRepository( logVersionRepository )
                                                       .build();
     }
-
-    private static final LogRotation.Monitor NOOP_LOGROTATION_MONITOR = new LogRotation.Monitor()
-    {
-        @Override
-        public void startedRotating( long currentVersion )
-        {
-
-        }
-
-        @Override
-        public void finishedRotating( long currentVersion )
-        {
-
-        }
-    };
-
 }

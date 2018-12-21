@@ -25,6 +25,7 @@ import org.junit.rules.RuleChain;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitorAdapter;
 import org.neo4j.kernel.internal.DatabaseHealth;
 import org.neo4j.kernel.lifecycle.LifeRule;
 import org.neo4j.logging.NullLog;
@@ -95,7 +97,7 @@ public class TransactionLogAppendAndRotateIT
         TransactionMetadataCache metadataCache = new TransactionMetadataCache();
         monitoring.setLogFile( logFiles.getLogFile() );
         DatabaseHealth health = new DatabaseHealth( mock( DatabasePanicEventGenerator.class ), NullLog.getInstance() );
-        LogRotation rotation = new LogRotationImpl( monitoring, logFiles, health );
+        LogRotation rotation = new LogRotationImpl( logFiles, Clock.systemUTC(), health, monitoring );
         final TransactionAppender appender = life.add( new BatchingTransactionAppender( logFiles, rotation, metadataCache, txIdStore, health ) );
 
         // WHEN
@@ -183,7 +185,7 @@ public class TransactionLogAppendAndRotateIT
         return tx;
     }
 
-    private static class AllTheMonitoring implements LogFileCreationMonitor, LogRotation.Monitor
+    private static class AllTheMonitoring extends LogRotationMonitorAdapter implements LogFileCreationMonitor
     {
         private final AtomicBoolean end;
         private final int maxNumberOfRotations;
@@ -203,16 +205,11 @@ public class TransactionLogAppendAndRotateIT
         }
 
         @Override
-        public void startedRotating( long currentVersion )
-        {
-        }
-
-        @Override
-        public void finishedRotating( long currentVersion )
+        public void finishLogRotation( long currentLogVersion, long rotationMillis )
         {
             try
             {
-                assertWholeTransactionsIn( logFile, currentVersion );
+                assertWholeTransactionsIn( logFile, currentLogVersion );
             }
             catch ( IOException e )
             {

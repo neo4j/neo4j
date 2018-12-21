@@ -21,7 +21,9 @@ package org.neo4j.kernel.impl.transaction.log.rotation.monitor;
 
 public interface LogRotationMonitor
 {
-    void logRotation( long millis );
+    void startRotation( long currentLogVersion );
+
+    void finishLogRotation( long currentLogVersion, long rotationMillis );
 
     long numberOfLogRotations();
 

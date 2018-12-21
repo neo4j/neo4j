@@ -150,8 +150,7 @@ class CheckPointerImplTest
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
-        verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( forceOperation, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
 
     @Test
@@ -176,8 +175,7 @@ class CheckPointerImplTest
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
-        verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( forceOperation, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
 
     @Test
@@ -202,8 +200,7 @@ class CheckPointerImplTest
         verify( threshold, times( 1 ) ).checkPointHappened( transactionId );
         verify( threshold, never() ).isCheckPointingNeeded( transactionId, INFO );
         verify( logPruning, times( 1 ) ).pruneLogs( logPosition.getLogVersion() );
-        verifyZeroInteractions( tracer );
-        verifyNoMoreInteractions( forceOperation, health, appender, threshold, tracer );
+        verifyNoMoreInteractions( forceOperation, health, appender, threshold );
     }
 
     @Test
@@ -478,7 +475,7 @@ class CheckPointerImplTest
     private CheckPointerImpl checkPointer( StoreCopyCheckPointMutex mutex )
     {
         return new CheckPointerImpl( txIdStore, threshold, forceOperation, logPruning, appender, health,
-                NullLogProvider.getInstance(), tracer, limiter, mutex );
+                NullLogProvider.getInstance(), tracer, limiter, mutex, CheckPointerMonitorAdapter.EMPTY );
     }
 
     private CheckPointerImpl checkPointer()

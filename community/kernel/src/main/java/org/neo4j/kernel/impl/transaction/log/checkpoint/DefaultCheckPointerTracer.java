@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.log.checkpoint;
 
-import java.time.Clock;
-
 import org.neo4j.kernel.impl.transaction.tracing.CheckPointTracer;
 import org.neo4j.kernel.impl.transaction.tracing.LogCheckPointEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
@@ -28,16 +26,12 @@ import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
 
 public class DefaultCheckPointerTracer implements CheckPointTracer
 {
-    private final Clock clock;
-    private final CheckPointerMonitor monitor;
-    private volatile long startTimeMillis;
-
     private LogCheckPointEvent logCheckPointEvent = new LogCheckPointEvent()
     {
         @Override
         public void close()
         {
-            notifyMonitor();
+            //empty
         }
 
         @Override
@@ -53,22 +47,14 @@ public class DefaultCheckPointerTracer implements CheckPointTracer
         }
     };
 
-    public DefaultCheckPointerTracer( Clock clock, CheckPointerMonitor monitor )
+    public DefaultCheckPointerTracer()
     {
-        this.clock = clock;
-        this.monitor = monitor;
+        //empty
     }
 
     @Override
     public LogCheckPointEvent beginCheckPoint()
     {
-        startTimeMillis = clock.millis();
         return logCheckPointEvent;
-    }
-
-    private void notifyMonitor()
-    {
-        long lastEventTimeMillis = clock.millis() - startTimeMillis;
-        monitor.checkPointCompleted( lastEventTimeMillis );
     }
 }

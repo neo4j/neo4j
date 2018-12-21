@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.Clock;
 import java.util.List;
 
 import org.neo4j.kernel.impl.api.TransactionToApply;
@@ -36,8 +37,8 @@ import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeaderReader;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
 import org.neo4j.kernel.impl.transaction.log.files.LogFilesBuilder;
-import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogForceWaitEvent;
@@ -76,7 +77,7 @@ public class BatchingTransactionAppenderRotationIT
         DatabaseHealth databaseHealth = getDatabaseHealth();
 
         LogRotationImpl logRotation =
-                new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFiles, databaseHealth );
+                new LogRotationImpl( logFiles, Clock.systemUTC(), databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
         TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache();
 
         BatchingTransactionAppender transactionAppender =

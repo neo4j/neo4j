@@ -51,6 +51,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     private final Log msgLog;
     private final CheckPointTracer tracer;
     private final StoreCopyCheckPointMutex mutex;
+    private final CheckPointerMonitor checkPointerMonitor;
 
     private volatile long lastCheckPointedTx;
 
@@ -64,7 +65,8 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             LogProvider logProvider,
             CheckPointTracer tracer,
             IOLimiter ioLimiter,
-            StoreCopyCheckPointMutex mutex )
+            StoreCopyCheckPointMutex mutex,
+            CheckPointerMonitor checkPointerMonitor )
     {
         this.appender = appender;
         this.transactionIdStore = transactionIdStore;
@@ -76,6 +78,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         this.msgLog = logProvider.getLog( CheckPointerImpl.class );
         this.tracer = tracer;
         this.mutex = mutex;
+        this.checkPointerMonitor = checkPointerMonitor;
     }
 
     @Override
@@ -90,7 +93,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         ioLimiter.disableLimit();
         try ( Resource lock = mutex.checkPoint() )
         {
-            return doCheckPoint( info, LogCheckPointEvent.NULL );
+            return doCheckPoint( info );
         }
         finally
         {
@@ -115,10 +118,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
     {
         if ( threshold.isCheckPointingNeeded( transactionIdStore.getLastClosedTransactionId(), info ) )
         {
-            try ( LogCheckPointEvent event = tracer.beginCheckPoint();
-                  Resource lock = mutex.checkPoint() )
+            try ( Resource lock = mutex.checkPoint() )
             {
-                return doCheckPoint( info, event );
+                return doCheckPoint( info );
             }
         }
         return NO_TRANSACTION_ID;
@@ -134,7 +136,7 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
             {
                 try ( Resource lock = lockAttempt )
                 {
-                    return doCheckPoint( info, LogCheckPointEvent.NULL );
+                    return doCheckPoint( info );
                 }
             }
             else
@@ -158,9 +160,9 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
         }
     }
 
-    private long doCheckPoint( TriggerInfo triggerInfo, LogCheckPointEvent logCheckPointEvent ) throws IOException
+    private long doCheckPoint( TriggerInfo triggerInfo ) throws IOException
     {
-        try
+        try ( LogCheckPointEvent event = tracer.beginCheckPoint() )
         {
             long[] lastClosedTransaction = transactionIdStore.getLastClosedTransaction();
             long lastClosedTransactionId = lastClosedTransaction[0];
@@ -185,9 +187,11 @@ public class CheckPointerImpl extends LifecycleAdapter implements CheckPointer
              * repair the damages.
              */
             databaseHealth.assertHealthy( IOException.class );
-            appender.checkPoint( logPosition, logCheckPointEvent );
+            appender.checkPoint( logPosition, event );
             threshold.checkPointHappened( lastClosedTransactionId );
-            msgLog.info( prefix + " checkpoint completed in " + duration( currentTimeMillis() - startTime ) );
+            long durationMillis = currentTimeMillis() - startTime;
+            msgLog.info( prefix + " checkpoint completed in " + duration( durationMillis ) );
+            checkPointerMonitor.checkPointCompleted( durationMillis );
             /*
              * Prune up to the version pointed from the latest check point,
              * since it might be an earlier version than the current log version.

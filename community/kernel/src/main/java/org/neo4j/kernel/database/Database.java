@@ -109,6 +109,7 @@ import org.neo4j.kernel.impl.transaction.log.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointScheduler;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointThreshold;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerImpl;
+import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckPointerMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.CheckpointerLifecycle;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.DefaultCheckPointMonitor;
 import org.neo4j.kernel.impl.transaction.log.checkpoint.StoreCopyCheckPointMutex;
@@ -125,6 +126,7 @@ import org.neo4j.kernel.impl.transaction.log.reverse.ReversedSingleFileTransacti
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotation;
 import org.neo4j.kernel.impl.transaction.log.rotation.LogRotationImpl;
 import org.neo4j.kernel.impl.transaction.log.rotation.monitor.DefaultLogRotationMonitor;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.state.DatabaseFileListing;
 import org.neo4j.kernel.impl.transaction.state.DefaultIndexProviderMap;
 import org.neo4j.kernel.impl.transaction.state.storeview.DynamicIndexStoreView;
@@ -374,8 +376,9 @@ public class Database extends LifecycleAdapter
             versionContextSupplier.init( transactionIdStore::getLastClosedTransactionId );
 
             CheckPointerImpl.ForceOperation forceOperation = new DefaultForceOperation( indexingService, labelScanStore, storageEngine );
-            DatabaseTransactionLogModule transactionLogModule = buildTransactionLogs( logFiles, config, logProvider,
-                    scheduler, forceOperation, logEntryReader, transactionIdStore, databaseMonitors );
+            DatabaseTransactionLogModule transactionLogModule =
+                    buildTransactionLogs( logFiles, config, logProvider, scheduler, forceOperation,
+                            logEntryReader, transactionIdStore, databaseMonitors );
             transactionLogModule.satisfyDependencies( databaseDependencies );
 
             final DatabaseKernelModule kernelModule = buildKernel(
@@ -582,7 +585,7 @@ public class Database extends LifecycleAdapter
                 new LogPruningImpl( fs, logFiles, logProvider, new LogPruneStrategyFactory(), clock, config );
 
         final LogRotation logRotation =
-                new LogRotationImpl( monitors.newMonitor( LogRotation.Monitor.class ), logFiles, databaseHealth );
+                new LogRotationImpl( logFiles, clock, databaseHealth, monitors.newMonitor( LogRotationMonitor.class ) );
 
         final TransactionAppender appender = life.add( new BatchingTransactionAppender(
                 logFiles, logRotation, transactionMetadataCache, transactionIdStore, databaseHealth ) );
@@ -593,7 +596,7 @@ public class Database extends LifecycleAdapter
 
         final CheckPointerImpl checkPointer = new CheckPointerImpl(
                 transactionIdStore, threshold, forceOperation, logPruning, appender, databaseHealth, logProvider,
-                globalTracers.getTracersFactory().createCheckPointTracer( monitors, clock ), ioLimiter, storeCopyCheckPointMutex );
+                globalTracers.getCheckPointTracer(), ioLimiter, storeCopyCheckPointMutex, monitors.newMonitor( CheckPointerMonitor.class ) );
 
         long recurringPeriod = threshold.checkFrequencyMillis();
         CheckPointScheduler checkPointScheduler = new CheckPointScheduler( checkPointer, ioLimiter, scheduler,

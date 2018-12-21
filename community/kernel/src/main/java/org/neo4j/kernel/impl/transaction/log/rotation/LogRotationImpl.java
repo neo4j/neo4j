@@ -20,25 +20,30 @@
 package org.neo4j.kernel.impl.transaction.log.rotation;
 
 import java.io.IOException;
+import java.time.Clock;
 
 import org.neo4j.kernel.impl.transaction.log.files.LogFile;
 import org.neo4j.kernel.impl.transaction.log.files.LogFiles;
+import org.neo4j.kernel.impl.transaction.log.rotation.monitor.LogRotationMonitor;
 import org.neo4j.kernel.impl.transaction.tracing.LogAppendEvent;
 import org.neo4j.kernel.impl.transaction.tracing.LogRotateEvent;
 import org.neo4j.kernel.internal.DatabaseHealth;
+import org.neo4j.util.VisibleForTesting;
 
 /**
  * Default implementation of the LogRotation interface.
  */
 public class LogRotationImpl implements LogRotation
 {
-    private final LogRotation.Monitor monitor;
+    private final Clock clock;
+    private final LogRotationMonitor monitor;
     private final LogFiles logFiles;
     private final DatabaseHealth databaseHealth;
     private final LogFile logFile;
 
-    public LogRotationImpl( Monitor monitor, LogFiles logFiles, DatabaseHealth databaseHealth )
+    public LogRotationImpl( LogFiles logFiles, Clock clock, DatabaseHealth databaseHealth, LogRotationMonitor monitor )
     {
+        this.clock = clock;
         this.monitor = monitor;
         this.logFiles = logFiles;
         this.databaseHealth = databaseHealth;
@@ -69,10 +74,7 @@ public class LogRotationImpl implements LogRotation
         return false;
     }
 
-    /**
-     * use for test purpose only
-     * @throws IOException
-     */
+    @VisibleForTesting
     @Override
     public void rotateLogFile() throws IOException
     {
@@ -90,8 +92,10 @@ public class LogRotationImpl implements LogRotation
          * at full health. In case of a panic this rotation will be aborted, which is the safest alternative.
          */
         databaseHealth.assertHealthy( IOException.class );
-        monitor.startedRotating( currentVersion );
+        long startTimeMillis = clock.millis();
+        monitor.startRotation( currentVersion );
+
         logFile.rotate();
-        monitor.finishedRotating( currentVersion );
+        monitor.finishLogRotation( currentVersion, clock.millis() - startTimeMillis );
     }
 }

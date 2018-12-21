@@ -24,9 +24,15 @@ public class LogRotationMonitorAdapter implements LogRotationMonitor
     public static final LogRotationMonitor EMPTY = new LogRotationMonitorAdapter();
 
     @Override
-    public void logRotation( long millis )
+    public void startRotation( long currentLogVersion )
     {
-        // empty
+        //empty
+    }
+
+    @Override
+    public void finishLogRotation( long currentLogVersion, long rotationMillis )
+    {
+        //empty
     }
 
     @Override

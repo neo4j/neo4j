@@ -46,13 +46,13 @@ public class EmptyTracersFactory implements TracerFactory
     }
 
     @Override
-    public TransactionTracer createTransactionTracer( Monitors monitors, Clock clock )
+    public TransactionTracer createTransactionTracer( Clock clock )
     {
         return TransactionTracer.NULL;
     }
 
     @Override
-    public CheckPointTracer createCheckPointTracer( Monitors monitors, Clock clock )
+    public CheckPointTracer createCheckPointTracer( Clock clock )
     {
         return CheckPointTracer.NULL;
     }

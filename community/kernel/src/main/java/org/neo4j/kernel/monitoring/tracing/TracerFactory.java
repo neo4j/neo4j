@@ -60,20 +60,18 @@ public interface TracerFactory
     /**
      * Create a new TransactionTracer instance.
      *
-     * @param monitors the monitoring manager
      * @param clock system clock
      * @return The created instance.
      */
-    TransactionTracer createTransactionTracer( Monitors monitors, Clock clock );
+    TransactionTracer createTransactionTracer( Clock clock );
 
     /**
      * Create a new CheckPointTracer instance.
      *
-     * @param monitors the monitoring manager
      * @param clock system clock
      * @return The created instance.
      */
-    CheckPointTracer createCheckPointTracer( Monitors monitors, Clock clock );
+    CheckPointTracer createCheckPointTracer( Clock clock );
 
     /**
      * Create a new LockTracer instance.
