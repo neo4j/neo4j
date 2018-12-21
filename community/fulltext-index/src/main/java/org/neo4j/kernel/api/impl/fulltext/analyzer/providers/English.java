@@ -38,4 +38,10 @@ public class English extends AnalyzerProvider
     {
         return new EnglishAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "English analyzer with stemming and stop word filtering.";
+    }
 }

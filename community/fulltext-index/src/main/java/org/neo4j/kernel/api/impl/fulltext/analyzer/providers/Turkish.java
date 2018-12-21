@@ -38,4 +38,10 @@ public class Turkish extends AnalyzerProvider
     {
         return new TurkishAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Turkish analyzer with stemming and stop word filtering.";
+    }
 }

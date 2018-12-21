@@ -38,4 +38,10 @@ public class CJK extends AnalyzerProvider
     {
         return new CJKAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "CJK - Chinese/Japanese/Korean - analyzer. Terms are normalised and case-folded. Produces bi-grams, and filters out stop words.";
+    }
 }

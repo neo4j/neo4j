@@ -703,6 +703,7 @@ public class FulltextProceduresTest
     {
         db = createDatabase();
 
+        // Verify that a couple of expected analyzers are available.
         try ( Transaction tx = db.beginTx() )
         {
             Set<String> analyzers = new HashSet<>();
@@ -716,6 +717,24 @@ public class FulltextProceduresTest
             assertThat( analyzers, hasItem( "english" ) );
             assertThat( analyzers, hasItem( "swedish" ) );
             assertThat( analyzers, hasItem( "standard" ) );
+            tx.success();
+        }
+
+        // Verify that all analyzers have a description.
+        try ( Transaction tx = db.beginTx() )
+        {
+            try ( Result result = db.execute( LIST_AVAILABLE_ANALYZERS ) )
+            {
+                while ( result.hasNext() )
+                {
+                    Map<String,Object> row = result.next();
+                    Object description = row.get( "description" );
+                    if ( !row.containsKey( "description" ) || !(description instanceof String) || ((String) description).trim().isEmpty() )
+                    {
+                        fail( "Found no description for analyzer: " + row );
+                    }
+                }
+            }
             tx.success();
         }
     }

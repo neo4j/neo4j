@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.fulltext;
 import java.util.Properties;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.common.EntityType;
 import org.neo4j.storageengine.api.schema.SchemaDescriptor;
 
@@ -31,5 +32,5 @@ public interface FulltextAdapter
 
     void awaitRefresh();
 
-    Stream<String> listAvailableAnalyzers();
+    Stream<AnalyzerProvider> listAvailableAnalyzers();
 }

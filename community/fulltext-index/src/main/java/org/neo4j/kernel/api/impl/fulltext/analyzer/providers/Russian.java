@@ -38,4 +38,10 @@ public class Russian extends AnalyzerProvider
     {
         return new RussianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Russian analyzer with stemming and stop word filtering.";
+    }
 }

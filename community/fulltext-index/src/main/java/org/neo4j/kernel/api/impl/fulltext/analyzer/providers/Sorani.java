@@ -38,4 +38,10 @@ public class Sorani extends AnalyzerProvider
     {
         return new SoraniAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Sorani Kurdish analyzer with stemming and stop word filtering.";
+    }
 }

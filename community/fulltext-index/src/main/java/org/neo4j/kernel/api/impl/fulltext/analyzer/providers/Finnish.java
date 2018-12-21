@@ -38,4 +38,10 @@ public class Finnish extends AnalyzerProvider
     {
         return new FinnishAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Finnish analyzer with stemming and stop word filtering.";
+    }
 }

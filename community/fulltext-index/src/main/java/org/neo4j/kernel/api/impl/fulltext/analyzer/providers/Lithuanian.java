@@ -38,4 +38,10 @@ public class Lithuanian extends AnalyzerProvider
     {
         return new LithuanianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Lithuanian analyzer with stemming and stop word filtering.";
+    }
 }

@@ -194,7 +194,7 @@ public class BuiltInProceduresIT extends KernelIntegrationTest
                         "(indexName :: STRING?, relationshipTypes :: LIST? OF STRING?, propertyNames :: LIST? OF STRING?, config = {} :: MAP?) :: VOID",
                         startsWith( "Create a relationship fulltext index for the given relationship types and properties." ), "SCHEMA" ),
                 proc( "db.index.fulltext.drop", "(indexName :: STRING?) :: VOID", "Drop the specified index.", "SCHEMA" ),
-                proc( "db.index.fulltext.listAvailableAnalyzers", "() :: (analyzer :: STRING?)",
+                proc( "db.index.fulltext.listAvailableAnalyzers", "() :: (analyzer :: STRING?, description :: STRING?)",
                         "List the available analyzers that the fulltext indexes can be configured with.", "READ" ),
                 proc( "db.index.fulltext.queryNodes", "(indexName :: STRING?, queryString :: STRING?) :: (node :: NODE?, score :: FLOAT?)",
                         "Query the given fulltext index. Returns the matching nodes and their lucene query score, ordered by score.", "READ"),

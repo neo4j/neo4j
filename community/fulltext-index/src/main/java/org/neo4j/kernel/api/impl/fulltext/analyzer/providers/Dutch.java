@@ -38,4 +38,10 @@ public class Dutch extends AnalyzerProvider
     {
         return new DutchAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Dutch analyzer with stemming and stop word filtering.";
+    }
 }

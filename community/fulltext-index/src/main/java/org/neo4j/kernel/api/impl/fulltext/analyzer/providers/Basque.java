@@ -38,4 +38,10 @@ public class Basque extends AnalyzerProvider
     {
         return new BasqueAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Basque analyzer with stemming and stop word filtering.";
+    }
 }

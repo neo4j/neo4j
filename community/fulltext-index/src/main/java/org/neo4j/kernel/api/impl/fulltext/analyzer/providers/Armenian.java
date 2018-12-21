@@ -38,4 +38,10 @@ public class Armenian extends AnalyzerProvider
     {
         return new ArmenianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Armenian analyzer with stemming and stop word filtering.";
+    }
 }

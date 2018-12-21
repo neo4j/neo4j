@@ -38,4 +38,10 @@ public class Greek extends AnalyzerProvider
     {
         return new GreekAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Greek analyzer with stemming and stop word filtering.";
+    }
 }

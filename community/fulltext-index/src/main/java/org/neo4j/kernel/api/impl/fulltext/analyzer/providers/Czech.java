@@ -38,4 +38,10 @@ public class Czech extends AnalyzerProvider
     {
         return new CzechAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Czech analyzer with stemming and stop word filtering.";
+    }
 }

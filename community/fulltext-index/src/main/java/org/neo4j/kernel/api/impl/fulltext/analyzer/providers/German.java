@@ -38,4 +38,10 @@ public class German extends AnalyzerProvider
     {
         return new GermanAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "German analyzer with stemming and stop word filtering.";
+    }
 }
