@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -91,7 +90,6 @@ import static org.mockito.Mockito.verify;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
 
-@Ignore
 @RunWith( Parameterized.class )
 public class StoreUpgraderTest
 {
@@ -314,7 +312,6 @@ public class StoreUpgraderTest
         // Then
         logProvider.assertContainsLogCallContaining( "Store files" );
         logProvider.assertContainsLogCallContaining( "Indexes" );
-        logProvider.assertContainsLogCallContaining( "Counts store" );
         logProvider.assertContainsLogCallContaining( "Successfully finished" );
     }
 
@@ -345,7 +342,7 @@ public class StoreUpgraderTest
         PageCache pageCache = pageCacheRule.getPageCache( fileSystem );
         UpgradableDatabase upgradableDatabase = getUpgradableDatabase( pageCache );
         StoreUpgrader storeUpgrader = newUpgrader( upgradableDatabase, pageCache );
-        assertThat( storeUpgrader.getParticipants(), hasSize( 3 ) );
+        assertThat( storeUpgrader.getParticipants(), hasSize( 2 ) );
     }
 
     protected void prepareSampleDatabase( String version, FileSystemAbstraction fileSystem, DatabaseLayout databaseLayout,

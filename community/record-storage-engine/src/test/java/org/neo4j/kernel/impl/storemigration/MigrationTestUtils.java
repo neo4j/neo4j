@@ -88,10 +88,9 @@ public class MigrationTestUtils
         }
     }
 
-    //TODO:
     private static File find34FormatStoreDirectory( File targetDir ) throws IOException
     {
-        return Unzip.unzip( Legacy34Store.class, "upgradeTest23Db.zip", targetDir );
+        return Unzip.unzip( Legacy34Store.class, "upgradeTest34Db.zip", targetDir );
     }
 
     public static boolean checkNeoStoreHasDefaultFormatVersion( RecordStoreVersionCheck check, DatabaseLayout databaseLayout )

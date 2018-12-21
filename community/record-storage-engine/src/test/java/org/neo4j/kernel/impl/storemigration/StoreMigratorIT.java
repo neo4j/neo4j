@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -67,7 +66,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.kernel.impl.transaction.log.TransactionIdStore.UNKNOWN_TX_COMMIT_TIMESTAMP;
 
-@Ignore
 @RunWith( Parameterized.class )
 public class StoreMigratorIT
 {

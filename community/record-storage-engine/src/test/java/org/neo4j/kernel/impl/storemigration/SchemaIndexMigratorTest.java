@@ -19,14 +19,12 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.common.ProgressReporter;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.api.index.IndexDirectoryStructure;
@@ -36,22 +34,23 @@ import org.neo4j.kernel.impl.store.format.standard.StandardV3_4;
 import org.neo4j.kernel.impl.store.format.standard.StandardV4_0;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.DEFAULT_DATABASE_NAME;
 
-@Ignore
-public class SchemaIndexMigratorTest
+class SchemaIndexMigratorTest
 {
     private final FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
     private final ProgressReporter progressReporter = mock( ProgressReporter.class );
     private final IndexProvider indexProvider = mock( IndexProvider.class );
-    private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store" ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
-    private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), GraphDatabaseSettings.DEFAULT_DATABASE_NAME );
+    private final DatabaseLayout databaseLayout = DatabaseLayout.of( new File( "store" ), DEFAULT_DATABASE_NAME );
+    private final DatabaseLayout migrationLayout = DatabaseLayout.of( new File( "migrationDir" ), DEFAULT_DATABASE_NAME );
 
     private final SchemaIndexMigrator migrator = new SchemaIndexMigrator( fs, indexProvider );
 
     @Test
-    public void schemaAndLabelIndexesRemovedAfterSuccessfulMigration() throws IOException
+    void schemaAndLabelIndexesNotRemovedAfterSuccessfulMigration() throws IOException
     {
         IndexDirectoryStructure directoryStructure = mock( IndexDirectoryStructure.class );
         File indexProviderRootDirectory = databaseLayout.file( "just-some-directory" );
@@ -65,6 +64,6 @@ public class SchemaIndexMigratorTest
 
         migrator.moveMigratedFiles( migrationLayout, databaseLayout, StandardV3_4.STORE_VERSION, StandardV4_0.STORE_VERSION );
 
-        verify( fs ).deleteRecursively( indexProviderRootDirectory );
+        verify( fs, never() ).deleteRecursively( indexProviderRootDirectory );
     }
 }

@@ -21,7 +21,6 @@ package upgrade;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -74,7 +73,6 @@ import static org.junit.Assert.fail;
 import static org.neo4j.consistency.store.StoreAssertions.assertConsistentStore;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.checkNeoStoreHasDefaultFormatVersion;
 
-@Ignore
 @RunWith( Parameterized.class )
 public class StoreUpgraderInterruptionTestIT
 {

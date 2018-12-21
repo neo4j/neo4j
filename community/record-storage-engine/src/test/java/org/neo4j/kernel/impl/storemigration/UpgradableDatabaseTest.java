@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
@@ -66,7 +65,6 @@ import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVers
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.removeCheckPointFromTxLog;
 import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnexpectedUpgradingStoreVersionException.MESSAGE;
 
-@Ignore
 @RunWith( Enclosed.class )
 public class UpgradableDatabaseTest
 {
