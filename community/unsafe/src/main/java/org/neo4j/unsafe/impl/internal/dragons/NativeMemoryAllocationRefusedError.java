@@ -17,20 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.mem;
+package org.neo4j.unsafe.impl.internal.dragons;
 
 import static org.neo4j.io.os.OsBeanUtil.VALUE_UNAVAILABLE;
 import static org.neo4j.io.os.OsBeanUtil.getCommittedVirtualMemory;
 import static org.neo4j.io.os.OsBeanUtil.getFreePhysicalMemory;
 import static org.neo4j.io.os.OsBeanUtil.getTotalPhysicalMemory;
 
-public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
+public class NativeMemoryAllocationRefusedError extends Error
 {
     private final long attemptedAllocationSizeBytes;
     private final long alreadyAllocatedBytes;
 
-    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes )
+    NativeMemoryAllocationRefusedError( long size, long alreadyAllocatedBytes, Throwable cause )
     {
+        super( cause );
         this.attemptedAllocationSizeBytes = size;
         this.alreadyAllocatedBytes = alreadyAllocatedBytes;
     }
@@ -47,8 +48,16 @@ public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
         appendBytes( sb, getTotalPhysicalMemory() ).append( " total physical memory, " );
         appendBytes( sb, getCommittedVirtualMemory() ).append( " committed virtual memory, and " );
         appendBytes( sb, getFreePhysicalMemory() ).append( " free physical memory. " );
+        sb.append( "Relevant system properties: " );
+        appendSysProp( sb, "java.vm.name" );
+        appendSysProp( sb.append( ", " ), "java.vm.vendor" );
+        appendSysProp( sb.append( ", " ), "os.arch" );
 
-        sb.append( "The allocation was refused by the operating system" );
+        if ( getCause() instanceof OutOfMemoryError )
+        {
+            sb.append( ". The allocation was refused by the operating system" );
+        }
+
         if ( message != null )
         {
             sb.append( ": " ).append( message );
@@ -71,5 +80,10 @@ public class NativeMemoryAllocationRefusedError extends OutOfMemoryError
             sb.append( bytes ).append( " bytes" );
         }
         return sb;
+    }
+
+    private void appendSysProp( StringBuilder sb, String sysProp )
+    {
+        sb.append( '"' ).append( sysProp ).append( "\" = \"" ).append( System.getProperty( sysProp ) ).append( '"' );
     }
 }
