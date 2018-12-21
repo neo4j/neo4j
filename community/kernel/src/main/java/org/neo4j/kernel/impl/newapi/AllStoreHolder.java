@@ -344,6 +344,13 @@ public class AllStoreHolder extends Read
             }
             catch ( IndexNotFoundKernelException e )
             {
+                if ( index instanceof IndexReference )
+                {
+                    // OK we tried lookup in the indexing service, but it wasn't there. Not loaded yet?
+                    // However this is already an IndexReference so go ahead and return it.
+                    return (IndexReference) index;
+                }
+
                 throw new IllegalStateException( format( "Wasn't able to convert %s into an %s because it was neither already of that type nor a %s",
                         index, IndexReference.class, StorageIndexReference.class ) );
             }
