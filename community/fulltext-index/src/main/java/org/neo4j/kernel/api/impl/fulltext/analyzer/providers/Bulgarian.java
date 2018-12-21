@@ -38,4 +38,10 @@ public class Bulgarian extends AnalyzerProvider
     {
         return new BulgarianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Bulgarian analyzer with light stemming, as specified by \"Searching Strategies for the Bulgarian Language\", and stop word filtering.";
+    }
 }

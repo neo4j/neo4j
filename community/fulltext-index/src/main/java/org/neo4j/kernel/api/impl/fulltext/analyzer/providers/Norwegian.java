@@ -38,4 +38,10 @@ public class Norwegian extends AnalyzerProvider
     {
         return new NorwegianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Norwegian analyzer with stemming and stop word filtering.";
+    }
 }

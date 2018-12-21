@@ -38,4 +38,11 @@ public class Thai extends AnalyzerProvider
     {
         return new ThaiAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Thai analyzer with stop word filtering. It relies on the Java built-in localization support for the Thai locale in order to break apart " +
+                "and tokenize words, which might not be available depending on Java version and JRE vendor.";
+    }
 }

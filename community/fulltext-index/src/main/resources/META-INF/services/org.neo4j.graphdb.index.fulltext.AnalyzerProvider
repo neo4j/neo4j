@@ -36,3 +36,6 @@ org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Turkish
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UnicodeWhitespace
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.UrlOrEmail
 org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Whitespace
+org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Classic
+org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Simple
+org.neo4j.kernel.api.impl.fulltext.analyzer.providers.Stop

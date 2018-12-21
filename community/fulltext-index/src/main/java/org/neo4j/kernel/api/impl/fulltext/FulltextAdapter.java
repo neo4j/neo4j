@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.stream.Stream;
 
+import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.internal.kernel.api.exceptions.schema.IndexNotFoundKernelException;
 import org.neo4j.internal.kernel.api.schema.SchemaDescriptor;
 import org.neo4j.kernel.api.KernelTransaction;
@@ -38,5 +39,5 @@ public interface FulltextAdapter
 
     void awaitRefresh();
 
-    Stream<String> listAvailableAnalyzers();
+    Stream<AnalyzerProvider> listAvailableAnalyzers();
 }

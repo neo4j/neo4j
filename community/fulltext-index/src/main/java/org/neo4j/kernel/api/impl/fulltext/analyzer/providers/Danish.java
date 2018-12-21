@@ -38,4 +38,10 @@ public class Danish extends AnalyzerProvider
     {
         return new DanishAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Danish analyzer with stemming and stop word filtering.";
+    }
 }

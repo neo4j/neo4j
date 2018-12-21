@@ -38,4 +38,10 @@ public class Swedish extends AnalyzerProvider
     {
         return new SwedishAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Swedish analyzer with stemming and stop word filtering.";
+    }
 }

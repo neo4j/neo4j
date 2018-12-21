@@ -38,4 +38,10 @@ public class Galician extends AnalyzerProvider
     {
         return new GalicianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Galician analyzer with stemming and stop word filtering.";
+    }
 }

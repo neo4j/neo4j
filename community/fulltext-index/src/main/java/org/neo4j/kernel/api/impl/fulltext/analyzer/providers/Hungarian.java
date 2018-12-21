@@ -38,4 +38,10 @@ public class Hungarian extends AnalyzerProvider
     {
         return new HungarianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Hungarian analyzer with stemming and stop word filtering.";
+    }
 }

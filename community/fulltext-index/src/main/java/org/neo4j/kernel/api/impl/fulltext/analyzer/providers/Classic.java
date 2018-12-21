@@ -20,28 +20,28 @@
 package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.UnicodeWhitespaceAnalyzer;
+import org.apache.lucene.analysis.standard.ClassicAnalyzer;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( AnalyzerProvider.class )
-public class UnicodeWhitespace extends AnalyzerProvider
+public class Classic extends AnalyzerProvider
 {
-    public UnicodeWhitespace()
+    public Classic()
     {
-        super( "unicode_whitespace" );
+        super( "classic" );
     }
 
     @Override
     public Analyzer createAnalyzer()
     {
-        return new UnicodeWhitespaceAnalyzer();
+        return new ClassicAnalyzer();
     }
 
     @Override
     public String description()
     {
-        return "Breaks text into terms by characters that have the unicode WHITESPACE property.";
+        return "Classic Lucene analyzer. Similar to 'standard', but with worse unicode support.";
     }
 }

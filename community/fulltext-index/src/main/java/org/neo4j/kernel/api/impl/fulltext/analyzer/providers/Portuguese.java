@@ -38,4 +38,10 @@ public class Portuguese extends AnalyzerProvider
     {
         return new PortugueseAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Portuguese analyzer with stemming and stop word filtering.";
+    }
 }

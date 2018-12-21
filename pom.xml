@@ -417,6 +417,12 @@
                       <oldType>org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext</oldType>
                       <justification>Adjusting revapi config to actual code state</justification>
                   </item>
+                <item>
+                  <code>java.method.added</code>
+                  <new>method java.lang.String org.neo4j.graphdb.index.fulltext.AnalyzerProvider::description()</new>
+                  <justification>This is necessary for listAvailableAnalyzers to show a description,
+                    and is extremely unlikely to conflict adversely with any code in the wild.</justification>
+                </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>

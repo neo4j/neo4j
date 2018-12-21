@@ -38,4 +38,10 @@ public class Romanian extends AnalyzerProvider
     {
         return new RomanianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Romanian analyzer with stemming and stop word filtering.";
+    }
 }

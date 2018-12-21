@@ -38,4 +38,10 @@ public class Hindi extends AnalyzerProvider
     {
         return new HindiAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Hindi analyzer with stemming, normalization, and stop word filtering.";
+    }
 }

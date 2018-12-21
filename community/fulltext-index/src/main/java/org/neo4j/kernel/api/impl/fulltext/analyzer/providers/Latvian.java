@@ -38,4 +38,10 @@ public class Latvian extends AnalyzerProvider
     {
         return new LatvianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Latvian analyzer with stemming and stop word filtering.";
+    }
 }

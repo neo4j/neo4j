@@ -38,4 +38,10 @@ public class Catalan extends AnalyzerProvider
     {
         return new CatalanAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Catalan analyzer with stemming and stop word filtering.";
+    }
 }

@@ -20,28 +20,29 @@
 package org.neo4j.kernel.api.impl.fulltext.analyzer.providers;
 
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.core.UnicodeWhitespaceAnalyzer;
+import org.apache.lucene.analysis.core.StopAnalyzer;
 
 import org.neo4j.graphdb.index.fulltext.AnalyzerProvider;
 import org.neo4j.helpers.Service;
 
 @Service.Implementation( AnalyzerProvider.class )
-public class UnicodeWhitespace extends AnalyzerProvider
+public class Stop extends AnalyzerProvider
 {
-    public UnicodeWhitespace()
+    public Stop()
     {
-        super( "unicode_whitespace" );
+        super( "stop" );
     }
 
     @Override
     public Analyzer createAnalyzer()
     {
-        return new UnicodeWhitespaceAnalyzer();
+        return new StopAnalyzer();
     }
 
     @Override
     public String description()
     {
-        return "Breaks text into terms by characters that have the unicode WHITESPACE property.";
+        return "Stop analyzer tokenizes at non-letter characters, and filters out English stop words. This differs from the 'classic' and 'standard' " +
+                "analyzers in that it makes no effort to recognize special terms, like likely product names, URLs or email addresses.";
     }
 }

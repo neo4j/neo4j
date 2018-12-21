@@ -38,4 +38,10 @@ public class Indonesian extends AnalyzerProvider
     {
         return new IndonesianAnalyzer();
     }
+
+    @Override
+    public String description()
+    {
+        return "Indonesian analyzer with stemming and stop word filtering.";
+    }
 }
