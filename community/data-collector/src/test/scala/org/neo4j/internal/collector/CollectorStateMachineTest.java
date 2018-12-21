@@ -68,8 +68,7 @@ class CollectorStateMachineTest
         enum State
         {
             IDLE,
-            COLLECTING,
-            HAS_DATA
+            COLLECTING
         }
 
         volatile State state = State.IDLE;
@@ -86,21 +85,21 @@ class CollectorStateMachineTest
         Result doStop()
         {
             assertSame( state, State.COLLECTING );
-            state = State.HAS_DATA;
+            state = State.IDLE;
             return null;
         }
 
         @Override
         Result doClear()
         {
-            assertSame( state, State.HAS_DATA );
-            state = State.IDLE;
+            assertSame( state, State.IDLE );
             return null;
         }
 
         @Override
         String doGetData()
         {
+            assertSame( state, State.IDLE );
             return "Data";
         }
     }

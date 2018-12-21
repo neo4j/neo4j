@@ -68,14 +68,28 @@ class DataCollectorQueriesAcceptanceTest extends ExecutionEngineFunSuite {
     execute("CALL db.stats.collect('QUERIES')").single
     execute("MATCH (n) RETURN count(n)")
     execute("CALL db.stats.stop('QUERIES')").single
+    execute("CALL db.stats.retrieve('QUERIES')").toList should have size 1
 
     // when
     execute("CALL db.stats.clear('QUERIES')").single
-    execute("CALL db.stats.collect('QUERIES')").single
-    execute("CALL db.stats.stop('QUERIES')").single
 
     // then
     execute("CALL db.stats.retrieve('QUERIES')").toList should be(empty)
+  }
+
+  test("should append queries if restarted collection") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("MATCH (n) RETURN count(n)")
+    execute("CALL db.stats.stop('QUERIES')").single
+    execute("CALL db.stats.retrieve('QUERIES')").toList should have size 1
+
+    // when
+    execute("CALL db.stats.collect('QUERIES')").single
+    execute("RETURN 'another query'")
+    execute("CALL db.stats.stop('QUERIES')").single
+
+    execute("CALL db.stats.retrieve('QUERIES')").toList should have size 2
   }
 
   test("should retrieve query execution plan and estimated rows") {

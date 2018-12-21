@@ -26,7 +26,7 @@ abstract class CollectorStateMachine<DATA>
 {
     private enum State
     {
-        IDLE, COLLECTING, HAS_DATA
+        IDLE, COLLECTING
     }
 
     static final class Status
@@ -74,11 +74,9 @@ abstract class CollectorStateMachine<DATA>
         switch ( state )
         {
         case IDLE:
-            return new Status( "collector is idle" );
+            return new Status( "idle" );
         case COLLECTING:
-            return new Status( "collecting data" );
-        case HAS_DATA:
-            return new Status( "collector has data" );
+            return new Status( "collecting" );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
@@ -92,9 +90,7 @@ abstract class CollectorStateMachine<DATA>
             state = State.COLLECTING;
             return doCollect();
         case COLLECTING:
-            return error( "Collection is already started." );
-        case HAS_DATA:
-            return error( "Collector already has data, clear data before collecting again." );
+            return success( "Collection is already ongoing." );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
@@ -107,10 +103,8 @@ abstract class CollectorStateMachine<DATA>
         case IDLE:
             return success( "Collector is idle, no collection ongoing." );
         case COLLECTING:
-            state = State.HAS_DATA;
+            state = State.IDLE;
             return doStop();
-        case HAS_DATA:
-            return success( "Collector is already stopped and has data, no collection ongoing." );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
@@ -121,15 +115,9 @@ abstract class CollectorStateMachine<DATA>
         switch ( state )
         {
         case IDLE:
-            return success( "Collector is idle and has no data." );
-        case COLLECTING:
-            doStop();
-            state = State.IDLE;
-            doClear();
-            return success( "Collection stopped and data cleared." );
-        case HAS_DATA:
-            state = State.IDLE;
             return doClear();
+        case COLLECTING:
+            return error( "Collected data cannot be cleared while collecting." );
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }
@@ -140,11 +128,9 @@ abstract class CollectorStateMachine<DATA>
         switch ( state )
         {
         case IDLE:
-            throw new IllegalStateException( "Collector is idle and has no data." );
+            return doGetData();
         case COLLECTING:
             throw new IllegalStateException( "Collector is still collecting." );
-        case HAS_DATA:
-            return doGetData();
         default:
             throw new IllegalStateException( "Unknown state " + state );
         }

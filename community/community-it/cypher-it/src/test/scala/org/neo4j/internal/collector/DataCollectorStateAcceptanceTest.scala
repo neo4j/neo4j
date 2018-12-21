@@ -25,9 +25,8 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
 
   import DataCollectorMatchers._
 
-  private val IDLE = "collector is idle"
-  private val COLLECTING = "collecting data"
-  private val HAS_DATA = "collector has data"
+  private val IDLE = "idle"
+  private val COLLECTING = "collecting"
 
   test("QUERIES: happy path collect cycle") {
     assertStatus(IDLE)
@@ -46,14 +45,6 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
       "message" -> "Collection stopped."
     )
 
-    assertStatus(HAS_DATA)
-
-    execute("CALL db.stats.clear('QUERIES')").single should beMap(
-      "section" -> "QUERIES",
-      "success" -> true,
-      "message" -> "Data cleared."
-    )
-
     assertStatus(IDLE)
 
     execute("CALL db.stats.collect('QUERIES')").single should beMap(
@@ -65,7 +56,7 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     assertStatus(COLLECTING)
   }
 
-  test("QUERIES: misuse while idle") {
+  test("QUERIES: stop while idle is idempotent") {
     // when
     execute("CALL db.stats.stop('QUERIES')").single should beMap(
       "section" -> "QUERIES",
@@ -75,20 +66,9 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
 
     // then
     assertStatus(IDLE)
-
-    // when
-    execute("CALL db.stats.clear('QUERIES')").single should beMap(
-      "section" -> "QUERIES",
-      "success" -> true,
-      "message" -> "Collector is idle and has no data."
-    )
-
-    // then
-    assertStatus(IDLE)
   }
 
-  test("QUERIES: misuse while collecting") {
-
+  test("QUERIES: collect while collecting is idempotent") {
     // given
     execute("CALL db.stats.collect('QUERIES')")
     assertStatus(COLLECTING)
@@ -96,50 +76,28 @@ class DataCollectorStateAcceptanceTest extends ExecutionEngineFunSuite {
     // when
     execute("CALL db.stats.collect('QUERIES')").single should beMap(
       "section" -> "QUERIES",
-      "success" -> false,
-      "message" -> "Collection is already started."
+      "success" -> true,
+      "message" -> "Collection is already ongoing."
     )
 
     // then
+    assertStatus(COLLECTING)
+  }
+
+  test("QUERIES: clear while collecting is not allowed") {
+    // given
+    execute("CALL db.stats.collect('QUERIES')")
     assertStatus(COLLECTING)
 
     // when
     execute("CALL db.stats.clear('QUERIES')").single should beMap(
       "section" -> "QUERIES",
-      "success" -> true,
-      "message" -> "Collection stopped and data cleared."
-    )
-
-    // then
-    assertStatus(IDLE)
-  }
-
-  test("QUERIES: misuse while having data") {
-
-    // given
-    execute("CALL db.stats.collect('QUERIES')")
-    execute("CALL db.stats.stop('QUERIES')")
-    assertStatus(HAS_DATA)
-
-    // when
-    execute("CALL db.stats.collect('QUERIES')").single should beMap(
-      "section" -> "QUERIES",
       "success" -> false,
-      "message" -> "Collector already has data, clear data before collecting again."
+      "message" -> "Collected data cannot be cleared while collecting."
     )
 
     // then
-    assertStatus(HAS_DATA)
-
-    // when
-    execute("CALL db.stats.stop('QUERIES')").single should beMap(
-      "section" -> "QUERIES",
-      "success" -> true,
-      "message" -> "Collector is already stopped and has data, no collection ongoing."
-    )
-
-    // then
-    assertStatus(HAS_DATA)
+    assertStatus(COLLECTING)
   }
 
   test("collect/stop/clear of invalid section should throw") {
