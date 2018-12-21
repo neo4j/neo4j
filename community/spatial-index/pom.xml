@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>3.5.1-SNAPSHOT</version>
+    <version>3.5.2-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
@@ -35,7 +35,7 @@
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-spatial-index</artifactId>
-  <version>3.5.1-SNAPSHOT</version>
+  <version>3.5.2-SNAPSHOT</version>
 
   <packaging>jar</packaging>
   <name>Neo4j - Native Spatial Index</name>
