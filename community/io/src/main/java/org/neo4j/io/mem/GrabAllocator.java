@@ -227,76 +227,43 @@ public final class GrabAllocator implements MemoryAllocator
                 throw new IllegalArgumentException( "Invalid alignment: " + alignment + ". Alignment must be positive." );
             }
             long grabSize = Math.min( GRAB_SIZE, expectedMaxMemory );
-            try
+            if ( bytes > GRAB_SIZE )
             {
-                if ( bytes > GRAB_SIZE )
+                // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
+                grabSize = bytes;
+                Grab nextGrab = head == null ? null : head.next;
+                Grab allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
+                if ( !allocationGrab.canAllocate( bytes, alignment ) )
                 {
-                    // This is a huge allocation. Put it in its own grab and keep any existing grab at the head.
+                    allocationGrab.free();
+                    grabSize = bytes + alignment;
+                    allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
+                }
+                long allocation = allocationGrab.allocate( bytes, alignment );
+                head = head == null ? allocationGrab : head.setNext( allocationGrab );
+                expectedMaxMemory -= bytes;
+                return allocation;
+            }
+
+            if ( head == null || !head.canAllocate( bytes, alignment ) )
+            {
+                if ( grabSize < bytes )
+                {
                     grabSize = bytes;
-                    Grab nextGrab = head == null ? null : head.next;
-                    Grab allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
-                    if ( !allocationGrab.canAllocate( bytes, alignment ) )
+                    Grab grab = new Grab( head, grabSize, memoryTracker );
+                    if ( grab.canAllocate( bytes, alignment ) )
                     {
-                        allocationGrab.free();
-                        grabSize = bytes + alignment;
-                        allocationGrab = new Grab( nextGrab, grabSize, memoryTracker );
+                        expectedMaxMemory -= grabSize;
+                        head = grab;
+                        return head.allocate( bytes, alignment );
                     }
-                    long allocation = allocationGrab.allocate( bytes, alignment );
-                    head = head == null ? allocationGrab : head.setNext( allocationGrab );
-                    expectedMaxMemory -= bytes;
-                    return allocation;
+                    grab.free();
+                    grabSize = bytes + alignment;
                 }
-
-                if ( head == null || !head.canAllocate( bytes, alignment ) )
-                {
-                    if ( grabSize < bytes )
-                    {
-                        grabSize = bytes;
-                        Grab grab = new Grab( head, grabSize, memoryTracker );
-                        if ( grab.canAllocate( bytes, alignment ) )
-                        {
-                            expectedMaxMemory -= grabSize;
-                            head = grab;
-                            return head.allocate( bytes, alignment );
-                        }
-                        grab.free();
-                        grabSize = bytes + alignment;
-                    }
-                    head = new Grab( head, grabSize, memoryTracker );
-                    expectedMaxMemory -= grabSize;
-                }
-                return head.allocate( bytes, alignment );
+                head = new Grab( head, grabSize, memoryTracker );
+                expectedMaxMemory -= grabSize;
             }
-            catch ( OutOfMemoryError oome )
-            {
-                NativeMemoryAllocationRefusedError error =
-                        new NativeMemoryAllocationRefusedError( grabSize, usedMemory() );
-                initCause( error, oome );
-                throw error;
-            }
-        }
-
-        private static void initCause( NativeMemoryAllocationRefusedError error, OutOfMemoryError cause )
-        {
-            try
-            {
-                error.initCause( cause );
-            }
-            catch ( Throwable ignore )
-            {
-                // This can only happen if our NMARE somehow already has a cause initialised, which should not
-                // be the case, but it could if the JDK decided to inject a default cause in some future version.
-                // To avoid loosing the ability to trace this cause back, we'll add it as a suppressed exception
-                // instead.
-                try
-                {
-                    error.addSuppressed( cause );
-                }
-                catch ( Throwable ignore2 )
-                {
-                    // Okay, we tried.
-                }
-            }
+            return head.allocate( bytes, alignment );
         }
     }
 

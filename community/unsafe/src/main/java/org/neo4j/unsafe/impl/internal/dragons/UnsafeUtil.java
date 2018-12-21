@@ -388,9 +388,17 @@ public final class UnsafeUtil
      *
      * @return a pointer to the allocated memory
      */
-    public static long allocateMemory( long bytes )
+    public static long allocateMemory( long bytes ) throws NativeMemoryAllocationRefusedError
     {
-        final long pointer = unsafe.allocateMemory( bytes );
+        final long pointer;
+        try
+        {
+            pointer = unsafe.allocateMemory( bytes );
+        }
+        catch ( Throwable e )
+        {
+            throw new NativeMemoryAllocationRefusedError( bytes, GlobalMemoryTracker.INSTANCE.usedDirectMemory(), e );
+        }
         if ( DIRTY_MEMORY )
         {
             setMemory( pointer, bytes, (byte) 0xA5 );
@@ -407,7 +415,7 @@ public final class UnsafeUtil
      * The memory is uninitialised, so it may contain random garbage, or it may not.
      * @return a pointer to the allocated memory
      */
-    public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker )
+    public static long allocateMemory( long bytes, MemoryAllocationTracker allocationTracker ) throws NativeMemoryAllocationRefusedError
     {
         final long pointer = allocateMemory( bytes );
         allocationTracker.allocated( bytes );
