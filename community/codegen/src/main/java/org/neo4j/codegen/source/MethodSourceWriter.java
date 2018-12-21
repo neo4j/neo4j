@@ -478,10 +478,17 @@ class MethodSourceWriter implements MethodEmitter, ExpressionVisitor
     @Override
     public void cast( TypeReference type, Expression expression )
     {
-        append( "(" );
-        append( "(" ).append( type.fullName() ).append( ") " );
-        expression.accept( this );
-        append( ")" );
+        if ( !type.equals( expression.type() ) )
+        {
+            append( "(" );
+            append( "(" ).append( type.fullName() ).append( ") " );
+            expression.accept( this );
+            append( ")" );
+        }
+        else
+        {
+            expression.accept( this );
+        }
     }
 
     @Override
