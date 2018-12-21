@@ -39,12 +39,12 @@ import org.neo4j.kernel.impl.query.QueryExecutionMonitor;
  */
 class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> implements QueryExecutionMonitor
 {
-    private volatile boolean on;
+    private volatile boolean isCollecting;
     private final ConcurrentLinkedQueue<QuerySnapshot> queries;
 
     QueryCollector()
     {
-        on = false;
+        isCollecting = false;
         queries = new ConcurrentLinkedQueue<>();
     }
 
@@ -53,14 +53,14 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     @Override
     Result doCollect()
     {
-        on = true;
+        isCollecting = true;
         return success( "Collection started." );
     }
 
     @Override
     Result doStop()
     {
-        on = false;
+        isCollecting = false;
         return success( "Collection stopped." );
     }
 
@@ -87,7 +87,7 @@ class QueryCollector extends CollectorStateMachine<Iterator<QuerySnapshot>> impl
     @Override
     public void endSuccess( ExecutingQuery query )
     {
-        if ( on )
+        if ( isCollecting )
         {
             queries.add( query.snapshot() );
         }

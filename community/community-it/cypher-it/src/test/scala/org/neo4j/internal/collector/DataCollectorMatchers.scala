@@ -244,7 +244,7 @@ object DataCollectorMatchers {
           case _ => false
         },
         rawFailureMessage = s"'$left' is not the same Cypher as '$expected'",
-        rawNegatedFailureMessage = "")
+        rawNegatedFailureMessage = s"'$left' is unexpectedly the same Cypher as '$expected'")
 
     override def toString(): String = s"cypher string `$expected`"
   }
