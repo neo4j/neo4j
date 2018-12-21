@@ -78,11 +78,10 @@ public interface TracerFactory
     /**
      * Create a new LockTracer instance.
      *
-     * @param monitors the monitoring manager
      * @param clock system clock
      * @return The created instance.
      */
-    default LockTracer createLockTracer( Monitors monitors, Clock clock )
+    default LockTracer createLockTracer( Clock clock )
     {
         return LockTracer.NONE;
     }

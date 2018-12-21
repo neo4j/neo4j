@@ -376,7 +376,7 @@ public class KernelTransactions extends LifecycleAdapter implements Supplier<Ker
                             constraintIndexCreator, procedures, transactionHeaderInformationFactory,
                             transactionCommitProcess, transactionMonitor, localTxPool, clock, cpuClockRef, heapAllocationRef,
                             tracers.getTracersFactory().createTransactionTracer( monitors, clock ),
-                            tracers.getTracersFactory().createLockTracer( monitors, clock ),
+                            tracers.getLockTracer(),
                             tracers.getPageCursorTracerSupplier(), storageEngine, accessCapability,
                             versionContextSupplier, collectionsFactorySupplier, constraintSemantics,
                             schemaState, tokenHolders, indexingService, labelScanStore, indexStatisticsStore, databaseDependendies );

@@ -58,7 +58,7 @@ public class EmptyTracersFactory implements TracerFactory
     }
 
     @Override
-    public LockTracer createLockTracer( Monitors monitors, Clock clock )
+    public LockTracer createLockTracer( Clock clock )
     {
         return LockTracer.NONE;
     }

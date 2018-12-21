@@ -25,6 +25,7 @@ import org.neo4j.io.pagecache.tracing.cursor.PageCursorTracerSupplier;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.logging.Log;
 import org.neo4j.scheduler.JobScheduler;
+import org.neo4j.storageengine.api.lock.LockTracer;
 import org.neo4j.time.SystemNanoClock;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -100,6 +101,7 @@ public class Tracers
 {
     private final TracerFactory tracersFactory;
     private final PageCacheTracer pageCacheTracer;
+    private final LockTracer lockTracer;
     private final PageCursorTracerSupplier pageCursorTracerSupplier;
 
     /**
@@ -118,6 +120,7 @@ public class Tracers
         tracersFactory = createTracersFactory( desiredImplementationName, msgLog );
         pageCursorTracerSupplier = tracersFactory.createPageCursorTracerSupplier( monitors, jobScheduler );
         pageCacheTracer = tracersFactory.createPageCacheTracer( monitors, jobScheduler, clock, msgLog );
+        lockTracer = tracersFactory.createLockTracer( clock );
     }
 
     public PageCacheTracer getPageCacheTracer()
@@ -128,6 +131,11 @@ public class Tracers
     public PageCursorTracerSupplier getPageCursorTracerSupplier()
     {
         return pageCursorTracerSupplier;
+    }
+
+    public LockTracer getLockTracer()
+    {
+        return lockTracer;
     }
 
     public TracerFactory getTracersFactory()
@@ -151,7 +159,7 @@ public class Tracers
     {
         if ( isBlank( desiredImplementationName ) )
         {
-            return new DefaultTracerFactory();
+            return createDefaultTracerFactory();
         }
         try
         {
@@ -168,6 +176,11 @@ public class Tracers
             msgLog.warn( "Failed to instantiate desired tracer implementations '" + desiredImplementationName + "'", e );
         }
         msgLog.warn( "Using default tracer implementations instead of '%s'", desiredImplementationName );
+        return createDefaultTracerFactory();
+    }
+
+    private static DefaultTracerFactory createDefaultTracerFactory()
+    {
         return new DefaultTracerFactory();
     }
 }
