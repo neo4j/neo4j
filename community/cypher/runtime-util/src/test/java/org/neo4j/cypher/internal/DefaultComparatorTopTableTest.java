@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal;
 
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+
+import org.junit.jupiter.api.Test;
 
 import java.util.Comparator;
 import java.util.Iterator;
@@ -29,8 +28,9 @@ import java.util.Iterator;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class DefaultComparatorTopTableTest
+class DefaultComparatorTopTableTest
 {
     private static Long[] testValues = new Long[]{7L, 4L, 5L, 0L, 3L, 4L, 8L, 6L, 1L, 9L, 2L};
 
@@ -38,11 +38,8 @@ public class DefaultComparatorTopTableTest
 
     private static final Comparator<Long> comparator = Long::compare;
 
-    @Rule
-    public final ExpectedException exception = ExpectedException.none();
-
     @Test
-    public void shouldHandleAddingMoreValuesThanCapacity()
+    void shouldHandleAddingMoreValuesThanCapacity()
     {
         DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 7 );
         for ( Long i : testValues )
@@ -64,7 +61,7 @@ public class DefaultComparatorTopTableTest
     }
 
     @Test
-    public void shouldHandleWhenNotCompletelyFilledToCapacity()
+    void shouldHandleWhenNotCompletelyFilledToCapacity()
     {
         DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 20 );
         for ( Long i : testValues )
@@ -86,7 +83,7 @@ public class DefaultComparatorTopTableTest
     }
 
     @Test
-    public void shouldHandleWhenEmpty()
+    void shouldHandleWhenEmpty()
     {
         DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 10 );
 
@@ -98,21 +95,21 @@ public class DefaultComparatorTopTableTest
     }
 
     @Test
-    public void shouldThrowOnInitializeToZeroCapacity()
+    void shouldThrowOnInitializeToZeroCapacity()
     {
-        exception.expect( IllegalArgumentException.class );
-        new DefaultComparatorTopTable<>( comparator, 0 );
+        assertThrows( IllegalArgumentException.class,
+                () -> new DefaultComparatorTopTable<>( comparator, 0 ) );
     }
 
     @Test
-    public void shouldThrowOnInitializeToNegativeCapacity()
+    void shouldThrowOnInitializeToNegativeCapacity()
     {
-        exception.expect( IllegalArgumentException.class );
-        new DefaultComparatorTopTable<>( comparator, -1 );
+        assertThrows( IllegalArgumentException.class,
+                () -> new DefaultComparatorTopTable<>( comparator, -1 ) );
     }
 
     @Test
-    public void shouldThrowOnSortNotCalledBeforeIterator()
+    void shouldThrowOnSortNotCalledBeforeIterator()
     {
         DefaultComparatorTopTable<Long> table = new DefaultComparatorTopTable<>( comparator, 5 );
         for ( Long i : testValues )
@@ -122,7 +119,6 @@ public class DefaultComparatorTopTableTest
 
         // We forgot to call sort() here...
 
-        exception.expect( IllegalStateException.class );
-        table.iterator();
+        assertThrows( IllegalStateException.class, table::iterator );
     }
 }
