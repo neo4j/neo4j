@@ -32,9 +32,9 @@ import org.neo4j.internal.kernel.api.schema.LabelSchemaDescriptor;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.values.storable.Values;
 
-import static junit.framework.TestCase.assertEquals;
-import static junit.framework.TestCase.assertTrue;
-import static junit.framework.TestCase.fail;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public abstract class LockingTestBase<G extends KernelAPIWriteTestSupport>
         extends KernelAPIWriteTestBase<G>
@@ -69,7 +69,7 @@ public abstract class LockingTestBase<G extends KernelAPIWriteTestSupport>
         Future<?> f1 = executor.submit( () -> {
             try ( Transaction tx = session.beginTransaction() )
             {
-                createNodeWIthProperty( tx, nodeProp );
+                createNodeWithProperty( tx, nodeProp );
 
                 createNodeLatch.countDown();
                 assertTrue( createConstraintLatch.await( 5, TimeUnit.MINUTES) );
@@ -120,7 +120,7 @@ public abstract class LockingTestBase<G extends KernelAPIWriteTestSupport>
         }
     }
 
-    private void createNodeWIthProperty( Transaction tx, int propId1 ) throws KernelException
+    private void createNodeWithProperty( Transaction tx, int propId1 ) throws KernelException
     {
         long node = tx.dataWrite().nodeCreate();
         tx.dataWrite().nodeSetProperty( node, propId1, Values.intValue( 42 ) );
