@@ -316,40 +316,6 @@
                       <!-- Ignore for now since some are already published, should be removed in 4.0 -->
                       <code>java.class.nonPublicPartOfAPI</code>
                   </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.helpers.collection.MultiSet</classQualifiedName>
-                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                  </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.helpers.collection.CachingIterator</classQualifiedName>
-                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                  </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.helpers.collection.RangeIterator</classQualifiedName>
-                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                  </item>
-                  <item>
-                      <code>java.class.added</code>
-                      <classQualifiedName>org.neo4j.helpers.collection.PagingIterator</classQualifiedName>
-                      <justification>This class was accidentally removed in 3.5.0 and recovered after release.</justification>
-                  </item>
-                  <item>
-                      <code>java.method.parameterTypeChanged</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.GraphDatabaseFactory</classQualifiedName>
-                      <newType>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</newType>
-                      <oldType>org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies</oldType>
-                      <justification>This class was moved during edition/platform separation from the kernel</justification>
-                  </item>
-                  <item>
-                      <code>java.method.returnTypeChanged</code>
-                      <classQualifiedName>org.neo4j.graphdb.factory.GraphDatabaseFactoryState</classQualifiedName>
-                      <newType>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</newType>
-                      <oldType>org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies</oldType>
-                      <justification>This class was moved during edition/platform separation from the kernel</justification>
-                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
