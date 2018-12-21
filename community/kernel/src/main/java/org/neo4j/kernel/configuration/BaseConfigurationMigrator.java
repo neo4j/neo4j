@@ -55,7 +55,7 @@ public class BaseConfigurationMigrator implements ConfigurationMigrator
         private final String propertyKey;
         private final String deprecationMessage;
 
-        SpecificPropertyMigration( String propertyKey, String deprecationMessage )
+        protected SpecificPropertyMigration( String propertyKey, String deprecationMessage )
         {
             this.propertyKey = propertyKey;
             this.deprecationMessage = deprecationMessage;
