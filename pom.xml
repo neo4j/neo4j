@@ -381,6 +381,42 @@
                       <oldType>org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies</oldType>
                       <justification>This class was moved during edition/platform separation from the kernel</justification>
                   </item>
+                  <item>
+                      <code>java.method.returnTypeChanged</code>
+                      <classQualifiedName>org.neo4j.graphdb.factory.GraphDatabaseFactoryState</classQualifiedName>
+                      <newType>org.neo4j.graphdb.facade.GraphDatabaseFacadeFactory.Dependencies</newType>
+                      <oldType>org.neo4j.kernel.impl.factory.GraphDatabaseFacadeFactory.Dependencies</oldType>
+                      <justification>This class was moved during edition/platform separation from the kernel</justification>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.graphdb.factory.module.DatabaseInitializer</classQualifiedName>
+                      <justification>Adjusting revapi config to actual code state</justification>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext</classQualifiedName>
+                      <justification>Adjusting revapi config to actual code state</justification>
+                  </item>
+                  <item>
+                      <code>java.class.added</code>
+                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.context.DefaultEditionDatabaseContext</classQualifiedName>
+                      <justification>Adjusting revapi config to actual code state</justification>
+                  </item>
+                  <item>
+                      <code>java.method.returnTypeChanged</code>
+                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.AbstractEditionModule</classQualifiedName>
+                      <newType>org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext</newType>
+                      <oldType>org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext</oldType>
+                      <justification>Adjusting revapi config to actual code state</justification>
+                  </item>
+                  <item>
+                      <code>java.method.returnTypeChanged</code>
+                      <classQualifiedName>org.neo4j.graphdb.factory.module.edition.DefaultEditionModule</classQualifiedName>
+                      <newType>org.neo4j.graphdb.factory.module.edition.context.EditionDatabaseContext</newType>
+                      <oldType>org.neo4j.graphdb.factory.module.edition.context.DatabaseEditionContext</oldType>
+                      <justification>Adjusting revapi config to actual code state</justification>
+                  </item>
               </revapi.ignore>
               <revapi.semver.ignore>
                 <enabled>true</enabled>
