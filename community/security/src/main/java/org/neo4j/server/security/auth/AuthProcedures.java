@@ -111,7 +111,7 @@ public class AuthProcedures
         return showCurrentUser();
     }
 
-    @Description( "List all local users." )
+    @Description( "List all native users." )
     @Procedure( name = "dbms.security.listUsers", mode = DBMS )
     public Stream<UserResult> listUsers()
     {
