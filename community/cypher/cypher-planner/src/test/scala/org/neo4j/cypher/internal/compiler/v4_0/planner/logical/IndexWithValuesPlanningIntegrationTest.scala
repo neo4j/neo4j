@@ -329,8 +329,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
           Projection(
             IndexSeek(
               "n:Awesome(prop = 'foo')", GetValue),
-            Map("  FRESHID61" -> FunctionInvocation(Namespace(List())(pos), FunctionName("toUpper")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos))),
-          Seq(Ascending("  FRESHID61"))),
+            Map("toUpper(n.prop)" -> FunctionInvocation(Namespace(List())(pos), FunctionName("toUpper")(pos), distinct = false, IndexedSeq(cachedNodeProperty("n", "prop")))(pos))),
+          Seq(Ascending("toUpper(n.prop)"))),
         Map("n.foo" -> Property(Variable("n")(pos), PropertyKeyName("foo")(pos))(pos)))
     )
   }
@@ -876,8 +876,8 @@ class IndexWithValuesPlanningIntegrationTest extends CypherFunSuite with Logical
         Sort(
           Projection(
             IndexSeek("n:Awesome(prop < 2)", GetValue),
-            Map("  FRESHID60" -> Property(varFor("n"), PropertyKeyName("foo")(pos))(pos))),
-          Seq(Ascending("  FRESHID60"))
+            Map("n.foo" -> Property(varFor("n"), PropertyKeyName("foo")(pos))(pos))),
+          Seq(Ascending("n.foo"))
         ),
         Map("n.prop" -> cachedNodeProperty("n", "prop"))
       )

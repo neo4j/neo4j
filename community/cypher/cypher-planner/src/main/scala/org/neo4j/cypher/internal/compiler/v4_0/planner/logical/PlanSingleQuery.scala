@@ -119,17 +119,9 @@ object PlannerHelper {
         case InterestingOrder.Asc(_, v@Variable(key), projection) => (Ascending(key), AscSortItem(v)(v.position), projection, None)
         case InterestingOrder.Desc(_, v@Variable(key), projection) => (Descending(key), DescSortItem(v)(v.position), projection, None)
         case InterestingOrder.Asc(_, expression, projection) =>
-//          val newVariable = Variable(FreshIdNameGenerator.name(expression.position))(expression.position)
-//          val projectItem = newVariable.name -> expression
-//          val newSortItem = AscSortItem(newVariable)(newVariable.position)
-//          (Ascending(newVariable.name), newSortItem, projection, Some(projectItem))
           val columnId = idFrom(expression, projection)
           (Ascending(columnId), AscSortItem(expression)(expression.position), projection, Some(columnId -> expression))
         case InterestingOrder.Desc(_, expression, projection) =>
-//          val newVariable = Variable(FreshIdNameGenerator.name(expression.position))(expression.position)
-//          val projectItem = newVariable.name -> expression
-//          val newSortItem = DescSortItem(newVariable)(newVariable.position)
-//          (Descending(newVariable.name), newSortItem, projection, Some(projectItem))
           val columnId = idFrom(expression, projection)
           (Descending(columnId), DescSortItem(expression)(expression.position), projection, Some(columnId -> expression))
       }
@@ -177,7 +169,7 @@ object PlannerHelper {
 }
 
 trait PartPlanner {
-  def apply(query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan
+  def apply(query: PlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan
 }
 
 trait EventHorizonPlanner {

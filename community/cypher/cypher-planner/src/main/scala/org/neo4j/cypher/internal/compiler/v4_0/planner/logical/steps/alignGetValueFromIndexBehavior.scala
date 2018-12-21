@@ -45,12 +45,14 @@ object alignGetValueFromIndexBehavior {
 
   private def usedExpressionsInQueryPart(queryPart: PlannerQuery, withPredicates: Boolean): Set[Expression] = {
     val horizonDependingExpressions = queryPart.horizon.dependingExpressions.toSet
+    val requiredOrderExpressions = queryPart.interestingOrder.requiredOrderCandidate.order.map(_.expression)
     val usedExpressionsInHorizon = collectPropertiesAndVariables(horizonDependingExpressions)
+    val usedExpressionsInOrdering = collectPropertiesAndVariables(requiredOrderExpressions)
     if (withPredicates) {
       val usedExpressionsInPredicates = collectPropertiesAndVariables(queryPart.queryGraph.selections.predicates.map(_.expr))
-      usedExpressionsInHorizon ++ usedExpressionsInPredicates
+      usedExpressionsInHorizon ++ usedExpressionsInPredicates ++ usedExpressionsInOrdering
     } else {
-      usedExpressionsInHorizon
+      usedExpressionsInHorizon ++ usedExpressionsInOrdering
     }
   }
 

@@ -34,8 +34,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID30" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID30")))
+    val projection = Projection(labelScan, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
     val resultProjection = Projection(sort, Map("a.name" -> nameProperty))
 
     plan should equal(resultProjection)
@@ -48,8 +48,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID30" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID30")))
+    val projection = Projection(labelScan, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
     val resultProjection = Projection(sort, Map("a.name" -> nameProperty, "a.age" -> ageProperty))
 
     plan should equal(resultProjection)
@@ -108,8 +108,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val fooProperty = Property(varFor("b"), PropertyKeyName("foo") _) _
 
     val projection = Projection(labelScan, Map("b" -> varFor("a"), "age" -> ageProperty))
-    val projection2 = Projection(projection, Map("  FRESHID49" -> fooProperty, "  FRESHID60" -> Add(varFor("age"), SignedDecimalIntegerLiteral("5") _) _))
-    val sort = Sort(projection2, Seq(Ascending("  FRESHID49"), Ascending("  FRESHID60")))
+    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "age + 5" -> Add(varFor("age"), SignedDecimalIntegerLiteral("5") _) _))
+    val sort = Sort(projection2, Seq(Ascending("b.foo"), Ascending("age + 5")))
     val result = Projection(sort, Map("b.name" -> nameProperty))
 
     plan should equal(result)
@@ -125,8 +125,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val fooProperty = Property(varFor("b"), PropertyKeyName("foo") _) _
 
     val projection = Projection(labelScan, Map("b" -> varFor("a")))
-    val projection2 = Projection(projection, Map("  FRESHID49" -> fooProperty, "  FRESHID60" -> Add(ageBProperty, SignedDecimalIntegerLiteral("5") _) _))
-    val sort = Sort(projection2, Seq(Ascending("  FRESHID49"), Ascending("  FRESHID60")))
+    val projection2 = Projection(projection, Map("b.foo" -> fooProperty, "b.age + 5" -> Add(ageBProperty, SignedDecimalIntegerLiteral("5") _) _))
+    val sort = Sort(projection2, Seq(Ascending("b.foo"), Ascending("b.age + 5")))
     val projection3 = Projection(sort, Map("age" -> ageAProperty))
     val result = Projection(projection3, Map("b.name" -> nameProperty))
 
@@ -140,8 +140,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID37" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID37")))
+    val projection = Projection(labelScan, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
     val result = Projection(sort, Map("a.name" -> nameProperty))
 
     plan should equal(result)
@@ -181,8 +181,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val labelScan = NodeByLabelScan("a", LabelName("A") _, Set.empty)
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID32" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID32")))
+    val projection = Projection(labelScan, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
 
     plan should equal(sort)
   }
@@ -218,8 +218,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageProperty = Property(varFor("a"), PropertyKeyName("age") _) _
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
-    val projection = Projection(labelScan, Map("  FRESHID34" -> Add(ageProperty, SignedDecimalIntegerLiteral("4") _) _))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID34")))
+    val projection = Projection(labelScan, Map("a.age + 4" -> Add(ageProperty, SignedDecimalIntegerLiteral("4") _) _))
+    val sort = Sort(projection, Seq(Ascending("a.age + 4")))
     val result = Projection(sort, Map("a.name" -> nameProperty))
 
     plan should equal(result)
@@ -245,8 +245,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val nameProperty = Property(varFor("a"), PropertyKeyName("name") _) _
 
     val distinct = Distinct(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")))
-    val projection = Projection(distinct, Map("  FRESHID55" -> ageProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID55")))
+    val projection = Projection(distinct, Map("a.age" -> ageProperty))
+    val sort = Sort(projection, Seq(Ascending("a.age")))
 
     plan should equal(sort)
   }
@@ -289,8 +289,8 @@ class OrderPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTe
     val ageSum = FunctionInvocation(Namespace(List()) _, FunctionName("sum") _, distinct = false, Vector(ageProperty)) _
 
     val aggregation = Aggregation(labelScan, Map("name" -> nameProperty, "a" -> varFor("a")), Map("age" -> ageSum))
-    val projection = Projection(aggregation, Map("  FRESHID65" -> fooProperty))
-    val sort = Sort(projection, Seq(Ascending("  FRESHID65")))
+    val projection = Projection(aggregation, Map("a.foo" -> fooProperty))
+    val sort = Sort(projection, Seq(Ascending("a.foo")))
 
     plan should equal(sort)
   }

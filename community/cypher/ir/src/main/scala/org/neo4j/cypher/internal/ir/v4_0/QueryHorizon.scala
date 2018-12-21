@@ -73,6 +73,7 @@ sealed abstract class QueryProjection extends QueryHorizon {
   def withAddedProjections(projections: Map[String, Expression]): QueryProjection
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 
+  // TODO shuffle.sortItems should not be used anymore
   override def dependingExpressions: Seq[Expression] = shuffle.sortItems.map(_.expression)
   override def preferredStrictness: Option[StrictnessMode] =
     if (shuffle.limit.isDefined && shuffle.sortItems.isEmpty) Some(LazyMode) else None

@@ -119,30 +119,33 @@ case class QueryPlanner(planSingleQuery: SingleQueryPlanner = PlanSingleQuery())
 
 case object planPart extends PartPlanner {
 
-  def apply(query: PlannerQuery, context: LogicalPlanningContext): LogicalPlan = {
+  def apply(query: PlannerQuery, context: LogicalPlanningContext, rhsPart: Boolean = false): LogicalPlan = {
     val ctx = query.preferredStrictness match {
       case Some(mode) if !context.input.strictness.contains(mode) => context.withStrictness(mode)
       case _ => context
     }
-    ctx.strategy.plan(query.queryGraph, interestingInterestingOrderForPart(query), ctx)
+    ctx.strategy.plan(query.queryGraph, interestingInterestingOrderForPart(query, rhsPart), ctx)
   }
 
   // TODO probably not be needed if returning sorted and unsorted
   // If the required order has dependency on argument, then it should not solve the ordering here
-  private def interestingInterestingOrderForPart(query: PlannerQuery) = {
+  private def interestingInterestingOrderForPart(query: PlannerQuery, rhsPart: Boolean) = {
     val interestingOrder = query.interestingOrder
-    query.horizon match {
-      case _: AggregatingQueryProjection | _: DistinctQueryProjection =>
-        interestingOrder.asInteresting
-
-      case _ =>
-        val orderCandidate = interestingOrder.requiredOrderCandidate.order
-        val dependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
-        if (dependencies.exists(dep => query.queryGraph.argumentIds.contains(dep.name)))
+    if (rhsPart)
+      interestingOrder.asInteresting
+    else
+      query.horizon match {
+        case _: AggregatingQueryProjection | _: DistinctQueryProjection =>
           interestingOrder.asInteresting
-        else
-          interestingOrder
-    }
+
+        case _ =>
+          val orderCandidate = interestingOrder.requiredOrderCandidate.order
+          val dependencies = orderCandidate.flatMap(_.projections).flatMap(_._2.dependencies) ++ orderCandidate.flatMap(_.expression.dependencies)
+          if (dependencies.exists(dep => query.queryGraph.argumentIds.contains(dep.name)))
+            interestingOrder.asInteresting
+          else
+            interestingOrder
+      }
   }
 }
 

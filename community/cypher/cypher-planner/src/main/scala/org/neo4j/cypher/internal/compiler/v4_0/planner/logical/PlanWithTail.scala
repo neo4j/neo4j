@@ -41,7 +41,7 @@ case class PlanWithTail(planEventHorizon: EventHorizonPlanner = PlanEventHorizon
         val attributes = context.planningAttributes.asAttributes(idGen)
         val lhsContext = context.withUpdatedCardinalityInformation(sortedLhs)
 
-        val partPlan = planPart(plannerQuery, lhsContext)
+        val partPlan = planPart(plannerQuery, lhsContext, rhsPart = true)
         val (planWithUpdates, newContext) = planUpdates(plannerQuery, partPlan, firstPlannerQuery = false, lhsContext)
 
         // Mark properties from indexes to be fetched, if the properties are used later in the query
