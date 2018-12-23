@@ -23,7 +23,10 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.io.IOUtils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -35,7 +38,6 @@ import org.neo4j.commandline.Util;
 import org.neo4j.function.ThrowingAction;
 
 import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
-import static org.neo4j.dbms.archive.Utils.copy;
 import static org.neo4j.function.Predicates.not;
 import static org.neo4j.function.ThrowingAction.noop;
 import static org.neo4j.io.fs.FileVisitors.justContinue;
@@ -79,7 +81,7 @@ public class Dumper
         // the check ourselves non-atomically.
         TarArchiveOutputStream tarball =
                 new TarArchiveOutputStream( new GzipCompressorOutputStream(
-                        Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) );
+                        new BufferedOutputStream( Files.newOutputStream( archive, StandardOpenOption.CREATE_NEW ) ) ) );
         tarball.setLongFileMode( TarArchiveOutputStream.LONGFILE_POSIX );
         tarball.setBigNumberMode( TarArchiveOutputStream.BIGNUMBER_POSIX );
         return tarball;
@@ -111,9 +113,9 @@ public class Dumper
 
     private void writeFile( Path file, ArchiveOutputStream archiveStream ) throws IOException
     {
-        try ( InputStream in = Files.newInputStream( file ) )
+        try ( InputStream in = new BufferedInputStream( Files.newInputStream( file ) ) )
         {
-            copy( in, archiveStream );
+            IOUtils.copy( in, archiveStream );
         }
     }
 }

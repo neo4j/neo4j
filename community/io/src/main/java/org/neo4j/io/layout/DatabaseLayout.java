@@ -28,8 +28,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.collection.Streams;
+import org.neo4j.helpers.collection.Iterables;
 
 import static org.neo4j.io.fs.FileUtils.getCanonicalFile;
 import static org.neo4j.io.layout.StoreLayoutConfig.NOT_CONFIGURED;
@@ -341,6 +341,8 @@ public class DatabaseLayout
             return false;
         }
         DatabaseLayout that = (DatabaseLayout) o;
-        return Objects.equals( databaseDirectory, that.databaseDirectory ) && Objects.equals( storeLayout, that.storeLayout );
+        return Objects.equals( databaseDirectory, that.databaseDirectory ) &&
+               Objects.equals( storeLayout, that.storeLayout ) &&
+               getTransactionLogsDirectory().equals( that.getTransactionLogsDirectory() );
     }
 }

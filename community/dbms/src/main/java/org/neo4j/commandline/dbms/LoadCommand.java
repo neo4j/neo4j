@@ -19,6 +19,7 @@
  */
 package org.neo4j.commandline.dbms;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
@@ -35,18 +36,16 @@ import org.neo4j.commandline.arguments.common.MandatoryCanonicalPath;
 import org.neo4j.dbms.archive.IncorrectFormat;
 import org.neo4j.dbms.archive.Loader;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.configuration.LayoutConfig;
 
 import static java.util.Objects.requireNonNull;
-import static org.neo4j.commandline.Util.canonicalPath;
 import static org.neo4j.commandline.Util.checkLock;
-import static org.neo4j.commandline.Util.isSameOrChildPath;
 import static org.neo4j.commandline.Util.wrapIOException;
 import static org.neo4j.commandline.arguments.common.Database.ARG_DATABASE;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.database_path;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.transaction_logs_root_path;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class LoadCommand implements AdminCommand
 {
@@ -80,21 +79,15 @@ public class LoadCommand implements AdminCommand
 
         Config config = buildConfig( database );
 
-        Path databaseDirectory = canonicalPath( getDatabaseDirectory( config ) );
-        Path transactionLogsDirectory = canonicalPath( getTransactionalLogsDirectory( config ) );
+        DatabaseLayout databaseLayout = DatabaseLayout.of( getDatabaseDirectory( config ), LayoutConfig.of( config ) );
 
-        deleteIfNecessary( databaseDirectory, transactionLogsDirectory, force );
-        load( archive, database, databaseDirectory, transactionLogsDirectory );
+        deleteIfNecessary( databaseLayout, force );
+        load( archive, databaseLayout );
     }
 
-    private Path getDatabaseDirectory( Config config )
+    private File getDatabaseDirectory( Config config )
     {
-        return config.get( database_path ).toPath();
-    }
-
-    private Path getTransactionalLogsDirectory( Config config )
-    {
-        return config.get( transaction_logs_root_path ).toPath();
+        return config.get( database_path );
     }
 
     private Config buildConfig( String databaseName )
@@ -107,18 +100,15 @@ public class LoadCommand implements AdminCommand
                 .build();
     }
 
-    private void deleteIfNecessary( Path databaseDirectory, Path transactionLogsDirectory, boolean force ) throws CommandFailed
+    private void deleteIfNecessary( DatabaseLayout databaseLayout, boolean force ) throws CommandFailed
     {
         try
         {
             if ( force )
             {
-                checkLock( DatabaseLayout.of( databaseDirectory.toFile() ).getStoreLayout() );
-                FileUtils.deletePathRecursively( databaseDirectory );
-                if ( !isSameOrChildPath( databaseDirectory, transactionLogsDirectory ) )
-                {
-                    FileUtils.deletePathRecursively( transactionLogsDirectory );
-                }
+                checkLock( databaseLayout.getStoreLayout() );
+                deleteRecursively( databaseLayout.databaseDirectory() );
+                deleteRecursively( databaseLayout.getTransactionLogsDirectory() );
             }
         }
         catch ( IOException e )
@@ -127,11 +117,11 @@ public class LoadCommand implements AdminCommand
         }
     }
 
-    private void load( Path archive, String database, Path databaseDirectory, Path transactionLogsDirectory ) throws CommandFailed
+    private void load( Path archive, DatabaseLayout databaseLayout ) throws CommandFailed
     {
         try
         {
-            loader.load( archive, databaseDirectory, transactionLogsDirectory );
+            loader.load( archive, databaseLayout );
         }
         catch ( NoSuchFileException e )
         {
@@ -143,7 +133,7 @@ public class LoadCommand implements AdminCommand
         }
         catch ( FileAlreadyExistsException e )
         {
-            throw new CommandFailed( "database already exists: " + database, e );
+            throw new CommandFailed( "database already exists: " + databaseLayout.getDatabaseName(), e );
         }
         catch ( AccessDeniedException e )
         {

@@ -203,7 +203,7 @@ class DumpCommandTest
     void databaseThatRequireRecoveryIsNotDumpable() throws IOException
     {
         Config config = Config.builder().withHome( homeDir ).build();
-        DatabaseLayout databaseLayout = testDirectory.databaseLayout( LayoutConfig.of( config ), "foo.db" );
+        DatabaseLayout databaseLayout = testDirectory.databaseLayout( "foo.db", LayoutConfig.of( config ) );
         testDirectory.getFileSystem().mkdirs( databaseLayout.getTransactionLogsDirectory() );
         File logFile = new File( databaseLayout.getTransactionLogsDirectory(), TransactionLogFiles.DEFAULT_NAME + ".0" );
 

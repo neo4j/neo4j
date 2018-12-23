@@ -23,7 +23,10 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveInputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
+import org.apache.commons.io.IOUtils;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.impl.transaction.log.files.TransactionLogFiles;
 
 import static java.nio.file.Files.exists;
@@ -40,8 +44,11 @@ import static org.neo4j.dbms.archive.Utils.checkWritableDirectory;
 
 public class Loader
 {
-    public void load( Path archive, Path databaseDestination, Path transactionLogsDirectory ) throws IOException, IncorrectFormat
+    public void load( Path archive, DatabaseLayout databaseLayout ) throws IOException, IncorrectFormat
     {
+        Path databaseDestination = databaseLayout.databaseDirectory().toPath();
+        Path transactionLogsDirectory = databaseLayout.getTransactionLogsDirectory().toPath();
+
         validatePath( databaseDestination );
         validatePath( transactionLogsDirectory );
 
@@ -105,16 +112,16 @@ public class Loader
         }
         else
         {
-            try ( OutputStream output = Files.newOutputStream( file ) )
+            try ( OutputStream output = new BufferedOutputStream( Files.newOutputStream( file ) ) )
             {
-                Utils.copy( stream, output );
+                IOUtils.copy( stream, output );
             }
         }
     }
 
     private static ArchiveInputStream openArchiveIn( Path archive ) throws IOException, IncorrectFormat
     {
-        InputStream input = Files.newInputStream( archive );
+        InputStream input = new BufferedInputStream( Files.newInputStream( archive ) );
         GzipCompressorInputStream compressor;
         try
         {

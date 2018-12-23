@@ -165,7 +165,7 @@ class ConsistencyCheckToolTest
 
         // then
         ArgumentCaptor<Config> config = ArgumentCaptor.forClass( Config.class );
-        verify( service ).runFullConsistencyCheck( eq( databaseLayout ), config.capture(),
+        verify( service ).runFullConsistencyCheck( any(), config.capture(),
                 any( ProgressMonitorFactory.class ), any( LogProvider.class ), any( FileSystemAbstraction.class ),
                 anyBoolean(), any(ConsistencyFlags.class) );
         assertTrue( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );

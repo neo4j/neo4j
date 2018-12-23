@@ -198,18 +198,20 @@ public class TestDirectory extends ExternalResource
 
     public DatabaseLayout databaseLayout( StoreLayoutConfig storeLayoutConfig )
     {
-        return databaseLayout( storeLayoutConfig, DEFAULT_DATABASE_DIRECTORY );
+        return databaseLayout( DEFAULT_DATABASE_DIRECTORY, storeLayoutConfig );
     }
 
-    public DatabaseLayout databaseLayout( StoreLayoutConfig storeLayoutConfig, String databaseName )
+    public DatabaseLayout databaseLayout( String databaseName, StoreLayoutConfig storeLayoutConfig )
     {
-        return StoreLayout.of( testDirectory, storeLayoutConfig ).databaseLayout( databaseName );
+        DatabaseLayout databaseLayout = StoreLayout.of( testDirectory, storeLayoutConfig ).databaseLayout( databaseName );
+        createDirectory( databaseLayout );
+        return databaseLayout;
     }
 
     public DatabaseLayout databaseLayout( File storeDir )
     {
         DatabaseLayout databaseLayout = StoreLayout.of( storeDir ).databaseLayout( DEFAULT_DATABASE_DIRECTORY );
-        createDirectory( databaseLayout.databaseDirectory() );
+        createDirectory( databaseLayout );
         return databaseLayout;
     }
 
@@ -309,6 +311,12 @@ public class TestDirectory extends ExternalResource
     private void directoryForDescription( Description description ) throws IOException
     {
         prepareDirectory( description.getTestClass(), description.getMethodName() );
+    }
+
+    private void createDirectory( DatabaseLayout databaseLayout )
+    {
+        createDirectory( databaseLayout.databaseDirectory() );
+        createDirectory( databaseLayout.getTransactionLogsDirectory() );
     }
 
     private void ensureFileExists( File file )

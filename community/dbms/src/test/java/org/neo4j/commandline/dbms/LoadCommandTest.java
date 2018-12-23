@@ -36,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 import org.neo4j.commandline.admin.CommandFailed;
 import org.neo4j.commandline.admin.CommandLocator;
@@ -96,7 +97,8 @@ class LoadCommandTest
     void shouldLoadTheDatabaseFromTheArchive() throws CommandFailed, IncorrectUsage, IOException, IncorrectFormat
     {
         execute( "foo.db" );
-        verify( loader ).load( archive, homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/tx-logs" ) );
+        DatabaseLayout databaseLayout = createDatabaseLayout( homeDir.resolve( "data/databases/foo.db" ), homeDir.resolve( "data/tx-logs" ) );
+        verify( loader ).load( archive, databaseLayout );
     }
 
     @Test
@@ -110,7 +112,8 @@ class LoadCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( databaseDir ), eq( transactionLogsDir ) );
+        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, transactionLogsDir );
+        verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
     @Test
@@ -124,7 +127,8 @@ class LoadCommandTest
                         formatProperty( transaction_logs_root_path, txLogsDir ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( databaseDir ), eq( txLogsDir ) );
+        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, txLogsDir );
+        verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
     @Test
@@ -146,7 +150,8 @@ class LoadCommandTest
         Files.write( configDir.resolve( Config.DEFAULT_CONFIG_FILE_NAME ), singletonList( formatProperty( data_directory, dataDir ) ) );
 
         execute( "foo.db" );
-        verify( loader ).load( any(), eq( realDatabaseDir ), eq( txLogsDir ) );
+        DatabaseLayout databaseLayout = createDatabaseLayout( realDatabaseDir, txLogsDir );
+        verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
     @Test
@@ -160,7 +165,7 @@ class LoadCommandTest
         new LoadCommand( homeDir, configDir, loader )
                 .execute( ArrayUtil.concat( new String[]{"--database=foo.db", "--from=foo.dump"} ) );
 
-        verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any(), any() );
+        verify( loader ).load( eq( Paths.get( new File( "foo.dump" ).getCanonicalPath() ) ), any() );
     }
 
     @Test
@@ -176,7 +181,7 @@ class LoadCommandTest
         {
             assertThat( Files.exists( databaseDirectory ), equalTo( false ) );
             return null;
-        } ).when( loader ).load( any(), any(), any() );
+        } ).when( loader ).load( any(), any() );
 
         execute( "foo.db", "--force" );
     }
@@ -192,7 +197,7 @@ class LoadCommandTest
         {
             assertThat( Files.exists( databaseDirectory ), equalTo( true ) );
             return null;
-        } ).when( loader ).load( any(), any(), any() );
+        } ).when( loader ).load( any(), any() );
 
         execute( "foo.db" );
     }
@@ -221,7 +226,8 @@ class LoadCommandTest
         Files.createDirectories( databaseDir );
 
         new LoadCommand( homeDir, configDir, loader ).execute( new String[]{"--from=something"} );
-        verify( loader ).load( any(), eq( databaseDir ), eq( transactionLogsDir ) );
+        DatabaseLayout databaseLayout = createDatabaseLayout( databaseDir, transactionLogsDir );
+        verify( loader ).load( any(), eq( databaseLayout ) );
     }
 
     @Test
@@ -235,7 +241,7 @@ class LoadCommandTest
     @Test
     void shouldGiveAClearMessageIfTheArchiveDoesntExist() throws IOException, IncorrectFormat
     {
-        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any(), any() );
+        doThrow( new NoSuchFileException( archive.toString() ) ).when( loader ).load( any(), any() );
         CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
         assertEquals( "archive does not exist: " + archive, commandFailed.getMessage() );
     }
@@ -243,7 +249,7 @@ class LoadCommandTest
     @Test
     void shouldGiveAClearMessageIfTheDatabaseAlreadyExists() throws IOException, IncorrectFormat, IncorrectUsage
     {
-        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any(), any() );
+        doThrow( FileAlreadyExistsException.class ).when( loader ).load( any(), any() );
         CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( "foo.db" ) );
         assertEquals( "database already exists: foo.db", commandFailed.getMessage() );
     }
@@ -252,7 +258,7 @@ class LoadCommandTest
     void shouldGiveAClearMessageIfTheDatabasesDirectoryIsNotWritable()
             throws IOException, IncorrectFormat
     {
-        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any(), any() );
+        doThrow( AccessDeniedException.class ).when( loader ).load( any(), any() );
         CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
         assertEquals( "you do not have permission to load a database -- is Neo4j running as a different user?", commandFailed.getMessage() );
     }
@@ -261,7 +267,7 @@ class LoadCommandTest
     void shouldWrapIOExceptionsCarefullyBecauseCriticalInformationIsOftenEncodedInTheirNameButMissingFromTheirMessage()
             throws IOException, IncorrectFormat
     {
-        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any(), any() );
+        doThrow( new FileSystemException( "the-message" ) ).when( loader ).load( any(), any() );
         CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
         assertEquals( "unable to load database: FileSystemException: the-message", commandFailed.getMessage() );
     }
@@ -269,7 +275,7 @@ class LoadCommandTest
     @Test
     void shouldThrowIfTheArchiveFormatIsInvalid() throws IOException, IncorrectFormat
     {
-        doThrow( IncorrectFormat.class ).when( loader ).load( any(), any(), any() );
+        doThrow( IncorrectFormat.class ).when( loader ).load( any(), any() );
         CommandFailed commandFailed = assertThrows( CommandFailed.class, () -> execute( null ) );
         assertThat( commandFailed.getMessage(), containsString( archive.toString() ) );
         assertThat( commandFailed.getMessage(), containsString( "valid Neo4j archive" ) );
@@ -307,6 +313,11 @@ class LoadCommandTest
                             "                          [default:false]%n" ),
                     baos.toString() );
         }
+    }
+
+    private static DatabaseLayout createDatabaseLayout( Path databasePath, Path transactionLogsPath )
+    {
+        return DatabaseLayout.of( databasePath.toFile(), () -> Optional.of( transactionLogsPath.toFile() ) );
     }
 
     private void execute( String database, String... otherArgs ) throws IncorrectUsage, CommandFailed
