@@ -26,9 +26,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.neo4j.commandline.admin.CommandFailed;
@@ -40,7 +38,6 @@ import org.neo4j.commandline.admin.RealOutsideWorld;
 import org.neo4j.commandline.admin.Usage;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
-import org.neo4j.io.layout.DatabaseLayout;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.extension.Inject;
 import org.neo4j.test.extension.SuppressOutputExtension;
@@ -176,7 +173,8 @@ class ImportCommandTest
         Path confPath = testDir.directory( "conf" ).toPath();
         ImportCommand importCommand = new ImportCommand( homeDir, confPath, outsideWorld );
         File nodesFile = createTextFile( "nodes.csv", ":ID", "1", "2" );
-        String[] arguments = {"--mode=csv", "--database=existing.db", "--nodes=" + nodesFile.getAbsolutePath()};
+        String[] arguments = {"--mode=csv", "--database=existing.db", "--nodes=" + nodesFile.getAbsolutePath(),
+                "--report-file=" + testDir.file( "report" )};
 
         // First run an import so that a database gets created
         importCommand.execute( arguments );
@@ -325,13 +323,6 @@ class ImportCommandTest
                             "      subsystem can support parallel IO with high throughput. [default:null]%n" ),
                     baos.toString() );
         }
-    }
-
-    private static void putStoreInDirectory( Path databaseDirectory ) throws IOException
-    {
-        Files.createDirectories( databaseDirectory );
-        Path storeFile = DatabaseLayout.of( databaseDirectory.toFile() ).metadataStore().toPath();
-        Files.createFile( storeFile );
     }
 
     private File createTextFile( String name, String... lines ) throws FileNotFoundException
