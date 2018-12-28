@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.apache.commons.lang3.StringUtils;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,11 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.neo4j.helpers.AdvertisedSocketAddress;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.helpers.SocketAddress;
 
 public class Converters
 {
@@ -112,16 +113,17 @@ public class Converters
         return Integer::new;
     }
 
-    public static <T extends SocketAddress> T toSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort,
-            BiFunction<String,Integer,T> addressFactory )
+    public static AdvertisedSocketAddress toAdvertisedSocketAddress( HostnamePort hostnamePort, String defaultHostname, int defaultPort )
     {
         String hostname = removeIpV6Brackets( hostnamePort.getHost() != null ? hostnamePort.getHost() : defaultHostname );
+        // port 0 only makes sense for a listen address, not advertised address
+        // it is thus safe to treat port 0 as missing port when converting the given host and port into an advertised address
         int port = hostnamePort.getPort() != 0 ? hostnamePort.getPort() : defaultPort;
-        return addressFactory.apply( hostname, port );
+        return new AdvertisedSocketAddress( hostname, port );
     }
 
     private static String removeIpV6Brackets( String hostname )
     {
-        return hostname.replace( "[", "" ).replace( "]", "" );
+        return StringUtils.remove( StringUtils.remove( hostname, '[' ), ']' );
     }
 }
